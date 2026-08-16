@@ -40,9 +40,9 @@ scope, risk, or legal meaning); apply the voice mask in the neutral
 register unless the content demands serious, holding every fact, number,
 commitment, and caveat constant, one spelling convention throughout;
 re-lint and settle anything the mask reintroduced. Draft the PR title and
-body to the same standard: what changed, why, the issue reference,
-pointers to the audit file and stacked PR, and the command that proves the
-step.
+body to the same standard: what changed, why, pointers to the audit file and
+stacked PR, and the command that proves the step. Do not invent an issue
+reference; include one only when the user independently supplied it.
 
 If the lint script cannot run, stop and say so -- do not imitate it from
 memory and do not report it as applied. Report back the file count (PR

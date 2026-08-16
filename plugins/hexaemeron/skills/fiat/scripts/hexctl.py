@@ -8,7 +8,7 @@ command appends a ledger entry, so `verify` can prove the run history was not
 edited after the fact.
 
 Phase order is fixed. Globally: study -> runbook -> steps -> done.
-Within each step: issue -> implement -> audit -> prose -> push.
+Within each step: implement -> audit -> prose -> push.
 
 Exit codes: 0 success, 2 validation/usage error, 1 unexpected failure.
 Stdout from `next` and `status --json` is a single JSON object; everything
@@ -30,6 +30,8 @@ STATE_DIR_NAME = ".hexaemeron"
 STATE_FILE = "state.json"
 LEDGER_FILE = "ledger.jsonl"
 
+# ``issue`` remains accepted only so runs created by older controllers can
+# advance directly into implementation without losing their ledger history.
 STEP_PHASES = ["issue", "implement", "audit", "prose", "push"]
 GLOBAL_PHASES = ["study", "runbook", "steps", "done"]
 
@@ -63,11 +65,6 @@ DEFAULT_CONFIG = {
         "fold": False,
         "log_path": "audit/AUDIT.md",
     },
-    "issue": {
-        "headers": ["Description", "TODO", "Acceptance Criteria", "User Value / Need"],
-        "epic": True,
-        "allow_subissues": True,
-    },
     "git": {
         "base": "main",
         "step_base": "chain",
@@ -75,9 +72,6 @@ DEFAULT_CONFIG = {
     },
     "solidity": "auto",
 }
-
-CHECKBOX_RE = re.compile(r"^(\d+)/(\d+)$")
-
 
 def now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).isoformat()
@@ -126,6 +120,7 @@ MUTATING = frozenset(
         "cmd_audit_round",
         "cmd_halt",
         "cmd_resume",
+        "cmd_reset",
     }
 )
 """Commands that write. `status`, `next` and `verify` only read, and blocking
@@ -455,38 +450,25 @@ def done_runbook(args, state: dict) -> None:
         for i, title in enumerate(titles)
     ]
     state["steps"][0]["status"] = "open"
-    state["steps"][0]["phase"] = "issue"
+    state["steps"][0]["phase"] = "implement"
     state["current_step"] = 1
     state["phase"] = "steps"
     receipt = {"artifact": artifact, "steps": titles}
-    if args.epic_issue:
-        state["receipts"]["epic_issue"] = args.epic_issue
-        receipt["epic_issue"] = args.epic_issue
     state["receipts"]["runbook"] = {"artifact": artifact, "step_count": len(titles)}
     commit(args.dir, state, "done:runbook", receipt)
-    print(f"runbook receipted; {len(titles)} steps registered; step 1 -> issue")
-
-
-def done_issue(args, state: dict) -> None:
-    step = require_step_phase(state, "issue")
-    if not args.issue_url:
-        die("--issue-url is required")
-    step["receipts"]["issue"] = {
-        "url": args.issue_url,
-        "subissues": args.subissue_url or [],
-    }
-    step["phase"] = "implement"
-    commit(
-        args.dir,
-        state,
-        "done:issue",
-        {"step": step["n"], "url": args.issue_url, "subissues": args.subissue_url or []},
-    )
-    print(f"step {step['n']} issue receipted; phase -> implement")
+    print(f"runbook receipted; {len(titles)} steps registered; step 1 -> implement")
 
 
 def done_implement(args, state: dict) -> None:
-    step = require_step_phase(state, "implement")
+    # Runs created before issue-free Fiat may still be parked at ``issue``.
+    # Treat that legacy phase as implementation-ready and retire it in the
+    # implementation receipt rather than forcing a GitHub side effect.
+    step = current_step(state)
+    if state.get("halted"):
+        die(f"run is halted ({state['halted']['reason']}); `hexctl resume` first")
+    if state["phase"] != "steps" or step["phase"] not in ("issue", "implement"):
+        require_step_phase(state, "implement")
+    legacy_phase = step["phase"] == "issue"
     if not args.branch or not args.commit:
         die("--branch and --commit are required")
     step["receipts"]["implement"] = {
@@ -499,7 +481,12 @@ def done_implement(args, state: dict) -> None:
         args.dir,
         state,
         "done:implement",
-        {"step": step["n"], "branch": args.branch, "commit": args.commit},
+        {
+            "step": step["n"],
+            "branch": args.branch,
+            "commit": args.commit,
+            "legacy_issue_phase_skipped": legacy_phase,
+        },
     )
     print(f"step {step['n']} implementation receipted; phase -> audit")
 
@@ -606,35 +593,16 @@ def done_push(args, state: dict) -> None:
     step = require_step_phase(state, "push")
     if not args.pr_url:
         die("--pr-url is required")
-    match = CHECKBOX_RE.match(args.checkboxes or "")
-    if not match:
-        die("--checkboxes must look like `checked/total`, e.g. 5/7")
-    checked, total = int(match.group(1)), int(match.group(2))
-    if checked > total:
-        die(f"checkbox count {checked}/{total} is impossible")
-    if args.issue_state not in ("open", "closed"):
-        die("--issue-state must be 'open' or 'closed'")
-    if checked == total and args.issue_state != "closed":
-        die("all checkboxes ticked: the issue must be closed before receipting")
-    if checked < total and args.issue_state != "open":
-        die(
-            f"only {checked}/{total} checkboxes ticked: the issue must stay "
-            "open; do not close early"
-        )
-    step["receipts"]["push"] = {
-        "pr_url": args.pr_url,
-        "checkboxes": f"{checked}/{total}",
-        "issue_state": args.issue_state,
-    }
+    step["receipts"]["push"] = {"pr_url": args.pr_url}
     step["status"] = "done"
     step["phase"] = "done"
     remaining = [s for s in state["steps"] if s["status"] == "pending"]
     if remaining:
         nxt = remaining[0]
         nxt["status"] = "open"
-        nxt["phase"] = "issue"
+        nxt["phase"] = "implement"
         state["current_step"] = nxt["n"]
-        tail = f"step {nxt['n']} -> issue"
+        tail = f"step {nxt['n']} -> implement"
     else:
         state["current_step"] = None
         state["phase"] = "done"
@@ -651,7 +619,6 @@ def done_push(args, state: dict) -> None:
 DONE_HANDLERS = {
     "study": done_study,
     "runbook": done_runbook,
-    "issue": done_issue,
     "implement": done_implement,
     "audit": done_audit,
     "prose": done_prose,
@@ -719,6 +686,8 @@ def _next_directive(state: dict) -> dict:
             "round": len(rounds) + 1,
             "prior_findings": last["findings"],
         }
+    if step["phase"] == "issue":
+        return {**base, "do": "implement", "legacy_issue_phase_skipped": True}
     return {**base, "do": step["phase"]}
 
 
@@ -776,9 +745,9 @@ def cmd_resume(args) -> None:
     print("resumed")
 
 
-def cmd_verify(args) -> None:
-    state = load_state(args.dir)
-    path = ledger_path(args.dir)
+def verify_run(base_dir: str) -> int:
+    state = load_state(base_dir)
+    path = ledger_path(base_dir)
     if not os.path.exists(path):
         die("ledger missing", 1)
     prev = "genesis"
@@ -818,7 +787,47 @@ def cmd_verify(args) -> None:
         step = current_step(state)
         if step["status"] != "open" or step["phase"] not in STEP_PHASES:
             die("state inconsistent: current step is not open", 1)
+    return count
+
+
+def cmd_verify(args) -> None:
+    count = verify_run(args.dir)
     print(f"ok: {count} ledger entries, chain intact, state consistent")
+
+
+def cmd_reset(args) -> None:
+    """Archive a completed run inside its ignored state directory."""
+    count = verify_run(args.dir)
+    state = load_state(args.dir)
+    if state["phase"] != "done":
+        die(
+            f"refusing to reset an incomplete run in phase '{state['phase']}'; "
+            "resume it or halt it explicitly"
+        )
+
+    root = state_root(args.dir)
+    archive_root = os.path.join(root, "archive")
+    os.makedirs(archive_root, exist_ok=True)
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    topic = re.sub(r"[^a-z0-9]+", "-", state["topic"].lower()).strip("-")[:48]
+    name = f"{stamp}-{topic or 'completed-run'}"
+    destination = os.path.join(archive_root, name)
+    suffix = 2
+    while os.path.exists(destination):
+        destination = os.path.join(archive_root, f"{name}-{suffix}")
+        suffix += 1
+    os.makedirs(destination)
+
+    preserved = {".gitignore", "archive", "lock"}
+    for entry in os.listdir(root):
+        if entry in preserved:
+            continue
+        os.replace(os.path.join(root, entry), os.path.join(destination, entry))
+
+    print(
+        f"archived completed run ({count} ledger entries) at {destination}; "
+        "active state cleared"
+    )
 
 
 # ---------------------------------------------------------------------- cli
@@ -856,9 +865,6 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--artifact")
     sp.add_argument("--skills")
     sp.add_argument("--steps-file", dest="steps_file")
-    sp.add_argument("--epic-issue", dest="epic_issue")
-    sp.add_argument("--issue-url", dest="issue_url")
-    sp.add_argument("--subissue-url", dest="subissue_url", action="append")
     sp.add_argument("--branch")
     sp.add_argument("--commit")
     sp.add_argument("--tests")
@@ -868,8 +874,6 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--log")
     sp.add_argument("--files", type=int)
     sp.add_argument("--pr-url", dest="pr_url")
-    sp.add_argument("--checkboxes")
-    sp.add_argument("--issue-state", dest="issue_state")
     sp.set_defaults(fn=cmd_done)
 
     sp = sub.add_parser("audit-round", help="record one security round")
@@ -885,6 +889,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("resume", help="clear a halt")
     sp.add_argument("--note")
     sp.set_defaults(fn=cmd_resume)
+
+    sp = sub.add_parser(
+        "reset", help="archive a completed run and clear its active state"
+    )
+    sp.set_defaults(fn=cmd_reset)
 
     sp = sub.add_parser("verify", help="check ledger chain and state consistency")
     sp.set_defaults(fn=cmd_verify)

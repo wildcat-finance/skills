@@ -1,7 +1,7 @@
 {
   "name": "hexaemeron",
-  "version": "1.0.0+codex.20260816055928",
-  "description": "One-shot delivery loop: study, runbook, then per-step issue/implement/audit/prose/push to a working prototype, receipt-backed and resumable.",
+  "version": "1.0.0+codex.20260816145806",
+  "description": "Issue-free delivery loop: study, runbook, then per-step implement/audit/prose/push to a working prototype, receipt-backed and resumable.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
@@ -20,11 +20,11 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Hexaemeron",
-    "shortDescription": "One-shot delivery loop with receipts: study, runbook, issue, build, audit, prose, push.",
-    "longDescription": "Takes a topic from nothing to a working prototype through a receipt-backed controller: a linted study, a runbook of discrete steps, then per step an issue, the simplest satisfying implementation, a security loop over the vendored Pashov suite (x-ray, solidity-auditor, fizz) until clean or reasoned out, a prose pass through the bundled imprimatur and vulgate masks, and a pushed PR. State survives resets in a hash-chained ledger; resume is the same command.",
+    "shortDescription": "Issue-free delivery loop with receipts: study, runbook, build, audit, prose, push.",
+    "longDescription": "Takes a topic from nothing to a working prototype through a receipt-backed controller: a linted study, a runbook of discrete steps, then per step the simplest satisfying implementation, a security loop over the vendored Pashov suite (x-ray, solidity-auditor, fizz) until clean or reasoned out, a prose pass through the bundled imprimatur and vulgate masks, and a pushed PR. Completed state is archived and reset automatically when a new run begins; incomplete state remains resumable.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],
-    "defaultPrompt": "Use $hexaemeron to take \"<topic>\" from study to a pushed prototype, one receipted phase at a time."
+    "defaultPrompt": "Use $hexaemeron:fiat to start \"<topic>\" in the current repository without creating GitHub issues. If existing controller state is complete, archive and reset it automatically before starting."
   }
 }

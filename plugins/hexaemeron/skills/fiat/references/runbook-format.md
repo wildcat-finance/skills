@@ -6,9 +6,9 @@ prototype. Write it to `.hexaemeron/runbook.md`, emit
 
 ## What makes a step a step
 
-- **Discrete.** One PR, one issue, one clear boundary. If two topics are so
-  entangled that separate issues would confuse a reader, keep one issue and
-  hang sub-issues off it rather than splitting the step.
+- **Discrete.** One PR and one clear boundary. If two topics are entangled
+  enough that separating them would confuse a reviewer, keep them in one
+  step.
 - **Self-contained.** Completable in a single session by someone holding
   only the study, the runbook, and the repo at the step's entry state.
 - **Green at both ends.** Entry state builds and tests pass; exit state
@@ -49,19 +49,11 @@ objects both parse:
 ["Scaffold repo and docs", "Core market contract", "Withdrawal queue", "Demo path and primer"]
 ```
 
-## Epic issue
-
-When `config issue.epic` is true (default), file a tracking issue with
-`gh` whose `TODO` checklist is this step list, one box per step, before
-receipting, and pass it as `--epic-issue <url>` on the runbook receipt.
-Tick a box only when the matching step's PR is pushed and its own issue
-reconciled.
-
 ## Receipt
 
 ```text
 hexctl done runbook --artifact .hexaemeron/runbook.md \
-  --steps-file .hexaemeron/steps.json --epic-issue <url>
+  --steps-file .hexaemeron/steps.json
 ```
 
 Run the `hexaemeron:imprimatur` lint on the runbook before receipting, same

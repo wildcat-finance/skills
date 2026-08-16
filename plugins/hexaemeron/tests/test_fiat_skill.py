@@ -12,8 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 FIAT = ROOT / "skills" / "fiat" / "SKILL.md"
 MARKETPLACE = ROOT / "skills" / "fiat" / "references" / "wildcat-marketplace.md"
 CONTRIBUTOR_CHECK = ROOT / "skills" / "fiat" / "scripts" / "check_wildcat_contributor.py"
-ISSUE_DISCIPLINE = ROOT / "skills" / "fiat" / "references" / "issue-discipline.md"
-ISSUE_TEMPLATE = ROOT / "skills" / "fiat" / "assets" / "issue-body.md"
+PUSH_DISCIPLINE = ROOT / "skills" / "fiat" / "references" / "push-discipline.md"
 
 
 def load_contributor_check():
@@ -29,8 +28,7 @@ class FiatSkillContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.fiat = FIAT.read_text(encoding="utf-8")
         cls.marketplace = MARKETPLACE.read_text(encoding="utf-8")
-        cls.issue_discipline = ISSUE_DISCIPLINE.read_text(encoding="utf-8")
-        cls.issue_template = ISSUE_TEMPLATE.read_text(encoding="utf-8")
+        cls.push_discipline = PUSH_DISCIPLINE.read_text(encoding="utf-8")
 
     def test_marketplace_reference_is_linked(self):
         self.assertIn("[wildcat-marketplace.md](references/wildcat-marketplace.md)", self.fiat)
@@ -78,19 +76,19 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("hexctl record labs_marketplace", self.marketplace)
 
     def test_ai_origin_markers_are_required_for_delivery_artifacts(self):
-        self.assertIn("`origin:ai`", self.issue_discipline)
-        self.assertIn("<!-- wildcat-origin: shoggoth -->", self.issue_discipline)
+        self.assertIn("`origin:ai`", self.push_discipline)
+        self.assertIn("<!-- wildcat-origin: shoggoth -->", self.push_discipline)
         self.assertIn(
             "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>",
-            self.issue_discipline,
+            self.push_discipline,
         )
-        self.assertIn("Wildcat-Origin: shoggoth", self.issue_discipline)
-        self.assertIn("<!-- wildcat-origin: shoggoth -->", self.issue_template)
+        self.assertIn("Wildcat-Origin: shoggoth", self.push_discipline)
 
     def test_provenance_is_verified_without_reclassifying_human_work(self):
-        self.assertIn("Read the pull request back from GitHub", self.issue_discipline)
-        self.assertIn("read the issue back from GitHub", self.issue_discipline)
-        self.assertIn("pre-existing human issue, commit or pull request", self.issue_discipline)
+        self.assertIn("Read the pull\nrequest back from GitHub", self.push_discipline)
+        self.assertIn("same `gh pr create` command", self.push_discipline)
+        self.assertIn("pre-existing human commit", self.push_discipline)
+        self.assertIn("pre-existing human pull\nrequest", self.push_discipline)
 
 
 class ContributorCheckTests(unittest.TestCase):

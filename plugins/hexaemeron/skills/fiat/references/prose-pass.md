@@ -32,10 +32,10 @@ bundled in this plugin, so no external install is involved.
 ## PR text
 
 Title: plain statement of what the PR does, in-voice, no ticket-speak.
-Body: what changed and why, the issue reference (`Refs #<n>` or
-`Closes #<n>` per issue-discipline), a pointer to the audit file and the
-stacked PR, and how to run the step's proof (test command, demo path).
-Both go through the same lint-voice-relint order as the files.
+Body: what changed and why, a pointer to the audit file and the stacked PR,
+and how to run the step's proof (test command, demo path). Do not invent an
+issue reference; include one only when the user independently supplied it.
+Both title and body go through the same lint-voice-relint order as the files.
 
 ## Receipt
 

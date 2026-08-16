@@ -1,6 +1,7 @@
 """End-to-end tests for hexctl, run through the CLI the way the skill uses it."""
 
 import json
+import hashlib
 import os
 import subprocess
 import sys
@@ -125,20 +126,17 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
 
     def to_audit(self):
         self.to_steps()
-        self.run_ctl("done", "issue", "--issue-url", "https://x/1")
-        self.run_ctl("done", "implement", "--branch", "issue-1-scaffold",
+        self.run_ctl("done", "implement", "--branch", "step-1-scaffold",
                      "--commit", "abc123")
 
-    def finish_step(self, issue_no=1):
-        self.run_ctl("done", "issue", "--issue-url", f"https://x/{issue_no}")
-        self.run_ctl("done", "implement", "--branch", f"issue-{issue_no}",
+    def finish_step(self, step_no=1):
+        self.run_ctl("done", "implement", "--branch", f"step-{step_no}",
                      "--commit", "abc123")
         self.run_ctl("audit-round", "--findings", "0", "--log", "audit/AUDIT.md")
         self.run_ctl("done", "audit")
         self.run_ctl("done", "prose", "--files", "3",
                      "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate")
-        self.run_ctl("done", "push", "--pr-url", f"https://x/pr/{issue_no}",
-                     "--checkboxes", "4/4", "--issue-state", "closed")
+        self.run_ctl("done", "push", "--pr-url", f"https://x/pr/{step_no}")
 
 
 class TestLifecycle(HexctlCase):
@@ -184,7 +182,7 @@ class TestLifecycle(HexctlCase):
                            json.dumps(["Scaffold", {"title": "Core"}]))
         self.run_ctl("done", "runbook", "--artifact", rb, "--steps-file", steps)
         out = self.next_json()
-        self.assertEqual(out["do"], "issue")
+        self.assertEqual(out["do"], "implement")
         self.assertEqual(out["step"], 1)
         self.assertEqual(out["title"], "Scaffold")
 
@@ -265,25 +263,43 @@ class TestRunLock(HexctlCase):
 
 
 class TestStepGates(HexctlCase):
-    def test_issue_requires_url(self):
-        self.to_steps()
-        proc = self.run_ctl("done", "issue", expect=2)
-        self.assertIn("--issue-url", proc.stderr)
-
     def test_step_phase_order_enforced(self):
         self.to_steps()
-        proc = self.run_ctl("done", "implement", "--branch", "b",
-                            "--commit", "c", expect=2)
+        proc = self.run_ctl("done", "audit", expect=2)
         self.assertIn("out of order", proc.stderr)
 
-    def test_subissues_recorded(self):
+    def test_legacy_issue_phase_advances_without_creating_an_issue(self):
         self.to_steps()
-        self.run_ctl("done", "issue", "--issue-url", "https://x/1",
-                     "--subissue-url", "https://x/2",
-                     "--subissue-url", "https://x/3")
-        state = json.loads(self.run_ctl("status", "--json").stdout)
-        subs = state["steps"][0]["receipts"]["issue"]["subissues"]
-        self.assertEqual(subs, ["https://x/2", "https://x/3"])
+        state_path = os.path.join(self.dir, ".hexaemeron", "state.json")
+        ledger_path = os.path.join(self.dir, ".hexaemeron", "ledger.jsonl")
+        with open(state_path, encoding="utf-8") as handle:
+            state = json.load(handle)
+        state["steps"][0]["phase"] = "issue"
+        canonical_state = json.dumps(
+            state, sort_keys=True, separators=(",", ":")
+        )
+        with open(state_path, "w", encoding="utf-8") as handle:
+            json.dump(state, handle, indent=2)
+            handle.write("\n")
+        with open(ledger_path, encoding="utf-8") as handle:
+            entries = [json.loads(line) for line in handle if line.strip()]
+        entries[-1]["state"] = hashlib.sha256(canonical_state.encode()).hexdigest()
+        unsigned = {key: value for key, value in entries[-1].items() if key != "hash"}
+        entries[-1]["hash"] = hashlib.sha256(
+            json.dumps(unsigned, sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+        with open(ledger_path, "w", encoding="utf-8") as handle:
+            for entry in entries:
+                handle.write(json.dumps(entry, sort_keys=True) + "\n")
+
+        self.run_ctl("verify")
+        directive = self.next_json()
+        self.assertEqual(directive["do"], "implement")
+        self.assertTrue(directive["legacy_issue_phase_skipped"])
+        self.run_ctl(
+            "done", "implement", "--branch", "step-1", "--commit", "abc123"
+        )
+        self.assertEqual(self.next_json()["do"], "resolve-security-suite")
 
 
 class TestAuditLoop(HexctlCase):
@@ -367,29 +383,20 @@ class TestProseAndPush(HexctlCase):
         self.run_ctl("done", "prose", "--files", "3",
                      "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate")
 
-    def test_push_checkbox_and_issue_state_rules(self):
+    def test_push_requires_pr_url(self):
         self.to_prose()
         self.run_ctl("done", "prose", "--files", "1",
                      "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate")
-        base = ["done", "push", "--pr-url", "https://x/pr/1"]
-        self.run_ctl(*base, "--checkboxes", "seven", "--issue-state", "open",
-                     expect=2)
-        self.run_ctl(*base, "--checkboxes", "5/4", "--issue-state", "open",
-                     expect=2)
-        proc = self.run_ctl(*base, "--checkboxes", "4/4",
-                            "--issue-state", "open", expect=2)
-        self.assertIn("must be closed", proc.stderr)
-        proc = self.run_ctl(*base, "--checkboxes", "3/4",
-                            "--issue-state", "closed", expect=2)
-        self.assertIn("stay", proc.stderr)
-        self.run_ctl(*base, "--checkboxes", "3/4", "--issue-state", "open")
+        proc = self.run_ctl("done", "push", expect=2)
+        self.assertIn("--pr-url", proc.stderr)
+        self.run_ctl("done", "push", "--pr-url", "https://x/pr/1")
 
     def test_push_advances_steps_then_run_completes(self):
         self.to_steps(("One", "Two"))
         self.run_ctl("record", "security_suite", '"suite"')
         self.finish_step(1)
         out = self.next_json()
-        self.assertEqual((out["do"], out["step"]), ("issue", 2))
+        self.assertEqual((out["do"], out["step"]), ("implement", 2))
         self.finish_step(2)
         self.assertEqual(self.next_json()["do"], "done")
 
@@ -399,11 +406,12 @@ class TestControls(HexctlCase):
         self.to_steps()
         self.run_ctl("halt", "--reason", "waiting on Oliver")
         self.assertEqual(self.next_json()["do"], "halted")
-        proc = self.run_ctl("done", "issue", "--issue-url", "https://x/1",
+        proc = self.run_ctl("done", "implement", "--branch", "step-1",
+                            "--commit", "abc123",
                             expect=2)
         self.assertIn("halted", proc.stderr)
         self.run_ctl("resume", "--note", "cleared")
-        self.assertEqual(self.next_json()["do"], "issue")
+        self.assertEqual(self.next_json()["do"], "implement")
 
     def test_verify_ok_and_tamper_detected(self):
         self.to_steps()
@@ -421,10 +429,35 @@ class TestControls(HexctlCase):
 
     def test_record_and_status_json(self):
         self.init()
-        self.run_ctl("record", "epic_issue", "https://x/epic")
+        self.run_ctl("record", "note", '"local run"')
         state = json.loads(self.run_ctl("status", "--json").stdout)
-        self.assertEqual(state["receipts"]["epic_issue"], "https://x/epic")
+        self.assertEqual(state["receipts"]["note"], "local run")
         self.assertEqual(state["phase"], "study")
+
+    def test_reset_archives_completed_run_and_allows_reinit(self):
+        self.to_steps(("One",))
+        self.run_ctl("record", "security_suite", '"suite"')
+        self.finish_step(1)
+        self.assertEqual(self.next_json()["do"], "done")
+
+        self.run_ctl("reset")
+        root = os.path.join(self.dir, ".hexaemeron")
+        self.assertFalse(os.path.exists(os.path.join(root, "state.json")))
+        archives = os.listdir(os.path.join(root, "archive"))
+        self.assertEqual(len(archives), 1)
+        archived = os.path.join(root, "archive", archives[0])
+        self.assertTrue(os.path.exists(os.path.join(archived, "state.json")))
+        self.assertTrue(os.path.exists(os.path.join(archived, "ledger.jsonl")))
+
+        self.init("next topic")
+        state = json.loads(self.run_ctl("status", "--json").stdout)
+        self.assertEqual(state["topic"], "next topic")
+
+    def test_reset_refuses_incomplete_run(self):
+        self.init()
+        proc = self.run_ctl("reset", expect=2)
+        self.assertIn("refusing to reset an incomplete run", proc.stderr)
+        self.assertEqual(self.next_json()["do"], "study")
 
     def test_config_get_set_roundtrip(self):
         self.init()

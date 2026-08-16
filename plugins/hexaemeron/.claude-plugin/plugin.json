@@ -2,7 +2,7 @@
   "name": "hexaemeron",
   "displayName": "Hexaemeron",
   "version": "1.0.0",
-  "description": "One-shot delivery loop: study, runbook, then per-step issue/implement/audit/prose/push to a working prototype, receipt-backed and resumable.",
+  "description": "Issue-free delivery loop: study, runbook, then per-step implement/audit/prose/push to a working prototype, receipt-backed and resumable.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"

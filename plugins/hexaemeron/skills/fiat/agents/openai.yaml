@@ -1,4 +1,4 @@
 interface:
   display_name: "Hexaemeron"
-  short_description: "One-shot delivery loop: study, runbook, then per-step issue, build, audit, prose, push"
-  default_prompt: "Use $hexaemeron to take this topic from study to a pushed prototype, one receipted phase at a time."
+  short_description: "Issue-free delivery loop: study, runbook, build, audit, prose, push"
+  default_prompt: "Use $hexaemeron:fiat to start this topic in the current repository without creating GitHub issues. If the existing controller state is complete, archive and reset it automatically before starting."

@@ -3,8 +3,8 @@
 Let there be light.
 
 One command that takes a topic from nothing to a working prototype:
-study, runbook, then for each runbook step an issue, the simplest
-implementation that satisfies it, a security loop that runs until clean or
+study, runbook, then for each runbook step the simplest implementation that
+satisfies it, a security loop that runs until clean or
 reasoned out, a prose pass in the house voice, and a pushed PR. Every phase
 leaves a receipt in a hash-chained ledger, so the run survives context
 resets, crashes, and week-long pauses -- resume is the same command.
@@ -19,11 +19,10 @@ then rest. The entry skill is `fiat`, so the invocation is
 | --- | --- | --- |
 | 1 | `study` | Study the topic; write `.hexaemeron/study.md`, linted |
 | 2 | `runbook` | Divide the work into discrete, self-contained steps |
-| 3 | `issue` | File the step's issue: Description, TODO, Acceptance Criteria, User Value / Need |
-| 4 | `implement` | Build the step, least mental load that satisfies the issue |
+| 3–4 | `implement` | Build the step, least mental load that satisfies the runbook |
 | 5 | `audit` | The vendored Pashov suite in rounds until clean or reasoned out; fixes on a stacked branch |
 | 6 | `prose` | The `imprimatur` lint, then the `vulgate` voice mask, on every document and the PR text |
-| rest | `push` | Push, open the PR, reconcile the issue, tick the epic, move on |
+| rest | `push` | Push, open the PR, move on |
 
 Days 3 through the rest repeat per step. The sixth day makes the prose in
 a human image, which is roughly the joke the name is carrying.
@@ -38,7 +37,7 @@ a human image, which is roughly the joke the name is carrying.
 ```
 
 The run stops on its own only for a decision that belongs to a human: the
-audit loop hit its round cap with findings still open, an issue or push was
+audit loop hit its round cap with findings still open, a push was
 refused, or a Solidity repo is missing its security-suite receipt.
 Everything else proceeds.
 
@@ -54,8 +53,9 @@ hexctl next                 # the single next action, as JSON
 hexctl status [--json]      # where the run is
 hexctl done <phase> ...     # receipt a phase; validation lives here
 hexctl audit-round ...      # record one security round
-hexctl record <key> <val>   # named receipts (epic issue, resolved suite)
+hexctl record <key> <val>   # named receipts (resolved suite, run context)
 hexctl halt / resume        # put a stop itself on the ledger
+hexctl reset                # archive a completed run and clear active state
 hexctl verify               # prove the chain and state were not edited
 ```
 
@@ -67,9 +67,8 @@ the holder crashes, so a stale metadata file never needs manual cleanup.
 The receipts are opinionated where the process is: the audit phase will not
 open without a resolved (or explicitly waived) security suite; it will not
 close with findings open unless a reasoned no-further-leads verdict is
-recorded; a prose receipt missing either configured skill is rejected; and
-a push receipt must close the issue when every box is ticked and must leave
-it open when any box is not.
+recorded; a prose receipt missing either configured skill is rejected; and a
+push receipt requires a verifiable PR URL. Fiat creates no GitHub issues.
 
 ## Configuration
 
@@ -84,7 +83,6 @@ Per-run, via `hexctl config set <path> <value>`:
 | `audit.stacked_suffix` | `--audit` | Fix branch: `<step-branch>--audit` |
 | `audit.fold` | `false` | Merge the stacked branch into the step branch on close |
 | `audit.log_path` | `audit/AUDIT.md` | Where rounds append |
-| `issue.epic` | `true` | Tracking issue whose TODO list is the runbook |
 | `git.base` | `main` | Starting ref |
 | `git.step_base` | `chain` | Steps branch from the prior step (`base` for independent) |
 
@@ -124,7 +122,7 @@ path, so the warden and scribe always have their tools.
 python3 tests/run_tests.py
 ```
 
-Forty-two tests cover the controller and Fiat contract: phase ordering,
-audit gating and round caps, fixes evidence, prose skill enforcement,
-checkbox/issue-state rules, halt/resume, ledger tamper detection, concurrent
-writer exclusion, crash recovery, and the Wildcat marketplace boundary.
+The tests cover the controller and Fiat contract: phase ordering, completed
+run archival and reset, audit gating and round caps, fixes evidence, prose
+skill enforcement, halt/resume, ledger tamper detection, concurrent writer
+exclusion, crash recovery, and the Wildcat marketplace boundary.

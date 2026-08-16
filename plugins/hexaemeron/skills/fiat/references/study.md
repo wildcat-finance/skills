@@ -23,7 +23,7 @@ the runbook, after the prose pass).
 5. **Risk register seed.** What the audit loop should look hardest at:
    trust boundaries, external calls, arithmetic, upgrade paths, key custody,
    whatever the domain makes dangerous.
-6. **Glossary seeds.** Terms the runbook and issues will reuse, each with a
+6. **Glossary seeds.** Terms the runbook and implementation will reuse, each with a
    one-line definition.
 7. **Sources.** Repos, docs, and standards consulted, with enough of a
    pointer to find them again.
