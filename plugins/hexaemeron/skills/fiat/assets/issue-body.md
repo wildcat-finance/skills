@@ -22,3 +22,5 @@ inherited from the study or runbook.>
 ## User Value / Need
 
 - [ ] <who benefits and what problem this removes for them>
+
+<!-- wildcat-origin: shoggoth -->
