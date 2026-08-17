@@ -1,7 +1,7 @@
 {
   "name": "hexaemeron",
   "version": "1.0.0+codex.20260816145806",
-  "description": "Receipted delivery from study to draft pull request, with audit, fuzzing and prose tools.",
+  "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing and prose tools.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
@@ -20,8 +20,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Hexaemeron",
-    "shortDescription": "Receipted delivery from study to draft pull request, with audit, fuzzing and prose tools.",
-    "longDescription": "Takes a topic from nothing to a working prototype through a receipt-backed controller: a linted study, a runbook of discrete steps, then per step the simplest satisfying implementation, a security loop over the vendored Pashov suite (x-ray, solidity-auditor, fizz) until clean or reasoned out, a prose pass through the bundled imprimatur and vulgate masks, and a pushed PR. Completed state is archived and reset automatically when a new run begins; incomplete state remains resumable.",
+    "shortDescription": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing and prose tools.",
+    "longDescription": "Takes a topic from nothing to a working prototype through a receipt-backed controller: a linted study, a runbook of discrete steps, then per step the simplest satisfying implementation, a security loop over the vendored Pashov suite, a prose pass through Imprimatur and Vulgate, and a merged pull request with its task issue closed. Kronos can rank eligible held frontiers and repeat complete Fiat runs until no worthwhile frontier remains.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

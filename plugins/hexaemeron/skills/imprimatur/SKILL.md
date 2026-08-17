@@ -9,20 +9,17 @@ description: >-
   any prose that ships, when checking whether a draft reads as
   machine-written, or when the user names a term to ban.
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Imprimatur
 
-<!-- marketplace-context:start -->
-## Where this sits
+## Frontier
 
-Hexaemeron runs an explicit, receipted delivery loop and also exposes its fuzzing, audit-readiness, security-review and prose skills on their own.
-
-**Use another tool when.** Use Hermes for measured gas work, Pandects for reviewed credit laws, and Lemma when the output needed is source-linked retrieval chunks.
-
-**Current frontier.** The bundled Solidity audit suite has not yet been exercised in a published end-to-end Fiat delivery.
-<!-- marketplace-context:end -->
+Imprimatur owns the prose-lint contract, not Hexaemeron's delivery or Solidity
+frontier. Its version, held calibration target, next job, and maturity state
+live in [EVOLUTION.md](EVOLUTION.md). Do not recommend or run another frontier
+pass after that ledger becomes mature.
 
 A banned lexicon with three enforcement tiers and a rule about why wordlists fail on their own.
 

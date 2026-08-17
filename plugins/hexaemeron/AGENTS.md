@@ -18,6 +18,13 @@ Hexaemeron skill matches a task.
 | `solidity-auditor` | `skills/solidity-auditor/SKILL.md` | Audit Solidity source for security findings |
 | `imprimatur` | `skills/imprimatur/SKILL.md` | Lint shipped prose against the banned lexicon |
 | `vulgate` | `skills/vulgate/SKILL.md` | Rewrite prose in a plain human register without changing its content |
+| `kronos` | `skills/kronos/SKILL.md` | Repeatedly rank eligible skill frontiers and send the best held job through Fiat |
+
+The first-party `fiat`, `imprimatur`, `vulgate`, and `kronos` directories each
+carry an `EVOLUTION.md` ledger governed by `skills/VERSIONING.md`. Read the
+selected skill's ledger before proposing a frontier run. A `mature` frontier
+is a hard stop unless a maintainer has recorded an evidenced epoch reopening.
+Kronos is terminal by design and excludes itself from its candidate set.
 
 ## Translate tool names by capability
 
@@ -61,6 +68,8 @@ preserve.
   user supplied absolute paths.
 - Names such as `hexaemeron:fizz` and `/hexaemeron:fiat` are logical skill
   aliases. Load the local canonical path from the table above.
+- Fiat's controller path is relative to the exact active Fiat instruction
+  file, never to `{PROJECT_ROOT}` or a GitHub URL.
 
 ## Side effects and truthfulness
 

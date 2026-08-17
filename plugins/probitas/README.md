@@ -9,7 +9,7 @@ Probitas builds a sourced record of what a counterparty did across lending venue
 
 **Current frontier.** Euler v1/v2 now ship; Morpho Midnight fixed-maturity coverage and curation remain unimplemented.
 
-**Next Fiat job.** Use /hexaemeron:fiat to add fail-closed Morpho Midnight fixed-maturity coverage so a dossier can establish whether repayment was timely. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose, then replace every completed or stale Next Fiat job with the next evidenced repair or frontier step.
+**Next Fiat job.** Use /hexaemeron:fiat to add fail-closed Morpho Midnight fixed-maturity coverage so a dossier can establish whether repayment was timely. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 A sourced dossier on a counterparty's record across on-chain lending venues,

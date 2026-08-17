@@ -1,9 +1,5 @@
 # Audit loop
 
-<!-- marketplace-context:start -->
-> **Marketplace context: Hexaemeron.** Hexaemeron runs an explicit, receipted delivery loop and also exposes its fuzzing, audit-readiness, security-review and prose skills on their own. Use Hermes for measured gas work, Pandects for reviewed credit laws, and Lemma when the output needed is source-linked retrieval chunks. **Current frontier:** The bundled Solidity audit suite has not yet been exercised in a published end-to-end Fiat delivery.
-<!-- marketplace-context:end -->
-
 Budget accordingly: this phase is expected to take longer than the
 implementation it audits. The loop runs the security suite against the
 step's branch, logs everything, fixes on a stacked branch, and repeats

@@ -9,7 +9,7 @@ Pandects supplies executable laws for credit contracts, each paired with a delib
 
 **Current frontier.** No law prevents fees from reducing pooled lender claims below amounts owed on open withdrawal batches.
 
-**Next Fiat job.** Use /hexaemeron:fiat to add and prove the missing law that fees cannot reduce pooled lender claims below amounts owed on open withdrawal batches, including its specimen, reduced counterexample and applicability. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose, then replace every completed or stale Next Fiat job with the next evidenced repair or frontier step.
+**Next Fiat job.** Use /hexaemeron:fiat to add and prove the missing law that fees cannot reduce pooled lender claims below amounts owed on open withdrawal batches, including its specimen, reduced counterexample and applicability. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 Executable laws for credit contracts.

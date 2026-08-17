@@ -90,6 +90,13 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("pre-existing human commit", self.push_discipline)
         self.assertIn("pre-existing human pull\nrequest", self.push_discipline)
 
+    def test_publish_phase_merges_and_closes_its_own_work(self):
+        self.assertIn("merge it using the repository's permitted", self.push_discipline)
+        self.assertIn("close that exact\nissue", self.push_discipline)
+        self.assertIn("--head-commit <sha> --merge-commit <sha>", self.push_discipline)
+        self.assertNotIn("Never merge it", self.push_discipline)
+        self.assertIn("routine publish or closure action is not a\nhandoff", self.fiat)
+
 
 class ContributorCheckTests(unittest.TestCase):
     @classmethod

@@ -9,7 +9,7 @@ Tabularium maps preserved venue-native records into reproducible, venue-qualifie
 
 **Current frontier.** Compound v3 Phase 0 now rebuilds ordered calls and signed-principal transitions from one verified Alexandria witness; the Phase 1 canonical adapter and Ethereum USDC specimen remain unimplemented.
 
-**Next Fiat job.** Use /hexaemeron:fiat to ship Compound v3 Phase 1 from Alexandria raw evidence with a new canonical and coverage schema version, supply, withdraw, base-transfer and absorb mappings, a mined borrower-to-borrower transfer witness, hostile fixtures and a byte-identical offline Ethereum USDC specimen. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose, then replace every completed or stale Next Fiat job with the next evidenced repair or frontier step.
+**Next Fiat job.** Use /hexaemeron:fiat to ship Compound v3 Phase 1 from Alexandria raw evidence with a new canonical and coverage schema version, supply, withdraw, base-transfer and absorb mappings, a mined borrower-to-borrower transfer witness, hostile fixtures and a byte-identical offline Ethereum USDC specimen. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 A public record of on-chain credit events that keeps the venue's source record

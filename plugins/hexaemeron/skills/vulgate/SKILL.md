@@ -1,19 +1,18 @@
 ---
 name: vulgate
 description: Rewrite AI-assisted or generic text into a plain human register -- a mask that produces prose easier to grasp than the usual AI slop. Use whenever drafting or rewriting messages, docs, or announcements that should read as though a person wrote them, without touching what they say.
+metadata:
+  version: "1.1.0"
 ---
 
 # Vulgate
 
-<!-- marketplace-context:start -->
-## Where this sits
+## Frontier
 
-Hexaemeron runs an explicit, receipted delivery loop and also exposes its fuzzing, audit-readiness, security-review and prose skills on their own.
-
-**Use another tool when.** Use Hermes for measured gas work, Pandects for reviewed credit laws, and Lemma when the output needed is source-linked retrieval chunks.
-
-**Current frontier.** The bundled Solidity audit suite has not yet been exercised in a published end-to-end Fiat delivery.
-<!-- marketplace-context:end -->
+Vulgate owns the content-preserving voice mask, not Hexaemeron's delivery or
+Solidity frontier. Its version, held parity target, next job, and maturity
+state live in [EVOLUTION.md](EVOLUTION.md). Do not recommend or run another
+frontier pass after that ledger becomes mature.
 
 A voice mask: it renders machine-register text into the common tongue. The
 output should read as though a busy, competent person wrote it -- someone who

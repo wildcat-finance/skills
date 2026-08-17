@@ -9,7 +9,7 @@ Lazarus captures the finite fixed-block Ethereum state and RPC evidence an appli
 
 **Current frontier.** Preservation-pipeline integration and an Ariadne state-fixture predicate remain unimplemented.
 
-**Next Fiat job.** Use /hexaemeron:fiat to bind a Lazarus fixture through an Ariadne state-fixture predicate in the first end-to-end Goldfinch preservation release without upgrading recorded RPC evidence into proof-backed state. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose, then replace every completed or stale Next Fiat job with the next evidenced repair or frontier step.
+**Next Fiat job.** Use /hexaemeron:fiat to bind a Lazarus fixture through an Ariadne state-fixture predicate in the first end-to-end Goldfinch preservation release without upgrading recorded RPC evidence into proof-backed state. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 Lazarus preserves the finite part of historical Ethereum state and RPC

@@ -1,11 +1,9 @@
 # Push discipline
 
-<!-- marketplace-context:start -->
-> **Marketplace context: Hexaemeron.** Hexaemeron runs an explicit, receipted delivery loop and also exposes its fuzzing, audit-readiness, security-review and prose skills on their own. Use Hermes for measured gas work, Pandects for reviewed credit laws, and Lemma when the output needed is source-linked retrieval chunks. **Current frontier:** The bundled Solidity audit suite has not yet been exercised in a published end-to-end Fiat delivery.
-<!-- marketplace-context:end -->
-
-The pushed branch and pull request are the delivery trail. Fiat does not
-create or require a GitHub issue.
+The pushed branch, merged pull request, and closed task issue are the delivery
+trail. Fiat does not create an issue unless the user or a higher-priority
+target-repository rule requires one. If one exists, record it as
+`task_issue` and close it before the terminal receipt.
 
 ## Branches and commits
 
@@ -20,7 +18,7 @@ create or require a GitHub issue.
   Wildcat-Origin: shoggoth
   ```
 
-## Pull request
+## Pull request and closure
 
 Push the branch, then open a pull request using the title and body prepared in
 the prose phase. The body states what changed, why, where the audit record
@@ -37,11 +35,25 @@ Extra labels are additive. Do not remove or rename either provenance marker.
 Do not amend a pre-existing human commit or relabel a pre-existing human pull
 request merely because Fiat later resumes work around it.
 
-Verify the pull request URL after creation. Never merge it and never
-force-push over another person's work.
+Verify the pull request URL after creation. Wait for required checks, convert
+the PR from draft if necessary, then merge it using the repository's permitted
+merge method. Enable auto-merge when checks are still running and the host
+supports it. Never force-push over another person's work and never bypass a
+required review or failing gate.
+
+After merge, verify the merge commit and delete the remote task branch where
+repository policy permits. If a `task_issue` receipt exists, close that exact
+issue with a short comment linking the merged PR. A plan or implementation is
+not complete while its own branch, PR, or issue is awaiting routine agent
+action.
+
+If GitHub rejects the push or merge, a required independent approval cannot be
+self-supplied, or an external gate fails, record `hexctl halt --reason ...`
+with the exact blocker. Do not call the run complete.
 
 ## Receipt
 
 ```text
-hexctl done push --pr-url <url>
+hexctl done push --pr-url <url> --head-commit <sha> --merge-commit <sha> \
+  [--closed-issue-url <url>]
 ```

@@ -31,7 +31,7 @@
       "name": "hexaemeron",
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
-      "description": "Receipted delivery from study to draft pull request, with audit, fuzzing and prose tools.",
+      "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing and prose tools.",
       "version": "1.0.0",
       "author": {
         "name": "Wildcat Labs",

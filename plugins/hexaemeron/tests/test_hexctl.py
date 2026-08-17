@@ -136,7 +136,12 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
         self.run_ctl("done", "audit")
         self.run_ctl("done", "prose", "--files", "3",
                      "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate")
-        self.run_ctl("done", "push", "--pr-url", f"https://x/pr/{step_no}")
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", f"https://x/pr/{step_no}",
+            "--head-commit", f"head{step_no}",
+            "--merge-commit", f"merge{step_no}",
+        )
 
 
 class TestLifecycle(HexctlCase):
@@ -389,7 +394,44 @@ class TestProseAndPush(HexctlCase):
                      "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate")
         proc = self.run_ctl("done", "push", expect=2)
         self.assertIn("--pr-url", proc.stderr)
-        self.run_ctl("done", "push", "--pr-url", "https://x/pr/1")
+        proc = self.run_ctl(
+            "done", "push", "--pr-url", "https://x/pr/1", expect=2
+        )
+        self.assertIn("--head-commit", proc.stderr)
+        proc = self.run_ctl(
+            "done", "push", "--pr-url", "https://x/pr/1",
+            "--head-commit", "abc123", expect=2,
+        )
+        self.assertIn("--merge-commit", proc.stderr)
+        self.run_ctl(
+            "done", "push", "--pr-url", "https://x/pr/1",
+            "--head-commit", "abc123", "--merge-commit", "def456",
+        )
+
+    def test_recorded_task_issue_must_be_closed_before_push_receipt(self):
+        self.to_prose()
+        self.run_ctl("record", "task_issue", '"https://x/issues/74"')
+        self.run_ctl(
+            "done", "prose", "--files", "1",
+            "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        proc = self.run_ctl(
+            "done", "push", "--pr-url", "https://x/pr/1",
+            "--head-commit", "abc123", "--merge-commit", "def456",
+            expect=2,
+        )
+        self.assertIn("--closed-issue-url", proc.stderr)
+        proc = self.run_ctl(
+            "done", "push", "--pr-url", "https://x/pr/1",
+            "--head-commit", "abc123", "--merge-commit", "def456",
+            "--closed-issue-url", "https://x/issues/75", expect=2,
+        )
+        self.assertIn("does not match", proc.stderr)
+        self.run_ctl(
+            "done", "push", "--pr-url", "https://x/pr/1",
+            "--head-commit", "abc123", "--merge-commit", "def456",
+            "--closed-issue-url", "https://x/issues/74",
+        )
 
     def test_push_advances_steps_then_run_completes(self):
         self.to_steps(("One", "Two"))

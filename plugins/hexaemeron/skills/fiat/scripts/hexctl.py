@@ -8,7 +8,9 @@ command appends a ledger entry, so `verify` can prove the run history was not
 edited after the fact.
 
 Phase order is fixed. Globally: study -> runbook -> steps -> done.
-Within each step: implement -> audit -> prose -> push.
+Within each step: implement -> audit -> prose -> push. The push receipt is
+terminal only after the final head is pushed, its pull request is merged, and
+any recorded task issue is closed.
 
 Exit codes: 0 success, 2 validation/usage error, 1 unexpected failure.
 Stdout from `next` and `status --json` is a single JSON object; everything
@@ -593,7 +595,29 @@ def done_push(args, state: dict) -> None:
     step = require_step_phase(state, "push")
     if not args.pr_url:
         die("--pr-url is required")
-    step["receipts"]["push"] = {"pr_url": args.pr_url}
+    if not args.head_commit:
+        die("--head-commit is required")
+    if not args.merge_commit:
+        die("--merge-commit is required; the pull request is not terminal until merged")
+    task_issue = state["receipts"].get("task_issue")
+    expected_issue = None
+    if isinstance(task_issue, str):
+        expected_issue = task_issue
+    elif isinstance(task_issue, dict):
+        expected_issue = task_issue.get("url")
+    if task_issue is not None and not args.closed_issue_url:
+        die("--closed-issue-url is required because a task_issue receipt exists")
+    if expected_issue and args.closed_issue_url != expected_issue:
+        die(
+            "--closed-issue-url does not match the recorded task_issue "
+            f"({expected_issue})"
+        )
+    step["receipts"]["push"] = {
+        "pr_url": args.pr_url,
+        "head_commit": args.head_commit,
+        "merge_commit": args.merge_commit,
+        "closed_issue_url": args.closed_issue_url,
+    }
     step["status"] = "done"
     step["phase"] = "done"
     remaining = [s for s in state["steps"] if s["status"] == "pending"]
@@ -613,7 +637,7 @@ def done_push(args, state: dict) -> None:
         "done:push",
         {"step": step["n"], **step["receipts"]["push"]},
     )
-    print(f"step {step['n']} pushed and receipted; {tail}")
+    print(f"step {step['n']} published, merged, and receipted; {tail}")
 
 
 DONE_HANDLERS = {
@@ -874,6 +898,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--log")
     sp.add_argument("--files", type=int)
     sp.add_argument("--pr-url", dest="pr_url")
+    sp.add_argument("--head-commit", dest="head_commit")
+    sp.add_argument("--merge-commit", dest="merge_commit")
+    sp.add_argument("--closed-issue-url", dest="closed_issue_url")
     sp.set_defaults(fn=cmd_done)
 
     sp = sub.add_parser("audit-round", help="record one security round")

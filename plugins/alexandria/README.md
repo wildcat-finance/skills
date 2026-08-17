@@ -9,7 +9,7 @@ Alexandria preserves heterogeneous lending data as digest-bound releases, then d
 
 **Current frontier.** Compound v3 Phase 0 now pins the Comet registry and preserves one verified Ethereum execution witness; a resumable, reconciled Ethereum USDC interval harvester remains unimplemented.
 
-**Next Fiat job.** Use /hexaemeron:fiat to build the first resumable Ethereum USDC interval collector with implementation-epoch discovery, bounded shards, a second-provider reconciliation path, explicit finality and offline raw-release verification. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose, then replace every completed or stale Next Fiat job with the next evidenced repair or frontier step.
+**Next Fiat job.** Use /hexaemeron:fiat to build the first resumable Ethereum USDC interval collector with implementation-epoch discovery, bounded shards, a second-provider reconciliation path, explicit finality and offline raw-release verification. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 An offline tool for digest-bound lending-data releases.

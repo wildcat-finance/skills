@@ -33,8 +33,8 @@ CANONICAL_SKILLS = {
 NEXT_JOB_PREFIX = "**Next Fiat job.** Use /hexaemeron:fiat to "
 NEXT_JOB_SUFFIX = (
     "Before the run finishes, cold-read and reconcile all mutable first-party "
-    "marketplace prose, then replace every completed or stale Next Fiat job "
-    "with the next evidenced repair or frontier step."
+    "marketplace prose. Change a skill's Next Fiat job only when that exact "
+    "frontier job completed; otherwise leave it unchanged."
 )
 MARKETPLACE_CONTEXT_START = "<!-- marketplace-context:start -->"
 MARKETPLACE_CONTEXT_END = "<!-- marketplace-context:end -->"
@@ -128,7 +128,7 @@ class MarketplaceProseTests(unittest.TestCase):
         topics = {}
         for name, path in landings.items():
             text = path.read_text(encoding="utf-8")
-            lines = [line for line in text.splitlines() if "Next Fiat job" in line]
+            lines = [line for line in text.splitlines() if line.startswith(NEXT_JOB_PREFIX)]
             with self.subTest(plugin=name):
                 self.assertEqual(text.count(NEXT_JOB_PREFIX), 1, path)
                 self.assertEqual(len(lines), 1, path)
@@ -157,7 +157,7 @@ class MarketplaceProseTests(unittest.TestCase):
             relative = path.relative_to(ROOT)
             if relative.parts[0] in {".git", ".hexaemeron"}:
                 continue
-            if "Next Fiat job" in path.read_text(encoding="utf-8"):
+            if "**Next Fiat job.**" in path.read_text(encoding="utf-8"):
                 found.add(path)
         self.assertEqual(found, allowed)
 

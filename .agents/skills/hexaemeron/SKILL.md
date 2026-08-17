@@ -1,6 +1,6 @@
 ---
 name: hexaemeron
-description: Route explicit Hexaemeron delivery runs and named bundled fuzzing, audit or prose work to their canonical skills. Do not start the controller unless the user asks for it.
+description: Route explicit Hexaemeron delivery runs, Kronos frontier loops, and named bundled fuzzing, audit or prose work to their canonical skills. Do not start Fiat or Kronos unless the user asks for it.
 ---
 
 # Hexaemeron portable entrypoint
@@ -18,6 +18,12 @@ Hexaemeron runs an explicit, receipted delivery loop and also exposes its fuzzin
 Read [the Hexaemeron runtime contract](../../../plugins/hexaemeron/AGENTS.md).
 Use its selection table to choose the narrowest matching skill, then read that
 canonical `SKILL.md` in full and follow it.
+
+Before suggesting or starting Fiat work intended to advance `fiat`,
+`imprimatur`, `vulgate`, or `kronos`, read that skill's `EVOLUTION.md`. Refuse
+a further frontier run when its status is `mature`; a reworded request does
+not reopen it. Kronos may still orchestrate other non-mature skills because it
+excludes itself from selection.
 
 Invocation prefixes are aliases:
 

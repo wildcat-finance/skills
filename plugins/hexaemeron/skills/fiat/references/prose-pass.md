@@ -1,9 +1,5 @@
 # Prose pass
 
-<!-- marketplace-context:start -->
-> **Marketplace context: Hexaemeron.** Hexaemeron runs an explicit, receipted delivery loop and also exposes its fuzzing, audit-readiness, security-review and prose skills on their own. Use Hermes for measured gas work, Pandects for reviewed credit laws, and Lemma when the output needed is source-linked retrieval chunks. **Current frontier:** The bundled Solidity audit suite has not yet been exercised in a published end-to-end Fiat delivery.
-<!-- marketplace-context:end -->
-
 Everything a human will read ships in one plain voice, with the AI tells
 stripped. Code stays untouched; this phase is words only. Both masks are
 bundled in this plugin, so no external install is involved.

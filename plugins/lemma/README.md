@@ -9,7 +9,7 @@ Lemma turns Solidity compiler input or Markdown trees into validated, source-lin
 
 **Current frontier.** Callable-surface ABI validation does not independently check return types or state mutability.
 
-**Next Fiat job.** Use /hexaemeron:fiat to make callable-surface ABI validation cover return types and state mutability as well as names and input types, with any divergence rejecting the output. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose, then replace every completed or stale Next Fiat job with the next evidenced repair or frontier step.
+**Next Fiat job.** Use /hexaemeron:fiat to make callable-surface ABI validation cover return types and state mutability as well as names and input types, with any divergence rejecting the output. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 Lemma turns Solidity compiler inputs and Markdown documents into JSONL chunks.

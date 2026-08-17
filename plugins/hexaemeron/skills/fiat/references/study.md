@@ -1,9 +1,5 @@
 # Study
 
-<!-- marketplace-context:start -->
-> **Marketplace context: Hexaemeron.** Hexaemeron runs an explicit, receipted delivery loop and also exposes its fuzzing, audit-readiness, security-review and prose skills on their own. Use Hermes for measured gas work, Pandects for reviewed credit laws, and Lemma when the output needed is source-linked retrieval chunks. **Current frontier:** The bundled Solidity audit suite has not yet been exercised in a published end-to-end Fiat delivery.
-<!-- marketplace-context:end -->
-
 Produce one markdown study that someone competent could build from without
 access to this conversation. Write it to `.hexaemeron/study.md` (the state
 directory is self-gitignored; a repo copy gets committed later, in step 1 of

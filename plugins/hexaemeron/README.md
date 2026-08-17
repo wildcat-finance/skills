@@ -9,7 +9,7 @@ Hexaemeron runs an explicit, receipted delivery loop and also exposes its fuzzin
 
 **Current frontier.** The bundled Solidity audit suite has not yet been exercised in a published end-to-end Fiat delivery.
 
-**Next Fiat job.** Use /hexaemeron:fiat to run and publish the first Solidity delivery that exercises the bundled x-ray, solidity-auditor and fizz loop end to end, recording every round and closing state. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose, then replace every completed or stale Next Fiat job with the next evidenced repair or frontier step.
+**Next Fiat job.** Use /hexaemeron:fiat to run and publish the first Solidity delivery that exercises the bundled x-ray, solidity-auditor and fizz loop end to end, recording every round and closing state. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 Let there be light.
@@ -17,7 +17,7 @@ Let there be light.
 One command that takes a topic from nothing to a working prototype:
 study, runbook, then for each runbook step the simplest implementation that
 satisfies it, a security loop that runs until clean or
-reasoned out, a prose pass in the house voice, and a pushed PR. Every phase
+reasoned out, a prose pass in the house voice, and a merged PR. Every phase
 leaves a receipt in a hash-chained ledger, so the run survives context
 resets, crashes, and week-long pauses -- resume is the same command.
 
@@ -34,7 +34,7 @@ then rest. The entry skill is `fiat`, so the invocation is
 | 3-4 | `implement` | Build the step, least mental load that satisfies the runbook |
 | 5 | `audit` | The vendored Pashov suite in rounds until clean or reasoned out; fixes on a stacked branch |
 | 6 | `prose` | The `imprimatur` lint, then the `vulgate` voice mask, on every document and the PR text |
-| rest | `push` | Push, open the PR, move on |
+| rest | `push` | Stage and commit the final diff, push, merge the PR, clean up the branch, and close the task issue |
 
 Days 3 through the rest repeat per step. The sixth day makes the prose in
 a human image, which is roughly the joke the name is carrying.
@@ -46,7 +46,17 @@ a human image, which is roughly the joke the name is carrying.
 /hexaemeron:fiat --base release/v2.5 "..."                  # start from a ref
 /hexaemeron:fiat                                            # resume
 /hexaemeron:fiat status                                     # report
+/hexaemeron:kronos                                          # rank and run frontier jobs until none remain
 ```
+
+Kronos is the small loop around Fiat. It scores every eligible held frontier
+out of 100, sends the best one through a complete Fiat run, then ranks again.
+The name carries the old Kronos/Chronos knot: sickle for the ripest job, clock
+for keeping the sequence moving.
+
+> Highest first, then Fiat runs.
+>
+> Kronos cuts till work is done.
 
 The run stops on its own only for a decision that belongs to a human: the
 audit loop hit its round cap with findings still open, a push was
@@ -80,7 +90,25 @@ The receipts are opinionated where the process is: the audit phase will not
 open without a resolved (or explicitly waived) security suite; it will not
 close with findings open unless a reasoned no-further-leads verdict is
 recorded; a prose receipt missing either configured skill is rejected; and a
-push receipt requires a verifiable PR URL. Fiat creates no GitHub issues.
+push receipt requires the final head, a merged PR, and closure of any recorded
+task issue. Fiat creates no GitHub issue unless the user or target repository
+requires one.
+
+## Skill versions and the stopping rule
+
+The first-party Fiat, Imprimatur, Vulgate, and Kronos skills keep an
+`EVOLUTION.md` ledger beside `SKILL.md`. Labels use
+`{skill}-v{evolution}.{generation}.{epoch}`: evolution counts completed
+frontier advances, generation counts meaningful behavioural changes, and
+epoch marks a rare compatibility or provenance boundary. These are governed
+by `skills/VERSIONING.md`; they are not SemVer and do not change invocation
+names.
+
+A held Next Fiat job changes only after that exact frontier job completes.
+Once a capable review finds that another pass has no concrete chance of
+material improvement, the ledger becomes `mature`, its next job becomes
+`None -- mature`, and Fiat refuses further frontier runs. A different rewrite
+or another model's curiosity is not grounds to keep seasoning it.
 
 ## Configuration
 
@@ -117,9 +145,9 @@ mask that renders text into a plain human register) live under `skills/`
 and can be invoked on their own, outside the loop, whenever a draft needs
 the treatment. Edit the lexicon in place when a term needs adding.
 Upstream attribution for the absorbed lint material sits in
-`skills/imprimatur/NOTICE.md`. One boundary holds regardless: the plugin
-pushes PRs and never merges one -- merge review belongs to humans and to
-whatever gate the repo runs.
+`skills/imprimatur/NOTICE.md`. Fiat never bypasses a gate, but once the gates
+pass it merges its own PR and closes its own task issue rather than leaving
+routine publication work behind.
 
 ## Agents
 

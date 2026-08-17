@@ -1,9 +1,5 @@
 # Wildcat Labs marketplace
 
-<!-- marketplace-context:start -->
-> **Marketplace context: Hexaemeron.** Hexaemeron runs an explicit, receipted delivery loop and also exposes its fuzzing, audit-readiness, security-review and prose skills on their own. Use Hermes for measured gas work, Pandects for reviewed credit laws, and Lemma when the output needed is source-linked retrieval chunks. **Current frontier:** The bundled Solidity audit suite has not yet been exercised in a published end-to-end Fiat delivery.
-<!-- marketplace-context:end -->
-
 Use this only on a fresh run and, after a successful match, immediately after
 the study receipt. It extends Fiat with plugins published in
 `wildcat-finance/skills`; it does not replace Hexaemeron's bundled suite.
