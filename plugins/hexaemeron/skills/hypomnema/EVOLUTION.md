@@ -6,7 +6,7 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier status: `open`
 - Frontier revision: `recorded-reasons-and-their-homes`
 - Current frontier: A lint checks that every pointer in a first-party record resolves, and no decision-record directory exists in this marketplace yet for the skill's conventions to match.
-- Next Fiat job: Record the market-wide choices that still lack decision records: scope boundaries between skills, the rule that ledgers are per-skill not per-plugin, and the exemption rule for vendored skills. Accepted when records exist under the convention this skill states, the lint resolves every pointer in them, and both suites pass.
+- Next Fiat job: Run Fiat delivery loops for the Hexaemeron safety-layer cluster: protasis (study/runbook contract), elenchus (root-cause guard), metron (baseline-first measurement), phylax (off-chain hardening). Establish decision records linking each skill to its operational boundary and failure mode. Accepted when records exist under the convention this skill states, the lint resolves every pointer in them, and both suites pass.
 
 ## History
 
