@@ -6,7 +6,8 @@ Policy: [../VERSIONING.md](../VERSIONING.md)
 - Frontier status: `open`
 - Frontier revision: `recorded-reasons-and-their-homes`
 - Current frontier: A lint checks that every pointer in a first-party record resolves, and no decision-record directory exists in this marketplace yet for the skill's conventions to match.
-- Next Fiat job: Run Fiat delivery loops for the Hexaemeron safety-layer cluster: protasis (study/runbook contract), elenchus (root-cause guard), metron (baseline-first measurement), phylax (off-chain hardening). Establish decision records linking each skill to its operational boundary and failure mode. Accepted when records exist under the convention this skill states, the lint resolves every pointer in them, and both suites pass.
+- Next Fiat job: Run three Fiat delivery loops for the Aegis review-and-release chain: (04/06) imprimatur lexical gate, (05/06) vulgate voice gate, (06/06) ephoros telemetry gate. Establish decision records for each skill's operational boundary and failure mode. Accepted when all three records exist, lints resolve, and suites pass.
+- ADR-004 merged via PR #187: safety-layer cluster operational boundaries.
 
 ## History
 
