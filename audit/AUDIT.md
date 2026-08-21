@@ -5951,3 +5951,28 @@ strings, so a future Python whose rendering differs would refuse a Hermes that
 had not moved. The refusal is loud and fail-closed, names the signature it saw,
 and the recovery is to re-pin, so it is not worth trading for a looser
 comparison. The `--force` question on the size build remains step 3's.
+
+## Procrustes, step 2, round 5 -- 2026-08-21
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+No findings. Two things this round checked against forge 1.7.1 rather than
+against the fake forge the tests use, because a harness that only ever meets its
+own stub is not evidence. On a cold build with `out/` and `cache/` removed,
+`forge build --sizes --json` writes only JSON to stdout and sends compilation
+progress to stderr, so the parse is not exposed to compile chatter. And the
+over-limit comparison uses a strict `>`, which is EIP-170's own boundary: a
+contract of exactly 24576 bytes deploys.
+
+Per the register: every id reviewed with no change. `deleted-check`,
+`delegatecall-surface`, `gas-regression` and `metadata-only-win` remain not
+applicable until the candidate loop exists, and each is named in the step 3
+runbook entry that will incur it.
+
+Phylax, ephoros and hypomnema exit 0. Procrustes 33/33; root 104/104; the
+promise_machine check and the Horos boundary check exit 0.
+
+Leads not pursued: two carried forward, both recorded in round 4 -- the
+`inspect.signature` rendering pin, and the `--force` question on the size build
+that belongs to step 3.
