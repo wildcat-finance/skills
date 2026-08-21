@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import inspect
 import json
 import os
@@ -335,6 +336,38 @@ class BaselineTests(HarnessCase):
         self.assertEqual(code, 0)
         self.assertTrue((self.evidence / "storage-layout" / "A.baseline.json").is_file())
         self.assertTrue((self.evidence / "method-identifiers" / "A.baseline.json").is_file())
+
+    def test_seals_every_protected_artefact_by_digest(self) -> None:
+        with mock.patch.dict(os.environ, self.environment, clear=True):
+            code = procrustes.main([
+                "baseline",
+                "--repo",
+                str(self.repo),
+                "--evidence-dir",
+                str(self.evidence),
+                "--size-target",
+                "^A$",
+                "--fuzz-seed",
+                "0x5EED",
+                "--protected-contract",
+                "A=src/A.sol:A",
+            ])
+        self.assertEqual(code, 0)
+        state = json.loads((self.evidence / "state.json").read_text(encoding="utf-8"))
+        artifacts = state["artifacts"]
+        for relative in (
+            "sizes.json",
+            "foundry-config.json",
+            "baseline-source-manifest.json",
+            "storage-layout/A.baseline.json",
+            "method-identifiers/A.baseline.json",
+        ):
+            with self.subTest(artefact=relative):
+                self.assertIn(relative, artifacts)
+                self.assertEqual(
+                    artifacts[relative],
+                    hashlib.sha256((self.evidence / relative).read_bytes()).hexdigest(),
+                )
 
     def test_requires_a_protected_set_or_an_explicit_denial(self) -> None:
         argv = [

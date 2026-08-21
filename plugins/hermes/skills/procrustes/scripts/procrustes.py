@@ -313,11 +313,13 @@ def baseline_command(args: argparse.Namespace) -> int:
 
         layouts: dict[str, str] = {}
         methods: dict[str, str] = {}
+        sealed_paths: list[Path] = []
         for contract in protected:
             layout_path, _ = inspect_layout(repo, run_dir, contract, "baseline", 1, 10)
             method_path, _ = inspect_methods(repo, run_dir, contract, "baseline", 1, 10)
             layouts[contract["label"]] = str(layout_path.relative_to(run_dir))
             methods[contract["label"]] = str(method_path.relative_to(run_dir))
+            sealed_paths.extend([layout_path, method_path])
 
         test_arguments = forge_test_arguments(args.fuzz_seed, args.no_match_path or [])
         tests = run_command(
@@ -343,12 +345,15 @@ def baseline_command(args: argparse.Namespace) -> int:
             "source_count": len(manifest),
             "sealed_at": utc_now(),
         }
+        # The layouts and method maps are evidence the candidate gates compare
+        # against, so they are sealed by digest here rather than merely written.
         state["artifacts"] = artifact_hashes(
             run_dir,
             [
                 run_dir / "sizes.json",
                 run_dir / "foundry-config.json",
                 run_dir / "baseline-source-manifest.json",
+                *sealed_paths,
             ],
         )
         write_json(run_dir / "state.json", state)
