@@ -5916,3 +5916,19 @@ promise_machine check and the Horos boundary check exit 0.
 
 Leads not pursued: the `--force` question on the size build stands, unchanged
 from round 1, and still belongs to step 3.
+
+## Procrustes, step 2, round 3 -- 2026-08-21
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R3-01 | medium | plugins/hermes/skills/procrustes/scripts/procrustes.py | The sealed state hashed `sizes.json`, the Foundry config and the source manifest, but not the storage layouts or method identifier maps. Those are the files the candidate gates compare against, so a change to one between Gate 1 and the comparison would not have been detectable from the record the promise names as evidence. | fixed in f6df3c6 |
+
+Per the register: `layout-selector-drift` reviewed, which is where this finding
+came from; `size-accounting`, `subprocess-input`, `partial-write` and
+`import-coupling` reviewed with no change this round. The candidate-side ids stay
+not applicable.
+
+Phylax and ephoros exit 0; hypomnema exits 0 over the unchanged documents.
+Procrustes 31/31; root 104/104.
+
+Leads not pursued: the `--force` question on the size build, still step 3's.
