@@ -43,6 +43,9 @@ if args[:1] == ["build"]:
     if (repo / ".shapeless-sizes").exists():
         print(json.dumps({"A": {"runtime_size": "297", "init_size": 325}}))
         raise SystemExit(0)
+    if (repo / ".boolean-size").exists():
+        print(json.dumps({"A": {"runtime_size": True, "init_size": 325}}))
+        raise SystemExit(0)
     if (repo / ".odd-key").exists():
         print(json.dumps({"src/A.sol": {"runtime_size": 297, "init_size": 325}}))
         raise SystemExit(0)
@@ -151,6 +154,8 @@ class HarnessCase(unittest.TestCase):
             str(evidence if evidence is not None else self.evidence),
             "--size-target",
             "^A$",
+            "--fuzz-seed",
+            "0x5EED",
             "--assert-no-protected-contracts",
             *extra,
         ]
@@ -215,6 +220,8 @@ class BaselineTests(HarnessCase):
             str(self.evidence),
             "--size-target",
             r"^A \(src/A\.sol\)$",
+            "--fuzz-seed",
+            "0x5EED",
             "--assert-no-protected-contracts",
         ]
         with mock.patch.dict(os.environ, self.environment, clear=True):
@@ -222,6 +229,34 @@ class BaselineTests(HarnessCase):
         sizes = json.loads((self.evidence / "sizes.json").read_text(encoding="utf-8"))
         self.assertEqual(sorted(sizes["sizes"]), ["A (src/A.sol)", "A (src/nested/A.sol)"])
         self.assertEqual(sizes["targets"], {r"^A \(src/A\.sol\)$": ["A (src/A.sol)"]})
+
+    def test_refuses_to_seal_without_a_pinned_fuzz_seed(self) -> None:
+        argv = [
+            "baseline",
+            "--repo",
+            str(self.repo),
+            "--evidence-dir",
+            str(self.evidence),
+            "--size-target",
+            "^A$",
+            "--assert-no-protected-contracts",
+        ]
+        with mock.patch.dict(os.environ, self.environment, clear=True):
+            with self.assertRaises(SystemExit) as raised:
+                procrustes.main(argv)
+        self.assertEqual(raised.exception.code, 2)
+
+    def test_records_the_pinned_seed_in_the_sealed_state(self) -> None:
+        self.assertEqual(self.run_baseline(), 0)
+        state = json.loads((self.evidence / "state.json").read_text(encoding="utf-8"))
+        self.assertEqual(state["fuzz_seed"], "0x5EED")
+        log = (self.evidence / "logs" / "gate1.forge-test.log").read_text(encoding="utf-8")
+        self.assertIn("--fuzz-seed 0x5EED", log)
+
+    def test_rejects_a_boolean_size(self) -> None:
+        self.marker(".boolean-size")
+        self.assertEqual(self.run_baseline(), 10)
+        self.assertIn("boolean size", self.result()["reason"])
 
     def test_rejects_a_size_report_key_that_is_not_a_contract(self) -> None:
         self.marker(".odd-key")
@@ -242,6 +277,8 @@ class BaselineTests(HarnessCase):
             str(self.evidence),
             "--size-target",
             "^NoSuchContract$",
+            "--fuzz-seed",
+            "0x5EED",
             "--assert-no-protected-contracts",
         ]
         with mock.patch.dict(os.environ, self.environment, clear=True):
@@ -257,6 +294,8 @@ class BaselineTests(HarnessCase):
             str(self.evidence),
             "--size-target",
             "A(",
+            "--fuzz-seed",
+            "0x5EED",
             "--assert-no-protected-contracts",
         ]
         with mock.patch.dict(os.environ, self.environment, clear=True):
@@ -288,6 +327,8 @@ class BaselineTests(HarnessCase):
                 str(self.evidence),
                 "--size-target",
                 "^A$",
+                "--fuzz-seed",
+                "0x5EED",
                 "--protected-contract",
                 "A=src/A.sol:A",
             ])
@@ -304,6 +345,8 @@ class BaselineTests(HarnessCase):
             str(self.evidence),
             "--size-target",
             "^A$",
+            "--fuzz-seed",
+            "0x5EED",
         ]
         with mock.patch.dict(os.environ, self.environment, clear=True):
             self.assertEqual(procrustes.main(argv), 10)

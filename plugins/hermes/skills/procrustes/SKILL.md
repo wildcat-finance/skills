@@ -72,6 +72,8 @@ python3 "$PROCRUSTES_PY" baseline \
 Repeat `--size-target`, `--protected-contract` and `--no-match-path` as needed.
 Where no layout is frozen, say so explicitly with
 `--assert-no-protected-contracts`; the harness refuses a silent empty set.
+`--fuzz-seed` is required: a green suite recorded under a seed nobody pinned is
+not comparable to the candidate suite that follows it.
 
 Gate 1 records the per-contract runtime and initcode sizes with both margins,
 the declared targets and the contracts each one matched, the resolved Foundry

@@ -183,6 +183,10 @@ def parse_size_report(raw: str, gate: int, exit_code: int) -> dict[str, dict[str
             raise GateFailure(gate, f"size report entry for {name} is not an object", exit_code)
         runtime = entry.get("runtime_size")
         initcode = entry.get("init_size")
+        # `isinstance(True, int)` holds in Python, so a boolean would otherwise
+        # pass for a byte count and be arithmetic from there on.
+        if isinstance(runtime, bool) or isinstance(initcode, bool):
+            raise GateFailure(gate, f"size report for {name} reports a boolean size", exit_code)
         if not isinstance(runtime, int) or not isinstance(initcode, int):
             raise GateFailure(
                 gate,
@@ -422,7 +426,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-match-path", action="append", metavar="GLOB", help="Forge test exclusion; repeatable"
     )
     baseline.add_argument(
-        "--fuzz-seed", action=SingleValueAction, help="Pinned Foundry fuzz seed for the behaviour suite"
+        "--fuzz-seed",
+        required=True,
+        action=SingleValueAction,
+        help="Pinned Foundry fuzz seed; the sealed green suite is only comparable under a fixed seed",
     )
     baseline.set_defaults(handler=baseline_command)
 
