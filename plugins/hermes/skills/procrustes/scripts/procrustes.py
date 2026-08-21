@@ -100,7 +100,12 @@ forge_test_arguments = hermes.forge_test_arguments
 artifact_hashes = hermes.artifact_hashes
 git = hermes.git
 
-CONTRACT_NAME_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+# Forge keys each size row by contract name, and disambiguates a name that
+# several files declare as `Name (path/to/File.sol)`. Both forms are legitimate
+# and a real repository with a mock or an interface twin produces the second.
+CONTRACT_KEY_RE = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_]*(?: \((?!/)[A-Za-z0-9_./-]+\.sol\))?$"
+)
 
 
 def pinned_surface_drift() -> dict[str, str]:
@@ -172,7 +177,7 @@ def parse_size_report(raw: str, gate: int, exit_code: int) -> dict[str, dict[str
         raise GateFailure(gate, "forge build --sizes --json returned no contract sizes", exit_code)
     sizes: dict[str, dict[str, int]] = {}
     for name, entry in value.items():
-        if not isinstance(name, str) or not CONTRACT_NAME_RE.fullmatch(name):
+        if not isinstance(name, str) or not CONTRACT_KEY_RE.fullmatch(name):
             raise GateFailure(gate, f"unexpected contract name in size report: {name!r}", exit_code)
         if not isinstance(entry, dict):
             raise GateFailure(gate, f"size report entry for {name} is not an object", exit_code)
@@ -186,6 +191,22 @@ def parse_size_report(raw: str, gate: int, exit_code: int) -> dict[str, dict[str
             )
         if runtime < 0 or initcode < 0:
             raise GateFailure(gate, f"negative size reported for {name}", exit_code)
+        # Forge reports its own margins. They are recomputed here rather than
+        # trusted, and a disagreement means Forge is measuring against a
+        # different limit than this harness claims to enforce.
+        for field, size, limit in (
+            ("runtime_margin", runtime, EIP170_RUNTIME_LIMIT),
+            ("init_margin", initcode, EIP3860_INITCODE_LIMIT),
+        ):
+            reported = entry.get(field)
+            if isinstance(reported, int) and reported != limit - size:
+                raise GateFailure(
+                    gate,
+                    f"forge reports {field} {reported} for {name}, which is not "
+                    f"{limit} - {size}: the toolchain is measuring against a "
+                    f"different code-size limit",
+                    exit_code,
+                )
         sizes[name] = {
             "runtime_size": runtime,
             "init_size": initcode,

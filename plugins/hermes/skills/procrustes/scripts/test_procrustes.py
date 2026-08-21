@@ -43,6 +43,21 @@ if args[:1] == ["build"]:
     if (repo / ".shapeless-sizes").exists():
         print(json.dumps({"A": {"runtime_size": "297", "init_size": 325}}))
         raise SystemExit(0)
+    if (repo / ".odd-key").exists():
+        print(json.dumps({"src/A.sol": {"runtime_size": 297, "init_size": 325}}))
+        raise SystemExit(0)
+    if (repo / ".duplicate-names").exists():
+        print(json.dumps({
+            "A (src/A.sol)": {"runtime_size": 297, "init_size": 325,
+                              "runtime_margin": 24279, "init_margin": 48827},
+            "A (src/nested/A.sol)": {"runtime_size": 170, "init_size": 196,
+                                     "runtime_margin": 24406, "init_margin": 48956},
+        }))
+        raise SystemExit(0)
+    if (repo / ".other-limit").exists():
+        print(json.dumps({"A": {"runtime_size": 297, "init_size": 325,
+                                "runtime_margin": 48279, "init_margin": 48827}}))
+        raise SystemExit(0)
     runtime = 297
     init = 325
     if (repo / ".over-limit").exists():
@@ -189,6 +204,34 @@ class BaselineTests(HarnessCase):
         self.assertEqual(entry["runtime_margin"], 24576 - 297)
         self.assertEqual(entry["init_margin"], 49152 - 325)
         self.assertEqual(sizes["limits"]["eip3860_initcode"], 49152)
+
+    def test_accepts_disambiguated_contract_names(self) -> None:
+        self.marker(".duplicate-names")
+        argv = [
+            "baseline",
+            "--repo",
+            str(self.repo),
+            "--evidence-dir",
+            str(self.evidence),
+            "--size-target",
+            r"^A \(src/A\.sol\)$",
+            "--assert-no-protected-contracts",
+        ]
+        with mock.patch.dict(os.environ, self.environment, clear=True):
+            self.assertEqual(procrustes.main(argv), 0)
+        sizes = json.loads((self.evidence / "sizes.json").read_text(encoding="utf-8"))
+        self.assertEqual(sorted(sizes["sizes"]), ["A (src/A.sol)", "A (src/nested/A.sol)"])
+        self.assertEqual(sizes["targets"], {r"^A \(src/A\.sol\)$": ["A (src/A.sol)"]})
+
+    def test_rejects_a_size_report_key_that_is_not_a_contract(self) -> None:
+        self.marker(".odd-key")
+        self.assertEqual(self.run_baseline(), 10)
+        self.assertIn("unexpected contract name", self.result()["reason"])
+
+    def test_rejects_a_margin_measured_against_another_limit(self) -> None:
+        self.marker(".other-limit")
+        self.assertEqual(self.run_baseline(), 10)
+        self.assertIn("different code-size limit", self.result()["reason"])
 
     def test_rejects_a_size_target_matching_no_contract(self) -> None:
         argv = [
