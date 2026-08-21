@@ -77,8 +77,9 @@ not comparable to the candidate suite that follows it.
 
 Gate 1 records the per-contract runtime and initcode sizes with both margins,
 the declared targets and the contracts each one matched, the resolved Foundry
-configuration, the Forge version, the Git revision, every Solidity source, and
-the protected storage layouts and method identifiers. Then it runs the suite and
+configuration, the Forge version, the Git revision and every Solidity source. It
+seals the protected storage layouts and method identifiers by digest, since those
+are the files a candidate is later compared against. Then it runs the suite and
 requires it green.
 
 A contract already over a limit is recorded rather than refused. Being over the

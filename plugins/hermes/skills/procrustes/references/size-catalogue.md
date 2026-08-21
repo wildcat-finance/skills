@@ -30,9 +30,9 @@ Two are worth knowing about before reaching for source edits. Lowering
 `optimizer_runs` tells solc to favour deployment size over call cost, which is
 the whole trade in one setting. Setting `bytecode_hash = "none"` and
 `cbor_metadata = false` removes the metadata trailer solc appends after the
-runtime code, which is tens of bytes and no behaviour at all -- worth taking
-first when the overshoot is small, and worth checking against any verification
-or provenance workflow that expects the trailer to be there.
+runtime code. That is tens of bytes and no behaviour at all, so it is worth
+taking first when the overshoot is small. Check it against any verification or
+provenance workflow that expects the trailer to be there.
 
 ## Quick source searches
 
