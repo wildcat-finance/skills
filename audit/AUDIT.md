@@ -5842,3 +5842,23 @@ the promise_machine check exit 0. Root 104/104; hexaemeron 490/492 with
 the two recorded environment failures.
 
 Leads not pursued: none
+
+## Procrustes, step 1, round 1 -- 2026-08-21
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+No findings. The step ships two Markdown documents and no Solidity, so the
+Pashov pair had no source to read and the three bundled lints are the
+mechanical part of the round: phylax, ephoros and hypomnema each exit 0 over
+both documents. Per the register: every id is not applicable this step, because
+no harness, gate, subprocess or evidence directory exists yet to carry one. The
+look the lints cannot do was a check of what the documents assert about the
+tree -- `hermes.py` at 1138 lines, 29 runtime maps and 66 promise rows in the
+coverage file, 14 plugins, `forge 1.7.1`, the starting ref
+`3c061c2e15df085cf300220250b421bbd03f664c`, the `7e68d9a` storage-layout
+normalisation cited in design option C, and pull requests #287 and #291 -- each
+confirmed against the checkout rather than recalled. Root 104/104; the
+promise_machine check and the Horos boundary check exit 0.
+
+Leads not pursued: none
