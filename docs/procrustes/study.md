@@ -25,11 +25,11 @@ declared target shows no gas saving; most size reductions cost gas, so Hermes
 refuses them by construction rather than by judgement.
 
 Procrustes measures deployed bytecode instead. It seals a baseline of per-contract
-runtime and initcode sizes, takes one declared size class at a time, and accepts
-the candidate only when the bytes fell, the behaviour suites stayed green, the
-protected layouts and selectors did not move, and the diff did not buy its
-reduction by removing a check or by relocating code behind `delegatecall` without
-saying so.
+runtime and initcode sizes and takes one declared size class at a time. A
+candidate is accepted only when the bytes fell, the behaviour suites stayed
+green, the protected layouts and selectors did not move, and the diff did not buy
+its reduction by removing a check or by relocating code behind `delegatecall`
+without saying so.
 
 A working prototype means all of these hold:
 
@@ -57,10 +57,10 @@ experiment, and it names `forge build --sizes` as the place deployed size gets
 recorded. Nobody built the loop around that sentence.
 
 The last two merged pull requests touching the plugin are
-[#291](https://github.com/wildcat-finance/skills/pull/291), which bound
-digest-backed runtime maps for all 29 promises at consequence 2 and 3 and
-published the fourteen plugins at patch package versions, and
-[#287](https://github.com/wildcat-finance/skills/pull/287), which added the 43
+[#291](https://github.com/wildcat-finance/skills/pull/291) and
+[#287](https://github.com/wildcat-finance/skills/pull/287). The first bound
+digest-backed runtime maps for all 29 promises at consequence 2 and 3, and
+published the fourteen plugins at patch package versions. The second added the 43
 standalone Promise Machine declarations and made the `contracts` component guard
 the exact repository promise-id sets. Neither left work carried forward that
 touches size. What they do leave is the cost of adding a governed skill here:
