@@ -503,6 +503,31 @@
       "selector": "test_rejects_any_gas_regression_at_gate_three",
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path."
     },
+    "procrustes-p": {
+      "path": "plugins/hermes/skills/procrustes/scripts/test_procrustes.py",
+      "selector": "test_seals_a_green_baseline_with_measured_sizes",
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary."
+    },
+    "procrustes-m": {
+      "path": "plugins/hermes/skills/procrustes/scripts/test_procrustes.py",
+      "selector": "test_rejects_a_missing_or_unparsable_size_report",
+      "claim": "Missing required evidence is refused rather than treated as success."
+    },
+    "procrustes-s": {
+      "path": "plugins/hermes/skills/procrustes/scripts/test_procrustes.py",
+      "selector": "test_rejects_a_dirty_tree",
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped."
+    },
+    "procrustes-o": {
+      "path": "plugins/hermes/skills/procrustes/scripts/test_procrustes.py",
+      "selector": "test_records_initcode_beside_runtime_without_calling_either_the_limit",
+      "claim": "The nearest tempting overclaim remains explicitly unavailable."
+    },
+    "procrustes-r": {
+      "path": "plugins/hermes/skills/procrustes/scripts/test_procrustes.py",
+      "selector": "test_rejects_a_size_target_matching_no_contract",
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path."
+    },
     "elenchus-p": {
       "path": "plugins/hexaemeron/tests/test_elenchus_checker.py",
       "selector": "test_runner_categories_distinguish_all_three_outcomes",
@@ -2318,6 +2343,22 @@
         "S": "probitas-s",
         "O": "probitas-o",
         "R": "probitas-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
+    },
+    {
+      "promise_id": "procrustes-sealed-baseline",
+      "skill_path": "plugins/hermes/skills/procrustes/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "procrustes-p",
+        "M": "procrustes-m",
+        "S": "procrustes-s",
+        "O": "procrustes-o",
+        "R": "procrustes-r",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."

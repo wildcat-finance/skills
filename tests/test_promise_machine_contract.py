@@ -320,8 +320,8 @@ class PromiseInventoryTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertEqual(report["counts"]["plugins"], 14)
-        self.assertEqual(report["counts"]["canonical_skills"], 28)
-        self.assertEqual(report["counts"]["governed_skills"], 23)
+        self.assertEqual(report["counts"]["canonical_skills"], 29)
+        self.assertEqual(report["counts"]["governed_skills"], 24)
         self.assertEqual(report["counts"]["vendored_skills"], 5)
         self.assertEqual(report["counts"]["routers"], 1)
 
@@ -455,6 +455,9 @@ class PromiseStructureTests(unittest.TestCase):
                 "hermes-candidate-acceptance",
                 "hermes-baseline-promotion",
             },
+            "plugins/hermes/skills/procrustes/SKILL.md": {
+                "procrustes-sealed-baseline",
+            },
             "plugins/horos/skills/horos/SKILL.md": {
                 "horos-boundary-scan",
                 "horos-boundary-check",
@@ -517,7 +520,7 @@ class PromiseStructureTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["promises"], 61)
+        self.assertEqual(report["counts"]["promises"], 62)
 
     def test_hexaemeron_contract_population_is_complete(self):
         expected = {
@@ -579,7 +582,7 @@ class PromiseOverlayTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["promises"], 66)
+        self.assertEqual(report["counts"]["promises"], 67)
         self.assertEqual(report["counts"]["overlays"], 1)
 
     def test_one_byte_vendored_mutation_is_refused(self):
@@ -781,12 +784,12 @@ class PromiseIdentityTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["canonical_skills"], 28)
+        self.assertEqual(report["counts"]["canonical_skills"], 29)
         self.assertEqual(report["counts"]["routers"], 1)
         self.assertEqual(report["counts"]["claude_plugins"], 14)
         self.assertEqual(report["counts"]["codex_plugins"], 14)
         self.assertEqual(report["counts"]["package_versions"], 14)
-        self.assertEqual(report["counts"]["skill_versions"], 23)
+        self.assertEqual(report["counts"]["skill_versions"], 24)
 
     def test_unresolved_router_fixture_is_refused(self):
         completed = run_cli(
@@ -955,8 +958,8 @@ class PromiseCoverageTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["coverage_rows"], 66)
-        self.assertEqual(report["counts"]["coverage_selected"], 50)
+        self.assertEqual(report["counts"]["coverage_rows"], 67)
+        self.assertEqual(report["counts"]["coverage_selected"], 51)
 
     def test_berean_and_janus_boundaries_are_explicit(self):
         coverage = json.loads(
@@ -1154,7 +1157,7 @@ class PromiseCoverageTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["coverage_rows"], 66)
+        self.assertEqual(report["counts"]["coverage_rows"], 67)
         self.assertEqual(report["counts"]["coverage_selected"], 16)
 
     def test_prompt_and_vendored_evaluations_never_claim_proof(self):
