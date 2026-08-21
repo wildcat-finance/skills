@@ -5896,3 +5896,23 @@ on disk. Gate 1 requires a clean tree and Forge recompiles on source change, so
 the exposure here is narrow. It stops being narrow in the candidate loop, where
 the baseline and candidate builds must not share a stale artefact, so the
 decision belongs to step 3 rather than to a fix here.
+
+## Procrustes, step 2, round 2 -- 2026-08-21
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R2-01 | medium | plugins/hermes/skills/procrustes/scripts/procrustes.py | `--fuzz-seed` was optional, so a sealed baseline could record a green suite under a seed nobody pinned. The promise authorises comparing a candidate against that baseline, and a candidate suite run under a different seed is not comparable to it. The flag is now required and the sealed state records the value the suite ran under. | fixed in 6b8e850 |
+| S2-R2-02 | low | plugins/hermes/skills/procrustes/scripts/procrustes.py | A JSON boolean passed the integer size check, since `isinstance(True, int)` holds in Python, and every later margin and comparison would have treated it as a byte count. Refused explicitly now. | fixed in 6b8e850 |
+
+Per the register: `size-accounting` reviewed again, which is where S2-R2-02 came
+from; `subprocess-input` reviewed, the pinned seed is passed through Hermes's
+`forge_test_arguments` as a list element rather than interpolated;
+`partial-write` and `import-coupling` reviewed with no change. `deleted-check`,
+`delegatecall-surface`, `gas-regression` and `metadata-only-win` remain not
+applicable until the candidate loop exists.
+
+Phylax, ephoros and hypomnema exit 0. Procrustes 30/30; root 104/104; the
+promise_machine check and the Horos boundary check exit 0.
+
+Leads not pursued: the `--force` question on the size build stands, unchanged
+from round 1, and still belongs to step 3.
