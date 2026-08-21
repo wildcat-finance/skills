@@ -5862,3 +5862,37 @@ confirmed against the checkout rather than recalled. Root 104/104; the
 promise_machine check and the Horos boundary check exit 0.
 
 Leads not pursued: none
+
+## Procrustes, step 2, round 1 -- 2026-08-21
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | high | plugins/hermes/skills/procrustes/scripts/procrustes.py | `CONTRACT_KEY_RE` accepted only bare contract names, so any repository declaring one name in two files could not be baselined at all. `forge build --sizes --json` keys those rows `A (src/A.sol)`, confirmed against forge 1.7.1 on a two-file fixture. A mock or an interface twin is the ordinary case, not an edge one. | fixed in 1362bba |
+| S2-R1-02 | medium | plugins/hermes/skills/procrustes/scripts/procrustes.py | Forge reports `runtime_margin` and `init_margin` beside each size and the harness silently ignored both. A toolchain measuring against a different code-size limit than EIP-170 would therefore be recorded as agreement. Now recomputed, compared, and refused on disagreement. | fixed in 1362bba |
+
+Both fixes carry a guard. Reverting either one and rerunning the suite fails
+exactly its own test: `test_accepts_disambiguated_contract_names` and
+`test_rejects_a_margin_measured_against_another_limit`. Verified by staging a
+reverted copy of the harness, not by inspection.
+
+Per the register: `subprocess-input` reviewed, every argv is a pinned list with
+no shell and the target is resolved and checked for `foundry.toml` before use;
+`partial-write` reviewed, evidence is written through Hermes's atomic replace and
+a killed run leaves no `result.json`, so `status` reports absence rather than
+success; `size-accounting` reviewed, and it is where both findings came from;
+`import-coupling` reviewed, the pinned map now carries only names the harness
+actually calls, which a test enforces. `deleted-check`,
+`delegatecall-surface`, `gas-regression` and `metadata-only-win` are not
+applicable this step, since no candidate gate exists yet. `layout-selector-drift`
+reviewed, the baseline seals both sides through Hermes's comparison unchanged.
+
+Phylax, ephoros and hypomnema exit 0 over the changed harness and documents.
+Procrustes 27/27; root 104/104; the promise_machine check and the Horos boundary
+check exit 0.
+
+Leads not pursued: `forge build --sizes --json` is read without `--force`, so a
+stale build cache could in principle report sizes for sources that are no longer
+on disk. Gate 1 requires a clean tree and Forge recompiles on source change, so
+the exposure here is narrow. It stops being narrow in the candidate loop, where
+the baseline and candidate builds must not share a stale artefact, so the
+decision belongs to step 3 rather than to a fix here.
