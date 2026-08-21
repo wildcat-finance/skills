@@ -5932,3 +5932,22 @@ Phylax and ephoros exit 0; hypomnema exits 0 over the unchanged documents.
 Procrustes 31/31; root 104/104.
 
 Leads not pursued: the `--force` question on the size build, still step 3's.
+
+## Procrustes, step 2, round 4 -- 2026-08-21
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R4-01 | medium | plugins/hermes/skills/procrustes/scripts/procrustes.py | `load_hermes` inserted the sibling directory on `sys.path` and then imported the plain name `hermes`, so a module already in `sys.modules` or earlier on the path could answer instead. The pinned-signature check would catch a different shape but not a same-shaped impostor, and the harness would run foreign code under the name it pinned. The loader now compares the imported module's file to the sibling path and refuses anything else. | fixed in 3483459 |
+
+Per the register: `import-coupling` reviewed, which is where this finding came
+from, and the pin is now a pin on identity as well as on shape;
+`subprocess-input`, `partial-write`, `size-accounting` and
+`layout-selector-drift` reviewed with no change this round.
+
+Phylax and ephoros exit 0. Procrustes 33/33; root 104/104.
+
+Leads not pursued: `PINNED_HERMES_SURFACE` compares rendered `inspect.signature`
+strings, so a future Python whose rendering differs would refuse a Hermes that
+had not moved. The refusal is loud and fail-closed, names the signature it saw,
+and the recovery is to re-pin, so it is not worth trading for a looser
+comparison. The `--force` question on the size build remains step 3's.
