@@ -434,6 +434,31 @@ class CouplingTests(unittest.TestCase):
         with mock.patch.object(procrustes, "pinned_surface_drift", return_value={"utc_now": "absent"}):
             self.assertEqual(procrustes.main(["status", "--run-dir", "/nonexistent"]), 70)
 
+    def test_binds_to_the_sibling_hermes_file(self) -> None:
+        self.assertEqual(
+            Path(procrustes.hermes.__file__).resolve(),
+            (procrustes.HERMES_SCRIPTS / "hermes.py").resolve(),
+        )
+
+    def test_refuses_a_foreign_module_answering_to_the_name(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            impostor = Path(directory) / "hermes.py"
+            impostor.write_text("SCHEMA = 'not-hermes'\n", encoding="utf-8")
+            saved = sys.modules.pop("hermes", None)
+            sys.path.insert(0, directory)
+            try:
+                with mock.patch.object(procrustes, "HERMES_SCRIPTS", Path(directory) / "elsewhere"):
+                    with self.assertRaises(SystemExit) as raised:
+                        procrustes.load_hermes()
+                message = str(raised.exception)
+                self.assertIn("the imported hermes module is", message)
+                self.assertIn(str(impostor), message)
+            finally:
+                sys.path.remove(directory)
+                sys.modules.pop("hermes", None)
+                if saved is not None:
+                    sys.modules["hermes"] = saved
+
     def test_the_limits_are_the_consensus_numbers(self) -> None:
         self.assertEqual(procrustes.EIP170_RUNTIME_LIMIT, 24576)
         self.assertEqual(procrustes.EIP3860_INITCODE_LIMIT, 49152)

@@ -74,6 +74,15 @@ def load_hermes():
         raise SystemExit(
             f"cannot import the Hermes harness from {HERMES_SCRIPTS}: {exc}"
         ) from exc
+    # `hermes` is a plain module name. Something else on the path, or already in
+    # sys.modules, can answer to it, and this harness would then run foreign code
+    # under the name it pinned. Bind to the sibling file or refuse.
+    loaded = Path(getattr(hermes, "__file__", "") or "").resolve()
+    expected = (HERMES_SCRIPTS / "hermes.py").resolve()
+    if loaded != expected:
+        raise SystemExit(
+            f"the imported hermes module is {loaded or 'unlocatable'}, not {expected}"
+        )
     return hermes
 
 
