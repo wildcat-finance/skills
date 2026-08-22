@@ -46,6 +46,9 @@ P008_MESSAGES = {
     "yaml": "yaml.load has no resolved SafeLoader or CSafeLoader",
     "builtins": "dynamic execution receives non-literal source",
 }
+P008_AMBIGUOUS_MESSAGE = (
+    "source-local bindings leave the boundary call family unresolved"
+)
 
 CREDENTIAL = re.compile(
     r"(?:^|_)(?:priv(?:ate)?_?key|secret|passwd|password|mnemonic|seed_?phrase"
@@ -135,6 +138,95 @@ def _is_dynamic_literal(node: ast.AST) -> bool:
     )
 
 
+def _boundary_bindings(
+    tree: ast.AST,
+) -> tuple[
+    dict[str, set[str]],
+    dict[str, set[str]],
+    set[str],
+    set[str],
+    set[str],
+]:
+    """Collect source-local import evidence before descending function bodies.
+
+    A depth-first visitor reaches a function's calls before module imports that
+    follow its definition, even though those imports bind before normal calls.
+    Conflicting imports remain conservative evidence because scope and runtime
+    rebinding are outside this rule.
+    """
+    modules: dict[str, set[str]] = {}
+    direct: dict[str, set[str]] = {}
+    identities: dict[str, set[tuple[int, str | None, str]]] = {}
+    imports = (
+        node for node in ast.walk(tree)
+        if isinstance(node, (ast.Import, ast.ImportFrom))
+    )
+    for node in imports:
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                local = alias.asname or alias.name.split(".", 1)[0]
+                identities.setdefault(local, set()).add((-1, alias.name, ""))
+                if alias.name in BOUNDARY_CALLS:
+                    modules.setdefault(local, set()).add(alias.name)
+            continue
+
+        for alias in node.names:
+            if alias.name == "*":
+                continue
+            local = alias.asname or alias.name
+            identities.setdefault(local, set()).add(
+                (node.level, node.module, alias.name)
+            )
+            if node.level != 0 or node.module not in BOUNDARY_CALLS:
+                continue
+            if alias.name in BOUNDARY_CALLS[node.module]:
+                direct.setdefault(local, set()).add(node.module)
+
+    safe_yaml_modules = {
+        local
+        for local, imported in identities.items()
+        if all(
+            level == -1 and module == "yaml"
+            for level, module, _name in imported
+        )
+    }
+    safe_yaml_loaders = {
+        local
+        for local, imported in identities.items()
+        if all(
+            level == 0 and module == "yaml" and name in SAFE_YAML_LOADERS
+            for level, module, name in imported
+        )
+    }
+    ambiguous_calls = set()
+    for local, imported in identities.items():
+        families = set()
+        for level, module, name in imported:
+            if level == -1 and module in BOUNDARY_CALLS:
+                families.add(module)
+            elif (
+                level == 0
+                and module in BOUNDARY_CALLS
+                and name in BOUNDARY_CALLS[module]
+            ):
+                families.add(module)
+            else:
+                families.add(None)
+        # a direct import elsewhere in the file does not prove that it shadows
+        # a bare built-in at this call site; scope analysis is outside P008.
+        if local in BOUNDARY_CALLS["builtins"]:
+            families.add("builtins")
+        if len(families) > 1:
+            ambiguous_calls.add(local)
+    return (
+        modules,
+        direct,
+        safe_yaml_modules,
+        safe_yaml_loaders,
+        ambiguous_calls,
+    )
+
+
 class Visitor(ast.NodeVisitor):
     """Flag only calls resolved by the source-local import grammar.
 
@@ -142,21 +234,23 @@ class Visitor(ast.NodeVisitor):
     `run` and `.call` methods must stay outside the rule that owns each name.
     """
 
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, tree: ast.AST) -> None:
         self.path = path
         self.findings: list[Finding] = []
         self.modules: set[str] = set()
         self.direct: set[str] = set()
-        self.boundary_modules: dict[str, str] = {}
-        self.boundary_direct: dict[str, str] = {}
-        self.safe_yaml_loaders: set[str] = set()
+        (
+            self.boundary_modules,
+            self.boundary_direct,
+            self.safe_yaml_modules,
+            self.safe_yaml_loaders,
+            self.ambiguous_boundary_calls,
+        ) = _boundary_bindings(tree)
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             if alias.name == "subprocess":
                 self.modules.add(alias.asname or "subprocess")
-            if alias.name in BOUNDARY_CALLS:
-                self.boundary_modules[alias.asname or alias.name] = alias.name
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
@@ -164,13 +258,6 @@ class Visitor(ast.NodeVisitor):
             for alias in node.names:
                 if alias.name in RUNNERS:
                     self.direct.add(alias.asname or alias.name)
-        if node.level == 0 and node.module in BOUNDARY_CALLS:
-            for alias in node.names:
-                local = alias.asname or alias.name
-                if alias.name in BOUNDARY_CALLS[node.module]:
-                    self.boundary_direct[local] = node.module
-                if node.module == "yaml" and alias.name in SAFE_YAML_LOADERS:
-                    self.safe_yaml_loaders.add(local)
         self.generic_visit(node)
 
     def _starts_process(self, func: ast.AST) -> bool:
@@ -183,42 +270,53 @@ class Visitor(ast.NodeVisitor):
     def _add(self, node: ast.AST, code: str, message: str) -> None:
         self.findings.append(Finding(self.path, node.lineno, code, message))
 
-    def _boundary_module(self, func: ast.AST) -> str | None:
+    def _boundary_modules(self, func: ast.AST) -> set[str]:
         if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
-            module = self.boundary_modules.get(func.value.id)
-            if module and func.attr in BOUNDARY_CALLS[module]:
-                return module
+            return {
+                module
+                for module in self.boundary_modules.get(func.value.id, set())
+                if func.attr in BOUNDARY_CALLS[module]
+            }
         if isinstance(func, ast.Name):
-            resolved = self.boundary_direct.get(func.id)
-            if resolved:
-                return resolved
+            resolved = set(self.boundary_direct.get(func.id, set()))
             if func.id in BOUNDARY_CALLS["builtins"]:
-                return "builtins"
-        return None
+                resolved.add("builtins")
+            return resolved
+        return set()
 
     def _safe_yaml_loader(self, loader: ast.AST) -> bool:
         if isinstance(loader, ast.Attribute) and isinstance(loader.value, ast.Name):
             return (
-                self.boundary_modules.get(loader.value.id) == "yaml"
+                loader.value.id in self.safe_yaml_modules
                 and loader.attr in SAFE_YAML_LOADERS
             )
         return isinstance(loader, ast.Name) and loader.id in self.safe_yaml_loaders
 
     def _check_p008(self, node: ast.Call) -> None:
-        module = self._boundary_module(node.func)
-        if not module:
-            return
-        if module == "yaml":
-            loader = next(
-                (keyword.value for keyword in node.keywords if keyword.arg == "Loader"),
-                node.args[1] if len(node.args) > 1 else None,
+        binding = (
+            node.func.value.id
+            if isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            else node.func.id if isinstance(node.func, ast.Name) else None
+        )
+        loader = next(
+            (keyword.value for keyword in node.keywords if keyword.arg == "Loader"),
+            node.args[1] if len(node.args) > 1 else None,
+        )
+        for module in sorted(self._boundary_modules(node.func)):
+            if module == "yaml":
+                if loader is not None and self._safe_yaml_loader(loader):
+                    continue
+            elif module == "builtins":
+                if not node.args or _is_dynamic_literal(node.args[0]):
+                    continue
+            message = (
+                P008_AMBIGUOUS_MESSAGE
+                if binding in self.ambiguous_boundary_calls
+                else P008_MESSAGES[module]
             )
-            if loader is not None and self._safe_yaml_loader(loader):
-                return
-        elif module == "builtins":
-            if not node.args or _is_dynamic_literal(node.args[0]):
-                return
-        self._add(node, "P008", P008_MESSAGES[module])
+            self._add(node, "P008", message)
+            return
 
     def visit_Call(self, node: ast.Call) -> None:
         self._check_p008(node)
@@ -262,7 +360,7 @@ def check_python(path: Path, text: str) -> list[Finding]:
         tree = ast.parse(text)
     except SyntaxError as err:
         return [Finding(path, err.lineno or 1, "P000", f"could not parse: {err.msg}")]
-    visitor = Visitor(path)
+    visitor = Visitor(path, tree)
     visitor.visit(tree)
     return visitor.findings
 

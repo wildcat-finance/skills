@@ -101,6 +101,115 @@ class UnsafeDeserialization(unittest.TestCase):
             ),
         })
 
+    def test_imports_after_function_definitions_still_resolve(self):
+        self.assert_p008({
+            "module": (
+                "def decode(payload):\n"
+                "    return pickle.loads(payload)\n"
+                "import pickle\n"
+            ),
+            "direct": (
+                "def decode(payload):\n"
+                "    return decode_pickle(payload)\n"
+                "from pickle import loads as decode_pickle\n"
+            ),
+        })
+
+    def test_import_rebinding_does_not_hide_boundary_evidence(self):
+        self.assertEqual(["P008"], codes(
+            "import pickle as codec\n"
+            "import json as codec\n"
+            "codec.loads(payload)\n"
+        ))
+        self.assertEqual(["P008"], codes(
+            "from pickle import loads as decode\n"
+            "from json import loads as decode\n"
+            "decode(payload)\n"
+        ))
+        self.assertEqual(["P008"], codes(
+            "from yaml import load, SafeLoader as Loader\n"
+            "from yaml import FullLoader as Loader\n"
+            "load(payload, Loader=Loader)\n"
+        ))
+        self.assertEqual(["P008"], codes(
+            "import yaml as parser\n"
+            "import custom as parser\n"
+            "parser.load(payload, Loader=parser.SafeLoader)\n"
+        ))
+        self.assertEqual(["P008"], codes(
+            "import pickle as codec\n"
+            "import yaml as codec\n"
+            "codec.loads(payload)\n"
+        ))
+        self.assertEqual(["P008"], codes(
+            "from builtins import eval as decode\n"
+            "from yaml import load as decode\n"
+            "decode('literal')\n"
+        ))
+
+    def test_conflicting_imports_do_not_claim_one_call_family(self):
+        sentinel = "conflicting-import-sentinel"
+        specimens = {
+            "module-boundaries": (
+                "import pickle as codec\n"
+                "import yaml as codec\n"
+                "codec.load(payload)\n"
+            ),
+            "direct-boundaries": (
+                "from pickle import load as decode\n"
+                "from yaml import load as decode\n"
+                "decode(payload)\n"
+            ),
+            "boundary-and-neighbour": (
+                "from pickle import load as decode\n"
+                "from json import load as decode\n"
+                "decode(payload)\n"
+            ),
+            "explicit-bare-shadow": (
+                "from ast import literal_eval as eval\n"
+                "eval(payload)\n"
+            ),
+        }
+        for label, source in specimens.items():
+            with self.subTest(label=label):
+                result = findings(
+                    f'payload = "{sentinel}"\n' + source,
+                    "sample.py",
+                )
+                self.assertEqual(["P008"], [finding.code for finding in result])
+                self.assertEqual(
+                    "source-local bindings leave the boundary call family unresolved",
+                    result[0].message,
+                )
+                self.assertNotIn(sentinel, str(result[0]))
+                self.assertNotIn(sentinel, json.dumps(result[0].as_dict()))
+
+    def test_bare_dynamic_calls_survive_cross_scope_yaml_aliases(self):
+        specimens = {
+            "eval": (
+                "def run(payload, SafeLoader):\n"
+                "    return eval(payload, SafeLoader)\n"
+                "def imports_elsewhere():\n"
+                "    from yaml import load as eval\n"
+                "    from yaml import SafeLoader\n"
+            ),
+            "exec": (
+                "def run(payload, SafeLoader):\n"
+                "    exec(payload, SafeLoader)\n"
+                "def imports_elsewhere():\n"
+                "    from yaml import load as exec\n"
+                "    from yaml import SafeLoader\n"
+            ),
+        }
+        for label, source in specimens.items():
+            with self.subTest(label=label):
+                result = findings(source, "sample.py")
+                self.assertEqual(["P008"], [finding.code for finding in result])
+                self.assertEqual(
+                    "source-local bindings leave the boundary call family unresolved",
+                    result[0].message,
+                )
+
     def test_safe_yaml_loaders_are_allowed_in_keyword_and_positional_forms(self):
         specimens = {
             "module-safe-keyword": (
@@ -136,6 +245,42 @@ class UnsafeDeserialization(unittest.TestCase):
         for label, source in specimens.items():
             with self.subTest(label=label):
                 self.assertEqual([], codes(source))
+
+    def test_yaml_loader_keyword_takes_precedence_over_second_position(self):
+        self.assertEqual([], codes(
+            "import yaml\n"
+            "yaml.load(payload, yaml.FullLoader, Loader=yaml.SafeLoader)\n"
+        ))
+        self.assertEqual(["P008"], codes(
+            "import yaml\n"
+            "yaml.load(payload, yaml.SafeLoader, Loader=yaml.FullLoader)\n"
+        ))
+
+    def test_argument_shape_edges_follow_the_stated_grammar(self):
+        self.assert_p008({
+            "pickle-no-args": "import pickle\npickle.load()\n",
+            "yaml-no-args": "import yaml\nyaml.load()\n",
+        })
+        self.assertEqual([], codes("eval()\nexec(source=payload)\n"))
+        self.assertEqual(["P008"], codes(
+            "def eval(value):\n"
+            "    return value\n"
+            "eval(payload)\n"
+        ))
+
+    def test_nested_boundary_calls_each_report_once(self):
+        result = findings(
+            "import pickle\n"
+            "eval(pickle.loads(payload))\n",
+            "sample.py",
+        )
+        self.assertEqual(
+            [
+                "dynamic execution receives non-literal source",
+                "pickle deserialization may execute untrusted code",
+            ],
+            [finding.message for finding in result],
+        )
 
     def test_named_safe_and_out_of_scope_neighbours_are_allowed(self):
         source = (
