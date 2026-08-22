@@ -38,13 +38,19 @@ REFRESH = (
 def drifted_paths(root):
     """Every path where the committed boundary and a fresh scan disagree."""
     committed = horos.load_boundary(str(root))
-    fresh = horos.boundary_document(
+    fresh = fresh_boundary(root, committed)
+    return [path for path, _ in horos.diff_documents(committed, fresh)]
+
+
+def fresh_boundary(root, committed=None):
+    """The canonical boundary document for the committed universe."""
+    committed = committed or horos.load_boundary(str(root))
+    return horos.boundary_document(
         horos.scan_tree(
             str(root),
             include_untracked=committed.get("universe") == "tracked+untracked",
         )
     )
-    return [path for path, _ in horos.diff_documents(committed, fresh)]
 
 
 def write(root, relpath, content):
@@ -67,6 +73,10 @@ def git(root, *args):
 class BoundaryCurrencyTests(unittest.TestCase):
     def test_the_committed_boundary_matches_a_fresh_scan(self):
         self.assertEqual(drifted_paths(ROOT), [], REFRESH)
+
+    def test_the_committed_boundary_metadata_matches_a_fresh_scan(self):
+        committed = horos.load_boundary(str(ROOT))
+        self.assertEqual(committed, fresh_boundary(ROOT, committed), REFRESH)
 
 
 @unittest.skipIf(GIT is None, "git unavailable")
