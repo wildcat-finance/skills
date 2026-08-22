@@ -2,7 +2,7 @@
 
 Derived from the committed study. The chosen design is option A: `init` creates the run's worktree at a path derived from the run branch, puts the run's state in it, leaves one breadcrumb in the operator's checkout, and refuses by name when it cannot. Five steps, dependency order, one pull request each, every step green at both ends.
 
-Every step's suite commands, run from the repository root with `/root/.foundry/bin` on `PATH`. The Hexaemeron suite is green except the two pinned-toolchain assertions the study's amendment names:
+Every step's suite commands, run from the repository root with Foundry's bin directory on `PATH`. The Hexaemeron suite is green except the two pinned-toolchain assertions the study's amendment names:
 
 ```bash
 python3 plugins/hexaemeron/tests/run_tests.py

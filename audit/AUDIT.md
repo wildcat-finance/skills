@@ -8099,3 +8099,33 @@ required-text and forbidden-name assertions pass. The controller verifies its
 No new findings.
 
 Leads not pursued: none.
+
+## Fiat run worktree, step 1, round 1 -- 2026-08-22
+
+Suite waived (no Solidity: the step ships two Markdown documents). Phylax,
+Ephoros and Hypomnema lints each exit 0 over both changed documents. Root suite
+113/113. Hexaemeron 739/741, the two failures being
+`test_elenchus_checker.ForgeReports.test_fixture_exercised_the_declared_forge_version`
+and `NodeReports.test_fixture_exercised_the_declared_node_version`, which assert
+`1.7.1` and `v26.6.0` against this container's `forge 1.5.1-stable` and
+`v22.22.2`. Both compare a live tool against a string literal in a file this
+run does not modify, so neither is caused by the step; the study's amendment
+records them. Promise Machine check clean over 14 plugins, coverage clean
+67/67.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| I439-S1-R1-01 | low | docs/fiat-run-worktree-study.md | The amendment named `/root/.foundry/bin` as a `PATH` requirement, putting one machine's home-directory path into a shipped document. The study's own never-list refuses absolute home paths, and the runbook preamble repeated it. Nothing reads the value, so the cost is a reader following a path that exists on one container. | fixed in the commit recording this round |
+
+Reviewed against the risk register: `path-escape`, `branch-already-checked-out`,
+`operator-head-mutation`, `stale-tree-reuse`, `uncommitted-work-loss`,
+`resume-orphan`, `partial-write`, `cross-filesystem-atomicity`,
+`subprocess-control`, `legacy-state-resume` and `dirty-origin-tree` are all not
+applicable to this step, which adds no executable path, no filesystem write and
+no state handling. The one concern a document step can carry is what it tells a
+later reader to run, which is where the finding above sits.
+
+Leads not pursued: the two pinned-toolchain assertions are left failing rather
+than repaired. Raising this container to forge 1.7.1 and node v26.6.0, or
+loosening the fixtures' pins, is a change to Elenchus's fixtures and belongs to
+whoever owns that pin, not to a run about worktrees.
