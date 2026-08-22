@@ -8129,3 +8129,31 @@ Leads not pursued: the two pinned-toolchain assertions are left failing rather
 than repaired. Raising this container to forge 1.7.1 and node v26.6.0, or
 loosening the fixtures' pins, is a change to Elenchus's fixtures and belongs to
 whoever owns that pin, not to a run about worktrees.
+
+## Fiat run worktree, step 1, round 2 -- 2026-08-22
+
+Suite waived (no Solidity). Phylax, Ephoros and Hypomnema each exit 0 over the
+step's two shipped documents. Root suite 113/113; Hexaemeron 739/741 with the
+two pinned-toolchain assertions round 1 already recorded; Promise Machine check
+and coverage clean.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+Zero findings. I439-S1-R1-01 is closed: neither document names a
+machine-specific path, and the study now says why the directory is not named.
+
+Reviewed again against the risk register, with the same result as round 1: this
+step adds no executable path, no filesystem write and no state handling, so
+every concern in the register belongs to steps 2 through 4.
+
+Leads not pursued: running Hypomnema over `audit/AUDIT.md` itself, rather than
+over the step's shipped documents, exits 1 with two H003 alerts at lines 6119
+and 6269. Both sit inside rounds written weeks ago, and both name runbook paths
+(`runbooks/missing`, `runbooks/present.md`) that were fixture names in the work
+those rounds recorded. They cannot be repaired: this file is append-only by
+contract, and the rounds above stay as they were written. So the append-only
+ledger and H003's file-existence rule cannot both hold over the whole file
+forever. That is a question about H003's scope for whoever owns Hypomnema, not
+something a run about worktrees can settle, and it is left here rather than
+worked around quietly.
