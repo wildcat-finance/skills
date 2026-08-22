@@ -8099,3 +8099,39 @@ required-text and forbidden-name assertions pass. The controller verifies its
 No new findings.
 
 Leads not pursued: none.
+
+## Portable checkpoint design package, step 1, round 1 -- 2026-08-22
+
+Reviewed the complete Step 1 diff from run branch
+`fiat/portable-hexaemeron-checkpoint-archives-and-hand` through signed commit
+`b490da51b0ed4f56208ae490cdd89348ec689934`. The two tracked design documents
+are byte-identical to the receipted controller artefacts. The Step 1 commit has
+a valid local signature and one copy of each required provenance trailer. The
+scaffold adds no checkpoint command, archive parser, importer, service, or
+unattended path, and it does not claim that any later-step interface is live.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | No findings. | clean |
+
+All fifteen study risks were reviewed. `base-ref-drift`,
+`worktree-dependency`, `state-repository-split`, `caller-progress-claim`,
+`lineage-fork`, `archive-traversal`, `archive-exhaustion`,
+`git-object-injection`, `changing-snapshot`, `secret-disclosure`,
+`partial-upload`, `object-metadata-drift`, and `controller-version-drift`
+remain design constraints for later modules rather than behaviour attributed
+to this scaffold. The study keeps issue #439 as a prerequisite and the
+runbook requires each later module to receive its own Fiat study and runbook.
+`duplicate-work` remains bounded by the future availability rechecks, while
+`authorship-confusion` keeps uploader identity separate from Git authors and
+commit evidence. No risk row is silently treated as implemented.
+
+Phylax, Ephoros, and Hypomnema each exit 0 over every cumulative changed path.
+Protasis accepts the tracked study and runbook; Imprimatur and Brevitas are
+clean. The focused document suite passes 2/2, the root suite passes 120/120,
+Horos reports that the boundary matches the tree, its currency suite passes
+4/4, and the Promise Machine contract and licence check is clean for all 14
+plugins. The Horos update records the byte-identical runbook copy as generated
+and makes no unrelated boundary change.
+
+Leads not pursued: none.
