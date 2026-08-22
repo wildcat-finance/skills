@@ -1,4 +1,4 @@
-"""The Phylax boundary lint catches its four rules and nothing else.
+"""The Phylax boundary lint catches its eight rules and nothing else.
 
 Every rule carries a specimen it must flag and a neighbour it must not. The
 neighbours are the point: this marketplace has a test helper named `run` and
@@ -34,6 +34,207 @@ def findings(source, name="sample.ts"):
         path = Path(directory) / name
         path.write_text(source, encoding="utf-8")
         return phylax.check(path)
+
+
+class UnsafeDeserialization(unittest.TestCase):
+    def assert_p008(self, specimens):
+        for label, source in specimens.items():
+            with self.subTest(label=label):
+                self.assertEqual(["P008"], codes(source))
+
+    def test_pickle_load_and_loads_import_shapes_are_p008(self):
+        self.assert_p008({
+            "module-load": "import pickle\npickle.load(stream)\n",
+            "module-loads": "import pickle\npickle.loads(payload)\n",
+            "module-alias-load": "import pickle as codec\ncodec.load(stream)\n",
+            "module-alias-loads": "import pickle as codec\ncodec.loads(payload)\n",
+            "direct-load": "from pickle import load\nload(stream)\n",
+            "direct-loads": "from pickle import loads\nloads(payload)\n",
+            "direct-alias-load": "from pickle import load as decode\ndecode(stream)\n",
+            "direct-alias-loads": "from pickle import loads as decode\ndecode(payload)\n",
+        })
+
+    def test_marshal_load_import_shapes_are_p008(self):
+        self.assert_p008({
+            "module": "import marshal\nmarshal.load(stream)\n",
+            "module-alias": "import marshal as codec\ncodec.load(stream)\n",
+            "direct": "from marshal import load\nload(stream)\n",
+            "direct-alias": "from marshal import load as decode\ndecode(stream)\n",
+        })
+
+    def test_yaml_load_without_safe_loader_import_shapes_is_p008(self):
+        self.assert_p008({
+            "module": "import yaml\nyaml.load(payload)\n",
+            "module-alias": "import yaml as parser\nparser.load(payload)\n",
+            "direct": "from yaml import load\nload(payload)\n",
+            "direct-alias": "from yaml import load as parse\nparse(payload)\n",
+        })
+
+    def test_yaml_load_with_unsafe_loader_is_p008(self):
+        self.assert_p008({
+            "full-loader": (
+                "import yaml\nyaml.load(payload, Loader=yaml.FullLoader)\n"
+            ),
+            "loader-positional": "import yaml\nyaml.load(payload, yaml.Loader)\n",
+            "direct-unsafe-loader": (
+                "from yaml import load, UnsafeLoader\n"
+                "load(payload, Loader=UnsafeLoader)\n"
+            ),
+            "unknown-loader": (
+                "from yaml import load\nload(payload, Loader=trusted_loader)\n"
+            ),
+        })
+
+    def test_dynamic_execution_nonliteral_input_is_p008(self):
+        self.assert_p008({
+            "bare-eval": "eval(payload)\n",
+            "bare-exec": "exec(receive())\n",
+            "builtins-eval": "import builtins\nbuiltins.eval(payload)\n",
+            "builtins-alias-exec": (
+                "import builtins as runtime\nruntime.exec(f\"run({payload})\")\n"
+            ),
+            "direct-alias-eval": (
+                "from builtins import eval as evaluate\nevaluate(payload)\n"
+            ),
+            "direct-alias-exec": (
+                "from builtins import exec as execute\nexecute(payload)\n"
+            ),
+        })
+
+    def test_safe_yaml_loaders_are_allowed_in_keyword_and_positional_forms(self):
+        specimens = {
+            "module-safe-keyword": (
+                "import yaml\nyaml.load(payload, Loader=yaml.SafeLoader)\n"
+            ),
+            "module-safe-positional": (
+                "import yaml\nyaml.load(payload, yaml.SafeLoader)\n"
+            ),
+            "module-csafe-keyword": (
+                "import yaml as parser\n"
+                "parser.load(payload, Loader=parser.CSafeLoader)\n"
+            ),
+            "module-csafe-positional": (
+                "import yaml as parser\nparser.load(payload, parser.CSafeLoader)\n"
+            ),
+            "direct-safe-keyword": (
+                "from yaml import load, SafeLoader\n"
+                "load(payload, Loader=SafeLoader)\n"
+            ),
+            "direct-safe-positional": (
+                "from yaml import load as parse, SafeLoader as Safe\n"
+                "parse(payload, Safe)\n"
+            ),
+            "direct-csafe-keyword": (
+                "from yaml import load, CSafeLoader\n"
+                "load(payload, Loader=CSafeLoader)\n"
+            ),
+            "direct-csafe-positional": (
+                "from yaml import load as parse, CSafeLoader as FastSafe\n"
+                "parse(payload, FastSafe)\n"
+            ),
+        }
+        for label, source in specimens.items():
+            with self.subTest(label=label):
+                self.assertEqual([], codes(source))
+
+    def test_named_safe_and_out_of_scope_neighbours_are_allowed(self):
+        source = (
+            "import json\n"
+            "import marshal\n"
+            "import pickle\n"
+            "import yaml\n"
+            "from marshal import loads as decode_marshaled\n"
+            "from yaml import safe_load as parse_yaml\n"
+            "yaml.safe_load(payload)\n"
+            "parse_yaml(payload)\n"
+            "marshal.loads(payload)\n"
+            "decode_marshaled(payload)\n"
+            "json.load(stream)\n"
+            "json.loads(payload)\n"
+            "pickle.dump(value, stream)\n"
+            "pickle.dumps(value)\n"
+            "reader.load(payload)\n"
+            "from .pickle import load as local_load\n"
+            "local_load(stream)\n"
+        )
+        self.assertEqual([], codes(source))
+
+    def test_literal_string_and_bytes_dynamic_sources_are_allowed(self):
+        source = (
+            "import builtins as runtime\n"
+            "from builtins import exec as execute\n"
+            "eval('1 + 1')\n"
+            "exec(b'pass')\n"
+            "runtime.eval(b'1 + 1')\n"
+            "execute('value = 1')\n"
+        )
+        self.assertEqual([], codes(source))
+
+    def test_reason_bearing_p008_pragma_suppresses_but_a_bare_one_does_not(self):
+        self.assertEqual([], codes(
+            "import pickle\n"
+            "pickle.loads(payload)  # phylax: allow reviewed compatibility fixture\n"
+        ))
+        self.assertEqual(["P008"], codes(
+            "import pickle\npickle.loads(payload)  # phylax: allow\n"
+        ))
+
+    def test_p008_diagnostics_are_fixed_and_do_not_repeat_payload(self):
+        sample_value = "unsafe-deserialization-sentinel"
+        result = findings(
+            "import pickle\n"
+            f'payload = "{sample_value}"\n'
+            "pickle.loads(payload)\n",
+            "sample.py",
+        )
+        self.assertEqual(["P008"], [finding.code for finding in result])
+        self.assertEqual(
+            "pickle deserialization may execute untrusted code",
+            result[0].message,
+        )
+        rendered = "\n".join(str(finding) for finding in result)
+        encoded = json.dumps([finding.as_dict() for finding in result])
+        self.assertNotIn(sample_value, rendered)
+        self.assertNotIn(sample_value, encoded)
+
+    def test_import_alias_rebinding_is_not_followed(self):
+        self.assertEqual(["P008"], codes(
+            "import pickle as codec\ncodec = local_reader\ncodec.loads(payload)\n"
+        ))
+        self.assertEqual([], codes(
+            "from yaml import load as parse, SafeLoader as Safe\n"
+            "Safe = custom_loader\nparse(payload, Loader=Safe)\n"
+        ))
+
+    def test_p000_through_p007_classifications_remain_available(self):
+        specimens = {
+            "P000": ("(", "sample.py"),
+            "P001": (
+                "import subprocess\nsubprocess.run(['tool'], shell=True)\n",
+                "sample.py",
+            ),
+            "P002": ("import subprocess\nsubprocess.run('tool')\n", "sample.py"),
+            "P003": ("package>=1\n", "requirements.txt"),
+            "P004": ('SECRET = "fixture-value"\n', "sample.py"),
+            "P005": (
+                'import raw from "rehype-raw"\n'
+                "const view = <Markdown rehypePlugins={[raw]} />\n",
+                "sample.tsx",
+            ),
+            "P006": (
+                'localStorage.setItem("authToken", authToken)\n',
+                "sample.ts",
+            ),
+            "P007": (
+                "async function load(host: string) {\n"
+                "  return fetch(`https://${host}/api`)\n"
+                "}\n",
+                "sample.ts",
+            ),
+        }
+        for expected, (source, name) in specimens.items():
+            with self.subTest(code=expected):
+                self.assertEqual([expected], codes(source, name))
 
 
 class ShellInvocation(unittest.TestCase):

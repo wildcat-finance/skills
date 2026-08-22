@@ -11,6 +11,7 @@ reading intent. Everything else in SKILL.md stays a judgement.
   P005  raw HTML reaches a renderer without a later trusted sanitiser
   P006  a session credential reaches persisted browser storage
   P007  a runtime-selected absolute fetch host has no prior allowlist check
+  P008  unsafe deserialization or non-literal dynamic execution
 
 Exit 0 clean, 1 findings, 2 bad invocation.
 """
@@ -32,6 +33,19 @@ from lib.typescript_lexer import lex  # noqa: E402
 
 RUNNERS = {"run", "call", "check_call", "check_output", "Popen"}
 WRITERS = {"print", "debug", "info", "warning", "warn", "error", "critical", "exception"}
+BOUNDARY_CALLS = {
+    "pickle": frozenset({"load", "loads"}),
+    "marshal": frozenset({"load"}),
+    "yaml": frozenset({"load"}),
+    "builtins": frozenset({"eval", "exec"}),
+}
+SAFE_YAML_LOADERS = frozenset({"SafeLoader", "CSafeLoader"})
+P008_MESSAGES = {
+    "pickle": "pickle deserialization may execute untrusted code",
+    "marshal": "marshal deserialization accepts untrusted data",
+    "yaml": "yaml.load has no resolved SafeLoader or CSafeLoader",
+    "builtins": "dynamic execution receives non-literal source",
+}
 
 CREDENTIAL = re.compile(
     r"(?:^|_)(?:priv(?:ate)?_?key|secret|passwd|password|mnemonic|seed_?phrase"
@@ -114,12 +128,18 @@ def _is_string(node: ast.AST) -> bool:
     return _is_str_literal(node) or _is_formatted(node)
 
 
-class Visitor(ast.NodeVisitor):
-    """Flag only calls that resolve to subprocess.
+def _is_dynamic_literal(node: ast.AST) -> bool:
+    return (
+        isinstance(node, ast.Constant)
+        and isinstance(node.value, (str, bytes))
+    )
 
-    A bare name match is worthless here: this marketplace has a test helper
-    called `run` and an RPC client with a `.call`, and neither starts a
-    process.
+
+class Visitor(ast.NodeVisitor):
+    """Flag only calls resolved by the source-local import grammar.
+
+    A broad terminal-name match is worthless here: ordinary `.load`, `.loads`,
+    `run` and `.call` methods must stay outside the rule that owns each name.
     """
 
     def __init__(self, path: Path) -> None:
@@ -127,11 +147,16 @@ class Visitor(ast.NodeVisitor):
         self.findings: list[Finding] = []
         self.modules: set[str] = set()
         self.direct: set[str] = set()
+        self.boundary_modules: dict[str, str] = {}
+        self.boundary_direct: dict[str, str] = {}
+        self.safe_yaml_loaders: set[str] = set()
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
             if alias.name == "subprocess":
                 self.modules.add(alias.asname or "subprocess")
+            if alias.name in BOUNDARY_CALLS:
+                self.boundary_modules[alias.asname or alias.name] = alias.name
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
@@ -139,6 +164,13 @@ class Visitor(ast.NodeVisitor):
             for alias in node.names:
                 if alias.name in RUNNERS:
                     self.direct.add(alias.asname or alias.name)
+        if node.level == 0 and node.module in BOUNDARY_CALLS:
+            for alias in node.names:
+                local = alias.asname or alias.name
+                if alias.name in BOUNDARY_CALLS[node.module]:
+                    self.boundary_direct[local] = node.module
+                if node.module == "yaml" and alias.name in SAFE_YAML_LOADERS:
+                    self.safe_yaml_loaders.add(local)
         self.generic_visit(node)
 
     def _starts_process(self, func: ast.AST) -> bool:
@@ -151,7 +183,45 @@ class Visitor(ast.NodeVisitor):
     def _add(self, node: ast.AST, code: str, message: str) -> None:
         self.findings.append(Finding(self.path, node.lineno, code, message))
 
+    def _boundary_module(self, func: ast.AST) -> str | None:
+        if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+            module = self.boundary_modules.get(func.value.id)
+            if module and func.attr in BOUNDARY_CALLS[module]:
+                return module
+        if isinstance(func, ast.Name):
+            resolved = self.boundary_direct.get(func.id)
+            if resolved:
+                return resolved
+            if func.id in BOUNDARY_CALLS["builtins"]:
+                return "builtins"
+        return None
+
+    def _safe_yaml_loader(self, loader: ast.AST) -> bool:
+        if isinstance(loader, ast.Attribute) and isinstance(loader.value, ast.Name):
+            return (
+                self.boundary_modules.get(loader.value.id) == "yaml"
+                and loader.attr in SAFE_YAML_LOADERS
+            )
+        return isinstance(loader, ast.Name) and loader.id in self.safe_yaml_loaders
+
+    def _check_p008(self, node: ast.Call) -> None:
+        module = self._boundary_module(node.func)
+        if not module:
+            return
+        if module == "yaml":
+            loader = next(
+                (keyword.value for keyword in node.keywords if keyword.arg == "Loader"),
+                node.args[1] if len(node.args) > 1 else None,
+            )
+            if loader is not None and self._safe_yaml_loader(loader):
+                return
+        elif module == "builtins":
+            if not node.args or _is_dynamic_literal(node.args[0]):
+                return
+        self._add(node, "P008", P008_MESSAGES[module])
+
     def visit_Call(self, node: ast.Call) -> None:
+        self._check_p008(node)
         if self._starts_process(node.func):
             for kw in node.keywords:
                 if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:

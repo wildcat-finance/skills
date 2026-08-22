@@ -10,7 +10,7 @@ description: >-
   it to diagnose a failure that has already happened, which belongs to
   elenchus.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 # Phylax
@@ -266,7 +266,7 @@ draws that line once, over the same TypeScript files both lints read.
 
 ## The mechanical subset
 
-Seven of these rules are settled by a parser rather than by reading. Run the
+Eight of these rules are settled by a parser rather than by reading. Run the
 lint over the paths a step touched, and require exit 0.
 
 ```bash
@@ -275,8 +275,18 @@ python3 "$PLUGIN_ROOT/skills/phylax/scripts/phylax.py" src tests
 
 For Python and requirements files it reports a shell invocation, a subprocess
 command passed as a string rather than an argument list, a requirement with no
-exact pin, and a credential in source, in command arguments or handed to
-something that writes output.
+exact pin, a credential in source, in command arguments or handed to something
+that writes output, and import-resolved unsafe deserialization or dynamic
+execution.
+
+The last rule resolves module and direct-import aliases for `pickle.load`,
+`pickle.loads`, `marshal.load`, `yaml.load`, and `builtins.eval` or
+`builtins.exec`; bare `eval` and `exec` are also inside the grammar. A
+`yaml.load` call stays clean only when its second positional argument or
+`Loader=` value resolves directly to `SafeLoader` or `CSafeLoader`. An `eval`
+or `exec` call stays clean only when its first argument is an inline string or
+bytes constant. The parser does not follow assignments, prove input
+provenance, inspect custom loader classes or include `marshal.loads`.
 
 For tracked `.ts` and `.tsx` source it reports three source-local cases. A
 `rehype-raw` binding in a rendered plugin array needs a later
@@ -302,7 +312,7 @@ credential is the usual honest case, and a lint with no pragma to answer it is
 a lint people learn to bypass.
 
 Everything else in this skill stays judgement, and a clean exit says only that
-these seven found nothing.
+these eight found nothing.
 
 ## Rationalisations
 
