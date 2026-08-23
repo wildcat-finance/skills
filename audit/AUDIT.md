@@ -8873,3 +8873,77 @@ custom-loader proofs; the accepted pragma-in-string quirk; and Python file-size
 policy. Cross-scope YAML module and loader aliases can retain source-local
 trust for an actual `yaml.load` call. The receipted study excludes that scope,
 so changing it would require an amendment rather than an audit-side widening.
+
+## Issue 434 observable run record, step 1, round 1 -- 2026-08-23
+
+### Suite disposition
+
+The receipted suite waiver is exact: issue #434 Step 1 changes generated
+boundary metadata and Markdown only, with no Solidity path in the complete
+run-to-step diff. X-Ray, Solidity Auditor and Fizz did not run. The Phylax,
+Ephoros and repository-specified Hypomnema lint exits are `0`, `0` and `0`.
+
+### Finding table
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-review | none | full run-to-step diff | No Step 1 defect was confirmed. | clean |
+
+Finding count: 0.
+
+### Risk coverage
+
+| risk id | evidence checked | disposition |
+| --- | --- | --- |
+| `unbounded-input` | Step 1 adds no input reader; the study records fixed byte, line, event, nesting, string and collection ceilings for Step 2. | dormant until Step 2 |
+| `unsafe-path` | The published copies contain no filesystem-absolute pointer or relative Markdown source link; paths are backticked repository names or absolute web links. | clean |
+| `unsafe-deserialisation` | Step 1 adds no deserialiser and names JSON-only, no-execution handling as a Step 2 boundary. | dormant until Step 2 |
+| `schema-drift` | No schema or runtime lands in Step 1; the runbook assigns exact schema/runtime binding to Step 2. | dormant until Step 2 |
+| `event-order` | No event validator lands in Step 1; the accepted relations and negative fixtures are stated as Step 2 exit evidence. | dormant until Step 2 |
+| `correlation-gap` | No correlation implementation lands in Step 1; backward same-run resolution remains a Step 2 requirement. | dormant until Step 2 |
+| `evidence-binding` | No evidence consumer lands in Step 1; exact subject, selector and class binding remains a Step 2 requirement. | dormant until Step 2 |
+| `evidence-promotion` | The study and ADR state that structural acceptance proves neither truth nor mutation authority and introduce no class ranking. | clean |
+| `hidden-reasoning` | The study and ADR refuse hidden model reasoning as observable data; no payload format lands in this step. | clean |
+| `sensitive-payload` | Step 1 contains specifications only and permits bounded metadata, digests and references rather than prompts, completions, output, environment or credentials. | clean |
+| `optional-host-facts` | The study and ADR require unavailable host, model and token facts to stay omitted or unknown. | clean |
+| `token-accounting` | The accepted design limits token values to optional non-negative exposed counts with source, scope and accounting identity, without cost or quality claims. | clean |
+| `deterministic-report` | No reporter lands in Step 1; one shared sorted finding model and text/JSON parity remain Step 2 exit evidence. | dormant until Step 2 |
+| `partial-record` | No record reader lands in Step 1; final-newline, malformed-tail and lifecycle refusal remain Step 2 requirements. | dormant until Step 2 |
+| `command-drift` | Every Step 1 command exits 0. The correct Horos command exits 0; the obsolete `scan . --check` spelling exits 2. A temporary specimen using the five former relative targets emits exactly five H001 findings. | clean |
+
+### Step contract and evidence
+
+The committed study and runbook are byte-identical to the receipted copies.
+Their SHA-256 digests are
+`685243b2727d0341bfce4869d1c5615fe37e052377ca3a6983ff1bc688d437b3`
+and `9eae8f964c2a081c509d29fe78a1adb3f0c837854aa2ef4d91c65b9fa199466d`.
+ADR-014 records root Promise Machine ownership, the chosen location split,
+three rejected alternatives, the structural-only authority boundary and the
+work left outside this issue.
+
+The old-link specimen used these exact former targets from a temporary
+directory: `../plugins/hexaemeron/skills/ephoros/SKILL.md`,
+`../plugins/hexaemeron/skills/phylax/SKILL.md`,
+`../plugins/hexaemeron/skills/metron/SKILL.md`,
+`../plugins/hexaemeron/skills/elenchus/SKILL.md`, and
+`../plugins/hexaemeron/skills/hypomnema/SKILL.md`. Hypomnema exits 1 with five
+H001 findings. The specimen was removed. The obsolete Horos spelling exits 2
+with `unrecognized arguments: --check`; the documented
+`python3 plugins/horos/skills/horos/scripts/horos.py check .` exits 0 and
+reports that the boundary matches the tree.
+
+Both Protasis modes, the repository Hypomnema pass, Imprimatur, all three
+Brevitas files, the exact `git diff --check`, and the full run-to-step diff
+check exit 0. Root tests pass 118/118. The implementation commit
+`19a3f2135b0317904eb91676cabf5da6cb739f35` has a valid local signature and
+exactly one required co-author and origin trailer. The diff changes only the
+two receipted copies, ADR-014 and the generated Horos boundary.
+
+### Leads not pursued
+
+The Step 2 schema, validator, fixtures, Promise declaration and demonstration
+do not exist at the Step 1 exit and were not treated as implemented. A direct
+Hypomnema scan of the historical audit log reports two old H003 specimens at
+lines 6119 and 6269; the repository's required pointer-gate scope excludes
+`audit/AUDIT.md`, and the current step neither creates nor changes those
+specimens. No other lead remains.
