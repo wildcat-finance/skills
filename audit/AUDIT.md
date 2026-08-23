@@ -8883,13 +8883,10 @@ boundary metadata and Markdown only, with no Solidity path in the complete
 run-to-step diff. X-Ray, Solidity Auditor and Fizz did not run. The Phylax,
 Ephoros and repository-specified Hypomnema lint exits are `0`, `0` and `0`.
 
-### Finding table
+### Finding disposition
 
-| id | severity | file | finding | status |
-| --- | --- | --- | --- | --- |
-| S1-R1-review | none | full run-to-step diff | No Step 1 defect was confirmed. | clean |
-
-Finding count: 0.
+Finding count: 0. `S1-R1-review` covers the full run-to-step diff. No Step 1
+defect was confirmed. Status: clean.
 
 ### Risk coverage
 
