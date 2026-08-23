@@ -9,7 +9,7 @@ syntax tree and compare them. Either side edited alone fails here.
 
 from __future__ import annotations
 
-import ast
+import json
 from pathlib import Path
 import re
 import sys
@@ -26,56 +26,12 @@ HEXCTL = REPOSITORY_ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
 SET_NAMES = ("HOST_IDENTITY_NAMES", "HOST_IDENTITY_EMAILS", "HOST_PR_LOGINS")
 
 
-def frozensets_from_source(path: Path, prefix: str = "HOST_") -> dict[str, frozenset]:
-    """Read every `HOST_* = frozenset({...})` module-level literal without importing.
-
-    Discovery is by prefix, not by the known names. A parity test that compares
-    only the sets it already knows cannot notice a new one: if hexctl.py grows a
-    fourth host set, the generator would miss a whole class of runtime identity
-    and every test here would still pass. Reading by prefix turns that into a
-    failure naming the set nobody accounted for.
-    """
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    found: dict[str, frozenset] = {}
-    for node in tree.body:
-        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
-            continue
-        target = node.targets[0]
-        if not isinstance(target, ast.Name) or not target.id.startswith(prefix):
-            continue
-        call = node.value
-        if (
-            not isinstance(call, ast.Call)
-            or not isinstance(call.func, ast.Name)
-            or call.func.id != "frozenset"
-        ):
-            # A HOST_* name that is not a frozenset is not a classification set.
-            # hexctl.py has HOST_BYLINE_RE, a compiled pattern. Skipping it here
-            # is deliberate; a genuinely missing set is caught by comparing the
-            # discovered names against SET_NAMES, not by asserting shape here.
-            continue
-        if len(call.args) != 1:
-            raise AssertionError(
-                f"{target.id} in {path.name} is frozenset() with "
-                f"{len(call.args)} arguments, which this test cannot read"
-            )
-        try:
-            members = ast.literal_eval(call.args[0])
-        except (ValueError, TypeError) as error:
-            raise AssertionError(
-                f"{target.id} in {path.name} is a frozenset of something other than "
-                f"a literal, so this test cannot compare it: {error}"
-            ) from error
-        found[target.id] = frozenset(members)
-    return found
-
-
 class HostSetParity(unittest.TestCase):
     """The generator's copy of the host set matches Fiat's declaration."""
 
     @classmethod
     def setUpClass(cls):
-        cls.declared = frozensets_from_source(HEXCTL)
+        cls.declared = contributors.frozensets_from_source(HEXCTL)
 
     def test_hexctl_declares_exactly_the_sets_the_generator_accounts_for(self):
         """A host set in hexctl.py that the generator does not know about fails here."""
@@ -292,3 +248,229 @@ class CommittedSpecLinks(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def fixture(name):
+    return json.loads((REPOSITORY_ROOT / "tests/fixtures/contributors" / name).read_text("utf-8"))
+
+
+def fake_reader(contributors_rows=None, merged=None, authors=None, issues=None, fail=None):
+    """A reader over recorded data, so every test below runs with no network."""
+    rows = fixture("contributors.json") if contributors_rows is None else contributors_rows
+    merged = {} if merged is None else merged
+    authors = {} if authors is None else authors
+    issues = [] if issues is None else issues
+
+    def read(path):
+        if fail is not None:
+            raise contributors.Stop(fail)
+        if "/contributors" in path:
+            return rows
+        if "type:pr" in path:
+            login = path.split("author:")[1].split("&")[0]
+            return {"total_count": merged.get(login, 0)}
+        if "/search/commits" in path:
+            login = path.split("author:")[1].split("&")[0]
+            recorded = authors.get(login)
+            if recorded is None:
+                recorded = fixture(f"authors-{login}.json")
+            return {"items": [{"commit": {"author": pair}} for pair in recorded]}
+        if "type:issue" in path:
+            return {"items": [{"user": {"login": login}} for login in issues]}
+        raise AssertionError(f"unexpected api path: {path}")
+
+    return read
+
+
+class Ranking(unittest.TestCase):
+    """The ranking is computed from recorded responses, offline."""
+
+    MERGED = {"kethcode": 15, "radup1337": 1}
+
+    def compute(self, **kwargs):
+        return contributors.compute(fake_reader(**kwargs), repo="wildcat-finance/skills")
+
+    def test_ranks_only_the_human_contributors(self):
+        payload = self.compute(merged=self.MERGED)
+        self.assertEqual(
+            [(c["rank"], c["login"]) for c in payload["contributors"]],
+            [(1, "kethcode"), (2, "radup1337")],
+        )
+
+    def test_names_a_reason_for_every_exclusion(self):
+        payload = self.compute(merged=self.MERGED)
+        reasons = {e["login"]: e["reason"] for e in payload["excluded"]}
+        self.assertEqual(
+            sorted(reasons), ["claude", "claude[bot]", "laurenceday", "shoggoth-wildcat"]
+        )
+        self.assertIn("runtime host", reasons["claude"])
+        self.assertIn("runtime host", reasons["claude[bot]"])
+        self.assertIn("owner", reasons["laurenceday"])
+        self.assertIn("Shoggoth", reasons["shoggoth-wildcat"])
+        for login, reason in reasons.items():
+            self.assertTrue(reason.strip(), f"{login} excluded with an empty reason")
+
+    def test_shoggoth_is_never_ranked(self):
+        """The request was explicit: excluding shoggoth itself."""
+        payload = self.compute(merged=self.MERGED)
+        self.assertNotIn(
+            "shoggoth-wildcat", [c["login"] for c in payload["contributors"]]
+        )
+
+    def test_one_human_split_across_two_emails_ranks_once(self):
+        """kethcode is Kethic and Dave Coleman; git log splits them, the API does not."""
+        recorded = fixture("authors-kethcode.json")
+        self.assertEqual(len({pair["email"] for pair in recorded}), 2)
+        self.assertEqual(len({pair["name"] for pair in recorded}), 2)
+        payload = self.compute(merged=self.MERGED)
+        appearances = [c for c in payload["contributors"] if c["login"] == "kethcode"]
+        self.assertEqual(len(appearances), 1)
+        self.assertEqual(appearances[0]["commits"], 29)
+
+    def test_equal_counts_order_deterministically(self):
+        rows = [
+            {"login": "zoe", "type": "User", "contributions": 5},
+            {"login": "adam", "type": "User", "contributions": 5},
+            {"login": "mia", "type": "User", "contributions": 5},
+        ]
+        authors = {name: [{"name": name, "email": f"{name}@example.com"}] for name in ("zoe", "adam", "mia")}
+        first = contributors.compute(
+            fake_reader(contributors_rows=rows, merged={"zoe": 2, "adam": 2, "mia": 9}, authors=authors),
+            repo="x/y",
+        )
+        second = contributors.compute(
+            fake_reader(contributors_rows=list(reversed(rows)), merged={"zoe": 2, "adam": 2, "mia": 9}, authors=authors),
+            repo="x/y",
+        )
+        order = [c["login"] for c in first["contributors"]]
+        self.assertEqual(order, ["mia", "adam", "zoe"], "merged PRs break the commit tie, then login")
+        self.assertEqual(order, [c["login"] for c in second["contributors"]], "input order must not matter")
+
+    def test_no_api_field_other_than_login_reaches_the_payload(self):
+        rows = [
+            {
+                "login": "someone",
+                "type": "User",
+                "contributions": 3,
+                "avatar_url": "https://example.com/a.png",
+                "html_url": "https://example.com/someone",
+                "node_id": "MDQ6VXNlcjE=",
+            }
+        ]
+        payload = contributors.compute(
+            fake_reader(
+                contributors_rows=rows,
+                merged={"someone": 0},
+                authors={"someone": [{"name": "A Person", "email": "a@example.com"}]},
+            ),
+            repo="x/y",
+        )
+        blob = json.dumps(payload)
+        for leaked in ("avatar_url", "html_url", "node_id", "example.com", "MDQ6"):
+            self.assertNotIn(leaked, blob, f"{leaked} reached the payload")
+
+    def test_classification_lines_name_every_identity(self):
+        payload = self.compute(merged=self.MERGED)
+        lines = contributors.classification_lines(payload)
+        for login in ("kethcode", "radup1337", "claude", "claude[bot]", "laurenceday", "shoggoth-wildcat"):
+            self.assertTrue(
+                any(login in line for line in lines), f"{login} appears in no classification line"
+            )
+
+    def test_singular_merged_pull_request_reads_as_english(self):
+        payload = self.compute(merged=self.MERGED)
+        line = next(l for l in contributors.classification_lines(payload) if "radup1337" in l)
+        self.assertIn("1 merged pull request", line)
+        self.assertNotIn("1 merged pull requests", line)
+
+
+class FailClosed(unittest.TestCase):
+    """Each of the five stops in the study's item 11, one test each."""
+
+    def test_stops_on_unknown_identity(self):
+        rows = [{"login": "future-agent[bot]", "type": "Bot", "contributions": 4}]
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
+        self.assertIn("future-agent[bot]", str(caught.exception))
+        self.assertIn("unknown identity", str(caught.exception))
+
+    def test_stops_on_an_unknown_account_type(self):
+        rows = [{"login": "mystery", "type": "Organization", "contributions": 4}]
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
+        self.assertIn("Organization", str(caught.exception))
+
+    def test_stops_on_bad_login_grammar(self):
+        rows = [{"login": "[injected](http://evil.example)", "type": "User", "contributions": 4}]
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(fake_reader(contributors_rows=rows), repo="x/y")
+        self.assertIn("not a valid GitHub login", str(caught.exception))
+
+    def test_stops_on_api_failure(self):
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(fake_reader(fail="api read failed for /x: timed out"), repo="x/y")
+        self.assertIn("api read failed", str(caught.exception))
+
+    def test_stops_on_host_set_drift(self):
+        with tempfile.TemporaryDirectory() as work:
+            drifted = Path(work) / "hexctl.py"
+            drifted.write_text(
+                HEXCTL.read_text(encoding="utf-8") + '\n\nHOST_FUTURE = frozenset({"nobody"})\n',
+                encoding="utf-8",
+            )
+            with self.assertRaises(contributors.Stop) as caught:
+                contributors.verify_host_set_parity(drifted)
+        self.assertIn("host set drift", str(caught.exception))
+        self.assertIn("HOST_FUTURE", str(caught.exception))
+
+    def test_stops_on_a_changed_member_of_a_known_set(self):
+        with tempfile.TemporaryDirectory() as work:
+            drifted = Path(work) / "hexctl.py"
+            text = HEXCTL.read_text(encoding="utf-8").replace('"devin",', '"devin",\n        "newhost",', 1)
+            drifted.write_text(text, encoding="utf-8")
+            with self.assertRaises(contributors.Stop) as caught:
+                contributors.verify_host_set_parity(drifted)
+        self.assertIn("HOST_IDENTITY_NAMES", str(caught.exception))
+        self.assertIn("newhost", str(caught.exception))
+
+    def test_stops_on_owner_in_output(self):
+        """An owner that slipped past classification must not reach the ranking."""
+        rows = [{"login": "laurenceday", "type": "User", "contributions": 900}]
+        authors = {"laurenceday": [{"name": "Dr Laurence E. Day", "email": "l@example.com"}]}
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(
+                fake_reader(contributors_rows=rows, merged={"laurenceday": 1}, authors=authors),
+                repo="x/y",
+                excluded=frozenset(),
+            )
+        self.assertIn("laurenceday", str(caught.exception))
+        self.assertIn("reached the ranked list", str(caught.exception))
+
+    def test_stops_when_every_sampled_commit_is_a_runtime_host(self):
+        rows = [{"login": "suspicious", "type": "User", "contributions": 7}]
+        authors = {"suspicious": [{"name": "Claude", "email": "noreply@anthropic.com"}]}
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(
+                fake_reader(contributors_rows=rows, merged={"suspicious": 0}, authors=authors),
+                repo="x/y",
+            )
+        self.assertIn("runtime host identity", str(caught.exception))
+
+    def test_the_real_reader_refuses_a_non_absolute_path(self):
+        """Exercises the network reader itself, not an injected substitute."""
+        read = contributors.http_reader()
+        with self.assertRaises(contributors.Stop) as caught:
+            read("repos/x/y/contributors")
+        self.assertIn("must be absolute", str(caught.exception))
+
+    def test_the_real_reader_stops_on_an_unroutable_host(self):
+        """A genuine transport failure, with no fixture standing in for it."""
+        original = contributors.API_ROOT
+        contributors.API_ROOT = "http://127.0.0.1:1"
+        try:
+            read = contributors.http_reader()
+            with self.assertRaises(contributors.Stop) as caught:
+                read("/repos/x/y/contributors")
+        finally:
+            contributors.API_ROOT = original
+        self.assertIn("api read failed", str(caught.exception))
