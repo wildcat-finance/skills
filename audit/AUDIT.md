@@ -11697,3 +11697,21 @@ test file dereferences against the symbols the parent commit defines, and treat
 any name present in the former and absent from the latter as a guard that will
 error rather than fail. Run against this round it reports none. That comparison
 is cheap enough to run before every audit round in the remaining steps.
+
+## Step 3, round 3 -- 2026-08-24
+
+Against the tree with rounds 1 and 2 applied. Zero findings.
+
+Phylax, Ephoros and Hypomnema clean. Root suite 260 tests, all passing.
+`--check` exits 0. Both artefacts are `-rw-r--r--` after a regeneration, no
+orphan temporaries remain, and the working tree is clean.
+
+The check this round added is the one step 5's demonstration depends on:
+`--write` followed by `git diff --exit-code` over both artefacts comes back
+clean, so what is committed is exactly what the generator produces. Without that,
+step 5 could pass its own demo against artefacts a human had edited by hand.
+
+Leads not pursued: `.gitignore` now also hides a file a person might genuinely
+name `.CONTRIBUTORS.md.bak`. Accepted: the pattern has to cover a random suffix,
+and losing a hand-made backup of a generated file from `git status` costs nothing
+that matters.
