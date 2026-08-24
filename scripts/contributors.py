@@ -25,6 +25,8 @@ import os
 from pathlib import Path
 import re
 import sys
+import urllib.parse
+import urllib.request
 
 # Kept equal to hexctl.py's frozensets by tests/test_contributors.py.
 HOST_IDENTITY_NAMES = frozenset(
@@ -82,7 +84,11 @@ AGENT_LOGINS = frozenset({"shoggoth-wildcat"})
 REPOSITORY = "wildcat-finance/skills"
 HEXCTL_RELATIVE = "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
 PARITY_SET_NAMES = ("HOST_IDENTITY_EMAILS", "HOST_IDENTITY_NAMES", "HOST_PR_LOGINS")
-API_ROOT = "https://api.github.com"
+API_HOST = "api.github.com"
+API_ROOT = f"https://{API_HOST}"
+REPO_RE = re.compile(r"\A[A-Za-z0-9._-]{1,100}/[A-Za-z0-9._-]{1,100}\Z")
+PAGE_SIZE = 100
+MAX_PAGES = 50
 RESPONSE_LIMIT = 4 * 1024 * 1024
 TIMEOUT_SECONDS = 30
 
@@ -202,6 +208,22 @@ def verify_host_set_parity(hexctl_path) -> None:
             )
 
 
+class RefuseOffHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Stop a redirect off the API host before the next request is issued.
+
+    urllib copies every request header onto the redirected request except
+    content-length and content-type, so an Authorization bearer token travels to
+    wherever the redirect points. Checking the final URL after urlopen returns is
+    too late: by then the token has already been sent to that host.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        host = urllib.parse.urlsplit(newurl).netloc
+        if host != API_HOST:
+            raise Stop(f"api request was redirected off {API_HOST} to {host!r}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def http_reader():
     """Return a reader that fetches one API path and parses its JSON body.
 
@@ -209,10 +231,13 @@ def http_reader():
     reader is the only place this module touches the network.
     """
 
-    def read(path: str):
-        import urllib.error
-        import urllib.request
+    import urllib.error
+    import urllib.parse
+    import urllib.request
 
+    opener = urllib.request.build_opener(RefuseOffHostRedirect)
+
+    def read(path: str):
         if not path.startswith("/"):
             raise Stop(f"api path must be absolute: {path!r}")
         request = urllib.request.Request(
@@ -229,9 +254,10 @@ def http_reader():
             # reach the process table and the shell history.
             request.add_header("Authorization", f"Bearer {token}")
         try:
-            with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as response:
-                if response.geturl().split("/")[2] != "api.github.com":
-                    raise Stop("api request was redirected off api.github.com")
+            with opener.open(request, timeout=TIMEOUT_SECONDS) as response:
+                landed = urllib.parse.urlsplit(response.geturl()).netloc
+                if landed != API_HOST:
+                    raise Stop(f"api response came from {landed!r}, not {API_HOST}")
                 raw = response.read(RESPONSE_LIMIT + 1)
         except urllib.error.URLError as error:
             raise Stop(f"api read failed for {path}: {error}") from error
@@ -343,10 +369,23 @@ def issue_coverage(read, repo, ranked_logins, excluded_logins):
     only. Reporting it separately is what keeps a person who worked an issue
     without landing a commit from disappearing without trace.
     """
-    payload = read(f"/search/issues?q=repo:{repo}+type:issue+state:closed&per_page=100")
-    items = payload.get("items") if isinstance(payload, dict) else []
+    payload = read(f"/search/issues?q=repo:{repo}+type:issue+state:closed&per_page={PAGE_SIZE}")
+    if not isinstance(payload, dict):
+        raise Stop(f"closed-issue search returned {type(payload).__name__}, not an object")
+    items = payload.get("items")
+    if not isinstance(items, list):
+        raise Stop("closed-issue search returned no items list")
+    total = payload.get("total_count")
+    if isinstance(total, int) and total > len(items):
+        # Coverage that stops short has to say so. Reported rather than raised:
+        # this list informs, it does not rank, so a partial read is a caveat and
+        # not a reason to fail the whole refresh.
+        raise Stop(
+            f"closed-issue coverage read {len(items)} of {total} issues; "
+            "paginate this read before relying on the coverage list"
+        )
     seen, uncounted = set(), []
-    for item in items if isinstance(items, list) else []:
+    for item in items:
         login = ((item.get("user") or {}).get("login")) or ""
         if not login or login in seen:
             continue
@@ -357,13 +396,38 @@ def issue_coverage(read, repo, ranked_logins, excluded_logins):
     return sorted(uncounted)
 
 
+def read_all_pages(read, path_template, label):
+    """Read every page, or stop. A silent cap reads afterwards as full coverage.
+
+    The alternative is a truncated list that looks complete: a repository with
+    more than one page of contributors would quietly lose everyone past the
+    first hundred, and the artefact would give no sign of it.
+    """
+    collected = []
+    for page in range(1, MAX_PAGES + 1):
+        rows = read(path_template.format(page=page, per_page=PAGE_SIZE))
+        if not isinstance(rows, list):
+            raise Stop(f"{label} returned {type(rows).__name__}, not a list")
+        collected.extend(rows)
+        if len(rows) < PAGE_SIZE:
+            return collected
+    raise Stop(
+        f"{label} still had pages after {MAX_PAGES} of {PAGE_SIZE}; "
+        "raise MAX_PAGES rather than shipping a truncated list"
+    )
+
+
 def compute(read, repo=REPOSITORY, hexctl_path=None, excluded=EXCLUDED_MAINTAINERS):
     """Produce the whole ranking in one pass, so nothing downstream recomputes it."""
+    if not REPO_RE.match(repo):
+        raise Stop(f"repository must be owner/name with no query syntax: {repo!r}")
     if hexctl_path is not None:
         verify_host_set_parity(hexctl_path)
-    rows = read(f"/repos/{repo}/contributors?per_page=100")
-    if not isinstance(rows, list):
-        raise Stop(f"contributors endpoint returned {type(rows).__name__}, not a list")
+    rows = read_all_pages(
+        read,
+        f"/repos/{repo}/contributors?per_page={{per_page}}&page={{page}}",
+        "contributors endpoint",
+    )
     candidates, exclusions = classify(rows, excluded=excluded)
     for entry in candidates:
         entry["merged_prs"] = merged_pr_count(read, repo, entry["login"])
@@ -389,6 +453,8 @@ def compute(read, repo=REPOSITORY, hexctl_path=None, excluded=EXCLUDED_MAINTAINE
                 "login": entry["login"],
                 "commits": entry["commits"],
                 "merged_prs": entry["merged_prs"],
+                "human_authored_sampled": entry["human_authored_sampled"],
+                "commits_sampled": entry["sampled"],
             }
             for index, entry in enumerate(ranked, start=1)
         ],

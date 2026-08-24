@@ -11533,3 +11533,33 @@ existing precedent for a nested study and runbook pair alongside the flat
 `docs/<topic>-study.md` form. No index to update and no convention broken.
 
 Leads not pursued: none.
+
+## Step 2, round 1 -- 2026-08-24
+
+Non-Solidity round on the step that opens the network boundary. Phylax and
+Ephoros clean. Hypomnema clean once invoked correctly; see S2-R1-05.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | high | scripts/contributors.py | The reader checked the landing host with `response.geturl()` after `urlopen` returned. `urllib`'s `HTTPRedirectHandler.redirect_request` copies every request header onto the redirected request except `content-length` and `content-type`, confirmed by reading its source: `Authorization` is not excluded. So a 301 or 302 off `api.github.com` sent the bearer token to the redirect target, and the check fired only after that request had already completed. A token leak to an arbitrary host, detected one step too late to matter. Fixed with a `RefuseOffHostRedirect` handler that stops before the redirected request is issued, kept at module level so it is testable rather than sealed inside the reader factory. The landing-host check is retained as a second line. Three tests: the off-host stop, an on-host redirect still allowed, and one pinning `urllib`'s header-copying behaviour so nobody removes the guard as belt and braces. The stop's message is asserted not to echo the token. | fixed in this round |
+| S2-R1-02 | medium | scripts/contributors.py | `--repo` reached the API path unvalidated. A login is checked against the GitHub login grammar before it is interpolated, so a login cannot inject query syntax, but the repository came straight from the command line into `/repos/{repo}/contributors?...` and `q=repo:{repo}+...`. `--repo 'x/y&per_page=1'` rewrites the query. Operator-supplied rather than attacker-supplied, but the study names this read as a boundary with controls and an unvalidated path component is not one. Fixed with an `owner/name` grammar check, tested against seven malformed forms. | fixed in this round |
+| S2-R1-03 | low | scripts/contributors.py | The git-authorship corroboration counted how many sampled commits carried a non-host author, stored both counts on the working entry, and then dropped them: the rendered payload took only rank, login, commits and merged pull requests. Evidence gathered and discarded is evidence nobody can check. Both counts are now reported per contributor. | fixed in this round |
+| S2-R1-04 | medium | scripts/contributors.py | Two silent caps. The contributors read took `per_page=100` and used page one only, so a repository with more than a hundred contributors would lose everyone past the first page with no sign in the output. The closed-issue read did the same and additionally ignored `total_count`, so partial coverage read as full coverage. Both are the failure mode where a truncated list looks complete. Fixed with a paginating read that stops rather than truncating when pages outlast `MAX_PAGES`, and a closed-issue check that stops naming how many of how many it read. Three tests, including one asserting page two is actually fetched. | fixed in this round |
+| S2-R1-05 | low | audit procedure | Hypomnema was first run over `scripts tests` only and reported two H006 findings claiming `ADR-016` does not exist. It does. The lint resolves a comment's record citation against an index it builds from the record files it walked, so omitting `docs` from the invocation empties the index and turns every valid citation into a finding. The trap is worse than a wasted round: acting on the finding would mean deleting a correct citation to satisfy a lint that was never shown the record. Recorded here so later rounds on this run invoke it as `hypomnema.py docs scripts tests`. No code change. | recorded, no fix needed |
+
+Leads not pursued: the corroboration read samples at most twenty commits per
+contributor, which is a bound rather than a proof. It is now reported in the
+payload as `commits_sampled` alongside `human_authored_sampled`, so the bound is
+visible rather than implied, and widening it would cost an API call per
+contributor to strengthen a check that already fails closed.
+
+Elenchus verdict for this round: `inconclusive`, not `guarded`. Against the
+parent it recorded 45 executed, three assertion failures and four errors. The
+three failures are the guards working: the repository-grammar stop, the
+closed-issue coverage stop, and the corroboration-evidence report each failed on
+the unfixed tree. The four errors are `AttributeError` from two tests naming
+`RefuseOffHostRedirect` and `read_all_pages`, symbols the parent does not carry.
+Elenchus cannot tell a proved guard from a broken harness once errors appear, so
+it declines to call the round guarded, and that is the correct reading of the
+evidence rather than a tooling complaint. Round 2 reshapes those two tests to
+assert the symbol's presence instead of dereferencing it.

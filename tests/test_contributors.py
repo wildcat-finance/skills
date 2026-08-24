@@ -15,6 +15,7 @@ import re
 import sys
 import tempfile
 import unittest
+import urllib.request
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 if str(REPOSITORY_ROOT) not in sys.path:
@@ -474,3 +475,100 @@ class FailClosed(unittest.TestCase):
         finally:
             contributors.API_ROOT = original
         self.assertIn("api read failed", str(caught.exception))
+
+
+class NetworkBoundary(unittest.TestCase):
+    """Guards on the one boundary that reaches off the machine."""
+
+    def test_refuses_an_off_host_redirect_before_reissuing_the_request(self):
+        """The token must not travel to the redirect target."""
+        handler = contributors.RefuseOffHostRedirect()
+        request = urllib.request.Request(
+            contributors.API_ROOT + "/repos/x/y/contributors",
+            headers={"Authorization": "Bearer secret-value"},
+        )
+        with self.assertRaises(contributors.Stop) as caught:
+            handler.redirect_request(
+                request, None, 302, "Found", {}, "https://evil.example/steal"
+            )
+        message = str(caught.exception)
+        self.assertIn("redirected off", message)
+        self.assertIn("evil.example", message)
+        self.assertNotIn("secret-value", message, "the guard must not echo the token")
+
+    def test_allows_a_redirect_that_stays_on_the_api_host(self):
+        handler = contributors.RefuseOffHostRedirect()
+        request = urllib.request.Request(contributors.API_ROOT + "/repos/x/y/contributors")
+        result = handler.redirect_request(
+            request, None, 301, "Moved", {}, contributors.API_ROOT + "/repositories/1/contributors"
+        )
+        self.assertIsNotNone(result)
+
+    def test_urllib_would_otherwise_carry_the_authorization_header(self):
+        """Pin the reason the guard exists, so nobody deletes it as belt and braces."""
+        import inspect
+
+        source = inspect.getsource(urllib.request.HTTPRedirectHandler.redirect_request)
+        self.assertIn("content-length", source)
+        self.assertNotIn("authorization", source.lower())
+
+    def test_stops_on_a_repository_carrying_query_syntax(self):
+        for bad in ("x/y&per_page=1", "x", "x/y/z", "x/y#frag", "x /y", "", "x/y+type:pr"):
+            with self.assertRaises(contributors.Stop) as caught:
+                contributors.compute(fake_reader(), repo=bad)
+            self.assertIn("owner/name", str(caught.exception), bad)
+
+
+class Coverage(unittest.TestCase):
+    """No silent cap. A truncated read must not read as full coverage."""
+
+    def rows(self, count, offset=0):
+        return [
+            {"login": f"user{i + offset:04d}", "type": "User", "contributions": 1}
+            for i in range(count)
+        ]
+
+    def test_reads_every_page_rather_than_the_first(self):
+        pages = {1: self.rows(100), 2: self.rows(5, offset=100)}
+        calls = []
+
+        def read(path):
+            page = int(path.split("&page=")[1])
+            calls.append(page)
+            return pages[page]
+
+        collected = contributors.read_all_pages(
+            read, "/x?per_page={per_page}&page={page}", "test endpoint"
+        )
+        self.assertEqual(calls, [1, 2])
+        self.assertEqual(len(collected), 105)
+
+    def test_stops_rather_than_truncating_when_pages_never_end(self):
+        def read(path):
+            return self.rows(100)
+
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.read_all_pages(read, "/x?per_page={per_page}&page={page}", "test endpoint")
+        self.assertIn("truncated", str(caught.exception))
+
+    def test_stops_when_closed_issue_coverage_is_partial(self):
+        def read(path):
+            if "/contributors" in path:
+                return []
+            if "type:issue" in path:
+                return {"total_count": 340, "items": [{"user": {"login": "someone"}}]}
+            raise AssertionError(path)
+
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(read, repo="x/y")
+        self.assertIn("read 1 of 340", str(caught.exception))
+
+    def test_reports_the_corroboration_evidence_it_gathered(self):
+        payload = contributors.compute(
+            fake_reader(merged={"kethcode": 15, "radup1337": 1}), repo="wildcat-finance/skills"
+        )
+        for entry in payload["contributors"]:
+            self.assertIn("human_authored_sampled", entry)
+            self.assertIn("commits_sampled", entry)
+            self.assertGreater(entry["commits_sampled"], 0)
+            self.assertGreater(entry["human_authored_sampled"], 0)
