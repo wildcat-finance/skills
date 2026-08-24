@@ -208,6 +208,39 @@ def verify_host_set_parity(hexctl_path) -> None:
             )
 
 
+def rate_limit_aware_message(path, error, authenticated):
+    """Say plainly when the answer is a token, rather than reporting a bare 403.
+
+    The search endpoints allow 30 requests a minute with a token and 10 without.
+    This generator issues two search calls per ranked contributor plus two more,
+    so an unauthenticated run stops being viable at about four contributors. A
+    bare "api read failed" sends whoever is on call looking for a network fault.
+    """
+    remaining = error.headers.get("X-RateLimit-Remaining") if error.headers else None
+    retry_after = error.headers.get("Retry-After") if error.headers else None
+    rate_limited = error.code in (403, 429) and (remaining == "0" or retry_after is not None)
+    if not rate_limited:
+        return f"api read failed for {path}: HTTP {error.code} {error.reason}"
+    reset = error.headers.get("X-RateLimit-Reset") if error.headers else None
+    detail = f"api rate limit reached on {path} (HTTP {error.code}"
+    if retry_after:
+        detail += f", retry after {retry_after}s"
+    elif reset:
+        detail += f", resets at unix {reset}"
+    detail += "). "
+    if authenticated:
+        detail += (
+            "This run was authenticated, so the limit is 30 search requests a "
+            "minute; wait for the reset or reduce the number of ranked contributors."
+        )
+    else:
+        detail += (
+            "This run sent no token, so the limit is 10 search requests a minute. "
+            "Set GITHUB_TOKEN or GH_TOKEN in the environment and rerun."
+        )
+    return detail
+
+
 class RefuseOffHostRedirect(urllib.request.HTTPRedirectHandler):
     """Stop a redirect off the API host before the next request is issued.
 
@@ -259,6 +292,11 @@ def http_reader():
                 if landed != API_HOST:
                     raise Stop(f"api response came from {landed!r}, not {API_HOST}")
                 raw = response.read(RESPONSE_LIMIT + 1)
+        except urllib.error.HTTPError as error:
+            # HTTPError subclasses URLError, so catching only URLError would
+            # report a 403 as a generic read failure and lose the one field that
+            # says what to do about it.
+            raise Stop(rate_limit_aware_message(path, error, bool(token))) from error
         except urllib.error.URLError as error:
             raise Stop(f"api read failed for {path}: {error}") from error
         except OSError as error:

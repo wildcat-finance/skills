@@ -11580,3 +11580,17 @@ behaviour change, so against its own parent, which already carries round 1's
 fixes, nothing fails. The reshape cannot retroactively re-prove round 1; it makes
 the guards well-shaped from here on, and the proof of that is the direct
 comparison recorded above rather than a verdict this round could produce.
+
+## Step 2, round 3 -- 2026-08-24
+
+Against the tree with rounds 1 and 2 applied. All three lints clean. One
+finding, in a promise the study made that the code had not kept.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R3-01 | medium | scripts/contributors.py | The study's item 10 states the generator "must complete inside the unauthenticated rate limit when run without a token, or say plainly that it needs one." Nothing implemented that. Worse, `urllib.error.HTTPError` subclasses `URLError`, confirmed directly, so catching only `URLError` reported every HTTP status as a generic "api read failed" and discarded the one field that says what to do. A rate-limited run therefore looked like a network fault. The numbers make it reachable rather than theoretical: the search endpoints allow 30 requests a minute with a token and 10 without, and this generator issues two search calls per ranked contributor plus two more, so an unauthenticated run stops being viable at about four contributors. Fixed by catching `HTTPError` ahead of `URLError`, naming the status when it is not rate limiting, and on a 403 or 429 carrying an exhausted `X-RateLimit-Remaining` or a `Retry-After` saying which limit was hit, when it resets, and whether the answer is to set a token. Four tests, one of which pins the subclass relationship so a future reordering of the handlers cannot silently lose the status again. | fixed in this round |
+
+Leads not pursued: the generator does not pre-flight `/rate_limit` before
+starting, so it discovers exhaustion by hitting it. Adding a pre-flight would
+spend a request to predict a condition the run now diagnoses correctly when it
+happens, and the diagnosis is what was missing.

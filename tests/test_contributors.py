@@ -595,3 +595,44 @@ class Coverage(unittest.TestCase):
             self.assertIn("commits_sampled", entry)
             self.assertGreater(entry["commits_sampled"], 0)
             self.assertGreater(entry["human_authored_sampled"], 0)
+
+    def test_names_rate_limiting_and_the_token_when_unauthenticated(self):
+        import urllib.error
+
+        error = urllib.error.HTTPError(
+            "https://api.github.com/search/issues", 403, "rate limit exceeded",
+            {"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "1787529907"}, None,
+        )
+        message = contributors.rate_limit_aware_message("/search/issues", error, authenticated=False)
+        self.assertIn("rate limit reached", message)
+        self.assertIn("10 search requests", message)
+        self.assertIn("GITHUB_TOKEN", message)
+
+    def test_names_rate_limiting_differently_when_authenticated(self):
+        import urllib.error
+
+        error = urllib.error.HTTPError(
+            "https://api.github.com/search/issues", 429, "too many requests",
+            {"Retry-After": "42"}, None,
+        )
+        message = contributors.rate_limit_aware_message("/search/issues", error, authenticated=True)
+        self.assertIn("retry after 42s", message)
+        self.assertIn("30 search requests", message)
+        self.assertNotIn("GITHUB_TOKEN", message)
+
+    def test_reports_an_http_status_that_is_not_rate_limiting(self):
+        import urllib.error
+
+        error = urllib.error.HTTPError(
+            "https://api.github.com/repos/x/y/contributors", 404, "Not Found", {}, None,
+        )
+        message = contributors.rate_limit_aware_message("/repos/x/y/contributors", error, True)
+        self.assertIn("HTTP 404", message)
+        self.assertIn("Not Found", message)
+        self.assertNotIn("rate limit", message)
+
+    def test_http_error_is_a_url_error_so_the_order_of_handlers_matters(self):
+        """Pin the reason HTTPError is caught first; reordering silently loses the status."""
+        import urllib.error
+
+        self.assertTrue(issubclass(urllib.error.HTTPError, urllib.error.URLError))
