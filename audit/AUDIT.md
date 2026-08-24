@@ -11627,3 +11627,27 @@ third time.
 Leads not pursued: none. The pattern that produced S2-R2-01, S2-R4-01 and the
 false receipt corrected above is one pattern, and the mixin is the structural
 answer to it rather than a third instance of remembering.
+
+## Step 2, round 5 -- 2026-08-24
+
+Against the tree with rounds 1 to 4 applied. Zero findings.
+
+Phylax, Ephoros and Hypomnema clean. Root suite 241 tests, all passing. The
+live `--json` path runs clean against the real API and ranks `kethcode` then
+`radup1337`, excluding `claude`, `claude[bot]`, `laurenceday` and
+`shoggoth-wildcat` with a distinct reason for each.
+
+This round examined the one thing the local machine cannot check. The repository
+CI matrix pins Python 3.9 and this machine has only 3.14, so 3.9 behaviour is
+asserted by reading rather than running: both files carry
+`from __future__ import annotations`, so every annotation is a string and never
+evaluated, and an AST walk finds no `match` statement and no runtime `X | Y`
+union, the two 3.10 features that a future import does not cover. That is
+evidence about the syntax, not a passing 3.9 run. The 3.9 job on this step's
+pull request is the actual check, and step 1's equivalent job passed.
+
+Leads not pursued: `http_reader` imports `urllib.error` inside the factory while
+`urllib.parse` and `urllib.request` are imported at module scope, because the
+module-level pair is needed by `RefuseOffHostRedirect` at class-definition time
+and the third is not. Consistent enough to leave; moving it would change nothing
+a reader relies on.
