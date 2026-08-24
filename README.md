@@ -55,7 +55,11 @@ not finished yet, so reliable handover remains work in progress. The
 [contributor guide](./docs/how-to-help-shoggoth.md) and its
 [printable PDF](./docs/pdf/how-to-help-shoggoth.pdf) describe the route that
 works today. If a completed job is merged with your authorship intact, GitHub
-adds you to this repository's contributor list automatically.
+records you as a contributor, and a weekly job adds you to
+[CONTRIBUTORS.md](./CONTRIBUTORS.md) and to the thanks at the foot of this file.
+One condition sits outside this repository's control: a merge that discards
+commit authorship, or a commit whose author email is linked to no account,
+leaves nothing for either list to find.
 
 ## What Is It?
 

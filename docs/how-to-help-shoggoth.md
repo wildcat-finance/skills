@@ -154,6 +154,16 @@ I can take this issue through a Fiat run: <exact issue URL>.
 
 That sentence names the offer, the delivery method and the work. Everything after it can be made orderly.
 
+## Being credited
+
+A merged job puts you in [CONTRIBUTORS.md](../CONTRIBUTORS.md), ranked by merged commits with merged pull requests as the tie-break, and in the thanks at the foot of the root README. Both are regenerated weekly by `.github/workflows/contributors.yml` from the repository's own history. Nobody has to remember to add you and there is nothing to ask for.
+
+What that list establishes is narrow, and worth knowing before it disappoints anyone. It carries commit and merged-pull-request counts as GitHub resolves them, with one entry per account even where you have committed under several email addresses. It says nothing about how much judgement a commit carried, who wrote which line, or anything about you beyond the account you chose to commit under. It is a record of merged work, not a ranking of people.
+
+Two things keep somebody off it. Running a Fiat delivery does not: agent provenance trailers are not part of the decision, because the humans who have contributed here all ran Fiat and filtering on those trailers would empty the file. The reasons are recorded in [ADR-017](decisions/ADR-017-rank-contributors-by-resolved-identity.md). What does keep you off it is a merge that discards your commit authorship, or a commit whose author email is linked to no GitHub account. Neither is something this repository can detect or correct after the fact, which is why the route above asks for a fork and your own signed commits rather than a patch pasted into a comment.
+
+Runtime hosts, the Shoggoth's own account and the repository owner are excluded by name, each with its reason shown in the generator's output.
+
 ## Artwork boundary
 
 The Wildcat Shoggoth is a humanoid figure with a faceted geometric head or mask. It is not a literal cat. Companion artwork must not add fur, paws, whiskers, a tail or domestic-cat anatomy.

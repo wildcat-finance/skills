@@ -249,6 +249,59 @@ class CommittedSpecLinks(unittest.TestCase):
         )
 
 
+class RecordedDecisions(unittest.TestCase):
+    """The claims and records this work is obliged to leave behind."""
+
+    ADR = REPOSITORY_ROOT / "docs/decisions/ADR-017-rank-contributors-by-resolved-identity.md"
+    PROMISE_DOC = REPOSITORY_ROOT / "docs/promise-machine/contributors-v1.md"
+    GUIDE = REPOSITORY_ROOT / "docs/how-to-help-shoggoth.md"
+    README = REPOSITORY_ROOT / "README.md"
+
+    def test_the_readme_claim_names_the_file_it_promises(self):
+        text = self.README.read_text(encoding="utf-8")
+        head = text.split(contributors.THANKS_START)[0]
+        self.assertIn(
+            "CONTRIBUTORS.md",
+            head,
+            "the recognition sentence must name the list, not just imply one exists",
+        )
+        self.assertIn("weekly", head)
+
+    def test_the_readme_claim_names_the_condition_it_cannot_control(self):
+        head = self.README.read_text(encoding="utf-8").split(contributors.THANKS_START)[0]
+        self.assertIn("outside this repository's control", head)
+        self.assertIn("linked to no account", head)
+
+    def test_the_adr_records_the_decision_and_the_option_it_rejected(self):
+        self.assertTrue(self.ADR.is_file(), f"{self.ADR.name} is absent")
+        text = self.ADR.read_text(encoding="utf-8")
+        self.assertIn("Wildcat-Origin", text, "the rejected option must be named")
+        self.assertIn("empty file", text, "the evidence against it must be stated")
+        self.assertIn("ADR-016", text)
+        self.assertIn("#466", text)
+        for heading in ("## Status", "## Context", "## Decision", "## Alternatives", "## Consequences"):
+            self.assertIn(heading, text, f"{heading} missing from the record")
+
+    def test_the_promise_contract_states_a_boundary_and_refusals(self):
+        self.assertTrue(self.PROMISE_DOC.is_file(), f"{self.PROMISE_DOC.name} is absent")
+        text = self.PROMISE_DOC.read_text(encoding="utf-8")
+        for heading in ("## Boundary", "## Refuses", "## Recovery", "## Evidence classes"):
+            self.assertIn(heading, text)
+
+    def test_the_promise_is_declared_in_the_authored_source(self):
+        text = (REPOSITORY_ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
+        self.assertIn("promise-machine-contributor-ranking", text)
+        block = text.split("promise-machine-contributor-ranking", 1)[1]
+        for field in ("- Promise:", "- Evidence:", "- Boundary:", "- Refuses:", "- Recovery:"):
+            self.assertIn(field, block.split("## ", 1)[0])
+
+    def test_the_guide_says_what_the_list_does_not_establish(self):
+        text = self.GUIDE.read_text(encoding="utf-8")
+        self.assertIn("CONTRIBUTORS.md", text)
+        self.assertIn("ADR-017", text)
+        self.assertIn("not a ranking of people", text)
+
+
 if __name__ == "__main__":
     unittest.main()
 
