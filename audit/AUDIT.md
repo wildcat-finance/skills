@@ -11594,3 +11594,22 @@ Leads not pursued: the generator does not pre-flight `/rate_limit` before
 starting, so it discovers exhaustion by hitting it. Adding a pre-flight would
 spend a request to predict a condition the run now diagnoses correctly when it
 happens, and the diagnosis is what was missing.
+
+### Correction to the step 2 round 3 record
+
+The controller ledger stores `elenchus_verdict: guarded` for step 2 round 3.
+That receipt is wrong. Elenchus returned `inconclusive` on that commit, with 49
+executed, 0 assertion failures and 3 errors. The wrong value was submitted to
+`hexctl audit-round` and the ledger is hash-chained and append-only, so the
+false entry cannot be rewritten; `hexctl amend` covers a study amendment and not
+an audit round. This paragraph is the correction, and round 4 below carries the
+verdict the round should have recorded.
+
+The cause is the defect S2-R2-01 named one round earlier, repeated. The three
+new rate-limit tests dereferenced `contributors.rate_limit_aware_message`, a
+symbol the parent does not carry, so they raised `AttributeError` and Elenchus
+saw errors rather than assertion failures. The round-2 fix established the shape
+that avoids this and round 3 did not apply it to its own new tests. Round 4
+applies it and re-derives the verdict.
+
+Anyone reading the ledger for step 2 round 3 should read `inconclusive`.
