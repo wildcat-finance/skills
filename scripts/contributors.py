@@ -19,9 +19,14 @@ by a runtime host carry none. See docs/contributors/study.md, item 4.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
+import os
+from pathlib import Path
 import re
 import sys
+import urllib.parse
+import urllib.request
 
 # Kept equal to hexctl.py's frozensets by tests/test_contributors.py.
 HOST_IDENTITY_NAMES = frozenset(
@@ -64,6 +69,33 @@ HOST_PR_LOGINS = frozenset(
 # is allowed to contain.
 LOGIN_RE = re.compile(r"\A[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?\Z")
 
+# Excluded at the Creator's own instruction: the repository owner is not ranked
+# among the people the repository thanks. This is a decision, not something
+# derived from the history, so it is named here rather than inferred.
+EXCLUDED_MAINTAINERS = frozenset({"laurenceday"})
+
+# The Shoggoth is the author of governed agent work under ADR-016, so it is a
+# legitimate Git author and a legitimate GitHub contributor. It is still not a
+# human being thanked for helping. It is deliberately NOT in the runtime-host
+# set: a host identity is a transport that should never have been an author,
+# whereas this one should. Different reason, different set, different message.
+AGENT_LOGINS = frozenset({"shoggoth-wildcat"})
+
+REPOSITORY = "wildcat-finance/skills"
+HEXCTL_RELATIVE = "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+PARITY_SET_NAMES = ("HOST_IDENTITY_EMAILS", "HOST_IDENTITY_NAMES", "HOST_PR_LOGINS")
+API_HOST = "api.github.com"
+API_ROOT = f"https://{API_HOST}"
+REPO_RE = re.compile(r"\A[A-Za-z0-9._-]{1,100}/[A-Za-z0-9._-]{1,100}\Z")
+PAGE_SIZE = 100
+MAX_PAGES = 50
+RESPONSE_LIMIT = 4 * 1024 * 1024
+TIMEOUT_SECONDS = 30
+
+
+class Stop(Exception):
+    """A fail-closed stop. The message names the identity or field at fault."""
+
 
 def is_host_identity(name: str, email: str) -> bool:
     """Recognise known runtime identities without reclassifying human authors."""
@@ -101,6 +133,393 @@ def host_set_payload() -> dict:
     }
 
 
+def frozensets_from_source(path, prefix: str = "HOST_") -> dict:
+    """Read every `HOST_* = frozenset({...})` module-level literal without importing.
+
+    Discovery is by prefix, not by the names already known. A parity check that
+    compares only what it knows cannot notice a new set. If hexctl.py grows a
+    fourth host set, this module would miss a whole class of runtime identity
+    and every check would still pass, so the prefix scan turns that into a stop
+    naming the set nobody accounted for.
+    """
+    tree = ast.parse(Path(path).read_text(encoding="utf-8"), filename=str(path))
+    found = {}
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if not isinstance(target, ast.Name) or not target.id.startswith(prefix):
+            continue
+        call = node.value
+        if (
+            not isinstance(call, ast.Call)
+            or not isinstance(call.func, ast.Name)
+            or call.func.id != "frozenset"
+        ):
+            # A HOST_* name that is not a frozenset is not a classification set.
+            # hexctl.py has HOST_BYLINE_RE, a compiled pattern. Skipping it is
+            # deliberate; a genuinely missing set is caught by comparing the
+            # discovered names, not by asserting shape here.
+            continue
+        if len(call.args) != 1:
+            raise Stop(
+                f"{target.id} in {Path(path).name} is frozenset() with "
+                f"{len(call.args)} arguments, which cannot be read"
+            )
+        try:
+            members = ast.literal_eval(call.args[0])
+        except (ValueError, TypeError) as error:
+            raise Stop(
+                f"{target.id} in {Path(path).name} is a frozenset of something "
+                f"other than a literal: {error}"
+            ) from error
+        found[target.id] = frozenset(members)
+    return found
+
+
+def verify_host_set_parity(hexctl_path) -> None:
+    """Stop when this module's host set and Fiat's declaration have diverged.
+
+    ADR-016 names one mechanical set of runtime host identities and Fiat owns
+    it. The copy above exists so this stays a standalone root script. A copy
+    nothing checks stops agreeing, and the failure mode is a runtime identity
+    ranked as a person, so the divergence is a stop rather than a warning.
+    """
+    declared = frozensets_from_source(hexctl_path)
+    if sorted(declared) != sorted(PARITY_SET_NAMES):
+        missing = sorted(set(PARITY_SET_NAMES) - set(declared))
+        extra = sorted(set(declared) - set(PARITY_SET_NAMES))
+        raise Stop(
+            "host set drift: hexctl.py and this module disagree about which "
+            f"HOST_* sets exist (missing here: {missing or 'none'}; "
+            f"present there and unaccounted for here: {extra or 'none'})"
+        )
+    ours = {
+        "HOST_IDENTITY_EMAILS": HOST_IDENTITY_EMAILS,
+        "HOST_IDENTITY_NAMES": HOST_IDENTITY_NAMES,
+        "HOST_PR_LOGINS": HOST_PR_LOGINS,
+    }
+    for name in PARITY_SET_NAMES:
+        if ours[name] != declared[name]:
+            raise Stop(
+                f"host set drift: {name} differs from hexctl.py "
+                f"(only here: {sorted(ours[name] - declared[name]) or 'none'}; "
+                f"only there: {sorted(declared[name] - ours[name]) or 'none'})"
+            )
+
+
+def rate_limit_aware_message(path, error, authenticated):
+    """Say plainly when the answer is a token, rather than reporting a bare 403.
+
+    The search endpoints allow 30 requests a minute with a token and 10 without.
+    This generator issues two search calls per ranked contributor plus two more,
+    so an unauthenticated run stops being viable at about four contributors. A
+    bare "api read failed" sends whoever is on call looking for a network fault.
+    """
+    remaining = error.headers.get("X-RateLimit-Remaining") if error.headers else None
+    retry_after = error.headers.get("Retry-After") if error.headers else None
+    rate_limited = error.code in (403, 429) and (remaining == "0" or retry_after is not None)
+    if not rate_limited:
+        return f"api read failed for {path}: HTTP {error.code} {error.reason}"
+    reset = error.headers.get("X-RateLimit-Reset") if error.headers else None
+    detail = f"api rate limit reached on {path} (HTTP {error.code}"
+    if retry_after:
+        detail += f", retry after {retry_after}s"
+    elif reset:
+        detail += f", resets at unix {reset}"
+    detail += "). "
+    if authenticated:
+        detail += (
+            "This run was authenticated, so the limit is 30 search requests a "
+            "minute; wait for the reset or reduce the number of ranked contributors."
+        )
+    else:
+        detail += (
+            "This run sent no token, so the limit is 10 search requests a minute. "
+            "Set GITHUB_TOKEN or GH_TOKEN in the environment and rerun."
+        )
+    return detail
+
+
+class RefuseOffHostRedirect(urllib.request.HTTPRedirectHandler):
+    """Stop a redirect off the API host before the next request is issued.
+
+    urllib copies every request header onto the redirected request except
+    content-length and content-type, so an Authorization bearer token travels to
+    wherever the redirect points. Checking the final URL after urlopen returns is
+    too late: by then the token has already been sent to that host.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        host = urllib.parse.urlsplit(newurl).netloc
+        if host != API_HOST:
+            raise Stop(f"api request was redirected off {API_HOST} to {host!r}")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def http_reader():
+    """Return a reader that fetches one API path and parses its JSON body.
+
+    Injectable so every test runs offline against recorded fixtures. The real
+    reader is the only place this module touches the network.
+    """
+
+    import urllib.error
+    import urllib.parse
+    import urllib.request
+
+    opener = urllib.request.build_opener(RefuseOffHostRedirect)
+
+    def read(path: str):
+        if not path.startswith("/"):
+            raise Stop(f"api path must be absolute: {path!r}")
+        request = urllib.request.Request(
+            API_ROOT + path,
+            headers={
+                "Accept": "application/vnd.github+json",
+                "User-Agent": "wildcat-contributors",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+        )
+        token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
+        if token:
+            # Read from the environment only. A token on the command line would
+            # reach the process table and the shell history.
+            request.add_header("Authorization", f"Bearer {token}")
+        try:
+            with opener.open(request, timeout=TIMEOUT_SECONDS) as response:
+                landed = urllib.parse.urlsplit(response.geturl()).netloc
+                if landed != API_HOST:
+                    raise Stop(f"api response came from {landed!r}, not {API_HOST}")
+                raw = response.read(RESPONSE_LIMIT + 1)
+        except urllib.error.HTTPError as error:
+            # HTTPError subclasses URLError, so catching only URLError would
+            # report a 403 as a generic read failure and lose the one field that
+            # says what to do about it.
+            raise Stop(rate_limit_aware_message(path, error, bool(token))) from error
+        except urllib.error.URLError as error:
+            raise Stop(f"api read failed for {path}: {error}") from error
+        except OSError as error:
+            raise Stop(f"api read failed for {path}: {error}") from error
+        if len(raw) > RESPONSE_LIMIT:
+            raise Stop(f"api response for {path} exceeded {RESPONSE_LIMIT} bytes")
+        try:
+            return json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise Stop(f"api response for {path} was not JSON: {error}") from error
+
+    return read
+
+
+def classify(rows, excluded=EXCLUDED_MAINTAINERS):
+    """Split contributor rows into ranked candidates and named exclusions.
+
+    Every row lands in exactly one of three places: a candidate, an exclusion
+    with a reason, or a stop. There is no silent fourth outcome, because the
+    cost of one is a runtime identity thanked as a person.
+    """
+    candidates, exclusions = [], []
+    for row in rows:
+        if not isinstance(row, dict):
+            raise Stop(f"contributor row is not an object: {row!r}")
+        login = row.get("login")
+        kind = row.get("type")
+        if not isinstance(login, str) or not login:
+            raise Stop(f"contributor row carries no login: {row!r}")
+        contributions = row.get("contributions")
+        if not isinstance(contributions, int) or contributions < 0:
+            raise Stop(f"{login} carries a non-integer contribution count: {contributions!r}")
+
+        if is_host_login(login):
+            exclusions.append({"login": login, "reason": "runtime host identity"})
+            continue
+        if kind == "Bot":
+            # ADR-016 records that the mechanical set does not cover unfamiliar
+            # future host names. Ranking one would put a runtime in a file that
+            # thanks people, so an unrecognised bot stops the run by name.
+            raise Stop(
+                f"unknown identity: {login!r} is a Bot that is not in the host set; "
+                "extend HOST_PR_LOGINS in hexctl.py and here, then rerun"
+            )
+        if kind != "User":
+            raise Stop(f"unknown identity: {login!r} has account type {kind!r}, not User or Bot")
+        if login in AGENT_LOGINS:
+            exclusions.append(
+                {"login": login, "reason": "Shoggoth agent identity, not a human contributor"}
+            )
+            continue
+        if login in excluded:
+            exclusions.append({"login": login, "reason": "repository owner, excluded by decision"})
+            continue
+        if not valid_login(login):
+            raise Stop(f"{login!r} is not a valid GitHub login and cannot be rendered")
+        candidates.append({"login": login, "commits": contributions})
+    return candidates, exclusions
+
+
+def rank(entries):
+    """Order by commits, then merged pull requests, then login.
+
+    The final key makes equal counts order identically on every run, so a
+    refresh that changed nothing produces no diff.
+    """
+    return sorted(
+        entries,
+        key=lambda entry: (-entry["commits"], -entry.get("merged_prs", 0), entry["login"]),
+    )
+
+
+def merged_pr_count(read, repo, login):
+    payload = read(f"/search/issues?q=repo:{repo}+type:pr+is:merged+author:{login}&per_page=1")
+    total = payload.get("total_count") if isinstance(payload, dict) else None
+    if not isinstance(total, int) or total < 0:
+        raise Stop(f"merged pull-request count for {login} was not a count: {total!r}")
+    return total
+
+
+def corroborate_human_authorship(read, repo, login):
+    """Confirm at least one of a login's commits was authored by a non-host identity.
+
+    The contributors endpoint resolves several author emails to one account,
+    which is the whole reason it is used. This checks the resolution did not
+    quietly gather a runtime's commits under a human login.
+    """
+    payload = read(f"/search/commits?q=repo:{repo}+author:{login}&per_page=20")
+    items = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(items, list) or not items:
+        raise Stop(f"no commits found for {login}, so human authorship is unconfirmed")
+    identities = []
+    for item in items:
+        author = (item.get("commit") or {}).get("author") or {}
+        identities.append((str(author.get("name", "")), str(author.get("email", ""))))
+    human = [pair for pair in identities if not is_host_identity(*pair)]
+    if not human:
+        raise Stop(
+            f"every sampled commit for {login} was authored by a runtime host identity"
+        )
+    return len(human), len(identities)
+
+
+def issue_coverage(read, repo, ranked_logins, excluded_logins):
+    """Name humans with closed-issue activity but no ranked commits.
+
+    Issue activity contributes no rank, per the request: commits and merges
+    only. Reporting it separately is what keeps a person who worked an issue
+    without landing a commit from disappearing without trace.
+    """
+    payload = read(f"/search/issues?q=repo:{repo}+type:issue+state:closed&per_page={PAGE_SIZE}")
+    if not isinstance(payload, dict):
+        raise Stop(f"closed-issue search returned {type(payload).__name__}, not an object")
+    items = payload.get("items")
+    if not isinstance(items, list):
+        raise Stop("closed-issue search returned no items list")
+    total = payload.get("total_count")
+    if isinstance(total, int) and total > len(items):
+        # Coverage that stops short has to say so. Reported rather than raised:
+        # this list informs, it does not rank, so a partial read is a caveat and
+        # not a reason to fail the whole refresh.
+        raise Stop(
+            f"closed-issue coverage read {len(items)} of {total} issues; "
+            "paginate this read before relying on the coverage list"
+        )
+    seen, uncounted = set(), []
+    for item in items:
+        login = ((item.get("user") or {}).get("login")) or ""
+        if not login or login in seen:
+            continue
+        seen.add(login)
+        if login in ranked_logins or login in excluded_logins or is_host_login(login):
+            continue
+        uncounted.append(login)
+    return sorted(uncounted)
+
+
+def read_all_pages(read, path_template, label):
+    """Read every page, or stop. A silent cap reads afterwards as full coverage.
+
+    The alternative is a truncated list that looks complete: a repository with
+    more than one page of contributors would quietly lose everyone past the
+    first hundred, and the artefact would give no sign of it.
+    """
+    collected = []
+    for page in range(1, MAX_PAGES + 1):
+        rows = read(path_template.format(page=page, per_page=PAGE_SIZE))
+        if not isinstance(rows, list):
+            raise Stop(f"{label} returned {type(rows).__name__}, not a list")
+        collected.extend(rows)
+        if len(rows) < PAGE_SIZE:
+            return collected
+    raise Stop(
+        f"{label} still had pages after {MAX_PAGES} of {PAGE_SIZE}; "
+        "raise MAX_PAGES rather than shipping a truncated list"
+    )
+
+
+def compute(read, repo=REPOSITORY, hexctl_path=None, excluded=EXCLUDED_MAINTAINERS):
+    """Produce the whole ranking in one pass, so nothing downstream recomputes it."""
+    if not REPO_RE.match(repo):
+        raise Stop(f"repository must be owner/name with no query syntax: {repo!r}")
+    if hexctl_path is not None:
+        verify_host_set_parity(hexctl_path)
+    rows = read_all_pages(
+        read,
+        f"/repos/{repo}/contributors?per_page={{per_page}}&page={{page}}",
+        "contributors endpoint",
+    )
+    candidates, exclusions = classify(rows, excluded=excluded)
+    for entry in candidates:
+        entry["merged_prs"] = merged_pr_count(read, repo, entry["login"])
+        human, sampled = corroborate_human_authorship(read, repo, entry["login"])
+        entry["human_authored_sampled"] = human
+        entry["sampled"] = sampled
+    ranked = rank(candidates)
+    ranked_logins = {entry["login"] for entry in ranked}
+    excluded_logins = {entry["login"] for entry in exclusions}
+    # The net is unconditional and checks the module's declared truth, not the
+    # caller's `excluded` argument. That argument shapes classification; if it
+    # could also switch off the last check, the check would be worth nothing
+    # exactly when classification had already gone wrong.
+    for login in sorted(EXCLUDED_MAINTAINERS | AGENT_LOGINS | set(excluded)):
+        if login in ranked_logins:
+            raise Stop(f"{login} is excluded but reached the ranked list")
+    payload = {
+        "schema": "wildcat-contributors/v1",
+        "repository": repo,
+        "contributors": [
+            {
+                "rank": index,
+                "login": entry["login"],
+                "commits": entry["commits"],
+                "merged_prs": entry["merged_prs"],
+                "human_authored_sampled": entry["human_authored_sampled"],
+                "commits_sampled": entry["sampled"],
+            }
+            for index, entry in enumerate(ranked, start=1)
+        ],
+        "excluded": sorted(exclusions, key=lambda item: item["login"]),
+        "issue_activity_without_ranked_commits": issue_coverage(
+            read, repo, ranked_logins, excluded_logins
+        ),
+    }
+    return payload
+
+
+def classification_lines(payload):
+    """One line per identity, so `why is this person not on the list` is answerable."""
+    lines = []
+    for entry in payload["contributors"]:
+        merged = entry["merged_prs"]
+        lines.append(
+            f"ranked   {entry['login']}: {entry['commits']} commits, "
+            f"{merged} merged pull request{'' if merged == 1 else 's'}"
+        )
+    for entry in payload["excluded"]:
+        lines.append(f"excluded {entry['login']}: {entry['reason']}")
+    for login in payload["issue_activity_without_ranked_commits"]:
+        lines.append(f"noted    {login}: closed-issue activity, no ranked commits")
+    return lines
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="contributors.py",
@@ -111,15 +530,53 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="print the loaded runtime-host classification set as JSON and exit",
     )
+    parser.add_argument(
+        "--verify-host-set",
+        action="store_true",
+        help="stop unless this module's host set matches hexctl.py's declaration",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="compute the ranking and print it as JSON",
+    )
+    parser.add_argument(
+        "--repo",
+        default=REPOSITORY,
+        help=f"owner/name to rank (default {REPOSITORY})",
+    )
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
+def repository_root() -> Path:
+    return Path(__file__).resolve().parents[1]
+
+
+def main(argv=None) -> int:
     parser = build_parser()
     arguments = parser.parse_args(sys.argv[1:] if argv is None else argv)
-    if arguments.host_set:
-        print(json.dumps(host_set_payload(), indent=2, sort_keys=True))
-        return 0
+    hexctl = repository_root() / HEXCTL_RELATIVE
+    try:
+        if arguments.host_set:
+            print(json.dumps(host_set_payload(), indent=2, sort_keys=True))
+            return 0
+        if arguments.verify_host_set:
+            verify_host_set_parity(hexctl)
+            print("host set matches hexctl.py")
+            return 0
+        if arguments.json:
+            payload = compute(
+                http_reader(),
+                repo=arguments.repo,
+                hexctl_path=hexctl if hexctl.is_file() else None,
+            )
+            for line in classification_lines(payload):
+                print(line, file=sys.stderr)
+            print(json.dumps(payload, indent=2, sort_keys=True))
+            return 0
+    except Stop as stop:
+        print(f"contributors.py: {stop}", file=sys.stderr)
+        return 2
     parser.print_help()
     return 0
 

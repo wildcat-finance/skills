@@ -11533,3 +11533,121 @@ existing precedent for a nested study and runbook pair alongside the flat
 `docs/<topic>-study.md` form. No index to update and no convention broken.
 
 Leads not pursued: none.
+
+## Step 2, round 1 -- 2026-08-24
+
+Non-Solidity round on the step that opens the network boundary. Phylax and
+Ephoros clean. Hypomnema clean once invoked correctly; see S2-R1-05.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | high | scripts/contributors.py | The reader checked the landing host with `response.geturl()` after `urlopen` returned. `urllib`'s `HTTPRedirectHandler.redirect_request` copies every request header onto the redirected request except `content-length` and `content-type`, confirmed by reading its source: `Authorization` is not excluded. So a 301 or 302 off `api.github.com` sent the bearer token to the redirect target, and the check fired only after that request had already completed. A token leak to an arbitrary host, detected one step too late to matter. Fixed with a `RefuseOffHostRedirect` handler that stops before the redirected request is issued, kept at module level so it is testable rather than sealed inside the reader factory. The landing-host check is retained as a second line. Three tests: the off-host stop, an on-host redirect still allowed, and one pinning `urllib`'s header-copying behaviour so nobody removes the guard as belt and braces. The stop's message is asserted not to echo the token. | fixed in this round |
+| S2-R1-02 | medium | scripts/contributors.py | `--repo` reached the API path unvalidated. A login is checked against the GitHub login grammar before it is interpolated, so a login cannot inject query syntax, but the repository came straight from the command line into `/repos/{repo}/contributors?...` and `q=repo:{repo}+...`. `--repo 'x/y&per_page=1'` rewrites the query. Operator-supplied rather than attacker-supplied, but the study names this read as a boundary with controls and an unvalidated path component is not one. Fixed with an `owner/name` grammar check, tested against seven malformed forms. | fixed in this round |
+| S2-R1-03 | low | scripts/contributors.py | The git-authorship corroboration counted how many sampled commits carried a non-host author, stored both counts on the working entry, and then dropped them: the rendered payload took only rank, login, commits and merged pull requests. Evidence gathered and discarded is evidence nobody can check. Both counts are now reported per contributor. | fixed in this round |
+| S2-R1-04 | medium | scripts/contributors.py | Two silent caps. The contributors read took `per_page=100` and used page one only, so a repository with more than a hundred contributors would lose everyone past the first page with no sign in the output. The closed-issue read did the same and additionally ignored `total_count`, so partial coverage read as full coverage. Both are the failure mode where a truncated list looks complete. Fixed with a paginating read that stops rather than truncating when pages outlast `MAX_PAGES`, and a closed-issue check that stops naming how many of how many it read. Three tests, including one asserting page two is actually fetched. | fixed in this round |
+| S2-R1-05 | low | audit procedure | Hypomnema was first run over `scripts tests` only and reported two H006 findings claiming `ADR-016` does not exist. It does. The lint resolves a comment's record citation against an index it builds from the record files it walked, so omitting `docs` from the invocation empties the index and turns every valid citation into a finding. The trap is worse than a wasted round: acting on the finding would mean deleting a correct citation to satisfy a lint that was never shown the record. Recorded here so later rounds on this run invoke it as `hypomnema.py docs scripts tests`. No code change. | recorded, no fix needed |
+
+Leads not pursued: the corroboration read samples at most twenty commits per
+contributor, which is a bound rather than a proof. It is now reported in the
+payload as `commits_sampled` alongside `human_authored_sampled`, so the bound is
+visible rather than implied, and widening it would cost an API call per
+contributor to strengthen a check that already fails closed.
+
+Elenchus verdict for this round: `inconclusive`, not `guarded`. Against the
+parent it recorded 45 executed, three assertion failures and four errors. The
+three failures are the guards working: the repository-grammar stop, the
+closed-issue coverage stop, and the corroboration-evidence report each failed on
+the unfixed tree. The four errors are `AttributeError` from two tests naming
+`RefuseOffHostRedirect` and `read_all_pages`, symbols the parent does not carry.
+Elenchus cannot tell a proved guard from a broken harness once errors appear, so
+it declines to call the round guarded, and that is the correct reading of the
+evidence rather than a tooling complaint. Round 2 reshapes those two tests to
+assert the symbol's presence instead of dereferencing it.
+
+## Step 2, round 2 -- 2026-08-24
+
+Against the tree with round 1's fixes applied. Phylax and Ephoros clean.
+Hypomnema clean, invoked as `hypomnema.py docs scripts tests` per S2-R1-05.
+One finding, in round 1's own guards.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R2-01 | medium | tests/test_contributors.py | Round 1's guards for the redirect and pagination fixes dereferenced `contributors.RefuseOffHostRedirect` and `contributors.read_all_pages` directly. On a tree without those symbols that raises `AttributeError`, which unittest records as an error rather than a failure, and Elenchus refuses to call a round guarded once errors appear because it cannot tell a proved guard from a broken harness. Round 1 therefore recorded `inconclusive` on five findings whose guards were mostly sound: three failed cleanly, four crashed. A guard that errors on the unfixed tree proves nothing it could not have proved by failing. Fixed by asserting each symbol's presence and returning it, through one helper per class carrying the reason. Verified directly rather than inferred: the reshaped guards run against the pre-fix `scripts/contributors.py` from `5f424e5` produce 7 assertion failures and 0 errors, where round 1's shape produced 3 failures and 4 errors. | fixed in this round |
+
+Leads not pursued: this round's Elenchus verdict is `passed` rather than
+`guarded`, and that is the honest reading. The change is a test reshape with no
+behaviour change, so against its own parent, which already carries round 1's
+fixes, nothing fails. The reshape cannot retroactively re-prove round 1; it makes
+the guards well-shaped from here on, and the proof of that is the direct
+comparison recorded above rather than a verdict this round could produce.
+
+## Step 2, round 3 -- 2026-08-24
+
+Against the tree with rounds 1 and 2 applied. All three lints clean. One
+finding, in a promise the study made that the code had not kept.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R3-01 | medium | scripts/contributors.py | The study's item 10 states the generator "must complete inside the unauthenticated rate limit when run without a token, or say plainly that it needs one." Nothing implemented that. Worse, `urllib.error.HTTPError` subclasses `URLError`, confirmed directly, so catching only `URLError` reported every HTTP status as a generic "api read failed" and discarded the one field that says what to do. A rate-limited run therefore looked like a network fault. The numbers make it reachable rather than theoretical: the search endpoints allow 30 requests a minute with a token and 10 without, and this generator issues two search calls per ranked contributor plus two more, so an unauthenticated run stops being viable at about four contributors. Fixed by catching `HTTPError` ahead of `URLError`, naming the status when it is not rate limiting, and on a 403 or 429 carrying an exhausted `X-RateLimit-Remaining` or a `Retry-After` saying which limit was hit, when it resets, and whether the answer is to set a token. Four tests, one of which pins the subclass relationship so a future reordering of the handlers cannot silently lose the status again. | fixed in this round |
+
+Leads not pursued: the generator does not pre-flight `/rate_limit` before
+starting, so it discovers exhaustion by hitting it. Adding a pre-flight would
+spend a request to predict a condition the run now diagnoses correctly when it
+happens, and the diagnosis is what was missing.
+
+### Correction to the step 2 round 3 record
+
+The controller ledger stores `elenchus_verdict: guarded` for step 2 round 3.
+That receipt is wrong. Elenchus returned `inconclusive` on that commit, with 49
+executed, 0 assertion failures and 3 errors. The wrong value was submitted to
+`hexctl audit-round` and the ledger is hash-chained and append-only, so the
+false entry cannot be rewritten; `hexctl amend` covers a study amendment and not
+an audit round. This paragraph is the correction, and round 4 below carries the
+verdict the round should have recorded.
+
+The cause is the defect S2-R2-01 named one round earlier, repeated. The three
+new rate-limit tests dereferenced `contributors.rate_limit_aware_message`, a
+symbol the parent does not carry, so they raised `AttributeError` and Elenchus
+saw errors rather than assertion failures. The round-2 fix established the shape
+that avoids this and round 3 did not apply it to its own new tests. Round 4
+applies it and re-derives the verdict.
+
+Anyone reading the ledger for step 2 round 3 should read `inconclusive`.
+
+## Step 2, round 4 -- 2026-08-24
+
+Against the tree with rounds 1 to 3 applied, plus the correction above. All
+three lints clean. One finding, and it is the same omission as S2-R2-01 made a
+third time.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R4-01 | medium | tests/test_contributors.py | Round 3's three rate-limit guards dereferenced `contributors.rate_limit_aware_message` directly and so errored rather than failed on the unfixed tree, which is exactly the defect S2-R2-01 named. Round 2 had fixed the same shape by adding a per-class accessor, and that fix was not generalised, so the next new test reintroduced it. The first attempt at this round's fix then put the accessor on `NetworkBoundary` while the three tests live in `Coverage`, breaking the suite outright and making the same class-scoping mistake visible a second time within one round. Fixed properly with a shared `RequiresSymbol` mixin carrying one `require(name, why)` method, used by both classes, so the next new guard inherits the right shape instead of depending on whoever writes it remembering. Verified directly: against the pre-round-3 `scripts/contributors.py` the reshaped guards give 3 assertion failures and 0 errors, where round 3's shape gave 0 failures and 3 errors. | fixed in this round |
+
+Leads not pursued: none. The pattern that produced S2-R2-01, S2-R4-01 and the
+false receipt corrected above is one pattern, and the mixin is the structural
+answer to it rather than a third instance of remembering.
+
+## Step 2, round 5 -- 2026-08-24
+
+Against the tree with rounds 1 to 4 applied. Zero findings.
+
+Phylax, Ephoros and Hypomnema clean. Root suite 241 tests, all passing. The
+live `--json` path runs clean against the real API and ranks `kethcode` then
+`radup1337`, excluding `claude`, `claude[bot]`, `laurenceday` and
+`shoggoth-wildcat` with a distinct reason for each.
+
+This round examined the one thing the local machine cannot check. The repository
+CI matrix pins Python 3.9 and this machine has only 3.14, so 3.9 behaviour is
+asserted by reading rather than running: both files carry
+`from __future__ import annotations`, so every annotation is a string and never
+evaluated, and an AST walk finds no `match` statement and no runtime `X | Y`
+union, the two 3.10 features that a future import does not cover. That is
+evidence about the syntax, not a passing 3.9 run. The 3.9 job on this step's
+pull request is the actual check, and step 1's equivalent job passed.
+
+Leads not pursued: `http_reader` imports `urllib.error` inside the factory while
+`urllib.parse` and `urllib.request` are imported at module scope, because the
+module-level pair is needed by `RefuseOffHostRedirect` at class-definition time
+and the third is not. Consistent enough to leave; moving it would change nothing
+a reader relies on.
