@@ -11613,3 +11613,17 @@ that avoids this and round 3 did not apply it to its own new tests. Round 4
 applies it and re-derives the verdict.
 
 Anyone reading the ledger for step 2 round 3 should read `inconclusive`.
+
+## Step 2, round 4 -- 2026-08-24
+
+Against the tree with rounds 1 to 3 applied, plus the correction above. All
+three lints clean. One finding, and it is the same omission as S2-R2-01 made a
+third time.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R4-01 | medium | tests/test_contributors.py | Round 3's three rate-limit guards dereferenced `contributors.rate_limit_aware_message` directly and so errored rather than failed on the unfixed tree, which is exactly the defect S2-R2-01 named. Round 2 had fixed the same shape by adding a per-class accessor, and that fix was not generalised, so the next new test reintroduced it. The first attempt at this round's fix then put the accessor on `NetworkBoundary` while the three tests live in `Coverage`, breaking the suite outright and making the same class-scoping mistake visible a second time within one round. Fixed properly with a shared `RequiresSymbol` mixin carrying one `require(name, why)` method, used by both classes, so the next new guard inherits the right shape instead of depending on whoever writes it remembering. Verified directly: against the pre-round-3 `scripts/contributors.py` the reshaped guards give 3 assertion failures and 0 errors, where round 3's shape gave 0 failures and 3 errors. | fixed in this round |
+
+Leads not pursued: none. The pattern that produced S2-R2-01, S2-R4-01 and the
+false receipt corrected above is one pattern, and the mixin is the structural
+answer to it rather than a third instance of remembering.

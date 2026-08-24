@@ -477,22 +477,30 @@ class FailClosed(unittest.TestCase):
         self.assertIn("api read failed", str(caught.exception))
 
 
-class NetworkBoundary(unittest.TestCase):
+class RequiresSymbol:
+    """Assert a symbol exists before using it, so a guard fails instead of erroring.
+
+    Dereferencing a missing attribute raises AttributeError, which unittest
+    records as an error rather than a failure. Elenchus will not call a round
+    guarded once errors appear, because it cannot tell a proved guard from a
+    broken harness. A guard that errors on the unfixed tree proves nothing it
+    could not have proved by failing. This mixin is shared rather than copied per
+    class: the same omission was made twice in this run already.
+    """
+
+    def require(self, name, why):
+        value = getattr(contributors, name, None)
+        self.assertIsNotNone(value, f"contributors.{name} is absent; {why}")
+        return value
+
+
+class NetworkBoundary(RequiresSymbol, unittest.TestCase):
     """Guards on the one boundary that reaches off the machine."""
 
     def redirect_handler(self):
-        """Assert the guard exists, then return it.
-
-        Dereferencing a missing attribute raises AttributeError, which unittest
-        records as an error rather than a failure. Elenchus cannot tell a proved
-        guard from a broken harness once errors appear, so a guard that errors on
-        the unfixed tree proves nothing it could not have proved by failing.
-        """
-        handler = getattr(contributors, "RefuseOffHostRedirect", None)
-        self.assertIsNotNone(
-            handler, "contributors.RefuseOffHostRedirect is absent; the redirect guard is gone"
-        )
-        return handler()
+        return self.require(
+            "RefuseOffHostRedirect", "the off-host redirect guard is gone"
+        )()
 
     def test_refuses_an_off_host_redirect_before_reissuing_the_request(self):
         """The token must not travel to the redirect target."""
@@ -533,7 +541,7 @@ class NetworkBoundary(unittest.TestCase):
             self.assertIn("owner/name", str(caught.exception), bad)
 
 
-class Coverage(unittest.TestCase):
+class Coverage(RequiresSymbol, unittest.TestCase):
     """No silent cap. A truncated read must not read as full coverage."""
 
     def rows(self, count, offset=0):
@@ -543,12 +551,13 @@ class Coverage(unittest.TestCase):
         ]
 
     def pager(self):
-        """Assert the paginating read exists, then return it. See NetworkBoundary."""
-        pager = getattr(contributors, "read_all_pages", None)
-        self.assertIsNotNone(
-            pager, "contributors.read_all_pages is absent; the pagination guard is gone"
+        return self.require("read_all_pages", "the pagination guard is gone")
+
+    def rate_limit_message(self):
+        return self.require(
+            "rate_limit_aware_message",
+            "a rate-limited run would report a bare read failure again",
         )
-        return pager
 
     def test_reads_every_page_rather_than_the_first(self):
         pages = {1: self.rows(100), 2: self.rows(5, offset=100)}
@@ -603,7 +612,7 @@ class Coverage(unittest.TestCase):
             "https://api.github.com/search/issues", 403, "rate limit exceeded",
             {"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "1787529907"}, None,
         )
-        message = contributors.rate_limit_aware_message("/search/issues", error, authenticated=False)
+        message = self.rate_limit_message()("/search/issues", error, authenticated=False)
         self.assertIn("rate limit reached", message)
         self.assertIn("10 search requests", message)
         self.assertIn("GITHUB_TOKEN", message)
@@ -615,7 +624,7 @@ class Coverage(unittest.TestCase):
             "https://api.github.com/search/issues", 429, "too many requests",
             {"Retry-After": "42"}, None,
         )
-        message = contributors.rate_limit_aware_message("/search/issues", error, authenticated=True)
+        message = self.rate_limit_message()("/search/issues", error, authenticated=True)
         self.assertIn("retry after 42s", message)
         self.assertIn("30 search requests", message)
         self.assertNotIn("GITHUB_TOKEN", message)
@@ -626,7 +635,7 @@ class Coverage(unittest.TestCase):
         error = urllib.error.HTTPError(
             "https://api.github.com/repos/x/y/contributors", 404, "Not Found", {}, None,
         )
-        message = contributors.rate_limit_aware_message("/repos/x/y/contributors", error, True)
+        message = self.rate_limit_message()("/repos/x/y/contributors", error, True)
         self.assertIn("HTTP 404", message)
         self.assertIn("Not Found", message)
         self.assertNotIn("rate limit", message)
