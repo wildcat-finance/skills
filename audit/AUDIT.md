@@ -11452,3 +11452,84 @@ Leads not pursued: capture, redaction, persistence, Fiat receipt binding, and
 cross-run diagnosis remain assigned to their separate issues. This record does
 not claim capture completeness, external truth, cause, model quality, delivery
 correctness, deployment readiness, security, or mutation authority.
+
+## Step 1, round 1 -- 2026-08-24
+
+Non-Solidity round. The security suite is waived for this run: the step ships
+Python, Markdown and JSON only, with no Solidity and no Foundry or Hardhat
+project. Phylax, Ephoros and Hypomnema each returned clean over
+`scripts/contributors.py`, `tests/test_contributors.py`,
+`tests/emit_contributors_report.py` and `docs/contributors`. The three findings
+below came from reading the diff, not from a lint.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | medium | tests/emit_contributors_report.py | The emitter had no test at all. The step's exit requires it to write one `elenchus.unittest.v1` report to the supplied path and only that path, and nothing regressed it. It also imports `report_target`, `result_payload` and `write_report` from `tests/emit_run_observation_report.py`, so a signature change there breaks this module at import time, and the first symptom would be a broken audit round in a later step rather than a failing test here. The emitter cannot be executed from inside the module it loads without recursing, so the wiring is tested instead: the reused helpers import and are callable, every declared required file exists, the declared module list loads, an empty root produces a failing substitute suite, a present surface produces none, and the payload carries the `elenchus.unittest.v1` schema. | fixed in this round |
+| S1-R1-02 | low | tests/test_contributors.py | `frozensets_from_source` raised a clear `AssertionError` when an assignment was not a `frozenset(...)` call, but passed the call's argument straight to `ast.literal_eval`. A frozenset built from a comprehension or a name rather than a set literal therefore surfaced as a bare `ValueError`, so the parity test reported an error where it had a diagnosis available. The guard was one branch short of the message it intended. | fixed in this round |
+| S1-R1-03 | medium | scripts/contributors.py | Guard-order hazard reaching into step 2. `claude[bot]` and `app/claude` are both declared host identities and both fail `valid_login`, because neither is a legal GitHub login. The study's fail-closed posture stops the run on a login-grammar failure. So a ranking pipeline that validated grammar before excluding hosts would fail the whole weekly refresh on an identity the host set already knows how to drop, and nothing in the step recorded the required order. Fixed by stating the order in `valid_login`'s docstring next to the predicate it constrains, and by a test asserting that every host login failing the grammar check is still recognised by `is_host_login`. That test also fails loudly if the hazard ever disappears, so it cannot rot into a tautology. | fixed in this round |
+
+Leads not pursued: `LOGIN_RE` accepts consecutive hyphens, which GitHub itself
+rejects in a login. Left alone deliberately: the pattern exists to keep Markdown
+syntax out of a generated artefact, a hyphen carries none, and tightening it
+would trade a real guarantee for a cosmetic one. `.elenchus/` is not in the
+repository's `.gitignore`, which predates this run and belongs to whoever owns
+the run-observation emitter rather than to this step.
+
+## Step 1, round 2 -- 2026-08-24
+
+Against the tree with round 1's fixes applied. Phylax, Ephoros and Hypomnema
+each returned clean again. Both findings are in round 1's own fixes, which is
+what this round exists to catch.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R2-01 | medium | tests/test_contributors.py | The parity check compared only the three host sets it already knew by name. A fourth `HOST_*` frozenset added to `hexctl.py` would therefore pass every test here while `scripts/contributors.py` missed a whole class of runtime identity, and the contributor ranking would treat that class as people. Round 1 closed a drift gap in the sets it knew and left the discovery gap open. Fixed by discovering `HOST_*` frozensets by prefix and asserting the discovered names equal `SET_NAMES` exactly, so a new set fails by name until the generator accounts for it. Verified in both directions: discovery over the real `hexctl.py` finds exactly the three, and a synthetic fourth set breaks parity. The first attempt at this fix was itself wrong, matching `HOST_BYLINE_RE`, a compiled pattern rather than a set; the predicate now skips a `HOST_*` name that is not a `frozenset(...)` call and says why, and a missing known set is still caught by the name comparison rather than by asserting shape at the wrong place. | fixed in this round |
+| S1-R2-02 | low | tests/test_contributors.py | Round 1's guard around `ast.literal_eval` caught `ValueError` only. That is the exception every non-literal argument raises on the interpreter in hand, 3.14, but the repository's declared floor is 3.9 and the round-1 change pinned an exception type to behaviour observed on one version. Broadened to `(ValueError, TypeError)`. The `tempfile` import was also moved to module level, so no test body reaches for an import mid-run. | fixed in this round |
+
+Leads not pursued: none.
+
+## Step 1, round 3 -- 2026-08-24
+
+Against the tree with rounds 1 and 2 applied. Phylax, Ephoros and Hypomnema
+clean again. One finding, in the committed spec rather than the code.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R3-01 | medium | docs/contributors/study.md | Five dead relative links in a shipped document. The study is authored in the run's `.hexaemeron` directory, where `../ephoros/SKILL.md` correctly names the sibling skill. Copied to `docs/contributors/`, that same text resolves to `docs/ephoros/SKILL.md`, which does not exist, so every one of the study's five discipline citations was broken in the published copy. Copying a document changes what its relative links mean, and nothing in this repository checked a link in a shipped document. Fixed by rewriting the five to `../../plugins/hexaemeron/skills/<name>/SKILL.md`, each verified present, and by a test that resolves every relative link in both published spec files. The canonical `.hexaemeron/study.md` keeps its plugin-relative form and is deliberately not edited: it is receipted and digest-pinned, and its links are correct where it lives. The published copy diverging from it in link paths alone is the intended outcome, not drift. | fixed in this round |
+
+Leads not pursued: the parity test reads the repository's vendored
+`hexctl.py` rather than the installed controller running the loop. That is the
+correct authority for a test that has to pass in CI, where no plugin cache
+exists, but the test does not say so. Left as is; a comment would restate what
+the path already shows.
+
+## Step 1, round 4 -- 2026-08-24
+
+Against the tree with rounds 1 to 3 applied. Phylax, Ephoros and Hypomnema
+clean. One finding, again in the published spec rather than the code.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R4-01 | medium | docs/contributors/runbook.md | The published runbook's header sent readers to `` `.hexaemeron/study.md` `` for its study. `.hexaemeron/` carries its own `.gitignore` matching everything and has zero tracked files, so that path exists only on the machine that ran the delivery and never in a clone. Round 3 fixed the study's dead Markdown links and missed this because the reference is backticked prose rather than a link, so the round-3 guard could not see it. Fixed by pointing the published runbook at its sibling published study, and by a guard asserting no published spec file mentions `.hexaemeron` at all, which is the general form of the defect rather than the one instance. The `re` import was also moved to module level, matching the correction made to `tempfile` in round 2 and undoing an inconsistency round 3 introduced. | fixed in this round |
+
+Leads not pursued: the link-resolution regex truncates a URL containing a
+closing parenthesis and would read `](` inside a fenced code block as a link.
+Neither occurs in the two files it checks, and a stricter parser would be more
+machinery than the defect justifies.
+
+## Step 1, round 5 -- 2026-08-24
+
+Against the tree with rounds 1 to 4 applied. Zero findings.
+
+Phylax, Ephoros and Hypomnema clean. Root suite 211 tests, all passing. The
+four guards installed across rounds 1 to 4 were each confirmed to fail without
+their fix, three of them by Elenchus returning `guarded` on a recorded parent
+assertion failure.
+
+The remaining question this round examined was whether `docs/contributors/`
+needed registering anywhere. It does not: nothing in the repository enumerates
+`docs/` subdirectories, and `docs/protasis-discipline-cores/study.md` is
+existing precedent for a nested study and runbook pair alongside the flat
+`docs/<topic>-study.md` form. No index to update and no convention broken.
+
+Leads not pursued: none.
