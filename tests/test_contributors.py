@@ -1042,6 +1042,34 @@ class WorkflowShape(unittest.TestCase):
         self.assertGreater(minutes, 0)
         self.assertLessEqual(minutes, 30, "a generous timeout is not a bound")
 
+    TOP_LEVEL_KEYS = ("name:", "on:", "permissions:", "concurrency:", "jobs:")
+
+    def test_no_line_sits_at_column_one_except_a_top_level_key(self):
+        """The defect class that made this file unparseable once.
+
+        A `run: |` block scalar ends at the first line indented less than the
+        block. A shell continuation written at column 1 therefore terminates the
+        block and YAML reads the remainder as new keys, so the workflow never
+        runs and GitHub reports a syntax error instead. Every string and
+        indentation test in this class passed while the file was invalid, which
+        is why validity needs its own check rather than being assumed.
+        """
+        offenders = []
+        for number, line in enumerate(self.lines, start=1):
+            if not line or line[0] in " \t" or line.startswith("#"):
+                continue
+            if not line.startswith(self.TOP_LEVEL_KEYS):
+                offenders.append(f"{number}: {line[:60]}")
+        self.assertEqual(
+            offenders,
+            [],
+            "lines at column one that are not top-level keys; these end a block "
+            "scalar and make the workflow unparseable: " + "; ".join(offenders),
+        )
+
+    def test_a_multi_line_commit_message_is_built_without_unindented_lines(self):
+        self.assertIn("message=$(printf", self.text)
+
     def test_it_holds_no_secret_beyond_the_job_token(self):
         self.assertNotIn("secrets.", self.text, "this workflow needs no repository secret")
 
