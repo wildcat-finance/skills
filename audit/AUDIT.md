@@ -11715,3 +11715,24 @@ Leads not pursued: `.gitignore` now also hides a file a person might genuinely
 name `.CONTRIBUTORS.md.bak`. Accepted: the pattern has to cover a random suffix,
 and losing a hand-made backup of a generated file from `git status` costs nothing
 that matters.
+
+## Step 4, round 1 -- 2026-08-24
+
+Non-Solidity round on the unattended trigger. All three lints clean. Two
+findings, one of them the inverse of the signal the study asked this step for.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R1-01 | high | .github/workflows/contributors.yml | The summary step ran under `if: always()` and its first branch tested `steps.decide.outputs.changed != 'true'`. A `decide` step that failed, which is what a rate-limited or unreachable API produces, sets no output at all, so the empty value satisfied that branch and the summary announced "No change. The committed list already matches the repository's history." A failed weekly run would therefore have reported a clean no-op, in the one place somebody looks to find out whether the refresh is still working. The study's item 8 asked for the opposite property in as many words: a no-op distinguishable from a failure. This inverted it. Fixed by testing `job.status` first and saying plainly that the run failed and established nothing, with a test asserting the status check precedes the changed check rather than merely existing. | fixed in this round |
+| S4-R1-02 | low | .github/workflows/contributors.yml | The two generated commits carried the message "chore(contributors): refresh the ranked list" and nothing about their origin, so a reader of `git log` could not tell they were machine-written or how to reproduce them. Each now names the workflow, the generator, and the command that reproduces the result. Deliberately no provenance trailers: a scheduled job is not the Shoggoth performing governed work under ADR-016, and `Co-authored-by: Shoggoth` on a cron commit would claim an authorship that did not happen. A test asserts both trailers stay absent from the workflow's executable lines. | fixed in this round |
+
+Leads not pursued: the workflow is not executed by this run and cannot be. Its
+shape is asserted by twelve tests and its behaviour is established by its first
+scheduled or dispatched run. Two things it depends on could not be verified from
+here. Whether organisation policy permits the Actions token to open a pull
+request returned HTTP 403 on the permissions endpoint for the account running
+this delivery, so it is unknown rather than confirmed. And whether a Contents API
+write satisfies the signed-commit ruleset is inferred from an existing merge
+commit in this repository reporting `verified: true` with committer `GitHub`,
+which is strong evidence about GitHub's signing but not a test of this workflow.
+Both are named in the pull request as first-run risks rather than left implicit.
