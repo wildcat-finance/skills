@@ -11668,3 +11668,32 @@ Leads not pursued: `atomic_write` does not fsync the containing directory after
 `os.replace`, so the rename is not guaranteed durable across a host crash. The
 artefacts are regenerated weekly from a source of truth that is not this file, so
 the recovery for a lost rename is the next scheduled run.
+
+## Step 3, round 2 -- 2026-08-24
+
+Against the tree with round 1 applied. All three lints clean. One finding, in
+the atomic-write path round 1 touched but did not follow through.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R2-01 | medium | scripts/contributors.py, .gitignore | Round 1 established that `atomic_write` cleans up its temporary file when `os.replace` raises. It does not, and cannot, clean up after a hard kill. Confirmed by leaving one deliberately: `.CONTRIBUTORS.md.5le1z97x` appeared in the repository root, `git status` listed it as an untracked change, and `git check-ignore` confirmed nothing ignored it. Two consequences, and the second is the one that matters. A broad `git add` could commit the litter. More importantly step 4's workflow decides whether to open a pull request from whether anything changed, so an orphan from a killed run would make an unchanged ranking look changed and open an empty pull request every week. Fixed by ignoring `.CONTRIBUTORS.md.*` and `.README.md.*`, and by sweeping the script's own orphans at the start of a write. The sweep is anchored to the exact artefact names it writes and touches regular files only, so nothing outside its own litter is in scope; a test asserts a bystander file survives it. | fixed in this round |
+
+Leads not pursued: the sweep runs at the start of a write and not on a
+`--check`, so a check on a littered tree still reports the ranking correctly
+while leaving the orphan in place. That is deliberate: `--check` is the read-only
+mode and should not mutate the tree it is inspecting.
+
+Also in this round, and worth naming as a pattern rather than an incident: one of
+the round's own tests called `contributors.sweep_orphans` directly instead of
+going through the `require` helper, so Elenchus first returned `inconclusive` on
+one error. That is the fourth occurrence of the same mistake in this run, in a
+round whose predecessor added the very mixin that prevents it. The instance was
+fixed and the verdict re-derived as `guarded` with three assertion failures and
+zero errors.
+
+The lesson taken is that a helper only prevents the mistake for whoever
+remembers to call it. So the check is now mechanical: compare the symbols the
+test file dereferences against the symbols the parent commit defines, and treat
+any name present in the former and absent from the latter as a guard that will
+error rather than fail. Run against this round it reports none. That comparison
+is cheap enough to run before every audit round in the remaining steps.

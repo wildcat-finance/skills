@@ -679,9 +679,31 @@ def check_artefacts(root, payload):
     return stale
 
 
+def sweep_orphans(root, names):
+    """Remove this script's own abandoned temporaries, and nothing else.
+
+    A hard-killed write leaves `.<artefact>.<random>` beside the target. It is
+    untracked and not ignored by default, so it shows up as a repository change
+    and could be swept into a commit by a broad `git add`. The match is anchored
+    to the exact artefact name this script writes, and only regular files are
+    removed, so nothing outside the script's own litter is in scope.
+    """
+    removed = []
+    for name in names:
+        for candidate in Path(root).glob(f".{name}.*"):
+            if candidate.is_file() and not candidate.is_symlink():
+                try:
+                    candidate.unlink()
+                except OSError:
+                    continue
+                removed.append(candidate.name)
+    return sorted(removed)
+
+
 def write_artefacts(root, payload):
     """Render everything before writing anything."""
     documents = rendered(root, payload)
+    sweep_orphans(root, sorted(documents))
     for relative, text in sorted(documents.items()):
         atomic_write(Path(root) / relative, text)
     return sorted(documents)

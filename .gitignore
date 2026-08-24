@@ -34,3 +34,8 @@ plugins/*/harness/cache/
 # should not be able to commit a virtualenv. Anchored to the repository root, so
 # a plugin that wants its own tmp/ still decides for itself.
 /tmp/
+
+# Orphaned atomic-write temporaries from scripts/contributors.py. A hard-killed
+# run leaves one; it must never be committed and must never look like a change.
+.CONTRIBUTORS.md.*
+.README.md.*

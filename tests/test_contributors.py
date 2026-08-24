@@ -870,3 +870,30 @@ class Rendering(RequiresSymbol, unittest.TestCase):
         self.assert_stops(
             lambda: contributors.check_artefacts(root, self.PAYLOAD), "UTF-8"
         )
+
+    def test_an_abandoned_temporary_is_swept_and_never_looks_like_a_change(self):
+        """A hard-killed run leaves litter that a broad `git add` could commit."""
+        root = self.root()
+        sweep = self.require("sweep_orphans", "abandoned temporaries accumulate in the repository")
+        orphan = root / f".{contributors.CONTRIBUTORS_PATH}.abandoned"
+        orphan.write_text("half written\n", encoding="utf-8")
+        bystander = root / "unrelated.md"
+        bystander.write_text("keep me\n", encoding="utf-8")
+        removed = sweep(root, [contributors.CONTRIBUTORS_PATH, contributors.README_PATH])
+        self.assertEqual(removed, [orphan.name])
+        self.assertFalse(orphan.exists())
+        self.assertTrue(bystander.exists(), "the sweep must not touch anything else")
+
+    def test_the_sweep_leaves_the_artefacts_themselves_alone(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        before = (root / contributors.CONTRIBUTORS_PATH).read_bytes()
+        self.require("sweep_orphans", "the sweep is gone")(
+            root, [contributors.CONTRIBUTORS_PATH, contributors.README_PATH]
+        )
+        self.assertEqual(before, (root / contributors.CONTRIBUTORS_PATH).read_bytes())
+
+    def test_the_temporary_pattern_is_gitignored(self):
+        ignored = (REPOSITORY_ROOT / ".gitignore").read_text(encoding="utf-8")
+        for pattern in (".CONTRIBUTORS.md.*", ".README.md.*"):
+            self.assertIn(pattern, ignored, f"{pattern} must never be committed")
