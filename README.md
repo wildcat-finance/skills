@@ -289,3 +289,11 @@ dossier into a lending verdict.
 Wildcat Labs first-party work in this repository is licensed under
 [Apache-2.0](./LICENSE). The vendored Pashov skill set is explicitly excluded
 and remains under its upstream MIT licence and notices.
+
+<!-- contributors:start -->
+
+## Thanks
+
+Thanks to @kethcode and @radup1337.
+
+<!-- contributors:end -->

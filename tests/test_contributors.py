@@ -10,8 +10,10 @@ syntax tree and compare them. Either side edited alone fails here.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import re
+import stat
 import sys
 import tempfile
 import unittest
@@ -493,6 +495,26 @@ class RequiresSymbol:
         self.assertIsNotNone(value, f"contributors.{name} is absent; {why}")
         return value
 
+    def assert_stops(self, call, contains):
+        """Require a Stop, and fail rather than error on any other exception.
+
+        `assertRaises(Stop)` errors when the code raises the wrong type, and the
+        wrong type is often the defect itself: a bare FileNotFoundError where a
+        named Stop belongs. Elenchus reads an error as a broken harness, so a
+        guard written that way cannot prove the fix it guards.
+        """
+        try:
+            call()
+        except contributors.Stop as stop:
+            self.assertIn(contains, str(stop))
+        except BaseException as other:  # noqa: BLE001 - the point is to catch everything
+            self.fail(
+                f"expected a Stop naming {contains!r}, got "
+                f"{type(other).__name__}: {other}"
+            )
+        else:
+            self.fail(f"expected a Stop naming {contains!r}; nothing was raised")
+
 
 class NetworkBoundary(RequiresSymbol, unittest.TestCase):
     """Guards on the one boundary that reaches off the machine."""
@@ -645,3 +667,233 @@ class Coverage(RequiresSymbol, unittest.TestCase):
         import urllib.error
 
         self.assertTrue(issubclass(urllib.error.HTTPError, urllib.error.URLError))
+
+
+class Rendering(RequiresSymbol, unittest.TestCase):
+    """Both artefacts come from one computation, so they cannot disagree."""
+
+    PAYLOAD = {
+        "schema": "wildcat-contributors/v1",
+        "repository": "wildcat-finance/skills",
+        "contributors": [
+            {"rank": 1, "login": "kethcode", "commits": 29, "merged_prs": 15,
+             "human_authored_sampled": 20, "commits_sampled": 20},
+            {"rank": 2, "login": "radup1337", "commits": 11, "merged_prs": 1,
+             "human_authored_sampled": 11, "commits_sampled": 11},
+        ],
+        "excluded": [{"login": "laurenceday", "reason": "repository owner, excluded by decision"}],
+        "issue_activity_without_ranked_commits": [],
+    }
+    README = "# Project\n\nSome prose.\n\n## Licence\n\nApache-2.0.\n"
+
+    def root(self, readme=None):
+        work = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(work, ignore_errors=True))
+        (work / "README.md").write_text(self.README if readme is None else readme, encoding="utf-8")
+        return work
+
+    def test_readme_block_carries_handles_and_no_aggregate(self):
+        """A login may contain digits, so `radup1337` is a handle and not a count.
+
+        The check removes every handle first, then requires nothing numeric to
+        survive. Banning digits outright would fail on a legitimate login, which
+        is why the runbook's literal wording could not be implemented as written.
+        """
+        block = contributors.render_thanks(self.PAYLOAD)
+        stripped = re.sub(r"@[A-Za-z0-9-]+", "", block)
+        self.assertFalse(
+            re.search(r"\d", stripped),
+            f"numeric content survived handle removal: {stripped!r}",
+        )
+        # `#` is not in this list: `## Thanks` is a heading, not a rank column.
+        for word in ("commits", "Commits", "Merged PRs", "rank", "| ---"):
+            self.assertNotIn(word, block, f"{word!r} is aggregate data and must not be here")
+        self.assertIn("@kethcode", block)
+        self.assertIn("@radup1337", block)
+
+    def test_readme_block_reads_as_a_sentence_for_one_two_and_none(self):
+        one = dict(self.PAYLOAD, contributors=[self.PAYLOAD["contributors"][0]])
+        self.assertIn("Thanks to @kethcode.", contributors.render_thanks(one))
+        self.assertIn(
+            "Thanks to @kethcode and @radup1337.", contributors.render_thanks(self.PAYLOAD)
+        )
+        empty = dict(self.PAYLOAD, contributors=[])
+        self.assertIn("No external contributors", contributors.render_thanks(empty))
+
+    def test_everything_outside_the_markers_is_returned_byte_for_byte(self):
+        spliced = contributors.splice_thanks(
+            self.README, contributors.render_thanks(self.PAYLOAD)
+        )
+        again = contributors.splice_thanks(
+            spliced, contributors.render_thanks(dict(self.PAYLOAD, contributors=[]))
+        )
+        start = again.find(contributors.THANKS_START)
+        end = again.find(contributors.THANKS_END) + len(contributors.THANKS_END)
+        outside = again[:start] + again[end:]
+        original_start = spliced.find(contributors.THANKS_START)
+        original_end = spliced.find(contributors.THANKS_END) + len(contributors.THANKS_END)
+        self.assertEqual(outside, spliced[:original_start] + spliced[original_end:])
+        self.assertIn("Some prose.", again)
+        self.assertIn("Apache-2.0.", again)
+
+    def test_stops_on_one_marker_without_the_other(self):
+        for broken in (
+            self.README + "\n<!-- contributors:start -->\n",
+            self.README + "\n<!-- contributors:end -->\n",
+        ):
+            with self.assertRaises(contributors.Stop) as caught:
+                contributors.splice_thanks(broken, "block")
+            self.assertIn("marker", str(caught.exception))
+
+    def test_stops_on_markers_in_the_wrong_order(self):
+        broken = self.README + "\n<!-- contributors:end -->\n<!-- contributors:start -->\n"
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.splice_thanks(broken, "block")
+        self.assertIn("wrong order", str(caught.exception))
+
+    def test_a_rerun_that_changed_nothing_produces_no_diff(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        first = {
+            name: (root / name).read_bytes()
+            for name in (contributors.CONTRIBUTORS_PATH, contributors.README_PATH)
+        }
+        contributors.write_artefacts(root, self.PAYLOAD)
+        for name, before in first.items():
+            self.assertEqual(before, (root / name).read_bytes(), f"{name} changed on a no-op rerun")
+        self.assertEqual(contributors.check_artefacts(root, self.PAYLOAD), [])
+
+    def test_check_names_the_file_that_is_out_of_date(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        (root / contributors.CONTRIBUTORS_PATH).write_text("tampered\n", encoding="utf-8")
+        stale = contributors.check_artefacts(root, self.PAYLOAD)
+        self.assertEqual(len(stale), 1)
+        self.assertIn(contributors.CONTRIBUTORS_PATH, stale[0])
+
+    def test_check_reports_an_absent_artefact_rather_than_crashing(self):
+        root = self.root()
+        stale = contributors.check_artefacts(root, self.PAYLOAD)
+        self.assertTrue(any("is absent" in item for item in stale))
+
+    def test_no_excluded_login_reaches_either_artefact(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        for name in (contributors.CONTRIBUTORS_PATH, contributors.README_PATH):
+            text = (root / name).read_text(encoding="utf-8")
+            for login in sorted(contributors.EXCLUDED_MAINTAINERS | contributors.AGENT_LOGINS):
+                self.assertNotIn(login, text, f"{login} reached {name}")
+
+    def test_an_interrupted_write_leaves_the_original_intact(self):
+        """atomic_write replaces or does nothing. It never truncates in place."""
+        root = self.root()
+        target = root / contributors.CONTRIBUTORS_PATH
+        target.write_text("original content\n", encoding="utf-8")
+        real_replace = os.replace
+
+        def fail_replace(*args, **kwargs):
+            raise OSError("interrupted")
+
+        os.replace = fail_replace
+        try:
+            with self.assertRaises(OSError):
+                contributors.atomic_write(target, "new content that must not land\n")
+        finally:
+            os.replace = real_replace
+        self.assertEqual(target.read_text(encoding="utf-8"), "original content\n")
+        leftovers = [p.name for p in root.iterdir() if p.name.startswith(".CONTRIBUTORS")]
+        self.assertEqual(leftovers, [], f"temporary files left behind: {leftovers}")
+
+    def test_a_failure_on_the_second_artefact_leaves_the_first_whole(self):
+        root = self.root()
+        real_write = contributors.atomic_write
+        written = []
+
+        def one_then_fail(path, text):
+            if written:
+                raise OSError("interrupted between artefacts")
+            written.append(Path(path).name)
+            real_write(path, text)
+
+        contributors.atomic_write = one_then_fail
+        try:
+            with self.assertRaises(OSError):
+                contributors.write_artefacts(root, self.PAYLOAD)
+        finally:
+            contributors.atomic_write = real_write
+        first = root / written[0]
+        self.assertTrue(first.is_file())
+        self.assertEqual(
+            first.read_text(encoding="utf-8"),
+            contributors.rendered(root, self.PAYLOAD)[written[0]],
+            "the artefact that was written is not whole",
+        )
+        stale = contributors.check_artefacts(root, self.PAYLOAD)
+        self.assertTrue(stale, "--check must report the artefact that never landed")
+
+    def test_replacing_a_tracked_file_does_not_narrow_its_mode(self):
+        """git records only the executable bit, so a mode change leaves no diff."""
+        root = self.root()
+        readme = root / contributors.README_PATH
+        os.chmod(readme, 0o644)
+        contributors.write_artefacts(root, self.PAYLOAD)
+        self.assertEqual(
+            stat.S_IMODE(readme.stat().st_mode), 0o644, "README.md mode was changed by the write"
+        )
+
+    def test_a_new_artefact_is_created_world_readable(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        mode = stat.S_IMODE((root / contributors.CONTRIBUTORS_PATH).stat().st_mode)
+        self.assertEqual(mode, self.require("DEFAULT_FILE_MODE", "new artefacts get an ad-hoc mode"))
+        self.assertTrue(mode & stat.S_IROTH, "a generated file nobody else can read is a defect")
+
+    def test_an_unusual_existing_mode_is_preserved_rather_than_normalised(self):
+        root = self.root()
+        target = root / contributors.CONTRIBUTORS_PATH
+        target.write_text("placeholder\n", encoding="utf-8")
+        os.chmod(target, 0o640)
+        contributors.atomic_write(target, "replaced\n")
+        self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o640)
+
+    def test_check_reports_an_absent_readme_as_a_stop(self):
+        root = self.root()
+        (root / contributors.README_PATH).unlink()
+        self.assert_stops(
+            lambda: contributors.check_artefacts(root, self.PAYLOAD),
+            contributors.README_PATH,
+        )
+
+    def test_stops_on_a_readme_that_is_not_utf8(self):
+        root = self.root()
+        (root / contributors.README_PATH).write_bytes(b"\xff\xfe not text \x00")
+        self.assert_stops(
+            lambda: contributors.check_artefacts(root, self.PAYLOAD), "UTF-8"
+        )
+
+    def test_an_abandoned_temporary_is_swept_and_never_looks_like_a_change(self):
+        """A hard-killed run leaves litter that a broad `git add` could commit."""
+        root = self.root()
+        sweep = self.require("sweep_orphans", "abandoned temporaries accumulate in the repository")
+        orphan = root / f".{contributors.CONTRIBUTORS_PATH}.abandoned"
+        orphan.write_text("half written\n", encoding="utf-8")
+        bystander = root / "unrelated.md"
+        bystander.write_text("keep me\n", encoding="utf-8")
+        removed = sweep(root, [contributors.CONTRIBUTORS_PATH, contributors.README_PATH])
+        self.assertEqual(removed, [orphan.name])
+        self.assertFalse(orphan.exists())
+        self.assertTrue(bystander.exists(), "the sweep must not touch anything else")
+
+    def test_the_sweep_leaves_the_artefacts_themselves_alone(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        before = (root / contributors.CONTRIBUTORS_PATH).read_bytes()
+        self.require("sweep_orphans", "the sweep is gone")(
+            root, [contributors.CONTRIBUTORS_PATH, contributors.README_PATH]
+        )
+        self.assertEqual(before, (root / contributors.CONTRIBUTORS_PATH).read_bytes())
+
+    def test_the_temporary_pattern_is_gitignored(self):
+        ignored = (REPOSITORY_ROOT / ".gitignore").read_text(encoding="utf-8")
+        for pattern in (".CONTRIBUTORS.md.*", ".README.md.*"):
+            self.assertIn(pattern, ignored, f"{pattern} must never be committed")
