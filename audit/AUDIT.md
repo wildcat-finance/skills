@@ -11820,3 +11820,16 @@ textual and the resolution is to keep both blocks, since the file is an
 append-only log of rounds that genuinely both happened. Left for the merge rather
 than pre-empted, because reordering this run's own log to anticipate another
 branch's would make the record less true, not more.
+
+## Step 5, round 2 -- 2026-08-24
+
+Against the tree with round 1 applied. Zero findings.
+
+All three lints clean. Root suite 287 tests, all passing. The demonstration path
+from the study's problem statement runs clean end to end, including
+`git diff --exit-code` over both artefacts, which is what establishes that the
+committed files are exactly what the generator produces rather than something a
+hand edited afterwards. The working tree is clean and the guard-shape comparison
+against the parent commit reports nothing that would error rather than fail.
+
+Leads not pursued: none.
