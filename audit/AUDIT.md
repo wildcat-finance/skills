@@ -11776,3 +11776,29 @@ Leads not pursued: the guard catches an unindented line, not every possible way
 to invalidate YAML. A malformed nested mapping would still pass it. Accepted:
 the check is aimed at the one failure this file actually suffered, and GitHub's
 own workflow parser is the backstop for the rest.
+
+## Step 4, round 4 -- 2026-08-24
+
+Against the tree with rounds 1 to 3 applied. Zero findings.
+
+All three lints clean. Root suite 281 tests, all passing. `--check` exits 0 and
+the working tree is clean.
+
+This round re-read the workflow through an actual parser rather than through the
+string assertions that had already been fooled once. It loads, and the values it
+loads are the ones the runbook asked for: the job guard is
+`github.repository == 'wildcat-finance/skills'`, `timeout-minutes` is 10,
+`permissions` is exactly `contents: write` and `pull-requests: write` with
+nothing else, `concurrency` is grouped as `refresh-contributor-list` with
+`cancel-in-progress` false, and the triggers are one weekly cron at `17 4 * * 0`
+plus `workflow_dispatch`. Six steps.
+
+Leads not pursued: two properties of this workflow cannot be established from
+here and are named in the pull request rather than left implicit. Whether
+organisation policy permits the Actions token to open a pull request could not be
+read: the permissions endpoint returns HTTP 403 to the account running this
+delivery. And whether a Contents API write satisfies the signed-commit ruleset is
+inferred from an existing merge commit in this repository reporting
+`verified: true` with committer `GitHub`, which is good evidence about how GitHub
+signs but is not a test of this job. Both resolve on the first dispatched run,
+which is the correct place for them to resolve.
