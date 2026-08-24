@@ -897,3 +897,143 @@ class Rendering(RequiresSymbol, unittest.TestCase):
         ignored = (REPOSITORY_ROOT / ".gitignore").read_text(encoding="utf-8")
         for pattern in (".CONTRIBUTORS.md.*", ".README.md.*"):
             self.assertIn(pattern, ignored, f"{pattern} must never be committed")
+
+
+class WorkflowShape(unittest.TestCase):
+    """The unattended trigger's shape, checked without PyYAML.
+
+    PyYAML is not available to the root suite and every other root script is
+    stdlib-only, so a full parse is out. What is checked is the handful of keys
+    whose absence would be a real defect, read by indentation rather than by
+    regex over the whole file.
+    """
+
+    WORKFLOW = REPOSITORY_ROOT / ".github/workflows/contributors.yml"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.text = cls.WORKFLOW.read_text(encoding="utf-8")
+        cls.lines = cls.text.splitlines()
+
+    def block(self, key):
+        """Return the indented lines under a top-level mapping key."""
+        collected, inside, indent = [], False, None
+        for line in self.lines:
+            if not inside:
+                if line.startswith(f"{key}:"):
+                    inside = True
+                continue
+            if line.strip() == "" or line.lstrip().startswith("#"):
+                continue
+            current = len(line) - len(line.lstrip())
+            if indent is None:
+                indent = current
+            if current < indent:
+                break
+            collected.append(line.strip())
+        return collected
+
+    def test_the_workflow_exists(self):
+        self.assertTrue(self.WORKFLOW.is_file(), f"{self.WORKFLOW} is absent")
+
+    def test_permissions_are_exactly_the_two_writes_it_needs(self):
+        self.assertEqual(
+            sorted(self.block("permissions")),
+            ["contents: write", "pull-requests: write"],
+            "the workflow must hold no scope beyond what it uses",
+        )
+
+    def test_it_runs_weekly_and_on_demand(self):
+        trigger = self.block("on")
+        dispatch = [line for line in trigger if line.startswith("workflow_dispatch")]
+        self.assertTrue(dispatch, "workflow_dispatch is missing, so it cannot be run on demand")
+        crons = [line for line in trigger if line.startswith("- cron:")]
+        self.assertEqual(len(crons), 1, f"expected exactly one schedule, got {crons}")
+        fields = crons[0].split('"')[1].split()
+        self.assertEqual(len(fields), 5, f"malformed cron: {crons[0]}")
+        self.assertNotEqual(
+            fields[4], "*", "a day-of-week of * is daily or hourly, not the weekly cadence asked for"
+        )
+        self.assertNotEqual(fields[2], "*/1", "not weekly")
+
+    def test_it_is_guarded_to_the_canonical_repository(self):
+        self.assertIn(
+            "if: github.repository == 'wildcat-finance/skills'",
+            self.text,
+            "without the guard a fork's schedule opens pull requests",
+        )
+
+    def test_concurrency_is_grouped_so_two_runs_cannot_race(self):
+        block = self.block("concurrency")
+        self.assertTrue(any(line.startswith("group:") for line in block), block)
+
+    def test_it_checks_before_it_writes(self):
+        check_at = self.text.find("contributors.py --check")
+        write_at = self.text.find("contributors.py --write")
+        self.assertNotEqual(check_at, -1, "--check is never run, so it cannot skip a no-op")
+        self.assertNotEqual(write_at, -1)
+        self.assertLess(check_at, write_at, "--write must be gated behind --check")
+
+    def test_a_non_staleness_exit_is_not_treated_as_a_change(self):
+        """Exit 2 is a stop, not `the list needs updating`."""
+        self.assertIn('if [ "$status" -ne 1 ]', self.text)
+
+    def executable(self):
+        """The workflow's lines with comments dropped.
+
+        The comments deliberately name `git commit` to explain why it is not
+        used, so a whole-file search for it would fail on the explanation rather
+        than on a real call.
+        """
+        return "\n".join(
+            line for line in self.lines if not line.lstrip().startswith("#")
+        )
+
+    def test_it_publishes_through_the_contents_api_not_a_git_commit(self):
+        """Every branch here requires signed commits; an Actions git commit is not signed."""
+        self.assertIn("contents/$path", self.text)
+        body = self.executable()
+        self.assertNotIn("git commit", body)
+        self.assertNotIn("git push", body)
+
+    def test_the_comments_still_explain_why_git_commit_is_avoided(self):
+        """If the reason is deleted, the next person reinstates the broken approach."""
+        comments = "\n".join(line for line in self.lines if line.lstrip().startswith("#"))
+        self.assertIn("signed commits", comments)
+
+    def test_it_refuses_to_open_a_second_pull_request_for_one_ranking(self):
+        self.assertIn("--state open --json number --jq 'length'", self.text)
+
+    def test_it_writes_a_summary_on_every_run_including_a_no_op(self):
+        self.assertIn("GITHUB_STEP_SUMMARY", self.text)
+        self.assertIn("if: always()", self.text)
+        self.assertIn("A run that changes nothing is a success", self.text)
+
+    def test_it_holds_no_secret_beyond_the_job_token(self):
+        self.assertNotIn("secrets.", self.text, "this workflow needs no repository secret")
+
+
+class RankingDigest(RequiresSymbol, unittest.TestCase):
+    """The unattended run reports a digest, so a no-op is legible."""
+
+    def test_the_digest_covers_the_ranking_and_nothing_else(self):
+        digest = self.require("ranking_digest", "the unattended summary has nothing to report")
+        one = [{"login": "a", "commits": 2, "merged_prs": 1}]
+        self.assertEqual(digest(one), digest([dict(one[0], human_authored_sampled=5)]))
+
+    def test_the_digest_changes_when_the_ranking_changes(self):
+        digest = self.require("ranking_digest", "the unattended summary has nothing to report")
+        a = [{"login": "a", "commits": 2, "merged_prs": 1}]
+        for changed in (
+            [{"login": "b", "commits": 2, "merged_prs": 1}],
+            [{"login": "a", "commits": 3, "merged_prs": 1}],
+            [{"login": "a", "commits": 2, "merged_prs": 2}],
+            list(a) + [{"login": "b", "commits": 1, "merged_prs": 0}],
+        ):
+            self.assertNotEqual(digest(a), digest(changed), changed)
+
+    def test_order_matters_because_the_published_order_matters(self):
+        digest = self.require("ranking_digest", "the unattended summary has nothing to report")
+        a = [{"login": "a", "commits": 2, "merged_prs": 1},
+             {"login": "b", "commits": 1, "merged_prs": 0}]
+        self.assertNotEqual(digest(a), digest(list(reversed(a))))

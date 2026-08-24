@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -487,6 +488,7 @@ def compute(read, repo=REPOSITORY, hexctl_path=None, excluded=EXCLUDED_MAINTAINE
     payload = {
         "schema": "wildcat-contributors/v1",
         "repository": repo,
+        "digest": ranking_digest(ranked),
         "contributors": [
             {
                 "rank": index,
@@ -504,6 +506,20 @@ def compute(read, repo=REPOSITORY, hexctl_path=None, excluded=EXCLUDED_MAINTAINE
         ),
     }
     return payload
+
+
+def ranking_digest(ranked):
+    """A stable digest of the ranking alone, for the unattended run's summary.
+
+    Covers the ordered logins and their two counts and nothing else, so the
+    digest changes when the published ranking changes and not when an unrelated
+    field is added to the payload.
+    """
+    material = json.dumps(
+        [[e["login"], e["commits"], e["merged_prs"]] for e in ranked],
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
 def classification_lines(payload):
