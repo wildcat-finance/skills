@@ -10,6 +10,7 @@ syntax tree and compare them. Either side edited alone fails here.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -645,3 +646,166 @@ class Coverage(RequiresSymbol, unittest.TestCase):
         import urllib.error
 
         self.assertTrue(issubclass(urllib.error.HTTPError, urllib.error.URLError))
+
+
+class Rendering(RequiresSymbol, unittest.TestCase):
+    """Both artefacts come from one computation, so they cannot disagree."""
+
+    PAYLOAD = {
+        "schema": "wildcat-contributors/v1",
+        "repository": "wildcat-finance/skills",
+        "contributors": [
+            {"rank": 1, "login": "kethcode", "commits": 29, "merged_prs": 15,
+             "human_authored_sampled": 20, "commits_sampled": 20},
+            {"rank": 2, "login": "radup1337", "commits": 11, "merged_prs": 1,
+             "human_authored_sampled": 11, "commits_sampled": 11},
+        ],
+        "excluded": [{"login": "laurenceday", "reason": "repository owner, excluded by decision"}],
+        "issue_activity_without_ranked_commits": [],
+    }
+    README = "# Project\n\nSome prose.\n\n## Licence\n\nApache-2.0.\n"
+
+    def root(self, readme=None):
+        work = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(work, ignore_errors=True))
+        (work / "README.md").write_text(self.README if readme is None else readme, encoding="utf-8")
+        return work
+
+    def test_readme_block_carries_handles_and_no_aggregate(self):
+        """A login may contain digits, so `radup1337` is a handle and not a count.
+
+        The check removes every handle first, then requires nothing numeric to
+        survive. Banning digits outright would fail on a legitimate login, which
+        is why the runbook's literal wording could not be implemented as written.
+        """
+        block = contributors.render_thanks(self.PAYLOAD)
+        stripped = re.sub(r"@[A-Za-z0-9-]+", "", block)
+        self.assertFalse(
+            re.search(r"\d", stripped),
+            f"numeric content survived handle removal: {stripped!r}",
+        )
+        # `#` is not in this list: `## Thanks` is a heading, not a rank column.
+        for word in ("commits", "Commits", "Merged PRs", "rank", "| ---"):
+            self.assertNotIn(word, block, f"{word!r} is aggregate data and must not be here")
+        self.assertIn("@kethcode", block)
+        self.assertIn("@radup1337", block)
+
+    def test_readme_block_reads_as_a_sentence_for_one_two_and_none(self):
+        one = dict(self.PAYLOAD, contributors=[self.PAYLOAD["contributors"][0]])
+        self.assertIn("Thanks to @kethcode.", contributors.render_thanks(one))
+        self.assertIn(
+            "Thanks to @kethcode and @radup1337.", contributors.render_thanks(self.PAYLOAD)
+        )
+        empty = dict(self.PAYLOAD, contributors=[])
+        self.assertIn("No external contributors", contributors.render_thanks(empty))
+
+    def test_everything_outside_the_markers_is_returned_byte_for_byte(self):
+        spliced = contributors.splice_thanks(
+            self.README, contributors.render_thanks(self.PAYLOAD)
+        )
+        again = contributors.splice_thanks(
+            spliced, contributors.render_thanks(dict(self.PAYLOAD, contributors=[]))
+        )
+        start = again.find(contributors.THANKS_START)
+        end = again.find(contributors.THANKS_END) + len(contributors.THANKS_END)
+        outside = again[:start] + again[end:]
+        original_start = spliced.find(contributors.THANKS_START)
+        original_end = spliced.find(contributors.THANKS_END) + len(contributors.THANKS_END)
+        self.assertEqual(outside, spliced[:original_start] + spliced[original_end:])
+        self.assertIn("Some prose.", again)
+        self.assertIn("Apache-2.0.", again)
+
+    def test_stops_on_one_marker_without_the_other(self):
+        for broken in (
+            self.README + "\n<!-- contributors:start -->\n",
+            self.README + "\n<!-- contributors:end -->\n",
+        ):
+            with self.assertRaises(contributors.Stop) as caught:
+                contributors.splice_thanks(broken, "block")
+            self.assertIn("marker", str(caught.exception))
+
+    def test_stops_on_markers_in_the_wrong_order(self):
+        broken = self.README + "\n<!-- contributors:end -->\n<!-- contributors:start -->\n"
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.splice_thanks(broken, "block")
+        self.assertIn("wrong order", str(caught.exception))
+
+    def test_a_rerun_that_changed_nothing_produces_no_diff(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        first = {
+            name: (root / name).read_bytes()
+            for name in (contributors.CONTRIBUTORS_PATH, contributors.README_PATH)
+        }
+        contributors.write_artefacts(root, self.PAYLOAD)
+        for name, before in first.items():
+            self.assertEqual(before, (root / name).read_bytes(), f"{name} changed on a no-op rerun")
+        self.assertEqual(contributors.check_artefacts(root, self.PAYLOAD), [])
+
+    def test_check_names_the_file_that_is_out_of_date(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        (root / contributors.CONTRIBUTORS_PATH).write_text("tampered\n", encoding="utf-8")
+        stale = contributors.check_artefacts(root, self.PAYLOAD)
+        self.assertEqual(len(stale), 1)
+        self.assertIn(contributors.CONTRIBUTORS_PATH, stale[0])
+
+    def test_check_reports_an_absent_artefact_rather_than_crashing(self):
+        root = self.root()
+        stale = contributors.check_artefacts(root, self.PAYLOAD)
+        self.assertTrue(any("is absent" in item for item in stale))
+
+    def test_no_excluded_login_reaches_either_artefact(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        for name in (contributors.CONTRIBUTORS_PATH, contributors.README_PATH):
+            text = (root / name).read_text(encoding="utf-8")
+            for login in sorted(contributors.EXCLUDED_MAINTAINERS | contributors.AGENT_LOGINS):
+                self.assertNotIn(login, text, f"{login} reached {name}")
+
+    def test_an_interrupted_write_leaves_the_original_intact(self):
+        """atomic_write replaces or does nothing. It never truncates in place."""
+        root = self.root()
+        target = root / contributors.CONTRIBUTORS_PATH
+        target.write_text("original content\n", encoding="utf-8")
+        real_replace = os.replace
+
+        def fail_replace(*args, **kwargs):
+            raise OSError("interrupted")
+
+        os.replace = fail_replace
+        try:
+            with self.assertRaises(OSError):
+                contributors.atomic_write(target, "new content that must not land\n")
+        finally:
+            os.replace = real_replace
+        self.assertEqual(target.read_text(encoding="utf-8"), "original content\n")
+        leftovers = [p.name for p in root.iterdir() if p.name.startswith(".CONTRIBUTORS")]
+        self.assertEqual(leftovers, [], f"temporary files left behind: {leftovers}")
+
+    def test_a_failure_on_the_second_artefact_leaves_the_first_whole(self):
+        root = self.root()
+        real_write = contributors.atomic_write
+        written = []
+
+        def one_then_fail(path, text):
+            if written:
+                raise OSError("interrupted between artefacts")
+            written.append(Path(path).name)
+            real_write(path, text)
+
+        contributors.atomic_write = one_then_fail
+        try:
+            with self.assertRaises(OSError):
+                contributors.write_artefacts(root, self.PAYLOAD)
+        finally:
+            contributors.atomic_write = real_write
+        first = root / written[0]
+        self.assertTrue(first.is_file())
+        self.assertEqual(
+            first.read_text(encoding="utf-8"),
+            contributors.rendered(root, self.PAYLOAD)[written[0]],
+            "the artefact that was written is not whole",
+        )
+        stale = contributors.check_artefacts(root, self.PAYLOAD)
+        self.assertTrue(stale, "--check must report the artefact that never landed")
