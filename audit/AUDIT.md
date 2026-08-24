@@ -11736,3 +11736,16 @@ write satisfies the signed-commit ruleset is inferred from an existing merge
 commit in this repository reporting `verified: true` with committer `GitHub`,
 which is strong evidence about GitHub's signing but not a test of this workflow.
 Both are named in the pull request as first-run risks rather than left implicit.
+
+## Step 4, round 2 -- 2026-08-24
+
+Against the tree with round 1 applied. All three lints clean. One finding.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R2-01 | low | .github/workflows/contributors.yml | The job set no `timeout-minutes`, so a hung API call would hold a runner until GitHub's six-hour job ceiling, once a week, with nobody watching. No other workflow in this repository sets one either, but that is not the same precedent: the others are pull-request CI, bounded by the change that triggered them and observed by whoever opened it. This one is a scheduled writer making network calls unattended. Bounded at ten minutes, which is generous for a handful of API reads and two writes. The reason for departing from the surrounding style is recorded in the workflow itself, so the next reader does not normalise it away. A test asserts exactly one timeout exists and that it is not so large as to be no bound at all. | fixed in this round |
+
+Leads not pursued: `actions/checkout@v4` and `actions/setup-python@v5` are
+pinned by tag rather than commit digest. Every other workflow here does the same,
+so changing only this one would be inconsistent without being safer; pinning is a
+repository-wide decision rather than this step's.

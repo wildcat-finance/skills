@@ -24,6 +24,11 @@ jobs:
     # A fork's schedule must not open pull requests against anything.
     if: github.repository == 'wildcat-finance/skills'
     runs-on: ubuntu-latest
+    # No other workflow here sets this, because the others are pull-request CI
+    # whose runs are bounded by the change that triggered them. This one is a
+    # scheduled writer that makes network calls nobody is watching, so a hung
+    # request would otherwise hold a runner until GitHub's six-hour ceiling.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 

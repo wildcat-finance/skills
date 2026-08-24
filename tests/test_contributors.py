@@ -1034,6 +1034,14 @@ class WorkflowShape(unittest.TestCase):
         self.assertNotIn("Co-authored-by", body)
         self.assertNotIn("Wildcat-Origin", body)
 
+    def test_the_unattended_job_bounds_its_own_runtime(self):
+        """A scheduled writer with no timeout can hold a runner for six hours."""
+        timeouts = [line.strip() for line in self.lines if line.strip().startswith("timeout-minutes:")]
+        self.assertEqual(len(timeouts), 1, f"expected exactly one timeout, got {timeouts}")
+        minutes = int(timeouts[0].split(":", 1)[1])
+        self.assertGreater(minutes, 0)
+        self.assertLessEqual(minutes, 30, "a generous timeout is not a bound")
+
     def test_it_holds_no_secret_beyond_the_job_token(self):
         self.assertNotIn("secrets.", self.text, "this workflow needs no repository secret")
 
