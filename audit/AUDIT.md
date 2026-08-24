@@ -11651,3 +11651,20 @@ Leads not pursued: `http_reader` imports `urllib.error` inside the factory while
 module-level pair is needed by `RefuseOffHostRedirect` at class-definition time
 and the third is not. Consistent enough to leave; moving it would change nothing
 a reader relies on.
+
+## Step 3, round 1 -- 2026-08-24
+
+Non-Solidity round on the step that writes tracked files. Phylax, Ephoros and
+Hypomnema clean. Four findings.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | medium | scripts/contributors.py | `atomic_write` built its replacement with `tempfile.NamedTemporaryFile`, which creates at 0600, and `os.replace` carries the temporary file's mode onto the target. Both artefacts landed as `-rw-------` where every other file in the repository is `-rw-r--r--`, confirmed by `stat`. The serious half is `README.md`: a tracked file that existed before this run was silently narrowed from 0644, and git records only the executable bit, so the change appears in no diff and no review would catch it. Fixed by preserving an existing file's mode and giving a new file 0644. The two artefacts already on disk were repaired and regenerated. Three tests: a tracked file keeps 0644, a new artefact is world-readable, and an unusual existing mode is preserved rather than normalised. | fixed in this round |
+| S3-R1-02 | medium | scripts/contributors.py | `rendered` read `README.md` with a bare `read_text`, so an absent or non-UTF-8 README came out of `--check` as `FileNotFoundError` or `UnicodeDecodeError` rather than a named stop. The study's fail-closed posture requires a stop to name what went wrong; a traceback from the middle of a weekly job names the line and not the cause. Both are now stops that name the file. | fixed in this round |
+| S3-R1-03 | medium | .horos/boundary.json | Adding `CONTRIBUTORS.md` at the repository root invalidated the committed Horos reading boundary, and the step did not refresh it. The repository's own `test_boundary_currency` caught this, which is the system working, but it also corrects a judgement made earlier in this run: during the post-spec marketplace reassessment Horos was dismissed as having no concrete job in the remaining steps. It had one, and the evidence was a failing test rather than an argument. Refreshed with `horos.py scan . --write`. | fixed in this round |
+| S3-R1-04 | low | tests/test_contributors.py | Two of this round's own guards used `assertRaises(Stop)` against code whose defect is that it raises the wrong exception type. `assertRaises` records a wrong type as an error, and the wrong type was the finding, so those guards could never prove their own fix. This is the third distinct shape of the same underlying mistake in this run, after a missing symbol and a mis-scoped helper. Fixed with an `assert_stops` helper on the shared mixin that catches everything and fails on any exception that is not a `Stop`. Verified: against the parent the round's guards now give 5 assertion failures and 0 errors, where before they gave 3 failures and 2 errors. | fixed in this round |
+
+Leads not pursued: `atomic_write` does not fsync the containing directory after
+`os.replace`, so the rename is not guaranteed durable across a host crash. The
+artefacts are regenerated weekly from a source of truth that is not this file, so
+the recovery for a lost rename is the next scheduled run.

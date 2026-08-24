@@ -13,6 +13,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import sys
 import tempfile
 import unittest
@@ -494,6 +495,26 @@ class RequiresSymbol:
         self.assertIsNotNone(value, f"contributors.{name} is absent; {why}")
         return value
 
+    def assert_stops(self, call, contains):
+        """Require a Stop, and fail rather than error on any other exception.
+
+        `assertRaises(Stop)` errors when the code raises the wrong type, and the
+        wrong type is often the defect itself: a bare FileNotFoundError where a
+        named Stop belongs. Elenchus reads an error as a broken harness, so a
+        guard written that way cannot prove the fix it guards.
+        """
+        try:
+            call()
+        except contributors.Stop as stop:
+            self.assertIn(contains, str(stop))
+        except BaseException as other:  # noqa: BLE001 - the point is to catch everything
+            self.fail(
+                f"expected a Stop naming {contains!r}, got "
+                f"{type(other).__name__}: {other}"
+            )
+        else:
+            self.fail(f"expected a Stop naming {contains!r}; nothing was raised")
+
 
 class NetworkBoundary(RequiresSymbol, unittest.TestCase):
     """Guards on the one boundary that reaches off the machine."""
@@ -809,3 +830,43 @@ class Rendering(RequiresSymbol, unittest.TestCase):
         )
         stale = contributors.check_artefacts(root, self.PAYLOAD)
         self.assertTrue(stale, "--check must report the artefact that never landed")
+
+    def test_replacing_a_tracked_file_does_not_narrow_its_mode(self):
+        """git records only the executable bit, so a mode change leaves no diff."""
+        root = self.root()
+        readme = root / contributors.README_PATH
+        os.chmod(readme, 0o644)
+        contributors.write_artefacts(root, self.PAYLOAD)
+        self.assertEqual(
+            stat.S_IMODE(readme.stat().st_mode), 0o644, "README.md mode was changed by the write"
+        )
+
+    def test_a_new_artefact_is_created_world_readable(self):
+        root = self.root()
+        contributors.write_artefacts(root, self.PAYLOAD)
+        mode = stat.S_IMODE((root / contributors.CONTRIBUTORS_PATH).stat().st_mode)
+        self.assertEqual(mode, self.require("DEFAULT_FILE_MODE", "new artefacts get an ad-hoc mode"))
+        self.assertTrue(mode & stat.S_IROTH, "a generated file nobody else can read is a defect")
+
+    def test_an_unusual_existing_mode_is_preserved_rather_than_normalised(self):
+        root = self.root()
+        target = root / contributors.CONTRIBUTORS_PATH
+        target.write_text("placeholder\n", encoding="utf-8")
+        os.chmod(target, 0o640)
+        contributors.atomic_write(target, "replaced\n")
+        self.assertEqual(stat.S_IMODE(target.stat().st_mode), 0o640)
+
+    def test_check_reports_an_absent_readme_as_a_stop(self):
+        root = self.root()
+        (root / contributors.README_PATH).unlink()
+        self.assert_stops(
+            lambda: contributors.check_artefacts(root, self.PAYLOAD),
+            contributors.README_PATH,
+        )
+
+    def test_stops_on_a_readme_that_is_not_utf8(self):
+        root = self.root()
+        (root / contributors.README_PATH).write_bytes(b"\xff\xfe not text \x00")
+        self.assert_stops(
+            lambda: contributors.check_artefacts(root, self.PAYLOAD), "UTF-8"
+        )

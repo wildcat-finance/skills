@@ -24,6 +24,7 @@ import json
 import os
 from pathlib import Path
 import re
+import stat
 import sys
 import tempfile
 import urllib.parse
@@ -614,9 +615,23 @@ def splice_thanks(readme_text, block):
     return readme_text[:start] + block + readme_text[end + len(THANKS_END):]
 
 
+DEFAULT_FILE_MODE = 0o644
+
+
 def atomic_write(path, text):
-    """Write whole or not at all, so a killed run leaves no half-written artefact."""
+    """Write whole or not at all, so a killed run leaves no half-written artefact.
+
+    The replacement carries the temporary file's mode, and `NamedTemporaryFile`
+    creates at 0600. Replacing a tracked file would therefore quietly narrow it
+    from 0644, and git records only the executable bit so the diff would show
+    nothing. An existing file keeps its mode; a new one gets 0644 like the rest
+    of the repository.
+    """
     path = Path(path)
+    try:
+        mode = stat.S_IMODE(path.stat().st_mode)
+    except FileNotFoundError:
+        mode = DEFAULT_FILE_MODE
     handle = tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", dir=str(path.parent), prefix=f".{path.name}.", delete=False
     )
@@ -625,6 +640,7 @@ def atomic_write(path, text):
             stream.write(text)
             stream.flush()
             os.fsync(stream.fileno())
+        os.chmod(handle.name, mode)
         os.replace(handle.name, path)
     except BaseException:
         try:
@@ -637,9 +653,17 @@ def atomic_write(path, text):
 def rendered(root, payload):
     """Both artefacts, rendered from one payload, so they cannot disagree."""
     readme = Path(root) / README_PATH
+    try:
+        existing = readme.read_text(encoding="utf-8")
+    except FileNotFoundError as error:
+        raise Stop(
+            f"{README_PATH} is absent, so the thanks block has nowhere to go"
+        ) from error
+    except (OSError, UnicodeDecodeError) as error:
+        raise Stop(f"{README_PATH} cannot be read as UTF-8 text: {error}") from error
     return {
         CONTRIBUTORS_PATH: render_contributors(payload),
-        README_PATH: splice_thanks(readme.read_text(encoding="utf-8"), render_thanks(payload)),
+        README_PATH: splice_thanks(existing, render_thanks(payload)),
     }
 
 
