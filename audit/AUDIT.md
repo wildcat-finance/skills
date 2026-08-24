@@ -11563,3 +11563,20 @@ Elenchus cannot tell a proved guard from a broken harness once errors appear, so
 it declines to call the round guarded, and that is the correct reading of the
 evidence rather than a tooling complaint. Round 2 reshapes those two tests to
 assert the symbol's presence instead of dereferencing it.
+
+## Step 2, round 2 -- 2026-08-24
+
+Against the tree with round 1's fixes applied. Phylax and Ephoros clean.
+Hypomnema clean, invoked as `hypomnema.py docs scripts tests` per S2-R1-05.
+One finding, in round 1's own guards.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R2-01 | medium | tests/test_contributors.py | Round 1's guards for the redirect and pagination fixes dereferenced `contributors.RefuseOffHostRedirect` and `contributors.read_all_pages` directly. On a tree without those symbols that raises `AttributeError`, which unittest records as an error rather than a failure, and Elenchus refuses to call a round guarded once errors appear because it cannot tell a proved guard from a broken harness. Round 1 therefore recorded `inconclusive` on five findings whose guards were mostly sound: three failed cleanly, four crashed. A guard that errors on the unfixed tree proves nothing it could not have proved by failing. Fixed by asserting each symbol's presence and returning it, through one helper per class carrying the reason. Verified directly rather than inferred: the reshaped guards run against the pre-fix `scripts/contributors.py` from `5f424e5` produce 7 assertion failures and 0 errors, where round 1's shape produced 3 failures and 4 errors. | fixed in this round |
+
+Leads not pursued: this round's Elenchus verdict is `passed` rather than
+`guarded`, and that is the honest reading. The change is a test reshape with no
+behaviour change, so against its own parent, which already carries round 1's
+fixes, nothing fails. The reshape cannot retroactively re-prove round 1; it makes
+the guards well-shaped from here on, and the proof of that is the direct
+comparison recorded above rather than a verdict this round could produce.

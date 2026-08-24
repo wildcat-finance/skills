@@ -480,9 +480,23 @@ class FailClosed(unittest.TestCase):
 class NetworkBoundary(unittest.TestCase):
     """Guards on the one boundary that reaches off the machine."""
 
+    def redirect_handler(self):
+        """Assert the guard exists, then return it.
+
+        Dereferencing a missing attribute raises AttributeError, which unittest
+        records as an error rather than a failure. Elenchus cannot tell a proved
+        guard from a broken harness once errors appear, so a guard that errors on
+        the unfixed tree proves nothing it could not have proved by failing.
+        """
+        handler = getattr(contributors, "RefuseOffHostRedirect", None)
+        self.assertIsNotNone(
+            handler, "contributors.RefuseOffHostRedirect is absent; the redirect guard is gone"
+        )
+        return handler()
+
     def test_refuses_an_off_host_redirect_before_reissuing_the_request(self):
         """The token must not travel to the redirect target."""
-        handler = contributors.RefuseOffHostRedirect()
+        handler = self.redirect_handler()
         request = urllib.request.Request(
             contributors.API_ROOT + "/repos/x/y/contributors",
             headers={"Authorization": "Bearer secret-value"},
@@ -497,7 +511,7 @@ class NetworkBoundary(unittest.TestCase):
         self.assertNotIn("secret-value", message, "the guard must not echo the token")
 
     def test_allows_a_redirect_that_stays_on_the_api_host(self):
-        handler = contributors.RefuseOffHostRedirect()
+        handler = self.redirect_handler()
         request = urllib.request.Request(contributors.API_ROOT + "/repos/x/y/contributors")
         result = handler.redirect_request(
             request, None, 301, "Moved", {}, contributors.API_ROOT + "/repositories/1/contributors"
@@ -528,6 +542,14 @@ class Coverage(unittest.TestCase):
             for i in range(count)
         ]
 
+    def pager(self):
+        """Assert the paginating read exists, then return it. See NetworkBoundary."""
+        pager = getattr(contributors, "read_all_pages", None)
+        self.assertIsNotNone(
+            pager, "contributors.read_all_pages is absent; the pagination guard is gone"
+        )
+        return pager
+
     def test_reads_every_page_rather_than_the_first(self):
         pages = {1: self.rows(100), 2: self.rows(5, offset=100)}
         calls = []
@@ -537,7 +559,7 @@ class Coverage(unittest.TestCase):
             calls.append(page)
             return pages[page]
 
-        collected = contributors.read_all_pages(
+        collected = self.pager()(
             read, "/x?per_page={per_page}&page={page}", "test endpoint"
         )
         self.assertEqual(calls, [1, 2])
@@ -547,8 +569,9 @@ class Coverage(unittest.TestCase):
         def read(path):
             return self.rows(100)
 
+        pager = self.pager()
         with self.assertRaises(contributors.Stop) as caught:
-            contributors.read_all_pages(read, "/x?per_page={per_page}&page={page}", "test endpoint")
+            pager(read, "/x?per_page={per_page}&page={page}", "test endpoint")
         self.assertIn("truncated", str(caught.exception))
 
     def test_stops_when_closed_issue_coverage_is_partial(self):
