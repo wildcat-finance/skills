@@ -239,7 +239,7 @@ generator into the Promise Machine, and run the demo path.
 
 **Exit.** All of these hold:
 
-- `docs/decisions/ADR-017-rank-contributors-by-resolved-identity.md` records
+- `docs/decisions/ADR-018-rank-contributors-by-resolved-identity.md` records
   the decision, the rejected trailer option with the counts that disprove it,
   and the dependency on issue #466.
 - `README.md:57`'s recognition sentence names `CONTRIBUTORS.md`, states that
@@ -270,7 +270,7 @@ python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins scripts tests
   exactly what the generator produces.
 
 **Files.** Create
-`docs/decisions/ADR-017-rank-contributors-by-resolved-identity.md`,
+`docs/decisions/ADR-018-rank-contributors-by-resolved-identity.md`,
 `docs/promise-machine/contributors-v1.md`. Change `README.md`,
 `docs/how-to-help-shoggoth.md`, `tests/promise_machine_coverage.json`,
 `tests/test_contributors.py`.
@@ -291,5 +291,5 @@ report file:   .elenchus/contributors.json
 
 **Disciplines.** phylax: none, this step opens no new boundary. ephoros: none,
 the signals landed in steps 2 and 4. metron: none. elenchus: none, no failure in
-hand. hypomnema: this is the step hypomnema governs, carrying ADR-017, the
+hand. hypomnema: this is the step hypomnema governs, carrying ADR-018, the
 Promise Machine contract, and the two corrected prose claims.

@@ -11802,3 +11802,21 @@ inferred from an existing merge commit in this repository reporting
 `verified: true` with committer `GitHub`, which is good evidence about how GitHub
 signs but is not a test of this job. Both resolve on the first dispatched run,
 which is the correct place for them to resolve.
+
+## Step 5, round 1 -- 2026-08-24
+
+Non-Solidity round on the records this work leaves behind. All three lints
+clean. Three findings, the first of them external in origin.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R1-01 | medium | docs/decisions/ | Decision-record number collision. This run planned `ADR-017-rank-contributors-by-resolved-identity.md`, and the concurrent delivery for issue #466 had already opened pull request 521 carrying `ADR-017-bind-merged-authorship-to-the-integration-receipt.md`. Two records cannot share a number, and #521 claimed it first. Renumbered to ADR-018. The renumbering is recorded three ways rather than performed silently: inside the record's own Status section, in a dated Protasis amendment to the receipted study through `hexctl amend study`, which returned `step 5 holds`, and in the published spec copies. The study's item 12 still reads ADR-017 above the amendment, which is the point: the amendment appends so the run's earlier belief stays readable. | fixed in this round |
+| S5-R1-02 | low | tests/test_contributors.py | The dead-link guard added in step 1 round 3 listed only the two published spec files. Step 1 found that same defect twice, and a guard scoped to the files that had already failed could not cover the records added later, which is most of this step's output. Widened to every document this work ships, including the two new records and `CONTRIBUTORS.md`. The companion run-state guard was also over-broad: it flagged any line mentioning `.hexaemeron`, which would fail on a document that legitimately discusses the directory, so it now matches a citation rather than a mention. | fixed in this round |
+| S5-R1-03 | low | docs/decisions/ADR-018-rank-contributors-by-resolved-identity.md | The widened guard immediately earned itself. ADR-018 linked to #521's ADR-017 by relative path, and that file does not exist on this branch and will not until #466 lands, so the record shipped with a link that resolved to nothing. Changed to a named reference carrying the pull-request number, with the reason it is not a link stated in the record. | fixed in this round |
+
+Leads not pursued: this run and the #466 delivery both append to
+`audit/AUDIT.md`, so whichever merges second will conflict there. The conflict is
+textual and the resolution is to keep both blocks, since the file is an
+append-only log of rounds that genuinely both happened. Left for the merge rather
+than pre-empted, because reordering this run's own log to anticipate another
+branch's would make the record less true, not more.

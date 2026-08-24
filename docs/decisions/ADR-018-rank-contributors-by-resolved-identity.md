@@ -1,8 +1,13 @@
-# ADR-017: Rank contributors by resolved identity, not by provenance trailer
+# ADR-018: Rank contributors by resolved identity, not by provenance trailer
 
 ## Status
 
-Accepted, 2026-08-24. Depends on
+Accepted, 2026-08-24. Numbered 018 rather than 017: the concurrent delivery for
+issue #466 claimed 017 first, as
+`ADR-017-bind-merged-authorship-to-the-integration-receipt.md` in pull request
+521, and two records cannot share a number. That file is deliberately named
+rather than linked here, because it does not exist on this branch and will not
+until #466 lands. Depends on
 [ADR-016](ADR-016-attribute-governed-agent-work-to-shoggoth.md) for what an
 agent identity is. Consumes the authorship evidence that issue #466 exists to
 make correct at integration time.

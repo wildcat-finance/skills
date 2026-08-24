@@ -343,7 +343,7 @@ Two decisions here are expensive to reverse.
 The first is that identity, not the `Wildcat-Origin` trailer, decides who is a
 contributor, and that a human running Shoggoth keeps their credit. Reversing it
 would empty the file and contradict ADR-016's "human contributors remain
-visible". It gets `docs/decisions/ADR-017-rank-contributors-by-resolved-identity.md`,
+visible". It gets `docs/decisions/ADR-018-rank-contributors-by-resolved-identity.md`,
 recording the trailer option's rejection with the counts that disprove it, so a
 later round does not reopen a question this study already settled.
 
@@ -358,3 +358,15 @@ the Creator during this run. They are recorded in item 3 and in the assumptions
 block, which is where a reader looks for what the request ruled out.
 [hypomnema](../../plugins/hexaemeron/skills/hypomnema/SKILL.md) owns which decisions earn a record and where
 each one lives.
+
+### Amendment -- 2026-08-24
+
+**What changed.** The decision record this run adds is numbered ADR-018, not
+ADR-017 as item 12 states.
+**Why.** The concurrent delivery for issue #466 opened pull request 521 claiming
+`docs/decisions/ADR-017-bind-merged-authorship-to-the-integration-receipt.md`
+before this run reached its own record, and two decision records cannot share a
+number. The renumbering is external to this run's reasoning and changes nothing
+about the decision itself.
+**Steps touched.** Step 5's files and exit, which name the record's path.
+**Still holding.** Step 5: entry holds; exit holds.

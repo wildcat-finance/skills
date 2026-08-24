@@ -213,7 +213,17 @@ class CommittedSpecLinks(unittest.TestCase):
     repository checks a link in a shipped document.
     """
 
-    SPEC = ("docs/contributors/study.md", "docs/contributors/runbook.md")
+    # Every document this work ships, not only the two the guard was written for.
+    # Rounds 3 and 4 of step 1 found the same dead-link defect twice, and a guard
+    # scoped to the files that had already failed would not have caught it in the
+    # records added later.
+    SPEC = (
+        "docs/contributors/study.md",
+        "docs/contributors/runbook.md",
+        "docs/decisions/ADR-018-rank-contributors-by-resolved-identity.md",
+        "docs/promise-machine/contributors-v1.md",
+        "CONTRIBUTORS.md",
+    )
 
     def test_every_relative_link_resolves(self):
         dead = []
@@ -238,9 +248,14 @@ class CommittedSpecLinks(unittest.TestCase):
         """
         offenders = []
         for relative in self.SPEC:
-            text = (REPOSITORY_ROOT / relative).read_text(encoding="utf-8")
+            document = REPOSITORY_ROOT / relative
+            # Assert presence rather than dereferencing it: a missing file must
+            # fail this test, not error out of it, or Elenchus cannot tell a
+            # proved guard from a broken harness.
+            self.assertTrue(document.is_file(), f"{relative} is absent")
+            text = document.read_text(encoding="utf-8")
             for number, line in enumerate(text.splitlines(), start=1):
-                if ".hexaemeron" in line:
+                if "`.hexaemeron/" in line or "](.hexaemeron/" in line:
                     offenders.append(f"{relative}:{number}")
         self.assertEqual(
             offenders,
@@ -252,7 +267,7 @@ class CommittedSpecLinks(unittest.TestCase):
 class RecordedDecisions(unittest.TestCase):
     """The claims and records this work is obliged to leave behind."""
 
-    ADR = REPOSITORY_ROOT / "docs/decisions/ADR-017-rank-contributors-by-resolved-identity.md"
+    ADR = REPOSITORY_ROOT / "docs/decisions/ADR-018-rank-contributors-by-resolved-identity.md"
     PROMISE_DOC = REPOSITORY_ROOT / "docs/promise-machine/contributors-v1.md"
     GUIDE = REPOSITORY_ROOT / "docs/how-to-help-shoggoth.md"
     README = REPOSITORY_ROOT / "README.md"
@@ -298,7 +313,7 @@ class RecordedDecisions(unittest.TestCase):
     def test_the_guide_says_what_the_list_does_not_establish(self):
         text = self.GUIDE.read_text(encoding="utf-8")
         self.assertIn("CONTRIBUTORS.md", text)
-        self.assertIn("ADR-017", text)
+        self.assertIn("ADR-018-rank-contributors-by-resolved-identity", text)
         self.assertIn("not a ranking of people", text)
 
 
