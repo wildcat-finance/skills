@@ -181,6 +181,36 @@ INTEGRATION_COMMAND_BYTES_MAX = 2048
 INTEGRATION_CHECK_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 INTEGRATION_SYNC_SUPERSESSIONS_MAX = 8
 INTEGRATION_SYNC_REASON_BYTES_MAX = 1024
+RESOLUTION_SYNC_KEYS = frozenset(
+    {
+        "commit",
+        "base",
+        "starting_base",
+        "base_head",
+        "parents",
+        "github_verified",
+        "product_evidence",
+        "revalidation",
+    }
+)
+RESOLUTION_REVALIDATION_KEYS = frozenset(
+    {
+        "schema",
+        "artifact",
+        "sha256",
+        "base_before",
+        "base_after",
+        "product_paths",
+        "upstream_paths",
+        "overlap_paths",
+        "composition_paths",
+        "affected_paths",
+        "checks",
+    }
+)
+RESOLUTION_REVALIDATION_CHECK_KEYS = frozenset(
+    {"id", "command", "paths", "exit"}
+)
 OBSERVATION_BINDING_CONTRACT = "fiat-run-observation-binding/v1"
 OBSERVATION_CONTRACT = "promise-machine-run-observation/v1"
 OBSERVATION_BYTES_MAX = 1_048_576
@@ -2288,6 +2318,26 @@ def _native_relation_parents(
     return parents
 
 
+def _native_relation_merge_base(
+    base_dir: str, left: str, right: str
+) -> str:
+    """Resolve one native common ancestor for a stored composition proof."""
+    left = require_full_sha(left, "version resolution product head")
+    right = require_full_sha(right, "version resolution base head")
+    raw = _native_relation_git(
+        base_dir,
+        ["merge-base", "--all", left, right],
+        "version resolution product/base merge base cannot be read",
+    )
+    try:
+        candidates = [line for line in raw.decode("ascii").splitlines() if line]
+    except UnicodeDecodeError:
+        candidates = []
+    if len(candidates) != 1 or COMMIT_RE.fullmatch(candidates[0]) is None:
+        die("version resolution product/base merge base is ambiguous or malformed")
+    return candidates[0]
+
+
 def _native_relation_diff_paths(
     base_dir: str, before: str, after: str
 ) -> list[str]:
@@ -3146,9 +3196,12 @@ def _require_resolution_sync(
     relations: dict,
 ) -> None:
     """Recheck the active signed composition and its target-path coverage."""
+    if set(sync) != RESOLUTION_SYNC_KEYS:
+        die("active version-resolution sync has an unsupported field set")
     if (
         sync.get("commit") != head_commit
         or sync.get("base") != integration_base_of(state)
+        or sync.get("starting_base") != state.get("base")
         or sync.get("base_head") != base_commit
         or sync.get("parents") != [product_head, base_commit]
         or sync.get("github_verified") != [head_commit]
@@ -3166,10 +3219,56 @@ def _require_resolution_sync(
         "version resolution sync",
         native_relation=True,
     )
-    revalidation = as_dict(sync.get("revalidation"))
-    if revalidation.get("schema") != INTEGRATION_REVALIDATION_SCHEMA:
+    revalidation = sync.get("revalidation")
+    if (
+        not isinstance(revalidation, dict)
+        or set(revalidation) != RESOLUTION_REVALIDATION_KEYS
+        or revalidation.get("schema") != INTEGRATION_REVALIDATION_SCHEMA
+    ):
         die("version resolution sync revalidation is missing or malformed")
-    affected = revalidation.get("affected_paths")
+    _manifest_paths(
+        [revalidation.get("artifact")],
+        "version resolution sync revalidation artifact",
+    )
+    digest = revalidation.get("sha256")
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        die("version resolution sync revalidation digest is malformed")
+    base_before = _native_relation_merge_base(base_dir, product_head, base_commit)
+    expected_paths = {
+        "product_paths": _native_relation_diff_paths(
+            base_dir, base_before, product_head
+        ),
+        "upstream_paths": _native_relation_diff_paths(
+            base_dir, base_before, base_commit
+        ),
+        "composition_paths": _native_relation_diff_paths(
+            base_dir, product_head, head_commit
+        ),
+    }
+    expected_paths["overlap_paths"] = sorted(
+        set(expected_paths["product_paths"]) & set(expected_paths["upstream_paths"])
+    )
+    expected_paths["affected_paths"] = sorted(
+        set(expected_paths["composition_paths"]) | set(expected_paths["overlap_paths"])
+    )
+    if (
+        revalidation.get("base_before") != base_before
+        or revalidation.get("base_after") != base_commit
+    ):
+        die("version resolution sync revalidation commit pair is stale or malformed")
+    stored_paths = {}
+    for name in (
+        "product_paths",
+        "upstream_paths",
+        "overlap_paths",
+        "composition_paths",
+        "affected_paths",
+    ):
+        stored_paths[name] = _manifest_paths(
+            revalidation.get(name), f"version resolution sync {name}"
+        )
+        if stored_paths[name] != expected_paths[name]:
+            die("version resolution sync revalidation path proof does not match")
     checks = revalidation.get("checks")
     if (
         not isinstance(checks, list)
@@ -3177,30 +3276,51 @@ def _require_resolution_sync(
         or len(checks) > INTEGRATION_CHECKS_MAX
     ):
         die("version resolution sync revalidation is missing or malformed")
-    affected_paths = _manifest_paths(
-        affected, "version resolution sync affected_paths"
-    )
-    changed = set(
-        _native_relation_diff_paths(base_dir, product_head, head_commit)
-    )
+    affected_paths = stored_paths["affected_paths"]
+    changed = set(expected_paths["composition_paths"])
+    overlap = set(expected_paths["overlap_paths"])
     target_paths = set()
     for target in relations["targets"]:
         target_paths.add(target["ledger"])
         target_paths.add(target["ledger"].rsplit("/", 1)[0] + "/SKILL.md")
-    needed = changed & target_paths
-    if not needed.issubset(set(affected_paths)):
-        die("version resolution sync omits a changed target path")
+    needed = (changed | overlap) & target_paths
     covered = set()
+    seen_ids = set()
     for index, check in enumerate(checks):
-        item = as_dict(check)
-        if item.get("exit") != 0 or not isinstance(item.get("paths"), list):
+        if not isinstance(check, dict) or set(check) != RESOLUTION_REVALIDATION_CHECK_KEYS:
+            die("version resolution sync carries a failed or malformed check")
+        check_id = check.get("id")
+        if (
+            not isinstance(check_id, str)
+            or INTEGRATION_CHECK_ID_RE.fullmatch(check_id) is None
+            or check_id in seen_ids
+        ):
+            die("version resolution sync carries a failed or malformed check")
+        seen_ids.add(check_id)
+        command = check.get("command")
+        try:
+            command_bytes = command.encode("utf-8") if isinstance(command, str) else b""
+        except UnicodeEncodeError:
+            command_bytes = b""
+        if (
+            not command_bytes
+            or len(command_bytes) > INTEGRATION_COMMAND_BYTES_MAX
+            or any(
+                ord(character) < 32 or ord(character) == 127
+                for character in command
+            )
+            or isinstance(check.get("exit"), bool)
+            or check.get("exit") != 0
+        ):
             die("version resolution sync carries a failed or malformed check")
         paths = _manifest_paths(
-            item["paths"],
+            check.get("paths"),
             f"version resolution sync check {index} paths",
             set(affected_paths),
         )
         covered.update(paths)
+    if covered != set(affected_paths):
+        die("version resolution sync checks do not cover every affected path")
     if not needed.issubset(covered):
         die("version resolution sync checks do not cover each changed target path")
 

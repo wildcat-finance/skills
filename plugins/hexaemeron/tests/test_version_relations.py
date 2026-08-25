@@ -390,6 +390,20 @@ class VersionRelationTests(HexctlCase):
         target_paths = sorted(
             [self.ledger_path("fiat"), self.skill_path("fiat")]
         )
+        base_before = module._native_relation_merge_base(
+            self.target, product_head, concurrent_base
+        )
+        product_paths = module._native_relation_diff_paths(
+            self.target, base_before, product_head
+        )
+        upstream_paths = module._native_relation_diff_paths(
+            self.target, base_before, concurrent_base
+        )
+        overlap_paths = sorted(set(product_paths) & set(upstream_paths))
+        composition_paths = module._native_relation_diff_paths(
+            self.target, product_head, sync_head
+        )
+        affected_paths = sorted(set(composition_paths) | set(overlap_paths))
         state["integrate"]["sync"] = {
             "commit": sync_head,
             "base": "main",
@@ -402,12 +416,20 @@ class VersionRelationTests(HexctlCase):
             ),
             "revalidation": {
                 "schema": module.INTEGRATION_REVALIDATION_SCHEMA,
-                "affected_paths": target_paths,
+                "artifact": ".hexaemeron/integration-revalidation.json",
+                "sha256": "d" * 64,
+                "base_before": base_before,
+                "base_after": concurrent_base,
+                "product_paths": product_paths,
+                "upstream_paths": upstream_paths,
+                "overlap_paths": overlap_paths,
+                "composition_paths": composition_paths,
+                "affected_paths": affected_paths,
                 "checks": [
                     {
                         "id": "collision-versions",
                         "command": "python3 -m unittest",
-                        "paths": target_paths,
+                        "paths": affected_paths,
                         "exit": 0,
                     }
                 ],
@@ -1067,6 +1089,14 @@ class VersionRelationTests(HexctlCase):
             ),
             "revalidation": {
                 "schema": module.INTEGRATION_REVALIDATION_SCHEMA,
+                "artifact": ".hexaemeron/integration-revalidation.json",
+                "sha256": "d" * 64,
+                "base_before": "a" * 40,
+                "base_after": base_commit,
+                "product_paths": sorted([ledger, skill]),
+                "upstream_paths": sorted([ledger, skill]),
+                "overlap_paths": sorted([ledger, skill]),
+                "composition_paths": sorted([ledger, skill]),
                 "affected_paths": sorted([ledger, skill]),
                 "checks": [
                     {
@@ -1096,6 +1126,11 @@ class VersionRelationTests(HexctlCase):
                 module,
                 "_native_relation_parents",
                 return_value=[product_head, base_commit],
+            ),
+            mock.patch.object(
+                module,
+                "_native_relation_merge_base",
+                return_value="a" * 40,
             ),
             mock.patch.object(module, "verify_local_commit", return_value=sync_head),
             mock.patch.object(
@@ -1184,6 +1219,7 @@ class VersionRelationTests(HexctlCase):
             base_commit,
             sync_head,
         ) = self._sync_evidence_fixture()
+        paths = sorted([self.ledger_path("fiat"), self.skill_path("fiat")])
         with (
             mock.patch.object(
                 module,
@@ -1191,7 +1227,12 @@ class VersionRelationTests(HexctlCase):
                 return_value=[product_head, base_commit],
             ),
             mock.patch.object(
-                module, "_native_relation_diff_paths", return_value=[]
+                module, "_native_relation_diff_paths", return_value=paths
+            ),
+            mock.patch.object(
+                module,
+                "_native_relation_merge_base",
+                return_value="a" * 40,
             ),
             mock.patch.object(
                 module, "verify_local_commit", return_value=sync_head
@@ -1234,6 +1275,11 @@ class VersionRelationTests(HexctlCase):
             ),
             mock.patch.object(module, "verify_local_commit", return_value=sync_head),
             mock.patch.object(
+                module,
+                "_native_relation_merge_base",
+                return_value="a" * 40,
+            ),
+            mock.patch.object(
                 module, "_native_relation_diff_paths", return_value=paths
             ),
         ):
@@ -1248,7 +1294,7 @@ class VersionRelationTests(HexctlCase):
                     sync_head,
                     relation,
                 )
-        self.assertIn("omits a changed target path", stderr.getvalue())
+        self.assertIn("path proof does not match", stderr.getvalue())
 
         sync["revalidation"]["affected_paths"] = paths
         sync["revalidation"]["checks"][0]["exit"] = 1
@@ -1259,6 +1305,11 @@ class VersionRelationTests(HexctlCase):
                 return_value=[product_head, base_commit],
             ),
             mock.patch.object(module, "verify_local_commit", return_value=sync_head),
+            mock.patch.object(
+                module,
+                "_native_relation_merge_base",
+                return_value="a" * 40,
+            ),
             mock.patch.object(
                 module, "_native_relation_diff_paths", return_value=paths
             ),
@@ -1320,6 +1371,130 @@ class VersionRelationTests(HexctlCase):
                         relation,
                     )
                 self.assertNotIn("Traceback", stderr.getvalue())
+
+    def test_resolution_sync_replay_requires_closed_stored_shapes(self):
+        (
+            module,
+            state,
+            relation,
+            sync,
+            product_head,
+            base_commit,
+            sync_head,
+        ) = self._sync_evidence_fixture()
+        paths = sorted([self.ledger_path("fiat"), self.skill_path("fiat")])
+        specimens = {}
+        malformed = json.loads(json.dumps(sync))
+        malformed["unexpected"] = True
+        specimens["extra sync field"] = malformed
+        malformed = json.loads(json.dumps(sync))
+        malformed.pop("starting_base")
+        specimens["missing starting base"] = malformed
+        malformed = json.loads(json.dumps(sync))
+        malformed["starting_base"] = "wrong"
+        specimens["wrong starting base"] = malformed
+        malformed = json.loads(json.dumps(sync))
+        malformed["revalidation"]["unexpected"] = True
+        specimens["extra revalidation field"] = malformed
+        malformed = json.loads(json.dumps(sync))
+        malformed["revalidation"]["checks"][0].pop("id")
+        specimens["missing check id"] = malformed
+        malformed = json.loads(json.dumps(sync))
+        malformed["revalidation"]["checks"][0].pop("command")
+        specimens["missing check command"] = malformed
+        malformed = json.loads(json.dumps(sync))
+        malformed["revalidation"]["checks"][0]["unexpected"] = True
+        specimens["extra check field"] = malformed
+        malformed = json.loads(json.dumps(sync))
+        malformed["revalidation"]["checks"].append(
+            json.loads(json.dumps(malformed["revalidation"]["checks"][0]))
+        )
+        specimens["duplicate check id"] = malformed
+
+        for label, specimen in specimens.items():
+            with self.subTest(label=label):
+                with (
+                    mock.patch.object(
+                        module,
+                        "_native_relation_parents",
+                        return_value=[product_head, base_commit],
+                    ),
+                    mock.patch.object(
+                        module,
+                        "_native_relation_merge_base",
+                        return_value="a" * 40,
+                    ),
+                    mock.patch.object(
+                        module, "verify_local_commit", return_value=sync_head
+                    ),
+                    mock.patch.object(
+                        module, "_native_relation_diff_paths", return_value=paths
+                    ),
+                    contextlib.redirect_stderr(io.StringIO()),
+                    self.assertRaises(SystemExit),
+                ):
+                    module._require_resolution_sync(
+                        self.target,
+                        state,
+                        specimen,
+                        product_head,
+                        base_commit,
+                        sync_head,
+                        relation,
+                    )
+
+    def test_resolution_sync_replay_requires_every_affected_path_covered(self):
+        (
+            module,
+            state,
+            relation,
+            sync,
+            product_head,
+            base_commit,
+            sync_head,
+        ) = self._sync_evidence_fixture()
+        ledger = self.ledger_path("fiat")
+        paths = sorted([ledger, "uncovered.txt"])
+        revalidation = sync["revalidation"]
+        for name in (
+            "product_paths",
+            "upstream_paths",
+            "overlap_paths",
+            "composition_paths",
+            "affected_paths",
+        ):
+            revalidation[name] = paths
+        revalidation["checks"][0]["paths"] = [ledger]
+
+        with (
+            mock.patch.object(
+                module,
+                "_native_relation_parents",
+                return_value=[product_head, base_commit],
+            ),
+            mock.patch.object(
+                module,
+                "_native_relation_merge_base",
+                return_value="a" * 40,
+            ),
+            mock.patch.object(
+                module, "verify_local_commit", return_value=sync_head
+            ),
+            mock.patch.object(
+                module, "_native_relation_diff_paths", return_value=paths
+            ),
+            contextlib.redirect_stderr(io.StringIO()),
+            self.assertRaises(SystemExit),
+        ):
+            module._require_resolution_sync(
+                self.target,
+                state,
+                sync,
+                product_head,
+                base_commit,
+                sync_head,
+                relation,
+            )
 
     def test_two_target_resolution_is_all_or_nothing_and_skill_sorted(self):
         self.install_chain("fiat", (2,))
