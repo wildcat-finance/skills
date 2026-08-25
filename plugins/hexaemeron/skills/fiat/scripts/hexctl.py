@@ -7128,6 +7128,17 @@ GITHUB_SIGNING_KEYS = frozenset(
     }
 )
 
+# A repository may choose its signature format and trust material, but it may
+# not replace the native program that decides whether a signature is valid.
+# Command-scoped values outrank repository-local config while preserving the
+# three formats Git supports.
+SIGNATURE_VERIFIER_CONFIG = (
+    "gpg.program=gpg",
+    "gpg.openpgp.program=gpg",
+    "gpg.x509.program=gpgsm",
+    "gpg.ssh.program=ssh-keygen",
+)
+
 
 HOST_IDENTITY_NAMES = frozenset(
     {
@@ -7451,16 +7462,22 @@ def verify_local_commit(
 ) -> str:
     """Verify one exact locally created commit and its required trailers."""
     commit_sha = require_full_sha(commit_sha, label)
+    verification_argv = [
+        item
+        for setting in SIGNATURE_VERIFIER_CONFIG
+        for item in ("-c", setting)
+    ]
+    verification_argv.extend(["verify-commit", commit_sha])
     if native_relation:
         _native_relation_git(
             base_dir,
-            ["verify-commit", commit_sha],
+            verification_argv,
             f"{label} commit {commit_sha} has no valid native local signature",
         )
     elif bounded_tool_status(
         base_dir,
         "git",
-        ["--no-replace-objects", "verify-commit", commit_sha],
+        ["--no-replace-objects", *verification_argv],
     ) != 0:
         key = signing_key(base_dir, commit_sha).upper()
         if key in GITHUB_SIGNING_KEYS:

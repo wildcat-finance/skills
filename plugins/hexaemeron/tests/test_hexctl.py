@@ -233,12 +233,11 @@ import time
 
 raw_args = sys.argv[1:]
 args = raw_args
-if (
-    len(raw_args) >= 2
-    and raw_args[0] == "--no-replace-objects"
-    and raw_args[1] in ("verify-commit", "show")
-):
-    args = args[1:]
+candidate = raw_args[1:] if raw_args[:1] == ["--no-replace-objects"] else raw_args
+while len(candidate) >= 2 and candidate[0] == "-c":
+    candidate = candidate[2:]
+if candidate and candidate[0] in ("verify-commit", "show"):
+    args = candidate
 mode = os.environ.get("FAKE_GIT_MODE", "valid")
 if args and args[0] == "rev-parse" and "--show-toplevel" not in args:
     if mode == "missing-commit":
@@ -1582,7 +1581,14 @@ class TestCommitVerification(HexctlCase):
         status.assert_called_once_with(
             self.dir,
             "git",
-            ["--no-replace-objects", "verify-commit", commit_sha],
+            [
+                "--no-replace-objects",
+                "-c", "gpg.program=gpg",
+                "-c", "gpg.openpgp.program=gpg",
+                "-c", "gpg.x509.program=gpgsm",
+                "-c", "gpg.ssh.program=ssh-keygen",
+                "verify-commit", commit_sha,
+            ],
         )
 
     def test_local_fake_git_negative_matrix_is_fail_closed_and_secret_safe(self):

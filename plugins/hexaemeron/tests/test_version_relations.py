@@ -1255,6 +1255,57 @@ class VersionRelationTests(HexctlCase):
             native_relation=True,
         )
 
+    def test_native_resolution_signature_ignores_repository_verifier_config(self):
+        module = hexctl_module()
+        parent = self.git("rev-parse", "HEAD").stdout.strip()
+        tree = self.git("rev-parse", f"{parent}^{{tree}}").stdout.strip()
+        raw_commit = (
+            f"tree {tree}\n"
+            f"parent {parent}\n"
+            "author Shoggoth <shoggoth@wildcat.finance> 0 +0000\n"
+            "committer Shoggoth <shoggoth@wildcat.finance> 0 +0000\n"
+            "gpgsig -----BEGIN PGP SIGNATURE-----\n"
+            " \n"
+            " YQ==\n"
+            " =AAAA\n"
+            " -----END PGP SIGNATURE-----\n"
+            "\n"
+            "fake native signature\n\n"
+            "Co-authored-by: Shoggoth <shoggoth@wildcat.finance>\n"
+            "Wildcat-Origin: shoggoth\n"
+        )
+        commit_sha = subprocess.run(
+            ["git", "hash-object", "-t", "commit", "-w", "--stdin"],
+            cwd=self.target,
+            input=raw_commit,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        verifier = os.path.join(self.target, "fake-openpgp-verifier")
+        with open(verifier, "w", encoding="utf-8") as handle:
+            handle.write(
+                "#!/bin/sh\n"
+                "printf '[GNUPG:] NEWSIG\\n'\n"
+                "printf '[GNUPG:] GOODSIG 0123456789ABCDEF Probe\\n'\n"
+                "printf '[GNUPG:] VALIDSIG "
+                "0123456789ABCDEF0123456789ABCDEF01234567 "
+                "1970-01-01 0 0 4 0 22 8 00 "
+                "0123456789ABCDEF0123456789ABCDEF01234567\\n'\n"
+            )
+        os.chmod(verifier, 0o755)
+        self.git("config", "gpg.program", verifier)
+
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module.verify_local_commit(
+                self.target,
+                commit_sha,
+                "version resolution sync",
+                native_relation=True,
+            )
+        self.assertIn("valid native local signature", stderr.getvalue())
+
     def test_resolution_sync_refuses_missing_path_or_green_check_coverage(self):
         (
             module,
