@@ -50,9 +50,9 @@ def make_origin_checkout(path):
     """
     for argv in (
         ["init", "-q", "-b", "main"],
+        ["config", "--local", "commit.gpgsign", "false"],
         ["config", "user.email", "fixture@example.invalid"],
         ["config", "user.name", "Fixture"],
-        ["config", "commit.gpgsign", "false"],
         ["commit", "-q", "--allow-empty", "-m", "base"],
     ):
         subprocess.run(["git", *argv], cwd=path, check=True, capture_output=True)
@@ -1292,6 +1292,7 @@ class TestStudyAmendments(HexctlCase):
     def test_temporary_git_repositories_demonstrate_holding_and_broken_runs(self):
         original = self.to_amendable_steps()
         self.git("init", "-b", "main")
+        self.git("config", "--local", "commit.gpgsign", "false")
         self.git("config", "user.email", "tests@example.com")
         self.git("config", "user.name", "Hexctl Tests")
         self.git("add", "study.md", "runbook.md", "steps.json")
@@ -1314,6 +1315,7 @@ class TestStudyAmendments(HexctlCase):
         try:
             original = broken.to_amendable_steps()
             broken.git("init", "-b", "main")
+            broken.git("config", "--local", "commit.gpgsign", "false")
             broken.git("config", "user.email", "tests@example.com")
             broken.git("config", "user.name", "Hexctl Tests")
             broken.git("add", "study.md", "runbook.md", "steps.json")

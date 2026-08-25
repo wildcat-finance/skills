@@ -112,6 +112,7 @@ class Fixture:
     def __init__(self, base_files):
         self.path = Path(tempfile.mkdtemp(prefix="elenchus-fixture-"))
         self.run("init", "--quiet", "-b", "main")
+        self.run("config", "--local", "commit.gpgsign", "false")
         self.run("config", "user.email", "fixture@example.org")
         self.run("config", "user.name", "Fixture")
         self.base = self.commit("base", base_files)

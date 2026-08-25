@@ -62,6 +62,7 @@ class ScopedEntryTests(unittest.TestCase):
         self.root = os.path.realpath(self._tmp.name)
         self.addCleanup(self._tmp.cleanup)
         git(self.root, "init", "-q")
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
         write(self.root, ".gitattributes", "vendor-only/** linguist-vendored\n")
         write(self.root, "src/app.py", "value = 1\n")
         write(self.root, "plugins/one/module.py", "value = 2\n")

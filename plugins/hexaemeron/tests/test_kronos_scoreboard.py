@@ -662,6 +662,7 @@ class DurableHomeTest(unittest.TestCase):
             LEDGER.replace("some-revision", "other-revision"), encoding="utf-8"
         )
         self.git(path, "init")
+        self.git(path, "config", "--local", "commit.gpgsign", "false")
         self.git(path, "config", "user.name", "Kronos Test")
         self.git(path, "config", "user.email", "kronos@test.invalid")
         self.git(path, "add", "alpha", "beta")
@@ -757,6 +758,7 @@ class DurableHomeTest(unittest.TestCase):
         self.push(tree_a)
         edit = self.home / "edit"
         self.git(None, "clone", "--branch", "kronos/state", str(self.bare), str(edit))
+        self.git(edit, "config", "--local", "commit.gpgsign", "false")
         self.git(edit, "config", "user.name", "Kronos Test")
         self.git(edit, "config", "user.email", "kronos@test.invalid")
         (edit / "README").write_text("not a kronos file\n", encoding="utf-8")

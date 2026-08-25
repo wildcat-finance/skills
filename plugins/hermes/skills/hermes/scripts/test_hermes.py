@@ -171,6 +171,11 @@ class HarnessFixture:
         forge.write_text(FAKE_FORGE)
         forge.chmod(0o755)
         subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
+        subprocess.run(
+            ["git", "config", "--local", "commit.gpgsign", "false"],
+            cwd=self.repo,
+            check=True,
+        )
         subprocess.run(["git", "config", "user.name", "Hermes Tests"], cwd=self.repo, check=True)
         subprocess.run(["git", "config", "user.email", "hermes@example.invalid"], cwd=self.repo, check=True)
         subprocess.run(["git", "add", "foundry.toml", "src/C.sol", "test/C.t.sol"], cwd=self.repo, check=True)
