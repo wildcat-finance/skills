@@ -26,6 +26,7 @@ import fcntl
 import glob
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import re
@@ -43,6 +44,7 @@ STATE_FILE = "state.json"
 LEDGER_FILE = "ledger.jsonl"
 STUDY_AMENDMENT_PENDING_FILE = "study-amendment-pending.json"
 RUNBOOK_AMENDMENT_PENDING_FILE = "runbook-amendment-pending.json"
+VERSION_RESOLUTION_PENDING_FILE = "version-resolution.pending.json"
 AMENDMENT_PENDING_FILES = {
     "study": STUDY_AMENDMENT_PENDING_FILE,
     "runbook": RUNBOOK_AMENDMENT_PENDING_FILE,
@@ -227,6 +229,36 @@ VERSION_RELATION_TARGET_KEYS = frozenset(
 )
 VERSION_RELATION_KEYS = frozenset(
     {"schema", "source_sha256", "anchor_commit", "targets"}
+)
+VERSION_RESOLUTION_SCHEMA = "fiat-version-resolution/v1"
+VERSION_RESOLUTION_PENDING_SCHEMA = "fiat-version-resolution-pending/v1"
+VERSION_RESOLUTIONS_MAX = 8
+VERSION_RESOLUTION_TARGET_KEYS = frozenset(
+    {
+        "skill",
+        "ledger",
+        "relation",
+        "anchor_version",
+        "base_version",
+        "resolved_version",
+        "base_ledger_sha256",
+        "head_ledger_sha256",
+        "row_sha256",
+        "skill_sha256",
+        "skill_metadata_version",
+    }
+)
+VERSION_RESOLUTION_KEYS = frozenset(
+    {
+        "schema",
+        "runbook_sha256",
+        "relations_sha256",
+        "base_ref",
+        "base_commit",
+        "head_commit",
+        "targets",
+        "ts",
+    }
 )
 
 
@@ -912,6 +944,120 @@ def validate_version_relations_shape(value, path: str) -> dict:
     return value
 
 
+def _state_resolution_fault(path: str, reason: str) -> None:
+    """Refuse one malformed optional resolution without echoing its value."""
+    die(f"state version resolution key '{path}' {reason}", 1)
+
+
+def validate_version_resolution_shape(value, path: str) -> dict:
+    """Validate one closed append-only integrate-time resolution receipt."""
+    if not isinstance(value, dict):
+        _state_resolution_fault(path, "must be an object")
+    if set(value) != VERSION_RESOLUTION_KEYS:
+        _state_resolution_fault(path, "has an unsupported field set")
+    if value.get("schema") != VERSION_RESOLUTION_SCHEMA:
+        _state_resolution_fault(f"{path}.schema", "is not supported")
+    for name in ("runbook_sha256", "relations_sha256"):
+        digest = value.get(name)
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            _state_resolution_fault(f"{path}.{name}", "is malformed")
+    base_ref = value.get("base_ref")
+    if (
+        not isinstance(base_ref, str)
+        or not BRANCH_RE.fullmatch(base_ref)
+        or ".." in base_ref
+        or "//" in base_ref
+        or base_ref.endswith(".lock")
+    ):
+        _state_resolution_fault(f"{path}.base_ref", "is malformed")
+    for name in ("base_commit", "head_commit"):
+        commit_sha = value.get(name)
+        if not isinstance(commit_sha, str) or COMMIT_RE.fullmatch(commit_sha) is None:
+            _state_resolution_fault(f"{path}.{name}", "is malformed")
+    timestamp = value.get("ts")
+    try:
+        parsed_timestamp = (
+            datetime.datetime.fromisoformat(timestamp)
+            if isinstance(timestamp, str)
+            else None
+        )
+    except ValueError:
+        parsed_timestamp = None
+    if parsed_timestamp is None or parsed_timestamp.tzinfo is None:
+        _state_resolution_fault(f"{path}.ts", "is malformed")
+
+    targets = value.get("targets")
+    if not isinstance(targets, list) or not targets:
+        _state_resolution_fault(f"{path}.targets", "must be a non-empty array")
+    if len(targets) > VERSION_RELATIONS_MAX:
+        _state_resolution_fault(f"{path}.targets", "exceeds its item cap")
+    prior_skill = None
+    seen_paths = set()
+    for index, target in enumerate(targets):
+        target_path = f"{path}.targets[{index}]"
+        if not isinstance(target, dict) or set(target) != VERSION_RESOLUTION_TARGET_KEYS:
+            _state_resolution_fault(target_path, "has an unsupported field set")
+        skill = target.get("skill")
+        ledger = target.get("ledger")
+        if not isinstance(skill, str) or VERSION_RELATION_SKILL_RE.fullmatch(skill) is None:
+            _state_resolution_fault(f"{target_path}.skill", "is malformed")
+        if not isinstance(ledger, str) or _version_relation_path_fault(ledger, skill):
+            _state_resolution_fault(f"{target_path}.ledger", "is malformed")
+        if prior_skill is not None and skill <= prior_skill:
+            _state_resolution_fault(f"{path}.targets", "is not uniquely skill-sorted")
+        if ledger in seen_paths:
+            _state_resolution_fault(f"{path}.targets", "repeats a ledger path")
+        prior_skill = skill
+        seen_paths.add(ledger)
+        if target.get("relation") != VERSION_RELATION:
+            _state_resolution_fault(f"{target_path}.relation", "is not supported")
+        labels = {}
+        for name in ("anchor_version", "base_version", "resolved_version"):
+            label = target.get(name)
+            parts = _label_parts(label, skill) if isinstance(label, str) else None
+            if parts is None or label != f"{skill}-v{parts[0]}.{parts[1]}.{parts[2]}":
+                _state_resolution_fault(f"{target_path}.{name}", "is malformed")
+            labels[name] = parts
+        anchor, base, resolved = (
+            labels["anchor_version"],
+            labels["base_version"],
+            labels["resolved_version"],
+        )
+        if (
+            base[0] != anchor[0]
+            or base[2] != anchor[2]
+            or base[1] < anchor[1]
+            or resolved != (base[0], base[1] + 1, base[2])
+        ):
+            _state_resolution_fault(f"{target_path}.resolved_version", "is inconsistent")
+        if target.get("skill_metadata_version") != ".".join(
+            str(part) for part in resolved
+        ):
+            _state_resolution_fault(
+                f"{target_path}.skill_metadata_version", "is inconsistent"
+            )
+        for name in (
+            "base_ledger_sha256",
+            "head_ledger_sha256",
+            "row_sha256",
+            "skill_sha256",
+        ):
+            digest = target.get(name)
+            if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+                _state_resolution_fault(f"{target_path}.{name}", "is malformed")
+    return value
+
+
+def validate_version_resolution_history(value, path: str) -> list[dict]:
+    if not isinstance(value, list):
+        _state_resolution_fault(path, "must be an array")
+    if len(value) > VERSION_RESOLUTIONS_MAX:
+        _state_resolution_fault(path, "exceeds its item cap")
+    for index, receipt in enumerate(value):
+        validate_version_resolution_shape(receipt, f"{path}[{index}]")
+    return value
+
+
 def validate_state_shape(state) -> dict:
     """Validate the version-1 container spine in one deterministic order.
 
@@ -929,6 +1075,16 @@ def validate_state_shape(state) -> dict:
     if isinstance(runbook, dict) and "version_relations" in runbook:
         validate_version_relations_shape(
             runbook["version_relations"], "receipts.runbook.version_relations"
+        )
+    integrate = root.get("integrate")
+    if isinstance(integrate, dict) and "version_resolutions" in integrate:
+        validate_version_resolution_history(
+            integrate["version_resolutions"], "integrate.version_resolutions"
+        )
+    terminal = receipts.get("integrate")
+    if isinstance(terminal, dict) and "version_resolution" in terminal:
+        validate_version_resolution_shape(
+            terminal["version_resolution"], "receipts.integrate.version_resolution"
         )
     steps = require_state_container(root.get("steps"), "steps", list)
 
@@ -1092,7 +1248,139 @@ def clear_study_amendment_pending(base_dir: str) -> None:
     clear_amendment_pending(base_dir, "study")
 
 
-def load_state(base_dir: str, *, allow_pending_amendment: bool = False) -> dict:
+def version_resolution_pending_path(base_dir: str) -> str:
+    return os.path.join(state_root(base_dir), VERSION_RESOLUTION_PENDING_FILE)
+
+
+def load_version_resolution_pending(base_dir: str) -> dict | None:
+    """Read one closed, subject-labelled interrupted resolution marker."""
+    path = version_resolution_pending_path(base_dir)
+    try:
+        file_state = os.lstat(path)
+    except FileNotFoundError:
+        return None
+    except OSError:
+        die("version resolution pending record cannot be inspected", 1)
+    if not stat.S_ISREG(file_state.st_mode) or stat.S_ISLNK(file_state.st_mode):
+        die("version resolution pending record is not a regular file", 1)
+    if file_state.st_size > 131072:
+        die("version resolution pending record exceeds 131072-byte cap", 1)
+    try:
+        with open(path, "rb") as handle:
+            raw = handle.read(131073)
+    except OSError:
+        die("version resolution pending record cannot be read", 1)
+    if len(raw) > 131072:
+        die("version resolution pending record exceeds 131072-byte cap", 1)
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        die("version resolution pending record is malformed", 1)
+    expected_keys = {
+        "schema",
+        "subject",
+        "state_before_sha256",
+        "state_after_sha256",
+        "ledger_head",
+        "receipt_sha256",
+        "receipt",
+    }
+    if not isinstance(value, dict) or set(value) != expected_keys:
+        die("version resolution pending record has an unsupported shape", 1)
+    if (
+        value.get("schema") != VERSION_RESOLUTION_PENDING_SCHEMA
+        or value.get("subject") != "version-resolution"
+    ):
+        die("version resolution pending record has an unsupported subject", 1)
+    for name in (
+        "state_before_sha256",
+        "state_after_sha256",
+        "ledger_head",
+        "receipt_sha256",
+    ):
+        digest = value.get(name)
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            die("version resolution pending record has an invalid digest", 1)
+    receipt = validate_version_resolution_shape(
+        value.get("receipt"), "pending.version_resolution.receipt"
+    )
+    if hashlib.sha256(canonical(receipt).encode()).hexdigest() != value["receipt_sha256"]:
+        die("version resolution pending record receipt digest does not match", 1)
+    return value
+
+
+def write_version_resolution_pending(base_dir: str, value: dict) -> None:
+    """Publish the resolution marker before its ledger/state write windows."""
+    root = state_root(base_dir)
+    path = version_resolution_pending_path(base_dir)
+    descriptor, temporary = tempfile.mkstemp(
+        prefix=".version-resolution-pending-", dir=root
+    )
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump(value, handle, sort_keys=True, separators=(",", ":"))
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        directory = os.open(root, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except OSError:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
+        die("version resolution pending record could not be written", 1)
+
+
+def clear_version_resolution_pending(base_dir: str) -> None:
+    path = version_resolution_pending_path(base_dir)
+    try:
+        os.unlink(path)
+        directory = os.open(state_root(base_dir), os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except FileNotFoundError:
+        return
+    except OSError:
+        die("version resolution pending record could not be cleared", 1)
+
+
+def make_version_resolution_write_durable(
+    base_dir: str, path: str, label: str, *, replaced: bool = False
+) -> None:
+    """Fsync one transaction write before crossing its next recovery window."""
+    try:
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        if replaced:
+            directory = os.open(state_root(base_dir), os.O_RDONLY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+    except OSError:
+        die(f"version resolution {label} could not be made durable", 1)
+
+
+def load_state(
+    base_dir: str,
+    *,
+    allow_pending_amendment: bool = False,
+    allow_pending_resolution: bool = False,
+) -> dict:
     path = state_path(base_dir)
     if not os.path.exists(path):
         # A checkout that started a run has no state of its own: the run's state
@@ -1121,15 +1409,26 @@ def load_state(base_dir: str, *, allow_pending_amendment: bool = False) -> dict:
     except (ValueError, OSError) as exc:
         die(f"state file unreadable at {path}: {exc}", 1)
     state = validate_state_shape(state)
-    if not allow_pending_amendment:
-        pending = pending_amendments(base_dir)
-        if pending:
-            subject = next(iter(pending))
-            die(
-                f"{subject} amendment transaction is pending; rerun `hexctl "
-                f"amend {subject} --artifact <canonical-{subject}>` to recover "
-                "before continuing"
-            )
+    amendments = pending_amendments(base_dir)
+    resolution = load_version_resolution_pending(base_dir)
+    if amendments and resolution is not None:
+        die(
+            "amendment and version-resolution transactions are both pending; "
+            "inspect both markers without removing either",
+            1,
+        )
+    if amendments and not allow_pending_amendment:
+        subject = next(iter(amendments))
+        die(
+            f"{subject} amendment transaction is pending; rerun `hexctl "
+            f"amend {subject} --artifact <canonical-{subject}>` to recover "
+            "before continuing"
+        )
+    if resolution is not None and not allow_pending_resolution:
+        die(
+            "version-resolution transaction is pending; rerun `hexctl done "
+            "resolve-versions` to recover before continuing"
+        )
     return state
 
 
@@ -1950,6 +2249,72 @@ def _native_relation_commit(base_dir: str, ref: str, label: str) -> str:
     return lines[0]
 
 
+def _native_relation_parents(
+    base_dir: str, commit_sha: str, label: str
+) -> list[str]:
+    """Read exact commit parents without replacement refs or inherited Git state."""
+    commit_sha = require_full_sha(commit_sha, label)
+    raw = _native_relation_git(
+        base_dir,
+        ["show", "-s", "--no-show-signature", "--format=%P", commit_sha],
+        f"{label} parents cannot be read",
+    )
+    try:
+        parents = raw.decode("ascii").strip().split()
+    except UnicodeDecodeError:
+        parents = []
+    if any(COMMIT_RE.fullmatch(parent) is None for parent in parents):
+        die(f"{label} returned a malformed parent SHA")
+    return parents
+
+
+def _native_relation_diff_paths(
+    base_dir: str, before: str, after: str
+) -> list[str]:
+    """Read one exact native tree delta for target-path revalidation."""
+    before = require_full_sha(before, "version resolution product head")
+    after = require_full_sha(after, "version resolution sync head")
+    raw = _native_relation_git(
+        base_dir,
+        ["diff", "--name-only", "-z", f"{before}..{after}", "--"],
+        "version resolution target path delta cannot be read",
+    )
+    try:
+        decoded = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        die("version resolution target path delta is not UTF-8")
+    paths = [path for path in decoded.split("\0") if path]
+    unique = sorted(set(paths))
+    if len(unique) > GIT_PATHS_MAX:
+        die(f"version resolution target path delta exceeds {GIT_PATHS_MAX} paths")
+    if len(unique) != len(paths):
+        die("version resolution target path delta contains duplicate paths")
+    root = os.path.realpath(base_dir)
+    for index, path in enumerate(unique):
+        if (
+            not path
+            or os.path.isabs(path)
+            or path in (".", "..")
+            or ".." in path.split("/")
+            or any(ord(character) < 32 or ord(character) == 127 for character in path)
+        ):
+            die(
+                "version resolution target path delta contains an unsafe "
+                f"path at index {index}"
+            )
+        candidate = os.path.realpath(os.path.join(root, path))
+        try:
+            inside = os.path.commonpath((root, candidate)) == root
+        except ValueError:
+            inside = False
+        if not inside:
+            die(
+                "version resolution target path delta escapes the repository "
+                f"at index {index}"
+            )
+    return unique
+
+
 def _native_relation_repository_identity(base_dir: str) -> tuple[str, str]:
     """Identify the worktree Git directory and its exact common repository."""
     raw = _native_relation_git(
@@ -2450,7 +2815,7 @@ def capture_version_relations(
     return receipt
 
 
-def version_relations_packet(receipt: dict) -> dict:
+def version_relations_packet(receipt: dict, resolution: dict | None = None) -> dict:
     """Label an anchor and its provisional arithmetic without reserving it."""
     targets = []
     for target in receipt["targets"]:
@@ -2465,12 +2830,504 @@ def version_relations_packet(receipt: dict) -> dict:
         )
     return {
         "schema": receipt["schema"],
-        "status": "anchor",
-        "resolution": None,
+        "status": "resolved" if resolution is not None else "anchor",
+        "resolution": resolution,
         "source_sha256": receipt["source_sha256"],
         "anchor_commit": receipt["anchor_commit"],
         "targets": targets,
     }
+
+
+def _ledger_history_records(text: str, skill: str, label: str) -> list[dict]:
+    """Parse and validate every governed history row, retaining exact bytes."""
+    history_index = text.find("## History")
+    if history_index < 0:
+        die(f"{label} has no History section")
+    rows = []
+    for physical in text[history_index:].splitlines(keepends=True):
+        line = physical.rstrip("\r\n")
+        match = LEDGER_ROW.fullmatch(line) or LEDGER_ROW_COMPACT.fullmatch(line)
+        if match is None:
+            if line.startswith("| `") or line.startswith("- `"):
+                die(f"{label} carries a malformed history row")
+            continue
+        row = match.groupdict()
+        parts = _label_parts(row["version"], skill)
+        if parts is None or row["version"] != (
+            f"{skill}-v{parts[0]}.{parts[1]}.{parts[2]}"
+        ):
+            die(f"{label} carries a malformed history label")
+        row["parts"] = parts
+        row["raw"] = physical
+        rows.append(row)
+    if not rows:
+        die(f"{label} carries no governed history row")
+    if rows[0]["axis"] != "baseline":
+        die(f"{label} history does not begin with a baseline row")
+    seen_versions = set()
+    for index, row in enumerate(rows):
+        if row["version"] in seen_versions:
+            die(f"{label} history repeats a version")
+        seen_versions.add(row["version"])
+        if index == 0:
+            continue
+        previous = rows[index - 1]
+        deltas = tuple(
+            row["parts"][part] - previous["parts"][part]
+            for part in range(3)
+        )
+        expected_axis = {0: "evolution", 1: "generation", 2: "epoch"}
+        changed = [part for part, delta in enumerate(deltas) if delta != 0]
+        if (
+            len(changed) != 1
+            or deltas[changed[0]] != 1
+            or row["axis"] != expected_axis[changed[0]]
+            or row["axis"] == "baseline"
+        ):
+            die(f"{label} history does not follow the version-axis arithmetic")
+        if row["axis"] == "generation" and (
+            row["revision"] != previous["revision"]
+            or row["digest"] != previous["digest"]
+        ):
+            die(f"{label} generation history changes the held frontier")
+    return rows
+
+
+def _version_target_snapshot(
+    base_dir: str, commit_sha: str, target: dict, label: str
+) -> dict:
+    """Read one exact ledger and sibling skill blob from a native commit."""
+    skill = target["skill"]
+    ledger_path = target["ledger"]
+    ledger_object, ledger_bytes = read_commit_blob(
+        base_dir, commit_sha, ledger_path, f"{label} ledger"
+    )
+    skill_path = ledger_path.rsplit("/", 1)[0] + "/SKILL.md"
+    skill_object, skill_bytes = read_commit_blob(
+        base_dir, commit_sha, skill_path, f"{label} skill"
+    )
+    try:
+        ledger_text = ledger_bytes.decode("utf-8")
+        skill_text = skill_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        die(f"{label} version evidence is not UTF-8 text")
+    current, _ = _ledger_field_bytes(ledger_text, "Current version", label)
+    status, _ = _ledger_field_bytes(ledger_text, "Frontier status", label)
+    revision, _ = _ledger_field_bytes(ledger_text, "Frontier revision", label)
+    frontier, frontier_raw = _ledger_field_bytes(
+        ledger_text, "Current frontier", label
+    )
+    next_job, next_job_raw = _ledger_field_bytes(ledger_text, "Next Fiat job", label)
+    parts = _label_parts(current, skill)
+    if parts is None or current != f"{skill}-v{parts[0]}.{parts[1]}.{parts[2]}":
+        die(f"{label} has a malformed current version")
+    if parts[1] >= VERSION_RELATION_COUNTER_MAX:
+        die(f"{label} generation has no representable successor")
+    if status not in ("open", "mature"):
+        die(f"{label} has a malformed frontier status")
+    if (status == "mature") != (next_job == "None -- mature"):
+        die(f"{label} has an inconsistent frontier status and next job")
+    frontier_sha256 = hashlib.sha256(
+        f"{status}|{revision}|{frontier}|{next_job}\n".encode("utf-8")
+    ).hexdigest()
+    rows = _ledger_history_records(ledger_text, skill, label)
+    if (
+        rows[-1]["version"] != current
+        or rows[-1]["revision"] != revision
+        or rows[-1]["digest"] != frontier_sha256
+    ):
+        die(f"{label} header does not match its final history row")
+    metadata = _skill_frontmatter_identity(skill_text, skill)
+    if metadata != ".".join(str(part) for part in parts):
+        die(f"{label} skill metadata does not match its ledger")
+    return {
+        "skill": skill,
+        "ledger": ledger_path,
+        "skill_path": skill_path,
+        "current": current,
+        "parts": parts,
+        "status": status,
+        "revision": revision,
+        "frontier_sha256": frontier_sha256,
+        "current_frontier_sha256": hashlib.sha256(frontier_raw).hexdigest(),
+        "next_job_sha256": hashlib.sha256(next_job_raw).hexdigest(),
+        "rows": rows,
+        "ledger_object": ledger_object,
+        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+        "skill_object": skill_object,
+        "skill_sha256": hashlib.sha256(skill_bytes).hexdigest(),
+        "metadata": metadata,
+    }
+
+
+def _require_anchor_snapshot(snapshot: dict, anchor: dict) -> None:
+    expected = {
+        "current": anchor["anchor_version"],
+        "parts": (
+            anchor["evolution"],
+            anchor["generation"],
+            anchor["epoch"],
+        ),
+        "status": anchor["frontier_status"],
+        "revision": anchor["frontier_revision"],
+        "frontier_sha256": anchor["frontier_sha256"],
+        "current_frontier_sha256": anchor["current_frontier_sha256"],
+        "next_job_sha256": anchor["next_job_sha256"],
+        "ledger_sha256": anchor["ledger_sha256"],
+        "skill_sha256": anchor["skill_sha256"],
+        "metadata": anchor["skill_metadata_version"],
+    }
+    if any(snapshot[name] != value for name, value in expected.items()):
+        die("version relation anchor evidence no longer matches its exact objects")
+
+
+def _require_history_prefix(
+    prefix: list[dict], history: list[dict], label: str
+) -> None:
+    if len(history) < len(prefix):
+        die(f"{label} history is shorter than its required prefix")
+    if any(
+        expected["raw"] != actual["raw"]
+        for expected, actual in zip(prefix, history)
+    ):
+        die(f"{label} history rewrites its required prefix")
+
+
+def version_compatibility_fault(anchor: dict, snapshot: dict) -> str | None:
+    """Name the first non-generation anchor field that drifted."""
+    comparisons = (
+        ("evolution", anchor["evolution"], snapshot["parts"][0]),
+        ("epoch", anchor["epoch"], snapshot["parts"][2]),
+        ("frontier_status", anchor["frontier_status"], snapshot["status"]),
+        ("frontier_revision", anchor["frontier_revision"], snapshot["revision"]),
+        ("frontier_sha256", anchor["frontier_sha256"], snapshot["frontier_sha256"]),
+        (
+            "current_frontier_sha256",
+            anchor["current_frontier_sha256"],
+            snapshot["current_frontier_sha256"],
+        ),
+        ("next_job_sha256", anchor["next_job_sha256"], snapshot["next_job_sha256"]),
+    )
+    return next(
+        (name for name, expected, actual in comparisons if expected != actual),
+        None,
+    )
+
+
+def resolve_version_relation_target(
+    base_dir: str,
+    anchor_commit: str,
+    base_commit: str,
+    head_commit: str,
+    anchor: dict,
+) -> dict:
+    """Resolve and prove one target against exact base and candidate objects."""
+    anchor_snapshot = _version_target_snapshot(
+        base_dir, anchor_commit, anchor, "version relation anchor"
+    )
+    _require_anchor_snapshot(anchor_snapshot, anchor)
+    base_snapshot = _version_target_snapshot(
+        base_dir, base_commit, anchor, "version resolution base"
+    )
+    head_snapshot = _version_target_snapshot(
+        base_dir, head_commit, anchor, "version resolution candidate"
+    )
+    _require_history_prefix(
+        anchor_snapshot["rows"], base_snapshot["rows"], "version resolution base"
+    )
+    compatibility_fault = version_compatibility_fault(anchor, base_snapshot)
+    if compatibility_fault:
+        die(
+            "version resolution base has incompatible drift in "
+            f"{compatibility_fault}"
+        )
+    if base_snapshot["parts"][1] < anchor["generation"]:
+        die("version resolution base generation predates the anchor")
+    for row in base_snapshot["rows"][len(anchor_snapshot["rows"]) :]:
+        if (
+            row["axis"] != "generation"
+            or row["revision"] != anchor["frontier_revision"]
+            or row["digest"] != anchor["frontier_sha256"]
+        ):
+            die("version resolution base carries incompatible history drift")
+
+    _require_history_prefix(
+        base_snapshot["rows"], head_snapshot["rows"], "version resolution candidate"
+    )
+    if len(head_snapshot["rows"]) != len(base_snapshot["rows"]) + 1:
+        die("version resolution candidate must add exactly one target history row")
+    resolved_parts = (
+        base_snapshot["parts"][0],
+        base_snapshot["parts"][1] + 1,
+        base_snapshot["parts"][2],
+    )
+    resolved_version = (
+        f"{anchor['skill']}-v{resolved_parts[0]}."
+        f"{resolved_parts[1]}.{resolved_parts[2]}"
+    )
+    final_row = head_snapshot["rows"][-1]
+    if (
+        head_snapshot["current"] != resolved_version
+        or head_snapshot["parts"] != resolved_parts
+        or head_snapshot["metadata"] != ".".join(str(part) for part in resolved_parts)
+        or final_row["version"] != resolved_version
+        or final_row["axis"] != "generation"
+        or final_row["revision"] != anchor["frontier_revision"]
+        or final_row["digest"] != anchor["frontier_sha256"]
+    ):
+        die("version resolution candidate row or skill metadata does not match")
+    compatibility_fault = version_compatibility_fault(anchor, head_snapshot)
+    if compatibility_fault:
+        die(
+            "version resolution candidate changes anchored field "
+            f"{compatibility_fault}"
+        )
+    return {
+        "skill": anchor["skill"],
+        "ledger": anchor["ledger"],
+        "relation": anchor["relation"],
+        "anchor_version": anchor["anchor_version"],
+        "base_version": base_snapshot["current"],
+        "resolved_version": resolved_version,
+        "base_ledger_sha256": base_snapshot["ledger_sha256"],
+        "head_ledger_sha256": head_snapshot["ledger_sha256"],
+        "row_sha256": hashlib.sha256(final_row["raw"].encode("utf-8")).hexdigest(),
+        "skill_sha256": head_snapshot["skill_sha256"],
+        "skill_metadata_version": head_snapshot["metadata"],
+    }
+
+
+def final_product_head(state: dict) -> str:
+    if not state.get("steps"):
+        die("version resolution requires at least one completed step")
+    final_step = state["steps"][-1]["n"]
+    merge_records = as_dict(as_dict(state.get("integrate")).get("merges"))
+    return require_full_sha(
+        as_dict(merge_records.get(str(final_step))).get("merge_commit"),
+        "final recorded product head",
+    )
+
+
+def _require_resolution_sync(
+    base_dir: str,
+    state: dict,
+    sync: dict,
+    product_head: str,
+    base_commit: str,
+    head_commit: str,
+    relations: dict,
+) -> None:
+    """Recheck the active signed composition and its target-path coverage."""
+    if (
+        sync.get("commit") != head_commit
+        or sync.get("base") != integration_base_of(state)
+        or sync.get("base_head") != base_commit
+        or sync.get("parents") != [product_head, base_commit]
+        or sync.get("github_verified") != [head_commit]
+        or sync.get("product_evidence") != product_evidence_record(state, product_head)
+    ):
+        die("active version-resolution sync evidence is stale or malformed")
+    if _native_relation_parents(base_dir, head_commit, "version resolution sync") != [
+        product_head,
+        base_commit,
+    ]:
+        die("version resolution sync parents do not match product and base")
+    verify_local_commit(base_dir, head_commit, "version resolution sync")
+    revalidation = as_dict(sync.get("revalidation"))
+    if revalidation.get("schema") != INTEGRATION_REVALIDATION_SCHEMA:
+        die("version resolution sync revalidation is missing or malformed")
+    affected = revalidation.get("affected_paths")
+    checks = revalidation.get("checks")
+    if not isinstance(affected, list) or not isinstance(checks, list):
+        die("version resolution sync revalidation is missing or malformed")
+    changed = set(
+        _native_relation_diff_paths(base_dir, product_head, head_commit)
+    )
+    target_paths = set()
+    for target in relations["targets"]:
+        target_paths.add(target["ledger"])
+        target_paths.add(target["ledger"].rsplit("/", 1)[0] + "/SKILL.md")
+    needed = changed & target_paths
+    if not needed.issubset(set(affected)):
+        die("version resolution sync omits a changed target path")
+    covered = set()
+    for check in checks:
+        item = as_dict(check)
+        if item.get("exit") != 0 or not isinstance(item.get("paths"), list):
+            die("version resolution sync carries a failed or malformed check")
+        covered.update(item["paths"])
+    if not needed.issubset(covered):
+        die("version resolution sync checks do not cover each changed target path")
+
+
+def _resolution_without_timestamp(receipt: dict) -> dict:
+    return {key: value for key, value in receipt.items() if key != "ts"}
+
+
+def build_version_resolution(
+    base_dir: str,
+    state: dict,
+    *,
+    exact_base: str | None = None,
+    exact_head: str | None = None,
+) -> dict:
+    """Build one atomic resolution from stable refs or exact terminal parents."""
+    runbook = receipted_source(base_dir, state, "runbook")
+    relations = receipted_version_relations(base_dir, runbook, state=state)
+    if relations is None:
+        die("the receipted runbook declares no version relation")
+    if state.get("phase") != "integrate":
+        die("version resolution is available only after the step stack closes")
+    product_head = final_product_head(state)
+    integrate = as_dict(state.get("integrate"))
+    sync = as_dict(integrate.get("sync"))
+    expected_head = (
+        require_full_sha(sync.get("commit"), "active recorded sync commit")
+        if sync
+        else product_head
+    )
+    base_ref = integration_base_of(state)
+    repository = _native_relation_repository_identity(base_dir)
+    _require_native_relation_history(base_dir)
+
+    if exact_base is None or exact_head is None:
+        first_base = remote_branch_tip(base_dir, base_ref, "version resolution base ref")
+        first_head = remote_branch_tip(
+            base_dir, run_branch_of(state), "version resolution run ref"
+        )
+        if first_head != expected_head:
+            die("version resolution run ref does not match the candidate head")
+        if not sync and first_base != relations["anchor_commit"]:
+            die(
+                "version resolution base advanced; create the existing signed "
+                "product/base sync and complete path revalidation first"
+            )
+        if sync and sync.get("base_head") != first_base:
+            die("version resolution sync does not name the current base ref")
+        base_commit, head_commit = first_base, first_head
+    else:
+        base_commit = require_full_sha(exact_base, "version resolution exact base")
+        head_commit = require_full_sha(exact_head, "version resolution exact head")
+        if head_commit != expected_head:
+            die("version resolution exact head does not match the candidate head")
+        if sync and sync.get("base_head") != base_commit:
+            die("version resolution sync does not name the exact base parent")
+        if not sync and base_commit != relations["anchor_commit"]:
+            die("version resolution exact base requires a recorded signed sync")
+
+    if _native_relation_commit(
+        base_dir, base_commit, "version resolution base object"
+    ) != base_commit:
+        die("version resolution base object does not match")
+    if _native_relation_commit(
+        base_dir, head_commit, "version resolution candidate object"
+    ) != head_commit:
+        die("version resolution candidate object does not match")
+    if sync:
+        _require_resolution_sync(
+            base_dir,
+            state,
+            sync,
+            product_head,
+            base_commit,
+            head_commit,
+            relations,
+        )
+    targets = [
+        resolve_version_relation_target(
+            base_dir,
+            relations["anchor_commit"],
+            base_commit,
+            head_commit,
+            target,
+        )
+        for target in relations["targets"]
+    ]
+    if exact_base is None:
+        final_head = remote_branch_tip(
+            base_dir, run_branch_of(state), "version resolution run ref reread"
+        )
+        final_base = remote_branch_tip(
+            base_dir, base_ref, "version resolution base ref reread"
+        )
+        if (final_base, final_head) != (base_commit, head_commit):
+            die("version resolution remote refs changed during evidence collection")
+    _require_native_relation_history(base_dir)
+    if _native_relation_repository_identity(base_dir) != repository:
+        die("version resolution repository changed during evidence collection")
+    receipt = {
+        "schema": VERSION_RESOLUTION_SCHEMA,
+        "runbook_sha256": as_dict(state["receipts"].get("runbook")).get("sha256"),
+        "relations_sha256": relations["source_sha256"],
+        "base_ref": base_ref,
+        "base_commit": base_commit,
+        "head_commit": head_commit,
+        "targets": sorted(targets, key=lambda target: target["skill"]),
+        "ts": now(),
+    }
+    validate_version_resolution_shape(receipt, "built.version_resolution")
+    return receipt
+
+
+def active_version_resolution(base_dir: str, state: dict) -> dict:
+    history = as_dict(state.get("integrate")).get("version_resolutions")
+    if not isinstance(history, list) or not history:
+        die("version relations have no recorded integration-time resolution")
+    active = validate_version_resolution_shape(
+        history[-1], "integrate.version_resolutions[-1]"
+    )
+    current = build_version_resolution(base_dir, state)
+    if _resolution_without_timestamp(active) != _resolution_without_timestamp(current):
+        die("the active version resolution is stale for the current base or head")
+    return active
+
+
+def version_resolution_status(base_dir: str, state: dict) -> dict:
+    """Describe the newest receipt without mistaking recorded for current."""
+    history = as_dict(state.get("integrate")).get("version_resolutions") or []
+    if not history:
+        return {
+            "status": "absent",
+            "history": 0,
+            "base_commit": None,
+            "head_commit": None,
+            "reason": None,
+        }
+    newest = validate_version_resolution_shape(
+        history[-1], "integrate.version_resolutions[-1]"
+    )
+    common = {
+        "history": len(history),
+        "base_commit": newest["base_commit"],
+        "head_commit": newest["head_commit"],
+    }
+    terminal = as_dict(as_dict(state.get("receipts")).get("integrate")).get(
+        "version_resolution"
+    )
+    if state.get("phase") == "done" and terminal == newest:
+        return {"status": "terminal", **common, "reason": None}
+    if state.get("phase") != "integrate":
+        return {
+            "status": "stale",
+            **common,
+            "reason": "recorded outside the integration phase",
+        }
+    diagnostic = io.StringIO()
+    try:
+        with contextlib.redirect_stderr(diagnostic):
+            active_version_resolution(base_dir, state)
+    except SystemExit:
+        reason = diagnostic.getvalue().strip()
+        prefix = "hexctl: error: "
+        if reason.startswith(prefix):
+            reason = reason[len(prefix) :]
+        reason = re.sub(r"[\x00-\x1f\x7f]+", " ", reason).strip()[:512]
+        return {
+            "status": "stale",
+            **common,
+            "reason": reason or "current evidence does not match the newest receipt",
+        }
+    return {"status": "active", **common, "reason": None}
 
 
 def carried_forward_lines(text: str) -> list[str] | None:
@@ -3604,7 +4461,12 @@ def done_push(args, state: dict) -> None:
         print(f"step {step['n']} published, merged, and receipted; {tail}")
 
 
-def _integrate_directive(state: dict) -> dict:
+def _integrate_directive(
+    state: dict,
+    base_dir: str | None = None,
+    *,
+    check_resolution: bool = True,
+) -> dict:
     """Merge the stack bottom up, then the run branch into the base once."""
     run_branch = run_branch_of(state)
     integration_base = integration_base_of(state)
@@ -3649,6 +4511,28 @@ def _integrate_directive(state: dict) -> dict:
             "--reason <bounded-repair-reason>"
         )
         sync_recovery = "supersede-sync-and-revalidate"
+    resolution = None
+    relations = as_dict(as_dict(state.get("receipts")).get("runbook")).get(
+        "version_relations"
+    )
+    if relations is not None and check_resolution:
+        history = as_dict(state.get("integrate")).get("version_resolutions")
+        if not isinstance(history, list) or not history:
+            return {
+                "do": "resolve-versions",
+                "run_branch": run_branch,
+                "base": integration_base,
+                "starting_base": state["base"],
+                "reason": "the relation-bearing run has no exact base/head resolution",
+                "then": "hexctl done resolve-versions",
+                "recovery": (
+                    "if the base advanced, first use the existing signed "
+                    "product/base sync with complete integration revalidation"
+                ),
+            }
+        if base_dir is None:
+            die("version resolution freshness needs the run worktree", 1)
+        resolution = active_version_resolution(base_dir, state)
     return {
         "do": "integrate",
         "run_branch": run_branch,
@@ -3674,6 +4558,7 @@ def _integrate_directive(state: dict) -> dict:
                 "author or in a Co-authored-by trailer"
             ),
         },
+        **({"version_resolution": resolution} if resolution is not None else {}),
         "then": then,
     }
 
@@ -3987,7 +4872,7 @@ def done_merge_step(args, state: dict) -> None:
         die("--step is required")
     if not args.merge_commit:
         die("--merge-commit is required")
-    pending = _integrate_directive(state)
+    pending = _integrate_directive(state, args.dir, check_resolution=False)
     if pending["do"] != "merge-step":
         die(f"every step already merged into '{run_branch_of(state)}'")
     if args.step != pending["step"]:
@@ -4091,7 +4976,7 @@ def done_sync_run(args, state: dict) -> None:
         )
     if state.get("halted"):
         die(f"run is halted ({state['halted']['reason']}); `hexctl resume` first")
-    pending = _integrate_directive(state)
+    pending = _integrate_directive(state, args.dir, check_resolution=False)
     if pending["do"] != "integrate":
         die(
             f"step {pending['step']} still has to merge into "
@@ -4226,6 +5111,259 @@ def done_sync_run(args, state: dict) -> None:
         )
 
 
+def version_resolution_event(receipt: dict) -> dict:
+    """Bounded ledger projection of one full state receipt."""
+    return {
+        "schema": VERSION_RESOLUTION_SCHEMA,
+        "sha256": hashlib.sha256(canonical(receipt).encode()).hexdigest(),
+        "runbook_sha256": receipt["runbook_sha256"],
+        "relations_sha256": receipt["relations_sha256"],
+        "base_ref": receipt["base_ref"],
+        "base_commit": receipt["base_commit"],
+        "head_commit": receipt["head_commit"],
+        "targets": [
+            {
+                "skill": target["skill"],
+                "ledger": target["ledger"],
+                "resolved_version": target["resolved_version"],
+                "head_ledger_sha256": target["head_ledger_sha256"],
+                "skill_sha256": target["skill_sha256"],
+            }
+            for target in receipt["targets"]
+        ],
+    }
+
+
+def _intact_ledger_entries(base_dir: str, label: str) -> list[dict]:
+    path = ledger_path(base_dir)
+    entries = []
+    previous = "genesis"
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            for line_number, line in enumerate(handle, 1):
+                if not line.strip():
+                    continue
+                entry = json.loads(line)
+                expected = hashlib.sha256(
+                    canonical(
+                        {
+                            "ts": entry["ts"],
+                            "event": entry["event"],
+                            "data": entry["data"],
+                            "prev": entry["prev"],
+                            "state": entry["state"],
+                        }
+                    ).encode()
+                ).hexdigest()
+                if entry["prev"] != previous or entry["hash"] != expected:
+                    die(
+                        f"{label} controller ledger is not intact at line "
+                        f"{line_number}",
+                        1,
+                    )
+                previous = entry["hash"]
+                entries.append(entry)
+    except (OSError, UnicodeDecodeError, ValueError, KeyError, TypeError):
+        die(f"{label} controller ledger is malformed", 1)
+    if not entries:
+        die(f"{label} controller ledger is empty", 1)
+    return entries
+
+
+def _state_with_resolution(state: dict, receipt: dict) -> dict:
+    candidate = json.loads(json.dumps(state))
+    integrate = candidate.setdefault("integrate", {"merged": [], "merges": {}})
+    history = integrate.setdefault("version_resolutions", [])
+    if not isinstance(history, list):
+        die("recorded version resolution history is malformed", 1)
+    history.append(receipt)
+    validate_version_resolution_history(
+        history, "candidate.integrate.version_resolutions"
+    )
+    return candidate
+
+
+def recover_version_resolution(
+    base_dir: str, state: dict, pending: dict, current: dict
+) -> tuple[dict, bool]:
+    """Finish, clear, or refuse one interrupted ledger/state transition."""
+    recorded = pending["receipt"]
+    if _resolution_without_timestamp(recorded) != _resolution_without_timestamp(current):
+        die(
+            "pending version resolution names stale base, head, or target "
+            "evidence; restore that exact evidence or inspect the marker",
+            1,
+        )
+    state_hash = state_fingerprint(state)
+    before = pending["state_before_sha256"]
+    after = pending["state_after_sha256"]
+    event_data = version_resolution_event(recorded)
+    last = _intact_ledger_entries(base_dir, "version resolution")[-1]
+    event_durable = (
+        last.get("event") == "done:version-resolution"
+        and last.get("data") == event_data
+        and last.get("state") == after
+        and last.get("prev") == pending["ledger_head"]
+    )
+    if state_hash == after:
+        if not event_durable:
+            die(
+                "version resolution state is durable without its matching "
+                "ledger event",
+                1,
+            )
+        clear_version_resolution_pending(base_dir)
+        return state, True
+    if state_hash != before:
+        die("version resolution pending state fingerprint does not match", 1)
+    if event_durable:
+        candidate = _state_with_resolution(state, recorded)
+        if state_fingerprint(candidate) != after:
+            die("version resolution pending candidate fingerprint does not match", 1)
+        save_state(base_dir, candidate)
+        make_version_resolution_write_durable(
+            base_dir,
+            state_path(base_dir),
+            "state recovery",
+            replaced=True,
+        )
+        clear_version_resolution_pending(base_dir)
+        return candidate, True
+    if last.get("hash") != pending["ledger_head"] or last.get("state") != before:
+        die(
+            "version resolution pending ledger ends with an unrelated transition",
+            1,
+        )
+    clear_version_resolution_pending(base_dir)
+    return state, False
+
+
+def done_resolve_versions(args, state: dict) -> None:
+    """Receipt one exact all-target relation result without editing the product."""
+    if state.get("phase") != "integrate":
+        die("resolve-versions is available only in the integrate phase")
+    if state.get("halted"):
+        die(f"run is halted ({state['halted']['reason']}); `hexctl resume` first")
+    pending_directive = _integrate_directive(
+        state, args.dir, check_resolution=False
+    )
+    if pending_directive["do"] != "integrate":
+        die(
+            f"step {pending_directive['step']} still has to merge into "
+            f"'{run_branch_of(state)}' before versions can resolve"
+        )
+    pending = load_version_resolution_pending(args.dir)
+    current = build_version_resolution(args.dir, state)
+    if pending is not None:
+        state, recovered = recover_version_resolution(
+            args.dir, state, pending, current
+        )
+        if recovered:
+            verify_run(args.dir)
+            print(
+                "recovered version resolution for base "
+                f"{current['base_commit']} and head {current['head_commit']}"
+            )
+            return
+    verify_run(args.dir)
+    history = as_dict(state.get("integrate")).get("version_resolutions") or []
+    if not isinstance(history, list):
+        die("recorded version resolution history is malformed", 1)
+    if (
+        history
+        and _resolution_without_timestamp(history[-1])
+        == _resolution_without_timestamp(current)
+    ):
+        print(
+            "version resolution already records base "
+            f"{current['base_commit']} and head {current['head_commit']}"
+        )
+        return
+    if len(history) >= VERSION_RESOLUTIONS_MAX:
+        die(
+            f"version resolution history already retains {VERSION_RESOLUTIONS_MAX} "
+            "entries; halt rather than evicting evidence"
+        )
+    candidate = _state_with_resolution(state, current)
+    marker = {
+        "schema": VERSION_RESOLUTION_PENDING_SCHEMA,
+        "subject": "version-resolution",
+        "state_before_sha256": state_fingerprint(state),
+        "state_after_sha256": state_fingerprint(candidate),
+        "ledger_head": _intact_ledger_entries(
+            args.dir, "version resolution"
+        )[-1]["hash"],
+        "receipt_sha256": hashlib.sha256(canonical(current).encode()).hexdigest(),
+        "receipt": current,
+    }
+    write_version_resolution_pending(args.dir, marker)
+    append_ledger(
+        args.dir,
+        "done:version-resolution",
+        version_resolution_event(current),
+        marker["state_after_sha256"],
+    )
+    make_version_resolution_write_durable(
+        args.dir, ledger_path(args.dir), "ledger event"
+    )
+    save_state(args.dir, candidate)
+    make_version_resolution_write_durable(
+        args.dir,
+        state_path(args.dir),
+        "state replacement",
+        replaced=True,
+    )
+    clear_version_resolution_pending(args.dir)
+    print(
+        f"resolved {len(current['targets'])} version target(s) against "
+        f"{current['base_ref']} at {current['base_commit']} and candidate "
+        f"{current['head_commit']}"
+    )
+
+
+def terminal_version_resolution(
+    base_dir: str, state: dict, merge_commit: str
+) -> dict | None:
+    """Replay a relation from the actual base merge's ordered parents."""
+    relations = as_dict(as_dict(state.get("receipts")).get("runbook")).get(
+        "version_relations"
+    )
+    if relations is None:
+        return None
+    history = as_dict(state.get("integrate")).get("version_resolutions")
+    if not isinstance(history, list) or not history:
+        die("relation-bearing integration has no version resolution")
+    active = validate_version_resolution_shape(
+        history[-1], "integrate.version_resolutions[-1]"
+    )
+    merge_sha = require_full_sha(merge_commit, "integration merge commit")
+    parents = _native_relation_parents(
+        base_dir, merge_sha, "integration merge commit"
+    )
+    expected_parents = [active["base_commit"], active["head_commit"]]
+    if parents != expected_parents:
+        die(
+            "integration merge parents do not replay the resolved "
+            "[base, candidate] pair"
+        )
+    replay = build_version_resolution(
+        base_dir,
+        state,
+        exact_base=parents[0],
+        exact_head=parents[1],
+    )
+    if _resolution_without_timestamp(active) != _resolution_without_timestamp(replay):
+        die("integration merge parents do not replay the active resolution")
+    remote_base_after = remote_branch_tip(
+        base_dir,
+        integration_base_of(state),
+        "post-merge base branch tip",
+    )
+    if remote_base_after != merge_sha:
+        die("the base branch moved again after the checked integration merge")
+    return active
+
+
 def done_integrate(args, state: dict) -> None:
     verify_run(args.dir)
     if state["phase"] != "integrate":
@@ -4235,7 +5373,7 @@ def done_integrate(args, state: dict) -> None:
         )
     if state.get("halted"):
         die(f"run is halted ({state['halted']['reason']}); `hexctl resume` first")
-    pending = _integrate_directive(state)
+    pending = _integrate_directive(state, args.dir, check_resolution=False)
     integration_base = integration_base_of(state)
     if pending["do"] != "integrate":
         die(
@@ -4295,6 +5433,9 @@ def done_integrate(args, state: dict) -> None:
         if sync:
             die("remote run branch tip does not match the recorded run sync commit")
         die("remote run branch tip does not match the final recorded step merge")
+    terminal_resolution = terminal_version_resolution(
+        args.dir, state, args.merge_commit
+    )
     pr_record = inspect_pull_request(
         args.dir,
         args.pr_url,
@@ -4323,6 +5464,8 @@ def done_integrate(args, state: dict) -> None:
             args.dir, frontier, published
         ) if frontier else [],
     }
+    if terminal_resolution is not None:
+        state["receipts"]["integrate"]["version_resolution"] = terminal_resolution
     if sync:
         state["receipts"]["integrate"]["sync"] = sync
         state["receipts"]["integrate"]["superseded_syncs"] = list(
@@ -4357,12 +5500,16 @@ DONE_HANDLERS = {
     "push": done_push,
     "merge-step": done_merge_step,
     "sync-run": done_sync_run,
+    "resolve-versions": done_resolve_versions,
     "integrate": done_integrate,
 }
 
 
 def cmd_done(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(
+        args.dir,
+        allow_pending_resolution=args.phase == "resolve-versions",
+    )
     handler = DONE_HANDLERS.get(args.phase)
     if handler is None:
         die(f"unknown phase '{args.phase}'")
@@ -6637,11 +7784,11 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
 
 def cmd_next(args) -> None:
     state = load_state(args.dir)
-    out = delegation_packet(args.dir, state, _next_directive(state))
+    out = delegation_packet(args.dir, state, _next_directive(state, args.dir))
     print(json.dumps(out))
 
 
-def _next_directive(state: dict) -> dict:
+def _next_directive(state: dict, base_dir: str | None = None) -> dict:
     if state.get("halted"):
         return {"do": "halted", "reason": state["halted"]["reason"]}
     blocked = amendment_block(state)
@@ -6673,7 +7820,7 @@ def _next_directive(state: dict) -> dict:
             "then": "hexctl done runbook --artifact <path> --steps-file <path>",
         }
     if phase == "integrate":
-        return _integrate_directive(state)
+        return _integrate_directive(state, base_dir)
     if phase == "done":
         return {"do": "done", "steps": len(state["steps"])}
     step = current_step(state)
@@ -6731,6 +7878,7 @@ def clean(text: str) -> str:
 def cmd_status(args) -> None:
     state = load_state(args.dir)
     version_relations = None
+    resolution_state = None
     for name in ("study", "runbook"):
         receipt = as_dict(as_dict(state.get("receipts")).get(name))
         if receipt.get("sha256") is None:
@@ -6741,9 +7889,13 @@ def cmd_status(args) -> None:
             version_relations = receipted_version_relations(
                 args.dir, source, state=state
             )
+            if version_relations is not None:
+                resolution_state = version_resolution_status(args.dir, state)
     if args.json:
         payload = dict(state)
         payload["observation_run_id"] = controller_run_id(state)
+        if resolution_state is not None:
+            payload["version_resolution_status"] = resolution_state
         print(json.dumps(payload, indent=2))
         return
     print(f"topic: {clean(state['topic'])}")
@@ -6751,17 +7903,47 @@ def cmd_status(args) -> None:
     if state.get("run_branch"):
         print(f"run:   {state['run_branch']} -> {state['base']}")
     if version_relations is not None:
-        relation_packet = version_relations_packet(version_relations)
+        resolution_history = as_dict(state.get("integrate")).get(
+            "version_resolutions"
+        ) or []
+        resolution = resolution_history[-1] if resolution_history else None
+        current = (
+            resolution
+            if resolution_state["status"] in ("active", "terminal")
+            else None
+        )
+        relation_packet = version_relations_packet(version_relations, current)
+        resolution_text = (
+            "resolution null"
+            if resolution is None
+            else (
+                f"{resolution_state['status']} base "
+                f"{resolution['base_commit']} head {resolution['head_commit']}"
+            )
+        )
+        if resolution_state and resolution_state["reason"]:
+            resolution_text += f"; reason {resolution_state['reason']}"
         print(
             "version relations: "
             f"{relation_packet['schema']}; source "
             f"{relation_packet['source_sha256']}; anchor "
-            f"{relation_packet['anchor_commit']}; resolution null"
+            f"{relation_packet['anchor_commit']}; {resolution_text}"
         )
+        resolved_targets = {
+            target["skill"]: target for target in (resolution or {}).get("targets", [])
+        }
         for target in relation_packet["targets"]:
+            recorded = resolved_targets.get(target["skill"])
+            if recorded is None:
+                detail = f"projection {target['projection']}"
+            else:
+                detail = (
+                    f"{resolution_state['status']} base {recorded['base_version']}; "
+                    f"resolved {recorded['resolved_version']}"
+                )
             print(
                 f"version relation {target['skill']} ({target['ledger']}): anchor "
-                f"{target['anchor_version']}; projection {target['projection']}"
+                f"{target['anchor_version']}; {detail}"
             )
     print(f"observe: {controller_run_id(state)}")
     if state.get("halted"):
@@ -6832,9 +8014,16 @@ def cmd_resume(args) -> None:
     print("resumed")
 
 
-def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
+def verify_run(
+    base_dir: str,
+    *,
+    allow_pending_amendment: bool = False,
+    allow_pending_resolution: bool = False,
+) -> int:
     state = load_state(
-        base_dir, allow_pending_amendment=allow_pending_amendment
+        base_dir,
+        allow_pending_amendment=allow_pending_amendment,
+        allow_pending_resolution=allow_pending_resolution,
     )
     path = ledger_path(base_dir)
     if not os.path.exists(path):
@@ -6843,6 +8032,7 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
     count = 0
     last_state = None
     runbook_event = None
+    resolution_events = []
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh, 1):
             if not line.strip():
@@ -6867,6 +8057,8 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
                 die(f"ledger chain broken at line {i}", 1)
             if entry.get("event") == "done:runbook":
                 runbook_event = entry.get("data")
+            if entry.get("event") == "done:version-resolution":
+                resolution_events.append(entry.get("data"))
             prev = entry["hash"]
             last_state = entry["state"]
             count += 1
@@ -6879,6 +8071,7 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
     if study_receipt.get("sha256") is not None:
         receipted_source(base_dir, state, "study")
     runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    version_relations = None
     if runbook_receipt.get("sha256") is not None:
         runbook = receipted_source(base_dir, state, "runbook")
         _receipted_runbook_amendments(runbook)
@@ -6890,6 +8083,34 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
             die("done:runbook ledger event has an unreceipted version anchor", 1)
         if version_relations is not None and event_relations != version_relations:
             die("done:runbook ledger event does not match the version anchor", 1)
+    integrate_state = as_dict(state.get("integrate"))
+    history = integrate_state.get("version_resolutions") or []
+    if history:
+        validate_version_resolution_history(
+            history, "integrate.version_resolutions"
+        )
+    if version_relations is None and (history or resolution_events):
+        die("literal-only run carries unreceipted version resolution evidence", 1)
+    expected_resolution_events = [
+        version_resolution_event(receipt) for receipt in history
+    ]
+    if resolution_events != expected_resolution_events:
+        die(
+            "version resolution state history does not match its controller "
+            "ledger events",
+            1,
+        )
+    terminal = as_dict(as_dict(state.get("receipts")).get("integrate"))
+    terminal_resolution = terminal.get("version_resolution")
+    if terminal_resolution is not None:
+        validate_version_resolution_shape(
+            terminal_resolution, "receipts.integrate.version_resolution"
+        )
+        if not history or terminal_resolution != history[-1]:
+            die("terminal version resolution does not copy the active receipt", 1)
+    if state.get("phase") == "done" and version_relations is not None:
+        if not history or terminal_resolution != history[-1]:
+            die("relation-bearing completed run has no terminal version resolution", 1)
     if state["phase"] == "integrate":
         merged = as_dict(state.get("integrate")).get("merged") or []
         expected = [s["n"] for s in state["steps"][: len(merged)]]

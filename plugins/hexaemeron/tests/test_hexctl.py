@@ -474,6 +474,7 @@ print(json.dumps(payload))
     def state(self):
         payload = json.loads(self.run_ctl("status", "--json").stdout)
         payload.pop("observation_run_id", None)
+        payload.pop("version_resolution_status", None)
         return payload
 
     def run_branch(self):
