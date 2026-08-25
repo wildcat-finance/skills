@@ -842,3 +842,172 @@ local hash chain, and coordinate matching ref and object substitutions. Hash
 chaining detects partial or accidental edits; without an external signed
 anchor it does not prove that local evidence survived a malicious complete
 rewrite. No operating-system lock or external storage guarantee is claimed.
+
+## Step 3, round 1 -- 2026-08-25
+
+Non-Solidity round over signed Mason commit
+`eacc5cfa9bdb6fe73a22c7d7fce0fd9fe8e375d2`, whose direct parent is the
+audited Step 2 tip `882776b8e1e5c33d6b93fefa997552b3fb75b1b4`. Both local
+Shoggoth signatures verify, and the Mason commit carries exactly one
+co-author trailer and one origin trailer. Four findings were fixed with
+regression guards on the named audit branch in this round.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | medium | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | Initial and terminal remote relation reads used the generic Git subprocess environment while exact local-object reads used the native relation environment. An inherited `GIT_DIR` could redirect the base and run observations to another repository and let substituted remote evidence enter a resolution receipt or terminal base check. | fixed in this round: all base and run observations, both stability rereads, and the terminal post-merge base observation use the replacement-, config-, and repository-environment-free relation reader; a real attacker repository under inherited `GIT_DIR` guards the receipt path |
+| S3-R1-02 | medium | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | Resolution history parsing enforced ordering and generation rules but omitted two evolution-contract rules. It accepted an evolution row retaining the prior digest and an epoch row changing the digest without recording a reopen. Both invalid histories reached compatibility evaluation. | fixed in this round: the relation parser enforces both evolution-contract rules. Value-free refusals cover an unchanged evolution digest and an epoch digest change without reopen evidence |
+| S3-R1-03 | medium | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | The pending-resolution reader capped records at 131,072 bytes, but the closed accepted receipt shape permits a 228,690-byte marker at 32 targets. The writer could publish that valid marker and every later recovery attempt would refuse it. | fixed in this round: writer and reader share a 262,144-byte ceiling, the writer bounds the final encoded bytes before replacement, and a maximum admitted target envelope round-trips through the pending marker |
+| S3-R1-04 | low | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | Snapshot parsing required every candidate generation to have a successor. A valid base at the maximum generation minus one therefore could not resolve a candidate at the maximum representable generation, although that candidate is representable and accepted by the receipt schema. | fixed in this round: successor availability is required only for the base; a final-generation candidate now resolves and is guarded at the exact counter ceiling |
+
+### Evidence
+
+The final all-four-guard causal report is
+`.elenchus/fiat-556-step-3-warden-round1-red-final.json`, SHA-256
+`0041afe9db4e15dbb64eafe25a5a15220f52a5b2e60917b523fbbdb4de92f741`.
+It records `elenchus.unittest.v1`, 1,149 tests, two assertion failures, three
+errors, and zero skips while all four regression guards were present and no
+Warden product fix was present. The earlier full Warden red is
+`.elenchus/fiat-556-step-3-warden-round1-red.json`, SHA-256
+`c776f6c4de7847050585119f8e10e22177e85ec877c237352897d519225d257f`:
+1,148 tests, two assertion failures, two errors, and zero skips. Both reports
+are complete and remain preserved outside the tracked tree.
+
+The repaired-tree report is
+`.elenchus/fiat-556-step-3-warden-round1-green.json`, SHA-256
+`11a60c69fca3535d9141af174e898765869693273997e651d5dbdba6550229b0`.
+It records `elenchus.unittest.v1`, 1,149 tests with zero failures, errors,
+or skips. The four reduced guards pass independently. All 89 focused relation
+cases, 399 adjacent controller and Fiat contract-selection cases, nine
+evolution-contract cases, and 350 root cases are green.
+
+Mason's causal red remains at `tmp/elenchus/fiat-556-step-3-red.json`, SHA-256
+`c9b6bba81dbcf83d5776b9cc029d5773fc0120ae8a61148c1da37d4e506c07e8`.
+It records 1,106 tests and the one expected argument-parser error. Mason's
+canonical green remains byte-for-byte intact at
+`tmp/elenchus/fiat-556-step-3.json`, SHA-256
+`02cae51edd345007bd777c23b4b20c07c9eb9881c6319e00741c3b8d3461415d`:
+1,145 tests with zero failures, errors, or skips.
+
+The full Mason range contains exactly eight product paths: Fiat's `SKILL.md`,
+`references/push-discipline.md`, `scripts/hexctl.py`,
+`tests/test_fiat_skill.py`, `tests/test_hexctl.py`,
+`tests/test_version_relations.py`, `tests/promise_machine_coverage.json`, and
+`tests/test_promise_machine_contract.py`. Warden's product repair changes only
+the controller, its focused relation tests, and the controller digest bindings
+inside that range. The audit record is the only additional tracked path.
+
+All 16 complete non-Solidity suite commands in `AGENTS.md` are green:
+Alexandria ran 255 tests; Ariadne 632 with six skips; Berean 151 with one skip;
+Brevitas 21; Hermes 72; Hexaemeron 1,149; Imprimatur 62; Horos 217; Lazarus
+364; Pandects 116; Probitas 276; Sapheneia 11; and Tabularium 134. Both Lemma
+runners report zero failures; the Solidity runner leaves its compiler cases
+skipped without `--solc`. Lazarus ran under its pinned Python 3.13 lockfile
+runtime because the system Python lacks its declared third-party packages.
+
+The inherited root HTTP fixture cleanup warnings, controller fixture
+`ResourceWarning` at `test_hexctl.py:5538`, and Pandects catalogue
+`ResourceWarning` at `test_search_record.py:46` remain non-failing. Promise
+Machine reports 14 clean plugin copies and 72 of 72 covered promises. Phylax,
+Ephoros, and Hypomnema each exit 0. Horos reports that the boundary matches the
+tree. Python compilation, JSON parsing, and `git diff --check` are clean.
+
+The receipted and tracked study copies remain byte-identical at SHA-256
+`4f379dac26ed32af4310bcd55ebaef7ca91774da7ca53f69f2d3a6401e8942c7`;
+the receipted and tracked runbook copies remain byte-identical at SHA-256
+`593ce6e4faa9598c475475e931f66c28e6d2ecaff116232299a7085e47ee89d2`.
+Protasis accepts both. All five relative study links resolve from the tracked
+study, the misplaced plugin-local study path remains absent, and
+`audit/AUDIT.md` remains byte-identical to the Step 2 tip at SHA-256
+`582aa3cfe6b83344c0c6f52987d55ab5a180b429a2199fccd14f6ff769a267d1`.
+
+The prior 55,023-byte, 844-line audit record is the exact prefix of this
+append, SHA-256
+`c1ecfcfc50de5cc8ee1eb117dc898b4d4123925633393e54f5ba9eabd741ab7d`.
+The bounded Sapheneia comparison preserves all four findings, severities,
+counterexamples, paths, hashes, counts, skips, warnings, statuses, scope
+exclusions, and the unpursued leads. The required audit heading, findings
+table, evidence, risk register, scope boundary, and lead boundary are present.
+
+Imprimatur scores the complete record 100.0 out of 100 with zero defects.
+Brevitas reports five B011 table-shape diagnostics, all inside the unchanged
+prefix. This round's required four-row findings table satisfies its structural
+threshold; no protected row was removed or invented.
+
+### Risk register
+
+`base-ref-race`, `run-ref-race`, `remote-evidence-failure`, and
+`post-check-race` surfaced S3-R1-01. Stable base and run observations now use
+the same native Git boundary as commit, ancestry, tree, path, type, size, and
+blob inspection. Both refs are reread after object reconstruction. Signed sync
+selection requires the exact product-first and base-second parents, verified
+signature, pushed head, affected ledger and `SKILL.md` paths, and a green
+covering integration check. Terminal replay verifies the actual
+`[base,candidate]` merge parents, signature and head, then refuses if the base
+moves after that check. Timeout, nonzero, oversized, malformed, missing, and
+credential-bearing Git or GitHub responses retain bounded value-free
+diagnostics.
+
+`frontier-drift` and `ledger-history-rewrite` surfaced S3-R1-02. Compatible
+generation-only base drift still proceeds. Every incompatible tuple field --
+evolution, epoch, status, revision, digest, frontier text, and next job --
+refuses. Deleted, reordered, edited, duplicated, generation-invalid,
+evolution-invalid, and epoch-invalid history refuses before resolution.
+`generation-arithmetic` surfaced S3-R1-04: ordinary successors, carries,
+leading-zero and malformed labels, the exact axis rule, base exhaustion, and
+the final representable candidate are now distinct and green.
+
+`interrupted-resolution`, `multi-target-partial`, and `state-history-growth`
+surfaced S3-R1-03. A receipt still resolves every declared target or none,
+sorts them once, and joins state and ledger to one exact event. Every pending
+window before the ledger append, between ledger and state replacement, and
+after state replacement either completes that event once or returns a named
+recoverable refusal. Malformed, tampered, stale, oversized, wrong-subject,
+state-only, ledger-only, duplicate, and mismatched pending or durable records
+refuse. Eight append-only receipts remain replayable; a ninth refuses without
+eviction. The repaired ceiling covers the complete admitted 32-target shape
+and is enforced before publication as well as during recovery.
+
+`anchor-substitution`, `git-object-shape`, `metadata-mismatch`,
+`resolution-staleness`, `receipt-replay`, and `legacy-state` are green. Base,
+candidate, and optional signed-sync evidence is reconstructed from exact
+native objects. Each candidate has exactly one matching history row and exact
+`SKILL.md` name and version metadata. Altered runbook, active receipt, state,
+ledger, target, object, order, base, head, or sync identity refuses. Legacy
+states and literal or absent relation blocks retain their prior shapes and
+explicit null status. Human status, worker packets, provisional receipts,
+current receipts, stale receipts, and terminal integration receipts remain
+distinct; stale or absent current resolution withholds integration rather
+than presenting old evidence as current.
+
+`sync-carriage`, `revalidation-coverage`, and `self-hosted-collision` are
+green. The divergent issue 555 topology requires one signed two-parent sync;
+one-parent, wrong-parent-order, unsigned, unpushed, wrong-head, incomplete-path,
+or uncovered-check candidates refuse. Concurrent Fiat or Protasis generation
+changes are treated as ordinary incompatible or compatible evidence under the
+same controller rather than trusted from the model packet.
+
+`diagnostic-leak`, `promise-overclaim`, and `literal-compatibility` are green.
+Refusals name only the bounded evidence class and do not echo repository paths,
+refs, commits, contents, credentials, signatures, or remote bodies. Promise
+text authorises only an exact resolution receipt and later checked carriage;
+it does not claim semantic compatibility, label reservation, or an atomic
+GitHub base lock. The push discipline still requires integration authority and
+verified evidence before any external mutation; this audit made none.
+
+### Scope boundary
+
+This round cold-read the complete Step 3 contract and the eight-file Mason
+range, then changed only three product paths inside that range plus this
+append-only audit record. No Solidity was present, so the non-Solidity waiver
+and three mandatory lint exits apply. No controller command that mutates state,
+push, pull request, merge, issue change, or other GitHub mutation was run.
+
+Leads not pursued: a process with direct write access to both controller state
+and its ledger can rewrite both durable copies consistently, and a process
+with direct write access to the native Git object database can replace the
+underlying local evidence. The closed controller shapes detect partial,
+stale, and mismatched edits; they do not provide an external trust anchor or
+an operating-system storage guarantee. The shared root history parser's
+fenced-row convention was not changed here because Step 3 consumes the same
+canonical ledger grammar already accepted by the evolution contract; changing
+that suite-wide grammar belongs to a separately studied contract.

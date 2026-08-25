@@ -233,6 +233,7 @@ VERSION_RELATION_KEYS = frozenset(
 VERSION_RESOLUTION_SCHEMA = "fiat-version-resolution/v1"
 VERSION_RESOLUTION_PENDING_SCHEMA = "fiat-version-resolution-pending/v1"
 VERSION_RESOLUTIONS_MAX = 8
+VERSION_RESOLUTION_PENDING_BYTES_MAX = 256 * 1024
 VERSION_RESOLUTION_TARGET_KEYS = frozenset(
     {
         "skill",
@@ -1263,15 +1264,23 @@ def load_version_resolution_pending(base_dir: str) -> dict | None:
         die("version resolution pending record cannot be inspected", 1)
     if not stat.S_ISREG(file_state.st_mode) or stat.S_ISLNK(file_state.st_mode):
         die("version resolution pending record is not a regular file", 1)
-    if file_state.st_size > 131072:
-        die("version resolution pending record exceeds 131072-byte cap", 1)
+    if file_state.st_size > VERSION_RESOLUTION_PENDING_BYTES_MAX:
+        die(
+            "version resolution pending record exceeds "
+            f"{VERSION_RESOLUTION_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
     try:
         with open(path, "rb") as handle:
-            raw = handle.read(131073)
+            raw = handle.read(VERSION_RESOLUTION_PENDING_BYTES_MAX + 1)
     except OSError:
         die("version resolution pending record cannot be read", 1)
-    if len(raw) > 131072:
-        die("version resolution pending record exceeds 131072-byte cap", 1)
+    if len(raw) > VERSION_RESOLUTION_PENDING_BYTES_MAX:
+        die(
+            "version resolution pending record exceeds "
+            f"{VERSION_RESOLUTION_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
     try:
         value = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, ValueError):
@@ -1311,15 +1320,26 @@ def load_version_resolution_pending(base_dir: str) -> dict | None:
 
 def write_version_resolution_pending(base_dir: str, value: dict) -> None:
     """Publish the resolution marker before its ledger/state write windows."""
+    try:
+        raw = (
+            json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError):
+        die("version resolution pending record has an unsupported shape", 1)
+    if len(raw) > VERSION_RESOLUTION_PENDING_BYTES_MAX:
+        die(
+            "version resolution pending record exceeds "
+            f"{VERSION_RESOLUTION_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
     root = state_root(base_dir)
     path = version_resolution_pending_path(base_dir)
     descriptor, temporary = tempfile.mkstemp(
         prefix=".version-resolution-pending-", dir=root
     )
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-            json.dump(value, handle, sort_keys=True, separators=(",", ":"))
-            handle.write("\n")
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(raw)
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(temporary, path)
@@ -2890,6 +2910,14 @@ def _ledger_history_records(text: str, skill: str, label: str) -> list[dict]:
             or row["digest"] != previous["digest"]
         ):
             die(f"{label} generation history changes the held frontier")
+        if row["axis"] == "evolution" and row["digest"] == previous["digest"]:
+            die(f"{label} evolution history does not change the held frontier")
+        if (
+            row["axis"] == "epoch"
+            and row["digest"] != previous["digest"]
+            and "reopen" not in (row["evidence"] + row["change"]).lower()
+        ):
+            die(f"{label} epoch history changes the frontier without reopening it")
     return rows
 
 
@@ -2921,8 +2949,6 @@ def _version_target_snapshot(
     parts = _label_parts(current, skill)
     if parts is None or current != f"{skill}-v{parts[0]}.{parts[1]}.{parts[2]}":
         die(f"{label} has a malformed current version")
-    if parts[1] >= VERSION_RELATION_COUNTER_MAX:
-        die(f"{label} generation has no representable successor")
     if status not in ("open", "mature"):
         die(f"{label} has a malformed frontier status")
     if (status == "mature") != (next_job == "None -- mature"):
@@ -3041,6 +3067,8 @@ def resolve_version_relation_target(
             "version resolution base has incompatible drift in "
             f"{compatibility_fault}"
         )
+    if base_snapshot["parts"][1] >= VERSION_RELATION_COUNTER_MAX:
+        die("version resolution base generation has no representable successor")
     if base_snapshot["parts"][1] < anchor["generation"]:
         die("version resolution base generation predates the anchor")
     for row in base_snapshot["rows"][len(anchor_snapshot["rows"]) :]:
@@ -3191,9 +3219,17 @@ def build_version_resolution(
     _require_native_relation_history(base_dir)
 
     if exact_base is None or exact_head is None:
-        first_base = remote_branch_tip(base_dir, base_ref, "version resolution base ref")
+        first_base = remote_branch_tip(
+            base_dir,
+            base_ref,
+            "version resolution base ref",
+            native_relation=True,
+        )
         first_head = remote_branch_tip(
-            base_dir, run_branch_of(state), "version resolution run ref"
+            base_dir,
+            run_branch_of(state),
+            "version resolution run ref",
+            native_relation=True,
         )
         if first_head != expected_head:
             die("version resolution run ref does not match the candidate head")
@@ -3245,10 +3281,16 @@ def build_version_resolution(
     ]
     if exact_base is None:
         final_head = remote_branch_tip(
-            base_dir, run_branch_of(state), "version resolution run ref reread"
+            base_dir,
+            run_branch_of(state),
+            "version resolution run ref reread",
+            native_relation=True,
         )
         final_base = remote_branch_tip(
-            base_dir, base_ref, "version resolution base ref reread"
+            base_dir,
+            base_ref,
+            "version resolution base ref reread",
+            native_relation=True,
         )
         if (final_base, final_head) != (base_commit, head_commit):
             die("version resolution remote refs changed during evidence collection")
@@ -5358,6 +5400,7 @@ def terminal_version_resolution(
         base_dir,
         integration_base_of(state),
         "post-merge base branch tip",
+        native_relation=True,
     )
     if remote_base_after != merge_sha:
         die("the base branch moved again after the checked integration merge")
@@ -7119,11 +7162,16 @@ def resolved_commit(base_dir: str, ref: str, label: str) -> str:
 
 
 def remote_branch_tip(
-    base_dir: str, branch: str, label: str = "remote run branch tip"
+    base_dir: str,
+    branch: str,
+    label: str = "remote run branch tip",
+    *,
+    native_relation: bool = False,
 ) -> str:
     check_branch_name(branch)
     expected_ref = f"refs/heads/{branch}"
-    data = bounded_git(
+    reader = _native_relation_git if native_relation else bounded_git
+    data = reader(
         base_dir,
         ["ls-remote", "--refs", "origin", expected_ref],
         f"{label} could not be read",

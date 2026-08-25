@@ -106,6 +106,26 @@ class VersionRelationTests(HexctlCase):
         self.assertEqual(resolved["base_version"], "fiat-v1.5.3")
         self.assertEqual(resolved["resolved_version"], "fiat-v1.6.3")
 
+    def test_resolution_accepts_the_maximum_representable_generation(self):
+        module = hexctl_module()
+        final_generation = module.VERSION_RELATION_COUNTER_MAX
+        module, anchor_commit, anchor = self._capture_chain_anchor(
+            (final_generation - 1,)
+        )
+        head_commit = self._commit_chain(
+            (final_generation - 1, final_generation),
+            "candidate maximum generation",
+        )
+
+        resolved = module.resolve_version_relation_target(
+            self.dir, anchor_commit, anchor_commit, head_commit, anchor
+        )
+
+        self.assertEqual(
+            resolved["resolved_version"],
+            f"fiat-v1.{final_generation}.3",
+        )
+
     def test_resolution_refuses_a_rewritten_base_history_prefix(self):
         module, anchor_commit, anchor = self._capture_chain_anchor()
         rewritten = self.chain_ledger("fiat", (2, 3)).replace(
@@ -124,6 +144,38 @@ class VersionRelationTests(HexctlCase):
                 self.dir, anchor_commit, base_commit, head_commit, anchor
             )
         self.assertIn("rewrites its required prefix", stderr.getvalue())
+
+    def test_resolution_history_enforces_evolution_and_epoch_digest_rules(self):
+        module = hexctl_module()
+        unchanged = "a" * 64
+        changed = "b" * 64
+        baseline = (
+            f"- `fiat-v1.1.3` | baseline | `held` | `{unchanged}` | "
+            "fixture | Versioning starts here.\n"
+        )
+        invalid = (
+            (
+                baseline
+                + f"- `fiat-v2.1.3` | evolution | `held` | `{unchanged}` | "
+                "fixture | Frontier changed.\n"
+            ),
+            (
+                baseline
+                + f"- `fiat-v1.1.4` | epoch | `held` | `{changed}` | "
+                "fixture | Tooling changed.\n"
+            ),
+        )
+
+        for ledger in invalid:
+            with self.subTest(ledger=ledger.splitlines()[-1]):
+                stderr = io.StringIO()
+                with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module._ledger_history_records(
+                        "# fiat evolution ledger\n\n## History\n\n" + ledger,
+                        "fiat",
+                        "version resolution fixture",
+                    )
+                self.assertNotIn("fiat-v", stderr.getvalue())
 
     def test_each_non_generation_compatibility_field_blocks_resolution(self):
         module, _, anchor = self._capture_chain_anchor()
@@ -254,6 +306,42 @@ class VersionRelationTests(HexctlCase):
             with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
                 module.build_version_resolution(self.target, state)
         self.assertIn("remote refs changed", stderr.getvalue())
+
+    def test_resolution_remote_reads_ignore_inherited_git_repository(self):
+        anchor_commit, head_commit, state = self._relation_run_with_candidate()
+        module = hexctl_module()
+        self.git("remote", "add", "origin", self.dir)
+
+        with tempfile.TemporaryDirectory() as attacker:
+            for argv in (
+                ("init", "-q", "-b", "main"),
+                ("config", "user.email", "attacker@example.invalid"),
+                ("config", "user.name", "Attacker"),
+                ("config", "commit.gpgsign", "false"),
+                ("commit", "-q", "--allow-empty", "-m", "substitute remote"),
+            ):
+                subprocess.run(
+                    ["git", *argv], cwd=attacker, check=True, capture_output=True
+                )
+            subprocess.run(
+                ["git", "branch", state["run_branch"]],
+                cwd=attacker,
+                check=True,
+                capture_output=True,
+            )
+            subprocess.run(
+                ["git", "remote", "add", "origin", attacker],
+                cwd=attacker,
+                check=True,
+                capture_output=True,
+            )
+            with mock.patch.dict(
+                os.environ, {"GIT_DIR": os.path.join(attacker, ".git")}
+            ):
+                receipt = module.build_version_resolution(self.target, state)
+
+        self.assertEqual(receipt["base_commit"], anchor_commit)
+        self.assertEqual(receipt["head_commit"], head_commit)
 
     def test_555_collision_topology_requires_signed_sync_before_resolution(self):
         self.install_chain("fiat", (2,))
@@ -590,6 +678,40 @@ class VersionRelationTests(HexctlCase):
             os.path.exists(module.version_resolution_pending_path(self.target))
         )
         module.verify_run(self.target)
+
+    def test_pending_resolution_loads_the_maximum_target_shape(self):
+        module, state, receipt = self._persistable_resolution()
+        counter = int("1" * module.VERSION_RELATION_COUNTER_DIGITS_MAX)
+        targets = []
+        for index in range(module.VERSION_RELATIONS_MAX):
+            skill = f"s{index:02d}" + "a" * 1008
+            ledger = f"{skill}/EVOLUTION.md"
+            target = json.loads(json.dumps(receipt["targets"][0]))
+            target.update(
+                {
+                    "skill": skill,
+                    "ledger": ledger,
+                    "anchor_version": f"{skill}-v{counter}.{counter}.{counter}",
+                    "base_version": f"{skill}-v{counter}.{counter}.{counter}",
+                    "resolved_version": f"{skill}-v{counter}.{counter + 1}.{counter}",
+                    "skill_metadata_version": f"{counter}.{counter + 1}.{counter}",
+                }
+            )
+            targets.append(target)
+        receipt["targets"] = targets
+        module.validate_version_resolution_shape(receipt, "fixture.max_resolution")
+        _, marker = self._resolution_marker(module, state, receipt)
+        encoded = (
+            json.dumps(marker, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+        self.assertGreater(len(encoded), 131072)
+        self.assertEqual(len(receipt["targets"][0]["ledger"].encode("utf-8")), 1024)
+
+        module.write_version_resolution_pending(self.target, marker)
+
+        self.assertEqual(
+            module.load_version_resolution_pending(self.target), marker
+        )
 
     def test_pending_resolution_after_ledger_completes_state_once(self):
         module, state, receipt = self._persistable_resolution()
