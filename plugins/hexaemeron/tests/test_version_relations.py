@@ -1306,6 +1306,62 @@ class VersionRelationTests(HexctlCase):
             )
         self.assertIn("valid native local signature", stderr.getvalue())
 
+    def test_resolution_path_proof_disables_repository_rename_detection(self):
+        module = hexctl_module()
+        self.write("old-target.txt", "before\n")
+        self.git("add", "old-target.txt")
+        self.git("commit", "-m", "path proof base")
+        before = self.git("rev-parse", "HEAD").stdout.strip()
+        self.git("mv", "old-target.txt", "new-target.txt")
+        self.git("commit", "-m", "path proof rename")
+        after = self.git("rev-parse", "HEAD").stdout.strip()
+        self.git("config", "diff.renames", "true")
+
+        expected = ["new-target.txt", "old-target.txt"]
+        self.assertEqual(
+            module.git_diff_paths(self.target, before, after), expected
+        )
+        self.assertEqual(
+            module._native_relation_diff_paths(self.target, before, after),
+            expected,
+        )
+
+    def test_resolution_path_proof_disables_repository_submodule_ignores(self):
+        module = hexctl_module()
+        self.write("gitlink-source.txt", "before\n")
+        self.git("add", "gitlink-source.txt")
+        self.git("commit", "-m", "gitlink source before")
+        link_before = self.git("rev-parse", "HEAD").stdout.strip()
+        self.write("gitlink-source.txt", "after\n")
+        self.git("commit", "-am", "gitlink source after")
+        link_after = self.git("rev-parse", "HEAD").stdout.strip()
+        self.git("rm", "gitlink-source.txt")
+        self.git(
+            "update-index",
+            "--add",
+            "--cacheinfo",
+            f"160000,{link_before},nested-target",
+        )
+        self.git("commit", "-m", "path proof gitlink base")
+        before = self.git("rev-parse", "HEAD").stdout.strip()
+        self.git(
+            "update-index",
+            "--cacheinfo",
+            f"160000,{link_after},nested-target",
+        )
+        self.git("commit", "-m", "path proof gitlink update")
+        after = self.git("rev-parse", "HEAD").stdout.strip()
+        self.git("config", "diff.ignoreSubmodules", "all")
+
+        expected = ["nested-target"]
+        self.assertEqual(
+            module.git_diff_paths(self.target, before, after), expected
+        )
+        self.assertEqual(
+            module._native_relation_diff_paths(self.target, before, after),
+            expected,
+        )
+
     def test_resolution_sync_refuses_missing_path_or_green_check_coverage(self):
         (
             module,

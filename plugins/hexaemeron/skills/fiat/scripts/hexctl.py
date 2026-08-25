@@ -2346,7 +2346,15 @@ def _native_relation_diff_paths(
     after = require_full_sha(after, "version resolution sync head")
     raw = _native_relation_git(
         base_dir,
-        ["diff", "--name-only", "-z", f"{before}..{after}", "--"],
+        [
+            "diff",
+            "--no-renames",
+            "--ignore-submodules=none",
+            "--name-only",
+            "-z",
+            f"{before}..{after}",
+            "--",
+        ],
         "version resolution target path delta cannot be read",
     )
     try:
@@ -4792,7 +4800,15 @@ def merge_base_commit(base_dir: str, product_head: str, base_head: str) -> str:
 def git_diff_paths(base_dir: str, before: str, after: str) -> list[str]:
     raw = bounded_git(
         base_dir,
-        ["diff", "--name-only", "-z", f"{before}..{after}", "--"],
+        [
+            "diff",
+            "--no-renames",
+            "--ignore-submodules=none",
+            "--name-only",
+            "-z",
+            f"{before}..{after}",
+            "--",
+        ],
         "could not read the integration path delta",
     )
     try:

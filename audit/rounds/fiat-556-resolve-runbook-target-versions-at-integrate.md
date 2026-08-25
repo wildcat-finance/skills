@@ -1391,3 +1391,137 @@ and native Git storage can still rewrite all three local evidence classes; no
 external signed state anchor or storage guarantee is claimed. Step 4 still
 owns the exact issue-or-document wording in issue #556's eventual generation
 rows.
+
+## Step 3, round 5 -- 2026-08-25
+
+Non-Solidity round over signed repair-and-audit tip
+`3c9618a15cc55367deed0eb2636e0465344a4cdf`, whose direct parent is the
+signed round 3 repair-and-audit tip
+`fba9b657dab9f313cdac46260276f474b969063e`. Both local Shoggoth signatures
+verify, and the starting tip carries exactly one co-author trailer and one
+origin trailer. One high finding was fixed with causal real-repository guards
+on the named audit branch in this round.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R5-01 | high | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | Integration revalidation path enumeration inherited repository-local Git diff semantics. With `diff.renames=true`, a pure `old-target.txt` to `new-target.txt` rename returned only the new path. With `diff.ignoreSubmodules=all`, a changed gitlink returned no path. Receipt construction and native replay could therefore agree on incomplete product, upstream, overlap, composition, and affected sets, leaving the deleted rename side or the changed gitlink outside required check coverage. | fixed in this round: both path readers force `--no-renames` and `--ignore-submodules=none`. Real repositories now return both sides of a rename and the changed gitlink despite the hostile local settings |
+
+### Evidence
+
+The causal report is
+`.elenchus/fiat-556-step-3-warden-round5-red.json`, SHA-256
+`2eaa1f1c3295a38cadb08cb674ca07002de081cd0d09230fd277f06c6f3550b8`.
+It records `elenchus.unittest.v1`, 1,157 tests, one assertion failure, zero
+errors, and zero skips while the tree carried the rename guard and no product
+repair. The real repository returned only `new-target.txt`, not the required
+sorted pair containing both `new-target.txt` and `old-target.txt`.
+
+The adjacent gitlink specimen also ran before its repair. Its one targeted
+case failed once with zero errors: repository-local
+`diff.ignoreSubmodules=all` changed the required `nested-target` result to an
+empty list. The intermediate report
+`.elenchus/fiat-556-step-3-warden-round5-green-final.json`, SHA-256
+`7383caf5eee9efdb08aa540ccf5911109c516269f31003cb2c6bef1c14b9f9a8`, is
+preserved but superseded. Its 1,157 green cases predate the gitlink guard and
+are not the final result.
+
+The fixed-tree report is
+`.elenchus/fiat-556-step-3-warden-round5-green-final-1158.json`, SHA-256
+`f59fb900d69985850363a8d2c8d70d784e9eef9a0536979890fcfecc77b98e4a`.
+It records `elenchus.unittest.v1`, 1,158 tests with zero failures, errors, or
+skips. All 97 focused relation cases and 400 adjacent controller and Fiat
+contract-selection cases are green. The nine root evolution-contract cases,
+11 Hexaemeron evolution cases, and 350 root cases are also green. The Elenchus
+verdict is guarded.
+
+All non-Solidity suite commands in `AGENTS.md` are green: Alexandria ran 255
+tests; Ariadne 632 with six skips; Berean 151 with one skip; Brevitas 21;
+Hermes 72; Hexaemeron 1,158; Imprimatur 62; Horos 217; Lazarus 364; Pandects
+116; Probitas 276; Sapheneia 11; and Tabularium 134. Both Lemma runners report
+zero failures; the Solidity runner leaves its compiler cases skipped without
+`--solc`. Lazarus passed under an isolated Python 3.13 environment resolved
+from its lockfile.
+
+The inherited root HTTP fixture cleanup warnings, controller fixture
+`ResourceWarning` at `test_hexctl.py:5570`, and Pandects catalogue
+`ResourceWarning` at `test_search_record.py:46` remain non-failing. One
+superseded concurrent controller run crossed the test-first file replacement
+and observed a transient syntax error; the stable-tree 400-case rerun above is
+the cited result. Promise Machine reports 14 clean plugin copies and 72 of 72
+covered promises. Phylax, Ephoros, and Hypomnema each exit 0. Horos reports
+that the boundary matches the tree. Python compilation, JSON parsing, and
+`git diff --check` are clean.
+
+Ephemeral valid OpenPGP, X.509, and SSH signed commits each passed the
+relation-native verification route after the matching repository-local
+verifier setting was pointed at a failing program. The X.509 probe selected a
+working system `gpgsm` through `PATH`, which is the operating-system execution
+boundary retained in round 4. The command-shape guard still covers all four
+verifier settings.
+
+The receipted and tracked study copies remain byte-identical at SHA-256
+`4f379dac26ed32af4310bcd55ebaef7ca91774da7ca53f69f2d3a6401e8942c7`;
+the receipted, amended, and tracked runbook copies remain byte-identical at
+SHA-256
+`593ce6e4faa9598c475475e931f66c28e6d2ecaff116232299a7085e47ee89d2`.
+Protasis accepts both. All five relative study links resolve from the tracked
+study, the misplaced plugin-local study path remains absent, and
+`audit/AUDIT.md` remains byte-identical at SHA-256
+`582aa3cfe6b83344c0c6f52987d55ab5a180b429a2199fccd14f6ff769a267d1`.
+
+The prior 92,198-byte, 1,393-line audit record is the exact prefix of this
+append, SHA-256
+`30b0c45b7c3fdd4c5dfb9bac51408f0bad5aeda87aacb8bb7bbaaf1895afbd60`.
+The bounded Sapheneia comparison preserves every earlier finding, severity,
+counterexample, path, hash, count, skip, warning, status, scope exclusion, and
+unpursued lead. This round adds only its heading, one finding, its evidence,
+risk register, scope boundary, and lead boundary.
+
+Imprimatur scores the complete record 100.0 out of 100 with zero defects.
+Brevitas reports eight B011 finding-table shape diagnostics: seven in the
+unchanged prefix and this round's one-row table. The row count stays equal to
+the actual finding count; no protected finding was removed or invented.
+
+### Risk register
+
+`revalidation-coverage`, `sync-carriage`, and `git-object-shape` surfaced
+S3-R5-01. Receipt construction and native replay now force rename detection
+off, so a rename remains one deletion path and one addition path. They also
+force submodule ignores off, so a changed gitlink remains visible despite
+repository or submodule ignore policy. The existing UTF-8, path-safety,
+deduplication, sorting, and size checks still apply to both exact sets.
+
+`anchor-substitution`, `base-ref-race`, `run-ref-race`,
+`remote-evidence-failure`, `post-check-race`, `resolution-staleness`,
+`interrupted-resolution`, `receipt-replay`, `frontier-drift`,
+`ledger-history-rewrite`, `generation-arithmetic`, `multi-target-partial`,
+`state-history-growth`, `metadata-mismatch`, `self-hosted-collision`,
+`legacy-state`, `diagnostic-leak`, `promise-overclaim`, and
+`literal-compatibility` are green. Stable remote observations, replacement-free
+objects and parents, native signature verification in all three Git formats,
+exact stored sync shapes, complete path coverage, pending recovery before live
+rereads, eight retained receipts and ninth refusal, stale status and packet
+withholding, terminal `[base, candidate]` parent replay, and post-check
+base-move refusal retain direct focused guards.
+
+### Scope boundary
+
+This round cold-read the complete Step 3 contract, current controller and
+tests, Promise bindings, push discipline, and all four earlier Step 3 audit
+records. It changed the controller, one focused test file, controller digest
+bindings, and this append-only audit record, all within the Step 3 file set.
+No Solidity was present, so the non-Solidity waiver and three mandatory lint
+exits apply. No controller command that mutates run state, push, pull request,
+merge, issue change, remote write, or other GitHub mutation was run.
+
+Leads not pursued: a caller that controls the process `PATH`, system verifier
+binaries, or signature trust stores already controls the execution boundary;
+the controller removes repository-local program substitution rather than
+claiming an operating-system trust root. A process with coordinated direct
+write access to controller state, its hash-chained ledger, and native Git
+storage can still rewrite all three local evidence classes; no external signed
+state anchor or storage guarantee is claimed. The prose-phase generic file
+list has a separate non-authorising purpose and does not enter this Step 3
+receipt or replay proof, so this round did not widen that helper into the
+integration repair. Step 4 still owns the exact issue-or-document wording in
+issue #556's eventual generation rows.
