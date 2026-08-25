@@ -231,7 +231,14 @@ import re
 import sys
 import time
 
-args = sys.argv[1:]
+raw_args = sys.argv[1:]
+args = raw_args
+if (
+    len(raw_args) >= 2
+    and raw_args[0] == "--no-replace-objects"
+    and raw_args[1] in ("verify-commit", "show")
+):
+    args = args[1:]
 mode = os.environ.get("FAKE_GIT_MODE", "valid")
 if args and args[0] == "rev-parse" and "--show-toplevel" not in args:
     if mode == "missing-commit":
@@ -1559,6 +1566,25 @@ class TestStudyAmendments(HexctlCase):
 
 
 class TestCommitVerification(HexctlCase):
+    def test_local_signature_check_ignores_replacement_objects(self):
+        module = hexctl_module()
+        commit_sha = "a" * 40
+        with (
+            mock.patch.object(
+                module, "bounded_tool_status", return_value=1
+            ) as status,
+            mock.patch.object(module, "signing_key", return_value=""),
+            redirect_stderr(StringIO()),
+        ):
+            with self.assertRaises(SystemExit):
+                module.verify_local_commit(self.dir, commit_sha, "step")
+
+        status.assert_called_once_with(
+            self.dir,
+            "git",
+            ["--no-replace-objects", "verify-commit", commit_sha],
+        )
+
     def test_local_fake_git_negative_matrix_is_fail_closed_and_secret_safe(self):
         module = hexctl_module()
         module.GIT_TIMEOUT = 0.05

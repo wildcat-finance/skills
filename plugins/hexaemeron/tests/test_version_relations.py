@@ -663,6 +663,35 @@ class VersionRelationTests(HexctlCase):
         )
         module.verify_run(self.target)
 
+    def test_durable_resolution_clears_pending_before_live_evidence_reread(self):
+        module, state, receipt = self._persistable_resolution()
+        candidate, marker = self._resolution_marker(module, state, receipt)
+        module.write_version_resolution_pending(self.target, marker)
+        module.append_ledger(
+            self.target,
+            "done:version-resolution",
+            module.version_resolution_event(receipt),
+            marker["state_after_sha256"],
+        )
+        module.save_state(self.target, candidate)
+
+        with mock.patch.object(
+            module,
+            "build_version_resolution",
+            side_effect=AssertionError(
+                "live refs were read before the durable transaction recovered"
+            ),
+        ):
+            module.done_resolve_versions(
+                SimpleNamespace(dir=self.target), candidate
+            )
+
+        self.assertEqual(self._resolution_event_count(), 1)
+        self.assertFalse(
+            os.path.exists(module.version_resolution_pending_path(self.target))
+        )
+        module.verify_run(self.target)
+
     def test_pending_resolution_before_ledger_rolls_back_once(self):
         module, state, receipt = self._persistable_resolution()
         _, marker = self._resolution_marker(module, state, receipt)
@@ -700,7 +729,7 @@ class VersionRelationTests(HexctlCase):
             targets.append(target)
         receipt["targets"] = targets
         module.validate_version_resolution_shape(receipt, "fixture.max_resolution")
-        _, marker = self._resolution_marker(module, state, receipt)
+        candidate, marker = self._resolution_marker(module, state, receipt)
         encoded = (
             json.dumps(marker, sort_keys=True, separators=(",", ":")) + "\n"
         ).encode("utf-8")
@@ -709,8 +738,24 @@ class VersionRelationTests(HexctlCase):
 
         module.write_version_resolution_pending(self.target, marker)
 
-        self.assertEqual(
-            module.load_version_resolution_pending(self.target), marker
+        loaded = module.load_version_resolution_pending(self.target)
+        self.assertEqual(loaded, marker)
+        module.append_ledger(
+            self.target,
+            "done:version-resolution",
+            module.version_resolution_event(receipt),
+            marker["state_after_sha256"],
+        )
+        module.save_state(self.target, candidate)
+
+        recovered, completed = module.recover_version_resolution(
+            self.target, candidate, loaded, None
+        )
+
+        self.assertTrue(completed)
+        self.assertEqual(recovered, candidate)
+        self.assertFalse(
+            os.path.exists(module.version_resolution_pending_path(self.target))
         )
 
     def test_pending_resolution_after_ledger_completes_state_once(self):
@@ -1129,6 +1174,46 @@ class VersionRelationTests(HexctlCase):
                     relation,
                 )
 
+    def test_resolution_sync_verifies_the_native_commit_object(self):
+        (
+            module,
+            state,
+            relation,
+            sync,
+            product_head,
+            base_commit,
+            sync_head,
+        ) = self._sync_evidence_fixture()
+        with (
+            mock.patch.object(
+                module,
+                "_native_relation_parents",
+                return_value=[product_head, base_commit],
+            ),
+            mock.patch.object(
+                module, "_native_relation_diff_paths", return_value=[]
+            ),
+            mock.patch.object(
+                module, "verify_local_commit", return_value=sync_head
+            ) as verify,
+        ):
+            module._require_resolution_sync(
+                self.target,
+                state,
+                sync,
+                product_head,
+                base_commit,
+                sync_head,
+                relation,
+            )
+
+        verify.assert_called_once_with(
+            self.target,
+            sync_head,
+            "version resolution sync",
+            native_relation=True,
+        )
+
     def test_resolution_sync_refuses_missing_path_or_green_check_coverage(self):
         (
             module,
@@ -1190,6 +1275,51 @@ class VersionRelationTests(HexctlCase):
                     relation,
                 )
         self.assertIn("failed or malformed check", stderr.getvalue())
+
+    def test_resolution_sync_refuses_nested_revalidation_paths(self):
+        (
+            module,
+            state,
+            relation,
+            sync,
+            product_head,
+            base_commit,
+            sync_head,
+        ) = self._sync_evidence_fixture()
+        specimens = ("affected_paths", "check_paths")
+        for specimen in specimens:
+            with self.subTest(specimen=specimen):
+                malformed = json.loads(json.dumps(sync))
+                if specimen == "affected_paths":
+                    malformed["revalidation"]["affected_paths"] = [[]]
+                else:
+                    malformed["revalidation"]["checks"][0]["paths"] = [[]]
+                stderr = io.StringIO()
+                with (
+                    mock.patch.object(
+                        module,
+                        "_native_relation_parents",
+                        return_value=[product_head, base_commit],
+                    ),
+                    mock.patch.object(
+                        module, "verify_local_commit", return_value=sync_head
+                    ),
+                    mock.patch.object(
+                        module, "_native_relation_diff_paths", return_value=[]
+                    ),
+                    contextlib.redirect_stderr(stderr),
+                    self.assertRaises(SystemExit),
+                ):
+                    module._require_resolution_sync(
+                        self.target,
+                        state,
+                        malformed,
+                        product_head,
+                        base_commit,
+                        sync_head,
+                        relation,
+                    )
+                self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_two_target_resolution_is_all_or_nothing_and_skill_sorted(self):
         self.install_chain("fiat", (2,))

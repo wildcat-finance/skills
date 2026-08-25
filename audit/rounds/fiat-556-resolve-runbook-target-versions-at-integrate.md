@@ -1011,3 +1011,143 @@ an operating-system storage guarantee. The shared root history parser's
 fenced-row convention was not changed here because Step 3 consumes the same
 canonical ledger grammar already accepted by the evolution contract; changing
 that suite-wide grammar belongs to a separately studied contract.
+
+## Step 3, round 2 -- 2026-08-25
+
+Non-Solidity round over signed repair-and-audit tip
+`93921e4e3a550d165623b129826968cd689b3bb0`, whose direct parent is Mason's
+signed Step 3 commit `eacc5cfa9bdb6fe73a22c7d7fce0fd9fe8e375d2`.
+Both local Shoggoth signatures verify, and the repair tip carries exactly one
+co-author trailer and one origin trailer. Three findings were fixed with
+regression guards on the named audit branch in this round.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R2-01 | high | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | The signed `[product, base]` sync check read parents without replacement objects, then ran signature, author, and message checks through ordinary Git replacement handling. An unsigned native sync object could therefore borrow a valid signature and provenance trailers from a signed replacement object while its native parent pair passed separately. | fixed in this round: exact local verification ignores replacement objects; the relation path also removes inherited Git repository and configuration variables for signature, author, and message reads. A real repository probe proves ordinary verification accepts the replacement while native verification refuses the unsigned object, and a controller guard checks the replacement-free command boundary |
+| S3-R2-02 | medium | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | `done resolve-versions` rebuilt live base and run evidence before examining a pending marker. If the ledger event, state replacement, and marker were all durable but only the final clear was interrupted, a later ref move stranded that completed transaction behind a stale-evidence refusal instead of clearing the marker exactly once. | fixed in this round: recovery first reconciles a matching durable state/event pair without consulting refs; incomplete write windows still rebuild and compare current evidence before any completion or rollback. The guard makes any live-evidence reread fail after the durable transition and proves recovery clears only the matching marker |
+| S3-R2-03 | low | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | Active sync replay converted stored `affected_paths` and per-check `paths` directly to sets after checking only that the outer values were arrays. A nested array raised an unhandled `TypeError` during resolution and status replay instead of returning a bounded refusal. | fixed in this round: replay applies the existing capped, string-only, safe, sorted, unique path validator before set operations, caps the check array, and confines check paths to recorded affected paths. Both nested-array locations now refuse without a traceback |
+
+### Evidence
+
+The first causal report is
+`.elenchus/fiat-556-step-3-warden-round2-red.json`, SHA-256
+`54f09948dcc474d6f27e154764ccb94d30f1dda8c22699acb3ebb2f050011960`.
+It records `elenchus.unittest.v1`, 1,150 tests, one assertion failure, zero
+errors, and zero skips. In the isolated real-Git specimen, ordinary
+`verify-commit` over the replaced SHA exited 0 while
+`git --no-replace-objects verify-commit` over the same native unsigned object
+exited 1.
+
+The recovery causal report is
+`.elenchus/fiat-556-step-3-warden-round2-red-recovery.json`, SHA-256
+`00e0dfa4ac57071e692c2c517f7610ed20dcc80d22e76f43e45952de4f094c72`.
+It records the same schema, 1,151 tests, one assertion failure, zero errors,
+and zero skips. The sync-shape causal report is
+`.elenchus/fiat-556-step-3-warden-round2-red-sync-shape.json`, SHA-256
+`4b6169cdaa139622e122340232d07df1aeac196f4b1212fb4207e71d6d001cc8`.
+It records 1,153 tests, zero failures, two errors, and zero skips: one raw
+`TypeError` for nested affected paths and one for nested check paths. These
+reports remain outside the tracked tree.
+
+The final report is
+`.elenchus/fiat-556-step-3-warden-round2-green-final.json`, SHA-256
+`7ebdf22ad8fe3b9f78d96c3f58dc8b7f8666916752adbe592191f4ddc7e9773a`.
+It records `elenchus.unittest.v1`, 1,153 tests with zero failures, errors, or
+skips. All 92 focused relation cases, 400 adjacent controller and Fiat
+contract-selection cases, 11 Hexaemeron evolution cases, and 350 root cases
+are green.
+
+All non-Solidity suite commands in `AGENTS.md` are green: Alexandria ran 255
+tests; Ariadne 632 with six skips; Berean 151 with one skip; Brevitas 21;
+Hermes 72; Hexaemeron 1,153; Imprimatur 62; Horos 217; Lazarus 364; Pandects
+116; Probitas 276; Sapheneia 11; and Tabularium 134. Both Lemma runners report
+zero failures; the Solidity runner leaves its compiler cases skipped without
+`--solc`. Lazarus ran under its pinned Python 3.13 lockfile runtime.
+
+The inherited root HTTP fixture cleanup warnings, controller fixture
+`ResourceWarning` at `test_hexctl.py:5564`, and Pandects catalogue
+`ResourceWarning` at `test_search_record.py:46` remain non-failing. Promise
+Machine reports 14 clean plugin copies and 72 of 72 covered promises. Phylax,
+Ephoros, and Hypomnema each exit 0. Horos reports that the boundary matches the
+tree. Python compilation, JSON parsing, and `git diff --check` are clean.
+
+The receipted and tracked study copies remain byte-identical at SHA-256
+`4f379dac26ed32af4310bcd55ebaef7ca91774da7ca53f69f2d3a6401e8942c7`;
+the receipted and tracked runbook copies remain byte-identical at SHA-256
+`593ce6e4faa9598c475475e931f66c28e6d2ecaff116232299a7085e47ee89d2`.
+Protasis accepts both. All five relative study links resolve from the tracked
+study, the misplaced plugin-local study path remains absent, and
+`audit/AUDIT.md` remains byte-identical at SHA-256
+`582aa3cfe6b83344c0c6f52987d55ab5a180b429a2199fccd14f6ff769a267d1`.
+
+The prior 67,084-byte, 1,013-line audit record is the exact prefix of this
+append, SHA-256
+`8f21ca225215dc117f2adebf7b23e08370fde23e282cd9a3eae5ce9ab4a6062f`.
+The bounded Sapheneia comparison preserves all three findings, severities,
+counterexamples, paths, hashes, counts, skips, warnings, statuses, scope
+exclusions, and unpursued leads. The required audit heading, findings table,
+evidence, risk register, scope boundary, and lead boundary are present.
+
+Imprimatur scores the complete record 100.0 out of 100 with zero defects.
+Brevitas reports the five B011 table-shape diagnostics already present in the
+unchanged prefix. This round's required three-row findings table satisfies its
+structural threshold; no protected row was removed or invented.
+
+### Risk register
+
+`sync-carriage`, `anchor-substitution`, and `git-object-shape` surfaced
+S3-R2-01. The active sync now has one native-object boundary for commit
+identity, product-first and base-second parents, signature, author, provenance
+trailers, and product-to-sync target-path delta. Replacement refs and inherited
+repository substitution state cannot mix those facts across objects. Generic
+local commit verification also ignores replacement refs, while existing local
+key and GitHub-signing-key diagnostics remain value-bounded.
+
+`interrupted-resolution`, `resolution-staleness`, and `receipt-replay`
+surfaced S3-R2-02. A matching state-after fingerprint and final hash-chained
+ledger event clear the leftover marker before mutable refs are read. State-only,
+ledger-only, before-state, mismatched, corrupt-tail, unrelated-event, and
+incomplete windows retain their prior exact-evidence checks. The admitted
+32-target maximum marker round-trips through the same recovery path. Eight
+append-only receipts remain replayable; the ninth still refuses without
+eviction.
+
+`revalidation-coverage`, `legacy-state`, and `diagnostic-leak` surfaced
+S3-R2-03. Stored affected paths and covering check paths now share the same
+closed path grammar used when the revalidation artefact enters the controller.
+Empty or oversized check lists, nested values, duplicate or unsorted paths,
+unsafe paths, and paths outside the affected set refuse before coverage is
+computed. The refusal does not print the stored value or a traceback.
+
+`base-ref-race`, `run-ref-race`, `remote-evidence-failure`,
+`post-check-race`, `frontier-drift`, `ledger-history-rewrite`,
+`generation-arithmetic`, `multi-target-partial`, `state-history-growth`,
+`metadata-mismatch`, `self-hosted-collision`, `promise-overclaim`, and
+`literal-compatibility` are green. Stable native base and run observations,
+exact object and history snapshots, evolution and epoch rules, non-repeating
+frontier digests, compatible generation-only drift, incompatible tuple drift,
+the maximum representable candidate, complete signed sync coverage, stale
+withholding, actual terminal parent replay, and post-check base movement all
+retain direct focused guards. Status and worker packets distinguish absent,
+provisional, active, stale, and terminal relation evidence without widening
+what the receipt authorises.
+
+### Scope boundary
+
+This round cold-read the complete Step 3 contract, current controller, tests,
+Promise bindings, push discipline, and round 1 record. It changed the
+controller, two focused test files, controller digest bindings, and this
+append-only audit record. No Solidity was present, so the non-Solidity waiver
+and three mandatory lint exits apply. No controller command that mutates run
+state, push, pull request, merge, issue change, remote write, or other GitHub
+mutation was run.
+
+Leads not pursued: a process with coordinated direct write access to controller
+state, its hash-chained ledger, and native Git storage can rewrite all three
+local evidence classes. The checks detect partial, stale, substituted, and
+mismatched reads; no external signed state anchor or operating-system storage
+guarantee is claimed. Repository-local Git configuration is read within the
+native object store and is not independently pinned in the resolution schema.
+The exact issue-or-document wording in issue #556's eventual generation rows
+remains a Step 4 product obligation; this Step 3 audit did not invent a generic
+history-citation grammar beyond the shared versioning contract.

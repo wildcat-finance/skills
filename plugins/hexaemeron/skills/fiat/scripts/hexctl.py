@@ -3160,14 +3160,26 @@ def _require_resolution_sync(
         base_commit,
     ]:
         die("version resolution sync parents do not match product and base")
-    verify_local_commit(base_dir, head_commit, "version resolution sync")
+    verify_local_commit(
+        base_dir,
+        head_commit,
+        "version resolution sync",
+        native_relation=True,
+    )
     revalidation = as_dict(sync.get("revalidation"))
     if revalidation.get("schema") != INTEGRATION_REVALIDATION_SCHEMA:
         die("version resolution sync revalidation is missing or malformed")
     affected = revalidation.get("affected_paths")
     checks = revalidation.get("checks")
-    if not isinstance(affected, list) or not isinstance(checks, list):
+    if (
+        not isinstance(checks, list)
+        or not checks
+        or len(checks) > INTEGRATION_CHECKS_MAX
+    ):
         die("version resolution sync revalidation is missing or malformed")
+    affected_paths = _manifest_paths(
+        affected, "version resolution sync affected_paths"
+    )
     changed = set(
         _native_relation_diff_paths(base_dir, product_head, head_commit)
     )
@@ -3176,14 +3188,19 @@ def _require_resolution_sync(
         target_paths.add(target["ledger"])
         target_paths.add(target["ledger"].rsplit("/", 1)[0] + "/SKILL.md")
     needed = changed & target_paths
-    if not needed.issubset(set(affected)):
+    if not needed.issubset(set(affected_paths)):
         die("version resolution sync omits a changed target path")
     covered = set()
-    for check in checks:
+    for index, check in enumerate(checks):
         item = as_dict(check)
         if item.get("exit") != 0 or not isinstance(item.get("paths"), list):
             die("version resolution sync carries a failed or malformed check")
-        covered.update(item["paths"])
+        paths = _manifest_paths(
+            item["paths"],
+            f"version resolution sync check {index} paths",
+            set(affected_paths),
+        )
+        covered.update(paths)
     if not needed.issubset(covered):
         die("version resolution sync checks do not cover each changed target path")
 
@@ -5226,16 +5243,13 @@ def _state_with_resolution(state: dict, receipt: dict) -> dict:
 
 
 def recover_version_resolution(
-    base_dir: str, state: dict, pending: dict, current: dict
+    base_dir: str,
+    state: dict,
+    pending: dict,
+    current: dict | None,
 ) -> tuple[dict, bool]:
     """Finish, clear, or refuse one interrupted ledger/state transition."""
     recorded = pending["receipt"]
-    if _resolution_without_timestamp(recorded) != _resolution_without_timestamp(current):
-        die(
-            "pending version resolution names stale base, head, or target "
-            "evidence; restore that exact evidence or inspect the marker",
-            1,
-        )
     state_hash = state_fingerprint(state)
     before = pending["state_before_sha256"]
     after = pending["state_after_sha256"]
@@ -5258,6 +5272,17 @@ def recover_version_resolution(
         return state, True
     if state_hash != before:
         die("version resolution pending state fingerprint does not match", 1)
+    # The first pass lets a matching durable state/event pair clear without
+    # consulting refs which may legitimately have moved after the transaction.
+    # Every incomplete window still rebuilds current evidence before mutation.
+    if current is None:
+        return state, False
+    if _resolution_without_timestamp(recorded) != _resolution_without_timestamp(current):
+        die(
+            "pending version resolution names stale base, head, or target "
+            "evidence; restore that exact evidence or inspect the marker",
+            1,
+        )
     if event_durable:
         candidate = _state_with_resolution(state, recorded)
         if state_fingerprint(candidate) != after:
@@ -5295,6 +5320,18 @@ def done_resolve_versions(args, state: dict) -> None:
             f"'{run_branch_of(state)}' before versions can resolve"
         )
     pending = load_version_resolution_pending(args.dir)
+    if pending is not None:
+        state, recovered = recover_version_resolution(
+            args.dir, state, pending, None
+        )
+        if recovered:
+            verify_run(args.dir)
+            recorded = pending["receipt"]
+            print(
+                "recovered version resolution for base "
+                f"{recorded['base_commit']} and head {recorded['head_commit']}"
+            )
+            return
     current = build_version_resolution(args.dir, state)
     if pending is not None:
         state, recovered = recover_version_resolution(
@@ -7137,11 +7174,31 @@ def message_coauthors(message: object, label: str) -> list[dict]:
     return found
 
 
-def commit_author(base_dir: str, commit_sha: str, label: str) -> tuple[str, str]:
-    data = bounded_git(
+def _exact_commit_git(
+    base_dir: str,
+    argv: list[str],
+    refusal: str,
+    *,
+    native_relation: bool = False,
+) -> bytes:
+    """Read one native commit object, optionally inside the relation sandbox."""
+    if native_relation:
+        return _native_relation_git(base_dir, argv, refusal)
+    return bounded_git(base_dir, ["--no-replace-objects", *argv], refusal)
+
+
+def commit_author(
+    base_dir: str,
+    commit_sha: str,
+    label: str,
+    *,
+    native_relation: bool = False,
+) -> tuple[str, str]:
+    data = _exact_commit_git(
         base_dir,
         ["show", "-s", "--no-show-signature", "--format=%an%x00%ae", commit_sha],
         f"{label} commit {commit_sha} author cannot be read",
+        native_relation=native_relation,
     )
     fields = tool_text(data, f"{label} commit author").rstrip("\n").split("\0")
     if len(fields) != 2 or not all(field.strip() for field in fields):
@@ -7257,7 +7314,7 @@ def signing_key(base_dir: str, commit_sha: str) -> str:
     try:
         data = bounded_git(
             base_dir,
-            ["log", "-n1", "--pretty=%GK", commit_sha],
+            ["--no-replace-objects", "log", "-n1", "--pretty=%GK", commit_sha],
             f"signing key for {commit_sha} could not be read",
         )
     except SystemExit:
@@ -7265,10 +7322,26 @@ def signing_key(base_dir: str, commit_sha: str) -> str:
     return tool_text(data, "signing key").strip()
 
 
-def verify_local_commit(base_dir: str, commit_sha: str, label: str) -> str:
+def verify_local_commit(
+    base_dir: str,
+    commit_sha: str,
+    label: str,
+    *,
+    native_relation: bool = False,
+) -> str:
     """Verify one exact locally created commit and its required trailers."""
     commit_sha = require_full_sha(commit_sha, label)
-    if bounded_tool_status(base_dir, "git", ["verify-commit", commit_sha]) != 0:
+    if native_relation:
+        _native_relation_git(
+            base_dir,
+            ["verify-commit", commit_sha],
+            f"{label} commit {commit_sha} has no valid native local signature",
+        )
+    elif bounded_tool_status(
+        base_dir,
+        "git",
+        ["--no-replace-objects", "verify-commit", commit_sha],
+    ) != 0:
         key = signing_key(base_dir, commit_sha).upper()
         if key in GITHUB_SIGNING_KEYS:
             die(
@@ -7288,17 +7361,23 @@ def verify_local_commit(base_dir: str, commit_sha: str, label: str) -> str:
                 f"(signed with key {key}, which this keyring cannot validate)"
             )
         die(f"{label} commit {commit_sha} has no valid local signature")
-    author_name, author_email = commit_author(base_dir, commit_sha, label)
+    author_name, author_email = commit_author(
+        base_dir,
+        commit_sha,
+        label,
+        native_relation=native_relation,
+    )
     if is_host_identity(author_name, author_email):
         die(
             f"{label} commit {commit_sha} uses a runtime host as author; "
             "use Shoggoth or preserve the human contributor"
         )
     body = tool_text(
-        bounded_git(
+        _exact_commit_git(
             base_dir,
             ["show", "-s", "--no-show-signature", "--format=%B", commit_sha],
             f"{label} commit {commit_sha} message cannot be read",
+            native_relation=native_relation,
         ),
         f"{label} commit message",
     )
