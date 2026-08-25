@@ -1362,6 +1362,33 @@ class VersionRelationTests(HexctlCase):
             expected,
         )
 
+    def test_sync_receipt_path_proof_ignores_git_replacement_objects(self):
+        module = hexctl_module()
+        self.write("replacement-target.txt", "before\n")
+        self.git("add", "replacement-target.txt")
+        self.git("commit", "-m", "replacement path proof base")
+        before = self.git("rev-parse", "HEAD").stdout.strip()
+        self.write("replacement-target.txt", "after\n")
+        self.git("commit", "-am", "replacement path proof change")
+        after = self.git("rev-parse", "HEAD").stdout.strip()
+        self.git("replace", after, before)
+
+        expected = ["replacement-target.txt"]
+        self.assertEqual(
+            module.git_diff_paths(self.target, before, after), expected
+        )
+        self.assertEqual(
+            module._native_relation_diff_paths(self.target, before, after),
+            expected,
+        )
+        self.assertEqual(
+            module.merge_base_commit(self.target, before, after), before
+        )
+        self.assertEqual(
+            module._native_relation_merge_base(self.target, before, after),
+            before,
+        )
+
     def test_resolution_sync_refuses_missing_path_or_green_check_coverage(self):
         (
             module,

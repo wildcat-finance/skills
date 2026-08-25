@@ -4783,63 +4783,13 @@ def product_evidence_record(state: dict, product_head: str) -> dict:
 
 
 def merge_base_commit(base_dir: str, product_head: str, base_head: str) -> str:
-    raw = bounded_git(
-        base_dir,
-        ["merge-base", product_head, base_head],
-        "could not resolve the product/base merge base",
-    )
-    try:
-        lines = raw.decode("ascii", "strict").splitlines()
-    except UnicodeDecodeError:
-        die("product/base merge base is not ASCII")
-    if len(lines) != 1:
-        die("product/base merge base did not return one commit")
-    return require_full_sha(lines[0], "product/base merge base")
+    """Use the same replacement-free merge base stored evidence replays."""
+    return _native_relation_merge_base(base_dir, product_head, base_head)
 
 
 def git_diff_paths(base_dir: str, before: str, after: str) -> list[str]:
-    raw = bounded_git(
-        base_dir,
-        [
-            "diff",
-            "--no-renames",
-            "--ignore-submodules=none",
-            "--name-only",
-            "-z",
-            f"{before}..{after}",
-            "--",
-        ],
-        "could not read the integration path delta",
-    )
-    try:
-        decoded = raw.decode("utf-8")
-    except UnicodeDecodeError:
-        die("integration path delta is not UTF-8")
-    paths = [path for path in decoded.split("\0") if path]
-    unique = sorted(set(paths))
-    if len(unique) > GIT_PATHS_MAX:
-        die(f"integration path delta exceeds {GIT_PATHS_MAX} paths")
-    if len(unique) != len(paths):
-        die("integration path delta contains duplicate paths")
-    root = os.path.realpath(base_dir)
-    for index, path in enumerate(unique):
-        if (
-            not isinstance(path, str)
-            or not path
-            or os.path.isabs(path)
-            or path in (".", "..")
-            or ".." in path.split("/")
-            or any(ord(character) < 32 or ord(character) == 127 for character in path)
-        ):
-            die(f"integration path delta contains an unsafe path at index {index}")
-        candidate = os.path.realpath(os.path.join(root, path))
-        try:
-            inside = os.path.commonpath((root, candidate)) == root
-        except ValueError:
-            inside = False
-        if not inside:
-            die(f"integration path delta escapes the repository at index {index}")
-    return unique
+    """Use the same replacement-free tree delta stored evidence replays."""
+    return _native_relation_diff_paths(base_dir, before, after)
 
 
 def _strict_json_object(pairs):

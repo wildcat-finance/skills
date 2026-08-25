@@ -236,7 +236,7 @@ args = raw_args
 candidate = raw_args[1:] if raw_args[:1] == ["--no-replace-objects"] else raw_args
 while len(candidate) >= 2 and candidate[0] == "-c":
     candidate = candidate[2:]
-if candidate and candidate[0] in ("verify-commit", "show"):
+if candidate and candidate[0] in ("verify-commit", "show", "diff", "merge-base"):
     args = candidate
 mode = os.environ.get("FAKE_GIT_MODE", "valid")
 if args and args[0] == "rev-parse" and "--show-toplevel" not in args:
