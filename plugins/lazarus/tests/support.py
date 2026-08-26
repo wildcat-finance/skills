@@ -100,6 +100,35 @@ def sample_plan():
     }
 
 
+def sample_plan_v2(source_ids=("archive-a",)):
+    plan = sample_plan()
+    plan["schema_version"] = 2
+    plan["anchor_sources"] = [{"source_id": source_id} for source_id in source_ids]
+    return plan
+
+
+def sample_anchor_record(
+    source_id="archive-a",
+    *,
+    chain_id="0x1",
+    block_number="0x10",
+    block_hash=None,
+):
+    block_hash = hash32("11") if block_hash is None else block_hash
+    return {
+        "schema_version": 1,
+        "source_id": source_id,
+        "observed_at": "2026-08-25T08:30:45.123456Z",
+        "method": "eth_getBlockByNumber",
+        "params": [block_number, False],
+        "returned": {
+            "chain_id": chain_id,
+            "number": block_number,
+            "hash": block_hash,
+        },
+    }
+
+
 def sample_header():
     return {
         "schema_version": 1,
@@ -235,6 +264,15 @@ def synthetic_fixture_material():
         "state_trie": state_trie,
         "storage_trie": storage_trie,
     }
+
+
+def anchored_fixture_material(source_ids=("archive-a", "archive-b")):
+    material = synthetic_fixture_material()
+    material["plan"]["schema_version"] = 2
+    material["plan"]["anchor_sources"] = [
+        {"source_id": source_id} for source_id in source_ids
+    ]
+    return material
 
 
 def sample_proof_record():

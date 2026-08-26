@@ -10,7 +10,7 @@ description: >
   to run a model, retrieve documents, capture live chain state or bind a
   release to an Ariadne statement.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 # Berean
@@ -86,7 +86,9 @@ that fails its own validation; nothing repairs on the way through.
 grades recorded answer documents against the same rules:
 
 1. Every factual sentence carries one source class: `document`, `chain_read`,
-   `calculation` or `user_supplied`. An unclassified assertion fails.
+   `calculation` or `user_supplied`. An unclassified assertion fails, and a
+   `user_supplied` sentence names the spans of the recorded question it
+   rests on.
 2. A citation is document identity, byte start, byte end, span digest and
    display text. It passes only when re-slicing the pinned file reproduces
    both digest and text.
@@ -169,7 +171,7 @@ do not describe it as successful.
 - Boundary: The check establishes rule conformance for a recorded answer; it does not establish factual truth, model quality, canonical-chain status or proof-backed status for a recorded RPC read.
 - Authorises: Retention or presentation of the checked answer with its source classes, time domains, conflicts and refusals unchanged.
 - Consequence: 1
-- Refuses: An unclassified assertion, mismatched citation, blockless live value, silent conflict choice, evidence-class upgrade or answer outside the release boundary.
+- Refuses: An unclassified assertion, a user-supplied sentence resting on no span of the recorded question, mismatched citation, blockless live value, silent conflict choice, evidence-class upgrade or answer outside the release boundary.
 - Recovery: Correct or refuse the affected sentence, restore the pinned evidence and rerun `check-answer` against the same release.
 - Exceptions: none
 

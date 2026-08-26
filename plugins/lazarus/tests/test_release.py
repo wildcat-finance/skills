@@ -21,7 +21,11 @@ from lazarus_lib.binding import CHECKS
 from lazarus_lib.canonical import dump, dumps, loads
 from lazarus_lib.errors import FormatError, IntegrityError, LazarusError, PathError
 from lazarus_lib.manifest import build_manifest, write_manifest
-from lazarus_lib.records import write_proof_records, write_rpc_records
+from lazarus_lib.records import (
+    write_anchor_records,
+    write_proof_records,
+    write_rpc_records,
+)
 from lazarus_lib.release import (
     FIXTURE_DIRECTORY,
     RELEASE_NAME,
@@ -36,11 +40,12 @@ from lazarus_lib.verifier import verify_fixture
 from . import support
 
 COMPONENTS = ("header.json", "plan.json", "proofs.jsonl", "rpc.jsonl")
+ANCHORED_COMPONENTS = (*COMPONENTS, "anchors.jsonl")
 STATE_FIXTURE_TYPE = "https://ariadne.wildcat.finance/state-fixture/v1"
 CLI = support.PLUGIN_ROOT / "scripts" / "lazarus.py"
 
 
-def write_fixture(root: Path, *, hash_source=None):
+def write_fixture(root: Path, *, hash_source=None, anchor_source_ids=None):
     """A fixture that verifies, built from synthetic material.
 
     `hash_source` changes one string nothing verifies against, which is enough
@@ -49,13 +54,32 @@ def write_fixture(root: Path, *, hash_source=None):
     material = support.synthetic_fixture_material()
     if hash_source is not None:
         material["plan"]["block"]["hash_source"] = hash_source
+    components = COMPONENTS
+    if anchor_source_ids is not None:
+        material["plan"]["schema_version"] = 2
+        material["plan"]["anchor_sources"] = [
+            {"source_id": source_id} for source_id in anchor_source_ids
+        ]
+        components = ANCHORED_COMPONENTS
     dump(root / "plan.json", material["plan"])
     dump(root / "header.json", material["header"])
     write_rpc_records(root / "rpc.jsonl", material["rpc_records"])
     write_proof_records(root / "proofs.jsonl", material["proof_records"])
+    if anchor_source_ids is not None:
+        write_anchor_records(
+            root / "anchors.jsonl",
+            [
+                support.sample_anchor_record(
+                    source_id,
+                    block_number=material["header"]["number"],
+                    block_hash=material["header"]["hash"],
+                )
+                for source_id in anchor_source_ids
+            ],
+        )
     manifest = build_manifest(
         root,
-        COMPONENTS,
+        components,
         chain_id="0x1",
         block_number=material["header"]["number"],
         block_hash=material["header"]["hash"],
@@ -132,6 +156,52 @@ class Prepared:
 
 
 class WrittenReleaseTests(unittest.TestCase):
+    def test_an_anchored_fixture_round_trips_without_changing_release_v1(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = root / "fixture-source"
+            fixture.mkdir()
+            write_fixture(
+                fixture, anchor_source_ids=("archive-a", "archive-b")
+            )
+            statement_path = root / "statement.json"
+            statement_path.write_bytes(
+                json.dumps(statement_for(fixture), indent=2).encode()
+            )
+            out = root / "release"
+            document = write_release(fixture, statement_path, out)
+            read_back = verify_release(out)
+            fixture_report = verify_fixture(out / FIXTURE_DIRECTORY)
+
+            self.assertIn("chain_anchors", fixture_report)
+            self.assertEqual(fixture_report["chain_anchors"]["records"], 2)
+            self.assertEqual(
+                set(document),
+                {
+                    "schema_version",
+                    "tool_version",
+                    "fixture",
+                    "statement",
+                    "verified",
+                    "binding",
+                    "release_digest",
+                },
+            )
+            self.assertEqual(
+                set(document["verified"]),
+                {"block_hash", "evidence_counts", "canonical_chain_claim"},
+            )
+            self.assertNotIn("chain_anchors", document)
+            self.assertNotIn("chain_anchors", read_back)
+            self.assertEqual(
+                document["fixture"]["fixture_digest"],
+                fixture_report["fixture_digest"],
+            )
+            self.assertTrue(
+                (out / FIXTURE_DIRECTORY / "anchors.jsonl").is_file()
+            )
+            self.assertEqual(document["binding"]["checks"], list(CHECKS))
+
     def test_a_release_holds_the_fixture_the_statement_and_the_document(self):
         with tempfile.TemporaryDirectory() as directory:
             prepared = Prepared(directory)

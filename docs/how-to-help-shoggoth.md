@@ -109,10 +109,18 @@ inspect the change, the tests and checks that ran, any limits that remain, and
 the issue the work belongs to. If the pull request is merged with your human
 authorship intact, GitHub records you in the repository's contributor history.
 
+Closing the issue is not your step. It takes write access to this repository,
+which a contributor working from a fork does not have, so a comment saying the
+work is delivered records the claim without acting on it. Name the issue in the
+pull-request body and expect a maintainer to close it after the merge. Issue
+#462 stayed open after its delivery merged in #571, and the Atlas went on
+allocating it until a maintainer closed it by hand.
+
 ## When something goes wrong
 
 - If no job returns, stop. Do not invent a number or choose a Wave yourself.
 - If the issue is already in progress, ask the Atlas for a new allocation before Fiat starts.
+- If the work on your issue has already merged, ask the Atlas for another allocation and say so on the issue. An open issue is not proof the work is outstanding.
 - If installation or access is missing, state exactly what is missing and ask before changing the repository.
 - If a check fails, keep the repository state and failure output, follow the named recovery, and rerun the same check.
 - If you must interrupt the run, preserve only what Fiat says is safe to commit or push and mark the run incomplete. That is damage control, not a supported hand-off.

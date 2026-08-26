@@ -2,10 +2,31 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 9379286,
+    "bytes_blob": 9998955,
     "bytes_generated": 98
   },
   "entries": [
+    {
+      "bytes": 385852,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/AUDIT_SYNOPSIS.md"
+    },
+    {
+      "bytes": 79134,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 77086",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-429-audit-record-schema-timestamp-synopsis.md"
+    },
+    {
+      "bytes": 80046,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-429-audit-record-schema-timestamp-synopsis.synopsis.md"
+    },
     {
       "bytes": 59394,
       "category": "blob",
@@ -89,6 +110,13 @@
       "evidence": "no newline in the first 4096 bytes of 28233 bytes",
       "grade": "candidate",
       "path": "plugins/alexandria/examples/compound-v3-phase0-v0/source/registry.json"
+    },
+    {
+      "bytes": 23932,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/ariadne/audit/AUDIT_SYNOPSIS.md"
     },
     {
       "bytes": 78175,
@@ -195,6 +223,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "plugins/lazarus/examples/goldfinch-v0/rpc.jsonl"
+    },
+    {
+      "bytes": 24967,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/pandects/audit/AUDIT_SYNOPSIS.md"
+    },
+    {
+      "bytes": 25738,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "plugins/probitas/audit/AUDIT_SYNOPSIS.md"
     },
     {
       "bytes": 732267,

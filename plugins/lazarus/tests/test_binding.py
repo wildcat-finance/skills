@@ -130,6 +130,37 @@ class CleanBindingTests(unittest.TestCase):
         for name in made:
             self.assertTrue(name and name.strip())
 
+    def test_anchor_inventory_binds_without_changing_the_ariadne_contract(self):
+        manifest = sample_manifest()
+        report = sample_report()
+        statement = sample_statement()
+        anchor = {
+            "path": "anchors.jsonl",
+            "bytes": 512,
+            "sha256": "e" * 64,
+        }
+        manifest["components"].append(anchor)
+        report["chain_anchors"] = {
+            "records": 2,
+            "canonical_chain_claim": False,
+            "provider_independence_claim": False,
+        }
+        statement["predicate"]["fixture_subjects"].append(
+            {
+                "name": anchor["path"],
+                "path": anchor["path"],
+                "digest": {"sha256": anchor["sha256"]},
+                "bytes": anchor["bytes"],
+            }
+        )
+        statement["subject"].append(
+            {"name": anchor["path"], "digest": {"sha256": anchor["sha256"]}}
+        )
+        original_evidence = copy.deepcopy(statement["predicate"]["evidence"])
+        self.assertEqual(bound(statement, manifest, report), list(CHECKS))
+        self.assertEqual(statement["predicate"]["evidence"], original_evidence)
+        self.assertNotIn("chain_anchors", statement["predicate"])
+
     def test_a_block_hash_in_the_other_case_still_binds(self):
         """Two spellings of one value. Lazarus writes lowercase and a producer
         may not."""

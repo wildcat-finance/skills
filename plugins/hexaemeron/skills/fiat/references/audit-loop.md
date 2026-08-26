@@ -30,7 +30,15 @@ another pass.
    that change and takes no new ones.
 
    ```markdown
-   ## Step <n>, round <r> -- <date>
+   ## Step <n>, round <r> -- 2026-08-23T02:17:46Z
+
+   Audit schema: fiat-audit-round/v2
+
+   Covered: <risk-id>=reviewed; <risk-id>=not-applicable
+
+   Not checked: <negative space, or "none">
+
+   Elenchus verdict: <guarded, unguarded, passed, inconclusive, or null>
 
    | id | severity | file | finding | status |
    | --- | --- | --- | --- | --- |
@@ -46,11 +54,35 @@ another pass.
    result, identifier, number, link, severity, verdict, status, or unpursued
    lead. Existing audit history is append-only and stays untouched.
 
+   Version 2 belongs to the per-run topology: the path identifies the run and
+   the heading identifies only the step, round, and UTC time. The timestamp
+   grammar is exactly `YYYY-MM-DDTHH:MM:SSZ`; offsets and fractional seconds
+   are not accepted. Historical topic-bearing `fiat-audit-round/v1` records
+   stay readable but are not
+   reinterpreted as version 2. An explicitly tagged record must match its own
+   grammar; untagged historical records remain legacy prose.
+
 3. Apply fixes on the stacked branch: `<step-branch><suffix>` (suffix from
    `config audit.stacked_suffix`, default `--audit`), with a PR targeting
-   the step branch. Fixes accumulate there across rounds; the audit file
-   commits alongside them.
-4. Record the round:
+   the step branch. Fixes accumulate there across rounds; the audit file and its
+   regenerated sibling commit alongside them. A legacy `AUDIT.md` source uses
+   `AUDIT_SYNOPSIS.md`; `audit/rounds/<run>.md` uses
+   `audit/rounds/<run>.synopsis.md`. Warden owns both changes in the same signed
+   commit; the controller never rewrites either.
+4. Record the round. The controller resolves and reads the configured log once
+   and refuses a different `--log`. The latest stored same-log end offset is
+   the next boundary. With no stored offset, the configured path's regular blob
+   at the last locally verified commit is the baseline; a Git-proved absent path
+   is byte zero. Missing, malformed, mismatched, oversized, changed, or
+   unavailable evidence refuses rather than falling back. Only the appended
+   delta is decoded and line-checked. It must have the exact separator implied
+   by the preceding byte and contain one raw record in the grammar above at EOF.
+   Earlier Markdown is not parsed or revalidated. Every check finishes before
+   state or ledger mutation. The captured full log is rendered by the same
+   bounded synopsis code, and its committed sibling must match fresh bytes.
+   A missing, stale, lossy, oversized, or over-budget view refuses. The receipt
+   records the canonical log path, schema, record timestamp, entry SHA-256,
+   log end offset, and synopsis SHA-256 without printing record content:
 
    ```text
    hexctl audit-round --findings <n> --log <the directive's log_path> \

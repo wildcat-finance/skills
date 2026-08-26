@@ -7,7 +7,7 @@ description: >
   proof-checked fixture with a fail-closed local replay boundary. Never use it
   to describe receipts, logs, calls or traces as state-proof-backed evidence.
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # Lazarus
@@ -67,7 +67,9 @@ manifest:
 
 ```bash
 python3 scripts/lazarus.py capture \
-  --plan <plan.json> --rpc-url <url> --out <fixture-directory>
+  --plan <plan-v2.json> --rpc-url <primary-url> \
+  --anchor-rpc-env <source-id>=<environment-variable> \
+  --out <fixture-directory>
 python3 scripts/lazarus.py validate schemas
 python3 scripts/lazarus.py validate plan <plan.json>
 python3 scripts/lazarus.py build-manifest <fixture-directory> \
@@ -108,6 +110,17 @@ failures leave no fixture. Optional provider failures retain only a stable
 sanitised error. URL credentials, query values, bearer tokens, cookies and raw
 provider errors are not fixture material.
 
+For plan v2, repeat `--anchor-rpc-env SOURCE_ID=ENV_VAR` once for every sorted
+source declared by the plan. The source set must match exactly. Capture reads
+only those explicitly named, non-empty environment variables and never places
+their URL values in argv, output, diagnostics or fixture bytes. One client per
+source shares the primary request, response-byte, component-byte, total-byte
+and elapsed-time limits. Each records only a local UTC observation time and the
+matching mainnet chain ID, fixed number and expected block hash. Any mapping,
+transport, identity, schema, limit, secret-scan or final verification failure
+removes the stage and leaves no destination. The operator contract and example
+are in [the chain-anchor guide](../../docs/chain-anchors.md).
+
 `replay` verifies the fixture in the same process before binding to
 `127.0.0.1`. It answers only exact method-and-parameter matches, preserves the
 caller's identifier, handles single requests, batches and notifications, and
@@ -127,6 +140,11 @@ of another:
 3. **Recorded RPC evidence.** Exact method, parameters and result or sanitised
    error bytes are preserved for calls, receipts, logs and traces without a
    trie-proof claim.
+
+Chain anchors are separately counted recorded observations. Distinct source
+IDs are operator labels, not proof of separate provider ownership or
+infrastructure. Matching records do not establish canonical-chain membership
+or provider independence; both report fields remain false.
 
 Replay is exact request replay, not arbitrary EVM execution from a partial
 world state. Object member order is canonicalised for a request key; values,
@@ -153,6 +171,8 @@ or digest material.
 - Account and storage inclusion or absence proofs against the header state
   root, response values against decoded leaves and code against `codeHash`.
 - Separate counts for proof-backed, header-bound and recorded evidence.
+- Exact plan-v2 anchor coverage and agreement, reported separately without a
+  canonical-chain or provider independence claim.
 
 A self-consistent header is not proof that it belongs to Ethereum's canonical
 chain. Report the expected hash and its external provenance without upgrading
@@ -181,21 +201,21 @@ invents a zero value or leaves loopback to answer a miss.
 ### lazarus-fixture-capture
 
 - Promise: A successful `capture` atomically writes a finite fixed-block fixture only after resolving the expected block, collecting the declared requests and proofs, closing the block bracket and passing complete local verification.
-- Evidence: The explicit plan, opening and closing headers, exact sanitised RPC records, EIP-1186 proofs, manifest, limits and the in-process successful verification result.
+- Evidence: The explicit plan, exact runtime anchor mapping, opening and closing headers, exact sanitised RPC records, source-sorted anchor records, EIP-1186 proofs, manifest, shared limits, union provider-secret scan and the in-process successful verification result.
 - Evidence classes: recorded, checked, recomputed, proved: EIP-1186 account and storage relation
-- Boundary: Only account and storage values and code with the named proof relation are proof-backed; headers remain externally unanchored and calls, receipts, logs and traces remain recorded RPC evidence.
+- Boundary: Only account and storage values and code with the named proof relation are proof-backed; matching anchor records remain recorded observations and establish neither canonical-chain membership nor provider independence; calls, receipts, logs and traces remain recorded RPC evidence.
 - Authorises: Installation of the verified fixture as a durable finite historical test input.
 - Consequence: 2
-- Refuses: Finalising after a required request, proof, block bracket, limit, credential-sanitisation or verification failure, or retaining raw provider errors as evidence.
+- Refuses: Finalising after an incomplete or duplicate anchor mapping, absent or empty named environment value, provider transport or identity disagreement, required request, proof, block bracket, shared limit, credential-sanitisation, secret scan or verification failure, or retaining a provider URL or raw provider error as evidence.
 - Recovery: Inspect the stable failure, amend the finite plan or provider input, discard the temporary output and perform a fresh capture.
 - Exceptions: none
 
 ### lazarus-fixture-verification
 
 - Promise: A successful `verify` recomputes the fixture's schemas, canonical manifest, component digests, header hash, state proofs, response values and evidence-class counts from local bytes.
-- Evidence: The fixture tree, registered schema bytes, manifest, header, proof and RPC records, recomputed hashes and the complete verification report.
+- Evidence: The fixture tree, registered schema bytes, manifest, header, proof, RPC and optional anchor records, recomputed hashes, exact plan-to-anchor coverage and the complete verification report.
 - Evidence classes: checked, recomputed, proved: EIP-1186 account and storage relation
-- Boundary: Verification does not prove canonical-chain membership, receipts or logs against `receiptsRoot`, trace portability or facts outside the finite manifest.
+- Boundary: Verification does not prove canonical-chain membership, provider independence, receipts or logs against `receiptsRoot`, trace portability or facts outside the finite manifest.
 - Authorises: Use of the verified fixture and its separately counted evidence classes in the named offline test or preservation workflow.
 - Consequence: 1
 - Refuses: Calling a component proof-backed when its trie or code check failed, or using a missing, extra, escaped, changed or schema-unknown component.

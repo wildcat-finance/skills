@@ -10,7 +10,7 @@ description: >-
   has observed yet, which belongs to solidity-auditor and x-ray, and do not use
   it to speed up something that already works, which belongs to metron.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 # Elenchus
@@ -75,7 +75,9 @@ rerunning and hoping:
 - **Timing.** Add timestamps around the suspect region, widen the window with
   an artificial delay, or run under concurrency to raise collision odds.
 - **Environment.** Compare interpreter and toolchain versions, environment
-  variables, and whether an RPC or fixture is warm or cold.
+  variables, and whether an RPC or fixture is warm or cold. A failure that
+  needs a live endpoint's answer to appear belongs in a fixture; "Pin an
+  RPC-boundary failure into a fixture" below says how.
 - **State.** Look for leakage between tests, module-level singletons, shared
   caches, and a directory left behind by an earlier run. Run the case alone,
   then after the suite.
@@ -135,6 +137,98 @@ one. A fix that repairs the case and breaks a neighbour is not done.
 When the fix touched contracts, run `fizz-sync` first. A harness built against
 the old sources keeps asserting properties whose functions have moved, and
 quarantines nothing. It comes back clean while guarding code that is gone.
+
+## Pin an RPC-boundary failure into a fixture
+
+Use this when Localise named the RPC or fixture boundary and the failure needs
+a live endpoint's answer to appear. Reproduce cannot be satisfied against that
+endpoint: it answers slowly, answers differently, rate limits or goes away, and
+none of that happens on demand. Lazarus records the exact exchange once and
+replays it over loopback, so the guard runs with no provider at all.
+
+1. Name the exact exchange: the JSON-RPC method and its parameters as the
+   test sent them. Read them from the client's request, or run the test once
+   against `lazarus replay` on any existing fixture and read the `-32070`
+   error's `data.method`, `data.params` and `data.capture_plan_fragment`. The
+   fragment is a plan entry ready to paste.
+2. Write the plan: `schema_version` 1 or 2, chain `0x1` on `ethereum-mainnet`,
+   the fixed block `number`, `hash` and `hash_source`, then each request with
+   a `name`, the exact `method` and `params`, `evidence: recorded-rpc`, which
+   is the only class capture accepts for a declared request, and `required`.
+   A state value the guard also wants proved goes under `proof_targets` as an
+   address and its slots, beside the request rather than instead of it. Mark
+   a request `required: true` when the test needs the provider's answer. Mark
+   it `required: false` when the provider's error is the thing to pin,
+   because a required request's error ends the capture with no fixture. An
+   optional request's error is kept as a sanitised record: its message is
+   `provider request failed` and its code is the provider's integer code when
+   it sent one, `-32000` otherwise. Declare `limits`, including
+   `max_elapsed_seconds`.
+3. Capture with `python3 plugins/lazarus/scripts/lazarus.py capture --plan
+   plan.json --rpc-url "$LAZARUS_RPC_URL" --out <fixture>`, adding one
+   `--anchor-rpc-env SOURCE_ID=ENV_VAR` per source a plan v2 declares. The
+   endpoint URL stays in the shell environment and enters no script, plan,
+   test or commit; an anchor's URL never enters argv at all. Lazarus scans
+   every staged byte for the URL and for every secret in it and refuses to
+   finalise on a hit. Any failure leaves no fixture.
+4. Verify with `python3 plugins/lazarus/scripts/lazarus.py verify <fixture>`
+   and record the printed digest in the guard's docstring.
+5. Guard. Start `python3 plugins/lazarus/scripts/lazarus.py replay <fixture>
+   --port 0` as a subprocess from a fixed argument list, read
+   `lazarus replay listening on http://127.0.0.1:<port>` from its first line
+   of output, point the client at that address and assert the recorded
+   outcome exactly, result or sanitised error. Treat `-32070` as a failed
+   test and never as a zero. Stop the server when the test ends.
+6. Commit the plan, the fixture and the test together. The test then runs
+   with no provider wherever the Lazarus dependencies are installed, and
+   skips by name where they are not.
+7. Know what stays out of reach. A fixture holds one answer per request key,
+   the one the capture saw, so a failure that exists only at the provider is
+   pinned as that one recorded response and not as the provider's behaviour.
+   A rate limit answered as a JSON-RPC error object on an optional request
+   becomes one sanitised record. An HTTP 4xx or 5xx status, a redirect, a
+   timeout or a non-JSON body is a transport failure that ends the capture
+   and is never a record. Values are exact, so `0x00` is a different request
+   from `0x0`.
+
+The three commands, run from the repository root:
+
+```bash
+python3 plugins/lazarus/scripts/lazarus.py capture --plan plan.json \
+  --rpc-url "$LAZARUS_RPC_URL" --out fixtures/incident-v0
+python3 plugins/lazarus/scripts/lazarus.py verify fixtures/incident-v0
+python3 plugins/lazarus/scripts/lazarus.py replay fixtures/incident-v0 --port 0
+```
+
+A plan fragment with one required and one optional request:
+
+```json
+{
+  "requests": [
+    {
+      "name": "market-slot-zero",
+      "method": "eth_getStorageAt",
+      "params": ["0x8bbd80f88e662e56b918c353da635e210ece93c6", "0x0", "0xc7da16"],
+      "required": true,
+      "evidence": "recorded-rpc"
+    },
+    {
+      "name": "provider-refuses-trace",
+      "method": "trace_transaction",
+      "params": ["0xa46a744d6d52528a660c1d99a4edde403504fe7a308118c7cc947819583ce699"],
+      "required": false,
+      "evidence": "recorded-rpc"
+    }
+  ]
+}
+```
+
+The worked example is
+`plugins/hexaemeron/tests/test_elenchus_rpc_boundary_fixture.py`. It starts
+`replay` on the shipped Goldfinch fixture, asserts the recorded slot value and
+the `-32070` miss over loopback, and skips by name where the Lazarus
+dependencies are absent. In this checkout it runs with
+`uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python -m unittest plugins.hexaemeron.tests.test_elenchus_rpc_boundary_fixture`.
 
 ## Three rounds, then stop
 
@@ -257,6 +351,8 @@ Report the count, then name every item that failed.
 - [ ] Cause stated as a mechanism, not a location.
 - [ ] That mechanism is what the fix addresses.
 - [ ] A guard test exists and was seen to fail on the unfixed tree.
+- [ ] A failure that crossed an RPC boundary was reproduced from a verified
+      fixture behind `lazarus replay`, and its guard fails closed on a miss.
 - [ ] Both suites pass.
 - [ ] A fix touching contracts refreshed the harness through `fizz-sync`.
 - [ ] Temporary instrumentation is gone, and no secret was logged.

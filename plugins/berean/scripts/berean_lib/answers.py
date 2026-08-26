@@ -5,10 +5,13 @@ class and the evidence ids behind it. A refusal is the other kind of
 answer: it names the evidence boundary it could not satisfy and carries
 nothing else. `check` proves what can be proved mechanically: shape,
 closed vocabularies, citation spans against the pinned corpus, read keys
-against the preserved records and the declared chain and block, and both
-sides of every declared disagreement. Whether a sentence should have been
-written at all is the evaluation corpus's job, not this module's.
+against the preserved records and the declared chain and block, question
+spans against the recorded question, and both sides of every declared
+disagreement. Whether a sentence should have been written at all is the
+evaluation corpus's job, not this module's.
 """
+
+import re
 
 from . import BereanError
 from . import citations as citations_lib
@@ -33,6 +36,12 @@ READ_FIELDS = ("id", "chain_id", "block_number", "request_key")
 REFUSAL_FIELDS = ("boundary", "detail")
 DISCREPANCY_FIELDS = ("subject", "document_evidence", "chain_evidence", "note")
 MAX_SENTENCES = 500
+# A user_supplied sentence rests on byte spans of `question`, spelled
+# question:<start>-<end>. Digits are bounded before int() runs so both
+# interpreters refuse an oversized run the same way; the prefix is reserved
+# so no citation or read id can spell a span.
+QUESTION_PREFIX = "question:"
+QUESTION_SPAN = re.compile(r"^question:(0|[1-9][0-9]{0,6})-(0|[1-9][0-9]{0,6})$")
 
 
 def validate(answer):
@@ -40,7 +49,7 @@ def validate(answer):
     jsonio.require(answer, FIELDS, "answer")
     if answer["format"] != FORMAT:
         raise BereanError(f"answer format is {answer['format']!r}, not {FORMAT!r}")
-    jsonio.stated(answer["question"], "question")
+    question = _question_bytes(jsonio.stated(answer["question"], "question"))
     if answer["kind"] not in KINDS:
         raise BereanError(f"unknown answer kind: {answer['kind']!r}")
     for name in ("sentences", "citations", "reads", "discrepancies"):
@@ -83,11 +92,10 @@ def validate(answer):
         if not isinstance(evidence, list):
             raise BereanError(f"sentence {index} evidence is not a list")
         if source_class == "user_supplied":
-            if evidence:
-                raise BereanError(
-                    f"sentence {index} is user_supplied and cites evidence; "
-                    "a supplied fact has no artefact behind it"
-                )
+            if not evidence:
+                raise BereanError(f"sentence {index} is user_supplied and names no span of the question")
+            for position, ref in enumerate(evidence):
+                _question_span(ref, f"sentence {index} evidence {position}", question, citation_ids | read_ids)
             continue
         if not evidence:
             raise BereanError(f"sentence {index} ({source_class}) cites no evidence")
@@ -125,10 +133,56 @@ def _collect_ids(items, what, validator):
     for index, item in enumerate(items):
         validator(item, index)
         identifier = item["id"]
+        if identifier.startswith(QUESTION_PREFIX):
+            raise BereanError(f"{what} {index} id begins with the reserved prefix {QUESTION_PREFIX!r}")
         if identifier in ids:
             raise BereanError(f"{what} id used twice: {identifier!r}")
         ids.add(identifier)
     return ids
+
+
+def _question_bytes(question):
+    """The UTF-8 bytes that span offsets count; a string with no encoding names none.
+
+    json turns a lone-surrogate escape into a str that cannot be encoded, and it
+    passes jsonio on the way in, so the assumption is proved here rather than
+    trusted at the slice. The detail carries the character position only.
+    """
+    try:
+        return question.encode("utf-8")
+    except UnicodeEncodeError as error:
+        raise BereanError(
+            f"question is not encodable as UTF-8 at character {error.start}; "
+            "a lone surrogate names no bytes"
+        ) from None
+
+
+def _question_span(reference, where, question, artefact_ids):
+    """Hold one span reference to real, whole, non-blank bytes of the question.
+
+    The detail names the sentence, the reference position and the parsed
+    offsets only; the question's bytes and the decoded span never leave here.
+    """
+    if not isinstance(reference, str):
+        raise BereanError(f"{where} is not a string")
+    if reference in artefact_ids:
+        raise BereanError(f"{where} names an artefact; a supplied fact has no artefact behind it")
+    match = QUESTION_SPAN.fullmatch(reference)
+    if match is None:
+        raise BereanError(f"{where} does not spell question:<start>-<end>")
+    start, end = int(match.group(1)), int(match.group(2))
+    if end <= start:
+        raise BereanError(f"{where} names an empty or inverted question span: {start}..{end}")
+    if end > len(question):
+        raise BereanError(f"{where} span {start}..{end} leaves the {len(question)} byte question")
+    try:
+        text = question[start:end].decode("utf-8")
+    except UnicodeDecodeError:
+        raise BereanError(
+            f"{where} span {start}..{end} is not whole UTF-8; the range splits a character"
+        ) from None
+    if not text.strip():
+        raise BereanError(f"{where} span {start}..{end} is blank")
 
 
 def _validate_citation(item, index):

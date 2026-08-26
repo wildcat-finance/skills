@@ -49,6 +49,19 @@ class LimitTests(unittest.TestCase):
         with self.assertRaisesRegex(ResourceLimitError, "seconds"):
             limits.after_response(1)
 
+    def test_one_budget_is_shared_across_provider_clients(self):
+        limits = CaptureLimits(self.values(max_requests=4, max_total_bytes=20))
+        primary = limits
+        anchor = limits
+        primary.before_request(2)
+        primary.after_response(8)
+        anchor.before_request(2)
+        anchor.after_response(7)
+        with self.assertRaisesRegex(ResourceLimitError, "RPC requests"):
+            primary.before_request()
+        with self.assertRaisesRegex(ResourceLimitError, "response bytes"):
+            anchor.after_response(6)
+
 
 if __name__ == "__main__":
     unittest.main()

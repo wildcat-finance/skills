@@ -2,16 +2,21 @@
 
 import copy
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
 from lazarus_lib.canonical import dumps
-from lazarus_lib.errors import FormatError
+from lazarus_lib.errors import FormatError, ResourceLimitError
 from lazarus_lib.records import (
+    loads_anchor_records,
     make_rpc_record,
+    read_anchor_records,
     read_proof_records,
     read_rpc_records,
     request_key,
+    write_anchor_records,
     write_proof_records,
     write_rpc_records,
 )
@@ -97,6 +102,62 @@ class RecordTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(FormatError, "duplicate"):
                 write_proof_records(path, [first, first])
+
+    def test_anchor_records_have_exact_canonical_bytes_and_source_order(self):
+        first = support.sample_anchor_record("a")
+        second = support.sample_anchor_record("z")
+        expected = dumps(first) + b"\n" + dumps(second) + b"\n"
+        with tempfile.TemporaryDirectory() as directory:
+            left = Path(directory) / "left.jsonl"
+            right = Path(directory) / "right.jsonl"
+            self.assertEqual(write_anchor_records(left, [second, first]), expected)
+            self.assertEqual(write_anchor_records(right, [first, second]), expected)
+            self.assertEqual(left.read_bytes(), expected)
+            self.assertEqual(read_anchor_records(left), [first, second])
+            self.assertEqual(loads_anchor_records(expected), [first, second])
+
+    def test_anchor_records_refuse_duplicates_and_noncanonical_order(self):
+        first = support.sample_anchor_record("a")
+        second = support.sample_anchor_record("z")
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "anchors.jsonl"
+            with self.assertRaisesRegex(FormatError, "duplicate anchor source ID"):
+                write_anchor_records(path, [first, first])
+            path.write_bytes(dumps(second) + b"\n" + dumps(first) + b"\n")
+            with self.assertRaisesRegex(FormatError, "not sorted by source_id"):
+                read_anchor_records(path)
+
+    def test_anchor_record_count_and_jsonl_shape_are_bounded(self):
+        records = [
+            support.sample_anchor_record(f"source-{index:02d}")
+            for index in range(33)
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "anchors.jsonl"
+            with self.assertRaisesRegex(ResourceLimitError, "exceeds 32"):
+                write_anchor_records(path, records)
+            path.write_bytes(b'{"schema_version":1,"schema_version":1}\n')
+            with self.assertRaisesRegex(FormatError, "duplicate JSON key"):
+                read_anchor_records(path)
+
+    def test_cli_validates_anchor_record_streams(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "anchors.jsonl"
+            write_anchor_records(path, [support.sample_anchor_record()])
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(support.SCRIPTS / "lazarus.py"),
+                    "validate",
+                    "anchor-records",
+                    str(path),
+                ],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, "valid anchor-records\n")
 
 
 if __name__ == "__main__":

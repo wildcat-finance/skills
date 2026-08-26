@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
-from typing import Any, Mapping
+from typing import Any, Iterable, Mapping
 from urllib.parse import parse_qsl, unquote, urlsplit
 
 from .errors import IntegrityError
@@ -40,6 +40,15 @@ def provider_secrets(url: str, headers: Mapping[str, str] | None = None) -> set[
                     if "=" in part:
                         values.add(part.split("=", 1)[1].strip())
     return {value for value in values if len(value) >= 4}
+
+
+def provider_secret_union(
+    providers: Iterable[tuple[str, Mapping[str, str] | None]],
+) -> set[str]:
+    secrets: set[str] = set()
+    for url, headers in providers:
+        secrets.update(provider_secrets(url, headers))
+    return secrets
 
 
 def redact_text(text: str, *, secrets: set[str] | None = None) -> str:

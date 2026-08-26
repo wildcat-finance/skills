@@ -292,7 +292,7 @@
       "displayName": "Berean",
       "source": "./plugins/berean",
       "description": "Digest-pinned agent releases with byte-exact citations, block-bound reads and evaluated refusals.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

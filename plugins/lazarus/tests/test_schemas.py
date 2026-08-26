@@ -1,4 +1,4 @@
-"""The six versioned formats validate before they reach fixture logic."""
+"""Versioned formats validate before they reach fixture logic."""
 
 import copy
 import unittest
@@ -16,8 +16,17 @@ class SchemaTests(unittest.TestCase):
         validate_builtin_schemas()
         self.assertEqual(
             {kind for kind, version in SCHEMAS if version == 1},
-            {"plan", "header", "rpc-record", "proof-record", "manifest", "release"},
+            {
+                "plan",
+                "header",
+                "rpc-record",
+                "proof-record",
+                "anchor-record",
+                "manifest",
+                "release",
+            },
         )
+        self.assertIn(("plan", 2), SCHEMAS)
 
     def test_a_well_formed_release_document_passes(self):
         validate_document("release", support.sample_release())
@@ -143,6 +152,7 @@ class SchemaTests(unittest.TestCase):
 
     def test_valid_plan_header_rpc_and_proof_documents_pass(self):
         validate_document("plan", support.sample_plan())
+        validate_document("plan", support.sample_plan_v2())
         validate_document("header", support.sample_header())
         validate_document(
             "rpc-record",
@@ -151,16 +161,135 @@ class SchemaTests(unittest.TestCase):
             ),
         )
         validate_document("proof-record", support.sample_proof_record())
+        validate_document("anchor-record", support.sample_anchor_record())
 
     def test_unknown_schema_versions_fail_closed(self):
         for kind, document in (
-            ("plan", support.sample_plan()),
+            ("plan", support.sample_plan_v2()),
             ("header", support.sample_header()),
             ("proof-record", support.sample_proof_record()),
+            ("anchor-record", support.sample_anchor_record()),
         ):
-            document["schema_version"] = 2
+            document["schema_version"] = 3 if kind == "plan" else 2
             with self.subTest(kind=kind), self.assertRaisesRegex(FormatError, "unsupported"):
                 validate_document(kind, document)
+
+    def test_plan_v2_requires_closed_bounded_source_declarations(self):
+        validate_document("plan", support.sample_plan_v2(("a",)))
+        validate_document(
+            "plan",
+            support.sample_plan_v2(tuple(f"source-{index:02d}" for index in range(32))),
+        )
+        for source_ids in ((), tuple(f"source-{index:02d}" for index in range(33))):
+            with self.subTest(count=len(source_ids)), self.assertRaisesRegex(
+                FormatError, "anchor_sources"
+            ):
+                validate_document("plan", support.sample_plan_v2(source_ids))
+
+        plan = support.sample_plan_v2()
+        plan["anchor_sources"][0]["url"] = "https://must-not-enter-a-plan.example"
+        with self.assertRaisesRegex(FormatError, "anchor_sources"):
+            validate_document("plan", plan)
+
+        legacy = support.sample_plan()
+        legacy["anchor_sources"] = [{"source_id": "a"}]
+        with self.assertRaisesRegex(FormatError, "anchor_sources"):
+            validate_document("plan", legacy)
+
+    def test_plan_v2_copies_every_plan_v1_contract_field(self):
+        plan_v1 = support.load_json("schemas/plan-v1.json")
+        plan_v2 = support.load_json("schemas/plan-v2.json")
+        plan_v2["$id"] = plan_v1["$id"]
+        plan_v2["title"] = plan_v1["title"]
+        plan_v2["required"].remove("anchor_sources")
+        plan_v2["properties"].pop("anchor_sources")
+        plan_v2["properties"]["schema_version"] = {"const": 1}
+        self.assertEqual(plan_v2, plan_v1)
+
+    def test_source_ids_keep_the_public_grammar(self):
+        invalid = ("", "A", "-source", "source/name", "a" * 129)
+        for value in invalid:
+            with self.subTest(value=value):
+                plan = support.sample_plan_v2((value,))
+                with self.assertRaisesRegex(FormatError, "source_id"):
+                    validate_document("plan", plan)
+                record = support.sample_anchor_record(value)
+                with self.assertRaisesRegex(FormatError, "source_id"):
+                    validate_document("anchor-record", record)
+
+    def test_plan_anchor_sources_must_be_sorted_and_unique(self):
+        for source_ids in (("z", "a"), ("a", "a")):
+            with self.subTest(source_ids=source_ids), self.assertRaisesRegex(
+                FormatError, "anchor sources must be sorted and unique"
+            ):
+                validate_document("plan", support.sample_plan_v2(source_ids))
+
+    def test_anchor_record_is_closed_and_complete(self):
+        for field in (
+            "schema_version",
+            "source_id",
+            "observed_at",
+            "method",
+            "params",
+            "returned",
+        ):
+            record = support.sample_anchor_record()
+            del record[field]
+            with self.subTest(field=field), self.assertRaises(FormatError):
+                validate_document("anchor-record", record)
+        record = support.sample_anchor_record()
+        record["provider_url"] = "https://must-not-enter-a-record.example"
+        with self.assertRaises(FormatError):
+            validate_document("anchor-record", record)
+
+    def test_anchor_timestamp_must_be_a_real_utc_instant(self):
+        invalid = (
+            "2026-08-25T08:30:45+00:00",
+            "2026-08-25T01:30:45-07:00",
+            "2026-08-25T08:30:45",
+            "2026-02-30T08:30:45Z",
+            "not-a-time",
+        )
+        for value in invalid:
+            record = support.sample_anchor_record()
+            record["observed_at"] = value
+            with self.subTest(value=value), self.assertRaisesRegex(FormatError, "UTC"):
+                validate_document("anchor-record", record)
+
+    def test_anchor_method_and_parameters_are_exact(self):
+        mutations = (
+            ("method", "eth_getBlockByHash"),
+            ("params", ["0x10"]),
+            ("params", ["0x10", True]),
+            ("params", ["0x00", False]),
+        )
+        for field, value in mutations:
+            record = support.sample_anchor_record()
+            record[field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(FormatError):
+                validate_document("anchor-record", record)
+
+    def test_anchor_returned_fields_are_mainnet_block_identity(self):
+        mutations = (
+            ("chain_id", "0x2"),
+            ("number", "0x11"),
+            ("number", "0x00"),
+            ("hash", "0x1234"),
+        )
+        for field, value in mutations:
+            record = support.sample_anchor_record()
+            record["returned"][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(FormatError):
+                validate_document("anchor-record", record)
+        for field in ("chain_id", "number", "hash"):
+            record = support.sample_anchor_record()
+            del record["returned"][field]
+            with self.subTest(missing=field), self.assertRaises(FormatError):
+                validate_document("anchor-record", record)
+        record = support.sample_anchor_record()
+        record["returned"]["provider"] = "extra"
+        with self.assertRaises(FormatError):
+            validate_document("anchor-record", record)
 
     def test_quantities_and_addresses_keep_exact_ethereum_shapes(self):
         plan = support.sample_plan()
@@ -236,10 +365,17 @@ class SchemaTests(unittest.TestCase):
             validate_document("proof-record", proof)
 
     def test_registry_digest_detects_schema_substitution(self):
-        filename, _ = SCHEMAS[("plan", 1)]
-        with mock.patch.dict(SCHEMAS, {("plan", 1): (filename, "0" * 64)}):
-            with self.assertRaisesRegex(IntegrityError, "digest mismatch"):
-                validate_document("plan", support.sample_plan())
+        for key, document in (
+            (("plan", 1), support.sample_plan()),
+            (("plan", 2), support.sample_plan_v2()),
+            (("anchor-record", 1), support.sample_anchor_record()),
+        ):
+            filename, _ = SCHEMAS[key]
+            with self.subTest(key=key), mock.patch.dict(
+                SCHEMAS, {key: (filename, "0" * 64)}
+            ):
+                with self.assertRaisesRegex(IntegrityError, "digest mismatch"):
+                    validate_document(key[0], document)
 
 
 if __name__ == "__main__":

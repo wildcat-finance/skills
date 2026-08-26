@@ -69,6 +69,11 @@ in [ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md).
 Filing an issue merely to satisfy a workflow remains forbidden; these
 conventions say how to title one that was worth filing.
 
+Closing a delivered issue belongs to whoever merges its pull request. The
+Atlas draws from open issues alone, so one whose delivery has merged keeps
+being allocated until it is closed, and a contributor working from a fork
+cannot close it.
+
 ## Issue and comment publication
 
 Before an agent publishes a GitHub issue title and body or a GitHub issue

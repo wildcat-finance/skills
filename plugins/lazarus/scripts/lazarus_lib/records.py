@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import hashlib
+from itertools import islice
 from pathlib import Path
 from typing import Any, Iterable
 
 from .canonical import dumps, dump_jsonl, load_jsonl, loads_jsonl
-from .errors import FormatError
+from .errors import FormatError, ResourceLimitError
 from .schemas import validate_document
 
 
@@ -66,6 +67,47 @@ def _check_rpc_records(records: list[Any]) -> list[dict[str, Any]]:
     _unique(checked, "request_key", "RPC request key")
     if checked != sorted(checked, key=lambda item: item["request_key"]):
         raise FormatError("RPC records are not sorted by request_key")
+    return checked
+
+
+MAX_ANCHOR_RECORDS = 32
+
+
+def write_anchor_records(path: str | Path, records: Iterable[dict[str, Any]]) -> bytes:
+    materialised = list(islice(records, MAX_ANCHOR_RECORDS + 1))
+    if len(materialised) > MAX_ANCHOR_RECORDS:
+        raise ResourceLimitError(
+            f"anchor record count exceeds {MAX_ANCHOR_RECORDS}"
+        )
+    checked = [validate_document("anchor-record", record) for record in materialised]
+    _unique(checked, "source_id", "anchor source ID")
+    return dump_jsonl(
+        path,
+        checked,
+        sort_key=lambda item: item["source_id"],
+        max_records=MAX_ANCHOR_RECORDS,
+    )
+
+
+def read_anchor_records(path: str | Path, **limits: int) -> list[dict[str, Any]]:
+    limits["max_records"] = min(
+        limits.get("max_records", MAX_ANCHOR_RECORDS), MAX_ANCHOR_RECORDS
+    )
+    return _check_anchor_records(load_jsonl(path, **limits))
+
+
+def loads_anchor_records(data: bytes, **limits: int) -> list[dict[str, Any]]:
+    limits["max_records"] = min(
+        limits.get("max_records", MAX_ANCHOR_RECORDS), MAX_ANCHOR_RECORDS
+    )
+    return _check_anchor_records(loads_jsonl(data, **limits))
+
+
+def _check_anchor_records(records: list[Any]) -> list[dict[str, Any]]:
+    checked = [validate_document("anchor-record", record) for record in records]
+    _unique(checked, "source_id", "anchor source ID")
+    if checked != sorted(checked, key=lambda item: item["source_id"]):
+        raise FormatError("anchor records are not sorted by source_id")
     return checked
 
 

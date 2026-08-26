@@ -10,7 +10,11 @@ import sys
 from lazarus_lib.canonical import load
 from lazarus_lib.errors import LazarusError
 from lazarus_lib.manifest import build_manifest, verify_manifest, write_manifest
-from lazarus_lib.records import read_proof_records, read_rpc_records
+from lazarus_lib.records import (
+    read_anchor_records,
+    read_proof_records,
+    read_rpc_records,
+)
 from lazarus_lib.schemas import validate_builtin_schemas, validate_document
 from lazarus_lib.verifier import verify_fixture
 
@@ -34,6 +38,7 @@ def parser() -> argparse.ArgumentParser:
             "header",
             "rpc-records",
             "proof-records",
+            "anchor-records",
             "manifest",
             "release",
         ),
@@ -59,6 +64,13 @@ def parser() -> argparse.ArgumentParser:
     )
     capture.add_argument("--plan", required=True, type=Path)
     capture.add_argument("--rpc-url", required=True)
+    capture.add_argument(
+        "--anchor-rpc-env",
+        action="append",
+        default=[],
+        metavar="SOURCE_ID=ENV_VAR",
+        help="map one declared anchor source to a runtime RPC URL environment variable",
+    )
     capture.add_argument("--out", required=True, type=Path)
 
     replay = commands.add_parser(
@@ -106,6 +118,8 @@ def _validate(kind: str, path: Path | None) -> None:
         read_rpc_records(path)
     elif kind == "proof-records":
         read_proof_records(path)
+    elif kind == "anchor-records":
+        read_anchor_records(path)
     else:
         validate_document(kind, load(path))
 
@@ -131,9 +145,16 @@ def run(argv: list[str] | None = None) -> int:
     if args.command == "capture":
         from lazarus_lib.capture import capture_fixture
 
-        report = capture_fixture(args.plan, args.rpc_url, args.out)
+        report = capture_fixture(
+            args.plan,
+            args.rpc_url,
+            args.out,
+            anchor_rpc_env=args.anchor_rpc_env,
+        )
         print(f"fixture: {report['fixture_digest']}")
         print(f"block: {report['block_hash']}")
+        print(f"anchor-sources-declared: {len(args.anchor_rpc_env)}")
+        print(f"chain-anchor-records: {report['chain_anchors']['records']}")
         return 0
     if args.command == "verify-release":
         from lazarus_lib.release import verify_release
@@ -175,6 +196,7 @@ def run(argv: list[str] | None = None) -> int:
     print(f"proof-backed: {report['evidence_counts']['proof_backed']}")
     print(f"header-bound: {report['evidence_counts']['header_bound']}")
     print(f"recorded-rpc: {report['evidence_counts']['recorded_rpc']}")
+    print(f"chain-anchor-records: {report['chain_anchors']['records']}")
     return 0
 
 

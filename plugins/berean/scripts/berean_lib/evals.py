@@ -247,6 +247,7 @@ def export(cases_document):
                 "every factual sentence carries a source class",
                 "every citation reproduces its pinned bytes and display text",
                 "every chain value names the declared chain and block",
+                "every user-supplied sentence names the spans of the recorded question it rests on",
             ],
             "refusal": [
                 f"the answer is a refusal naming the boundary: {case['expected_boundary']}",

@@ -10,10 +10,15 @@ from .canonical import MAX_JSON_BYTES, MAX_JSONL_BYTES, loads
 from .errors import FormatError, IntegrityError
 from .header import verify_header
 from .hexvalue import hash32_bytes, hex_bytes, quantity
-from .manifest import verify_manifest
+from .manifest import validate_anchor_records, verify_manifest
 from .paths import read_confined_bytes
 from .proofs import verify_proof_record
-from .records import loads_proof_records, loads_rpc_records, request_key
+from .records import (
+    loads_anchor_records,
+    loads_proof_records,
+    loads_rpc_records,
+    request_key,
+)
 from .schemas import validate_document
 from .text import listed
 
@@ -43,6 +48,25 @@ def verify_fixture(root: str | Path) -> dict[str, Any]:
         "header", loads(_read_bound(root, "header.json", claims, MAX_JSON_BYTES))
     )
     header_report = verify_header(header)
+    anchor_records: list[dict[str, Any]] = []
+    has_anchor_component = "anchors.jsonl" in paths
+    if plan["schema_version"] == 1:
+        if has_anchor_component:
+            raise IntegrityError("plan-v1 refuses anchors.jsonl")
+    else:
+        if not has_anchor_component:
+            raise IntegrityError("plan-v2 requires anchors.jsonl")
+        anchor_records = loads_anchor_records(
+            _read_bound(root, "anchors.jsonl", claims, MAX_JSONL_BYTES),
+            max_bytes=MAX_JSONL_BYTES,
+        )
+        validate_anchor_records(
+            plan,
+            anchor_records,
+            chain_id=manifest["chain_id"],
+            block_number=header_report["number"],
+            block_hash=header_report["hash"],
+        )
     rpc_records = loads_rpc_records(
         _read_bound(root, "rpc.jsonl", claims, MAX_JSONL_BYTES)
     )
@@ -106,6 +130,11 @@ def verify_fixture(root: str | Path) -> dict[str, Any]:
             "storage_absent": storage_absent,
         },
         "header_bound": {"headers": 1, "canonical_chain_claim": False},
+        "chain_anchors": {
+            "records": len(anchor_records),
+            "canonical_chain_claim": False,
+            "provider_independence_claim": False,
+        },
         "recorded_rpc": {
             "records": len(rpc_records),
             "optional_failures": len(manifest["optional_failures"]),

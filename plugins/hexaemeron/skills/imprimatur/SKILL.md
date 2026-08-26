@@ -7,7 +7,7 @@ description: >-
   names a term to ban. This is the diagnostic gate; Vulgate performs a
   content-preserving rewrite.
 metadata:
-  version: "2.2.0"
+  version: "2.3.0"
 ---
 
 # Imprimatur
@@ -58,6 +58,36 @@ cat draft.md | python3 scripts/imprimatur.py -
 ```
 
 Exit 1 when a threshold is breached, 0 otherwise. Read the defect list rather than the score: the score compresses severity and length into one number and loses the reason.
+
+Paths ending in `.sol`, `.py`, `.ts`, or `.tsx` use source-prose extraction
+under the default masking mode. Each such path must be a regular file no larger
+than 1,048,576 bytes and valid UTF-8. Solidity comments and NatSpec, Python
+comments and true module, class, function, or async-function docstrings, and
+TypeScript or TSX comments, JSDoc, and an initial hashbang are retained. Code,
+ordinary strings, templates, and regular-expression literals are blanked. The
+mask keeps the source length and language-owned line terminators unchanged,
+including CR and LF in Python and CR, LF, LS, and PS in TypeScript, so findings
+carry their original source line and column. Solidity LF, VT, FF, and CR line
+breaks are retained; NEL, LS, or PS outside a comment or string is a named
+refusal because Solidity rejects that source. The TypeScript and TSX comment
+scanner accepts at most 64 recursively entered code, template, or JSX regions.
+A 65th such region is a named extraction refusal rather than a clean result or
+an interpreter traceback; iteratively scanned type-argument depth is outside
+that recursion budget.
+
+Named extraction failures in supported source are not clean results. These
+include an unterminated Solidity block comment, invalid Python syntax or parser
+resource failure, an unterminated TypeScript string, template, JSX element, or
+regular expression in an expression goal, and source beyond the file-size or
+nesting boundary. A slash after contextual `await` or `yield` is refused when
+its regular-expression and identifier readings would move a comment boundary;
+a complete regular expression followed by a comment remains supported. An
+extraction failure names the path and source position and exits 2 before any
+partial multi-file report is printed.
+Markdown, standard input, and other suffixes keep the existing Markdown
+masking rules.
+`--include-code` bypasses source extraction and scans the whole input, as it
+already did for Markdown code.
 
 ## Workflow
 
@@ -127,11 +157,11 @@ Attribution, licence, and the list of deviations are in `NOTICE.md`.
 ### imprimatur-prose-gate
 
 - Promise: A successful Imprimatur run establishes that the exact prose crossed the configured hard, gated and structural pattern thresholds and that every reported defect was cleared or evidenced under the checker rules.
-- Evidence: The exact input bytes, lexicon and allowlist, selected mode and threshold, defect and signal output, labelled-corpus provenance and zero exit status.
+- Evidence: The exact input bytes and path suffix, lexicon and allowlist, selected mode and threshold, successful source extraction when default masking selects a `.sol`, `.py`, `.ts`, or `.tsx` path, defect and signal output, labelled-corpus provenance and zero exit status.
 - Evidence classes: checked, recorded
-- Boundary: The gate does not establish human authorship, factual accuracy, sound reasoning, an intended voice or absence of every machine-writing pattern.
+- Boundary: Source mode covers only comments, an initial TypeScript hashbang and the documented Python docstring owners in `.sol`, `.py`, `.ts`, and `.tsx`; a default source path must be a valid UTF-8 regular file of at most 1,048,576 bytes. The TypeScript and TSX scanner refuses a 65th recursively entered code, template, or JSX region while scanning angle-group depth iteratively, and refuses contextual slash input whose comment boundary needs surrounding parser grammar. It does not establish source validity beyond successful extraction, inspect executable semantics, or extend to another suffix. The gate does not establish human authorship, factual accuracy, sound reasoning, an intended voice or absence of every machine-writing pattern.
 - Authorises: Presentation or hand-off of the checked prose as Imprimatur-clean at the named checker version and threshold.
 - Consequence: 0
-- Refuses: Calling prose clean when the gate did not run or failed, hiding a hard hit with a synonym, treating a cadence signal as a defect or deleting a scope-bearing qualifier to clear a word.
+- Refuses: Calling prose clean when the gate did not run or failed, returning a clean result after supported-source extraction fails, hiding a hard hit with a synonym, treating a cadence signal as a defect or deleting a scope-bearing qualifier to clear a word.
 - Recovery: Read the named defect, rewrite the sentence without weakening evidence or uncertainty and rerun the exact gate.
 - Exceptions: none

@@ -30,7 +30,8 @@ verifies and the statement survives being held to what that verification
 recomputed. See [docs/preservation-release.md](docs/preservation-release.md).
 
 The current build implements finite capture and offline verification for the
-versioned plan, header, RPC record, proof record and manifest formats. It
+versioned plan, header, RPC record, proof record, chain-anchor record and
+manifest formats. It
 writes canonical JSON and JSONL, confines fixture paths, derives exact request
 keys, verifies component digests, recomputes the header hash, traverses
 EIP-1186 proofs, checks captured code and serves exact requests over loopback.
@@ -56,7 +57,7 @@ mutation rejection and byte-for-byte manifest rebuilding without a network.
 - offline header, account, storage, code and manifest verification;
 - exact-request JSON-RPC replay over loopback, including batches and
   notifications; and
-- 144 tests plus a proof-checked Goldfinch demonstration.
+- 414 tests plus a proof-checked Goldfinch demonstration.
 
 ## Day to day
 
@@ -80,6 +81,12 @@ header and keep ordinary RPC evidence outside that proof boundary.
 - **Recorded RPC evidence** preserves an exact response, receipt, log query,
   call or trace without describing it as a state proof.
 
+Multi-provider anchors are a fourth, separately counted observation surface.
+Plan v2 declares opaque source IDs and runtime environment-variable mappings;
+each source records only its UTC observation time and matching chain, height
+and hash. Matching records prove neither canonical-chain membership nor
+provider independence. See [the chain-anchor guide](./docs/chain-anchors.md).
+
 The [study](./docs/study.md) records the prior-art research and selected exact
 request cassette design. The [runbook](./docs/runbook.md) divides the prototype
 into six reviewable steps.
@@ -90,7 +97,10 @@ The implemented entrypoints are:
 
 ```bash
 python3 scripts/lazarus.py capture \
-  --plan <plan.json> --rpc-url <url> --out <fixture>
+  --plan <plan-v2.json> --rpc-url <primary-url> \
+  --anchor-rpc-env archive-a=ARCHIVE_A_RPC \
+  --anchor-rpc-env archive-b=ARCHIVE_B_RPC \
+  --out <fixture>
 python3 scripts/lazarus.py validate schemas
 python3 scripts/lazarus.py validate plan <plan.json>
 python3 scripts/lazarus.py build-manifest <fixture> \
@@ -100,12 +110,27 @@ python3 scripts/lazarus.py verify <fixture>
 python3 scripts/lazarus.py replay <fixture>
 ```
 
-`capture` is the only command that receives a provider URL. It brackets one
-fixed block, verifies the captured proofs and code, removes provider error
-prose and atomically finalises a deterministic fixture. `verify` repeats all
+`capture` is the only command that receives provider URLs. The primary URL
+keeps its legacy argument; each anchor argument carries only a source ID and
+environment-variable name, never the URL value. Capture requires the mapping
+set to equal plan v2, shares one request, byte and elapsed-time budget across
+all clients, brackets one fixed block, verifies captured proofs and code,
+removes provider error prose, scans for every provider secret and atomically
+finalises a deterministic fixture. `verify` repeats all
 format, digest, header, trie and code checks without a network. `replay` is the
 local exact-request server: it verifies before binding, returns a
 stable capture-plan fragment for a miss and has no provider fallback.
+
+[`examples/multi-provider-anchor-v0`](./examples/multi-provider-anchor-v0) is a
+synthetic plan-v2 fixture with two matching recorded observations. Verify it
+offline with:
+
+```bash
+python3 scripts/lazarus.py verify examples/multi-provider-anchor-v0
+```
+
+The result reports `chain-anchor-records: 2`; both canonical-chain and provider
+independence claims remain false.
 
 ## Goldfinch demonstration
 

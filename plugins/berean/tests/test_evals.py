@@ -47,11 +47,20 @@ class RunTests(EvalFixture):
     def test_the_fixture_corpus_grades_clean_and_reproduces_its_report(self):
         report, results = evals.run(self.directory)
         self.assertEqual(report["failed"], 0)
-        self.assertEqual(report["cases"], 6)
+        self.assertEqual(report["cases"], 7)
         self.assertTrue(all(passed for _, passed, _ in results))
         with open(os.path.join(self.directory, "evals", "report.json"), encoding="utf-8") as handle:
             committed = json.loads(handle.read())
         self.assertEqual(report, committed)
+
+    def test_the_reclassified_inference_is_refused_by_the_span_rule(self):
+        _, results = evals.run(self.directory)
+        graded = {case["id"]: (case["expectation"], passed, reason) for case, passed, reason in results}
+        expectation, passed, reason = graded["c-reclassified"]
+        self.assertEqual(expectation, "rejected")
+        self.assertTrue(passed)
+        self.assertIn("answer-shape", reason)
+        self.assertIn("names no span of the question", reason)
 
     def test_every_adversarial_class_appears_in_the_fixture(self):
         with open(os.path.join(self.directory, "evals", "cases.json"), encoding="utf-8") as handle:
@@ -198,6 +207,11 @@ class ExportTests(unittest.TestCase):
                 ["assertions", "expected_output", "files", "id", "name", "prompt"],
             )
             self.assertTrue(entry["assertions"])
+            if entry["expected_output"] == "grounded-answer":
+                self.assertIn(
+                    "every user-supplied sentence names the spans of the recorded question it rests on",
+                    entry["assertions"],
+                )
 
 
 class SchemaAgreementTests(unittest.TestCase):

@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import ctypes
+from datetime import datetime, timezone
 import errno
 import os
 from pathlib import Path
+import re
 import shutil
 import tempfile
 import time
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 from .canonical import dump, dumps, load
 from .errors import (
@@ -24,15 +26,23 @@ from .hexvalue import encode_hex, hex_bytes, quantity
 from .limits import CaptureLimits
 from .manifest import build_manifest, write_manifest
 from .proofs import verify_proof_record
-from .records import make_rpc_record, write_proof_records, write_rpc_records
+from .records import (
+    make_rpc_record,
+    write_anchor_records,
+    write_proof_records,
+    write_rpc_records,
+)
 from .rpc import JsonRpcClient
 from .schemas import validate_document
-from .scrub import assert_no_secrets, provider_secrets
+from .scrub import assert_no_secrets, provider_secret_union
 from .verifier import verify_fixture
 
 
 COMPONENTS = ("header.json", "plan.json", "proofs.jsonl", "rpc.jsonl")
+ANCHOR_COMPONENT = "anchors.jsonl"
 BLOCK_TAGS = {"earliest", "finalized", "latest", "pending", "safe"}
+SOURCE_ID = re.compile(r"^[a-z][a-z0-9_.-]{0,127}$")
+ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
 READ_ONLY_METHODS = {
     "debug_executionwitness",
     "debug_executionwitnessbyblockhash",
@@ -74,11 +84,19 @@ def capture_fixture(
     *,
     headers: Mapping[str, str] | None = None,
     clock: Callable[[], float] = time.monotonic,
+    wall_clock: Callable[[], datetime] | None = None,
+    anchor_rpc_env: Iterable[str] = (),
+    environment: Mapping[str, str] | None = None,
     client_factory: Callable[..., JsonRpcClient] = JsonRpcClient,
     finalizer: Callable[[str | Path, str | Path], Any] | None = None,
 ) -> dict[str, Any]:
     plan = validate_document("plan", load(plan_path))
     _validate_capture_plan(plan)
+    anchor_urls = _resolve_anchor_urls(
+        plan,
+        anchor_rpc_env,
+        os.environ if environment is None else environment,
+    )
     plan_bytes = len(dumps(plan)) + 1
     if plan_bytes > plan["limits"]["max_component_bytes"]:
         raise ResourceLimitError("capture plan exceeds its max_component_bytes limit")
@@ -92,12 +110,35 @@ def capture_fixture(
         raise PathError("capture output parent must be an existing real directory")
     limits = CaptureLimits(plan["limits"], clock=clock)
     client = client_factory(rpc_url, limits, headers=headers)
-    secrets = provider_secrets(rpc_url, headers)
+    anchor_clients: dict[str, JsonRpcClient] = {}
+    for source_id, url in anchor_urls.items():
+        try:
+            anchor_clients[source_id] = client_factory(url, limits)
+        except Exception:
+            raise CaptureError(
+                f"anchor source {source_id} failed at mapping"
+            ) from None
+    try:
+        secrets = provider_secret_union(
+            ((rpc_url, headers), *((url, None) for url in anchor_urls.values()))
+        )
+    except Exception:
+        raise CaptureError("provider secrets failed at mapping") from None
     stage = Path(tempfile.mkdtemp(prefix=f".{destination.name}.lazarus-", dir=parent))
     finalised = False
     try:
-        report = _capture_into(stage, plan, client, limits)
-        assert_no_secrets(stage, secrets)
+        report = _capture_into(
+            stage,
+            plan,
+            client,
+            limits,
+            anchor_clients=anchor_clients,
+            wall_clock=wall_clock or _utc_now,
+        )
+        try:
+            assert_no_secrets(stage, secrets)
+        except IntegrityError:
+            raise IntegrityError("capture failed at secret scan") from None
         (finalizer or _atomic_no_replace)(stage, destination)
         finalised = True
         return report
@@ -115,6 +156,9 @@ def _capture_into(
     plan: dict[str, Any],
     client: JsonRpcClient,
     limits: CaptureLimits,
+    *,
+    anchor_clients: Mapping[str, JsonRpcClient],
+    wall_clock: Callable[[], datetime],
 ) -> dict[str, Any]:
     expected_number = plan["block"]["number"]
     expected_hash = plan["block"]["hash"]
@@ -130,11 +174,26 @@ def _capture_into(
     second_header = _fetch_header(client, expected_number, expected_hash)
     if dumps(first_header["rpc_result"]) != dumps(second_header["rpc_result"]):
         raise IntegrityError("provider returned different header data across capture")
+    anchor_records = [
+        _capture_anchor(
+            source_id,
+            anchor_clients[source_id],
+            expected_number,
+            expected_hash,
+            plan["chain"]["chain_id"],
+            wall_clock,
+        )
+        for source_id in sorted(anchor_clients)
+    ]
     limits.check_time()
     dump(stage / "plan.json", plan)
     dump(stage / "header.json", first_header)
     write_rpc_records(stage / "rpc.jsonl", rpc_records)
     write_proof_records(stage / "proofs.jsonl", proof_records)
+    components = COMPONENTS
+    if plan["schema_version"] == 2:
+        write_anchor_records(stage / ANCHOR_COMPONENT, anchor_records)
+        components = (*COMPONENTS, ANCHOR_COMPONENT)
     optional_failures = sorted(
         record["request_key"]
         for record in rpc_records
@@ -145,7 +204,7 @@ def _capture_into(
     )
     manifest = build_manifest(
         stage,
-        COMPONENTS,
+        components,
         chain_id=plan["chain"]["chain_id"],
         block_number=expected_number,
         block_hash=expected_hash,
@@ -157,7 +216,135 @@ def _capture_into(
         optional_failures=optional_failures,
     )
     write_manifest(stage, manifest)
-    return verify_fixture(stage)
+    try:
+        return verify_fixture(stage)
+    except LazarusError:
+        raise CaptureError("capture failed at final verification") from None
+
+
+def _capture_anchor(
+    source_id: str,
+    client: JsonRpcClient,
+    block_number: str,
+    block_hash: str,
+    expected_chain_id: str,
+    wall_clock: Callable[[], datetime],
+) -> dict[str, Any]:
+    try:
+        chain_id = client.call("eth_chainId", [])
+    except ResourceLimitError:
+        raise ResourceLimitError(
+            f"anchor source {source_id} failed at limit"
+        ) from None
+    except Exception:
+        raise CaptureError(
+            f"anchor source {source_id} failed at transport"
+        ) from None
+    if chain_id != expected_chain_id:
+        raise IntegrityError(f"anchor source {source_id} failed at chain")
+    try:
+        header = client.call("eth_getBlockByNumber", [block_number, False])
+    except ResourceLimitError:
+        raise ResourceLimitError(
+            f"anchor source {source_id} failed at limit"
+        ) from None
+    except Exception:
+        raise CaptureError(
+            f"anchor source {source_id} failed at transport"
+        ) from None
+    if not isinstance(header, dict):
+        raise CaptureError(f"anchor source {source_id} failed at schema")
+    if header.get("number") != block_number:
+        raise IntegrityError(f"anchor source {source_id} failed at height")
+    returned_hash = header.get("hash")
+    if not isinstance(returned_hash, str):
+        raise CaptureError(f"anchor source {source_id} failed at schema")
+    try:
+        hex_bytes(returned_hash, label="anchor block hash", length=32)
+    except FormatError:
+        raise CaptureError(f"anchor source {source_id} failed at schema") from None
+    if returned_hash.lower() != block_hash.lower():
+        raise IntegrityError(f"anchor source {source_id} failed at hash")
+    try:
+        observed_at = _utc_timestamp(wall_clock())
+        return validate_document(
+            "anchor-record",
+            {
+                "schema_version": 1,
+                "source_id": source_id,
+                "observed_at": observed_at,
+                "method": "eth_getBlockByNumber",
+                "params": [block_number, False],
+                "returned": {
+                    "chain_id": chain_id,
+                    "number": header["number"],
+                    "hash": returned_hash,
+                },
+            },
+        )
+    except Exception:
+        raise CaptureError(f"anchor source {source_id} failed at schema") from None
+
+
+def _utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _utc_timestamp(instant: datetime) -> str:
+    if not isinstance(instant, datetime) or instant.tzinfo is None:
+        raise ValueError("wall clock must return an aware datetime")
+    if instant.utcoffset() != timezone.utc.utcoffset(instant):
+        raise ValueError("wall clock must return UTC")
+    return instant.isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def _resolve_anchor_urls(
+    plan: dict[str, Any],
+    mappings: Iterable[str],
+    environment: Mapping[str, str],
+) -> dict[str, str]:
+    expected = {
+        item["source_id"] for item in plan.get("anchor_sources", [])
+    }
+    declared: dict[str, str] = {}
+    for index, mapping in enumerate(mappings):
+        if index >= 32:
+            raise FormatError("anchor mapping count exceeds 32")
+        if not isinstance(mapping, str) or "=" not in mapping:
+            raise FormatError("anchor mapping must be SOURCE_ID=ENV_VAR")
+        source_id, environment_name = mapping.split("=", 1)
+        if SOURCE_ID.fullmatch(source_id) is None:
+            raise FormatError("anchor mapping has an invalid source ID")
+        if ENVIRONMENT_NAME.fullmatch(environment_name) is None:
+            raise FormatError(f"anchor source {source_id} failed at mapping")
+        if source_id in declared:
+            raise FormatError(
+                f"anchor source {source_id} failed at mapping: duplicate {source_id}"
+            )
+        declared[source_id] = environment_name
+    missing = sorted(expected - set(declared))
+    extra = sorted(set(declared) - expected)
+    if missing or extra:
+        details = []
+        if missing:
+            details.append("missing " + ", ".join(missing))
+        if extra:
+            details.append("extra " + ", ".join(extra))
+        raise FormatError("anchor mapping failed: " + "; ".join(details))
+    urls: dict[str, str] = {}
+    for source_id in sorted(expected):
+        try:
+            value = environment[declared[source_id]]
+        except Exception:
+            raise FormatError(
+                f"anchor source {source_id} failed at mapping: environment variable is absent"
+            ) from None
+        if not isinstance(value, str) or not value.strip():
+            raise FormatError(
+                f"anchor source {source_id} failed at mapping: environment variable is empty"
+            )
+        urls[source_id] = value
+    return urls
 
 
 def _fetch_header(

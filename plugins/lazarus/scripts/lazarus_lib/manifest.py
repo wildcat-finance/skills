@@ -14,7 +14,12 @@ from .paths import (
     read_confined_bytes,
     validate_relative_path,
 )
-from .records import loads_proof_records, loads_rpc_records, request_key
+from .records import (
+    loads_anchor_records,
+    loads_proof_records,
+    loads_rpc_records,
+    request_key,
+)
 from .schemas import validate_document
 from .version import __version__
 
@@ -215,6 +220,10 @@ def _inspect_components(
             observed["rpc"] = loads_rpc_records(data, max_bytes=MAX_JSONL_BYTES)
         elif relative == "proofs.jsonl":
             observed["proofs"] = loads_proof_records(data, max_bytes=MAX_JSONL_BYTES)
+        elif relative == "anchors.jsonl":
+            observed["anchors"] = loads_anchor_records(
+                data, max_bytes=MAX_JSONL_BYTES
+            )
     return components, observed
 
 
@@ -254,12 +263,67 @@ def _validate_observed(observed: dict[str, Any], manifest: dict[str, Any]) -> No
         raise IntegrityError("header number disagrees with manifest")
     if header["hash"] != manifest["block"]["hash"]:
         raise IntegrityError("header hash disagrees with manifest")
+    anchor_records = observed.get("anchors")
+    if plan["schema_version"] == 1:
+        if anchor_records is not None:
+            raise IntegrityError("plan-v1 refuses anchors.jsonl")
+    else:
+        if anchor_records is None:
+            raise IntegrityError("plan-v2 requires anchors.jsonl")
+        validate_anchor_records(
+            plan,
+            anchor_records,
+            chain_id=manifest["chain_id"],
+            block_number=manifest["block"]["number"],
+            block_hash=manifest["block"]["hash"],
+        )
     _validate_plan_coverage(plan, observed)
     counts, failures = _coverage(observed)
     if counts != manifest["evidence_counts"]:
         raise IntegrityError("manifest evidence counts disagree with fixture records")
     if failures != manifest["optional_failures"]:
         raise IntegrityError("manifest optional failures disagree with RPC records")
+
+
+def validate_anchor_records(
+    plan: dict[str, Any],
+    records: list[dict[str, Any]],
+    *,
+    chain_id: str,
+    block_number: str,
+    block_hash: str,
+) -> None:
+    """Hold anchor observations to their plan and verified block identity."""
+    planned = {item["source_id"] for item in plan["anchor_sources"]}
+    recorded = {item["source_id"] for item in records}
+    missing = sorted(planned - recorded)
+    extra = sorted(recorded - planned)
+    if missing or extra:
+        detail = []
+        if missing:
+            detail.append("missing " + ", ".join(missing))
+        if extra:
+            detail.append("extra " + ", ".join(extra))
+        raise IntegrityError(
+            "anchor records do not exactly cover plan sources: "
+            + "; ".join(detail)
+        )
+    for record in records:
+        source_id = record["source_id"]
+        returned = record["returned"]
+        if returned["chain_id"] != chain_id:
+            raise IntegrityError(f"anchor source {source_id} names another chain")
+        if (
+            record["params"][0] != block_number
+            or returned["number"] != block_number
+        ):
+            raise IntegrityError(
+                f"anchor source {source_id} names another block number"
+            )
+        if returned["hash"].lower() != block_hash.lower():
+            raise IntegrityError(
+                f"anchor source {source_id} disagrees with the verified header"
+            )
 
 
 def _validate_plan_coverage(plan: dict[str, Any], observed: dict[str, Any]) -> None:

@@ -38,6 +38,26 @@ def document():
 
 
 class ShippedReleaseTests(unittest.TestCase):
+    def test_the_legacy_fixture_has_no_anchor_records_or_new_release_fields(self):
+        report = verify_fixture(FIXTURE)
+        self.assertIn("chain_anchors", report)
+        self.assertEqual(
+            report["chain_anchors"],
+            {
+                "records": 0,
+                "canonical_chain_claim": False,
+                "provider_independence_claim": False,
+            },
+        )
+        self.assertNotIn(
+            "anchors.jsonl",
+            {component["path"] for component in report["manifest"]["components"]},
+        )
+        self.assertEqual(
+            set(document()["verified"]),
+            {"block_hash", "evidence_counts", "canonical_chain_claim"},
+        )
+
     def test_the_shipped_release_verifies(self):
         report = verify_release(SHIPPED)
         self.assertEqual(report["release_digest"], document()["release_digest"])

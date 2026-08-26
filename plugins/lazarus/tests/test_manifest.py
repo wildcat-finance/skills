@@ -15,13 +15,19 @@ from lazarus_lib.manifest import (
     verify_manifest,
     write_manifest,
 )
-from lazarus_lib.records import make_rpc_record, write_proof_records, write_rpc_records
+from lazarus_lib.records import (
+    make_rpc_record,
+    write_anchor_records,
+    write_proof_records,
+    write_rpc_records,
+)
 
 from . import support
 from lazarus import run
 
 
 COMPONENTS = ("header.json", "plan.json", "proofs.jsonl", "rpc.jsonl")
+ANCHORED_COMPONENTS = (*COMPONENTS, "anchors.jsonl")
 
 
 def write_components(root: Path) -> None:
@@ -43,10 +49,19 @@ def write_components(root: Path) -> None:
     write_proof_records(root / "proofs.jsonl", [support.sample_proof_record()])
 
 
-def make_manifest(root: Path):
+def write_anchored_components(root: Path, source_ids=("archive-a",)) -> None:
+    write_components(root)
+    dump(root / "plan.json", support.sample_plan_v2(source_ids))
+    write_anchor_records(
+        root / "anchors.jsonl",
+        [support.sample_anchor_record(source_id) for source_id in source_ids],
+    )
+
+
+def make_manifest(root: Path, components=COMPONENTS):
     manifest = build_manifest(
         root,
-        COMPONENTS,
+        components,
         chain_id="0x1",
         block_number="0x10",
         block_hash=support.hash32("11"),
@@ -57,6 +72,51 @@ def make_manifest(root: Path):
 
 
 class ManifestTests(unittest.TestCase):
+    def test_manifest_v1_accepts_the_optional_anchor_component_without_new_counts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_anchored_components(root)
+            manifest = make_manifest(root, ANCHORED_COMPONENTS)
+            self.assertEqual(
+                set(manifest),
+                {
+                    "schema_version",
+                    "tool_version",
+                    "chain_id",
+                    "block",
+                    "components",
+                    "evidence_counts",
+                    "optional_failures",
+                    "fixture_digest",
+                },
+            )
+            self.assertEqual(
+                manifest["evidence_counts"],
+                {"proof_backed": 2, "header_bound": 1, "recorded_rpc": 1},
+            )
+            self.assertIn(
+                "anchors.jsonl",
+                {component["path"] for component in manifest["components"]},
+            )
+            self.assertEqual(verify_manifest(root), manifest)
+
+    def test_anchor_component_presence_tracks_the_plan_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_components(root)
+            dump(root / "plan.json", support.sample_plan_v2())
+            with self.assertRaisesRegex(IntegrityError, "plan-v2 requires anchors.jsonl"):
+                make_manifest(root)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_components(root)
+            write_anchor_records(
+                root / "anchors.jsonl", [support.sample_anchor_record()]
+            )
+            with self.assertRaisesRegex(IntegrityError, "plan-v1 refuses anchors.jsonl"):
+                make_manifest(root, ANCHORED_COMPONENTS)
+
     def test_repeated_builds_and_writes_are_byte_identical(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

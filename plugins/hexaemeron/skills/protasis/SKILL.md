@@ -12,7 +12,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "4.7.0"
+  version: "4.8.0"
 ---
 
 # Protasis
@@ -103,18 +103,38 @@ are happy.
    request it lands, so that is where the unfinished work of the previous run
    is written down. Carry each item forward as content here, as a stated
    non-goal, or as a named reason it stays open. Read the audit records of
-   every in-scope skill the same way, before design options are drawn: the
-   run's audit file, at its `config audit.log_path`, holds what each round
-   found, what was fixed, and the leads accepted with the reason nobody
-   pursued them. Fiat derives one such file per run under `audit/rounds/`,
-   so the records of several runs are several files; a target that kept a
-   shared log before that change has the rest of its history in
-   `audit/AUDIT.md`. A study that cannot find the real reason for a
-   decision supplies a plausible one, and the plausible one then governs
-   the build: a rejected option gets rejected for the wrong cause, an
-   accepted risk gets quietly reopened, and the round that already judged
-   the question reads afterwards as though it never happened. Found in the
-   study it costs a sentence; found in step four it costs the step.
+   every in-scope skill the same way, before design options are drawn. Every
+   discovered audit source remains authoritative. A verified synopsis is its
+   normal reading view only after
+   `python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check
+   <target-root>` runs from the target root and the whole-set currency check
+   exits zero. `**/audit/AUDIT.md` maps to its sibling `AUDIT_SYNOPSIS.md`. A
+   direct child `audit/rounds/<run>.md` maps to
+   `audit/rounds/<run>.synopsis.md`. The root pair covers only the root source;
+   it does not cover per-run or plugin records.
+
+   Missing, stale, unsupported, or unavailable view means: read the
+   authoritative source directly and record its source path and the reason.
+   If the whole-set check fails, do that for every in-scope source rather than
+   guessing which view remains current. A target without the renderer or a
+   committed synopsis can still be studied when its source is available. If
+   neither view nor source is available, readiness stops on that evidence gap.
+
+   Keep every finding id and status, `Covered`, `Not checked`, `Elenchus
+   verdict`, and `Leads not pursued`; `[missing legacy field: ...]` remains
+   unknown. Then name every in-scope source, which synopsis or source was
+   actually read, and the evidence for that choice. Do not claim the source
+   was read when only its synopsis was read. The run's audit file, at its
+   `config audit.log_path`, holds what each round found, what was fixed, and
+   the leads accepted with the reason nobody pursued them. Fiat derives one
+   such file per run under `audit/rounds/`, so the records of several runs are
+   several files; a target that kept a shared log before that change has the
+   rest of its history in `audit/AUDIT.md`. A study that cannot find the real
+   reason for a decision supplies a plausible one, and the plausible one then
+   governs the build: a rejected option gets rejected for the wrong cause, an
+   accepted risk gets quietly reopened, and the round that already judged the
+   question reads afterwards as though it never happened. Found in the study
+   it costs a sentence; found in step four it costs the step.
 3. **Constraints and non-goals.** The starting ref, toolchain and version pins,
    what the user ruled out, what is deferred past the prototype.
 4. **Design options.** Two to four candidate constructions, each with the trade
@@ -372,8 +392,25 @@ count is not a report.
 - [ ] The last two merged pull requests touching the target were read, and
       anything they carried forward is answered, refused by name, or stated as
       still open. Say so plainly where there were none to read.
-- [ ] The audit records of every in-scope skill were read before design
-      options were drawn. Say so plainly where there were none to read.
+- [ ] Every discovered audit source remains authoritative. The study must name
+      every in-scope source, which synopsis or source was actually read, and
+      the evidence for that choice. Do not claim the source was read when only
+      its synopsis was read.
+- [ ] A verified synopsis was used only after
+      `python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check
+      <target-root>` ran from the target root and the whole-set currency check
+      exits zero. `**/audit/AUDIT.md` maps to its sibling
+      `AUDIT_SYNOPSIS.md`. A direct child `audit/rounds/<run>.md` maps to
+      `audit/rounds/<run>.synopsis.md`. The root pair covers only the root
+      source.
+- [ ] Missing, stale, unsupported, or unavailable view means: read the
+      authoritative source directly and record its source path and the reason.
+      If the whole-set check failed, every in-scope source was read directly;
+      if the source was also unavailable, readiness stopped on that evidence
+      gap.
+- [ ] The chosen read mode retains every finding id and status, `Covered`,
+      `Not checked`, `Elenchus verdict`, and `Leads not pursued`;
+      `[missing legacy field: ...]` remains unknown.
 - [ ] No discipline core is restated where a citation belongs.
 - [ ] Assumptions are on the page and were confirmed or corrected.
 - [ ] Every success criterion names a command, a test or a demo path.

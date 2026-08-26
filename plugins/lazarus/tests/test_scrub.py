@@ -9,12 +9,29 @@ from lazarus_lib.scrub import (
     SCAN_CHUNK_BYTES,
     assert_no_secrets,
     provider_secrets,
+    provider_secret_union,
     redact_text,
     sanitised_rpc_error,
 )
 
 
 class ScrubTests(unittest.TestCase):
+    def test_secret_union_covers_primary_headers_and_every_anchor_url(self):
+        secrets = provider_secret_union(
+            (
+                ("https://primary.example/?key=primary-secret", {"Authorization": "Bearer header-secret"}),
+                ("https://anchor-a.example/?key=anchor-a-secret", None),
+                ("https://anchor-b.example/?key=anchor-b-secret", None),
+            )
+        )
+        for value in (
+            "primary-secret",
+            "header-secret",
+            "anchor-a-secret",
+            "anchor-b-secret",
+        ):
+            self.assertIn(value, secrets)
+
     def test_url_userinfo_and_query_keys_are_secret_material(self):
         url = "https://alice:p%40ss@rpc.example/v1?apiKey=shh-secret&project=wildcat"
         secrets = provider_secrets(url)

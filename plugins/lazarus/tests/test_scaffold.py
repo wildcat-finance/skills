@@ -1,5 +1,6 @@
 """The Lazarus shell keeps every host and document on one contract."""
 
+import hashlib
 import json
 import re
 import unittest
@@ -72,6 +73,45 @@ class ScaffoldTests(unittest.TestCase):
             self.assertIn(f"`{command}`", contract)
         self.assertIn("implements format validation", contract)
         self.assertIn("no provider, proxy or fallback", contract)
+        self.assertIn("--anchor-rpc-env", contract)
+        self.assertIn("canonical-chain", contract)
+        self.assertIn("provider independence", contract)
+
+    def test_chain_anchor_guide_and_example_are_discoverable(self):
+        guide = support.PLUGIN_ROOT / "docs" / "chain-anchors.md"
+        self.assertTrue(guide.is_file())
+        text = guide.read_text(encoding="utf-8")
+        for term in (
+            "SOURCE_ID=ENV_VAR",
+            "share",
+            "canonical-chain",
+            "provider independence",
+            "multi-provider-anchor-v0",
+        ):
+            self.assertIn(term, text)
+        example = support.PLUGIN_ROOT / "examples" / "multi-provider-anchor-v0"
+        self.assertEqual(
+            {path.name for path in example.iterdir()},
+            {
+                "anchors.jsonl",
+                "header.json",
+                "manifest.json",
+                "plan.json",
+                "proofs.jsonl",
+                "rpc.jsonl",
+            },
+        )
+
+    def test_generation_1_2_0_remains_one_existing_ledger_row(self):
+        self.assertEqual(support.skill_version(), "1.2.0")
+        ledger = (support.SKILL.parent / "EVOLUTION.md").read_text(encoding="utf-8")
+        self.assertEqual(ledger.count("| `lazarus-v1.2.0` |"), 1)
+        for line in (
+            "- Current version: `lazarus-v1.2.0`",
+            "- Frontier status: `open`",
+            "- Frontier revision: `receipt-inclusion-proofs`",
+        ):
+            self.assertIn(line, ledger)
 
     def test_requirements_are_exact_direct_pins(self):
         requirements = (support.PLUGIN_ROOT / "requirements.txt").read_text().splitlines()
@@ -106,6 +146,23 @@ class ScaffoldTests(unittest.TestCase):
         self.assertIn("## Selected format and verification details", study)
         self.assertTrue(runbook.startswith("# Lazarus implementation runbook\n"))
         self.assertIn("## Step 6: Ship and run the Goldfinch demonstration", runbook)
+
+    def test_multi_provider_anchor_specification_copies_are_exact(self):
+        root = support.REPO_ROOT / "docs" / "lazarus-multi-provider-chain-anchor"
+        expected = {
+            "study.md": "f16d14e2182f872d95e56b4485218a264286a845f80b2857960dcd32c14442fd",
+            "runbook.md": "e6ad38a1b934a7d61ee81ce6b01341a863d79e4841bec7b75ca84c29f6f8d8d7",
+        }
+        for name, digest in expected.items():
+            with self.subTest(name=name):
+                self.assertEqual(
+                    hashlib.sha256((root / name).read_bytes()).hexdigest(), digest
+                )
+
+    def test_lazarus_owns_its_structured_unittest_runner(self):
+        tests = support.PLUGIN_ROOT / "tests"
+        self.assertTrue((tests / "run_tests.py").is_file())
+        self.assertTrue((tests / "test_runner.py").is_file())
 
     def test_cli_and_step_five_modules_exist(self):
         self.assertTrue((support.PLUGIN_ROOT / "scripts" / "lazarus.py").is_file())

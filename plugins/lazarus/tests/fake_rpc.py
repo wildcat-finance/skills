@@ -23,16 +23,23 @@ class FakeRpc:
         *,
         reverse_batches: bool = False,
         raw_response: bytes | None = None,
+        redirect_to: str | None = None,
     ) -> None:
         self.dispatch = dispatch
         self.reverse_batches = reverse_batches
         self.raw_response = raw_response
+        self.redirect_to = redirect_to
         self.requests: list[dict[str, Any]] = []
         self.headers: list[dict[str, str]] = []
         owner = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self) -> None:
+                if owner.redirect_to is not None:
+                    self.send_response(307)
+                    self.send_header("Location", owner.redirect_to)
+                    self.end_headers()
+                    return
                 length = int(self.headers.get("Content-Length", "0"))
                 payload = json.loads(self.rfile.read(length))
                 owner.headers.append(dict(self.headers.items()))

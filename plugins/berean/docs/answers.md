@@ -20,13 +20,34 @@ verifies nowhere, and reads to a human as though it verified somewhere.
   key, and the read names the chain and block the release declared.
 - `calculation` sentences derive from evidence already in the answer, so a
   number with no visible inputs has nowhere to hide.
-- `user_supplied` sentences carry no evidence at all. The fact came from
-  the asker; attaching an artefact to it would dress a claim as a check.
-  Their retention is the release's declaration, not the answer's.
+- `user_supplied` sentences name the spans of the recorded question they
+  rest on, as `question:<start>-<end>` byte ranges in `evidence`. They
+  still cite no artefact: the fact came from the asker, and attaching an
+  artefact to it would dress a claim as a check. Their retention is the
+  release's declaration, not the answer's.
 
 The classes never upgrade. A recorded read does not become proof-backed
 here, and a document claim does not become a chain reading because the
 chain happens to agree with it.
+
+## Question spans
+
+A span reference is `question:<start>-<end>`: two decimal offsets with no
+sign, no leading zero and at most seven digits each, matched in full before
+either is parsed. The offsets count bytes of the UTF-8 encoding of
+`question`, the unit citations already use, and the checker re-slices them:
+`start` is below `end`, `end` is within the encoded length, the slice
+decodes as whole UTF-8 and is not blank. Offsets are read only after
+`question` itself proves encodable. A question with no UTF-8 encoding,
+which a lone-surrogate escape in the JSON produces, fails `answer-shape`
+before any span is read, for either kind of document. A sentence may name
+several spans. No citation or read id may begin with `question:`, so one
+evidence string resolves to one kind of thing whichever sentence cites it.
+
+The check proves that the sentence points at real, whole, non-blank bytes
+of the asker's question. It does not prove that the sentence rests on them
+honestly; that stays with gate 6 and the evaluation corpus, as a citation
+that resolves can still fail to support its sentence.
 
 ## Time domains
 

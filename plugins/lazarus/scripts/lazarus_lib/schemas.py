@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
+import re
 from typing import Any
 
 from jsonschema import Draft202012Validator
@@ -19,6 +21,10 @@ SCHEMAS: dict[tuple[str, int], tuple[str, str]] = {
         "plan-v1.json",
         "f7081f2007ac8116215ffcb508a2ffc09d9c04fba512d87d1b69a885b72915de",
     ),
+    ("plan", 2): (
+        "plan-v2.json",
+        "4130d0349c4bf91041757fb2d36854e54a6a97af7a9f1eefa5d812e792c9b9c3",
+    ),
     ("header", 1): (
         "header-v1.json",
         "222e16df19169ae545e49ea423928ef63400ed078972e24734ac0697296fc9ac",
@@ -30,6 +36,10 @@ SCHEMAS: dict[tuple[str, int], tuple[str, str]] = {
     ("proof-record", 1): (
         "proof-record-v1.json",
         "3ed92e5ebb37ca2358e3b0b28b57333cb4f6c6bc5a2e760d81f73a226c679ee7",
+    ),
+    ("anchor-record", 1): (
+        "anchor-record-v1.json",
+        "f22459e10e0e7f3736eafeb44224b92debee30daece8c12deab37e58ee76fb8e",
     ),
     ("manifest", 1): (
         "manifest-v1.json",
@@ -90,6 +100,7 @@ def validate_document(kind: str, document: Any) -> Any:
         "header": _validate_header,
         "rpc-record": _validate_rpc_record,
         "proof-record": _validate_proof_record,
+        "anchor-record": _validate_anchor_record,
         "manifest": _validate_manifest,
         "release": _validate_release,
     }[kind]
@@ -153,6 +164,12 @@ def _validate_plan(plan: dict[str, Any]) -> None:
         slots = [slot.lower() for slot in target["slots"]]
         if slots != sorted(slots) or len(slots) != len(set(slots)):
             raise FormatError(f"proof slots must be sorted and unique: {target['address']}")
+    if plan["schema_version"] == 2:
+        source_ids = [source["source_id"] for source in plan["anchor_sources"]]
+        if source_ids != sorted(source_ids) or len(source_ids) != len(
+            set(source_ids)
+        ):
+            raise FormatError("anchor sources must be sorted and unique")
 
 
 def _validate_header(header: dict[str, Any]) -> None:
@@ -184,6 +201,24 @@ def _validate_proof_record(record: dict[str, Any]) -> None:
     keys = [item["key"].lower() for item in record["storage_proof"]]
     if keys != sorted(keys) or len(keys) != len(set(keys)):
         raise FormatError("storage proof keys must be sorted and unique")
+
+
+def _validate_anchor_record(record: dict[str, Any]) -> None:
+    observed_at = record["observed_at"]
+    utc_shape = (
+        r"[0-9]{4}-[0-9]{2}-[0-9]{2}T"
+        r"[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?Z"
+    )
+    if re.fullmatch(utc_shape, observed_at) is None:
+        raise FormatError("anchor observed_at must be a UTC timestamp ending in Z")
+    try:
+        instant = datetime.fromisoformat(observed_at[:-1] + "+00:00")
+    except ValueError:
+        raise FormatError("anchor observed_at must be a valid UTC timestamp") from None
+    if instant.tzinfo != timezone.utc:
+        raise FormatError("anchor observed_at must be a UTC timestamp")
+    if record["returned"]["number"] != record["params"][0]:
+        raise FormatError("anchor returned number disagrees with requested block number")
 
 
 def _validate_manifest(manifest: dict[str, Any]) -> None:

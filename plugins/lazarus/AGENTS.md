@@ -46,15 +46,23 @@ local tool. A non-zero exit means the requested operation did not succeed.
   implements format validation, finite capture, manifest construction, offline
   verification, exact loopback replay, and writing and reading back a
   preservation release.
+- A plan-v2 capture maps each declared anchor source at runtime with repeated
+  `--anchor-rpc-env SOURCE_ID=ENV_VAR` arguments. The argument names an
+  environment variable; its RPC URL value does not enter argv.
 - Names such as `lazarus:lazarus`, `/lazarus:lazarus` and `$lazarus` are
   logical aliases. Load the canonical path from the table above.
 
 ## Network and side effects
 
-`capture` is the only networked command. It uses only the explicit RPC URL,
-brackets one fixed block, verifies proofs before atomically finalising output
-and discards provider error prose. Format validation, manifest construction
-and fixture verification reach no network. `build-manifest` writes only
+`capture` is the only networked command. It uses the explicit primary RPC URL
+and, for plan v2, the exact declared source-to-environment mapping. Every
+anchor client shares the primary capture's request, response-byte,
+component-byte, total-byte and elapsed-time limits. Capture queries each source
+for the mainnet chain ID and fixed block, scans staged bytes against the union
+of all provider secrets, verifies the complete fixture and atomically finalises
+it. Provider URL values and raw provider errors are discarded. Format
+validation, manifest construction and fixture verification reach no network.
+`build-manifest` writes only
 `manifest.json` beneath its explicit fixture root. `verify` checks schemas,
 safe paths, canonical manifest bytes, component sizes and SHA-256 digests,
 then verifies the header, EIP-1186 account and storage proofs, proved response
@@ -78,6 +86,11 @@ nothing. Neither reaches a network, and neither signs anything.
   rejected.
 - No canonical-chain claim from a self-consistent header alone. The expected
   block hash needs an external provenance record.
+- No provider independence claim from distinct operator-chosen source IDs or
+  matching anchor records.
+- No partial anchor capture. Missing, extra or duplicate mappings, unavailable
+  environment values, provider failure, identity disagreement, exhausted
+  limits, secret detection or failed final verification leaves no fixture.
 - No proof claim for an account, storage slot or code blob unless the current
   `verify` command checked it against the captured header state root.
 - No release over a statement whose counts the fixture does not verify to, in

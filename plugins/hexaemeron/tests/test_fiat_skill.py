@@ -158,6 +158,25 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("does not attest the Elenchus report bytes", audit)
         self.assertIn("issue 453", audit)
 
+    def test_future_audit_records_use_v2_while_v1_remains_readable(self):
+        audit = " ".join(self.audit_loop.split())
+        fiat = " ".join(self.fiat.split())
+        warden = " ".join(AGENTS["warden"].split())
+        for text in (audit, warden):
+            self.assertIn("fiat-audit-round/v2", text)
+            self.assertIn("fiat-audit-round/v1", text)
+            self.assertIn("Covered", text)
+            self.assertIn("Not checked", text)
+            self.assertIn("Leads not pursued", text)
+        self.assertIn("[audit-loop.md]", fiat)
+        self.assertIn("do not write a new one", warden)
+        self.assertIn("YYYY-MM-DDTHH:MM:SSZ", audit)
+        self.assertIn("one raw record in the grammar above at EOF", audit)
+        self.assertIn("Only the appended delta is decoded", audit)
+        self.assertIn("canonical log path", audit)
+        self.assertIn("entry SHA-256", audit)
+        self.assertIn("packet's risk register", warden)
+
     def test_warden_uses_the_source_bound_step_and_returns_the_exact_verdict(self):
         contract = " ".join(AGENTS["warden"].split())
         self.assertIn("exact source-bound `runbook_step`", contract)
@@ -300,6 +319,51 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("P005", self.protasis)
         self.assertIn("ends the last baseline step before a real amendment heading", flat)
         self.assertIn("not that the new criterion is correct", flat)
+
+    def test_protasis_verified_audit_read_view_preserves_source_evidence(self):
+        passages = {
+            "study item 2": self.protasis.split("2. **Prior art.**", 1)[1].split(
+                "3. **Constraints and non-goals.**", 1
+            )[0],
+            "pre-receipt checklist": self.protasis.split(
+                "## Before the runbook is receipted", 1
+            )[1].split("## Hand back", 1)[0],
+        }
+        required = {
+            "source authority": "Every discovered audit source remains authoritative.",
+            "legacy mapping": (
+                "`**/audit/AUDIT.md` maps to its sibling `AUDIT_SYNOPSIS.md`."
+            ),
+            "per-run mapping": (
+                "A direct child `audit/rounds/<run>.md` maps to "
+                "`audit/rounds/<run>.synopsis.md`."
+            ),
+            "currency command": (
+                "`python3 plugins/hexaemeron/skills/fiat/scripts/"
+                "audit_synopsis.py --check <target-root>`"
+            ),
+            "whole-set gate": "whole-set currency check exits zero",
+            "unavailable view": "Missing, stale, unsupported, or unavailable view",
+            "source fallback": "read the authoritative source directly",
+            "fallback evidence": "record its source path and the reason",
+            "finding identity": "every finding id and status",
+            "covered evidence": "`Covered`",
+            "unchecked evidence": "`Not checked`",
+            "elenchus evidence": "`Elenchus verdict`",
+            "unfollowed leads": "`Leads not pursued`",
+            "legacy unknown": "`[missing legacy field: ...]` remains unknown",
+            "source inventory": "name every in-scope source",
+            "actual read mode": "which synopsis or source was actually read",
+            "read-mode evidence": "evidence for that choice",
+            "truthful source claim": (
+                "Do not claim the source was read when only its synopsis was read."
+            ),
+        }
+        for passage_name, passage in passages.items():
+            flat = " ".join(passage.split())
+            for rule, clause in required.items():
+                with self.subTest(passage=passage_name, rule=rule):
+                    self.assertIn(clause, flat)
 
     def test_observation_binding_is_optional_and_non_authorising(self):
         flat = " ".join(self.fiat.split())

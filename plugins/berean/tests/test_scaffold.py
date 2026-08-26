@@ -55,7 +55,7 @@ class ManifestTests(unittest.TestCase):
             read(REPO_ROOT / ".claude-plugin" / "marketplace.json")
         )
         entry = {p["name"]: p for p in marketplace["plugins"]}["berean"]
-        self.assertEqual(claude["version"], "0.1.1")
+        self.assertEqual(claude["version"], "0.1.2")
         self.assertEqual(codex["version"], claude["version"])
         self.assertEqual(entry["version"], claude["version"])
         self.assertEqual(codex["description"], claude["description"])

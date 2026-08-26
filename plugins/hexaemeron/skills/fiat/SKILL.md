@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.25.1"
+  version: "5.27.1"
 ---
 
 # Fiat
@@ -239,7 +239,10 @@ state transition.
 2. Confirm `git` and `gh auth status` work in the target directory. Resolve
    the repository from the current directory and the user's named target;
    never substitute an organisation or clone a different repository merely
-   because its name looks related.
+   because its name looks related. Every receipt reads GitHub over REST, so a
+   proxy or environment that serves the REST API without GraphQL can still
+   receipt a run. A read that never arrived says so in its own words, and it
+   is not a statement about whether the commits are verified.
 3. `init` observes this controller's own currency and refuses a proven-behind
    pin by name, before any run state exists. On that refusal, re-pin through
    the host's own installer, refresh, and re-resolve the paths, per
@@ -638,7 +641,7 @@ the study and runbook live.
 - Promise: A successful `hexctl verify` establishes that the controller state has the required version-1 container shape, the state and append-only ledger agree, and every recorded phase transition occurred in the required order with the required receipt shape.
 - Evidence: The ordered state-container check, exact study and runbook receipts, step branches and locally verified commit ranges, GitHub-verified pushed commits and merge SHAs, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
 - Evidence classes: checked, recorded
-- Boundary: Controller verification proves the required container shape, receipt order, integrity, and the recorded local and GitHub signature checks; it does not validate heterogeneous leaf values, prove a test summary, audit judgement, implementation claim, signer authority beyond those checks, or user authority merely written into a receipt.
+- Boundary: Controller verification proves the required container shape, receipt order, integrity, checked audit-entry structure, the recorded receipt-time synopsis check, and the recorded local and GitHub signature checks; it does not establish current working-tree currency, establish that audit prose or coverage judgements are true, make the lossy synopsis authoritative, validate other heterogeneous leaf values, prove a test summary, implementation claim, signer authority beyond those checks, or user authority merely written into a receipt.
 - Authorises: Advancing only to the single next controller directive and reporting the recorded workflow state without strengthening any underlying receipt.
 - Consequence: 2
 - Refuses: Skipping a phase, reconstructing progress from chat, accepting a malformed or missing receipt, or describing an unrun check as complete.

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://berean.wildcat.finance/answer/v1/schema.json",
   "title": "Berean answer record v1",
-  "description": "One answer or refusal for berean-answer/v1: classified sentences, embedded citations, block-bound reads and declared disagreements. The verifier enforces this shape plus the cross-checks a schema cannot express: citation spans against the pinned corpus, request keys against the preserved records, and the kind-dependent emptiness rules.",
+  "description": "One answer or refusal for berean-answer/v1: classified sentences, embedded citations, block-bound reads and declared disagreements. The verifier enforces this shape plus the cross-checks a schema cannot express: citation spans against the pinned corpus, request keys against the preserved records, and the kind-dependent emptiness rules. On a user_supplied sentence, evidence carries question:<start>-<end> byte spans of question rather than artefact ids; each span must re-slice to whole, non-blank UTF-8.",
   "type": "object",
   "additionalProperties": false,
   "required": ["format", "question", "kind", "refusal", "sentences", "citations", "reads", "discrepancies"],

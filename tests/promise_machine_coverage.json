@@ -119,7 +119,7 @@
     "berean-answer-o": {
       "claim": "The nearest tempting overclaim remains explicitly unavailable.",
       "path": "plugins/berean/tests/test_answers.py",
-      "selector": "test_a_user_supplied_fact_carries_no_evidence"
+      "selector": "test_a_user_supplied_fact_names_the_question_spans_it_rests_on"
     },
     "berean-answer-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
@@ -2448,7 +2448,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "1acaa14065bbfea18514448cdc0fa8b8e4c88266a76ac42fa849e4fdb7b59565"
+      "sha256": "ba27002316328d05c3c7c9c47e23322b82073ef4a063449309b83366ad7d1b95"
     },
     "validator": {
       "path": "scripts/run_observation.py",
@@ -2774,7 +2774,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work and any unrun external check"
       },
-      "sha256": "1acaa14065bbfea18514448cdc0fa8b8e4c88266a76ac42fa849e4fdb7b59565",
+      "sha256": "ba27002316328d05c3c7c9c47e23322b82073ef4a063449309b83366ad7d1b95",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -2788,7 +2788,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "1acaa14065bbfea18514448cdc0fa8b8e4c88266a76ac42fa849e4fdb7b59565",
+      "sha256": "ba27002316328d05c3c7c9c47e23322b82073ef4a063449309b83366ad7d1b95",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -2802,7 +2802,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "1acaa14065bbfea18514448cdc0fa8b8e4c88266a76ac42fa849e4fdb7b59565",
+      "sha256": "ba27002316328d05c3c7c9c47e23322b82073ef4a063449309b83366ad7d1b95",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -2816,7 +2816,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "1acaa14065bbfea18514448cdc0fa8b8e4c88266a76ac42fa849e4fdb7b59565",
+      "sha256": "ba27002316328d05c3c7c9c47e23322b82073ef4a063449309b83366ad7d1b95",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -2830,7 +2830,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "1acaa14065bbfea18514448cdc0fa8b8e4c88266a76ac42fa849e4fdb7b59565",
+      "sha256": "ba27002316328d05c3c7c9c47e23322b82073ef4a063449309b83366ad7d1b95",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {
@@ -2996,9 +2996,9 @@
         "scope": "captured method and parameters with loopback-only service",
         "subject": "verified fixture identity and exact request key",
         "transition": "verified replay binding joined to the canonical Authorises field",
-        "unknowns": "uncaptured requests and recorded-only RPC relations"
+        "unknowns": "uncaptured requests, recorded-only RPC relations and chain-anchor canonicality or independence"
       },
-      "sha256": "0ae280084dd2934e902b11826c12aff8247989616126c1771ae6af65e38307b2",
+      "sha256": "2088a8949896d672b18d4e7a79611cd32dc98da5d0057520015b0e432407e83c",
       "source": "plugins/lazarus/scripts/lazarus.py"
     },
     "lazarus-fixture-capture": {

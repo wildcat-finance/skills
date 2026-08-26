@@ -192,6 +192,38 @@ material improvement, the ledger becomes `mature`, its next job becomes
 `None -- mature`, and Fiat refuses further frontier runs. A different rewrite
 or another model's curiosity is not grounds to keep seasoning it.
 
+## Audit synopses
+
+Fiat keeps each audit source authoritative and commits a bounded deterministic
+read view beside it. A legacy `**/audit/AUDIT.md` uses
+`AUDIT_SYNOPSIS.md`. A direct `audit/rounds/<run>.md` source uses
+`<run>.synopsis.md`, so several runs can share the directory without replacing
+one another. Synopsis files are excluded from source discovery, and duplicate
+destinations refuse the whole plan before a write. Refresh or check every
+discovered pair from the repository root:
+
+```bash
+python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --write .
+python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+```
+
+`fiat-audit-synopsis/v1` has one metadata line and one physical line per raw
+H2. An unescaped `<br>` separates retained source lines; `%b` encodes a literal
+`<br>` and `%%` encodes a literal `%`. The renderer's
+`decode_synopsis_record()` reverses that framing exactly. The metadata binds
+source path, source SHA-256 and H2 count; records retain strict fields,
+canonical findings, recognised legacy risk tables, and every physical
+`Leads not pursued` occurrence with its remaining section. Missing legacy
+values stay missing. Explicit `fiat-audit-round/v1` records keep their
+topic-bearing heading; new per-run records use `fiat-audit-round/v2` and a
+path-bound `Step` heading. Discovery excludes nested Git
+repositories and worktrees, including active Fiat trees below `tmp/fiat/`.
+The CLI refuses symlinks, escape, invalid UTF-8, non-LF line endings, sources
+or rendered views over 16 MiB, more than 10,000 H2s, source lines over 1 MiB,
+and views that fail the strict 15% integer line budget. `--write` uses a
+flushed same-directory temporary, atomic replacement, cleanup and exact
+post-write read. It has no network, shell, dependency, or generation clock.
+
 ## Configuration
 
 Per-run, via `hexctl config set <path> <value>`:

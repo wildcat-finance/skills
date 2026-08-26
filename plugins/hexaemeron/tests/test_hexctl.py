@@ -12,12 +12,16 @@ import sys
 import tempfile
 import time
 import unittest
-from contextlib import redirect_stderr
-from io import StringIO
+from contextlib import ExitStack, redirect_stderr
+from io import BytesIO, StringIO, TextIOWrapper
+from pathlib import Path
 from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HEXCTL = os.path.join(HERE, "..", "skills", "fiat", "scripts", "hexctl.py")
+AUDIT_SYNOPSIS = os.path.join(
+    HERE, "..", "skills", "fiat", "scripts", "audit_synopsis.py"
+)
 PROTASIS = os.path.join(HERE, "..", "skills", "protasis", "scripts", "protasis.py")
 COMPLETE_STUDY = os.path.join(HERE, "fixtures", "protasis", "complete-study.md")
 
@@ -96,6 +100,18 @@ def hexctl_module():
     return module
 
 
+def audit_synopsis_module():
+    """The sibling renderer imported under the controller test runner."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "audit_synopsis_under_test", AUDIT_SYNOPSIS
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def protasis_module():
     import importlib.util
 
@@ -144,6 +160,12 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
                     state = json.load(handle)
             except (OSError, ValueError):
                 state = None
+        if (
+            args[:1] == ("audit-round",)
+            and expect == 0
+            and getattr(self, "auto_audit_records", True)
+        ):
+            self.append_valid_audit_record(args, state)
         if args[:2] == ("done", "implement") and expect == 0:
             branch = args[args.index("--branch") + 1]
             head = args[args.index("--commit") + 1]
@@ -163,14 +185,15 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             number = int(args[args.index("--step") + 1])
             url = state["steps"][number - 1]["receipts"]["push"]["pr_url"]
             merge = args[args.index("--merge-commit") + 1]
-            pending_prs[url]["state"] = "MERGED"
-            pending_prs[url]["mergeCommit"] = {"oid": merge}
+            pending_prs[url]["state"] = "closed"
+            pending_prs[url]["merged"] = True
+            pending_prs[url]["merge_commit_sha"] = merge
             pending_refs[state["run_branch"]] = merge
             if number < len(state["steps"]):
                 next_push = state["steps"][number]["receipts"].get("push", {})
                 next_url = next_push.get("pr_url")
                 if next_url in pending_prs:
-                    pending_prs[next_url]["baseRefName"] = state["run_branch"]
+                    pending_prs[next_url]["base"]["ref"] = state["run_branch"]
         if args[:2] == ("done", "integrate") and expect == 0 and state is not None:
             url = args[args.index("--pr-url") + 1]
             merge = args[args.index("--merge-commit") + 1]
@@ -200,21 +223,112 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             self.fake_parents = pending_parents
         return proc
 
+    def append_valid_audit_record(self, args, state):
+        """Stand in for Warden when a controller test is not about log syntax."""
+        if state is None:
+            raise AssertionError("cannot write an audit record without controller state")
+        findings = int(args[args.index("--findings") + 1])
+        verdict = (
+            args[args.index("--elenchus-verdict") + 1]
+            if "--elenchus-verdict" in args
+            else "null"
+        )
+        study_path = state["receipts"]["study"]["artifact"]
+        if not os.path.isabs(study_path):
+            study_path = os.path.join(self.target, study_path)
+        with open(study_path, encoding="utf-8") as handle:
+            study = handle.read()
+        block = re.search(
+            r"(?ms)^```risk-register\s*$\n(?P<body>.*?)^```\s*$",
+            study,
+        )
+        if block is None:
+            raise AssertionError("fixture study has no risk register")
+        risk_ids = [
+            line.split("|", 1)[0].strip()
+            for line in block.group("body").splitlines()
+            if line.strip()
+        ]
+        covered = "; ".join(f"{risk_id}=reviewed" for risk_id in risk_ids)
+        round_number = len(
+            state["steps"][state["current_step"] - 1]["audit"]["rounds"]
+        ) + 1
+        table_rows = (
+            ["| -- | -- | -- | none | -- |"]
+            if findings == 0
+            else [
+                f"| F-{index:02d} | low | fixture.py | finding {index} | open |"
+                for index in range(1, findings + 1)
+            ]
+        )
+        record = "\n".join(
+            [
+                f"## Step {state['current_step']}, round {round_number} "
+                "-- 2026-08-23T02:17:46Z",
+                "",
+                "Audit schema: fiat-audit-round/v2",
+                "",
+                f"Covered: {covered}",
+                "",
+                "Not checked: none",
+                "",
+                f"Elenchus verdict: {verdict}",
+                "",
+                "| id | severity | file | finding | status |",
+                "| --- | --- | --- | --- | --- |",
+                *table_rows,
+                "",
+                "Leads not pursued: none",
+                "",
+            ]
+        )
+        log_path = state["config"]["audit"]["log_path"]
+        path = log_path if os.path.isabs(log_path) else os.path.join(self.target, log_path)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        needs_gap = os.path.exists(path) and os.path.getsize(path) > 0
+        with open(path, "a", encoding="utf-8") as handle:
+            if needs_gap:
+                handle.write("\n")
+            handle.write(record)
+        synopsis_result = subprocess.run(
+            [sys.executable, AUDIT_SYNOPSIS, "--write", self.target],
+            cwd=self.target,
+            capture_output=True,
+            text=True,
+        )
+        if synopsis_result.returncode:
+            raise AssertionError(
+                f"audit synopsis fixture failed\nstdout: {synopsis_result.stdout}"
+                f"stderr: {synopsis_result.stderr}"
+            )
+        # Warden owns and commits the append in a real run. Keep the fixture's
+        # worktree equally clean so retirement tests exercise controller state,
+        # not an untracked stand-in log.
+        synopsis_path = os.path.splitext(log_path)[0] + ".synopsis.md"
+        self.git("add", "--", log_path, synopsis_path)
+        self.git("commit", "-q", "-m", "fixture audit record")
+
     @staticmethod
     def fake_sha(ref):
         return ref if re.fullmatch(r"[0-9a-f]{40}", ref) else hashlib.sha1(ref.encode()).hexdigest()
 
     @staticmethod
     def fake_pr(url, head, base, head_sha, merge_sha=None):
+        """One pull request as the REST endpoint spells it.
+
+        REST fills `merge_commit_sha` on an open pull request too, with the
+        test merge GitHub computes for it, so the fixture carries one either
+        way and `merged` is what says whether it is a real merge.
+        """
         return {
-            "url": url,
-            "state": "MERGED" if merge_sha else "OPEN",
-            "author": {"login": "shoggoth-wildcat"},
+            "html_url": url,
+            "state": "closed" if merge_sha else "open",
+            "merged": bool(merge_sha),
+            "user": {"login": "shoggoth-wildcat"},
             "body": "Delivery evidence.\n\n<!-- wildcat-origin: shoggoth -->",
-            "headRefName": head,
-            "headRefOid": head_sha,
-            "baseRefName": base,
-            "mergeCommit": {"oid": merge_sha} if merge_sha else None,
+            "head": {"ref": head, "sha": head_sha},
+            "base": {"ref": base},
+            "merge_commit_sha": merge_sha if merge_sha else "f" * 40,
         }
 
     def install_fake_delivery_tools(self):
@@ -268,6 +382,39 @@ elif args and args[0] == "merge-base":
                 raise SystemExit(1)
         raise SystemExit(0)
     print(os.environ.get("FAKE_GIT_MERGE_BASE", "4" * 40))
+elif args and args[0] == "ls-tree":
+    if mode == "baseline-unavailable":
+        raise SystemExit(128)
+    baseline_hex = os.environ.get("FAKE_GIT_BASELINE_HEX")
+    if baseline_hex is not None:
+        baseline = bytes.fromhex(baseline_hex)
+        object_id = hashlib.sha1(
+            b"blob " + str(len(baseline)).encode() + b"\\0" + baseline
+        ).hexdigest()
+        path = args[-1].encode()
+        if mode == "baseline-ambiguous":
+            sys.stdout.buffer.write(b"ambiguous\\0")
+        elif mode == "baseline-unsafe":
+            sys.stdout.buffer.write(
+                f"120000 blob {{object_id}}\\t".encode() + path + b"\\0"
+            )
+        else:
+            sys.stdout.buffer.write(
+                f"100644 blob {{object_id}}\\t".encode() + path + b"\\0"
+            )
+elif args and args[:2] == ["cat-file", "-s"]:
+    baseline = bytes.fromhex(os.environ.get("FAKE_GIT_BASELINE_HEX", ""))
+    if mode == "baseline-oversized":
+        print(2 * 1024 * 1024 + 1)
+    elif mode == "baseline-malformed-size":
+        print("not-a-size")
+    elif mode == "baseline-short-read":
+        print(len(baseline) + 1)
+    else:
+        print(len(baseline))
+elif args and args[:2] == ["cat-file", "blob"]:
+    baseline = bytes.fromhex(os.environ.get("FAKE_GIT_BASELINE_HEX", ""))
+    sys.stdout.buffer.write(baseline)
 elif (
     args
     and args[0] == "diff"
@@ -330,6 +477,7 @@ else:
             handle.write("""#!/usr/bin/env python3
 import json
 import os
+import re
 import sys
 import time
 
@@ -349,21 +497,23 @@ if mode == "nonzero":
 if mode == "invalid-json":
     print("not json")
     raise SystemExit(0)
-if args[:2] == ["repo", "view"]:
+path = args[-1]
+if re.fullmatch(r"repos/[^/]+/[^/]+", path):
     repository = "elsewhere/example" if mode == "repo-mismatch" else "wildcat-finance/example"
-    print(json.dumps({"nameWithOwner": repository}))
+    print(json.dumps({"full_name": repository}))
     raise SystemExit(0)
-if args[:2] == ["pr", "view"]:
-    url = args[2]
+pull = re.fullmatch(r"repos/(?P<repo>[^/]+/[^/]+)/pulls/(?P<number>[0-9]+)", path)
+if pull:
+    url = "https://github.com/%s/pull/%s" % (pull.group("repo"), pull.group("number"))
     payload = json.loads(os.environ.get("FAKE_GH_PRS", "{}")).get(url)
     if payload is None:
         raise SystemExit(4)
     if mode == "pr-mismatch":
-        payload["baseRefName"] = "wrong-base"
+        payload["base"]["ref"] = "wrong-base"
     if mode == "pr-head-mismatch":
-        payload["headRefOid"] = "9" * 40
+        payload["head"]["sha"] = "9" * 40
     if mode == "host-pr-author":
-        payload["author"] = {"login": "app/claude"}
+        payload["user"] = {"login": "app/claude"}
     if mode == "host-pr-byline":
         payload["body"] += "\\n\\nGenerated by [Claude Code](https://claude.ai/code)"
     print(json.dumps(payload))
@@ -877,7 +1027,13 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             scribe, "scribe", ("files", "pr_base", "pr_draft_path", "plugin_root")
         )
-        self.assertEqual(scribe["brief"]["files"], [])
+        self.assertEqual(
+            scribe["brief"]["files"],
+            [
+                "audit/rounds/fiat-test-topic.md",
+                "audit/rounds/fiat-test-topic.synopsis.md",
+            ],
+        )
         self.run_ctl("done", "prose", "--files", "1", "--skills",
                      "hexaemeron:imprimatur,hexaemeron:vulgate")
         push = self.next_json()
@@ -1087,8 +1243,15 @@ class TestDelegationPackets(HexctlCase):
             self.write(name, name)
         self.git("add", "zeta.md", "alpha.md")
         self.git("commit", "-m", "step")
-        self.assertEqual(self.next_json()["brief"]["files"],
-                         ["alpha.md", "zeta.md"])
+        self.assertEqual(
+            self.next_json()["brief"]["files"],
+            [
+                "alpha.md",
+                "audit/rounds/fiat-test-topic.md",
+                "audit/rounds/fiat-test-topic.synopsis.md",
+                "zeta.md",
+            ],
+        )
 
         for number in range(499):
             self.write(f"many/{number:03d}.md", "x")
@@ -1665,6 +1828,15 @@ class TestCommitVerification(HexctlCase):
                         module.verify_github_commits(self.dir, ["a" * 40])
 
 
+try:
+    from .github_transport_cases import build_github_transport_tests
+except ImportError:
+    from github_transport_cases import build_github_transport_tests
+
+
+TestGithubTransport = build_github_transport_tests(globals())
+
+
 class TestMergedAttribution(HexctlCase):
     """Who a run published under, recorded without an address.
 
@@ -1777,7 +1949,10 @@ class TestMergedAttribution(HexctlCase):
             module.verified_github_attribution(self.dir, ["a" * 40, "b" * 40])
         with open(log_path, encoding="utf-8") as handle:
             calls = [json.loads(line) for line in handle if line.strip()]
-        self.assertEqual(len([call for call in calls if call[:1] == ["api"]]), 2)
+        commit_reads = [
+            call for call in calls if any("/commits/" in value for value in call)
+        ]
+        self.assertEqual(len(commit_reads), 2)
 
     def test_the_push_receipt_records_the_accounts_and_no_address(self):
         self.to_push()
@@ -2033,7 +2208,7 @@ class TestMergedState(HexctlCase):
         self.env.pop("FAKE_GH_MODE", None)
         branch = self.step_branch(1)
         self.fake_refs[branch] = "c" * 40
-        self.fake_prs[self.URL]["headRefOid"] = "c" * 40
+        self.fake_prs[self.URL]["head"]["sha"] = "c" * 40
         self.env["FAKE_GH_MODE"] = "unlinked-author"
         self.run_ctl(
             "done", "merge-step", "--step", "1", "--merge-commit", "e" * 40
@@ -2096,15 +2271,16 @@ class TestPublicationBindings(HexctlCase):
 
     def prime_step_merge(self, merge_sha="e" * 40):
         pr = self.fake_prs["https://github.com/wildcat-finance/example/pull/1"]
-        pr["state"] = "MERGED"
-        pr["mergeCommit"] = {"oid": merge_sha}
+        pr["state"] = "closed"
+        pr["merged"] = True
+        pr["merge_commit_sha"] = merge_sha
 
     def set_post_push_head(self, head):
         branch = self.step_branch(1)
         self.fake_refs[branch] = head
         self.fake_prs["https://github.com/wildcat-finance/example/pull/1"][
-            "headRefOid"
-        ] = head
+            "head"
+        ]["sha"] = head
 
     def test_merge_repairs_legacy_push_receipt_missing_verified_head(self):
         self.to_merge_step()
@@ -2159,8 +2335,8 @@ class TestPublicationBindings(HexctlCase):
     def test_merge_time_repair_refuses_remote_pr_head_mismatch(self):
         self.to_merge_step()
         self.fake_prs["https://github.com/wildcat-finance/example/pull/1"][
-            "headRefOid"
-        ] = "7" * 40
+            "head"
+        ]["sha"] = "7" * 40
         self.prime_step_merge()
         proc = self.run_ctl(
             "done", "merge-step", "--step", "1",
@@ -3314,6 +3490,10 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         self.to_receiptable_audit()
         self.run_ctl("audit-round", "--findings", "1")
         self.make_last_round_legacy()
+        log_path = self.state()["config"]["audit"]["log_path"]
+        self.env["FAKE_GIT_BASELINE_HEX"] = Path(
+            os.path.join(self.target, *log_path.split("/"))
+        ).read_bytes().hex()
 
         self.run_ctl("status")
         directive = self.next_json()
@@ -3333,6 +3513,23 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         self.assertEqual(rounds[1]["audit_filter"], "sapheneia:sapheneia")
         self.assertEqual(self.state()["steps"][0]["phase"], "prose")
 
+
+try:
+    from .audit_record_schema_cases import (
+        build_audit_record_schema_tests,
+        build_audit_synopsis_resource_boundary_tests,
+    )
+except ImportError:
+    from audit_record_schema_cases import (
+        build_audit_record_schema_tests,
+        build_audit_synopsis_resource_boundary_tests,
+    )
+
+
+AuditSynopsisResourceBoundaryTests = (
+    build_audit_synopsis_resource_boundary_tests(globals())
+)
+AuditRecordSchemaTests = build_audit_record_schema_tests(globals())
 
 class TestProseAndPush(HexctlCase):
     def to_prose(self, task_issue=None):

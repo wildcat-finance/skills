@@ -57,8 +57,19 @@ that host structure and its protected evidence, then apply Sapheneia's bounded
 audit-record operation. Compare the candidate item by item and append only the
 compact candidate that retains every finding, qualification, unknown, negative
 result, identifier, number, link, severity, verdict, status, and unpursued lead.
+Write one `fiat-audit-round/v2` record at the directive's exact
+`audit_log_path`. Its heading is `## Step <n>, round <r> --
+<YYYY-MM-DDTHH:MM:SSZ>` using a calendar-valid UTC time. After one blank line,
+write `Audit schema`, `Covered`, `Not checked`, and `Elenchus verdict`, with one
+blank line between fields, then the exact five-column findings table and
+`Leads not pursued`. Cover every id from the packet's risk register exactly
+once as `reviewed` or `not-applicable`. Use the exact zero-finding row
+`| -- | -- | -- | none | -- |` when the count is zero. Regenerate the source's
+sibling `<run>.synopsis.md` before committing. Historical topic-bearing
+`fiat-audit-round/v1` records remain inputs only; do not write a new one.
 Apply fixes on the stacked branch in one commit per finding or coherent cluster,
-referencing the finding ids, and commit the updated log alongside. Sign every
+referencing the finding ids, and commit the updated log and synopsis alongside.
+Sign every
 commit and end its message, after a blank line, with exactly `Co-authored-by:
 Shoggoth <shoggoth@wildcat.finance>` and `Wildcat-Origin: shoggoth`; the
 controller verifies the exact fixes range.

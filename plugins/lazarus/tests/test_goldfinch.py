@@ -17,6 +17,7 @@ from . import support
 
 
 FIXTURE = support.PLUGIN_ROOT / "examples" / "goldfinch-v0"
+ANCHOR_FIXTURE = support.PLUGIN_ROOT / "examples" / "multi-provider-anchor-v0"
 DEMO_PATH = FIXTURE / "demo.py"
 TRANSACTION = "0xa46a744d6d52528a660c1d99a4edde403504fe7a308118c7cc947819583ce699"
 MARKET = "0x8bbd80f88e662e56b918c353da635e210ece93c6"
@@ -27,6 +28,30 @@ def load_demo():
 
 
 class GoldfinchDemoTests(unittest.TestCase):
+    def test_synthetic_multi_provider_fixture_keeps_anchor_claims_false(self):
+        report = verify_fixture(ANCHOR_FIXTURE)
+        self.assertEqual(
+            report["fixture_digest"],
+            "188eb293ac1de8036ff4be861e339fe5757b51995c88e8ea1afcfa498134a72e",
+        )
+        self.assertEqual(
+            report["chain_anchors"],
+            {
+                "records": 2,
+                "canonical_chain_claim": False,
+                "provider_independence_claim": False,
+            },
+        )
+        self.assertEqual(
+            report["evidence_counts"],
+            {"proof_backed": 3, "header_bound": 1, "recorded_rpc": 1},
+        )
+        fixture_bytes = b"".join(
+            path.read_bytes() for path in ANCHOR_FIXTURE.rglob("*") if path.is_file()
+        )
+        self.assertNotIn(b"provider_url", fixture_bytes)
+        self.assertNotIn(b"rpc-url", fixture_bytes)
+
     def test_fixture_verifies_with_expected_evidence_and_provenance(self):
         report = verify_fixture(FIXTURE)
         self.assertEqual(
