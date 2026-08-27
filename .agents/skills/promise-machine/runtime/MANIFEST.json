@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 847,
-  "total_bytes": 11017657,
+  "total_bytes": 11019121,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1957,15 +1957,15 @@
       "source": "plugins/hexaemeron/skills/fizz/templates/utils/StringUtils.sol"
     },
     {
-      "bytes": 10844,
+      "bytes": 11633,
       "path": "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md",
-      "sha256": "437a5fd2056a05143e2e4b52e9decfb17ea9a8325090ace3ad5951d631bcfb6a",
+      "sha256": "f06b3c19c05dc58b28a73892a61148d12255555e0c7aec4dcbadab1a17100026",
       "source": "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md"
     },
     {
-      "bytes": 14630,
+      "bytes": 15003,
       "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-      "sha256": "9d328f4a07f627ecf6a3f3bcaad65e1ef179f7114a5246bc19836391e06c653c",
+      "sha256": "83cacb3dc25f70762ebb2d8686f434cf86b4c07aceac10963cf61eb9b9de0da9",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     {
@@ -1975,9 +1975,9 @@
       "source": "plugins/hexaemeron/skills/hypomnema/agents/openai.yaml"
     },
     {
-      "bytes": 24685,
+      "bytes": 24987,
       "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
-      "sha256": "75cac8ea63ee7c7029167b944b82c853b00950bfc582ccd2ee9e057148784085",
+      "sha256": "15e86a563cf51bb532cc187ec1f6e3804bcbaabaf8236867823bda04c3842728",
       "source": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
     },
     {
