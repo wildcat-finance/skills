@@ -343,6 +343,15 @@ def row_coverage_faults(document: dict, rows: list) -> list:
     rule that the row's case names a skill rather than the row's phrase. A
     selection cell of any third shape is a fault, so a later unnamed row fails
     here instead of being skipped by both branches.
+
+    Matching a named row by its selection alone leaves one way for a row to
+    arrive ungraded, and it is not a shape the three branches above can see. Two
+    rows selecting the same canonical skill are covered by one case, so the
+    second row's request predicate is a selection claim nothing presents a
+    request for -- the decay this check exists to make loud. A repeated
+    selection is therefore a fault in its own right. The unnamed row needs no
+    such rule: its branch matches the row's own request predicate rather than a
+    skill name, so a second row carrying the same phrase already fails.
     """
     selected, quoted = set(), set()
     for case in document["cases"]:
@@ -353,10 +362,18 @@ def row_coverage_faults(document: dict, rows: list) -> list:
         sentence = case.get("deciding_sentence")
         if isinstance(sentence, dict):
             quoted.add(collapsed(sentence.get("text") or ""))
-    faults = []
+    faults, claimed = [], set()
     for request, selection in rows:
         named = CANONICAL_CELL.match(selection)
         if named:
+            if named.group(1) in claimed:
+                faults.append(
+                    f"router row {request!r} selects {named.group(1)!r}, which an "
+                    f"earlier row already selects; coverage matches a named row by "
+                    f"its skill, so one case would stand in for both and this row's "
+                    f"request predicate would be graded by nothing"
+                )
+            claimed.add(named.group(1))
             if named.group(1) not in selected:
                 faults.append(
                     f"router row {request!r} selects {named.group(1)!r} and no case "
@@ -709,9 +726,9 @@ class RouterSelectionCorpus(unittest.TestCase):
 
         The corpus on disk covers every row, so the coverage check over it can
         only ever pass. This drives the same function over a corpus with one
-        row uncovered, and over the two row shapes no fixture can hold: the
-        unnamed Pashov row left unquoted, and a selection cell of a shape the
-        check cannot read.
+        row uncovered, and over the three router defects no fixture can hold:
+        the unnamed Pashov row left unquoted, a selection cell of a shape the
+        check cannot read, and two rows selecting the same canonical skill.
         """
         self.assertEqual(
             row_coverage_faults(self.document, self.rows), [],
@@ -735,9 +752,9 @@ class RouterSelectionCorpus(unittest.TestCase):
             f"the failure does not name the row the fixture leaves uncovered: {faults[0]}",
         )
 
-        # Two row shapes the fixture cannot carry, because they are defects of
-        # the router rather than of a corpus. Both are driven against the same
-        # function, so neither branch ships having never run.
+        # Three router defects the fixture cannot carry, because they are
+        # defects of the router rather than of a corpus. Each is driven against
+        # the same function, so no branch ships having never run.
         covered = {"cases": [
             {"expect": {"outcome": "select", "canonical": "x-ray"},
              "deciding_sentence": {"path": ROUTER_PATH, "section": ROUTER_SECTION,
@@ -750,6 +767,13 @@ class RouterSelectionCorpus(unittest.TestCase):
             ],
             "a selection cell of a third shape": [
                 ("Do something new", "Ask the maintainers"),
+            ],
+            # Both rows are covered by the one case above, which is the point:
+            # without the repeated-selection fault the second row would pass
+            # while nothing presented a request for its predicate.
+            "two rows selecting the same canonical skill": [
+                ("Run audit-readiness on this protocol", "`x-ray`"),
+                ("Review these contracts for security", "`x-ray`"),
             ],
         }.items():
             with self.subTest(router=label):

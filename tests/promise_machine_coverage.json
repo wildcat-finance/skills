@@ -1172,7 +1172,7 @@
     "contract": "promise-machine-router-selection/v1",
     "documentation": {
       "path": "docs/promise-machine/router-selection-v1.md",
-      "sha256": "2b441df2d49a6a509d06baa2bc81697154004b2dd9df259ac6a3392f2ab3573e"
+      "sha256": "5778f64cad2bebb4c97c140b27f1228ca33519621c4b37010f4ad0e16c024c54"
     },
     "fixtures": [
       {
@@ -1189,6 +1189,10 @@
       }
     ],
     "promise_id": "promise-machine-router-selection",
+    "reporter": {
+      "path": "tests/emit_router_selection_report.py",
+      "sha256": "24c1bbd5423b1464bd21f43083c2743c304dbdf7f6ebfdf7c9c6fa3a49f7758b"
+    },
     "tests": {
       "path": "tests/test_router_selection.py",
       "selectors": [
@@ -1203,7 +1207,7 @@
         "test_every_router_row_is_named_by_at_least_one_case",
         "test_the_corpus_declares_the_supported_schema"
       ],
-      "sha256": "0c9ceb2ec9360c0a79b15f1573d142092fd736428148aa3a9197fda160caed32"
+      "sha256": "80152eccdf37528733cc4fe3dc3d303958ad952737f3738d7d9c577fcbad8422"
     },
     "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
   },

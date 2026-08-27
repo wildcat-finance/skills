@@ -43,6 +43,13 @@ run carries `model`, `date`, `prompt_template_sha256`, `corpus_sha256`,
 
 A case quotes the clause naming its own skill. A pair quotes the whole sentence
 that separates its members, because the separation is what the pair is about.
+Where the two quotable files hold no such sentence, the pair is one the corpus
+declares in order to record that gap, and it quotes the router rule that
+disposes of it instead. `elenchus-metron` is the one such pair: neither name
+occurs anywhere in `AGENTS.md`, and in the router each occurs only in its own
+table row, so nothing separates them and `RS-33` expects a refusal. The checker
+holds every quotation to its occurrence in the named section and does not read
+which of the two a pair carries.
 
 Two files may be quoted: `AGENTS.md` and
 `.agents/skills/promise-machine/SKILL.md`. That set is closed in the checker,
@@ -95,6 +102,12 @@ Reporting the corpus's coverage and the latest recorded run through
 `tests/emit_router_selection_report.py`, and citing a recorded run with the
 model, date and corpus digest it names attached. Nothing else.
 
+The `router_selection` capability entry pins that reporter's bytes beside the
+corpus, the guard fixtures, the checker and this document. Without the pin the
+authorised surface was the one surface nothing held: the reporter could be
+rewritten to echo a request or a deciding sentence, which is the contamination
+the report exists to avoid, and no digest would move.
+
 ## Refuses
 
 A corpus that is absent, unreadable, not UTF-8 or not JSON. A corpus declaring a
@@ -117,7 +130,10 @@ pass and fail counts cannot all be true: every case the run covered was passed
 or failed, and a run records every failing case id.
 
 On coverage, which the two checks over the router's tables and the corpus's
-pairs block add. A router row whose canonical selection no case expects. The
+pairs block add. A router row whose canonical selection no case expects. Two
+rows selecting the same canonical skill, because a named row is matched by its
+skill rather than by its predicate, so one case would stand in for both and the
+second row would arrive graded by nothing. The
 one row that names no canonical skill, the vendored Pashov suite's, quoted by
 no case that selects; a case that refuses does not cover it. A selection cell
 that is neither a canonical name in backticks nor that row's known phrase,
