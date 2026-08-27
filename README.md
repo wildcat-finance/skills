@@ -25,6 +25,11 @@ The [Shoggoth Interceptor](https://github.com/laurenceday/shoggoth-interceptor)
 is the same collective operating through an external problem-solving harness.
 It is an operating form, not another member, and it remains experimental.
 
+New here? Start with [A child or a golden retriever](./docs/a-child-or-a-golden-retriever.md),
+a five-minute primer for the Shoggoth, the Interceptor, Hex, and Fiat. It
+includes two infographics, a [short printable PDF](./docs/pdf/a-child-or-a-golden-retriever.pdf),
+and a [one-page quick-start](./docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf).
+
 ## So, You Want To Build God?
 
 Ask the Atlas for a number. Pick your harness. Finish what you start.
