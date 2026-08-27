@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 847,
-  "total_bytes": 11063782,
+  "total_bytes": 11064435,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -36,9 +36,9 @@
   ],
   "files": [
     {
-      "bytes": 5364,
+      "bytes": 6017,
       "path": ".agents/skills/promise-machine/SKILL.md",
-      "sha256": "05e4a523b363878695ebfc0d2aeb25327ef8a7630a864fc5ddd34149d6d7f57c",
+      "sha256": "39fdaa996e47e48ce6742c9278bc169d8160edf209baa0d5a40203df79ccb151",
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
