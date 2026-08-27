@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/tabularium/coverage-manifest-v1.json",
+  "title": "Tabularium coverage manifest v1",
+  "description": "Digest-bound source, capture manifest, canonical ledger, coverage and interpretation versions for offline verification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "release", "source", "capture_manifest", "canonical", "coverage", "versions", "known_gaps"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "release": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes", "evidence_class", "indexed_block"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bytes": {"$ref": "#/$defs/count"},
+        "evidence_class": {"const": "hosted-indexer-reported-block"},
+        "indexed_block": {"$ref": "#/$defs/count"}
+      }
+    },
+    "capture_manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bytes": {"$ref": "#/$defs/count"}
+      }
+    },
+    "canonical": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "bytes", "rows"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "bytes": {"$ref": "#/$defs/count"},
+        "rows": {"$ref": "#/$defs/count"}
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["included_entities", "unsupported_entities"],
+      "properties": {
+        "included_entities": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["borrows", "repays"],
+          "properties": {
+            "borrows": {"$ref": "#/$defs/count"},
+            "repays": {"$ref": "#/$defs/count"}
+          }
+        },
+        "unsupported_entities": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["_meta", "callableLoans", "creditLines", "tranchedPools"],
+          "properties": {
+            "_meta": {"$ref": "#/$defs/count"},
+            "callableLoans": {"$ref": "#/$defs/count"},
+            "creditLines": {"$ref": "#/$defs/count"},
+            "tranchedPools": {"$ref": "#/$defs/count"}
+          }
+        }
+      }
+    },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_schema", "adapter", "mapping_rules"],
+      "properties": {
+        "event_schema": {"const": 1},
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version"],
+          "properties": {
+            "name": {"const": "goldfinch"},
+            "version": {"const": "1.0.0"}
+          }
+        },
+        "mapping_rules": {"const": ["goldfinch.borrow.v1", "goldfinch.repay.v1"]}
+      }
+    },
+    "known_gaps": {
+      "const": [
+        "source boundary is a hosted indexer's reported block, not an independently verified chain proof",
+        "events do not carry an independently verified per-event block number or block hash",
+        "creditLines, tranchedPools, callableLoans and _meta are not mapped as canonical events",
+        "the release is unsigned; offline verification proves internal consistency, not publisher identity or authenticity"
+      ]
+    }
+  },
+  "$defs": {
+    "count": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+  }
+}

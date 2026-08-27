@@ -1,0 +1,4 @@
+interface:
+  display_name: "Metron"
+  short_description: "Measures before and after, or reverts"
+  default_prompt: "Use $hexaemeron:metron to baseline something slow, change one thing, and decide from the numbers."

@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/credit-event-v1.schema.json",
+  "title": "Alexandria Tabularium credit event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "row_kind", "chain", "venue", "subject", "deployment", "facility", "event_family", "action", "amounts", "provenance"],
+  "properties": {
+    "schema": {"const": "alexandria-credit-event/v1"},
+    "id": {"$ref": "#/$defs/digest"},
+    "row_kind": {"const": "credit-event"},
+    "chain": {"$ref": "#/$defs/chain"},
+    "venue": {"$ref": "#/$defs/name"},
+    "subject": {"$ref": "#/$defs/account"},
+    "deployment": {"$ref": "#/$defs/name"},
+    "facility": {"$ref": "#/$defs/facility"},
+    "event_family": {"enum": ["borrowing", "repayment", "liquidation"]},
+    "action": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*\\.[a-z0-9][a-z0-9._-]*$"},
+    "amounts": {"type": "array", "minItems": 1, "maxItems": 16, "items": {"$ref": "#/$defs/amount"}},
+    "transaction": {"$ref": "#/$defs/transaction"},
+    "provenance": {"$ref": "#/$defs/provenance"}
+  },
+  "$defs": {
+    "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "decimal": {"type": "string", "maxLength": 78, "pattern": "^(0|[1-9][0-9]*)$"},
+    "chain": {"type": "string", "pattern": "^eip155:(0|[1-9][0-9]*)$"},
+    "account": {"type": "string", "pattern": "^eip155:(0|[1-9][0-9]*):0x[0-9a-f]{40}$"},
+    "facility": {
+      "type": "object", "additionalProperties": false, "required": ["kind", "id"],
+      "properties": {"kind": {"$ref": "#/$defs/name"}, "id": {"type": "string", "minLength": 1}}
+    },
+    "amount": {
+      "type": "object", "additionalProperties": false, "required": ["role", "asset", "base_units"],
+      "properties": {"role": {"$ref": "#/$defs/name"}, "asset": {"$ref": "#/$defs/asset"}, "base_units": {"$ref": "#/$defs/decimal"}}
+    },
+    "asset": {
+      "type": "object", "additionalProperties": false, "required": ["chain", "decimals"],
+      "properties": {
+        "chain": {"$ref": "#/$defs/chain"}, "address": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
+        "symbol": {"type": "string", "minLength": 1, "maxLength": 32}, "decimals": {"type": "integer", "minimum": 0, "maximum": 255}
+      },
+      "anyOf": [{"required": ["address"]}, {"required": ["symbol"]}]
+    },
+    "transaction": {
+      "type": "object", "minProperties": 1, "additionalProperties": false,
+      "properties": {
+        "hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"}, "log_index": {"$ref": "#/$defs/decimal"},
+        "block_number": {"$ref": "#/$defs/decimal"}, "block_hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+        "timestamp": {"$ref": "#/$defs/decimal"}
+      }
+    },
+    "provenance": {
+      "type": "object", "additionalProperties": false,
+      "required": ["source_release_id", "component", "component_sha256", "capture_id", "source_selector", "source_identity", "mapping_rule", "adapter", "adapter_version", "evidence_class"],
+      "properties": {
+        "source_release_id": {"$ref": "#/$defs/digest"}, "component": {"$ref": "#/$defs/name"},
+        "component_sha256": {"$ref": "#/$defs/digest"}, "capture_id": {"$ref": "#/$defs/name"},
+        "source_selector": {"type": "string", "maxLength": 1024, "pattern": "^/"},
+        "context_selectors": {"type": "array", "maxItems": 16, "uniqueItems": true, "items": {"type": "string", "maxLength": 1024, "pattern": "^/"}},
+        "source_identity": {"type": "string", "minLength": 1},
+        "mapping_rule": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*\\.[a-z0-9][a-z0-9._-]*$"},
+        "adapter": {"$ref": "#/$defs/name"}, "adapter_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "evidence_class": {"enum": ["archive-log", "header-bound", "hosted-indexer", "proof-backed-state", "provider-export", "recorded-rpc"]}
+      }
+    }
+  }
+}

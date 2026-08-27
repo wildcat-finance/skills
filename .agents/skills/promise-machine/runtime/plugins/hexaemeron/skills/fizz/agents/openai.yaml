@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fizz (Pashov)"
+  short_description: "Generate Echidna/Medusa fuzz suites for Foundry or Hardhat projects"
+  default_prompt: "Use the fizz skill from $hexaemeron to build a stateful fuzz suite for this project."

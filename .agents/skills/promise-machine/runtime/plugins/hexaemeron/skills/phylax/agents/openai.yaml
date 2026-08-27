@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phylax"
+  short_description: "Guards the off-chain surface at its boundaries"
+  default_prompt: "Use $hexaemeron:phylax to harden the input, subprocess, secret and dependency boundaries a step introduces."

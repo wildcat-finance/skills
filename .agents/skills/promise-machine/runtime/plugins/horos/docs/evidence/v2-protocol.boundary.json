@@ -1,0 +1,28 @@
+{
+  "counts": {
+    "bytes_generated": 9712021,
+    "bytes_lockfile": 173977,
+    "files_skipped_unreadable": 0,
+    "files_walked": 182
+  },
+  "entries": [
+    {
+      "bytes": 9712021,
+      "category": "generated",
+      "evidence": "linguist-generated for 'deployments/**' in .gitattributes",
+      "files": 54,
+      "grade": "hard",
+      "path": "deployments/"
+    },
+    {
+      "bytes": 173977,
+      "category": "lockfile",
+      "evidence": "lockfile name yarn.lock",
+      "grade": "hard",
+      "path": "yarn.lock"
+    }
+  ],
+  "schema": 2,
+  "tool": "horos",
+  "universe": "tracked"
+}

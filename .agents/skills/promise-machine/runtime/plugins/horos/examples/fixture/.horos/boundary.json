@@ -1,0 +1,82 @@
+{
+  "counts": {
+    "bytes_binary": 17,
+    "bytes_content_addressed": 94,
+    "bytes_generated": 190,
+    "bytes_lockfile": 54,
+    "bytes_vendored": 94,
+    "files_skipped_unreadable": 0,
+    "files_walked": 15
+  },
+  "entries": [
+    {
+      "bytes": 53,
+      "category": "generated",
+      "evidence": "sourcemap: name ends .map and prefix carries \"mappings\"",
+      "grade": "hard",
+      "path": "app.js.map"
+    },
+    {
+      "bytes": 17,
+      "category": "binary",
+      "evidence": "file signature woff2",
+      "grade": "hard",
+      "path": "assets/font.woff2"
+    },
+    {
+      "bytes": 74,
+      "category": "generated",
+      "evidence": "directory name dist corroborated by sample: 1 of 1 files minified, binary or generated",
+      "files": 1,
+      "grade": "hard",
+      "path": "dist/"
+    },
+    {
+      "bytes": 63,
+      "category": "generated",
+      "evidence": "marker 'do not edit' on a comment-led line in the first 4096 bytes",
+      "grade": "hard",
+      "path": "gen/api.py"
+    },
+    {
+      "bytes": 10,
+      "category": "vendored",
+      "evidence": "linguist-vendored for 'lib/**' in .gitattributes",
+      "files": 1,
+      "grade": "hard",
+      "path": "lib/"
+    },
+    {
+      "bytes": 84,
+      "category": "vendored",
+      "evidence": "directory name node_modules corroborated by package-manager structure (left-pad/package.json)",
+      "files": 2,
+      "grade": "hard",
+      "path": "node_modules/"
+    },
+    {
+      "bytes": 49,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "store/blobs/sha256/3e02003799bc454870aca53af1adccdf0c695a00528998235c47d4ba0d006f89"
+    },
+    {
+      "bytes": 45,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "store/objects/sha256/7d/7d2aa7ee1155c6102a2dbb74ff9efa27115cec234f2ea4555a0d3a92663d7e82"
+    },
+    {
+      "bytes": 54,
+      "category": "lockfile",
+      "evidence": "lockfile name yarn.lock",
+      "grade": "hard",
+      "path": "yarn.lock"
+    }
+  ],
+  "schema": 2,
+  "tool": "horos",
+  "universe": "tracked"
+}

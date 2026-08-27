@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Wildcat Labs
+#
+# Lemma baseline regeneration
+#
+# Rebuild the recorded baseline in INVARIANTS.md from the synthetic
+# corpus in this directory. The corpus is invented: it exists so the numbers in
+# that document are reproducible by anyone who clones this repo, rather than
+# being an unverifiable claim about a corpus you cannot see.
+#
+#     baseline/regenerate [--solc PATH] [--expect VERSION] [--no-expect]
+#
+# The compiler is gated by default, because the AST is the compiler's output
+# and an ungated run would print different figures without saying so. Use
+# --expect to record the baseline against a different compiler, or --no-expect
+# to see what an ungated run produces.
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+SOLC="./solc-container"
+EXPECT="0.8.25"          # what solc-container's pinned digest resolves to
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --solc)      SOLC="$2"; shift 2 ;;
+    --expect)    EXPECT="$2"; shift 2 ;;
+    --no-expect) EXPECT=""; shift ;;
+    *) echo "regenerate: unknown argument $1" >&2; exit 2 ;;
+  esac
+done
+
+OUT="$(mktemp -d)"
+trap 'rm -rf "$OUT"' EXIT
+
+gate=()
+[ -n "$EXPECT" ] && gate=(--expect-solc "$EXPECT")
+
+echo "=== Solidity ==="
+python3 baseline/standard_input.py \
+    --src baseline/solidity/src --out "$OUT/standard-input.json"
+python3 chunkers/solidity.py \
+    --input "$OUT/standard-input.json" \
+    --solc "$SOLC" "${gate[@]}" --include 'src/**' --out "$OUT/solidity.jsonl"
+echo
+echo "=== Markdown ==="
+python3 chunkers/markdown.py \
+    --root baseline/docs --summary SUMMARY.md \
+    --exclude SUMMARY.md --out "$OUT/markdown.jsonl"

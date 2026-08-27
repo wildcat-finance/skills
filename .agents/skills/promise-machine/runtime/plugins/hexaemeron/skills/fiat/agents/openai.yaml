@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hexaemeron"
+  short_description: "Governed delivery loop: study, build, audit, prose, push"
+  default_prompt: "Use $hexaemeron:fiat to start or resume this topic only after validating the controller state containers, with source-bound agent packets, Sapheneia-declared audit records, ordered task issue comment prose, and verified commit receipts, without creating GitHub issues, first refusing a skill-frontier run that is mature or offers no material improvement."

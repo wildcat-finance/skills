@@ -1,0 +1,4 @@
+interface:
+  display_name: "Brevitas"
+  short_description: "Evidence-preserving budgets for engineering prose."
+  default_prompt: "Use $brevitas to compress this engineering review without losing evidence."

@@ -1,0 +1,68 @@
+{
+  "rows": [
+    {
+      "boundary_bytes": 117,
+      "bytes": 32301,
+      "files": 3,
+      "suffix": ".js"
+    },
+    {
+      "boundary_bytes": 41,
+      "bytes": 18132,
+      "files": 2,
+      "suffix": ".json"
+    },
+    {
+      "boundary_bytes": 94,
+      "bytes": 198,
+      "files": 4,
+      "suffix": "(no suffix)"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 138,
+      "files": 1,
+      "suffix": ".svg"
+    },
+    {
+      "boundary_bytes": 73,
+      "bytes": 125,
+      "files": 4,
+      "suffix": ".py"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 71,
+      "files": 1,
+      "suffix": ".sql"
+    },
+    {
+      "boundary_bytes": 54,
+      "bytes": 54,
+      "files": 1,
+      "suffix": ".lock"
+    },
+    {
+      "boundary_bytes": 53,
+      "bytes": 53,
+      "files": 1,
+      "suffix": ".map"
+    },
+    {
+      "boundary_bytes": 17,
+      "bytes": 17,
+      "files": 1,
+      "suffix": ".woff2"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 11,
+      "files": 1,
+      "suffix": ".bin"
+    }
+  ],
+  "schema": 1,
+  "tool": "horos",
+  "total_bytes": 51100,
+  "total_files": 19
+}

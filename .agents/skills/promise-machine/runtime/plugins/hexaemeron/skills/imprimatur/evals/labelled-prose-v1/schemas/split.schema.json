@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "calibration_groups": {
+      "maxItems": 8,
+      "minItems": 8,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "calibration_samples": {
+      "items": {
+        "pattern": "^[HM]-(?:TD|DR|GH)-0[1-8]-0[1-4]$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 32,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "holdout_groups": {
+      "maxItems": 8,
+      "minItems": 8,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "holdout_samples": {
+      "items": {
+        "pattern": "^[HM]-(?:TD|DR|GH)-0[1-8]-0[1-4]$",
+        "type": "string"
+      },
+      "maxItems": 32,
+      "minItems": 32,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "seed": {
+      "const": "imprimatur-labelled-prose-v1"
+    },
+    "unit": {
+      "const": "source_group"
+    },
+    "version": {
+      "const": 1
+    }
+  },
+  "required": [
+    "version",
+    "seed",
+    "unit",
+    "calibration_groups",
+    "holdout_groups",
+    "calibration_samples",
+    "holdout_samples"
+  ],
+  "title": "Imprimatur source-group split",
+  "type": "object"
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Probitas"
+  short_description: "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible."
+  default_prompt: "Use Probitas to build and verify a sourced counterparty lending dossier from declared addresses, keeping every unchecked venue visible."

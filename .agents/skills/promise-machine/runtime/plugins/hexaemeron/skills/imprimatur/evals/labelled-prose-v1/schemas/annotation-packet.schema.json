@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "rules": {
+      "minProperties": 6,
+      "type": "object"
+    },
+    "sample_id": {
+      "pattern": "^B-(?:00[1-9]|0[1-5][0-9]|06[0-4])$",
+      "type": "string"
+    },
+    "text": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "sample_id",
+    "text",
+    "rules"
+  ],
+  "title": "Blinded Imprimatur annotation packet row",
+  "type": "object"
+}

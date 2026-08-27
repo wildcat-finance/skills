@@ -1,0 +1,1375 @@
+{
+ "files": {
+  "script/Deploy4626Factory.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "script/DeployAndExercise4626.sol": {
+   "extra": 0,
+   "matched": 26,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 26,
+   "ours": 26,
+   "regions": 0
+  },
+  "script/DeployTypes.sol": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "script/DeployV2.sol": {
+   "extra": 0,
+   "matched": 24,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 24,
+   "ours": 24,
+   "regions": 0
+  },
+  "script/DeployV2Mainnet.sol": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "script/Lender.sol": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "script/LibDeployment.sol": {
+   "extra": 0,
+   "matched": 39,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 39,
+   "ours": 39,
+   "regions": 0
+  },
+  "script/MintTokens.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "script/SeedSphereX.sol": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "script/SeedSubgraphData.sol": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "script/Test12.sol": {
+   "extra": 0,
+   "matched": 38,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 38,
+   "ours": 38,
+   "regions": 0
+  },
+  "script/mock/MockArchControllerOwner.sol": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "script/mock/MockBorrower.sol": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "script/mock/MockCaller.sol": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "script/mock/MockERC20.sol": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "script/mock/MockERC20Factory.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "script/mock/UniversalProvider.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "src/HooksFactory.sol": {
+   "extra": 0,
+   "matched": 31,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 31,
+   "ours": 31,
+   "regions": 0
+  },
+  "src/IHooksFactory.sol": {
+   "extra": 0,
+   "matched": 50,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 50,
+   "ours": 50,
+   "regions": 0
+  },
+  "src/ReentrancyGuard.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "src/WildcatArchController.sol": {
+   "extra": 0,
+   "matched": 51,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 51,
+   "ours": 51,
+   "regions": 0
+  },
+  "src/WildcatSanctionsEscrow.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "src/WildcatSanctionsSentinel.sol": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "src/access/BaseAccessControls.sol": {
+   "extra": 0,
+   "matched": 51,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 51,
+   "ours": 51,
+   "regions": 0
+  },
+  "src/access/FixedTermHooks.sol": {
+   "extra": 0,
+   "matched": 34,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 34,
+   "ours": 34,
+   "regions": 0
+  },
+  "src/access/IHooks.sol": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "src/access/IRoleProvider.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "src/access/IRoleProviderFactory.sol": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "src/access/MarketConstraintHooks.sol": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "src/access/OpenTermHooks.sol": {
+   "extra": 0,
+   "matched": 24,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 24,
+   "ours": 24,
+   "regions": 0
+  },
+  "src/access/ProviderStructs.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "src/interfaces/IChainalysisSanctionsList.sol": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "src/interfaces/IERC20.sol": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "src/interfaces/IMarketEventsAndErrors.sol": {
+   "extra": 0,
+   "matched": 57,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 57,
+   "ours": 57,
+   "regions": 0
+  },
+  "src/interfaces/ISphereXProtectedRegisteredBase.sol": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "src/interfaces/IWildcatArchController.sol": {
+   "extra": 0,
+   "matched": 57,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 57,
+   "ours": 57,
+   "regions": 0
+  },
+  "src/interfaces/IWildcatSanctionsEscrow.sol": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "src/interfaces/IWildcatSanctionsSentinel.sol": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "src/interfaces/WildcatStructsAndEnums.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "src/lens/HooksConfigData.sol": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "src/lens/HooksDataForBorrower.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "src/lens/HooksInstanceData.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "src/lens/HooksTemplateData.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "src/lens/LenderAccountData.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "src/lens/MarketData.sol": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "src/lens/MarketLens.sol": {
+   "extra": 0,
+   "matched": 24,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 24,
+   "ours": 24,
+   "regions": 0
+  },
+  "src/lens/RoleProviderData.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "src/lens/TokenData.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "src/lens/WithdrawalBatchData.sol": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "src/libraries/BoolUtils.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "src/libraries/Errors.sol": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "src/libraries/FIFOQueue.sol": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "src/libraries/FeeMath.sol": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "src/libraries/FunctionTypeCasts.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "src/libraries/LibERC20.sol": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "src/libraries/LibStoredInitCode.sol": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "src/libraries/MarketErrors.sol": {
+   "extra": 0,
+   "matched": 33,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 33,
+   "ours": 33,
+   "regions": 0
+  },
+  "src/libraries/MarketEvents.sol": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "src/libraries/MarketState.sol": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "src/libraries/MathUtils.sol": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "src/libraries/SafeCastLib.sol": {
+   "extra": 0,
+   "matched": 33,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 33,
+   "ours": 33,
+   "regions": 0
+  },
+  "src/libraries/StringQuery.sol": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "src/libraries/Withdrawal.sol": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "src/market/WildcatMarket.sol": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "src/market/WildcatMarketBase.sol": {
+   "extra": 0,
+   "matched": 30,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 30,
+   "ours": 30,
+   "regions": 0
+  },
+  "src/market/WildcatMarketConfig.sol": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "src/market/WildcatMarketToken.sol": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "src/market/WildcatMarketWithdrawals.sol": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "src/spherex/ISphereXEngine.sol": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "src/spherex/SphereXConfig.sol": {
+   "extra": 0,
+   "matched": 23,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 23,
+   "ours": 23,
+   "regions": 0
+  },
+  "src/spherex/SphereXProtectedErrors.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "src/spherex/SphereXProtectedEvents.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "src/spherex/SphereXProtectedRegisteredBase.sol": {
+   "extra": 0,
+   "matched": 18,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 18,
+   "ours": 18,
+   "regions": 0
+  },
+  "src/types/HooksConfig.sol": {
+   "extra": 0,
+   "matched": 35,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 35,
+   "ours": 35,
+   "regions": 0
+  },
+  "src/types/LenderStatus.sol": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "src/types/RoleProvider.sol": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "src/types/TransientBytesArray.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "src/vault/Wildcat4626Wrapper.sol": {
+   "extra": 0,
+   "matched": 50,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 50,
+   "ours": 50,
+   "regions": 0
+  },
+  "src/vault/Wildcat4626WrapperFactory.sol": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/BaseMarketTest.sol": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "test/EscrowTest.sol": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "test/HooksFactory.t.sol": {
+   "extra": 0,
+   "matched": 48,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 48,
+   "ours": 48,
+   "regions": 0
+  },
+  "test/HooksIntegration.t.sol": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "test/InvariantTests.sol": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/LogTest.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/ReentrancyGuard.t.sol": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/SentinelTest.sol": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "test/WildcatArchController.t.sol": {
+   "extra": 0,
+   "matched": 54,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 54,
+   "ours": 54,
+   "regions": 0
+  },
+  "test/WildcatArchControllerIntegration.t.sol": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/access/BaseAccessControls.t.sol": {
+   "extra": 0,
+   "matched": 53,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 53,
+   "ours": 53,
+   "regions": 0
+  },
+  "test/access/FixedTermHooks.t.sol": {
+   "extra": 0,
+   "matched": 34,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 34,
+   "ours": 34,
+   "regions": 0
+  },
+  "test/access/OpenTermHooks.t.sol": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "test/handlers/BaseHandler.sol": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "test/handlers/ERC20Handler.sol": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/helpers/AddressSet.sol": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/helpers/Assertions.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/helpers/BaseERC20Test.sol": {
+   "extra": 0,
+   "matched": 18,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 18,
+   "ours": 18,
+   "regions": 0
+  },
+  "test/helpers/ExpectedBalances.sol": {
+   "extra": 0,
+   "matched": 40,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 40,
+   "ours": 40,
+   "regions": 0
+  },
+  "test/helpers/ExpectedStateTracker.sol": {
+   "extra": 0,
+   "matched": 25,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 25,
+   "ours": 25,
+   "regions": 0
+  },
+  "test/helpers/Labeler.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/helpers/Metrics.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/helpers/PRNG.sol": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/helpers/StandardStructs.sol": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/helpers/VmUtils.sol": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "test/helpers/fuzz/AccessControlHooksFuzzContext.sol": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "test/helpers/fuzz/MarketConfigFuzzInputs.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/helpers/fuzz/MarketStateFuzzInputs.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/lens/MarketLens.t.sol": {
+   "extra": 0,
+   "matched": 25,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 25,
+   "ours": 25,
+   "regions": 0
+  },
+  "test/libraries/FIFOQueue.t.sol": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "test/libraries/FeeMath.t.sol": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/libraries/LibStoredInitCode.t.sol": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "test/libraries/MarketState.t.sol": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/libraries/MathUtils.t.sol": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "test/libraries/SafeCastLib.t.sol": {
+   "extra": 0,
+   "matched": 32,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 32,
+   "ours": 32,
+   "regions": 0
+  },
+  "test/libraries/StringQuery.t.sol": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "test/libraries/Withdrawal.t.sol": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libraries/wrappers/FIFOQueueLibExternal.sol": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "test/libraries/wrappers/FeeMathExternal.sol": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "test/libraries/wrappers/LibStoredInitCodeExternal.sol": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "test/libraries/wrappers/MarketStateLibExternal.sol": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/libraries/wrappers/MathUtilsExternal.sol": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "test/libraries/wrappers/SafeCastLibExternal.sol": {
+   "extra": 0,
+   "matched": 32,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 32,
+   "ours": 32,
+   "regions": 0
+  },
+  "test/libraries/wrappers/WithdrawalLibExternal.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/market/FixedTermEquivalenceTests.t.sol": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/market/WildcatMarket.t.sol": {
+   "extra": 0,
+   "matched": 48,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 48,
+   "ours": 48,
+   "regions": 0
+  },
+  "test/market/WildcatMarketBase.t.sol": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "test/market/WildcatMarketConfig.t.sol": {
+   "extra": 0,
+   "matched": 37,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 37,
+   "ours": 37,
+   "regions": 0
+  },
+  "test/market/WildcatMarketToken.t.sol": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "test/market/WildcatMarketWithdrawals.t.sol": {
+   "extra": 0,
+   "matched": 54,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 54,
+   "ours": 54,
+   "regions": 0
+  },
+  "test/shared/Test.sol": {
+   "extra": 0,
+   "matched": 28,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 28,
+   "ours": 28,
+   "regions": 0
+  },
+  "test/shared/TestConstants.sol": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/shared/mocks/AlwaysAuthorizedRoleProvider.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/shared/mocks/MockChainalysis.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/shared/mocks/MockERC20.sol": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/shared/mocks/MockEngine.sol": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/shared/mocks/MockFixedTermHooks.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/shared/mocks/MockHookCaller.sol": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "test/shared/mocks/MockHooks.sol": {
+   "extra": 0,
+   "matched": 34,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 34,
+   "ours": 34,
+   "regions": 0
+  },
+  "test/shared/mocks/MockOpenTermHooks.sol": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/shared/mocks/MockRoleProvider.sol": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "test/shared/mocks/MockRoleProviderFactory.sol": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/shared/mocks/MockSanctionsSentinel.sol": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/spherex/SphereXConfig.t.sol": {
+   "extra": 0,
+   "matched": 33,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 33,
+   "ours": 33,
+   "regions": 0
+  },
+  "test/types/HooksConfig.t.sol": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "test/types/LenderStatus.t.sol": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/types/RoleProvider.t.sol": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "test/types/TransientBytesArray.t.sol": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/vault/Wildcat4626Wrapper.t.sol": {
+   "extra": 0,
+   "matched": 59,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 59,
+   "ours": 59,
+   "regions": 0
+  },
+  "test/vault/Wildcat4626WrapperFactory.t.sol": {
+   "extra": 0,
+   "matched": 18,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 18,
+   "ours": 18,
+   "regions": 0
+  },
+  "test/vault/Wildcat4626WrapperRounding.t.sol": {
+   "extra": 0,
+   "matched": 43,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 43,
+   "ours": 43,
+   "regions": 0
+  },
+  "test/vault/Wildcat4626WrapperStandard.t.sol": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  }
+ },
+ "totals": {
+  "crashes": 0,
+  "extra": 0,
+  "files": 151,
+  "files_with_regions": 0,
+  "matched": 2329,
+  "missed": 0,
+  "missed_confessed": 0,
+  "oracle": 2329,
+  "oracle_unparsed": 0,
+  "ours": 2329
+ }
+}

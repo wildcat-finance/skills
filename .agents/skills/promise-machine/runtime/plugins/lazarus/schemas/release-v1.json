@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lazarus.wildcat.finance/schemas/release-v1.json",
+  "title": "Lazarus preservation release v1",
+  "description": "The document binding a verified Lazarus fixture to a statement made about it. It records what verification established rather than what the fixture's manifest claims, because the manifest is the part a producer can edit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tool_version",
+    "fixture",
+    "statement",
+    "verified",
+    "binding",
+    "release_digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "tool_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "fixture": {
+      "type": "object",
+      "description": "Where the fixture sits inside the release, and the digest verification computed over it.",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "fixture_digest"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "\\S"
+        },
+        "fixture_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "statement": {
+      "type": "object",
+      "description": "The statement made about the fixture, digested as bytes. Lazarus does not write it and does not interpret its predicate beyond the fields the binding checks.",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256",
+        "predicate_type"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "pattern": "\\S"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "predicate_type": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^[a-z][a-z0-9+.-]*:\\S",
+          "description": "The type the statement declares. A URI, as in-toto predicate types are, so a release cannot name one that identifies nothing."
+        }
+      }
+    },
+    "verified": {
+      "type": "object",
+      "description": "What verification established, recomputed from the fixture's records. These are the numbers the binding holds a statement to.",
+      "additionalProperties": false,
+      "required": [
+        "block_hash",
+        "evidence_counts",
+        "canonical_chain_claim"
+      ],
+      "properties": {
+        "block_hash": {
+          "$ref": "#/$defs/hash32"
+        },
+        "evidence_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "proof_backed",
+            "header_bound",
+            "recorded_rpc"
+          ],
+          "properties": {
+            "proof_backed": {
+              "$ref": "#/$defs/count"
+            },
+            "header_bound": {
+              "$ref": "#/$defs/count"
+            },
+            "recorded_rpc": {
+              "$ref": "#/$defs/count"
+            }
+          }
+        },
+        "canonical_chain_claim": {
+          "const": false,
+          "description": "Always false. A self-consistent header is not proof that it belongs to Ethereum's canonical chain, and no part of this release establishes that it does."
+        }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "description": "Which checks the binding made. Named so a reader of the release knows what was established rather than inferring it from the release existing.",
+      "additionalProperties": false,
+      "required": [
+        "checks"
+      ],
+      "properties": {
+        "checks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "\\S",
+            "description": "The name of one check the binding made. A name that renders as nothing reads as an entry and establishes none."
+          }
+        }
+      }
+    },
+    "release_digest": {
+      "$ref": "#/$defs/sha256"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "hash32": {
+      "type": "string",
+      "pattern": "^0x[0-9a-f]{64}$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    }
+  }
+}
