@@ -1140,6 +1140,26 @@
       "evidence_class": "inferred",
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
+    },
+    "synkrisis-scaffold-p": {
+      "claim": "The declared scaffold behaviour, one stable refusal per specified operation, is exercised positively.",
+      "path": "plugins/synkrisis/tests/test_scaffold.py",
+      "selector": "test_every_operation_refuses_with_the_scaffold_code"
+    },
+    "synkrisis-scaffold-m": {
+      "claim": "Plausible-looking inputs do not stand in for an implementation; the refusal still fires.",
+      "path": "plugins/synkrisis/tests/test_scaffold.py",
+      "selector": "test_operations_refuse_even_with_plausible_inputs"
+    },
+    "synkrisis-scaffold-o": {
+      "claim": "The nearest overclaim, a written artefact from an unbuilt operation, remains unavailable.",
+      "path": "plugins/synkrisis/tests/test_scaffold.py",
+      "selector": "test_no_operation_writes_an_output"
+    },
+    "synkrisis-scaffold-r": {
+      "claim": "Every refusal names the committed runbook step whose delivery recovers the operation.",
+      "path": "plugins/synkrisis/tests/test_scaffold.py",
+      "selector": "test_refusal_names_the_pending_runbook_step"
     }
   },
   "handoffs": [
@@ -2412,6 +2432,25 @@
       "group": "prompt",
       "promise_id": "sapheneia-session-shape",
       "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "synkrisis-scaffold-m",
+        "O": "synkrisis-scaffold-o",
+        "P": "synkrisis-scaffold-p",
+        "R": "synkrisis-scaffold-r",
+        "S": {
+          "not_applicable": true,
+          "reason": "The scaffold holds no earlier artefact that could go stale."
+        },
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "synkrisis-scaffold-refusal",
+      "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {
       "cases": {

@@ -27,6 +27,7 @@ PLUGINS = (
     "pandects",
     "probitas",
     "sapheneia",
+    "synkrisis",
     "tabularium",
 )
 CANONICAL_SKILLS = {
@@ -43,6 +44,7 @@ CANONICAL_SKILLS = {
     "pandects": ROOT / "plugins" / "pandects" / "skills" / "pandects" / "SKILL.md",
     "probitas": ROOT / "plugins" / "probitas" / "skills" / "probitas" / "SKILL.md",
     "sapheneia": ROOT / "plugins" / "sapheneia" / "skills" / "sapheneia" / "SKILL.md",
+    "synkrisis": ROOT / "plugins" / "synkrisis" / "skills" / "synkrisis" / "SKILL.md",
     "tabularium": ROOT / "plugins" / "tabularium" / "skills" / "tabularium" / "SKILL.md",
 }
 NEXT_JOB_PREFIX = "**Next Fiat job.** Use /hexaemeron:fiat to "
@@ -264,7 +266,7 @@ class MarketplaceProseTests(unittest.TestCase):
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
         )
-        self.assertEqual(len(governed), 23)
+        self.assertEqual(len(governed), 24)
         for skill in governed:
             plugin = skill.parents[2]
             target = skill.parent if plugin.name == "hexaemeron" else plugin
@@ -339,7 +341,7 @@ class MarketplaceProseTests(unittest.TestCase):
     def test_plugin_landing_readmes_publish_unique_rolling_fiat_jobs(self):
         landings = plugin_landing_readmes()
         self.assertEqual(set(landings), set(PLUGINS))
-        self.assertEqual(len(landings), 14)
+        self.assertEqual(len(landings), 15)
 
         topics = {}
         for name, path in landings.items():
