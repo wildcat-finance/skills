@@ -29,6 +29,23 @@ def load_demo():
 demo = load_demo()
 
 
+def _restore_cleanup_modes(root: Path) -> None:
+    """Make a fixture tree removable without following a link out of it.
+
+    ``Path.chmod`` dereferences symlinks, so scrubbing a tree that holds a
+    test-planted link to a repository file would rewrite that file's mode
+    outside the sandbox.  A symlink needs no mode change to be unlinked, so
+    links are left untouched.
+    """
+    for path in root.rglob("*"):
+        try:
+            if path.is_symlink():
+                continue
+            path.chmod(0o700 if path.is_dir() else 0o600)
+        except FileNotFoundError:
+            pass
+
+
 class DemoTestCase(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
@@ -36,11 +53,7 @@ class DemoTestCase(unittest.TestCase):
         self.output = self.root / "demo"
 
     def tearDown(self):
-        for path in self.root.rglob("*"):
-            try:
-                path.chmod(0o700 if path.is_dir() else 0o600)
-            except FileNotFoundError:
-                pass
+        _restore_cleanup_modes(self.root)
         self.temporary.cleanup()
 
     def build(self):
@@ -163,6 +176,26 @@ class DemoVerificationTests(DemoTestCase):
         )
         with self.assertRaisesRegex(demo.AlexandriaError, "symlink"):
             demo.verify_demo(self.output)
+
+    def test_cleanup_does_not_follow_a_planted_symlink_out_of_the_sandbox(self):
+        """The scrub that makes fixtures removable must not chmod through a link.
+
+        The symlink-refusal case above plants a link at a repository file; a
+        dereferencing chmod during teardown then rewrites that file's mode
+        outside the sandbox, which the check runner's shared-snapshot source
+        verification reports as a mutated source.
+        """
+        victim = self.root / "victim.json"
+        victim.write_text("{}\n", encoding="utf-8")
+        victim.chmod(0o644)
+        sandbox = self.root / "sandbox"
+        sandbox.mkdir()
+        (sandbox / "escape.json").symlink_to(victim)
+        _restore_cleanup_modes(sandbox)
+        self.assertEqual(
+            victim.stat().st_mode & 0o777, 0o644,
+            "fixture cleanup escaped its sandbox through a planted symlink",
+        )
 
     @unittest.skipUnless(hasattr(os, "mkfifo"), "FIFO support required")
     def test_materialized_capture_plan_fifo_is_refused(self):
