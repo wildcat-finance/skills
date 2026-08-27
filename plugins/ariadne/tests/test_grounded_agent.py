@@ -336,6 +336,15 @@ class ComponentTests(unittest.TestCase):
             with self.subTest(field=field, value=value):
                 self.assertFalse(named("components", body).passed)
 
+    def test_one_digest_cannot_claim_conflicting_component_byte_counts(self):
+        body = predicate()
+        first, second = body["given"]["corpus"]["components"]
+        second["sha256"] = first["sha256"]
+        second["bytes"] = first["bytes"] + 1
+        found = named("components", body)
+        self.assertFalse(found.passed)
+        self.assertIn("same sha256", found.detail)
+
     def test_unsafe_component_paths_are_refused(self):
         for path in (
             "/absolute.json",
@@ -384,6 +393,27 @@ class ComponentTests(unittest.TestCase):
         found = numbered(2, body)
         self.assertFalse(found.passed)
         self.assertIn("reads at most", found.detail)
+
+    def test_the_subject_count_bounds_coverage_work_before_full_walk(self):
+        body = predicate()
+        outer = subjects(body)
+        digest = outer[0]["digest"]["sha256"]
+        outer.extend(
+            {
+                "name": "oversized-subject-%d" % index,
+                "digest": {"sha256": digest},
+            }
+            for index in range(agent.MAX_SUBJECTS + 1 - len(outer))
+        )
+        built_statement = built(body, outer)
+        with mock.patch.object(
+            built_statement,
+            "covers",
+            side_effect=AssertionError("unbounded subject scan"),
+        ) as covers:
+            faults, _, _ = agent.component_faults(built_statement)
+        self.assertFalse(covers.called)
+        self.assertTrue(any("statement names" in fault for fault in faults))
 
 
 class OptionalEvidenceTests(unittest.TestCase):
@@ -460,16 +490,24 @@ class OptionalEvidenceTests(unittest.TestCase):
         body["produced"]["promotion"]["terminal"]["target_release_digest"] = hex_digest("other")
         self.assertFalse(named("optional-evidence", body).passed)
         body["produced"]["promotion"]["terminal"]["action"] = "rollback"
+        body["produced"]["promotion"]["terminal"]["sequence"] = 2
         self.assertTrue(named("optional-evidence", body).passed)
 
-    def test_a_promote_terminal_requires_the_release_evaluations(self):
-        body = predicate()
-        body["produced"]["evaluations"] = None
-        body["produced"]["evaluations_absence_reason"] = "no evaluation was produced"
-        finalise(body)
-        found = named("optional-evidence", body)
-        self.assertFalse(found.passed)
-        self.assertIn("promote terminal requires evaluations", found.detail)
+    def test_any_promotion_terminal_requires_the_release_evaluations(self):
+        for action in agent.BEREAN_PROMOTION_ACTIONS:
+            body = predicate()
+            terminal = body["produced"]["promotion"]["terminal"]
+            terminal["action"] = action
+            terminal["sequence"] = 2 if action == "rollback" else 1
+            if action == "rollback":
+                terminal["target_release_digest"] = hex_digest("earlier release")
+            body["produced"]["evaluations"] = None
+            body["produced"]["evaluations_absence_reason"] = "no evaluation was produced"
+            finalise(body)
+            with self.subTest(action=action):
+                found = named("optional-evidence", body)
+                self.assertFalse(found.passed)
+                self.assertIn("promotion terminal requires evaluations", found.detail)
 
     def test_a_rollback_terminal_cannot_restore_the_current_release(self):
         body = predicate()
@@ -478,6 +516,29 @@ class OptionalEvidenceTests(unittest.TestCase):
         found = named("optional-evidence", body)
         self.assertFalse(found.passed)
         self.assertIn("rollback terminal must target another release", found.detail)
+
+    def test_promotion_sequence_matches_the_berean_chain_boundary(self):
+        limit = getattr(agent, "BEREAN_MAX_PROMOTION_RECORDS", None)
+        self.assertEqual(limit, 1000)
+        body = predicate()
+        body["produced"]["promotion"]["terminal"]["sequence"] = (
+            limit
+        )
+        self.assertTrue(named("optional-evidence", body).passed)
+
+        body["produced"]["promotion"]["terminal"]["sequence"] += 1
+        found = named("optional-evidence", body)
+        self.assertFalse(found.passed)
+        self.assertIn(str(limit), found.detail)
+
+        body = predicate()
+        terminal = body["produced"]["promotion"]["terminal"]
+        terminal["action"] = "rollback"
+        terminal["target_release_digest"] = hex_digest("earlier release")
+        terminal["sequence"] = 1
+        found = named("optional-evidence", body)
+        self.assertFalse(found.passed)
+        self.assertIn("cannot be the first", found.detail)
 
 
 class GateTwoAndFiveTests(unittest.TestCase):

@@ -71,6 +71,7 @@ BEREAN_RELEASE_DOCUMENT = "release.json"
 BEREAN_PROMOTIONS_FILE = "promotions.jsonl"
 BEREAN_PROMOTION_FORMAT = "berean-promotion/v1"
 BEREAN_PROMOTION_ACTIONS = ("promote", "rollback")
+BEREAN_MAX_PROMOTION_RECORDS = 1000
 
 COMPONENT_FIELDS = ("name", "path", "sha256", "bytes")
 RELEASE_FIELDS = ("format", "release_version", "release_digest", "document")
@@ -332,9 +333,21 @@ def component_faults(statement):
             % (len(statement.subjects), MAX_SUBJECTS)
         )
 
+    # `Statement.covers` scans the complete subject list.  Once the public
+    # ceiling is exceeded, calling it once per component would let a refused
+    # statement turn a count bound into component-by-subject work.  Build the
+    # only relation this predicate accepts from the bounded prefix instead.
+    bounded_subjects = statement.subjects[:MAX_SUBJECTS]
+    subject_sha256 = {
+        subject.digest.get("sha256")
+        for subject in bounded_subjects
+        if isinstance(subject.digest, dict)
+    }
+
     names = {}
     paths = {}
-    valid_digests = []
+    valid_digests = set()
+    digest_bytes = {}
     total_bytes = 0
     for label, entry in found:
         if not isinstance(entry, dict):
@@ -366,8 +379,8 @@ def component_faults(statement):
         if not sha256(digest):
             faults.append("%s sha256 is not 64 lowercase hex characters" % label)
         else:
-            valid_digests.append(digest)
-            if not statement.covers({"sha256": digest}):
+            valid_digests.add(digest)
+            if digest not in subject_sha256:
                 faults.append("%s is not a subject of this statement" % label)
         if not whole_number(byte_count) or not 0 <= byte_count <= MAX_COMPONENT_BYTES:
             faults.append(
@@ -376,9 +389,17 @@ def component_faults(statement):
             )
         else:
             total_bytes += byte_count
+            if sha256(digest):
+                if digest in digest_bytes and digest_bytes[digest] != byte_count:
+                    faults.append(
+                        "%s bytes disagree with another component carrying the same sha256"
+                        % label
+                    )
+                else:
+                    digest_bytes[digest] = byte_count
 
-    for index, subject in enumerate(statement.subjects[:MAX_SUBJECTS]):
-        if not any(digests.agree(subject.digest, {"sha256": value}) for value in valid_digests):
+    for index, subject in enumerate(bounded_subjects):
+        if subject.digest.get("sha256") not in valid_digests:
             faults.append(
                 "statement subject %d does not name a declared component"
                 % (index + 1)
@@ -552,30 +573,40 @@ def optional_faults(predicate):
                 faults.append("promotion component path must be %s" % BEREAN_PROMOTIONS_FILE)
             terminal = promotion.get("terminal")
             if isinstance(terminal, dict):
-                if not whole_number(terminal.get("sequence")) or terminal.get("sequence", 0) < 1:
-                    faults.append("promotion terminal sequence must be a positive whole number")
-                if terminal.get("action") not in BEREAN_PROMOTION_ACTIONS:
+                sequence = terminal.get("sequence")
+                action = terminal.get("action")
+                if (
+                    not whole_number(sequence)
+                    or not 1 <= sequence <= BEREAN_MAX_PROMOTION_RECORDS
+                ):
+                    faults.append(
+                        "promotion terminal sequence must be a whole number from 1 to %d"
+                        % BEREAN_MAX_PROMOTION_RECORDS
+                    )
+                if action not in BEREAN_PROMOTION_ACTIONS:
                     faults.append("promotion terminal action is outside promote and rollback")
                 if not sha256(terminal.get("target_release_digest")):
                     faults.append("promotion terminal target_release_digest is malformed")
                 release = predicate.get("release")
                 if (
-                    terminal.get("action") == "promote"
+                    action in BEREAN_PROMOTION_ACTIONS
                     and evaluations is None
                 ):
-                    faults.append("a promote terminal requires evaluations")
+                    faults.append("a promotion terminal requires evaluations")
                 if (
-                    terminal.get("action") == "promote"
+                    action == "promote"
                     and isinstance(release, dict)
                     and terminal.get("target_release_digest") != release.get("release_digest")
                 ):
                     faults.append("a promote terminal must target this release digest")
                 if (
-                    terminal.get("action") == "rollback"
+                    action == "rollback"
                     and isinstance(release, dict)
                     and terminal.get("target_release_digest") == release.get("release_digest")
                 ):
                     faults.append("a rollback terminal must target another release")
+                if action == "rollback" and sequence == 1:
+                    faults.append("a rollback terminal cannot be the first promotion record")
         if promotion_reason is not None:
             faults.append(
                 "promotion_absence_reason must be null when promotion is present"

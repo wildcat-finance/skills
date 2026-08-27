@@ -55,7 +55,9 @@ block carries only `cases` and `report` components.
 
 A non-null promotion block binds the exact `promotions.jsonl` component, the
 `berean-promotion/v1` format and its terminal `sequence`, `action`, and
-`target_release_digest`. It deliberately has no `score`, `grade`, `verdict`,
+`target_release_digest`. Its sequence is bounded by Berean's 1,000-record chain,
+a rollback cannot be the first record, and either terminal action requires the
+release's evaluation files. It deliberately has no `score`, `grade`, `verdict`,
 `threshold`, or `result count`. Those are evaluation conclusions, not Ariadne
 identity metadata. Unknown fields fail before any such vocabulary can acquire
 authority here.

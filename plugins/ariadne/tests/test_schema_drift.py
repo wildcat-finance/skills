@@ -750,6 +750,7 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
                 rule
                 for rule in rules
                 if rule["if"]["properties"].get(block) == {"type": "object"}
+                and reason in rule["then"]["properties"]
             ]
             with self.subTest(block=block):
                 self.assertEqual(len(null_rules), 1)
@@ -762,6 +763,33 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
                     object_rules[0]["then"]["properties"][reason],
                     {"type": "null"},
                 )
+
+    def test_promotion_boundaries_match_the_checked_projection(self):
+        limit = getattr(grounded_agent, "BEREAN_MAX_PROMOTION_RECORDS", None)
+        self.assertEqual(limit, 1000)
+        produced = self.properties["produced"]
+        promotion = produced["properties"]["promotion"]["oneOf"][1]
+        terminal = promotion["properties"]["terminal"]
+        sequence = terminal["properties"]["sequence"]
+        self.assertEqual(sequence.get("minimum"), 1)
+        self.assertEqual(
+            sequence.get("maximum"), limit
+        )
+        rollback = terminal.get("allOf", [])
+        self.assertIn(
+            {
+                "if": {"properties": {"action": {"const": "rollback"}}},
+                "then": {"properties": {"sequence": {"minimum": 2}}},
+            },
+            rollback,
+        )
+        self.assertIn(
+            {
+                "if": {"properties": {"promotion": {"type": "object"}}},
+                "then": {"properties": {"evaluations": {"type": "object"}}},
+            },
+            produced["allOf"],
+        )
 
     def test_core_vocabularies_match(self):
         claims = self.properties["claims"]["items"]["properties"]
@@ -829,10 +857,15 @@ class BereanPublicConstantDriftTests(unittest.TestCase):
         answers = literal_assignments(os.path.join(self.library, "answers.py"))
         reads = literal_assignments(os.path.join(self.library, "reads.py"))
         promotion = literal_assignments(os.path.join(self.library, "promote.py"))
+        limit = getattr(grounded_agent, "BEREAN_MAX_PROMOTION_RECORDS", None)
+        self.assertEqual(limit, 1000)
         self.assertEqual(answers["SOURCE_CLASSES"], grounded_agent.BEREAN_SOURCE_CLASSES)
         self.assertEqual(reads["EVIDENCE_CLASSES"], grounded_agent.BEREAN_EVIDENCE_CLASSES)
         self.assertEqual(promotion["FORMAT"], grounded_agent.BEREAN_PROMOTION_FORMAT)
         self.assertEqual(promotion["ACTIONS"], grounded_agent.BEREAN_PROMOTION_ACTIONS)
+        self.assertEqual(
+            promotion.get("MAX_RECORDS"), limit
+        )
 
 
 class CompletenessTests(unittest.TestCase):

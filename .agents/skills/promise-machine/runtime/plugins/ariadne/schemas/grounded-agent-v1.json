@@ -248,7 +248,8 @@
                   "properties": {
                     "sequence": {
                       "type": "integer",
-                      "minimum": 1
+                      "minimum": 1,
+                      "maximum": 1000
                     },
                     "action": {
                       "enum": [
@@ -259,7 +260,25 @@
                     "target_release_digest": {
                       "$ref": "#/$defs/sha256"
                     }
-                  }
+                  },
+                  "allOf": [
+                    {
+                      "if": {
+                        "properties": {
+                          "action": {
+                            "const": "rollback"
+                          }
+                        }
+                      },
+                      "then": {
+                        "properties": {
+                          "sequence": {
+                            "minimum": 2
+                          }
+                        }
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -337,6 +356,22 @@
             "properties": {
               "promotion_absence_reason": {
                 "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "promotion": {
+                "type": "object"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evaluations": {
+                "type": "object"
               }
             }
           }
