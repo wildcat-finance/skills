@@ -16,6 +16,16 @@ The comparison collapses runs of whitespace before searching, so rewrapping a
 paragraph does not fail the check and rewording one does. A reader who changes
 a boundary sentence gets a failure naming the case, the file and the sentence
 that is no longer there.
+
+Collapsing costs two things, and neither is a defect the check can see. A
+whitespace-only edit that changes how Markdown renders -- a newline inside a
+table row, four spaces that turn prose into a code block -- leaves every quote
+matching. And because the section's lines join with single spaces, a quotation
+may span two adjacent rows or list items that no reader would read as one
+sentence. Constraining that needs a rule about what counts as one sentence,
+which the ambiguity rule owns; what this module does refuse is a quotation that
+is empty, because an empty string occurs in every section and would pass here
+while establishing nothing.
 """
 
 from __future__ import annotations
@@ -139,6 +149,51 @@ def quoting(document: dict):
         yield f"case {case.get('id')}", case.get("deciding_sentence")
 
 
+def sentence_faults(where: str, sentence) -> list:
+    """Hold one `deciding_sentence` to its shape.
+
+    `text` and `section` are required to be non-empty here rather than left to
+    the occurrence check, because `"" in anything` is true: an empty quotation
+    satisfies that check over every section of every file, so a corpus could
+    void the prose binding case by case and still report clean.
+    """
+    if not isinstance(sentence, dict) or set(sentence) != SENTENCE_FIELDS:
+        return [f"{where}: deciding_sentence is not {sorted(SENTENCE_FIELDS)}"]
+    faults = []
+    if sentence["path"] not in PROSE_SOURCES:
+        faults.append(
+            f"{where}: deciding_sentence names {sentence['path']!r}, which is "
+            f"outside the quotable set {sorted(PROSE_SOURCES)}"
+        )
+    for field in ("section", "text"):
+        if not isinstance(sentence[field], str) or not sentence[field].strip():
+            faults.append(f"{where}: deciding_sentence {field} is not a non-empty string")
+    return faults
+
+
+def pair_faults(document: dict) -> list:
+    """Hold the pairs block to the same shape the cases are held to.
+
+    Pairs quote prose exactly as cases do, so an unchecked pair is an unchecked
+    quotation: its path would skip the occurrence check rather than fail there,
+    and a pair that lost its sentence entirely would go unnoticed.
+    """
+    faults = []
+    for index, pair in enumerate(document["pairs"]):
+        where = f"{CORPUS_PATH}#pairs[{index}]"
+        if not isinstance(pair, dict) or set(pair) != PAIR_FIELDS:
+            faults.append(f"{where}: fields are not exactly {sorted(PAIR_FIELDS)}")
+            continue
+        if not isinstance(pair["id"], str) or not pair["id"].strip():
+            faults.append(f"{where}: id is not a non-empty string")
+        if not isinstance(pair["skills"], list) or len(pair["skills"]) < 2 or any(
+            not isinstance(name, str) or not name for name in pair["skills"]
+        ):
+            faults.append(f"{where}: skills is not a list of at least two canonical names")
+        faults.extend(sentence_faults(where, pair["deciding_sentence"]))
+    return faults
+
+
 class RouterSelectionCorpus(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -179,14 +234,8 @@ class RouterSelectionCorpus(unittest.TestCase):
                 not isinstance(item, str) or not item for item in case["contested"]
             ):
                 wrong.append(f"{where}: contested is not a list of canonical names")
-            sentence = case["deciding_sentence"]
-            if not isinstance(sentence, dict) or set(sentence) != SENTENCE_FIELDS:
-                wrong.append(f"{where}: deciding_sentence is not {sorted(SENTENCE_FIELDS)}")
-            elif sentence["path"] not in PROSE_SOURCES:
-                wrong.append(
-                    f"{where}: deciding_sentence names {sentence['path']!r}, which is "
-                    f"outside the quotable set {sorted(PROSE_SOURCES)}"
-                )
+            wrong.extend(sentence_faults(where, case["deciding_sentence"]))
+        wrong.extend(pair_faults(self.document))
         self.assertEqual(
             wrong, [],
             "the corpus is data a checker parses, and these entries do not have the "
@@ -228,7 +277,20 @@ class RouterSelectionCorpus(unittest.TestCase):
         }
         missing = []
         for owner, sentence in quoting(self.document):
-            if not isinstance(sentence, dict) or sentence.get("path") not in sources:
+            if not isinstance(sentence, dict):
+                missing.append(f"{owner}: deciding_sentence is not an object")
+                continue
+            if sentence.get("path") not in sources:
+                missing.append(
+                    f"{owner}: {sentence.get('path')!r} is outside the quotable set "
+                    f"{sorted(PROSE_SOURCES)}, so its sentence was never looked for"
+                )
+                continue
+            if not collapsed(sentence.get("text") or ""):
+                missing.append(
+                    f"{owner}: the quotation is empty, which occurs in every section "
+                    f"and would pass while establishing nothing"
+                )
                 continue
             path, heading = sentence["path"], sentence.get("section")
             section = section_of(sources[path], heading)
@@ -286,12 +348,63 @@ class RouterSelectionCorpus(unittest.TestCase):
             "not an object": b"[]",
             "no cases": b'{"schema": "x", "pairs": [], "cases": [], "runs": []}',
             "cases not a list": b'{"schema": "x", "pairs": [], "cases": {}, "runs": []}',
+            "no pairs block": b'{"schema": "x", "cases": [{}], "runs": []}',
+            "pairs not a list": b'{"schema": "x", "cases": [{}], "pairs": {}, "runs": []}',
+            "no runs block": b'{"schema": "x", "cases": [{}], "pairs": []}',
+            "runs not a list": b'{"schema": "x", "cases": [{}], "pairs": [], "runs": {}}',
         }
         for label, raw in hostile.items():
             with self.subTest(corpus=label):
                 with self.assertRaises(CorpusError) as caught:
                     parse_corpus(raw)
                 self.assertIn(CORPUS_PATH, str(caught.exception))
+
+        # A corpus that parses can still read as empty. These are the shapes
+        # that satisfied every check above while quoting nothing, so each one
+        # is exercised against the validator rather than trusted to the corpus
+        # on disk, which is well-formed and therefore proves nothing about them.
+        good = {"path": "AGENTS.md", "section": "## Marketplace boundaries",
+                "text": "Horos decides what an agent does not read."}
+        vacuous = {
+            "empty quotation": dict(good, text=""),
+            "whitespace quotation": dict(good, text="   "),
+            "empty section": dict(good, section=""),
+            "quotation is not a string": dict(good, text=None),
+            "path outside the closed set": dict(good, path="README.md"),
+            "path escaping the tree": dict(good, path="../../../etc/passwd"),
+            "sentence is not an object": "Horos decides what an agent does not read.",
+        }
+        for label, sentence in vacuous.items():
+            with self.subTest(sentence=label):
+                self.assertNotEqual(
+                    sentence_faults("probe", sentence), [],
+                    f"a {label} was accepted, so the prose binding can be voided "
+                    f"entry by entry while every check reports clean",
+                )
+            with self.subTest(pair=label):
+                document = {"pairs": [{"id": "probe", "skills": ["horos", "lemma"],
+                                       "deciding_sentence": sentence}]}
+                self.assertNotEqual(
+                    pair_faults(document), [],
+                    f"a pair carrying a {label} was accepted; pairs quote prose "
+                    f"exactly as cases do and are held to the same shape",
+                )
+
+        for label, pair in {
+            "pair of an unknown shape": {"nonsense": True},
+            "pair that lost its sentence": {"id": "p", "skills": ["horos", "lemma"]},
+            "pair separating one skill": {"id": "p", "skills": ["horos"],
+                                          "deciding_sentence": good},
+            "pair naming an empty skill": {"id": "p", "skills": ["horos", ""],
+                                           "deciding_sentence": good},
+            "pair with no id": {"id": "", "skills": ["horos", "lemma"],
+                                "deciding_sentence": good},
+        }.items():
+            with self.subTest(pair=label):
+                self.assertNotEqual(
+                    pair_faults({"pairs": [pair]}), [],
+                    f"a {label} was accepted, so the pairs block carries no shape",
+                )
 
 
 if __name__ == "__main__":

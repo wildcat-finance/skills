@@ -1191,7 +1191,7 @@
         "test_every_expected_canonical_name_is_a_real_canonical_skill",
         "test_the_corpus_declares_the_supported_schema"
       ],
-      "sha256": "fcbd1a4fca07b425ae1a8b5c73d6b248c66db16cb813182638041b3ab6ed9da7"
+      "sha256": "0b686cfd5b9cf9cae67725b5bcd907e54f2b5ef4561f7b9a8695cea7e2c28b88"
     },
     "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
   },
