@@ -67,6 +67,12 @@ RUN_FIELDS = frozenset(
 # is closed: one case id this corpus holds and one canonical skill name.
 FAILURE_FIELDS = frozenset({"case", "selected"})
 REFUSALS = frozenset({"ambiguous", "uncovered"})
+# What a failure entry may record as the answer given. A graded context
+# can select a skill or refuse, so both are recordable and both stay closed
+# sets: a canonical name this repository declares, or a refusal in the
+# corpus's own two-reason vocabulary. A field that admitted free text would
+# put model prose into a committed file.
+REFUSAL_ANSWERS = frozenset(f"refuse:{reason}" for reason in REFUSALS)
 
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -350,10 +356,11 @@ def run_completeness_faults(runs: list, case_ids: set, names: set, template: str
             elif case in seen:
                 faults.append(f"{spot}: names case {case!r} a second time")
             seen.add(case)
-            if failure["selected"] not in names:
+            if failure["selected"] not in names | REFUSAL_ANSWERS:
                 faults.append(
-                    f"{spot}: records the selection {failure['selected']!r}, which is "
-                    f"not the frontmatter name of any SKILL.md under plugins/"
+                    f"{spot}: records the answer {failure['selected']!r}, which is "
+                    f"neither the frontmatter name of a SKILL.md under plugins/ nor "
+                    f"one of {sorted(REFUSAL_ANSWERS)}"
                 )
     return faults
 
@@ -739,6 +746,31 @@ class RouterSelectionCorpus(unittest.TestCase):
                         f"the authorised report omits {field}, so a cited score is "
                         "detached from one of the four things it is evidence about",
                     )
+
+        with self.subTest("a failure records a refusal as well as a selection"):
+            ids = {case.get("id") for case in self.document["cases"]}
+            names = set(canonical_skill_names())
+            template = prompt_template_digest()
+            base = dict(failing)
+            for answer, recordable in (
+                (sorted(names)[0], True),
+                ("refuse:ambiguous", True),
+                ("refuse:uncovered", True),
+                ("REFUSE", False),
+                ("refuse:unclear", False),
+                ("refuse", False),
+            ):
+                block = dict(base, passed=35, failed=1,
+                             failures=[{"case": "RS-33", "selected": answer}])
+                faults = run_completeness_faults([block], ids, names, template)
+                self.assertEqual(
+                    not faults, recordable,
+                    f"the answer {answer!r} was "
+                    f"{'refused' if faults else 'accepted'}; a graded context can "
+                    "select a skill or refuse, and the field admits exactly those "
+                    "two shapes, so a refusal has somewhere truthful to go and "
+                    "free text does not",
+                )
 
         with self.subTest("no report line echoes a request or a deciding sentence"):
             printed = "\n".join(report(dict(self.document, runs=[failing])))

@@ -1,4 +1,4 @@
-You are routing requests for the Wildcat Labs skills repository at
+You are routing one request for the Wildcat Labs skills repository at
 /Users/kethcode/wildcat/skills/tmp/fiat/fiat-499-grade-router-selection-not-just-resolution.
 
 Read these files, in this order, and read nothing else in the repository:
@@ -8,61 +8,26 @@ Read these files, in this order, and read nothing else in the repository:
 3. The fourteen plugin runtime contracts at plugins/*/AGENTS.md.
 
 Do not search, grep, glob or list any other path, and do not open any other
-file. Your answers must come from those files alone.
+file. Your answer must come from those files alone.
 
-Below is a labelled list of requests. Each one arrived on its own, from a
-different person, with no other context. For each label, follow the router as
-it is written and report the outcome it gives you:
+Below is one request. It arrived on its own, from one person, with no other
+context. Follow the router as it is written and report the outcome it gives
+you:
 
 - If the router resolves the request to one canonical skill, give that skill's
   canonical name exactly as the router writes it.
 - If the router does not resolve the request to one canonical skill, say
   REFUSE and give your reason in one short phrase.
 
-Answer every label. Treat each label independently: do not let one label's
-answer constrain another's, and do not try to spread your answers evenly across
-the available skills. Two labels may well have the same answer.
+Answer on the request's own terms, and do not try to spread your answer across
+the available skills.
 
-Return one line per label, and nothing else, in exactly this form:
+Return one line, and nothing else, in exactly one of these two forms. The label
+below is a placeholder and is not the label of any request:
 
-Q01: <canonical-name>
-Q02: REFUSE - <reason>
+REQUEST: <canonical-name>
+REQUEST: REFUSE - <reason>
 
-The requests:
+The request:
 
-Q01. This job runs nightly with nobody watching; decide what it should emit while it runs.
-Q02. Deploy this contract to mainnet and verify its source on the block explorer.
-Q03. Take this lender's raw loan tape and give me a reviewed credit view of it.
-Q04. This test started failing after the merge; find the cause and leave a guard behind.
-Q05. Measure the gas this contract saves when the storage read moves out of the loop.
-Q06. Rewrite this paragraph into plain human register and keep every number and caveat in it.
-Q07. The on-chain check that applies our credit laws costs more than we budgeted for. Find where the saving is.
-Q08. A hook fires in the middle of our drawdown call. Establish what it can observe and change before the drawdown's economic laws are re-checked.
-Q09. The nightly indexer job started timing out this week.
-Q10. I have a release artefact digest and the evidence record behind it; bind the two together.
-Q11. The borrower has sent us a list of addresses they say are theirs along with their loan tape. Work up what we can say about them as a counterparty.
-Q12. Check this runbook against its content contract before anyone writes code from it.
-Q13. Build a dossier on this counterparty from the addresses they declared to us.
-Q14. Find out what this hook can observe and change when the host calls into it.
-Q15. We are about to start the receipted delivery loop from this study. Is the study fit to build from?
-Q16. We just made a call that would be expensive to undo; where should that be written down?
-Q17. Rank the held frontier jobs across the non-mature skills and tell me which one to run next.
-Q18. The answers we are about to grade depend on chain state at a fixed block. Get that state and the RPC traffic behind it captured so the grading replays offline.
-Q19. Work out which parts of this repository an agent should not read, and write that boundary down.
-Q20. Turn these preserved venue records into a credit-event release for that venue.
-Q21. Apply our reviewed credit laws to this borrower's proposed drawdown.
-Q22. We shipped a fork-test fixture bundle last week. Show that the digest we published is the one the evidence record describes.
-Q23. Start the receipted delivery loop on this issue and run it through to a working prototype.
-Q24. We want to grade an agent's answers about this protocol against its documentation. Start by getting the documentation into retrievable pieces that cite the lines they came from.
-Q25. Check this protocol agent's answers against our pinned corpus and the chain reads we captured.
-Q26. Shape this audit record so an AuDHD reader can act on it, and change no fact and no gate inside it.
-Q27. Produce an audit-readiness report for this protocol before we book the audit.
-Q28. Scan this announcement for banned AI tells and for terms of art used without evidence.
-Q29. This gas review runs to three pages; cut it down and keep every number in it.
-Q30. This script builds a command out of a config value; review the off-chain surface around it.
-Q31. Split these Solidity files into chunks that link back to the lines they came from.
-Q32. Review the service that holds our settlement signing key and submits the transactions it signs.
-Q33. The indexer got slower this week; measure it before and after I change the query.
-Q34. The wording pass is done and the register reads fine. This review is still twice the length it should be.
-Q35. Rewrite this issue body so an AuDHD reader can act on it, without dropping the evidence.
-Q36. Capture the exact RPC traffic and historical state this fork test needs so it replays offline.
+REQUEST. {request}

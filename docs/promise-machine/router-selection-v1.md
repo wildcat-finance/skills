@@ -38,15 +38,18 @@ that separates them.
 `runs` is an array of recorded grading runs, empty until one is recorded. Each
 run carries `model`, `date`, `prompt_template_sha256`, `corpus_sha256`,
 `cases`, `passed`, `failed` and `failures`. A failure entry carries exactly
-`case` and `selected`, the failing case id and the canonical skill chosen
-instead.
+`case` and `selected`, the failing case id and what the graded context actually
+answered.
 
-That shape records one failure class. A case expecting a selection that the run
-refused has no `selected` to name, and a case expecting one refusal reason that
-the run refused for the other cannot say so either, so both would have to be
-recorded as something they are not. Widening `selected` is a schema change and
-not an editorial one, so until a run produces such a failure the honest record
-is that this schema cannot carry it.
+`selected` admits every answer a graded context can give, and nothing else. A
+canonical skill name records a selection, whether the corpus expected a
+different skill or expected a refusal. `refuse:ambiguous` and `refuse:uncovered`
+record a refusal of a case the corpus expects to be selected, and separate a
+refusal for the wrong reason from a refusal for the right one. Both sides stay
+closed sets the checker resolves, which is what keeps model prose out of a
+committed file. A field admitting only canonical names would leave a refusal
+with nothing to name, and a procedure that cannot record every answer its
+subject can give is one that reports the answers it likes.
 
 ## Quoting
 
@@ -107,6 +110,13 @@ run would repeat. A recorded score is evidence about one model, one prompt
 template, one corpus digest and one date. It is never called proved and it is
 never a gate: making it one would invite tuning the corpus until the model
 passed it.
+
+The prompt-template digest reaches the prompt the grading supplied and stops
+there. A graded context also receives a harness system prompt, whatever
+repository instruction files that harness loads, and the definitions of the
+tools it may call, and no digest in this contract covers any of them. The
+template is the part a later reader can retrieve and reissue; the rest is the
+condition the run was performed under, and it is recorded nowhere.
 
 Nor does a contested case establish that the boundary it declares is what
 decided it. `contested` records the canonical skills whose boundary the request
@@ -185,8 +195,9 @@ while measuring nothing. A failure entry whose field set is not exactly `case`
 and `selected`, since the entries are model output written into a committed file
 and the shape is closed rather than free text. A failure naming a case id this
 corpus does not hold. The same case id named by two failures, which would make
-the failing cases uncountable. And a failure recording a selection no `SKILL.md`
-declares.
+the failing cases uncountable. And a failure recording an answer that is neither
+a canonical name a `SKILL.md` declares nor one of the two refusal forms, since
+a field that took anything else would be taking model prose.
 
 ## Recovery
 

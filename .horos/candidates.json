@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 13730652,
+    "bytes_blob": 13738905,
     "bytes_generated": 98
   },
   "entries": [
@@ -49,7 +49,7 @@
       "path": "audit/rounds/fiat-429-audit-record-schema-timestamp-synopsis.synopsis.md"
     },
     {
-      "bytes": 57830,
+      "bytes": 66083,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

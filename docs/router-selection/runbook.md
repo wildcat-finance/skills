@@ -780,3 +780,67 @@ commit that prompt.
 **Steps touched.** Step 3.
 
 **Still holding.** Step 3: entry holds; exit holds.
+### Amendment -- 2026-08-27
+
+**What changed.** Complete replacement Exit: Five surfaces, then the commands. The corpus carries one run block
+naming `model`, `date`, `prompt_template_sha256`, `corpus_sha256`, `cases`,
+`passed`, `failed` and `failures`, where `failures` lists each failing case id
+with what the graded context actually answered: the canonical skill it selected
+when it selected one, or the refusal it returned when it refused a case the
+corpus expects to be selected, or the selection it made when the corpus expects
+a refusal. A failure the schema cannot record is a result the run cannot
+report, so the field admits every answer a graded context can give. The grading was performed as the
+study specifies: each `request` field alone was presented to a fresh agent
+context loaded with the router, `AGENTS.md` and the plugin runtime contracts,
+and with neither the corpus nor the study. The score is recorded evidence about
+one model on one date and is not a gate; no surface calls it proved. The
+checker gains the method that refuses an incomplete block, and the refusals
+that method adds are named on the promise and on the contract document, so the
+two-direction property the earlier rounds established still holds. The prompt template the run block
+pins is committed beside the corpus, pinned by the capability entry, and held
+equal to the block's `prompt_template_sha256` by the completeness method, so
+the digest names bytes a reader can retrieve rather than bytes that existed
+once. The
+committed copy of the runbook at `docs/router-selection/runbook.md` carries the
+receipted bytes again, which its own step could not do because each amendment
+landed after that step closed. Then:
+
+```bash
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py sync --check
+/Users/kethcode/.local/bin/python3.13 scripts/portable_promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 plugins/horos/skills/horos/scripts/horos.py check .
+/Users/kethcode/.local/bin/python3.13 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.13 tests/emit_router_selection_report.py
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py coverage --check
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py PROMISE_MACHINE.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/promise-machine/router-selection-v1.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/router-selection/runbook.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+git diff --check
+rm -rf .elenchus uv.lock
+git status --short
+```
+
+Every one exits zero and the root suite reports 449 tests. The second command
+is the demo path: it prints the coverage table and then the run block rather
+than `not-run`, which is how this step is checkable even though the score
+inside the block is not. The syncs and the Horos check are present because naming the new
+refusals moves the root law, which the generated copies and the portable mirror
+follow.
+
+**Why.** The failure entry admitted a canonical skill name and nothing else, so
+two truthful outcomes had no home: a graded context refusing a case the corpus
+expects to be selected, and one selecting a case the corpus expects to be
+refused. The audit found this while the recorded run happened to contain no
+failure at all, which is the only reason it did not bite. The grading is being
+performed again, one fresh context per request as this exit already requires,
+and a procedure that cannot record every answer its subject can give is a
+procedure that reports the answers it likes. The field now admits all three
+shapes. Nothing else in the exit moves, and the digest scope is unaffected
+because the run block sits outside the corpus digest.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds.

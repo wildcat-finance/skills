@@ -575,12 +575,17 @@
     {
       "model": "claude-opus-5[1m]",
       "date": "2026-08-27",
-      "prompt_template_sha256": "3f6904e631da153a22583dd2bbd2a1bc793f044960a82d932477f9e001d64101",
+      "prompt_template_sha256": "af3cb4c804f4d527535e2d771868aea709042ec08164f31687323c8120928c21",
       "corpus_sha256": "48ebe808dac69df8737bb4fc4b38ba3c2fe08818f7f973004b6619fce730c774",
       "cases": 36,
-      "passed": 36,
-      "failed": 0,
-      "failures": []
+      "passed": 35,
+      "failed": 1,
+      "failures": [
+        {
+          "case": "RS-33",
+          "selected": "elenchus"
+        }
+      ]
     }
   ]
 }

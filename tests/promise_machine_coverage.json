@@ -1172,12 +1172,12 @@
     "contract": "promise-machine-router-selection/v1",
     "documentation": {
       "path": "docs/promise-machine/router-selection-v1.md",
-      "sha256": "c747af122caab327c281d3a9fa5dc4e18d112ab81d9a9e215a6f3dd5853b48a0"
+      "sha256": "751673ed1dd1cb93e7e779936b024f6bbb47471830b26ca4ee2792b97f2d301f"
     },
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "db2a48a670b58190a2dbb324ceb58b3ed4cacc5e3782811074901a742aeeeb08"
+        "sha256": "40ac13d52d578240c7f621434c05ca8320249ab799bda591f2c6f4aa41a47a4b"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1189,7 +1189,7 @@
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
-        "sha256": "3f6904e631da153a22583dd2bbd2a1bc793f044960a82d932477f9e001d64101"
+        "sha256": "af3cb4c804f4d527535e2d771868aea709042ec08164f31687323c8120928c21"
       }
     ],
     "promise_id": "promise-machine-router-selection",
@@ -1212,7 +1212,7 @@
         "test_the_corpus_declares_the_supported_schema",
         "test_the_recorded_run_block_is_complete_and_names_its_failures"
       ],
-      "sha256": "0c85dde7d6df81d8d7568577689f7f9a7f92281253a5a6a206a8d4fb9881565b"
+      "sha256": "e0cebf8aaa3efd0fcc2a205f994550f6a454dc1bf14eec7be94388910628dea1"
     },
     "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
   },
