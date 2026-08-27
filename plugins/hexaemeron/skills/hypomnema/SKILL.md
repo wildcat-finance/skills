@@ -13,6 +13,10 @@ metadata:
   version: "4.6.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/hypomnema.png" width="1200">
+</p>
+
 # Hypomnema
 
 From *hypomnema*, the note written so the reason survives the person who had

@@ -2854,7 +2854,7 @@
         "transition": "review acceptance joined to the canonical Authorises field",
         "unknowns": "unexercised failure modes and missing operational evidence"
       },
-      "sha256": "d33af653a1ee0083fd7fa9d19d8292a04585ed137d68ca18a6a1b9d69d786d4f",
+      "sha256": "7e913cd8f93199872fe91451d1ac424178077611213915eec540c4ff2b2b3fdc",
       "source": "plugins/hexaemeron/skills/ephoros/SKILL.md"
     },
     "fiat-final-integration": {
@@ -3036,7 +3036,7 @@
         "transition": "accepted record placement joined to the canonical Authorises field",
         "unknowns": "unresolved decisions and intentionally absent records"
       },
-      "sha256": "83cacb3dc25f70762ebb2d8686f434cf86b4c07aceac10963cf61eb9b9de0da9",
+      "sha256": "58731777c8959577f2f0c04acc36cdc6380390c5b22dd2304e0105b8d6bd9a45",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     "janus-bounded-conformance": {
@@ -3134,7 +3134,7 @@
         "transition": "keep or revert decision joined to the canonical Authorises field",
         "unknowns": "noise, unmeasured workloads and unexplained environmental changes"
       },
-      "sha256": "1f801631647bc1550956e03a7f236a1c68f6d299369470cc3a2a538c76fe5333",
+      "sha256": "56cb579cdf3a94c48118b020ea2e6076b38b6b51557bbfbaf6e2ec65defa9e01",
       "source": "plugins/hexaemeron/skills/metron/SKILL.md"
     },
     "pandects-search-record": {
@@ -3162,7 +3162,7 @@
         "transition": "review acceptance joined to the canonical Authorises field",
         "unknowns": "unreviewed capabilities and unavailable adversarial evidence"
       },
-      "sha256": "d450380b6f0a58468a8574ea7002af8be966204d4b7ba0dff79be43472c5349d",
+      "sha256": "95afe4e09dc30f0b94a8abeda4d497a36a5332e7e8363b64d75c4e3fd86761c1",
       "source": "plugins/hexaemeron/skills/phylax/SKILL.md"
     },
     "probitas-dossier-verification": {

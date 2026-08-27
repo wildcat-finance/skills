@@ -15,6 +15,10 @@ metadata:
   version: "4.8.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/protasis.png" width="1200">
+</p>
+
 # Protasis
 
 From *protasis*, the proposition laid down before the argument runs. Nothing is

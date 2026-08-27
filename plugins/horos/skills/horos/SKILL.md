@@ -5,6 +5,10 @@ metadata:
   version: "10.3.3"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/horos.png" width="1200">
+</p>
+
 # Horos
 
 From *horos*, the boundary stone. Horos decides what an agent does not read,

@@ -27,6 +27,7 @@ ROOT_FILES = (
     Path("LICENSE"),
     Path("PROMISE_MACHINE.md"),
     Path("SHOGGOTH.md"),
+    Path("assets/characters/promise-machine.png"),
     Path("pyproject.toml"),
     Path("repo_contract.py"),
     Path("schemas/promise-machine-run-observation-capture-v1.schema.json"),

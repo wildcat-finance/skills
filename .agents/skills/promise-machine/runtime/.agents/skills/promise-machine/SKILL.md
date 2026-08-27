@@ -3,6 +3,10 @@ name: promise-machine
 description: Route a Wildcat Labs request to the one canonical first-party or vendored skill that owns it, preserving the Promise Machine evidence boundary and every named sibling hand-off.
 ---
 
+<p align="center">
+  <img src="../../../assets/characters/promise-machine.png" width="1200">
+</p>
+
 # Promise Machine router
 
 This is the suite's only host-neutral discovery entry. It is a switchboard, not

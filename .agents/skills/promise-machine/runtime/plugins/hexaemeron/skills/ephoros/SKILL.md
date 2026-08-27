@@ -13,6 +13,10 @@ metadata:
   version: "1.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/ephoros.png" width="1200">
+</p>
+
 # Ephoros
 
 From *ephoros*, the overseer whose office was to watch and report. Watching is

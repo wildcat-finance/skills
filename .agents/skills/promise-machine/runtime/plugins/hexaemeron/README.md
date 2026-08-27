@@ -1,3 +1,5 @@
+![Hexaemeron](./assets/characters/hexaemeron.png)
+
 # hexaemeron
 
 <!-- marketplace-context:start -->

@@ -1,3 +1,5 @@
+![Janus](./assets/characters/janus.png)
+
 # Janus
 
 <!-- marketplace-context:start -->

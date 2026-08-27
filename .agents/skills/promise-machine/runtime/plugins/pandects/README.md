@@ -1,3 +1,5 @@
+![Pandects](./assets/characters/pandects.png)
+
 # Pandects
 
 <!-- marketplace-context:start -->

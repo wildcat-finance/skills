@@ -13,6 +13,10 @@ metadata:
   version: "0.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/berean.png" width="1200">
+</p>
+
 # Berean
 
 In Acts, the Bereans receive a claim and check it against the scriptures each

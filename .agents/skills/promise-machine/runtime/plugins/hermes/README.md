@@ -1,3 +1,5 @@
+![Hermes](./assets/characters/hermes.png)
+
 # Hermes
 
 <!-- marketplace-context:start -->

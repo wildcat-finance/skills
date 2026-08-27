@@ -1,3 +1,5 @@
+![Lemma](./assets/characters/lemma.png)
+
 # Lemma
 
 <!-- marketplace-context:start -->

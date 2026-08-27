@@ -10,6 +10,10 @@ metadata:
   version: "2.3.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/imprimatur.png" width="1200">
+</p>
+
 # Imprimatur
 
 ## Frontier

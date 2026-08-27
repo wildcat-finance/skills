@@ -1,3 +1,5 @@
+![Probitas](./assets/characters/probitas.png)
+
 # Probitas
 
 <!-- marketplace-context:start -->

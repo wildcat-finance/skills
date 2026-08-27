@@ -12,6 +12,10 @@ metadata:
   version: "2.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/ariadne.png" width="1200">
+</p>
+
 # Ariadne
 
 ## Frontier

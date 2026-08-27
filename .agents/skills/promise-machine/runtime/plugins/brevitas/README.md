@@ -1,3 +1,5 @@
+![Brevitas](./assets/characters/brevitas.png)
+
 # Brevitas
 
 <!-- marketplace-context:start -->

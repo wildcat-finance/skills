@@ -5,6 +5,10 @@ metadata:
   version: "0.1.1"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/lemma.png" width="1200">
+</p>
+
 # Lemma
 
 ## Frontier
