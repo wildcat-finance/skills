@@ -18,7 +18,7 @@ Architecture and physics borrowed to assert importance. The origin family. Its t
 
 ### claude_tic
 
-Model-specific conversational habits. These are the highest-frequency tells in agent output and the easiest to catch, because they cluster at the start of turns. "That's a great question" is the purest case: it evaluates the question instead of answering it, and it is never true, because the model has no comparison class.
+Model-specific conversational habits. These are the highest-frequency tells in agent output and the easiest to catch, because they cluster at the start of turns. "That's a great question" is the purest case: it evaluates the question instead of answering it. The model has no comparison class, so the evaluation is never true.
 
 "There's a version of this where" deserves a separate mention. It reads as careful conditional reasoning and functions as a hedge that commits to nothing. If there is a version, describe it. If there is not, do not gesture at one.
 
@@ -59,6 +59,25 @@ The model doing Extremely Online. It never lands, because the register depends o
 Hedges that survive deletion with no loss of meaning. Distinct from scope qualifiers, which are protected. The distinction is testable: a scope qualifier changes what the reader should do next; an empty hedge does not.
 
 "Generally, the market accrues interest continuously" is an empty hedge if there is no exception, and a scope qualifier if there is one. If there is one, name it.
+
+## Structural families
+
+### causal_subject_has_no
+
+The form "because this repository has no checked hand-off" expresses an
+absence through possession by the subject. Its content may be correct. The
+form can still make the missing condition arrive indirectly, so Imprimatur
+reports it for a direct rewrite.
+
+Lead with the missing condition: "No checked hand-off exists for these
+clients, so they use the manual route." Where responsibility matters, name the
+actor and action instead: "The maintainers have not built and checked a
+hand-off for these clients, so they use the manual route."
+
+The family stays narrow. It covers one bounded causal form, not standalone
+"has no", "there is no", "lacks", or a clause whose punctuation separates the
+subject from the verb. Those neighbouring forms need their own evidence before
+they become lint rules.
 
 ## The gated tier
 

@@ -11,6 +11,8 @@ Scope, and why each exclusion is here rather than a matter of taste:
 - `audit/` and `docs/**` are records of what was written at the time. Editing a
   logged audit round or a delivered spec to satisfy a later lexicon rewrites
   history to look tidier than it was.
+- `EVOLUTION.md` history rows are governed records. The live frontier above
+  `## History` stays in scope; prior generation explanations do not.
 - The vendored Pashov skills keep their upstream instructional register. Their
   `NOTICE.md` files record the local distribution changes, and Wildcat's house
   lint does not rewrite third-party source for style.
@@ -60,9 +62,7 @@ def shipped_markdown():
         if not (ROOT / name).is_file():
             continue
         parts = Path(name).parts
-        if parts[0] in ("audit", "docs"):
-            continue
-        if "docs" in parts or "evals" in parts:
+        if "audit" in parts or "docs" in parts or "evals" in parts:
             continue
         if any(part in VENDORED for part in parts):
             continue
@@ -72,7 +72,10 @@ def shipped_markdown():
 
 
 def lint(module, name):
-    report = module.build((ROOT / name).read_text(encoding="utf-8"))
+    text = (ROOT / name).read_text(encoding="utf-8")
+    if Path(name).name == "EVOLUTION.md":
+        text = text.partition("\n## History\n")[0]
+    report = module.build(text)
     return report["score"], report["defects"]
 
 
@@ -95,9 +98,50 @@ class ShippedProseLintTests(unittest.TestCase):
     def test_history_and_vendored_text_stay_out_of_scope(self):
         found = set(shipped_markdown())
         for excluded in ("audit/AUDIT.md",
+                         "plugins/probitas/audit/AUDIT.md",
                          "docs/protasis-discipline-cores/study.md"):
             self.assertNotIn(excluded, found)
         self.assertFalse([n for n in found if "x-ray" in Path(n).parts])
+
+    def test_evolution_history_stays_out_of_the_live_prose_gate(self):
+        module = imprimatur()
+        name = "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
+        full = module.build((ROOT / name).read_text(encoding="utf-8"))
+        self.assertTrue(
+            [
+                hit for hit in full["hits"]
+                if hit["family"] == "causal_subject_has_no"
+            ]
+        )
+        _, defects = lint(module, name)
+        self.assertEqual(defects, 0)
+
+    def test_causal_subject_has_no_family_is_active(self):
+        module = imprimatur()
+        report = module.build(
+            "because this repository has no checked Atlas hand-off for them"
+        )
+        hits = [
+            hit for hit in report["hits"]
+            if hit["family"] == "causal_subject_has_no"
+        ]
+        self.assertEqual(report["defects"], 1)
+        self.assertEqual(
+            [
+                (hit["pass"], hit["severity"], hit["signal_only"])
+                for hit in hits
+            ],
+            [("structural", "medium", False)],
+        )
+        direct = module.build(
+            "No checked Atlas hand-off exists for them, so they stay on the manual route."
+        )
+        self.assertFalse(
+            [
+                hit for hit in direct["hits"]
+                if hit["family"] == "causal_subject_has_no"
+            ]
+        )
 
     def test_every_shipped_document_scores_clean(self):
         module = imprimatur()

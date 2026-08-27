@@ -21,6 +21,11 @@
       "severity": "high",
       "regex": "\\bit'?s not that\\b[^.!?]{0,120}?\\bit'?s that\\b"
     },
+    "causal_subject_has_no": {
+      "note": "A causal clause makes an explicit subject possess an absence before stating the result. Report the form for rewrite; the claim may still be factually correct.",
+      "severity": "medium",
+      "regex": "\\bbecause\\s+(?:[\\w'’-]+[ \\t\\r\\n]+){1,8}has[ \\t\\r\\n]+no\\b"
+    },
     "whether_or": {
       "note": "False-choice scaffolding. Absorbed from slopbeth STRUCTURE_PATTERNS. Signal only: fires on genuine enumerations.",
       "severity": "low",

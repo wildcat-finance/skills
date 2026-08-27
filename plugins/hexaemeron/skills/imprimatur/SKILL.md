@@ -7,7 +7,7 @@ description: >-
   names a term to ban. This is the diagnostic gate; Vulgate performs a
   content-preserving rewrite.
 metadata:
-  version: "2.3.0"
+  version: "2.4.0"
 ---
 
 # Imprimatur
@@ -93,7 +93,7 @@ already did for Markdown code.
 
 1. Run the lint before handing over any prose. Hard hits are defects and get rewritten, no exceptions and no synonyms from the same family.
 2. For each gated hit, decide whether the term has a referent. Fixing it usually means naming the thing the term is about, not deleting the term. "Orthogonal to the framing" fails; "orthogonal to `CrossMarketCapLib`" passes; "orthogonal in the sense that neither imports the other" passes, because the sentence supplies its own criterion.
-3. For each structural hit, rewrite the formula. Negation-correction is the highest-yield one to kill: it manufactures a position nobody held so the sentence has something to defeat.
+3. For each structural hit, rewrite the formula. Negation-correction is the highest-yield one to kill: it manufactures a position nobody held so the sentence has something to defeat. The causal-subject family reports causal clauses that make a named subject possess an absence. The claim may be factually correct; lead with the missing condition or name who must supply it.
 4. Read the cadence signals as prompts to look, not as defects. Repeated openers and flat sentence length are common in machine prose and also in good technical writing under a constraint.
 5. Check what the rewrite cost. Removing a hard-banned term must not remove a qualifier that carried scope, risk, or uncertainty. When the two collide, keep the qualifier and rephrase around the ban.
 

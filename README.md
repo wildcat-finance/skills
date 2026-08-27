@@ -66,8 +66,8 @@ native Wildcat marketplace packages. GitHub Copilot, Cursor, Gemini CLI and
 Windsurf use the [manual route](./docs/how-to-help-shoggoth.md#the-secondary-manual-route):
 open the repository, read `AGENTS.md`, then paste the exact Atlas prompt. They
 are not presented as tested one-click Atlas launchers. Cline and Roo Code are
-not listed as launch options because this repository has no checked Atlas
-hand-off for them.
+not listed as launch options. No Atlas hand-off has been built and checked for
+either one, so use the manual route.
 
 Fiat keeps the bounded run in order: study, runbook, implementation, audit,
 prose, push and integration. Code that looks finished is not the endpoint. The

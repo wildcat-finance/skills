@@ -90,8 +90,8 @@ Instruction compatibility and a known-good launcher are different claims.
 Codex and Claude Code have repository-native package routes. The two web
 bootstraps have checked Atlas redirects. The other named harnesses use the
 manual path until an Atlas hand-off is built and tested for them. Cline and Roo
-Code are not presented as launch options because this repository has no checked
-Atlas hand-off for either one.
+Code stay on the manual path. No Atlas hand-off has been built and checked for
+either one, so neither is presented as a launch option.
 
 Before Fiat starts, confirm that the selected issue is still open and does not
 already have an active owner, issue-number branch or pull request. If it does,

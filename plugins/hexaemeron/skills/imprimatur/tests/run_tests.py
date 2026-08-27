@@ -60,6 +60,33 @@ TRUE_POSITIVES = [
     ("cosplay", "The vibes are off on this one.", "register_cosplay"),
     ("negation correction", "This isn't just a protocol, it's a promise.", "negation_correction"),
     ("not because but", "Not because it failed, but because it never ran.", "not_x_but_y"),
+    (
+        "causal has no exact public sentence",
+        "Cline and Roo Code are not listed as launch options because this repository "
+        "has no checked Atlas hand-off for them.",
+        "causal_subject_has_no",
+    ),
+    (
+        "causal has no singular subject",
+        "The fallback remains because the repository has no checked hand-off.",
+        "causal_subject_has_no",
+    ),
+    # A product name with a plural-form head still takes singular agreement.
+    (
+        "causal has no plural-form subject",
+        "The fallback remains because Wildcat Skills has no checked hand-off.",
+        "causal_subject_has_no",
+    ),
+    (
+        "causal has no mixed case",
+        "The fallback remains BeCaUsE the repository HaS No checked hand-off.",
+        "causal_subject_has_no",
+    ),
+    (
+        "causal has no wrapped clause",
+        "The fallback remains because the repository\nhas no checked hand-off.",
+        "causal_subject_has_no",
+    ),
     ("em dash", "The market cleared — eventually.", "em_dash"),
     ("apology theatre", "I apologise for the confusion in the last message.", "apology_theatre"),
     ("generic title case", "## Evidence Changes Everything", "title_case_heading"),
@@ -218,6 +245,65 @@ check("mask/strict counts it", build('He said "load-bearing" again.', strict=Tru
 # Fenced code is not prose.
 check("mask/code fence", build("```\nload-bearing = True\n```")["defects"] == 0)
 
+# The bounded causal-subject family is scored, respects the prose masks, and
+# does not widen to neighbouring ways of describing an absence.
+exact_causal = build("because this repository has no checked Atlas hand-off for them")
+exact_causal_hits = [
+    hit for hit in exact_causal["hits"]
+    if hit["family"] == "causal_subject_has_no"
+]
+check(
+    "structural/causal has no is one medium defect",
+    len(exact_causal_hits) == 1
+    and exact_causal_hits[0]["severity"] == "medium"
+    and exact_causal_hits[0]["signal_only"] is False
+    and exact_causal["defects"] == 1,
+    f"got {exact_causal_hits}",
+)
+
+CAUSAL_HAS_NO_CLEAN = [
+    (
+        "direct rewrite",
+        "No checked Atlas hand-off exists for them, so they stay on the manual route.",
+    ),
+    ("standalone has no", "This repository has no checked Atlas hand-off for them."),
+    ("there is no", "The route is manual because there is no checked Atlas hand-off."),
+    ("lacks", "The route is manual because this repository lacks a checked hand-off."),
+    (
+        "comma before has no",
+        "The route is manual because this repository, at present, has no checked hand-off.",
+    ),
+    (
+        "semicolon before has no",
+        "The route is manual because this repository; the guide has no checked hand-off.",
+    ),
+    (
+        "full stop before has no",
+        "The route is manual because this repository is unsupported. The guide has no hand-off.",
+    ),
+    (
+        "quoted discussion",
+        'The phrase "because this repository has no checked Atlas hand-off" is under discussion.',
+    ),
+    (
+        "inline code",
+        "The old form was `because this repository has no checked Atlas hand-off`.",
+    ),
+    (
+        "subject longer than eight tokens",
+        "The fallback remains because the route selected by every current unsupported "
+        "local coding harness has no checked hand-off.",
+    ),
+]
+
+for label, text in CAUSAL_HAS_NO_CLEAN:
+    got = families(text)
+    check(
+        f"clean/causal has no {label}",
+        "causal_subject_has_no" not in got,
+        f"got {sorted(got) or 'nothing'}",
+    )
+
 # Source files retain comments and Python docstrings at their original offsets.
 solidity = "contract C {\n    /// @notice Leverage the underlying primitive.\n}\n"
 solidity_report = build(solidity, source_suffix=".sol")
@@ -226,6 +312,21 @@ check(
     "source/solidity indented NatSpec",
     solidity_hit is not None and (solidity_hit["line"], solidity_hit["col"]) == (2, 17),
     f"got {solidity_hit}",
+)
+
+causal_source = (
+    'const note = "because this repository has no checked Atlas hand-off";\n'
+    "// Because this repository has no checked Atlas hand-off.\n"
+)
+causal_source_hits = [
+    hit for hit in build(causal_source, source_suffix=".ts")["hits"]
+    if hit["family"] == "causal_subject_has_no"
+]
+check(
+    "source/typescript causal comment keeps coordinates and string stays masked",
+    len(causal_source_hits) == 1
+    and (causal_source_hits[0]["line"], causal_source_hits[0]["col"]) == (2, 4),
+    f"got {causal_source_hits}",
 )
 
 python_source = (
