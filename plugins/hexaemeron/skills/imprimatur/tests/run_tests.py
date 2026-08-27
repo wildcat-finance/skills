@@ -83,6 +83,11 @@ TRUE_POSITIVES = [
         "causal_subject_has_no",
     ),
     (
+        "causal has no smart apostrophe",
+        "The fallback remains because O’Reilly has no checked hand-off.",
+        "causal_subject_has_no",
+    ),
+    (
         "causal has no wrapped clause",
         "The fallback remains because the repository\nhas no checked hand-off.",
         "causal_subject_has_no",
@@ -250,6 +255,47 @@ check("mask/strict counts it", build('He said "load-bearing" again.', strict=Tru
 # Fenced code is not prose.
 check("mask/code fence", build("```\nload-bearing = True\n```")["defects"] == 0)
 
+for separator_name, separator in (("lf", "\n"), ("cr", "\r"), ("crlf", "\r\n")):
+    report = build(
+        f"heading{separator}because this repository{separator}has no checked hand-off"
+    )
+    causal_hits = [
+        hit for hit in report["hits"]
+        if hit["family"] == "causal_subject_has_no"
+    ]
+    check(
+        f"structural/causal has no {separator_name} coordinates",
+        [(hit["line"], hit["col"]) for hit in causal_hits] == [(2, 1)],
+        f"got {causal_hits}",
+    )
+    after_indented = build(
+        "    because hidden content has no prose effect"
+        f"{separator}because this repository has no checked hand-off"
+    )
+    after_indented_hits = [
+        hit for hit in after_indented["hits"]
+        if hit["family"] == "causal_subject_has_no"
+    ]
+    check(
+        f"structural/causal has no {separator_name} after indented code",
+        [(hit["line"], hit["col"]) for hit in after_indented_hits] == [(2, 1)],
+        f"got {after_indented_hits}",
+    )
+
+after_fence = build(
+    "```\nbecause hidden content has no prose effect\n```\n"
+    "because this repository has no checked hand-off"
+)
+after_fence_hits = [
+    hit for hit in after_fence["hits"]
+    if hit["family"] == "causal_subject_has_no"
+]
+check(
+    "structural/causal has no keeps coordinates after fenced code",
+    [(hit["line"], hit["col"]) for hit in after_fence_hits] == [(4, 1)],
+    f"got {after_fence_hits}",
+)
+
 # The bounded causal-subject family is scored, respects the prose masks, and
 # does not widen to neighbouring ways of describing an absence.
 exact_causal = build("because this repository has no checked Atlas hand-off for them")
@@ -295,6 +341,25 @@ CAUSAL_HAS_NO_CLEAN = [
         "The phrase “because this repository has no checked Atlas hand-off” is under discussion.",
     ),
     (
+        "smart single-quoted discussion",
+        "The phrase ‘because this repository has no checked Atlas hand-off’ is under discussion.",
+    ),
+    (
+        "smart single-quoted discussion with internal apostrophe",
+        "The phrase ‘O’Reilly says because this repository has no checked Atlas hand-off’ "
+        "is under discussion.",
+    ),
+    (
+        "smart single-quoted discussion with plural possessive",
+        "The phrase ‘developers’ guidance says because this repository has no hand-off’ "
+        "is under discussion.",
+    ),
+    (
+        "smart single-quoted discussion with paired apostrophes",
+        "The phrase ‘rock ’n’ roll says because this repository has no hand-off’ "
+        "is under discussion.",
+    ),
+    (
         "inline code",
         "The old form was `because this repository has no checked Atlas hand-off`.",
     ),
@@ -330,6 +395,23 @@ for label, text in CAUSAL_HAS_NO_CLEAN:
     check(
         f"clean/causal has no {label}",
         "causal_subject_has_no" not in got,
+        f"got {sorted(got) or 'nothing'}",
+    )
+
+for label, text in (
+    (
+        "after smart single quote with apostrophe",
+        "‘O’Reilly says hello’ because this repository has no checked hand-off",
+    ),
+    (
+        "between adjacent smart single quotes",
+        "‘quoted’ because this repository has no checked hand-off ‘quoted’",
+    ),
+):
+    got = families(text)
+    check(
+        f"structural/causal has no remains live {label}",
+        "causal_subject_has_no" in got,
         f"got {sorted(got) or 'nothing'}",
     )
 

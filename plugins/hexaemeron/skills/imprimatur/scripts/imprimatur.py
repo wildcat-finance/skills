@@ -220,6 +220,9 @@ def _quoted_pattern(line_terminators: frozenset[str]) -> re.Pattern[str]:
         rf"`[^`{excluded}]+`"  # inline code
         rf"|\"[^\"{excluded}]{{1,120}}\""  # double quotes
         rf"|\u201c[^\u201d{excluded}]{{1,120}}\u201d"  # smart quotes
+        # Take the last right mark before another opening mark or line ending,
+        # so apostrophes inside `‘O’Reilly’s note’` stay inside the mention.
+        rf"|\u2018[^\u2018{excluded}]{{1,120}}\u2019"
         rf"|(?<![\w'])'[^'{excluded}]{{1,120}}'(?![\w])"  # not apostrophes
     )
 
@@ -249,8 +252,19 @@ def mask_quoted(
 
 def strip_code_blocks(text: str) -> str:
     """Blank fenced code and inline code so prose rules do not fire on source."""
-    out = re.sub(r"```.*?```", lambda m: " " * len(m.group(0)), text, flags=re.S)
-    out = re.sub(r"^(?: {4}|\t).*$", lambda m: " " * len(m.group(0)), out, flags=re.M)
+    out = re.sub(
+        r"```.*?```",
+        lambda m: "".join(
+            char if char in "\r\n" else " " for char in m.group(0)
+        ),
+        text,
+        flags=re.S,
+    )
+    out = re.sub(
+        r"(?:(?<=\n)|(?<=\r)|\A)(?: {4}|\t)[^\r\n]*",
+        lambda m: " " * len(m.group(0)),
+        out,
+    )
     return out
 
 
@@ -901,7 +915,7 @@ def build(text: str, *, hard_only: bool = False, skip_code: bool = True,
     elif suffix == ".py":
         line_terminators = PYTHON_LINE_TERMINATORS
     else:
-        line_terminators = frozenset("\n")
+        line_terminators = PYTHON_LINE_TERMINATORS
     if skip_code and suffix in SOURCE_SUFFIXES:
         prose = extract_source_prose(text, suffix)
         evidence_text = prose

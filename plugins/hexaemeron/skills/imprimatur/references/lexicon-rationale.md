@@ -89,6 +89,16 @@ view. If quotation or inline-code masking changed any byte inside the span,
 the candidate is discarded; a short masked span must not become an ordinary
 three-space separator.
 
+Straight, smart double, and smart single quotations all remain mentions. In a
+smart single quotation, the last right mark before another opening mark or
+line ending closes the bounded span, so internal apostrophes remain inside. This keeps
+“`‘O’Reilly says because this repository has no hand-off’`” masked without
+hiding the same causal clause when it follows the closing quote.
+
+Markdown code masking retains CR and LF bytes while it blanks fenced or
+indented code. Generic input counts LF, CR, and CRLF as line endings, so the
+reported location after masked code remains the location in the input.
+
 ## The gated tier
 
 Nine families are banned outright. Four are gated, because they are real terms in the domains this organisation writes about, and a lexicon that fires on "orthogonal" in a maths context is a lexicon that gets uninstalled in a week.

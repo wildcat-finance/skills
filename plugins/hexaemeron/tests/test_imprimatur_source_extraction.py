@@ -1042,6 +1042,63 @@ class SourceExtractionTests(unittest.TestCase):
                 ]
                 self.assertEqual([], hits)
 
+    def test_causal_structural_match_masks_smart_single_quotes_not_apostrophes(self):
+        source = (
+            "// ‘O’Reilly says because this repository has no checked hand-off’\n"
+            "// ‘developers’ guidance says because this repository has no hand-off’\n"
+            "// ‘O’Reilly says hello’ because this repository has no checked hand-off\n"
+        )
+        hits = [
+            hit
+            for hit in build(source, source_suffix=".ts")["hits"]
+            if hit["family"] == "causal_subject_has_no"
+        ]
+        self.assertEqual(
+            [(3, 26)],
+            [(hit["line"], hit["col"]) for hit in hits],
+        )
+
+    def test_causal_structural_match_keeps_generic_input_coordinates(self):
+        for separator in ("\n", "\r", "\r\n"):
+            with self.subTest(separator=repr(separator)):
+                report = build(
+                    f"heading{separator}because this repository{separator}"
+                    "has no checked hand-off"
+                )
+                hits = [
+                    hit
+                    for hit in report["hits"]
+                    if hit["family"] == "causal_subject_has_no"
+                ]
+                self.assertEqual(
+                    [(2, 1)],
+                    [(hit["line"], hit["col"]) for hit in hits],
+                )
+                after_indented = build(
+                    "    because hidden content has no prose effect"
+                    f"{separator}because this repository has no checked hand-off"
+                )
+                indented_hits = [
+                    hit
+                    for hit in after_indented["hits"]
+                    if hit["family"] == "causal_subject_has_no"
+                ]
+                self.assertEqual(
+                    [(2, 1)],
+                    [(hit["line"], hit["col"]) for hit in indented_hits],
+                )
+
+        report = build(
+            "```\nbecause hidden content has no prose effect\n```\n"
+            "because this repository has no checked hand-off"
+        )
+        hits = [
+            hit
+            for hit in report["hits"]
+            if hit["family"] == "causal_subject_has_no"
+        ]
+        self.assertEqual([(4, 1)], [(hit["line"], hit["col"]) for hit in hits])
+
     def test_promise_evidence_conditions_extraction_on_default_masking(self):
         skill = (
             PLUGIN_ROOT / "skills" / "imprimatur" / "SKILL.md"
