@@ -152,6 +152,103 @@ class RunnerTests(unittest.TestCase):
             self.assertFalse(report.exists())
             self.assertEqual(list(report.parent.iterdir()), [])
 
+    def test_publication_race_does_not_replace_a_fresh_target(self) -> None:
+        result = SimpleNamespace(
+            testsRun=1,
+            failures=[],
+            errors=[],
+            skipped=[],
+            expectedFailures=[],
+            unexpectedSuccesses=[],
+        )
+        with tempfile.TemporaryDirectory(prefix="brevitas-runner-") as directory:
+            root = Path(directory).resolve()
+            report = root / "reports" / "collision.json"
+            with mock.patch.object(runner, "worktree_root", return_value=root):
+                target = runner.report_target([str(report)])
+
+            real_rename = runner.os.rename
+            real_link = runner.os.link
+
+            def create_collision(destination: str, directory_fd: int) -> None:
+                descriptor = runner.os.open(
+                    destination,
+                    runner.os.O_WRONLY | runner.os.O_CREAT | runner.os.O_EXCL,
+                    0o600,
+                    dir_fd=directory_fd,
+                )
+                try:
+                    runner.os.write(descriptor, b"keep-racing-writer\n")
+                finally:
+                    runner.os.close(descriptor)
+
+            def racing_rename(
+                source: str,
+                destination: str,
+                *,
+                src_dir_fd: int,
+                dst_dir_fd: int,
+            ) -> None:
+                create_collision(destination, dst_dir_fd)
+                real_rename(
+                    source,
+                    destination,
+                    src_dir_fd=src_dir_fd,
+                    dst_dir_fd=dst_dir_fd,
+                )
+
+            def racing_link(
+                source: str,
+                destination: str,
+                *,
+                src_dir_fd: int,
+                dst_dir_fd: int,
+                follow_symlinks: bool,
+            ) -> None:
+                create_collision(destination, dst_dir_fd)
+                real_link(
+                    source,
+                    destination,
+                    src_dir_fd=src_dir_fd,
+                    dst_dir_fd=dst_dir_fd,
+                    follow_symlinks=follow_symlinks,
+                )
+
+            with mock.patch.object(
+                runner.os, "rename", side_effect=racing_rename
+            ), mock.patch.object(
+                runner.os, "link", side_effect=racing_link
+            ), self.assertRaises(OSError):
+                runner.write_report(target, runner.result_payload(result))
+
+            self.assertEqual(report.read_bytes(), b"keep-racing-writer\n")
+            self.assertEqual(list(report.parent.iterdir()), [report])
+
+    def test_report_mode_is_0600_under_a_restrictive_umask(self) -> None:
+        result = SimpleNamespace(
+            testsRun=1,
+            failures=[],
+            errors=[],
+            skipped=[],
+            expectedFailures=[],
+            unexpectedSuccesses=[],
+        )
+        with tempfile.TemporaryDirectory(prefix="brevitas-runner-") as directory:
+            root = Path(directory).resolve()
+            reports = root / "reports"
+            reports.mkdir()
+            report = reports / "mode.json"
+            with mock.patch.object(runner, "worktree_root", return_value=root):
+                target = runner.report_target([str(report)])
+
+            previous = runner.os.umask(0o777)
+            try:
+                runner.write_report(target, runner.result_payload(result))
+            finally:
+                runner.os.umask(previous)
+
+            self.assertEqual(report.stat().st_mode & 0o777, 0o600)
+
 
 if __name__ == "__main__":
     unittest.main()

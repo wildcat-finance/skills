@@ -70,13 +70,17 @@ def report_target(argv: list[str]) -> tuple[Path, tuple[int, int], tuple[str, ..
         (os.open, "os.open(dir_fd)"),
         (os.mkdir, "os.mkdir(dir_fd)"),
         (os.stat, "os.stat(dir_fd)"),
+        (os.link, "os.link(dir_fd)"),
         (os.unlink, "os.unlink(dir_fd)"),
-        (os.rename, "os.rename(dir_fd)"),
     ):
         if operation not in os.supports_dir_fd:
             missing.append(name)
     if os.stat not in os.supports_follow_symlinks:
         missing.append("os.stat(follow_symlinks)")
+    if os.link not in os.supports_follow_symlinks:
+        missing.append("os.link(follow_symlinks)")
+    if not hasattr(os, "fchmod"):
+        missing.append("os.fchmod")
     if missing:
         parser.error("REPORT requires secure directory operations: " + ", ".join(missing))
 
@@ -170,11 +174,18 @@ def _private_report(parent_fd: int) -> tuple[str, int, tuple[int, int]]:
         except FileExistsError:
             continue
         created = os.fstat(descriptor)
-        if not stat.S_ISREG(created.st_mode):
+        try:
+            os.fchmod(descriptor, 0o600)
+        except OSError:
             os.close(descriptor)
             _unlink_own(parent_fd, name, (created.st_dev, created.st_ino))
-            raise OSError("report temporary is not a regular file")
-        return name, descriptor, (created.st_dev, created.st_ino)
+            raise
+        secured = os.fstat(descriptor)
+        if not stat.S_ISREG(secured.st_mode) or stat.S_IMODE(secured.st_mode) != 0o600:
+            os.close(descriptor)
+            _unlink_own(parent_fd, name, (created.st_dev, created.st_ino))
+            raise OSError("report temporary is not a private regular file")
+        return name, descriptor, (secured.st_dev, secured.st_ino)
     raise OSError("could not create a private report temporary")
 
 
@@ -204,7 +215,6 @@ def write_report(
         parent_fd = report_parent(root_fd, parts[:-1])
         try:
             temporary, descriptor, temporary_identity = _private_report(parent_fd)
-            published = False
             try:
                 _write_all(descriptor, body)
                 os.fsync(descriptor)
@@ -213,8 +223,6 @@ def write_report(
                 readback = os.read(descriptor, len(body) + 1)
                 if written.st_size != len(body) or readback != body:
                     raise OSError("report temporary bytes changed during write")
-                os.close(descriptor)
-                descriptor = -1
 
                 try:
                     os.stat(parts[-1], dir_fd=parent_fd, follow_symlinks=False)
@@ -223,30 +231,65 @@ def write_report(
                 else:
                     raise OSError("report target already exists")
 
-                os.rename(
+                temporary_entry = os.stat(
+                    temporary,
+                    dir_fd=parent_fd,
+                    follow_symlinks=False,
+                )
+                if (temporary_entry.st_dev, temporary_entry.st_ino) != temporary_identity:
+                    raise OSError("report temporary identity changed")
+                os.link(
                     temporary,
                     parts[-1],
                     src_dir_fd=parent_fd,
                     dst_dir_fd=parent_fd,
+                    follow_symlinks=False,
                 )
-                published = True
                 final = os.stat(parts[-1], dir_fd=parent_fd, follow_symlinks=False)
                 if (
                     not stat.S_ISREG(final.st_mode)
                     or (final.st_dev, final.st_ino) != temporary_identity
                     or final.st_size != len(body)
                     or final.st_size > MAX_REPORT_BYTES
+                    or stat.S_IMODE(final.st_mode) != 0o600
                 ):
                     raise OSError("published report identity or size changed")
+                _unlink_own(parent_fd, temporary, temporary_identity)
+                try:
+                    os.stat(temporary, dir_fd=parent_fd, follow_symlinks=False)
+                except FileNotFoundError:
+                    pass
+                else:
+                    raise OSError("report temporary could not be removed")
+
+                os.lseek(descriptor, 0, os.SEEK_SET)
+                published_readback = os.read(descriptor, len(body) + 1)
+                published_descriptor = os.fstat(descriptor)
+                published_entry = os.stat(
+                    parts[-1], dir_fd=parent_fd, follow_symlinks=False
+                )
+                if (
+                    published_readback != body
+                    or (published_descriptor.st_dev, published_descriptor.st_ino)
+                    != temporary_identity
+                    or (published_entry.st_dev, published_entry.st_ino)
+                    != temporary_identity
+                    or published_descriptor.st_size != len(body)
+                    or published_entry.st_size != len(body)
+                    or stat.S_IMODE(published_entry.st_mode) != 0o600
+                ):
+                    raise OSError("published report identity or bytes changed")
                 os.fsync(parent_fd)
+                os.close(descriptor)
+                descriptor = -1
             except BaseException:
                 if descriptor >= 0:
                     try:
                         os.close(descriptor)
                     except OSError:
                         pass
-                name = parts[-1] if published else temporary
-                _unlink_own(parent_fd, name, temporary_identity)
+                _unlink_own(parent_fd, parts[-1], temporary_identity)
+                _unlink_own(parent_fd, temporary, temporary_identity)
                 raise
         finally:
             os.close(parent_fd)
