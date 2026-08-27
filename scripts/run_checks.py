@@ -1766,6 +1766,130 @@ class Scheduler:
             self._condition.notify_all()
 
 
+CONTAINMENT_ENV = "WILDCAT_CHECK_CONTAINMENT"
+"""Environment marker every check inherits, however many sessions deep.
+
+A descendant can leave the process group by starting a new session, but it
+cannot shed inherited environment without deliberately scrubbing it, so the
+marker sweep reaches what the group signal cannot (S2-R8-01, S2-R8-03)."""
+
+
+def _marker_survivors(marker: str) -> list[int] | None:
+    """Same-user processes still carrying the containment marker.
+
+    Returns ``None`` when the platform offers no way to enumerate process
+    environments; the caller must then refuse to claim the tree drained
+    rather than assume it.
+    """
+    needle = f"{CONTAINMENT_ENV}={marker}".encode()
+    own = os.getpid()
+    if os.path.isdir("/proc"):
+        survivors = []
+        for name in os.listdir("/proc"):
+            if not name.isdigit():
+                continue
+            try:
+                with open(f"/proc/{name}/environ", "rb") as fh:
+                    data = fh.read(1_048_576)
+            except OSError:
+                continue
+            if needle in data and int(name) != own:
+                survivors.append(int(name))
+        return survivors
+    try:
+        listing = subprocess.run(
+            ["ps", "-axww", "-E", "-o", "pid=,command="],
+            capture_output=True,
+            shell=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if listing.returncode != 0:
+        return None
+    survivors = []
+    for line in listing.stdout.decode("utf-8", "replace").splitlines():
+        stripped = line.strip()
+        if f"{CONTAINMENT_ENV}={marker}" not in stripped:
+            continue
+        pid_text = stripped.split(None, 1)[0]
+        if pid_text.isdigit() and int(pid_text) != own:
+            survivors.append(int(pid_text))
+    return survivors
+
+
+def _group_alive(pgid: int) -> bool:
+    try:
+        os.killpg(pgid, 0)
+    except OSError:
+        return False
+    return True
+
+
+def _prove_drained(pgid: int | None, marker: str) -> dict[str, Any]:
+    """Prove the check's process tree stopped, or say exactly why not.
+
+    Two independent probes compose the proof: the signal-0 group probe
+    reaches same-group survivors that closed their descriptors (S2-R8-02),
+    and the environment-marker sweep reaches descendants that started new
+    sessions, nested shard workers included (S2-R8-01, S2-R8-03).
+
+    Termination stays identity-verified: a marker-carrying pid is provably
+    this check's work and is killed pid by pid, while the group id captured
+    at spawn is only ever probed -- a delivering ``killpg`` after the leader
+    was reaped could reach a stranger's recycled group, which the reaped-pid
+    contract forbids.  A group member the sweep cannot verify is therefore
+    reported and refuted, not shot.  ``proof`` is ``drained`` only when both
+    probes came back clean on their first pass.
+    """
+    proof: dict[str, Any] = {"group": "unprobed", "sweep": "unavailable"}
+    group_alive_first = pgid is not None and _group_alive(pgid)
+    proof["group"] = (
+        "unprobed" if pgid is None else ("survivors" if group_alive_first else "empty")
+    )
+    marked = _marker_survivors(marker)
+    if marked is None:
+        proof["proof"] = "unavailable"
+        return proof
+    survivors_seen = group_alive_first or bool(marked)
+    persist = False
+    if marked:
+        found = len(marked)
+        for sig in (signal.SIGTERM, signal.SIGKILL):
+            for pid in marked:
+                try:
+                    os.kill(pid, sig)
+                except OSError:
+                    continue
+            deadline = time.monotonic() + DRAIN_SECONDS
+            while time.monotonic() < deadline:
+                time.sleep(0.05)
+                marked = _marker_survivors(marker) or []
+                if not marked:
+                    break
+            if not marked:
+                break
+        if marked:
+            persist = True
+            proof["sweep"] = f"found:{found};persist:{len(marked)}"
+        else:
+            proof["sweep"] = f"found:{found};drained"
+    else:
+        proof["sweep"] = "clean"
+    if pgid is not None and _group_alive(pgid):
+        # Alive after the sweep: members the marker cannot verify remain, and
+        # an unverified group is never signalled.  Saying so is the result.
+        persist = True
+        proof["group"] = "survivors-unverified"
+    if persist:
+        proof["proof"] = "survivors-persist"
+    elif survivors_seen:
+        proof["proof"] = "survivors-drained"
+    else:
+        proof["proof"] = "drained"
+    return proof
+
+
 def _terminate_group(proc: subprocess.Popen[bytes]) -> str:
     """Signal the check's whole process group -- never a pid already reaped.
 
@@ -1952,10 +2076,11 @@ def run_check(
             str(workdir_fd),
         ] + argv
         buffer = CaptureBuffer()
+        marker = uuid.uuid4().hex
         try:
             proc = subprocess.Popen(
                 launcher,
-                env=_child_env(),
+                env=_child_env(marker),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 shell=False,
@@ -1964,6 +2089,12 @@ def run_check(
             )
         finally:
             os.close(workdir_fd)
+        try:
+            leader_pgid = os.getpgid(proc.pid)
+        except OSError:
+            # The leader owns a fresh session, so its group id is its pid even
+            # after it exits and can no longer answer getpgid.
+            leader_pgid = proc.pid
         capture_error: OSError | None = None
         try:
             termination = "not-required"
@@ -1998,6 +2129,12 @@ def run_check(
         finally:
             if proc.stdout is not None:
                 proc.stdout.close()
+        # The drain proof runs on every path, the otherwise-green one
+        # included: the group probe reaches quiet same-group survivors
+        # (S2-R8-02) and the marker sweep reaches new-session descendants,
+        # nested shard workers included (S2-R8-01, S2-R8-03).
+        containment = _prove_drained(leader_pgid, marker)
+        record["containment"] = containment
         record["output"] = buffer.record()
         record["exit_code"] = proc.returncode
         record["duration_seconds"] = round(time.monotonic() - started, 3)
@@ -2023,6 +2160,24 @@ def run_check(
             )
         elif timed_out:
             record.update(status="failed", failure_class="command-failure", reason="timeout")
+        elif containment["proof"] == "unavailable":
+            record.update(
+                status="failed",
+                failure_class="scheduler-error",
+                reason=(
+                    "platform cannot prove the check's process tree drained, "
+                    "so a green result cannot be claimed"
+                ),
+            )
+        elif containment["proof"] != "drained":
+            record.update(
+                status="failed",
+                failure_class="scheduler-error",
+                reason=(
+                    "the check left work running beyond its leader's exit; "
+                    f"group={containment['group']}, sweep={containment['sweep']}"
+                ),
+            )
         elif proc.returncode == 0:
             record["status"] = "passed"
         else:
@@ -2043,9 +2198,10 @@ def run_check(
         scheduler.release(granted)
 
 
-def _child_env() -> dict[str, str]:
+def _child_env(marker: str) -> dict[str, str]:
     env = _git_env()
     env["PYTHONDONTWRITEBYTECODE"] = "1"
+    env[CONTAINMENT_ENV] = marker
     return env
 
 

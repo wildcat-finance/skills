@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import errno
 import os
+import signal
 import stat
 import subprocess
 import sys
@@ -1410,6 +1411,176 @@ class PathAuthorityTests(TemporaryRepositoryMixin, _PathAuthorityCases, unittest
     """Bind the descriptor-authority cases to the repository fixture mixin."""
 
 
+class HereditaryContainmentTests(unittest.TestCase):
+    """No check reports green while its descendants keep working.
+
+    Round 8 findings S2-R8-01, S2-R8-02 and S2-R8-03: a descendant that
+    starts a new session, a same-group descendant that closes its output, and
+    nested independent-session workers under an outer timeout must all be
+    reached by the drain, and the otherwise-green path must carry a drain
+    proof rather than an assumption.
+    """
+
+    ESCAPEE = (
+        "import os, sys, time\n"
+        "time.sleep(600)\n"
+    )
+
+    def _leader(self, *, new_session: bool, close_output: bool, linger: float) -> str:
+        escapee = (
+            "import os, sys, time\n"
+            + ("os.close(1)\nos.close(2)\n" if close_output else "")
+            + "time.sleep(600)\n"
+        )
+        return (
+            "import os, subprocess, sys, time\n"
+            f"escapee = {escapee!r}\n"
+            "child = subprocess.Popen(\n"
+            "    [sys.executable, '-c', escapee],\n"
+            f"    start_new_session={new_session!r},\n"
+            "    stdin=subprocess.DEVNULL,\n"
+            + (
+                "    stdout=subprocess.DEVNULL,\n    stderr=subprocess.DEVNULL,\n"
+                if new_session
+                else ""
+            )
+            + ")\n"
+            "with open(sys.argv[1], 'w') as fh:\n"
+            "    fh.write(str(child.pid))\n"
+            f"time.sleep({linger!r})\n"
+        )
+
+    def _run_probe(self, tmp: str, *, new_session: bool, close_output: bool,
+                   linger: float, timeout_seconds: int) -> tuple[dict, int]:
+        snapshot = Path(tmp) / "snapshot"
+        snapshot.mkdir()
+        pid_file = Path(tmp) / "escapee.pid"
+        check = run_checks.Check(
+            id="probe",
+            title="Probe",
+            argv=(
+                sys.executable, "-c",
+                self._leader(
+                    new_session=new_session,
+                    close_output=close_output,
+                    linger=linger,
+                ),
+                str(pid_file),
+            ),
+            cwd=".",
+            kind="command",
+            script=None,
+            jobs_flag=None,
+            requires_executable=None,
+            group=None,
+            order=0,
+            timeout_seconds=timeout_seconds,
+        )
+        record = run_checks.run_check(check, snapshot, run_checks.Scheduler(2), 1)
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline and not pid_file.exists():
+            time.sleep(0.05)
+        self.assertTrue(pid_file.exists(), "the leader never reported its child")
+        pid = int(pid_file.read_text())
+        self.addCleanup(self._reap, pid)
+        return record, pid
+
+    def _reap(self, pid: int) -> None:
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except OSError:
+            pass
+
+    def _assert_dead(self, pid: int, why: str) -> None:
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            try:
+                os.kill(pid, 0)
+            except ProcessLookupError:
+                return
+            except OSError:
+                return
+            time.sleep(0.05)
+        self.fail(why)
+
+    def test_a_new_session_descendant_cannot_outlive_a_green_leader(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            record, pid = self._run_probe(
+                tmp, new_session=True, close_output=False,
+                linger=0.0, timeout_seconds=60,
+            )
+            self.assertEqual(
+                record.get("status"), "failed",
+                "the runner reported green while a detached descendant worked on",
+            )
+            self.assertEqual(record.get("failure_class"), "scheduler-error")
+            self._assert_dead(
+                pid, "a new-session descendant survived the hereditary drain"
+            )
+
+    def test_a_quiet_group_survivor_is_found_on_the_green_path(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            record, pid = self._run_probe(
+                tmp, new_session=False, close_output=True,
+                linger=0.0, timeout_seconds=60,
+            )
+            self.assertEqual(
+                record.get("status"), "failed",
+                "no group-drain proof ran on the otherwise-green path",
+            )
+            self._assert_dead(
+                pid, "a same-group survivor outlived the reaped leader"
+            )
+
+    def test_nested_session_workers_are_reached_by_an_outer_timeout(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            record, pid = self._run_probe(
+                tmp, new_session=True, close_output=False,
+                linger=600.0, timeout_seconds=3,
+            )
+            self.assertEqual(record.get("status"), "failed")
+            self._assert_dead(
+                pid,
+                "an independent-session worker survived the outer timeout drain",
+            )
+
+    def test_a_clean_check_still_passes_with_a_drain_proof(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            snapshot = Path(tmp) / "snapshot"
+            snapshot.mkdir()
+            check = run_checks.Check(
+                id="probe",
+                title="Probe",
+                argv=(sys.executable, "-c", "print('ok')"),
+                cwd=".",
+                kind="command",
+                script=None,
+                jobs_flag=None,
+                requires_executable=None,
+                group=None,
+                order=0,
+                timeout_seconds=60,
+            )
+            record = run_checks.run_check(
+                check, snapshot, run_checks.Scheduler(2), 1
+            )
+            self.assertEqual(record.get("status"), "passed", record)
+            containment = record.get("containment")
+            self.assertIsInstance(
+                containment, dict,
+                "a green record must carry its drain proof, not an assumption",
+            )
+            self.assertEqual(containment.get("proof"), "drained")
+
+
 class SupersessionTests(TemporaryRepositoryMixin, unittest.TestCase):
     """One movement supersedes and retries; repeated movement is unstable-source."""
 
@@ -1650,8 +1821,14 @@ class DescendantSignalSafetyTests(unittest.TestCase):
         )
         sent, _ = self._record_signals()
         record = run_checks.run_check(check, script, run_checks.Scheduler(2), 1)
+        # Signal 0 delivers nothing: it is the round-8 drain proof's existence
+        # probe and is allowed against the group id captured at spawn.  What
+        # stays forbidden is delivering a signal through a group handle once
+        # the leader has been reaped.
+        delivered = [entry for entry in sent if entry[1] != 0]
         self.assertEqual(
-            sent, [], "a stale pid's process group was signalled after the leader was reaped"
+            delivered, [],
+            "a stale pid's process group was signalled after the leader was reaped",
         )
         # The honest verdict is unchanged: a retained descriptor stays a bounded
         # red with an explicit disposition, never a pass.
