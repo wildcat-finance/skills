@@ -246,6 +246,12 @@ def run_faults(runs: list, expected: str) -> list:
     be true measured nothing, so the arithmetic the study gives them is checked
     here: every case the run covered was passed or failed, and a run records
     every failing case id.
+
+    The digest mismatch prints both values whole. The message exists to send a
+    reader to a regrade rather than to an edit of the block, and a truncation
+    that renders two different digests as one string argues for the edit
+    instead: it reads as a check that has broken rather than as a corpus that
+    has moved.
     """
     faults = []
     for index, run in enumerate(runs):
@@ -255,8 +261,8 @@ def run_faults(runs: list, expected: str) -> list:
             continue
         if run["corpus_sha256"] != expected:
             faults.append(
-                f"{where}: recorded against corpus {run['corpus_sha256'][:12]} "
-                f"and the cases on disk digest to {expected[:12]}"
+                f"{where}: recorded against corpus {run['corpus_sha256']} "
+                f"and the cases on disk digest to {expected}"
             )
         counts = {}
         for field in ("cases", "passed", "failed"):
@@ -636,6 +642,25 @@ class RouterSelectionCorpus(unittest.TestCase):
             f"regrade against the current cases rather than editing the digest: {wrong}",
         )
 
+        with self.subTest("a digest mismatch names both digests in full"):
+            on_disk = corpus_digest(self.document["cases"])
+            # Two digests that agree on their first twelve characters, which is
+            # where the message used to stop. Every mismatch a reader meets is
+            # this one as far as the printed string is concerned.
+            stale = on_disk[:12] + ("0" if on_disk[12] != "0" else "1") + on_disk[13:]
+            self.assertNotEqual(stale, on_disk)
+            block = dict(self.document["runs"][0], corpus_sha256=stale)
+            message = "\n".join(run_faults([block], on_disk))
+            for digest, role in ((stale, "recorded"), (on_disk, "on disk")):
+                self.assertIn(
+                    digest, message,
+                    f"the mismatch message does not carry the {role} digest whole, "
+                    "so a divergence past its truncation point prints the recorded "
+                    "value and the value on disk as the same string; the message "
+                    "that exists to send a reader to a regrade then reads as a "
+                    f"check that has broken:\n  {message}",
+                )
+
     def test_the_recorded_run_block_is_complete_and_names_its_failures(self):
         """The half of a run block the digest check leaves unread.
 
@@ -663,6 +688,65 @@ class RouterSelectionCorpus(unittest.TestCase):
             "it, so the score it carries is not evidence about any model on any "
             f"date:\n  " + "\n  ".join(faults),
         )
+
+        # The shape this method closes is consumed by the one surface the
+        # promise authorises for citing a run. A shape nothing can print is a
+        # record of a failing run that no reader ever sees, so the reporter is
+        # driven here, against the same closed shape, rather than left to the
+        # first run that fails something.
+        from tests.emit_router_selection_report import report
+
+        failing = {
+            "model": "a-model",
+            "date": "2026-01-01",
+            "prompt_template_sha256": prompt_template_digest(),
+            "corpus_sha256": corpus_digest(self.document["cases"]),
+            "cases": 36,
+            "passed": 34,
+            "failed": 2,
+            "failures": [
+                {"case": "RS-30", "selected": "pandects"},
+                {"case": "RS-33", "selected": "metron"},
+            ],
+        }
+        self.assertEqual(
+            run_faults([failing], failing["corpus_sha256"])
+            + run_completeness_faults(
+                [failing],
+                {case.get("id") for case in self.document["cases"]},
+                set(canonical_skill_names()),
+                prompt_template_digest(),
+            ),
+            [],
+            "the block driven against the reporter is not one this checker "
+            "accepts, so the guard would not be reporting a recordable run",
+        )
+
+        with self.subTest("the reporter renders a run that failed something"):
+            printed = report(dict(self.document, runs=[failing]))
+            run_lines = [text for text in printed if " run=" in text]
+            self.assertEqual(len(run_lines), 1)
+            self.assertIn("failures=RS-30:pandects,RS-33:metron", run_lines[0])
+
+        with self.subTest("the run line names the four identifiers a score is bound to"):
+            printed = report(self.document)
+            run_lines = [text for text in printed if " run=" in text]
+            self.assertEqual(len(run_lines), len(self.document["runs"]))
+            for text, run in zip(run_lines, self.document["runs"]):
+                for field in ("model", "date", "prompt_template_sha256", "corpus_sha256"):
+                    self.assertIn(
+                        f"{'run' if field == 'date' else field}={run[field]}", text,
+                        f"the authorised report omits {field}, so a cited score is "
+                        "detached from one of the four things it is evidence about",
+                    )
+
+        with self.subTest("no report line echoes a request or a deciding sentence"):
+            printed = "\n".join(report(dict(self.document, runs=[failing])))
+            for case in self.document["cases"]:
+                self.assertNotIn(case["request"], printed)
+                self.assertNotIn(case["deciding_sentence"]["text"], printed)
+            for pair in self.document["pairs"]:
+                self.assertNotIn(pair["deciding_sentence"]["text"], printed)
 
     def test_a_malformed_corpus_fails_by_name_rather_than_reading_as_empty(self):
         """The guard behind the fixed-path read.

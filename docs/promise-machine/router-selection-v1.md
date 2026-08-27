@@ -37,7 +37,16 @@ that separates them.
 
 `runs` is an array of recorded grading runs, empty until one is recorded. Each
 run carries `model`, `date`, `prompt_template_sha256`, `corpus_sha256`,
-`cases`, `passed`, `failed` and `failures`.
+`cases`, `passed`, `failed` and `failures`. A failure entry carries exactly
+`case` and `selected`, the failing case id and the canonical skill chosen
+instead.
+
+That shape records one failure class. A case expecting a selection that the run
+refused has no `selected` to name, and a case expecting one refusal reason that
+the run refused for the other cannot say so either, so both would have to be
+recorded as something they are not. Widening `selected` is a schema change and
+not an editorial one, so until a run produces such a failure the honest record
+is that this schema cannot carry it.
 
 ## Quoting
 
@@ -99,11 +108,22 @@ template, one corpus digest and one date. It is never called proved and it is
 never a gate: making it one would invite tuning the corpus until the model
 passed it.
 
+Nor does a contested case establish that the boundary it declares is what
+decided it. `contested` records the canonical skills whose boundary the request
+sits near, and nothing more. A request carrying a word that occurs under one
+plugin's runtime contract and under no other is answerable from that word, with
+the separating sentence unread, and the corpus holds no field that tells such a
+case apart from one that needs the sentence. A perfect score across the
+contested cases is therefore consistent with the boundaries separating the
+siblings and consistent with the requests being easy, and the run does not
+distinguish them.
+
 ## Authorises
 
 Reporting the corpus's coverage and the latest recorded run through
 `tests/emit_router_selection_report.py`, and citing a recorded run with the
-model, date and corpus digest it names attached. Nothing else.
+model, date, prompt-template digest and corpus digest it names attached.
+Nothing else.
 
 The `router_selection` capability entry pins that reporter's bytes beside the
 corpus, the prompt template, the guard fixtures, the checker and this document.
@@ -128,9 +148,10 @@ every section and pass while establishing nothing. A pair whose field set, id,
 separated skills or quotation the schema does not name, held to a case's shape
 because it quotes prose the same way, its id required to be present and
 non-empty exactly as a case's is. A run block whose field set the schema
-does not name, whose digest disagrees with the cases on disk, or whose case,
-pass and fail counts cannot all be true: every case the run covered was passed
-or failed, and a run records every failing case id.
+does not name, whose digest disagrees with the cases on disk, whose `failures`
+is present but is not a list, or whose case, pass and fail counts cannot all be
+true: every case the run covered was passed or failed, and a run records every
+failing case id.
 
 On coverage, which the two checks over the router's tables and the corpus's
 pairs block add. A router row whose canonical selection no case expects. Two
@@ -157,7 +178,9 @@ about any of them. An absent or unreadable prompt template, or a
 the corpus: a digest naming bytes the repository does not hold is evidence about
 no prompt at all, which is the defect this corpus exists to argue against, one
 level up. Holding the two equal makes a regrade under a different prompt commit
-that prompt. A run covering no cases at all, whose counts agree with each other
+that prompt, and it holds every recorded block against the one committed
+template, so the corpus carries one prompt template at a time and a regrade
+under a different prompt replaces the earlier block rather than joining it. A run covering no cases at all, whose counts agree with each other
 while measuring nothing. A failure entry whose field set is not exactly `case`
 and `selected`, since the entries are model output written into a committed file
 and the shape is closed rather than free text. A failure naming a case id this
