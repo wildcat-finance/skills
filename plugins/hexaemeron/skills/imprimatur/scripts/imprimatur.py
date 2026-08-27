@@ -802,6 +802,7 @@ def scan_structural(
     text: str,
     lex: dict,
     *,
+    evidence_text: str | None = None,
     line_terminators: frozenset[str] = frozenset("\n"),
     line_starts: list[int] | None = None,
 ) -> list[dict]:
@@ -819,6 +820,13 @@ def scan_structural(
             sys.stderr.write(f"imprimatur: bad regex {name}: {exc}\n")
             continue
         for m in pattern.finditer(text):
+            if (
+                spec.get("reject_masked_span")
+                and evidence_text is not None
+                and len(evidence_text) == len(text)
+                and text[m.start():m.end()] != evidence_text[m.start():m.end()]
+            ):
+                continue
             if m.group(0).strip() in spec.get("allow_exact", []):
                 continue
             ln, cl = _indexed_line_col(coordinate_starts, m.start())
@@ -921,6 +929,7 @@ def build(text: str, *, hard_only: bool = False, skip_code: bool = True,
         hits += scan_structural(
             prose,
             struct_lex,
+            evidence_text=evidence_text,
             line_terminators=line_terminators,
             line_starts=coordinate_starts,
         )

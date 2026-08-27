@@ -1027,6 +1027,21 @@ class SourceExtractionTests(unittest.TestCase):
             0,
         )
 
+    def test_causal_structural_match_does_not_bridge_a_short_masked_span(self):
+        specimens = (
+            "because this repository`x`has no checked hand-off",
+            'because this repository"x"has no checked hand-off',
+            "because this repository“x”has no checked hand-off",
+        )
+        for specimen in specimens:
+            with self.subTest(specimen=specimen):
+                hits = [
+                    hit
+                    for hit in build(specimen)["hits"]
+                    if hit["family"] == "causal_subject_has_no"
+                ]
+                self.assertEqual([], hits)
+
     def test_promise_evidence_conditions_extraction_on_default_masking(self):
         skill = (
             PLUGIN_ROOT / "skills" / "imprimatur" / "SKILL.md"

@@ -84,6 +84,11 @@ three spaces on either side. This admits an ordinary wrapped line without
 joining separate paragraphs, masked inline material, or comment fragments
 across an intervening source line.
 
+The matcher also compares each candidate span with the pre-quotation prose
+view. If quotation or inline-code masking changed any byte inside the span,
+the candidate is discarded; a short masked span must not become an ordinary
+three-space separator.
+
 ## The gated tier
 
 Nine families are banned outright. Four are gated, because they are real terms in the domains this organisation writes about, and a lexicon that fires on "orthogonal" in a maths context is a lexicon that gets uninstalled in a week.

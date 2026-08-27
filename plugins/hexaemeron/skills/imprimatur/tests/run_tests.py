@@ -303,6 +303,18 @@ CAUSAL_HAS_NO_CLEAN = [
         "The route is manual because this repository `still` has no checked hand-off.",
     ),
     (
+        "short inline code does not join adjacent prose",
+        "The route is manual because this repository`x`has no checked hand-off.",
+    ),
+    (
+        "short straight quote does not join adjacent prose",
+        'The route is manual because this repository"x"has no checked hand-off.',
+    ),
+    (
+        "short smart quote does not join adjacent prose",
+        "The route is manual because this repository“x”has no checked hand-off.",
+    ),
+    (
         "blank paragraph does not join clauses",
         "The route stays manual because the repository\n\nhas no checked hand-off.",
     ),
