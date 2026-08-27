@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 847,
-  "total_bytes": 11019121,
+  "file_count": 855,
+  "total_bytes": 11070045,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -36,16 +36,16 @@
   ],
   "files": [
     {
-      "bytes": 5364,
+      "bytes": 5495,
       "path": ".agents/skills/promise-machine/SKILL.md",
-      "sha256": "05e4a523b363878695ebfc0d2aeb25327ef8a7630a864fc5ddd34149d6d7f57c",
+      "sha256": "c57588a0fc02a932c200cd8ddbd8222c4be2325a134be1322bc901ded42d358a",
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
       "bytes": 3198,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "f03d1b727daef7ab7c98a2272fbf3fdfab0698b994d9ec35b8830098914dee0f",
+      "sha256": "0fd9944161af66649a501aa1dc72d43c85228ed5dd6fc0e41fd20a066ed0f87f",
       "source": null
     },
     {
@@ -55,9 +55,9 @@
       "source": ".python-version"
     },
     {
-      "bytes": 11496,
+      "bytes": 11894,
       "path": "AGENTS.md",
-      "sha256": "7d6e9d840205e5181d3e9ca1a1be90228635a853413081500d60f9de1494cc4c",
+      "sha256": "d49544138b92faeb53fbf1a91702a72f4731e705f0693e4e1344ba3d60c53212",
       "source": "AGENTS.md"
     },
     {
@@ -4721,6 +4721,54 @@
       "path": "plugins/sapheneia/skills/sapheneia/agents/openai.yaml",
       "sha256": "7dc44aaf0a94bdac8a92a86a9113a516f508b29ed0e22d98279a40f6a812504e",
       "source": "plugins/sapheneia/skills/sapheneia/agents/openai.yaml"
+    },
+    {
+      "bytes": 4405,
+      "path": "plugins/synkrisis/AGENTS.md",
+      "sha256": "8a5093f717b7fb40703623340f24d20e5dbc07a2fa3e3dd29cd64352f0e3f42d",
+      "source": "plugins/synkrisis/AGENTS.md"
+    },
+    {
+      "bytes": 11342,
+      "path": "plugins/synkrisis/LICENSE",
+      "sha256": "624ddb0910d0925eafa5ac16a65a1360417e3d7c72aff6df0f3eab475695b68d",
+      "source": "plugins/synkrisis/LICENSE"
+    },
+    {
+      "bytes": 16453,
+      "path": "plugins/synkrisis/PROMISE_MACHINE.md",
+      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "source": "plugins/synkrisis/PROMISE_MACHINE.md"
+    },
+    {
+      "bytes": 3710,
+      "path": "plugins/synkrisis/README.md",
+      "sha256": "71dcfa8a0af8f90723fa8bced54adc632f2d95690cd99a7134088ea046a6f1c3",
+      "source": "plugins/synkrisis/README.md"
+    },
+    {
+      "bytes": 2028,
+      "path": "plugins/synkrisis/docs/decisions/ADR-001-keep-cross-run-diagnosis-separate.md",
+      "sha256": "2caab7792e5d32b6b83866836052bb2386c6e86db4b2fc7c51972ae3c4d61fdc",
+      "source": "plugins/synkrisis/docs/decisions/ADR-001-keep-cross-run-diagnosis-separate.md"
+    },
+    {
+      "bytes": 4072,
+      "path": "plugins/synkrisis/scripts/synkrisis.py",
+      "sha256": "5895a0b72363acfde3d053a4b1db508e817e067048f8617c7314226956fdb05d",
+      "source": "plugins/synkrisis/scripts/synkrisis.py"
+    },
+    {
+      "bytes": 1595,
+      "path": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md",
+      "sha256": "bd362ae9c90cea4b4b64b5b7d771b06f7324fe22de467486192042a2d7f98081",
+      "source": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md"
+    },
+    {
+      "bytes": 6790,
+      "path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
+      "sha256": "5813cddaf7c3732576059ae9197b0b29eef1b2a015976923f13198d291543d8b",
+      "source": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {
       "bytes": 4570,

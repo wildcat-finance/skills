@@ -11,7 +11,7 @@ work, and owns no domain promise.
 
 Choose the runtime before routing. In a full source checkout,
 `../../../PROMISE_MACHINE.md` identifies `promise-machine/v1` and
-`../../../plugins/` holds all fourteen plugin contracts; read the [root runtime
+`../../../plugins/` holds all fifteen plugin contracts; read the [root runtime
 contract](../../../AGENTS.md) first. Otherwise this is an isolated Agent Skills
 install: read `PORTABLE.md`, verify its local runtime, and use the installed-path
 substitution it defines. A target repository's unrelated `AGENTS.md` never
@@ -19,7 +19,7 @@ counts as the suite contract. Do not select a canonical skill until one of
 these two runtime paths has loaded the same law and the selected plugin
 contract.
 
-The router sees the complete collective. Thirteen first-party specialists live
+The router sees the complete collective. Fourteen first-party specialists live
 in their own plugins. Hexaemeron contains Fiat, Kronos, six phase disciplines,
 two prose masks, four Fiat worker briefs, and the untouched Pashov security
 suite. The worker briefs are packets Fiat may delegate; they are not canonical
@@ -45,6 +45,7 @@ canonical skill only when the selected workflow requires a named handoff.
 | Apply executable credit laws | [Pandects](../../../plugins/pandects/AGENTS.md) | `pandects` |
 | Build a declared-address counterparty dossier | [Probitas](../../../plugins/probitas/AGENTS.md) | `probitas` |
 | Shape the agent's own replies for an AuDHD reader, or shape durable agent-authored audit records and GitHub issue titles, bodies and comments | [Sapheneia](../../../plugins/sapheneia/AGENTS.md) | `sapheneia` |
+| Compare validated run observations across one declared cohort | [Synkrisis](../../../plugins/synkrisis/AGENTS.md) | `synkrisis` |
 | Build a venue-qualified credit-event release | [Tabularium](../../../plugins/tabularium/AGENTS.md) | `tabularium` |
 
 Hexaemeron is one plugin with several distinct owners. Use the same runtime

@@ -180,6 +180,10 @@ turn a passing structural check into proof that a domain claim is true.
 - [Horos](./plugins/horos) writes and verifies evidence-backed repository
   boundaries and skeleton maps for oriented reading. Its exclusions reduce cost;
   they never apply during security review.
+- [Synkrisis](./plugins/synkrisis) compares validated run observations across
+  one declared cohort and recomputes bounded, evidence-linked findings. A
+  person declares what is comparable and decides what happens next; nothing
+  it emits is a cause.
 - [Sapheneia](./plugins/sapheneia) shapes the collective's own replies and
   bounded audit records, issues, or comments for AuDHD readers without changing
   their protected evidence.

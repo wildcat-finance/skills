@@ -1,0 +1,30 @@
+{
+  "name": "synkrisis",
+  "version": "0.1.0",
+  "description": "Bounded cross-run diagnosis: deterministic findings from validated run observations in one declared cohort.",
+  "author": {
+    "name": "Wildcat Labs",
+    "url": "https://wildcat.finance"
+  },
+  "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/synkrisis",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "keywords": [
+    "run-observations",
+    "telemetry",
+    "diagnosis",
+    "comparison",
+    "promise-machine",
+    "agents"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Synkrisis",
+    "shortDescription": "Bounded cross-run diagnosis: deterministic findings from validated run observations in one declared cohort.",
+    "longDescription": "The Promise Machine records what one agent run observably did; nothing interprets a repeated pattern across runs. Synkrisis owns that comparison and nothing past it. Its committed specification declares the surface: an operator names a manifest of validated, redacted, receipt-bound run-observation records and a comparison policy; cohort construction checks the producer contract, digests, bindings, caps and equality dimensions and classifies every declared run as included, excluded or unknown; a digest-bound catalogue of deterministic rules recomputes bounded findings; a fixed-template report and whole-path verification close the loop. A finding is specified as a bounded inferred relation carrying its evidence, counterevidence, unknowns, the nearest claim it refuses to make, and one suggested handoff a person may act on. The shipped command is the Step 1 scaffold: it declares the four operations and refuses each with a stable code naming the runbook step that implements it. It never calls a model, judges model quality, states a cause, files an issue, edits a repository or dispatches another skill.",
+    "developerName": "Wildcat Labs",
+    "category": "Developer Tools",
+    "capabilities": [],
+    "defaultPrompt": "Use $synkrisis to compare validated run observations across one declared cohort and recompute its bounded findings."
+  },
+  "license": "Apache-2.0"
+}

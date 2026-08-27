@@ -35,6 +35,7 @@ PYTHON_WORKFLOWS = {
     "lazarus.yml",
     "pandects.yml",
     "repo.yml",
+    "synkrisis.yml",
 }
 PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml"}
 DEPENDENCY_FILES = {
