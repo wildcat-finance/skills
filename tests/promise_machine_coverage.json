@@ -1172,7 +1172,7 @@
     "contract": "promise-machine-router-selection/v1",
     "documentation": {
       "path": "docs/promise-machine/router-selection-v1.md",
-      "sha256": "a05b9b91e1f5b2a110d08fcfa080bdaf2c70ad39c4686a1f8a5c199000576e16"
+      "sha256": "5ecd676c2a9ece61395eb73f3d7763d38dea5cee853792f206ae7f45c40b77d1"
     },
     "fixtures": [
       {
