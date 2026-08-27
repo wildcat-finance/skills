@@ -31,7 +31,7 @@ The corpus is one JSON object with four keys.
 - `deciding_sentence`, an object of `path`, `section` and `text`.
 - `not_established`, the nearest overclaim this selection does not support.
 
-`pairs` is an array of the sibling boundaries the corpus grades. Each pair
+`pairs` is a non-empty array of the sibling boundaries the corpus grades. Each pair
 carries an `id`, the `skills` it separates, and the `deciding_sentence` that
 separates them.
 
@@ -59,7 +59,10 @@ That the corpus declares this schema. That every case has exactly the fields
 above, with a unique id and an expectation the checker recognises. That every
 canonical name a case expects or contests, and every name a pair separates, is
 the frontmatter name of a real `SKILL.md` under `plugins/`. That every quoted
-sentence still occurs in the section of the file the entry names. And that any
+sentence still occurs in the section of the file the entry names. That every
+row of the router's two selection tables is named by at least one case. That
+every pair the corpus declares is contested by at least one case, whose
+`contested` list holds all of the skills that pair separates. And that any
 recorded run block carries the eight fields above with a `corpus_sha256` that
 recomputes from the cases on disk.
 
@@ -112,6 +115,19 @@ non-empty exactly as a case's is. A run block whose field set the schema
 does not name, whose digest disagrees with the cases on disk, or whose case,
 pass and fail counts cannot all be true: every case the run covered was passed
 or failed, and a run records every failing case id.
+
+On coverage, which the two checks over the router's tables and the corpus's
+pairs block add. A router row whose canonical selection no case expects. The
+one row that names no canonical skill, the vendored Pashov suite's, quoted by
+no case that selects; a case that refuses does not cover it. A selection cell
+that is neither a canonical name in backticks nor that row's known phrase,
+because a row the check cannot read is a row it would pass unexamined. A router
+carrying no `## Select one runtime contract` section, or that section carrying
+no selection table. A section whose parsed rows and table lines disagree, which
+is what a parser that skipped a row looks like. A corpus declaring no pairs at
+all, refused for the reason an empty case list is. A declared pair no case
+contests in full, since a case holding only some of its members leaves the rest
+ungraded. And a pair carrying no list of separated skills to contest.
 
 ## Recovery
 
