@@ -1418,12 +1418,14 @@ def source_identity(root: Path) -> str:
         raise PlanError(exc.code, exc.message) from exc
 
 
-_SNAPSHOT_OWNERSHIP: dict[tuple[str, str], dict[str, tuple[int, int]]] = {}
-"""Creation identities for live snapshot trees, keyed by (root, nonce).
+_SNAPSHOT_OWNERSHIP: dict[tuple[str, str], dict[str, Any]] = {}
+"""Creation identities and bound inventory for live snapshot trees.
 
-Cleanup consults this so a substituted sibling carrying a copied sentinel is
-preserved rather than removed (S2-R8-20): the parent directory and sentinel
-must be the exact inodes this process created.
+Keyed by (root, nonce).  Cleanup consults the parent and sentinel inode
+identities so a substituted sibling carrying a copied sentinel is preserved
+rather than removed (S2-R8-20), and post-run source verification consults the
+placed-entry inventory so a check that rewrote shared snapshot source refutes
+the aggregate (S2-R8-19).
 """
 
 
@@ -1637,12 +1639,28 @@ def make_snapshot(
             raise SnapshotError("snapshot-error", "the snapshot checked out a different HEAD")
         _reconstruct_index(root, target)
         _remove_head_only_paths(root, target)
-        built = _capture_source(
-            root,
-            lambda kind_tag, rel, kind, body, mode: _place_entry(
-                target, kind_tag, rel, kind, body, mode
-            ),
-        )
+        inventory: list[tuple[str, str, str, str, int]] = []
+
+        def place_and_record(kind_tag: str, rel: str, kind: str, body: bytes, mode: int) -> None:
+            _place_entry(target, kind_tag, rel, kind, body, mode)
+            inventory.append(
+                (
+                    kind_tag,
+                    rel,
+                    kind,
+                    hashlib.sha256(body).hexdigest(),
+                    stat.S_IMODE(mode) & 0o777,
+                )
+            )
+
+        built = _capture_source(root, place_and_record)
+        ownership = _SNAPSHOT_OWNERSHIP.get((str(root), nonce))
+        if ownership is not None:
+            ownership["head"] = head
+            ownership["index_digest"] = hashlib.sha256(
+                _git_bytes(root, "ls-files", "-z", "--stage")
+            ).hexdigest()
+            ownership["inventory"] = inventory
         if expected_identity is not None and built != expected_identity:
             raise SnapshotError(
                 "unstable-source",
@@ -1663,6 +1681,46 @@ def make_snapshot(
         # the caller's `except SnapshotError`, so the parent directory and its
         # sentinel are never removed and a whole clone is leaked on disk.
         raise SnapshotError("snapshot-error", f"cannot build the snapshot: {exc.message}") from exc
+
+
+def verify_snapshot_sources(root: Path, nonce: str, snapshot: Path) -> dict[str, Any]:
+    """Prove the executed source set is still the bound bytes (S2-R8-19).
+
+    Parallel checks share one writable snapshot, so after execution every
+    entry the construction placed is re-read from the snapshot and compared
+    with the digest that was bound.  New files a check created are build
+    products, not observed source, and do not refute the run; a changed or
+    resurrected bound entry does.
+    """
+    recorded = _SNAPSHOT_OWNERSHIP.get((str(root), nonce))
+    if recorded is None or "inventory" not in recorded:
+        return {"status": "unrecorded"}
+    mutated: list[str] = []
+    try:
+        if git(snapshot, "rev-parse", "HEAD").strip() != recorded["head"]:
+            mutated.append("HEAD")
+        listing = _git_bytes(snapshot, "ls-files", "-z", "--stage")
+        if hashlib.sha256(listing).hexdigest() != recorded["index_digest"]:
+            mutated.append("<index>")
+        for _kind_tag, rel, kind, body_sha, mode in recorded["inventory"]:
+            try:
+                now_kind, body, st_mode = _tracked_entry(snapshot, rel, MAX_TRACKED_BYTES)
+            except SnapshotError:
+                mutated.append(rel)
+                continue
+            if now_kind != kind:
+                mutated.append(rel)
+                continue
+            if kind == "regular" and (stat.S_IMODE(st_mode) & 0o777) != mode:
+                mutated.append(rel)
+                continue
+            if kind != "absent" and hashlib.sha256(body).hexdigest() != body_sha:
+                mutated.append(rel)
+    except (SnapshotError, PlanError) as exc:
+        return {"status": "unverifiable", "detail": exc.message}
+    if mutated:
+        return {"status": "mutated", "mutated": sorted(set(mutated))[:50]}
+    return {"status": "intact", "entries": len(recorded["inventory"])}
 
 
 def remove_snapshot(root: Path, nonce: str) -> str:
@@ -2532,6 +2590,7 @@ def write_report(root: Path, rel_path: str, payload: Mapping[str, Any]) -> str:
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
+            written = os.fstat(handle.fileno())
         try:
             os.replace(
                 tmp_name,
@@ -2540,6 +2599,25 @@ def write_report(root: Path, rel_path: str, payload: Mapping[str, Any]) -> str:
                 dst_dir_fd=parent_fd,
             )
             os.fsync(parent_fd)
+            # The temporary's name is discoverable and replaceable by the
+            # same credential between close and replace, so the final entry
+            # must be proved to be the very file this runner wrote
+            # (S2-R8-23): same device and inode, opened no-follow relative
+            # to the bound parent.
+            verify_fd = os.open(
+                target_name,
+                os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=parent_fd,
+            )
+            try:
+                final = os.fstat(verify_fd)
+            finally:
+                os.close(verify_fd)
+            if (final.st_dev, final.st_ino) != (written.st_dev, written.st_ino):
+                raise PlanError(
+                    "report-substituted",
+                    f"the final report entry is not the file this runner wrote: {safe}",
+                )
         except BaseException:
             try:
                 os.unlink(tmp_name, dir_fd=parent_fd)
@@ -2889,6 +2967,7 @@ def _run_attempts(
             return refusal(args, exc.code, exc.message, root=root)
         try:
             results, scheduler = execute(checks, snapshot, capacity["effective_budget"])
+            integrity = verify_snapshot_sources(root, nonce, snapshot)
             after = source_identity(root)
         finally:
             cleanup = remove_snapshot(root, nonce)
@@ -2920,6 +2999,11 @@ def _run_attempts(
         )
         if cleanup != "removed":
             classes = sorted(set(classes) | {"snapshot-error"})
+        if integrity["status"] != "intact":
+            # The bound source set moved under the running checks, so no
+            # aggregate can claim the checks observed what was bound
+            # (S2-R8-19).
+            classes = sorted(set(classes) | {"snapshot-error"})
         if moved:
             classes = sorted(set(classes) | {"superseded"})
         unknown = [c for c in classes if c not in FAILURE_CLASSES]
@@ -2937,6 +3021,7 @@ def _run_attempts(
             schema=RUN_SCHEMA,
             source_identity=before,
             snapshot_cleanup=cleanup,
+            snapshot_sources=integrity,
             outcome=outcome,
             failure_classes=classes,
             checks=results,

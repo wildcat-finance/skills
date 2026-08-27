@@ -1581,6 +1581,138 @@ class HereditaryContainmentTests(unittest.TestCase):
             self.assertEqual(containment.get("proof"), "drained")
 
 
+class SnapshotIsolationTests(TemporaryRepositoryMixin, unittest.TestCase):
+    """A run is green only if the observed source never changed under it.
+
+    Round 8 finding S2-R8-19: parallel checks share one writable snapshot, so
+    one selected check can alter source another selected check observes.  The
+    run must re-verify the snapshot's bound source set after execution and
+    refuse green when it moved.
+    """
+
+    def test_a_check_that_mutates_shared_source_cannot_aggregate_green(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(
+                root,
+                [
+                    "python3", "-c",
+                    "open('src/kept.txt', 'w').write('poisoned by a check')",
+                ],
+            )
+            (root / ".gitignore").write_text("out/\n", encoding="utf-8")
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            proc = self.run_cli(root, "--scope", "one", "--format", "json")
+            emitted = json.loads(proc.stdout)
+            self.assertNotEqual(
+                emitted["outcome"], "green",
+                "a check rewrote shared snapshot source and the run stayed green",
+            )
+            self.assertIn("snapshot-error", emitted.get("failure_classes", []))
+            verification = emitted.get("snapshot_sources")
+            self.assertIsInstance(verification, dict)
+            self.assertEqual(verification.get("status"), "mutated")
+            self.assertIn("src/kept.txt", verification.get("mutated", []))
+
+    def test_an_untouched_snapshot_verifies_intact(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "print('clean')"])
+            (root / ".gitignore").write_text("out/\n", encoding="utf-8")
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            proc = self.run_cli(root, "--scope", "one", "--format", "json")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            emitted = json.loads(proc.stdout)
+            self.assertEqual(emitted["outcome"], "green")
+            verification = emitted.get("snapshot_sources")
+            self.assertIsInstance(
+                verification, dict,
+                "a green run must carry its source verification, not imply it",
+            )
+            self.assertEqual(verification.get("status"), "intact")
+
+    def test_new_files_a_check_creates_do_not_refute_the_run(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(
+                root,
+                [
+                    "python3", "-c",
+                    "open('artifact.out', 'w').write('a build product')",
+                ],
+            )
+            (root / ".gitignore").write_text("out/\n", encoding="utf-8")
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            proc = self.run_cli(root, "--scope", "one", "--format", "json")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            emitted = json.loads(proc.stdout)
+            self.assertEqual(
+                emitted["outcome"], "green",
+                "a new build artifact is not a mutation of observed source",
+            )
+
+
+class ReportEntryIdentityTests(unittest.TestCase):
+    """The persisted report entry is the exact bytes this runner wrote.
+
+    Round 8 finding S2-R8-23: the temporary name is discoverable and
+    replaceable by the same credential between close and replace, so the
+    final directory entry must be proved to be the written file itself.
+    """
+
+    def test_a_substituted_final_entry_refuses_instead_of_standing(self) -> None:
+        import tempfile
+        from unittest import mock
+
+        real_replace = os.replace
+
+        def hijack(src, dst, *, src_dir_fd=None, dst_dir_fd=None):
+            real_replace(src, dst, src_dir_fd=src_dir_fd, dst_dir_fd=dst_dir_fd)
+            if dst_dir_fd is None or str(dst).endswith(".partial"):
+                return
+            attacker = f".attacker.{os.urandom(4).hex()}"
+            fd = os.open(
+                attacker, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644,
+                dir_fd=dst_dir_fd,
+            )
+            try:
+                os.write(fd, b'{"forged": true}\n')
+            finally:
+                os.close(fd)
+            real_replace(attacker, dst, src_dir_fd=dst_dir_fd, dst_dir_fd=dst_dir_fd)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with mock.patch.object(run_checks.os, "replace", side_effect=hijack):
+                with self.assertRaises(run_checks.PlanError) as caught:
+                    run_checks.write_report(
+                        root, "out/report.json", {"schema": run_checks.RUN_SCHEMA}
+                    )
+            self.assertEqual(caught.exception.code, "report-substituted")
+
+    def test_an_unmolested_report_still_writes_and_verifies(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            written = run_checks.write_report(
+                root, "out/report.json", {"schema": run_checks.RUN_SCHEMA}
+            )
+            self.assertEqual(
+                json.loads((root / written).read_text())["schema"],
+                run_checks.RUN_SCHEMA,
+            )
+
+
 class SupersessionTests(TemporaryRepositoryMixin, unittest.TestCase):
     """One movement supersedes and retries; repeated movement is unstable-source."""
 
