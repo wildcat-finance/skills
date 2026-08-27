@@ -8,8 +8,10 @@ sentence that decides it from the file that sentence lives in.
 
 What a pass here establishes is narrow and deliberate. The corpus has the shape
 its schema declares, every canonical name it expects is a real skill under
-`plugins/`, and every sentence it quotes still occurs in the file it names. It
-establishes nothing about how an agent routes. That is a recorded grading run's
+`plugins/`, every sentence it quotes still occurs in the file it names, every
+router row has a case presenting a request for it, and every sibling boundary
+the corpus declares has a case that makes something choose between its members.
+It establishes nothing about how an agent routes. That is a recorded grading run's
 subject, and a recorded score is never this suite's pass condition.
 
 The comparison collapses runs of whitespace before searching, so rewrapping a
@@ -23,8 +25,8 @@ table row, four spaces that turn prose into a code block -- leaves every quote
 matching. And because the section's lines join with single spaces, a quotation
 may span two adjacent rows or list items that no reader would read as one
 sentence. Constraining that needs a rule about what counts as one sentence,
-which the ambiguity rule owns; what this module does refuse is a quotation that
-is empty, because an empty string occurs in every section and would pass here
+which the router's ambiguity rule now states rather than this module; what this
+module does refuse is a quotation that is empty, because an empty string occurs in every section and would pass here
 while establishing nothing.
 """
 
@@ -60,7 +62,23 @@ RUN_FIELDS = frozenset(
 )
 REFUSALS = frozenset({"ambiguous", "uncovered"})
 
+# The two guard corpora, named by key rather than by path. `load_corpus` keeps
+# one fixed path and gains no argument; a caller that wants a degraded corpus
+# picks from this closed set, so no path a caller computes reaches the disk.
+GUARD_CORPORA = {
+    "altered-sentence": "tests/fixtures/router-selection/guard-altered-sentence.json",
+    "missing-row": "tests/fixtures/router-selection/guard-missing-row.json",
+}
+
+ROUTER_SECTION = "## Select one runtime contract"
+# The one row whose canonical selection is a phrase rather than a name: the
+# vendored Pashov suite ships several skills behind a single router row, so its
+# case names one of them and quotes the row instead.
+UNNAMED_ROW_SELECTION = "The named upstream Pashov skill"
+
 SKILL_NAME = re.compile(r"(?m)^name:\s*([^\n]+)$")
+TABLE_ROW = re.compile(r"(?m)^\|(?P<request>[^|]+)\|(?P<contract>[^|]+)\|(?P<selection>[^|]+)\|\s*$")
+CANONICAL_CELL = re.compile(r"^`([a-z0-9-]+)`$")
 
 
 class CorpusError(Exception):
@@ -237,10 +255,166 @@ def run_faults(runs: list, expected: str) -> list:
     return faults
 
 
+def prose_sources() -> dict:
+    """Read the closed quotable set once, mapped path to text."""
+    return {
+        path: (REPOSITORY_ROOT / path).read_text(encoding="utf-8")
+        for path in sorted(PROSE_SOURCES)
+    }
+
+
+def quotation_faults(document: dict, sources: dict) -> list:
+    """Every quoted sentence the file it names no longer carries.
+
+    Split out of the method that asserts on it so a degraded corpus can be run
+    through the same code the real corpus is run through. A guard that
+    reimplemented the search would prove the guard works and say nothing about
+    the check.
+    """
+    missing = []
+    for owner, sentence in quoting(document):
+        if not isinstance(sentence, dict):
+            missing.append(f"{owner}: deciding_sentence is not an object")
+            continue
+        if sentence.get("path") not in sources:
+            missing.append(
+                f"{owner}: {sentence.get('path')!r} is outside the quotable set "
+                f"{sorted(PROSE_SOURCES)}, so its sentence was never looked for"
+            )
+            continue
+        if not collapsed(sentence.get("text") or ""):
+            missing.append(
+                f"{owner}: the quotation is empty, which occurs in every section "
+                f"and would pass while establishing nothing"
+            )
+            continue
+        path, heading = sentence["path"], sentence.get("section")
+        section = section_of(sources[path], heading)
+        if section is None:
+            missing.append(f"{owner}: {path} has no section {heading!r}")
+        elif collapsed(sentence.get("text", "")) not in collapsed(section):
+            missing.append(
+                f"{owner}: {path} section {heading!r} no longer contains "
+                f"{sentence.get('text')!r}"
+            )
+    return missing
+
+
+def guard_corpus(name: str) -> dict:
+    """Parse one of the two guard corpora, chosen by key from a closed set.
+
+    The degraded corpora are read here rather than through `load_corpus`,
+    which resolves one fixed path and takes no argument. Giving that loader a
+    parameter so a test could aim it would put the first caller-supplied
+    component into the only path this module opens for corpus data.
+    """
+    return parse_corpus((REPOSITORY_ROOT / GUARD_CORPORA[name]).read_bytes())
+
+
+def router_rows(section: str) -> list:
+    """Every selection row of the router's tables, as (request, selection).
+
+    The header and separator lines are dropped by shape rather than by index,
+    so a table gaining a row above or below them is still read.
+    """
+    rows = []
+    for match in TABLE_ROW.finditer(section):
+        request = collapsed(match.group("request"))
+        selection = collapsed(match.group("selection"))
+        if request == "Request" or set(request) <= set("- "):
+            continue
+        rows.append((request, selection))
+    return rows
+
+
+def row_coverage_faults(document: dict, rows: list) -> list:
+    """Every router row no case presents a request for.
+
+    This is the check that makes the corpus decay loudly. A row added to the
+    router, or a case retired from the corpus, leaves a selection claim that
+    nothing grades, and without this the gap is noticed whenever somebody next
+    counts by hand.
+
+    Rows are matched two ways because the router names its selection two ways.
+    A row whose selection cell is a canonical name in backticks is covered by a
+    case expecting that name. The one row that names no skill -- the vendored
+    Pashov suite ships several behind it -- is covered by a case that selects
+    something and quotes the row's own request predicate, which is the study's
+    rule that the row's case names a skill rather than the row's phrase. A
+    selection cell of any third shape is a fault, so a later unnamed row fails
+    here instead of being skipped by both branches.
+    """
+    selected, quoted = set(), set()
+    for case in document["cases"]:
+        expect = case.get("expect")
+        if not isinstance(expect, dict) or expect.get("outcome") != "select":
+            continue
+        selected.add(expect.get("canonical"))
+        sentence = case.get("deciding_sentence")
+        if isinstance(sentence, dict):
+            quoted.add(collapsed(sentence.get("text") or ""))
+    faults = []
+    for request, selection in rows:
+        named = CANONICAL_CELL.match(selection)
+        if named:
+            if named.group(1) not in selected:
+                faults.append(
+                    f"router row {request!r} selects {named.group(1)!r} and no case "
+                    f"expects it, so that row's selection claim is graded by nothing"
+                )
+        elif selection == UNNAMED_ROW_SELECTION:
+            if request not in quoted:
+                faults.append(
+                    f"router row {request!r} names no canonical skill, so its case "
+                    f"is the one that selects a skill and quotes the row, and no "
+                    f"case does"
+                )
+        else:
+            faults.append(
+                f"router row {request!r} selects {selection!r}, which is neither a "
+                f"canonical name in backticks nor {UNNAMED_ROW_SELECTION!r}; a row "
+                f"this check cannot read is a row it would silently pass"
+            )
+    return faults
+
+
+def pair_coverage_faults(document: dict) -> list:
+    """Every declared pair no case actually contests.
+
+    A pairs block is a list of boundaries the corpus claims to grade. A pair
+    with no case behind it grades nothing: the boundary sentence is quoted and
+    checked, and no request is ever presented that has to choose between the
+    skills the sentence separates.
+    """
+    contested = [
+        set(case["contested"])
+        for case in document["cases"]
+        if isinstance(case.get("contested"), list)
+        and all(isinstance(name, str) for name in case["contested"])
+    ]
+    faults = []
+    for index, pair in enumerate(document["pairs"]):
+        where = f"{CORPUS_PATH}#pairs[{index}]"
+        if not isinstance(pair, dict) or not isinstance(pair.get("skills"), list):
+            faults.append(f"{where}: has no list of separated skills to contest")
+            continue
+        wanted = set(pair["skills"])
+        if not any(wanted <= holder for holder in contested):
+            faults.append(
+                f"pair {pair.get('id')!r} separates {sorted(wanted)} and no case "
+                f"contests all of them, so the boundary is declared and never graded"
+            )
+    return faults
+
+
 class RouterSelectionCorpus(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.document = load_corpus()
+        cls.sources = prose_sources()
+        cls.rows = router_rows(
+            section_of(cls.sources[ROUTER_PATH], ROUTER_SECTION) or ""
+        )
 
     def test_the_corpus_declares_the_supported_schema(self):
         self.assertEqual(
@@ -314,36 +488,7 @@ class RouterSelectionCorpus(unittest.TestCase):
         looks for the sentence, so a reworded boundary fails here instead of
         surviving until a reader notices the corpus no longer matches.
         """
-        sources = {
-            path: (REPOSITORY_ROOT / path).read_text(encoding="utf-8")
-            for path in sorted(PROSE_SOURCES)
-        }
-        missing = []
-        for owner, sentence in quoting(self.document):
-            if not isinstance(sentence, dict):
-                missing.append(f"{owner}: deciding_sentence is not an object")
-                continue
-            if sentence.get("path") not in sources:
-                missing.append(
-                    f"{owner}: {sentence.get('path')!r} is outside the quotable set "
-                    f"{sorted(PROSE_SOURCES)}, so its sentence was never looked for"
-                )
-                continue
-            if not collapsed(sentence.get("text") or ""):
-                missing.append(
-                    f"{owner}: the quotation is empty, which occurs in every section "
-                    f"and would pass while establishing nothing"
-                )
-                continue
-            path, heading = sentence["path"], sentence.get("section")
-            section = section_of(sources[path], heading)
-            if section is None:
-                missing.append(f"{owner}: {path} has no section {heading!r}")
-            elif collapsed(sentence.get("text", "")) not in collapsed(section):
-                missing.append(
-                    f"{owner}: {path} section {heading!r} no longer contains "
-                    f"{sentence.get('text')!r}"
-                )
+        missing = quotation_faults(self.document, prose_sources())
         self.assertEqual(
             missing, [],
             "a deciding sentence is no longer in the file the corpus quotes it "
@@ -477,6 +622,143 @@ class RouterSelectionCorpus(unittest.TestCase):
                     pair_faults({"pairs": [pair]}), [],
                     f"a {label} was accepted, so the pairs block carries no shape",
                 )
+
+    def test_every_router_row_is_named_by_at_least_one_case(self):
+        """A router row nothing grades is a selection claim on trust.
+
+        The corpus's reason to exist is that each row of the router asserts
+        which requests it owns and nothing tested that. A row with no case
+        restores exactly the gap the corpus was written to close, and a row
+        added later would open it again quietly.
+        """
+        section = section_of(self.sources[ROUTER_PATH], ROUTER_SECTION)
+        self.assertIsNotNone(section, f"{ROUTER_PATH} has no {ROUTER_SECTION!r}")
+        lines = [line for line in section.splitlines() if line.startswith("|")]
+        headers = sum(1 for line in lines if collapsed(line).startswith("| Request |"))
+        self.assertTrue(headers, "no selection table was found in the router")
+        self.assertEqual(
+            len(self.rows), len(lines) - 2 * headers,
+            "the row parser read a different number of rows than the section holds "
+            "table lines, so a row it skipped would pass this check unexamined",
+        )
+        faults = row_coverage_faults(self.document, self.rows)
+        self.assertEqual(
+            faults, [],
+            "the router makes a selection claim the corpus never presents a request "
+            f"for; add a case for the row or retire the row:\n  " + "\n  ".join(faults),
+        )
+
+    def test_every_declared_pair_has_at_least_one_contested_case(self):
+        """A boundary is graded by a request that has to choose, or not at all.
+
+        The pairs block quotes the sentence that separates two siblings and the
+        prose binding keeps that quotation current. Neither presents a request.
+        Without a case whose `contested` list holds the pair's members, the
+        corpus declares a boundary it never asks anything to respect.
+        """
+        self.assertTrue(
+            self.document["pairs"],
+            f"{CORPUS_PATH} declares no pairs, so this check would pass over nothing "
+            f"while the corpus graded no sibling boundary at all",
+        )
+        faults = pair_coverage_faults(self.document)
+        self.assertEqual(
+            faults, [],
+            "a declared pair has no case that contests it, so the boundary is quoted "
+            f"and never graded:\n  " + "\n  ".join(faults),
+        )
+
+    def test_an_altered_deciding_sentence_fails_the_prose_binding_check(self):
+        """The guard behind the prose binding.
+
+        `test_every_deciding_sentence_occurs_in_the_file_it_names` passes over
+        a corpus whose quotations are all current, which is the only corpus it
+        ever sees. That proves the check ran, not that it can fail. This drives
+        the same function over a corpus whose sentence has been reworded.
+        """
+        self.assertEqual(
+            quotation_faults(self.document, self.sources), [],
+            "the corpus on disk quotes prose that has moved, which this guard "
+            "needs to be clean before it can say anything about the degraded one",
+        )
+        faults = quotation_faults(guard_corpus("altered-sentence"), self.sources)
+        self.assertNotEqual(
+            faults, [],
+            "a corpus whose deciding sentence was reworded was accepted, so the "
+            "prose binding cannot fail and establishes nothing",
+        )
+        self.assertEqual(
+            len(faults), 1,
+            f"the fixture reworded one sentence and left the other current, so a "
+            f"second fault means the check refuses more than the rewording: {faults}",
+        )
+        self.assertIn(
+            "GA-02", faults[0],
+            f"the failure does not name the case that carries the reworded "
+            f"sentence, so a reader is sent looking for it: {faults[0]}",
+        )
+        self.assertIn(
+            "source-linked fragments", faults[0],
+            f"the failure does not quote the sentence that was looked for and not "
+            f"found, which is what tells a reader whether to requote or to revert: "
+            f"{faults[0]}",
+        )
+
+    def test_a_router_row_with_no_case_fails_the_coverage_check(self):
+        """The guard behind the row coverage check.
+
+        The corpus on disk covers every row, so the coverage check over it can
+        only ever pass. This drives the same function over a corpus with one
+        row uncovered, and over the two row shapes no fixture can hold: the
+        unnamed Pashov row left unquoted, and a selection cell of a shape the
+        check cannot read.
+        """
+        self.assertEqual(
+            row_coverage_faults(self.document, self.rows), [],
+            "the corpus on disk leaves a router row uncovered, which this guard "
+            "needs to be clean before it can say anything about the degraded one",
+        )
+        faults = row_coverage_faults(guard_corpus("missing-row"), self.rows)
+        self.assertNotEqual(
+            faults, [],
+            "a corpus leaving a router row uncovered was accepted, so the coverage "
+            "check cannot fail and establishes nothing",
+        )
+        self.assertEqual(
+            len(faults), 1,
+            f"the fixture is the corpus's own row cases with one removed, so a "
+            f"second fault means either the parser lost a row or the router gained "
+            f"one the fixture never had: {faults}",
+        )
+        self.assertIn(
+            "lemma", faults[0],
+            f"the failure does not name the row the fixture leaves uncovered: {faults[0]}",
+        )
+
+        # Two row shapes the fixture cannot carry, because they are defects of
+        # the router rather than of a corpus. Both are driven against the same
+        # function, so neither branch ships having never run.
+        covered = {"cases": [
+            {"expect": {"outcome": "select", "canonical": "x-ray"},
+             "deciding_sentence": {"path": ROUTER_PATH, "section": ROUTER_SECTION,
+                                   "text": "Run audit-readiness"}},
+        ]}
+        for label, rows in {
+            "the unnamed row quoted by no case": [
+                ("Run audit-readiness, Solidity review, or stateful fuzzing",
+                 UNNAMED_ROW_SELECTION),
+            ],
+            "a selection cell of a third shape": [
+                ("Do something new", "Ask the maintainers"),
+            ],
+        }.items():
+            with self.subTest(router=label):
+                self.assertNotEqual(
+                    row_coverage_faults(covered, rows), [],
+                    f"{label} was accepted, so a router row this check cannot read "
+                    f"would pass it unexamined",
+                )
+
 
 
 if __name__ == "__main__":
