@@ -1115,6 +1115,175 @@ class SnapshotFidelityTests(TemporaryRepositoryMixin, unittest.TestCase):
                 run_checks.remove_snapshot(root, nonce)
 
 
+class SourceAuthorityTests(TemporaryRepositoryMixin, unittest.TestCase):
+    """The bytes the snapshot executes are the bytes the identity binds.
+
+    Round 8 findings S2-R8-09 through S2-R8-14: content capture must never
+    pass through a Git clean filter, textconv or external-diff helper, must
+    survive non-UTF-8 tracked bytes exactly, must carry the staged index into
+    the snapshot, and must refuse a snapshot whose source moved between the
+    bound identity and construction.
+    """
+
+    def _committed_repo(self, tmp: str) -> Path:
+        root = self.make_repo(tmp)
+        self.write_map(root, ["python3", "-c", "pass"])
+        self.git(root, "add", "-A")
+        self.git(root, "commit", "--quiet", "-m", "base")
+        return root
+
+    def test_a_clean_filter_cannot_hide_changed_tracked_bytes(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            masked = root / "src" / "masked.txt"
+            masked.write_text("original\n", encoding="utf-8")
+            (root / ".gitattributes").write_text(
+                "src/masked.txt filter=hider\n", encoding="utf-8"
+            )
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            original_copy = Path(tmp) / "original.bin"
+            original_copy.write_text("original\n", encoding="utf-8")
+            # The clean filter swallows the real worktree bytes and answers
+            # with the committed bytes, so every content question routed
+            # through Git conversion reports the file unchanged.
+            self.git(
+                root, "config", "filter.hider.clean",
+                f"cat >/dev/null; cat '{original_copy}'",
+            )
+            before = run_checks.source_identity(root)
+            masked.write_text("tampered\n", encoding="utf-8")
+            after = run_checks.source_identity(root)
+            self.assertNotEqual(
+                before, after,
+                "a clean filter hid changed tracked bytes from the identity",
+            )
+            nonce = "hider" + os.urandom(5).hex()
+            try:
+                snapshot = run_checks.make_snapshot(root, nonce)
+                self.assertEqual(
+                    (snapshot / "src" / "masked.txt").read_bytes(),
+                    b"tampered\n",
+                    "the snapshot executed bytes a clean filter substituted",
+                )
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+
+    def test_diff_helpers_never_execute_during_capture(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            sentinel = Path(tmp) / "helper-ran"
+            helper = Path(tmp) / "external-diff.sh"
+            helper.write_text(
+                f"#!/bin/sh\n: > '{sentinel}'\nexit 0\n", encoding="utf-8"
+            )
+            helper.chmod(0o755)
+            self.git(root, "config", "diff.external", str(helper))
+            (root / "src" / "kept.txt").write_text("changed\n", encoding="utf-8")
+            run_checks.source_identity(root)
+            nonce = "helper" + os.urandom(5).hex()
+            try:
+                run_checks.make_snapshot(root, nonce)
+            except run_checks.SnapshotError:
+                pass
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+            self.assertFalse(
+                sentinel.exists(),
+                "a configured diff helper executed during source capture",
+            )
+
+    def test_non_utf8_tracked_bytes_reach_the_snapshot_exactly(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            blob = root / "src" / "blob.bin"
+            blob.write_bytes(b"\x00\xff\xfe-old")
+            self.git(root, "add", "src/blob.bin")
+            self.git(root, "commit", "--quiet", "-m", "binary fixture")
+            tampered = b"\x00\xff\xfe-new\x80"
+            blob.write_bytes(tampered)
+            nonce = "binary" + os.urandom(5).hex()
+            try:
+                snapshot = run_checks.make_snapshot(root, nonce)
+                self.assertEqual(
+                    (snapshot / "src" / "blob.bin").read_bytes(),
+                    tampered,
+                    "changed tracked binary bytes did not reach the snapshot",
+                )
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+
+    def test_staged_index_state_is_reconstructed_in_the_snapshot(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            staged = root / "src" / "staged.txt"
+            staged.write_text("staged\n", encoding="utf-8")
+            self.git(root, "add", "src/staged.txt")
+            staged.write_text("worktree\n", encoding="utf-8")
+
+            def index_listing(repo: Path) -> bytes:
+                return subprocess.run(
+                    ["git", "ls-files", "-z", "--stage"],
+                    cwd=str(repo), capture_output=True, shell=False, check=True,
+                ).stdout
+
+            nonce = "staged" + os.urandom(5).hex()
+            try:
+                snapshot = run_checks.make_snapshot(root, nonce)
+                self.assertEqual(
+                    index_listing(snapshot), index_listing(root),
+                    "the snapshot index diverged from the bound source index",
+                )
+                self.assertEqual(
+                    (snapshot / "src" / "staged.txt").read_bytes(), b"worktree\n"
+                )
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+
+    def test_snapshot_refuses_when_source_moved_since_the_bound_identity(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            expected = run_checks.source_identity(root)
+            (root / "src" / "kept.txt").write_text("moved\n", encoding="utf-8")
+            nonce = "moved" + os.urandom(5).hex()
+            try:
+                with self.assertRaises(run_checks.SnapshotError) as caught:
+                    run_checks.make_snapshot(
+                        root, nonce, expected_identity=expected
+                    )
+                self.assertEqual(caught.exception.code, "unstable-source")
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+
+    def test_oversized_tracked_capture_refuses_by_name(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            real_bound = getattr(run_checks, "MAX_TRACKED_BYTES", None)
+            self.assertIsNotNone(
+                real_bound, "tracked content capture must declare a byte bound"
+            )
+            run_checks.MAX_TRACKED_BYTES = 4
+            self.addCleanup(
+                lambda: setattr(run_checks, "MAX_TRACKED_BYTES", real_bound)
+            )
+            with self.assertRaises(run_checks.PlanError) as caught:
+                run_checks.source_identity(root)
+            self.assertEqual(caught.exception.code, "snapshot-error")
+
+
 class SupersessionTests(TemporaryRepositoryMixin, unittest.TestCase):
     """One movement supersedes and retries; repeated movement is unstable-source."""
 
@@ -1466,7 +1635,7 @@ class GitCaptureRefusalTests(unittest.TestCase):
         real_git = run_checks.git
 
         def oversized(r, *args, **kwargs):
-            if args[:2] == ("diff", "HEAD"):
+            if args[:2] == ("rev-parse", "HEAD"):
                 raise run_checks.PlanError("git-oversized", "too much output")
             return real_git(r, *args, **kwargs)
 
@@ -2001,7 +2170,11 @@ class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
 
         with (
             mock.patch.object(run_checks, "source_identity", side_effect=lambda root: next(identities)),
-            mock.patch.object(run_checks, "make_snapshot", side_effect=lambda root, nonce: root),
+            mock.patch.object(
+                run_checks,
+                "make_snapshot",
+                side_effect=lambda root, nonce, expected_identity=None: root,
+            ),
             mock.patch.object(
                 run_checks,
                 "execute",

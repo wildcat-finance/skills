@@ -17,6 +17,7 @@ else.
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
 import json
 import os
@@ -45,6 +46,7 @@ MAX_GIT_OUTPUT_BYTES = 8_388_608
 MAX_CAPTURE_HEAD_BYTES = 65_536
 MAX_CAPTURE_TAIL_BYTES = 65_536
 MAX_UNTRACKED_BYTES = 33_554_432
+MAX_TRACKED_BYTES = 268_435_456
 MAX_WORKTREE_ENTRIES = 100_000
 DEFAULT_TIMEOUT_SECONDS = 1_800
 SAFETY_CAP = 32
@@ -243,7 +245,7 @@ def _open_confined_directory(root: Path, parts: Sequence[str], *, create: bool) 
 
 def _read_confined_regular(
     root: Path, rel_path: str, maximum: int, *, label: str
-) -> tuple[str, bytes]:
+) -> tuple[str, bytes, os.stat_result]:
     """Read a bounded regular file through a no-follow descriptor walk."""
     safe = _safe_relpath(rel_path, field_name=label)
     parts = safe.split("/")
@@ -286,7 +288,7 @@ def _read_confined_regular(
         )
         if opened_identity != closed_identity:
             raise PlanError("map-unreadable", f"{label} changed while it was read: {safe}")
-        return safe, bytes(body)
+        return safe, bytes(body), opened
     finally:
         if fd >= 0:
             os.close(fd)
@@ -313,7 +315,7 @@ def _bounded_int(body: Mapping[str, Any], key: str, default: int, *, cid: str) -
 def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
     """Read, validate and digest the declared check map."""
     try:
-        safe_map_path, raw = _read_confined_regular(
+        safe_map_path, raw, _ = _read_confined_regular(
             root, map_path, MAX_MAP_BYTES, label="check map"
         )
     except PlanError:
@@ -1250,31 +1252,300 @@ def _digest_field(digest: Any, value: bytes) -> None:
     digest.update(value)
 
 
-def source_identity(root: Path) -> str:
-    """A digest over HEAD, the full working diff and every relevant untracked entry."""
-    parts = [git(root, "rev-parse", "HEAD").strip()]
-    parts.append(hashlib.sha256(git(root, "diff", "HEAD").encode()).hexdigest())
-    parts.append(hashlib.sha256(git(root, "diff", "--cached").encode()).hexdigest())
-    digest = hashlib.sha256()
-    consumed = 0
+def _git_bytes(root: Path, *args: str) -> bytes:
+    """Bounded raw git stdout for listings whose bytes must survive exactly."""
+    proc = subprocess.run(
+        ["git", *args],
+        cwd=str(root),
+        env=_git_env(),
+        capture_output=True,
+        shell=False,
+    )
+    if proc.returncode != 0:
+        raise SnapshotError(
+            "snapshot-error",
+            f"git {' '.join(args)} failed: "
+            + proc.stderr.decode("utf-8", "replace").strip(),
+        )
+    if len(proc.stdout) > MAX_GIT_OUTPUT_BYTES:
+        raise SnapshotError(
+            "snapshot-error", f"git {' '.join(args)} produced too much output"
+        )
+    return proc.stdout
+
+
+def _tracked_index_entries(root: Path) -> list[tuple[bytes, bytes, str]]:
+    """The exact zero-stage index as (mode, oid, path) records.
+
+    ``git ls-files -z --stage`` is plumbing: it lists index records without
+    converting any file content, so no clean filter, textconv or external
+    diff helper can run while the index model is read.  An unmerged index has
+    no single executable state, so any non-zero stage refuses.
+    """
+    raw = _git_bytes(root, "ls-files", "-z", "--stage")
+    entries: list[tuple[bytes, bytes, str]] = []
+    seen: set[str] = set()
+    for record in raw.split(b"\0"):
+        if not record:
+            continue
+        head, sep, path = record.partition(b"\t")
+        fields = head.split(b" ")
+        if not sep or len(fields) != 3 or not path:
+            raise SnapshotError("snapshot-error", "unparseable index entry")
+        mode, _oid, stage = fields
+        if stage != b"0":
+            raise SnapshotError(
+                "snapshot-error",
+                "an unmerged index has no single executable state",
+            )
+        rel = os.fsdecode(path)
+        if rel in seen:
+            raise SnapshotError("snapshot-error", f"duplicate index entry: {rel}")
+        seen.add(rel)
+        entries.append((mode, _oid, rel))
+    return entries
+
+
+def _tracked_entry(root: Path, rel: str, remaining: int) -> tuple[str, bytes, int]:
+    """One tracked path's exact worktree state, read without Git conversion.
+
+    Returns ``(kind, body, mode)`` with kind ``regular``, ``symlink`` or
+    ``absent``.  Regular bytes come through the no-follow descriptor walk, so
+    the captured content is what a check would execute, never what a filter
+    or helper answered for it.
+    """
+    safe = _snapshot_relpath(rel)
     try:
-        for rel in _untracked_paths(root):
-            kind, body, mode = _untracked_entry(root, rel, MAX_UNTRACKED_BYTES - consumed)
-            consumed += len(body)
-            _digest_field(digest, rel.encode("utf-8", "surrogateescape"))
-            _digest_field(digest, kind.encode("ascii"))
-            if kind == "regular":
-                replayed_mode = stat.S_IMODE(mode) & 0o777
-                _digest_field(digest, replayed_mode.to_bytes(4, "big"))
-            _digest_field(digest, body)
+        info = os.lstat(root / safe)
+    except FileNotFoundError:
+        return "absent", b"", 0
+    except OSError as exc:
+        raise SnapshotError(
+            "snapshot-error", f"cannot inspect tracked path {safe}: {exc}"
+        ) from exc
+    if stat.S_ISLNK(info.st_mode):
+        parts = safe.split("/")
+        try:
+            parent_fd = _open_confined_directory(root, parts[:-1], create=False)
+        except PlanError as exc:
+            raise SnapshotError("snapshot-error", exc.message) from exc
+        try:
+            target = os.readlink(parts[-1], dir_fd=parent_fd)
+        except OSError as exc:
+            raise SnapshotError(
+                "snapshot-error", f"cannot read tracked symlink {safe}: {exc}"
+            ) from exc
+        finally:
+            os.close(parent_fd)
+        body = os.fsencode(target)
+        if len(body) > remaining:
+            raise SnapshotError(
+                "snapshot-error", "tracked working files exceed the capture bound"
+            )
+        return "symlink", body, info.st_mode
+    if not stat.S_ISREG(info.st_mode):
+        raise SnapshotError(
+            "snapshot-error", f"unsupported tracked special file: {safe}"
+        )
+    try:
+        _, body, opened = _read_confined_regular(
+            root, safe, remaining, label="tracked file"
+        )
+    except PlanError as exc:
+        if exc.code == "map-oversized":
+            raise SnapshotError(
+                "snapshot-error", "tracked working files exceed the capture bound"
+            ) from exc
+        raise SnapshotError("snapshot-error", exc.message) from exc
+    return "regular", body, opened.st_mode
+
+
+def _capture_source(root: Path, place) -> str:
+    """Digest the exact executable source; optionally place every entry.
+
+    One pass serves both readers: the identity binds HEAD, the zero-stage
+    index records and the raw bytes of every tracked and relevant untracked
+    entry, and ``place(kind_tag, rel, kind, body, mode)`` receives those same
+    bytes so a snapshot builder writes exactly what was bound.  No Git
+    content conversion runs anywhere on this path (S2-R8-09, S2-R8-10,
+    S2-R8-11).
+    """
+    head = git(root, "rev-parse", "HEAD").strip()
+    entries = _tracked_index_entries(root)
+    digest = hashlib.sha256()
+    _digest_field(digest, head.encode())
+    for mode, oid, rel in entries:
+        _digest_field(digest, b"index")
+        _digest_field(digest, mode)
+        _digest_field(digest, oid)
+        _digest_field(digest, rel.encode("utf-8", "surrogateescape"))
+    tracked_consumed = 0
+    for _mode, _oid, rel in entries:
+        kind, body, st_mode = _tracked_entry(
+            root, rel, MAX_TRACKED_BYTES - tracked_consumed
+        )
+        tracked_consumed += len(body)
+        _digest_field(digest, b"tracked")
+        _digest_field(digest, rel.encode("utf-8", "surrogateescape"))
+        _digest_field(digest, kind.encode("ascii"))
+        if kind == "regular":
+            replayed_mode = stat.S_IMODE(st_mode) & 0o777
+            _digest_field(digest, replayed_mode.to_bytes(4, "big"))
+        _digest_field(digest, body)
+        if place is not None:
+            place("tracked", rel, kind, body, st_mode)
+    consumed = 0
+    for rel in _untracked_paths(root):
+        kind, body, mode = _untracked_entry(root, rel, MAX_UNTRACKED_BYTES - consumed)
+        consumed += len(body)
+        _digest_field(digest, b"untracked")
+        _digest_field(digest, rel.encode("utf-8", "surrogateescape"))
+        _digest_field(digest, kind.encode("ascii"))
+        if kind == "regular":
+            replayed_mode = stat.S_IMODE(mode) & 0o777
+            _digest_field(digest, replayed_mode.to_bytes(4, "big"))
+        _digest_field(digest, body)
+        if place is not None:
+            place("untracked", rel, kind, body, mode)
+    return digest.hexdigest()
+
+
+def source_identity(root: Path) -> str:
+    """A digest over HEAD, the zero-stage index and every relevant raw byte."""
+    try:
+        return _capture_source(root, None)
     except SnapshotError as exc:
         raise PlanError(exc.code, exc.message) from exc
-    parts.append(digest.hexdigest())
-    return hashlib.sha256("\0".join(parts).encode()).hexdigest()
 
 
-def make_snapshot(root: Path, nonce: str) -> Path:
-    """Clone the checkout, replay the working diff and copy relevant untracked files."""
+def _reconstruct_index(root: Path, target: Path) -> None:
+    """Copy the source's zero-stage index into the snapshot record for record.
+
+    The local clone carries every object the source repository holds, staged
+    blobs included, so emptying the snapshot index and feeding it the exact
+    ``ls-files --stage`` records reproduces the staged state a check would
+    observe in the source (S2-R8-13).
+    """
+    emptied = subprocess.run(
+        ["git", "read-tree", "--empty"],
+        cwd=str(target),
+        env=_git_env(),
+        capture_output=True,
+        shell=False,
+    )
+    if emptied.returncode != 0:
+        raise SnapshotError(
+            "snapshot-error",
+            "cannot clear the snapshot index: "
+            + emptied.stderr.decode("utf-8", "replace").strip(),
+        )
+    listing = _git_bytes(root, "ls-files", "-z", "--stage")
+    proc = subprocess.run(
+        ["git", "update-index", "-z", "--index-info"],
+        cwd=str(target),
+        env=_git_env(),
+        input=listing,
+        capture_output=True,
+        shell=False,
+    )
+    if proc.returncode != 0:
+        raise SnapshotError(
+            "snapshot-error",
+            "cannot reconstruct the staged index: "
+            + proc.stderr.decode("utf-8", "replace").strip(),
+        )
+
+
+def _remove_head_only_paths(root: Path, target: Path) -> None:
+    """Delete checkout files whose paths left the source index.
+
+    The checkout materialises HEAD, but the bound model is the source index
+    plus worktree: a path deleted from the index (a staged deletion) must not
+    survive in the snapshot as executable HEAD bytes, and a path that became
+    untracked must leave room for its captured placement.
+    """
+    head_paths = {
+        os.fsdecode(record)
+        for record in _git_bytes(
+            target, "ls-tree", "-r", "-z", "--name-only", "HEAD"
+        ).split(b"\0")
+        if record
+    }
+    index_paths = {rel for _mode, _oid, rel in _tracked_index_entries(root)}
+    for rel in sorted(head_paths - index_paths):
+        try:
+            (target / _snapshot_relpath(rel)).unlink()
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            raise SnapshotError(
+                "snapshot-error", f"cannot remove {rel} from the snapshot: {exc}"
+            ) from exc
+
+
+def _place_entry(target: Path, kind_tag: str, rel: str, kind: str, body: bytes, mode: int) -> None:
+    """Write one captured entry into the snapshot tree exactly as captured."""
+    safe = _snapshot_relpath(rel)
+    dest = target / safe
+    if kind == "absent":
+        try:
+            dest.unlink()
+        except FileNotFoundError:
+            return
+        except OSError as exc:
+            raise SnapshotError(
+                "snapshot-error", f"cannot remove {safe} from the snapshot: {exc}"
+            ) from exc
+        return
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+    except (FileExistsError, NotADirectoryError):
+        raise SnapshotError(
+            "snapshot-error", f"snapshot parent for {safe} is not a directory"
+        ) from None
+    if kind == "symlink":
+        try:
+            dest.unlink()
+        except FileNotFoundError:
+            pass
+        os.symlink(os.fsdecode(body), dest)
+        return
+    replayed_mode = stat.S_IMODE(mode) & 0o777
+    flags = os.O_WRONLY | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
+    flags |= os.O_EXCL if kind_tag == "untracked" else os.O_TRUNC
+    try:
+        fd = os.open(dest, flags, replayed_mode)
+    except OSError as exc:
+        if exc.errno != errno.ELOOP:
+            raise
+        # The checkout put a symlink where the worktree holds a regular file;
+        # replace the link with the captured bytes rather than following it.
+        dest.unlink()
+        fd = os.open(dest, flags | os.O_EXCL, replayed_mode)
+    try:
+        view = memoryview(body)
+        while view:
+            written = os.write(fd, view)
+            view = view[written:]
+        os.fchmod(fd, replayed_mode)
+    finally:
+        os.close(fd)
+
+
+def make_snapshot(
+    root: Path, nonce: str, expected_identity: str | None = None
+) -> Path:
+    """Build the attempt tree from exactly the bytes the identity binds.
+
+    The clone provides history and objects; the zero-stage index is then
+    reconstructed record for record and every tracked and untracked entry is
+    placed from raw captured worktree bytes, so no clean filter, diff helper
+    or patch decoding sits between the source and what executes (S2-R8-09
+    through S2-R8-13).  The capture that wrote the tree must match
+    ``expected_identity`` where the caller bound one, and a second full
+    capture must reproduce the first, so a source that moved before or during
+    construction refuses instead of being accepted (S2-R8-14).
+    """
     parent = root / RUNNER_PARENT / nonce
     try:
         parent.mkdir(parents=True, exist_ok=False)
@@ -1304,54 +1575,34 @@ def make_snapshot(root: Path, nonce: str) -> Path:
             )
         if git(target, "rev-parse", "HEAD").strip() != head:
             raise SnapshotError("snapshot-error", "the snapshot checked out a different HEAD")
-        patch = git(root, "diff", "HEAD")
-        if patch.strip():
-            applied = subprocess.run(
-                ["git", "apply", "--whitespace=nowarn", "-"],
-                cwd=str(target),
-                env=_git_env(),
-                input=patch.encode(),
-                capture_output=True,
-                shell=False,
+        _reconstruct_index(root, target)
+        _remove_head_only_paths(root, target)
+        built = _capture_source(
+            root,
+            lambda kind_tag, rel, kind, body, mode: _place_entry(
+                target, kind_tag, rel, kind, body, mode
+            ),
+        )
+        if expected_identity is not None and built != expected_identity:
+            raise SnapshotError(
+                "unstable-source",
+                "the source moved between the bound identity and snapshot construction",
             )
-            if applied.returncode != 0:
-                raise SnapshotError(
-                    "snapshot-error",
-                    "cannot replay the working diff: "
-                    + applied.stderr.decode("utf-8", "replace").strip(),
-                )
-        _copy_untracked(root, target)
+        settled = _capture_source(root, None)
+        if settled != built:
+            raise SnapshotError(
+                "unstable-source",
+                "the source moved while the snapshot was being constructed",
+            )
         return target
     except OSError as exc:
         raise SnapshotError("snapshot-error", f"cannot build the snapshot: {exc}") from exc
     except PlanError as exc:
         # Git capture inside the snapshot raises PlanError -- an oversized
-        # `git diff HEAD` is the reachable case.  Left as PlanError it slips past
+        # listing is the reachable case.  Left as PlanError it slips past
         # the caller's `except SnapshotError`, so the parent directory and its
         # sentinel are never removed and a whole clone is leaked on disk.
         raise SnapshotError("snapshot-error", f"cannot build the snapshot: {exc.message}") from exc
-
-
-def _copy_untracked(root: Path, target: Path) -> None:
-    copied = 0
-    for rel in _untracked_paths(root):
-        kind, body, mode = _untracked_entry(root, rel, MAX_UNTRACKED_BYTES - copied)
-        copied += len(body)
-        dest = target / _snapshot_relpath(rel)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        if kind == "symlink":
-            os.symlink(os.fsdecode(body), dest)
-            continue
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-        fd = os.open(dest, flags, stat.S_IMODE(mode) & 0o777)
-        try:
-            view = memoryview(body)
-            while view:
-                written = os.write(fd, view)
-                view = view[written:]
-            os.fchmod(fd, stat.S_IMODE(mode) & 0o777)
-        finally:
-            os.close(fd)
 
 
 def remove_snapshot(root: Path, nonce: str) -> str:
@@ -2302,9 +2553,43 @@ def _run_attempts(
             emit(args, plan, run)
             return exit_code
         try:
-            snapshot = make_snapshot(root, nonce)
+            snapshot = make_snapshot(root, nonce, expected_identity=before)
         except SnapshotError as exc:
             remove_snapshot(root, nonce)
+            if exc.code == "unstable-source":
+                # Construction observed different bytes than the bound
+                # identity: the attempt is superseded, exactly as movement
+                # observed after execution supersedes a completed attempt.
+                attempts.append(
+                    {
+                        "attempt": attempt,
+                        "outcome": "superseded",
+                        "phase": "snapshot",
+                        "source_before": before,
+                    }
+                )
+                if attempt == MAX_ATTEMPTS:
+                    run = dict(
+                        plan,
+                        schema=RUN_SCHEMA,
+                        outcome="unstable-source",
+                        failure_classes=["unstable-source"],
+                        checks=[],
+                        attempts=attempts,
+                    )
+                    if args.report:
+                        try:
+                            persist_run_report(root, args.report, run)
+                        except (PlanError, OSError) as report_exc:
+                            return refusal(
+                                args,
+                                "unsafe-report-path",
+                                str(report_exc),
+                                root=root,
+                            )
+                    emit(args, plan, run)
+                    return 3
+                continue
             return refusal(args, exc.code, exc.message, root=root)
         try:
             results, scheduler = execute(checks, snapshot, capacity["effective_budget"])
