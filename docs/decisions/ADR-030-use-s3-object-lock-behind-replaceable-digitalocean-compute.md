@@ -2,10 +2,10 @@
 
 ## Status
 
-Proposed, 2026-08-24. Recorded for
-[skills#558](https://github.com/wildcat-finance/skills/issues/558) and
-[skills#564](https://github.com/wildcat-finance/skills/issues/564). Depends on
-[ADR-029](ADR-029-separate-the-checkpoint-protocol-from-its-authority-service.md).
+Retired, 2026-08-27. The proposal below was never accepted and no longer
+governs. [ADR-028](ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md)
+replaces it with checkpoint continuation that works without S3 Object Lock or
+DigitalOcean compute. The remaining body is preserved as historical rationale.
 
 PR #569 published this record as ADR-025. It moved to ADR-030 so the five
 Wave Delta records stay contiguous and in reading order once the collisions on

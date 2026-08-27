@@ -1,5 +1,11 @@
 # Programme runbook: portable Fiat checkpoints for distributed contribution
 
+> **Historical proposal.** This runbook was never implemented and no longer
+> governs. Accepted
+> [ADR-028](decisions/ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md)
+> replaces it with same-ledger checkpoint continuation at two explicit
+> boundaries.
+
 Derived from `docs/hexaemeron-checkpoint-programme-study.md`. The chosen design
 is cumulative green-boundary archives, an independent locked authority, a
 signed external-run publication fence, and explicit DAG resolution.
