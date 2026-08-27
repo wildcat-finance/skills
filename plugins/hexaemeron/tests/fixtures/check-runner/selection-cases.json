@@ -1,0 +1,52 @@
+{
+  "description": "Named change classes resolved against the repository check map.",
+  "cases": [
+    {
+      "name": "plugin-local",
+      "changed": ["plugins/probitas/skills/probitas/SKILL.md"],
+      "expect_scopes": ["probitas", "repo-lints"],
+      "reject_scopes": ["alexandria", "tabularium"]
+    },
+    {
+      "name": "shared-contract",
+      "changed": ["PROMISE_MACHINE.md"],
+      "expect_scopes": ["promise-machine", "root", "hexaemeron", "repo-lints"],
+      "reject_scopes": ["janus"]
+    },
+    {
+      "name": "test-infrastructure",
+      "changed": ["tests/test_unique_identifiers.py"],
+      "expect_scopes": ["root", "repo-lints"],
+      "reject_scopes": ["pandects"]
+    },
+    {
+      "name": "hexctl",
+      "changed": ["plugins/hexaemeron/skills/fiat/scripts/hexctl.py"],
+      "expect_scopes": ["hexaemeron", "repo-lints", "root"],
+      "reject_scopes": ["alexandria", "lemma", "probitas"]
+    },
+    {
+      "name": "pandects-solidity",
+      "changed": ["plugins/pandects/contracts/Conservation.sol"],
+      "expect_scopes": ["pandects", "repo-lints"],
+      "reject_scopes": ["janus", "root"]
+    },
+    {
+      "name": "janus-harness",
+      "changed": ["plugins/janus/tests/test_hook_manifest.py"],
+      "expect_scopes": ["janus", "repo-lints"],
+      "reject_scopes": ["pandects"]
+    },
+    {
+      "name": "prose",
+      "changed": ["docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md"],
+      "expect_scopes": ["docs", "root", "repo-lints"],
+      "reject_scopes": ["lemma"]
+    },
+    {
+      "name": "unknown-path",
+      "changed": ["unowned-top-level/thing.txt"],
+      "expect_refusal": "unknown-ownership"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "wildcat.check-map.v1",
+  "checks": {"alpha": {"title": "Alpha", "argv": ["python3", "-c", "pass"], "cwd": ".", "kind": "suite"}},
+  "groups": {},
+  "scopes": {
+    "one": {"title": "One", "checks": ["alpha"]},
+    "two": {"title": "Two", "checks": []}
+  },
+  "dependencies": {},
+  "owners": [
+    {"path": "shared", "scope": "one"},
+    {"path": "shared", "scope": "two"}
+  ]
+}
