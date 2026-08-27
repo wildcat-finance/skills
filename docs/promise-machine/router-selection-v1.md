@@ -94,17 +94,21 @@ model, date and corpus digest it names attached. Nothing else.
 
 ## Refuses
 
-A corpus that is absent, unreadable, not UTF-8 or not JSON. A top-level value
+A corpus that is absent, unreadable, not UTF-8 or not JSON. A corpus declaring a
+schema other than `promise-machine-router-selection/v1`. A top-level value
 that is not an object, or one whose `cases`, `pairs` or `runs` key is missing
 or the wrong type. An empty case list, which is refused by name rather than
 allowed to pass every later check over nothing. A case whose field set differs
-from the seven above, whose id repeats, or whose expectation names neither a
-select nor a recognised refusal reason. A quoted path outside the closed set. A
+from the seven above, whose id repeats, whose expectation names neither a
+select nor a recognised refusal reason, whose required field is present but
+empty, whose `contested` is not a list of canonical names, or whose quotation
+is not the three keys the schema names. A quoted path outside the closed set. A
 canonical name no `SKILL.md` declares. A sentence the named section no longer
 contains. An empty or whitespace-only quotation, which would otherwise occur in
-every section and pass while establishing nothing. A pair whose field set,
+every section and pass while establishing nothing. A pair whose field set, id,
 separated skills or quotation the schema does not name, held to a case's shape
-because it quotes prose the same way. A run block whose field set the schema
+because it quotes prose the same way, its id required to be present and
+non-empty exactly as a case's is. A run block whose field set the schema
 does not name, whose digest disagrees with the cases on disk, or whose case,
 pass and fail counts cannot all be true: every case the run covered was passed
 or failed, and a run records every failing case id.
