@@ -60,7 +60,13 @@ RUN_FIELDS = frozenset(
     {"model", "date", "prompt_template_sha256", "corpus_sha256", "cases",
      "passed", "failed", "failures"}
 )
+# A failure entry is model output written into a committed file, so its shape
+# is closed: one case id this corpus holds and one canonical skill name.
+FAILURE_FIELDS = frozenset({"case", "selected"})
 REFUSALS = frozenset({"ambiguous", "uncovered"})
+
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 # The two guard corpora, named by key rather than by path. `load_corpus` keeps
 # one fixed path and gains no argument; a caller that wants a degraded corpus
@@ -252,6 +258,64 @@ def run_faults(runs: list, expected: str) -> list:
                 f"{where}: {counts['failed']} failed but {len(failures)} failing "
                 f"case id(s) are recorded; a run records every one of them"
             )
+    return faults
+
+
+def run_completeness_faults(runs: list, case_ids: set, names: set) -> list:
+    """Hold every recorded run block to its identity fields and its failures.
+
+    `run_faults` holds a block's field set, its digest and the arithmetic
+    between its counts. None of that reads what the identity fields say or
+    what a failure names, so a block could carry an empty model, no date, a
+    run over no cases at all, or the same failing case id twice and satisfy
+    it. A block nobody can read back to the run that produced it is not
+    evidence about one model on one date, which is the only thing a recorded
+    score is.
+    """
+    faults = []
+    for index, run in enumerate(runs):
+        where = f"{CORPUS_PATH}#runs[{index}]"
+        if not isinstance(run, dict):
+            faults.append(f"{where}: is not an object")
+            continue
+        model = run.get("model")
+        if not isinstance(model, str) or not model.strip():
+            faults.append(f"{where}: model is not a non-empty string, it is {model!r}")
+        date = run.get("date")
+        if not isinstance(date, str) or not ISO_DATE.match(date):
+            faults.append(f"{where}: date is not a YYYY-MM-DD date, it is {date!r}")
+        template = run.get("prompt_template_sha256")
+        if not isinstance(template, str) or not SHA256.match(template):
+            faults.append(
+                f"{where}: prompt_template_sha256 is not a sha256 digest, it is "
+                f"{template!r}; without it the prompt the run used is unrecoverable"
+            )
+        covered = run.get("cases")
+        if isinstance(covered, int) and not isinstance(covered, bool) and covered < 1:
+            faults.append(
+                f"{where}: covered {covered} cases, so its counts are consistent "
+                f"with each other and measure nothing"
+            )
+        failures = run.get("failures")
+        if not isinstance(failures, list):
+            continue
+        seen = set()
+        for position, failure in enumerate(failures):
+            spot = f"{where}.failures[{position}]"
+            if not isinstance(failure, dict) or set(failure) != FAILURE_FIELDS:
+                faults.append(f"{spot}: fields are not exactly {sorted(FAILURE_FIELDS)}")
+                continue
+            case = failure["case"]
+            if case not in case_ids:
+                faults.append(f"{spot}: names case {case!r}, which this corpus does not hold")
+            elif case in seen:
+                faults.append(f"{spot}: names case {case!r} a second time")
+            seen.add(case)
+            if failure["selected"] not in names:
+                faults.append(
+                    f"{spot}: records the selection {failure['selected']!r}, which is "
+                    f"not the frontmatter name of any SKILL.md under plugins/"
+                )
     return faults
 
 
@@ -537,6 +601,33 @@ class RouterSelectionCorpus(unittest.TestCase):
             wrong, [],
             "a recorded run block does not describe the corpus in this file; "
             f"regrade against the current cases rather than editing the digest: {wrong}",
+        )
+
+    def test_the_recorded_run_block_is_complete_and_names_its_failures(self):
+        """The half of a run block the digest check leaves unread.
+
+        A score is only ever evidence about one model, one prompt template,
+        one corpus digest and one date, so a block that does not say all four
+        cites nothing. The digest check covers the corpus half. This covers the
+        rest: who ran it, when, against which prompt template, over how many
+        cases, and which case each failure names.
+
+        A failure entry carries one case id this corpus holds and one canonical
+        skill name, and no other key. Both sides are closed sets the checker
+        already validates, which is what keeps model output out of a committed
+        file. Recording a selection this suite cannot resolve, or the same
+        failing case twice, would leave a score nobody could recount.
+        """
+        faults = run_completeness_faults(
+            self.document["runs"],
+            {case.get("id") for case in self.document["cases"]},
+            set(canonical_skill_names()),
+        )
+        self.assertEqual(
+            faults, [],
+            "a recorded run block cannot be read back to the run that produced "
+            "it, so the score it carries is not evidence about any model on any "
+            f"date:\n  " + "\n  ".join(faults),
         )
 
     def test_a_malformed_corpus_fails_by_name_rather_than_reading_as_empty(self):

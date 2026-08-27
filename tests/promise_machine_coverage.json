@@ -1172,12 +1172,12 @@
     "contract": "promise-machine-router-selection/v1",
     "documentation": {
       "path": "docs/promise-machine/router-selection-v1.md",
-      "sha256": "5778f64cad2bebb4c97c140b27f1228ca33519621c4b37010f4ad0e16c024c54"
+      "sha256": "c95094d5d206e61d0919d7cb472e8ded20ee2d4b2c6670a394f7bb1a273c9173"
     },
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "dd95e91d371a0bfd11c2ff029d01f85d256cc2c215ab9117e07d67264e1dbf22"
+        "sha256": "db2a48a670b58190a2dbb324ceb58b3ed4cacc5e3782811074901a742aeeeb08"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1205,9 +1205,10 @@
         "test_every_declared_pair_has_at_least_one_contested_case",
         "test_every_expected_canonical_name_is_a_real_canonical_skill",
         "test_every_router_row_is_named_by_at_least_one_case",
-        "test_the_corpus_declares_the_supported_schema"
+        "test_the_corpus_declares_the_supported_schema",
+        "test_the_recorded_run_block_is_complete_and_names_its_failures"
       ],
-      "sha256": "80152eccdf37528733cc4fe3dc3d303958ad952737f3738d7d9c577fcbad8422"
+      "sha256": "fe15111c3e63aebe44ae2e7d0e1f400aba2cd70285a18cb4c61a09d06af46c64"
     },
     "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
   },

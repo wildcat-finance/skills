@@ -571,5 +571,16 @@
       "not_established": "Refusing does not establish that no skill in the marketplace touches part of the request, only that no row of this router covers what was asked for."
     }
   ],
-  "runs": []
+  "runs": [
+    {
+      "model": "claude-opus-5[1m]",
+      "date": "2026-08-27",
+      "prompt_template_sha256": "3f6904e631da153a22583dd2bbd2a1bc793f044960a82d932477f9e001d64101",
+      "corpus_sha256": "48ebe808dac69df8737bb4fc4b38ba3c2fe08818f7f973004b6619fce730c774",
+      "cases": 36,
+      "passed": 36,
+      "failed": 0,
+      "failures": []
+    }
+  ]
 }

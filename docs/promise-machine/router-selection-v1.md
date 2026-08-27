@@ -31,9 +31,9 @@ The corpus is one JSON object with four keys.
 - `deciding_sentence`, an object of `path`, `section` and `text`.
 - `not_established`, the nearest overclaim this selection does not support.
 
-`pairs` is a non-empty array of the sibling boundaries the corpus grades. Each pair
-carries an `id`, the `skills` it separates, and the `deciding_sentence` that
-separates them.
+`pairs` is a non-empty array of the sibling boundaries the corpus grades. Each
+pair carries an `id`, the `skills` it separates, and the `deciding_sentence`
+that separates them.
 
 `runs` is an array of recorded grading runs, empty until one is recorded. Each
 run carries `model`, `date`, `prompt_template_sha256`, `corpus_sha256`,
@@ -66,12 +66,14 @@ That the corpus declares this schema. That every case has exactly the fields
 above, with a unique id and an expectation the checker recognises. That every
 canonical name a case expects or contests, and every name a pair separates, is
 the frontmatter name of a real `SKILL.md` under `plugins/`. That every quoted
-sentence still occurs in the section of the file the entry names. That every
-row of the router's two selection tables is named by at least one case. That
-every pair the corpus declares is contested by at least one case, whose
-`contested` list holds all of the skills that pair separates. And that any
-recorded run block carries the eight fields above with a `corpus_sha256` that
-recomputes from the cases on disk.
+sentence still occurs in the section of the file the entry names. That every row
+of the router's two selection tables is named by at least one case. That every
+pair the corpus declares is contested by at least one case, whose `contested`
+list holds all of the skills that pair separates. And that any recorded run
+block carries the eight fields above with a `corpus_sha256` that recomputes from
+the cases on disk, names the model, date and prompt-template digest a reader
+needs to recount it, and names each of its failures by a case id this corpus
+holds and a canonical skill that resolves.
 
 ## Evidence classes
 
@@ -133,17 +135,29 @@ On coverage, which the two checks over the router's tables and the corpus's
 pairs block add. A router row whose canonical selection no case expects. Two
 rows selecting the same canonical skill, because a named row is matched by its
 skill rather than by its predicate, so one case would stand in for both and the
-second row would arrive graded by nothing. The
-one row that names no canonical skill, the vendored Pashov suite's, quoted by
-no case that selects; a case that refuses does not cover it. A selection cell
-that is neither a canonical name in backticks nor that row's known phrase,
-because a row the check cannot read is a row it would pass unexamined. A router
-carrying no `## Select one runtime contract` section, or that section carrying
-no selection table. A section whose parsed rows and table lines disagree, which
-is what a parser that skipped a row looks like. A corpus declaring no pairs at
-all, refused for the reason an empty case list is. A declared pair no case
-contests in full, since a case holding only some of its members leaves the rest
-ungraded. And a pair carrying no list of separated skills to contest.
+second row would arrive graded by nothing. The one row that names no canonical
+skill, the vendored Pashov suite's, quoted by no case that selects; a case that
+refuses does not cover it. A selection cell that is neither a canonical name in
+backticks nor that row's known phrase, because a row the check cannot read is a
+row it would pass unexamined. A router carrying no `## Select one runtime
+contract` section, or that section carrying no selection table. A section whose
+parsed rows and table lines disagree, which is what a parser that skipped a row
+looks like. A corpus declaring no pairs at all, refused for the reason an empty
+case list is. A declared pair no case contests in full, since a case holding
+only some of its members leaves the rest ungraded. And a pair carrying no list
+of separated skills to contest.
+
+On completeness, which the run-block check adds. A run block that is not an
+object. A `model` that is absent, empty or not a string, a `date` that is not a
+`YYYY-MM-DD` date, or a `prompt_template_sha256` that is not a lowercase sha256
+digest: a score whose model, date or prompt nobody can recover is not evidence
+about any of them. A run covering no cases at all, whose counts agree with each
+other while measuring nothing. A failure entry whose field set is not exactly
+`case` and `selected`, since the entries are model output written into a
+committed file and the shape is closed rather than free text. A failure naming a
+case id this corpus does not hold. The same case id named by two failures, which
+would make the failing cases uncountable. And a failure recording a selection no
+`SKILL.md` declares.
 
 ## Recovery
 
