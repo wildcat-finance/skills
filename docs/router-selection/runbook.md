@@ -516,3 +516,178 @@ and gains no command.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds.
+### Amendment -- 2026-08-27
+
+**What changed.** Complete replacement Exit: Six surfaces, then the commands. The promise in
+`PROMISE_MACHINE.md` and the contract document name every refusal the
+checker makes once this step's checks are added, and their promise text
+names the two coverage properties, so the two-direction property the
+earlier audit established still holds. The corpus's `pairs` block names
+every pair the study's prior-art table lists, each pair's two members checked
+to be real canonical skills, plus the intra-Hexaemeron near neighbours the
+study names. Each pair carries at least one case whose `contested` list holds
+its members and whose `deciding_sentence` is the verbatim sentence that
+separates them. The checker gains the two coverage checks and their two guards,
+each guard reading its own fixture and failing when the corpus is degraded in
+exactly the way the check exists to catch. The router carries an ambiguity
+paragraph beside the existing no-match rule: name both candidate rows and the
+boundary sentence that separates them, select only where one row's sentence
+excludes the other, and otherwise stop at inspection naming the two rows and
+the sentence. It adds no Markdown link and no version line, so `check_routers`
+stays clean on PM041, PM042 and PM043. Then:
+
+```bash
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py sync --check
+/Users/kethcode/.local/bin/python3.13 scripts/portable_promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py coverage --check
+/Users/kethcode/.local/bin/python3.13 plugins/horos/skills/horos/scripts/horos.py check .
+/Users/kethcode/.local/bin/python3.13 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.13 tests/emit_router_selection_report.py
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py .agents/skills/promise-machine/SKILL.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py PROMISE_MACHINE.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/promise-machine/router-selection-v1.md
+/Users/kethcode/.local/bin/python3.13 plugins/brevitas/skills/brevitas/scripts/brevitas.py .agents/skills/promise-machine/SKILL.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
+git diff --check
+rm -rf .elenchus uv.lock
+git status --short
+```
+
+Every one exits zero and the root suite reports 448 tests. `audit_synopsis.py
+--check .` is absent because this step writes no audit source, and the
+Hexaemeron suite is absent for the reason stated above the steps.
+
+Complete replacement Files: Twelve entries, and nothing outside them.
+
+- `tests/fixtures/router-selection/cases.json`, change: the populated `pairs`
+  block and the contested cases.
+- `tests/fixtures/router-selection/guard-altered-sentence.json`, create: a
+  corpus whose deciding sentence has been reworded, so the prose-binding guard
+  has something to fail against.
+- `tests/fixtures/router-selection/guard-missing-row.json`, create: a corpus
+  with one router row uncovered, so the coverage guard has something to fail
+  against.
+- `tests/test_router_selection.py`, change: the two coverage checks and the two
+  guards.
+- `tests/promise_machine_coverage.json`, change: the corpus digest moved, the
+  two guard fixtures gained digests, and four selectors were added.
+- `.agents/skills/promise-machine/SKILL.md`, change: the ambiguity rule.
+- `.agents/skills/promise-machine/runtime/`, change: the router is one of the
+  eighteen fixed root paths the portable payload copies, so
+  `scripts/portable_promise_machine.py sync` runs in this same commit.
+- `.horos/boundary.json` and `.horos/candidates.json`, change: the mirror
+  entry's `bytes` moves with the router, so `horos.py scan . --write` runs in
+  this same commit and writes both files.
+- `PROMISE_MACHINE.md`, change: the promise's `Refuses` line names the eight
+  refusals this step's coverage checks add, and its `Promise` line names the
+  two properties they establish, because the audit made naming every refusal
+  on both surfaces a standing rule.
+- `docs/promise-machine/router-selection-v1.md`, change: the same eight
+  refusals and the same two properties, in the contract document's own
+  sections.
+- `plugins/*/PROMISE_MACHINE.md`, change, fourteen files: generated
+  byte-identical copies of the root law, written only by
+  `scripts/promise_machine.py sync`.
+- `tests/emit_router_selection_report.py`, change: the pair coverage the
+  disciplines field already promises this step's reporter answers, naming the
+  pair and the case that contests it.
+
+**Why.** The fourth audit round of the scaffolding step established a standing
+rule: every refusal the checker makes is named on the promise and on the
+contract document, driven fault by fault in both directions. This step's two
+coverage checks add eight refusals, so landing them without touching either
+surface breaks the property that round was spent establishing, and the files
+field did not name the surfaces that carry it. The step now names them, with
+the generated copies the law's own sync writes and the two commands that keep
+them honest. The reporter is added for a smaller reason: the disciplines field
+already says this step's reporter answers which pair a case contests, and the
+files field forgot to let it.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds.
+### Amendment -- 2026-08-27
+
+**What changed.** Complete replacement Exit: Four surfaces, then the commands. The corpus carries one run block
+naming `model`, `date`, `prompt_template_sha256`, `corpus_sha256`, `cases`,
+`passed`, `failed` and `failures`, where `failures` lists each failing case id
+with the canonical skill actually selected. The grading was performed as the
+study specifies: each `request` field alone was presented to a fresh agent
+context loaded with the router, `AGENTS.md` and the plugin runtime contracts,
+and with neither the corpus nor the study. The score is recorded evidence about
+one model on one date and is not a gate; no surface calls it proved. The
+checker gains the method that refuses an incomplete block, and the refusals
+that method adds are named on the promise and on the contract document, so the
+two-direction property the earlier rounds established still holds. The
+committed copy of the runbook at `docs/router-selection/runbook.md` carries the
+receipted bytes again, which its own step could not do because each amendment
+landed after that step closed. Then:
+
+```bash
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py sync --check
+/Users/kethcode/.local/bin/python3.13 scripts/portable_promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 plugins/horos/skills/horos/scripts/horos.py check .
+/Users/kethcode/.local/bin/python3.13 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.13 tests/emit_router_selection_report.py
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py coverage --check
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py PROMISE_MACHINE.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/promise-machine/router-selection-v1.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/router-selection/runbook.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+git diff --check
+rm -rf .elenchus uv.lock
+git status --short
+```
+
+Every one exits zero and the root suite reports 449 tests. The second command
+is the demo path: it prints the coverage table and then the run block rather
+than `not-run`, which is how this step is checkable even though the score
+inside the block is not. The syncs and the Horos check are present because naming the new
+refusals moves the root law, which the generated copies and the portable mirror
+follow.
+
+Complete replacement Files: Nine entries, and nothing outside them.
+
+- `tests/fixtures/router-selection/cases.json`, change: the recorded run block.
+- `tests/test_router_selection.py`, change: the run-block completeness method.
+- `tests/promise_machine_coverage.json`, change: the corpus digest moved and
+  one selector was added.
+- `PROMISE_MACHINE.md`, change: the `Refuses` line names what the run-block
+  completeness method refuses, because naming every refusal on both surfaces is
+  a standing rule the earlier rounds established.
+- `docs/promise-machine/router-selection-v1.md`, change: the same refusals in
+  the contract document's own sections, and the two wrapping irregularities
+  this run introduced into it.
+- `plugins/*/PROMISE_MACHINE.md`, change, fourteen files: generated
+  byte-identical copies of the root law, written only by
+  `scripts/promise_machine.py sync`.
+- `.agents/skills/promise-machine/runtime/`, change: the portable mirror, whose
+  payload carries the root law, so `scripts/portable_promise_machine.py sync`
+  runs in this same commit.
+- `.horos/boundary.json` and `.horos/candidates.json`, change: the mirror's
+  recorded byte and file counts move with it, so `horos.py scan . --write` runs
+  in this same commit and writes both files.
+- `docs/router-selection/runbook.md`, change: the committed copy returns to the
+  receipted bytes, which every amendment after step 1 left behind.
+
+**Why.** Two corrections, both consequences of what the earlier steps
+established rather than changes of plan. This step's completeness method adds
+refusals, and every refusal the checker makes is named on the promise and on
+the contract document; that rule was established by driving the whole fault
+inventory in both directions, and a step that added a refusal without naming it
+would break it. Naming it moves the root law, so the generated copies, the
+portable mirror and the boundary follow, and the three commands that keep them
+honest belong in the exit. Separately, the committed copy of the runbook has
+been one amendment behind since step 1 closed, because each amendment lands
+after the step that would have carried it; this is the last step, so it is the
+only place the copy can be brought back to the receipted bytes.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds.
