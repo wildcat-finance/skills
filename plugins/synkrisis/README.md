@@ -1,3 +1,5 @@
+![Synkrisis](./assets/characters/synkrisis.png)
+
 # Synkrisis
 
 <!-- marketplace-context:start -->

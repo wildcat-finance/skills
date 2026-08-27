@@ -11,6 +11,10 @@ metadata:
   version: "2.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/lazarus.png" width="1200">
+</p>
+
 # Lazarus
 
 ## Frontier

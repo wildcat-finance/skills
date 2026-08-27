@@ -1,3 +1,5 @@
+![Alexandria](./assets/characters/alexandria.png)
+
 # Alexandria
 
 <!-- marketplace-context:start -->

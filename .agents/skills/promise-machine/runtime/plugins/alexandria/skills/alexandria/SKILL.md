@@ -12,6 +12,10 @@ metadata:
   version: "0.3.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/alexandria.png" width="1200">
+</p>
+
 # Alexandria
 
 ## Frontier

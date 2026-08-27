@@ -13,6 +13,10 @@ metadata:
   version: "1.3.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/phylax.png" width="1200">
+</p>
+
 # Phylax
 
 From *phylax*, the guard posted at a boundary. The guard's job is not to trust

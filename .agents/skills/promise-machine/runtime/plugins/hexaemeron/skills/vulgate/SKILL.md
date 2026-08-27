@@ -5,6 +5,10 @@ metadata:
   version: "1.1.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/vulgate.png" width="1200">
+</p>
+
 # Vulgate
 
 ## Frontier

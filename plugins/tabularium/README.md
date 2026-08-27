@@ -1,3 +1,5 @@
+![Tabularium](./assets/characters/tabularium.png)
+
 # Tabularium
 
 <!-- marketplace-context:start -->

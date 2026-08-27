@@ -12,6 +12,10 @@ metadata:
   version: "1.1.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/pandects.png" width="1200">
+</p>
+
 # Pandects
 
 ## Frontier

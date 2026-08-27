@@ -11,6 +11,10 @@ metadata:
   version: "1.1.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/metron.png" width="1200">
+</p>
+
 # Metron
 
 From *metron*, the measure. The name is the rule: nothing here happens without
