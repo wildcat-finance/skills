@@ -195,10 +195,10 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
     ),
     "docs/affected-scope-test-runner/replacement-study.md": (
-        "d062a2c419f53bb434597d6ff8f498fc185d2f5c8415e8380d114b66126a6c92"
+        "78d8c99198aa4d211b43b29cdbd7497ba2dc6ea3ce6e7ee2434c551c5e858178"
     ),
     "docs/affected-scope-test-runner/replacement-runbook.md": (
-        "62474514841dbd702e6ffbc3598c33b34b1334c9d8a4d525d1d7558c91f2285c"
+        "a4b4c4f5aa2b80964d372501444d2f788922c69bed972eb4993c31d16a5ce61a"
     ),
     PACKET_ADR_PATH: (
         "089046388d57dd7c639a160b7fe5e83d804db789b0cef036cb8a1cd34bca4994"
