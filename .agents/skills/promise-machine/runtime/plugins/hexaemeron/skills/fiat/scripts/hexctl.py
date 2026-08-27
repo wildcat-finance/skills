@@ -197,6 +197,7 @@ SOURCE_BYTES_MAX = 2 * 1024 * 1024
 AMENDMENT_HISTORY_MAX = 500
 GIT_OUTPUT_MAX = 2 * 1024 * 1024
 GIT_PATHS_MAX = 500
+INTEGRATION_PATHS_MAX = 4096
 GIT_TIMEOUT = 30
 INTEGRATION_REVALIDATION_SCHEMA = "fiat-integration-revalidation/v1"
 INTEGRATION_REVALIDATION_FILE = os.path.join(
@@ -3901,8 +3902,11 @@ def git_diff_paths(base_dir: str, before: str, after: str) -> list[str]:
         die("integration path delta is not UTF-8")
     paths = [path for path in decoded.split("\0") if path]
     unique = sorted(set(paths))
-    if len(unique) > GIT_PATHS_MAX:
-        die(f"integration path delta exceeds {GIT_PATHS_MAX} paths")
+    if len(unique) > INTEGRATION_PATHS_MAX:
+        die(
+            "integration path delta exceeds "
+            f"{INTEGRATION_PATHS_MAX} paths"
+        )
     if len(unique) != len(paths):
         die("integration path delta contains duplicate paths")
     root = os.path.realpath(base_dir)
@@ -3936,8 +3940,11 @@ def _strict_json_object(pairs):
 
 
 def _manifest_paths(value, label: str, allowed: set[str] | None = None) -> list[str]:
-    if not isinstance(value, list) or len(value) > GIT_PATHS_MAX:
-        die(f"{label} must be an array of at most {GIT_PATHS_MAX} paths")
+    if not isinstance(value, list) or len(value) > INTEGRATION_PATHS_MAX:
+        die(
+            f"{label} must be an array of at most "
+            f"{INTEGRATION_PATHS_MAX} paths"
+        )
     if any(not isinstance(path, str) for path in value):
         die(f"{label} must contain only path strings")
     if value != sorted(set(value)):
