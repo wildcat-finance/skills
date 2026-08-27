@@ -84,14 +84,15 @@ GUARD_PATH_BY_OWNER = {
 #   the current map and rows are retained and only the reviewed reporter
 #   digest for the reconstructed runner is refreshed.
 # - The live scheduling decision is physically renamed from the packet's
-#   ADR-037 path to ADR-038 because current main introduced an unrelated
-#   ADR-037 decision after the patch preimage; the logical ADR-035 source and
-#   every immutable audit prefix keep their recorded bytes.
-# - The same collision recurred: current main later introduced an unrelated
-#   ADR-038 (with ADR-039 and ADR-040 behind it), so the live decision moved
-#   again to ADR-041, the next free number across both branches.  The heading
-#   moves with the filename, so the current digest changes with the rename
-#   while the archived ADR-035 source bytes stay fixed.
+#   ADR-037 path to the then-free number 038 because current main introduced
+#   an unrelated ADR-037 decision after the patch preimage; the logical
+#   ADR-035 source and every immutable audit prefix keep their recorded
+#   bytes.
+# - The same collision recurred: current main later took numbers 038 through
+#   040 for unrelated decisions, so the live decision moved again to ADR-041,
+#   the next free number across both branches.  The heading moves with the
+#   filename, so the current digest changes with the rename while the
+#   archived ADR-035 source bytes stay fixed.
 EXPECTED_CHANGED_CURRENT_SHA256 = {
     "docs/affected-scope-test-runner/runbook.md": (
         "295358d66202f3e36e906c28e4e8544d52722edd3db2356460b01ad0ebe02caa"
