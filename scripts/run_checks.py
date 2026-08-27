@@ -1049,10 +1049,13 @@ def source_identity(root: Path) -> str:
     consumed = 0
     try:
         for rel in _untracked_paths(root):
-            kind, body, _ = _untracked_entry(root, rel, MAX_UNTRACKED_BYTES - consumed)
+            kind, body, mode = _untracked_entry(root, rel, MAX_UNTRACKED_BYTES - consumed)
             consumed += len(body)
             _digest_field(digest, rel.encode("utf-8", "surrogateescape"))
             _digest_field(digest, kind.encode("ascii"))
+            if kind == "regular":
+                replayed_mode = stat.S_IMODE(mode) & 0o777
+                _digest_field(digest, replayed_mode.to_bytes(4, "big"))
             _digest_field(digest, body)
     except SnapshotError as exc:
         raise PlanError(exc.code, exc.message) from exc
@@ -1270,8 +1273,6 @@ def _capture_output(
                 chunk = os.read(fd, 65_536)
             except BlockingIOError:
                 continue
-            except OSError:
-                break
             if not chunk:
                 break
             buffer.feed(chunk)
@@ -1329,11 +1330,21 @@ def run_check(
             shell=False,
             start_new_session=True,
         )
+        capture_error: OSError | None = None
         try:
-            timed_out, retained = _capture_output(
-                proc, buffer, started + check.timeout_seconds
-            )
             termination = "not-required"
+            try:
+                timed_out, retained = _capture_output(
+                    proc, buffer, started + check.timeout_seconds
+                )
+            except OSError as exc:
+                # A pipe read fault is runner infrastructure, not the target's
+                # exit status.  Keep the partial bytes, stop the owned scope and
+                # leave a scheduler-error record instead of calling EIO EOF.
+                capture_error = exc
+                timed_out = False
+                retained = False
+                termination = _terminate_group(proc)
             if retained:
                 termination = _terminate_group(proc)
             try:
@@ -1358,7 +1369,13 @@ def run_check(
         record["duration_seconds"] = round(time.monotonic() - started, 3)
         record["descriptor_retained"] = retained
         record["termination"] = termination
-        if retained:
+        if capture_error is not None:
+            record.update(
+                status="failed",
+                failure_class="scheduler-error",
+                reason=f"capture failed: {capture_error}",
+            )
+        elif retained:
             # ADR-038: a retained output descriptor is a bounded red result with
             # an explicit detachment diagnostic, never a pass.  The runner does
             # not claim to have terminated a descendant that left the group.

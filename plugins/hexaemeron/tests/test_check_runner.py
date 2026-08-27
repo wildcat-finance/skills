@@ -10,6 +10,7 @@ that prints or exits.
 from __future__ import annotations
 
 import json
+import errno
 import os
 import subprocess
 import sys
@@ -1388,3 +1389,137 @@ class CacheDispositionTests(TemporaryRepositoryMixin, unittest.TestCase):
             self.assertIn("cache", report, "the run record binds no cache disposition")
             self.assertEqual(report["cache"]["result_cache"], "none")
             self.assertIs(report["cache"]["selection_input"], False)
+
+
+class RoundFiveReducedGuards(TemporaryRepositoryMixin, unittest.TestCase):
+    """Two causal guards retained after the larger candidate clusters were dropped."""
+
+    def _committed_repo(self, tmp: str) -> Path:
+        root = self.make_repo(tmp)
+        self.write_map(root, ["python3", "-c", "pass"])
+        self.git(root, "add", "-A")
+        self.git(root, "commit", "--quiet", "-m", "base")
+        return root
+
+    def test_untracked_regular_mode_is_part_of_source_identity(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            target = root / "untracked-tool"
+            target.write_bytes(b"#!/bin/sh\nexit 0\n")
+            target.chmod(0o644)
+            before = run_checks.source_identity(root)
+            target.chmod(0o755)
+            self.assertNotEqual(
+                run_checks.source_identity(root),
+                before,
+                "source identity omitted the executable mode replayed into the snapshot",
+            )
+
+    def test_untracked_special_mode_bits_are_normalized_to_replayed_permissions(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            target = root / "untracked-tool"
+            target.write_bytes(b"#!/bin/sh\nexit 0\n")
+            target.chmod(0o4755)
+            if target.stat().st_mode & 0o7000 != 0o4000:
+                self.skipTest("fixture filesystem does not retain set-id mode bits")
+            before = run_checks.source_identity(root)
+            nonce = "mode" + os.urandom(5).hex()
+            try:
+                snapshot = run_checks.make_snapshot(root, nonce)
+                copied = snapshot / "untracked-tool"
+                self.assertEqual(copied.stat().st_mode & 0o7777, 0o755)
+                self.assertEqual(run_checks.source_identity(snapshot), before)
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+
+    def test_untracked_symlink_mode_is_outside_replayed_identity(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            link = root / "untracked-link"
+            link.symlink_to("src/kept.txt")
+            lchmod = getattr(os, "lchmod", None)
+            if lchmod is None:
+                self.skipTest("fixture platform cannot change symlink permissions")
+            lchmod(link, 0o700)
+            source_mode = link.lstat().st_mode & 0o777
+            before = run_checks.source_identity(root)
+            nonce = "linkmode" + os.urandom(5).hex()
+            try:
+                snapshot = run_checks.make_snapshot(root, nonce)
+                copied = snapshot / "untracked-link"
+                replayed_mode = copied.lstat().st_mode & 0o777
+                if replayed_mode == source_mode:
+                    self.skipTest("fixture filesystem replayed the same symlink mode")
+                self.assertEqual(run_checks.source_identity(snapshot), before)
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+
+    def test_capture_eio_is_not_treated_as_eof(self) -> None:
+        proc = subprocess.Popen(
+            [sys.executable, "-c", "print('evidence')"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        real_read = os.read
+
+        def eio(fd: int, size: int) -> bytes:
+            raise OSError(errno.EIO, "injected capture fault")
+
+        os.read = eio
+        try:
+            try:
+                run_checks._capture_output(
+                    proc, run_checks.CaptureBuffer(), time.monotonic() + 10
+                )
+            except OSError as exc:
+                self.assertEqual(exc.errno, errno.EIO)
+            else:
+                self.fail("capture EIO was accepted as ordinary EOF")
+        finally:
+            os.read = real_read
+            if proc.poll() is None:
+                proc.kill()
+            proc.wait(timeout=5)
+            if proc.stdout is not None:
+                proc.stdout.close()
+
+    def test_capture_eio_is_reported_as_a_scheduler_error(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            check = run_checks.Check(
+                id="capture",
+                title="Capture",
+                argv=(sys.executable, "-c", "print('evidence')"),
+                cwd=".",
+                kind="lint",
+                script=None,
+                jobs_flag=None,
+                requires_executable=None,
+                group=None,
+                order=0,
+                timeout_seconds=10,
+            )
+            real_capture = run_checks._capture_output
+
+            def eio(*args, **kwargs):
+                raise OSError(errno.EIO, "injected capture fault")
+
+            run_checks._capture_output = eio
+            try:
+                record = run_checks.run_check(
+                    check, Path(tmp), run_checks.Scheduler(2), 1
+                )
+            finally:
+                run_checks._capture_output = real_capture
+            self.assertEqual(record.get("status"), "failed")
+            self.assertEqual(record.get("failure_class"), "scheduler-error")
+            self.assertIn("capture", record.get("reason", ""))
