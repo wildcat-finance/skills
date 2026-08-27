@@ -127,6 +127,7 @@ class CheckMap:
     dependencies: Mapping[str, tuple[str, ...]]
     owners: tuple[tuple[str, str], ...]
     digest: str
+    map_path: str
 
 
 @dataclass
@@ -203,6 +204,95 @@ def _safe_relpath(value: str, *, field_name: str) -> str:
     return "/".join(parts)
 
 
+def _open_confined_directory(root: Path, parts: Sequence[str], *, create: bool) -> int:
+    """Open one root-relative directory chain without following a component.
+
+    Pathname validation followed by an ordinary open leaves a substitution
+    window at every directory component.  Walking from an already opened root
+    descriptor makes each next component relative to the directory that was
+    actually checked.  The returned descriptor belongs to the caller.
+    """
+    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    try:
+        current = os.open(root, directory_flags | no_follow)
+    except OSError as exc:
+        raise PlanError("unsafe-path", f"cannot open repository root: {exc}") from exc
+    try:
+        for part in parts:
+            try:
+                nxt = os.open(part, directory_flags | no_follow, dir_fd=current)
+            except FileNotFoundError:
+                if not create:
+                    raise
+                os.mkdir(part, 0o755, dir_fd=current)
+                nxt = os.open(part, directory_flags | no_follow, dir_fd=current)
+            info = os.fstat(nxt)
+            if not stat.S_ISDIR(info.st_mode):
+                os.close(nxt)
+                raise OSError(f"not a directory: {part}")
+            os.close(current)
+            current = nxt
+        return current
+    except OSError as exc:
+        os.close(current)
+        raise PlanError(
+            "unsafe-path", "repository-relative path traverses an unsafe directory component"
+        ) from exc
+
+
+def _read_confined_regular(
+    root: Path, rel_path: str, maximum: int, *, label: str
+) -> tuple[str, bytes]:
+    """Read a bounded regular file through a no-follow descriptor walk."""
+    safe = _safe_relpath(rel_path, field_name=label)
+    parts = safe.split("/")
+    parent_fd = _open_confined_directory(root, parts[:-1], create=False)
+    fd = -1
+    try:
+        try:
+            fd = os.open(
+                parts[-1], os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0), dir_fd=parent_fd
+            )
+        except OSError as exc:
+            raise PlanError("unsafe-path", f"cannot open {label} {safe}: {exc}") from exc
+        opened = os.fstat(fd)
+        if not stat.S_ISREG(opened.st_mode):
+            raise PlanError("unsafe-path", f"{label} is not a regular file: {safe}")
+        if opened.st_size > maximum:
+            raise PlanError("map-oversized", f"{safe} exceeds {maximum} bytes")
+        body = bytearray()
+        while len(body) <= maximum:
+            chunk = os.read(fd, min(65_536, maximum - len(body) + 1))
+            if not chunk:
+                break
+            body.extend(chunk)
+        if len(body) > maximum:
+            raise PlanError("map-oversized", f"{safe} exceeds {maximum} bytes")
+        closed = os.fstat(fd)
+        opened_identity = (
+            opened.st_dev,
+            opened.st_ino,
+            opened.st_size,
+            opened.st_mtime_ns,
+            opened.st_ctime_ns,
+        )
+        closed_identity = (
+            closed.st_dev,
+            closed.st_ino,
+            closed.st_size,
+            closed.st_mtime_ns,
+            closed.st_ctime_ns,
+        )
+        if opened_identity != closed_identity:
+            raise PlanError("map-unreadable", f"{label} changed while it was read: {safe}")
+        return safe, bytes(body)
+    finally:
+        if fd >= 0:
+            os.close(fd)
+        os.close(parent_fd)
+
+
 def _optional_string(body: Mapping[str, Any], key: str, *, cid: str) -> str | None:
     value = body.get(key)
     if value is None:
@@ -222,13 +312,14 @@ def _bounded_int(body: Mapping[str, Any], key: str, default: int, *, cid: str) -
 
 def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
     """Read, validate and digest the declared check map."""
-    target = root / map_path
     try:
-        raw = target.read_bytes()
+        safe_map_path, raw = _read_confined_regular(
+            root, map_path, MAX_MAP_BYTES, label="check map"
+        )
+    except PlanError:
+        raise
     except OSError as exc:
         raise PlanError("map-unreadable", f"cannot read {map_path}: {exc}") from exc
-    if len(raw) > MAX_MAP_BYTES:
-        raise PlanError("map-oversized", f"{map_path} exceeds {MAX_MAP_BYTES} bytes")
     digest = hashlib.sha256(raw).hexdigest()
     try:
         data = json.loads(raw.decode("utf-8"), object_pairs_hook=_no_duplicate_keys)
@@ -410,7 +501,9 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
     owners.sort(key=lambda pair: (-len(pair[0]), pair[0]))
 
     _refuse_cycles(dependencies)
-    return CheckMap(checks, scopes, groups, dependencies, tuple(owners), digest)
+    return CheckMap(
+        checks, scopes, groups, dependencies, tuple(owners), digest, safe_map_path
+    )
 
 
 def _refuse_cycles(dependencies: Mapping[str, Sequence[str]]) -> None:
@@ -439,9 +532,7 @@ def refuse_stale_commands(root: Path, check_map: CheckMap) -> None:
     """Every declared script path must still exist in the checkout."""
     stale = []
     for check in check_map.checks.values():
-        if check.script is None:
-            continue
-        if not (root / check.script).exists():
+        if check.script is not None and not (root / check.script).exists():
             stale.append({"check": check.id, "script": check.script})
         if check.cwd != "." and not (root / check.cwd).is_dir():
             stale.append({"check": check.id, "cwd": check.cwd})
@@ -476,6 +567,35 @@ def _git_env() -> dict[str, str]:
     env.pop("GIT_EDITOR", None)
     env["GIT_OPTIONAL_LOCKS"] = "0"
     return env
+
+
+def require_tracked_map(root: Path, check_map: CheckMap) -> None:
+    """Keep execution authority inside Git-visible source identity."""
+    proc = subprocess.run(
+        [
+            "git",
+            "--literal-pathspecs",
+            "ls-files",
+            "--full-name",
+            "-z",
+            "--",
+            check_map.map_path,
+        ],
+        cwd=str(root),
+        env=_git_env(),
+        capture_output=True,
+        shell=False,
+    )
+    if proc.returncode != 0:
+        raise PlanError("git-failed", "cannot establish whether the check map is tracked")
+    if len(proc.stdout) > MAX_GIT_OUTPUT_BYTES:
+        raise PlanError("git-oversized", "tracked-map probe produced too much output")
+    entries = [entry for entry in proc.stdout.split(b"\0") if entry]
+    if entries != [os.fsencode(check_map.map_path)]:
+        raise PlanError(
+            "map-untracked",
+            f"check map must be tracked so source identity can bind it: {check_map.map_path}",
+        )
 
 
 def git(root: Path, *args: str, check: bool = True) -> str:
@@ -565,6 +685,10 @@ def build_selection(
         observed = changed_paths(root, pinned_base)
     selection.changed_paths = list(observed)
     for path in observed:
+        if path in {"scripts/run_checks.py", check_map.map_path}:
+            for scope in check_map.scopes:
+                selection.add_reason(scope, f"execution authority changed at {path}")
+            continue
         scope = owner_of(check_map, path)
         if scope is None:
             selection.unowned_paths.append(path)
@@ -1053,8 +1177,20 @@ def _read_untracked_regular(src: Path, expected: os.stat_result, maximum: int) -
     fd = os.open(src, flags)
     try:
         opened = os.fstat(fd)
-        identity = (expected.st_dev, expected.st_ino, expected.st_size, expected.st_mtime_ns)
-        opened_identity = (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns)
+        identity = (
+            expected.st_dev,
+            expected.st_ino,
+            expected.st_size,
+            expected.st_mtime_ns,
+            expected.st_ctime_ns,
+        )
+        opened_identity = (
+            opened.st_dev,
+            opened.st_ino,
+            opened.st_size,
+            opened.st_mtime_ns,
+            opened.st_ctime_ns,
+        )
         if identity != opened_identity or not stat.S_ISREG(opened.st_mode):
             raise SnapshotError("snapshot-error", f"untracked file moved while opening: {src}")
         body = bytearray()
@@ -1068,7 +1204,13 @@ def _read_untracked_regular(src: Path, expected: os.stat_result, maximum: int) -
                     "snapshot-error", "untracked working files exceed the snapshot bound"
                 )
         closed = os.fstat(fd)
-        closed_identity = (closed.st_dev, closed.st_ino, closed.st_size, closed.st_mtime_ns)
+        closed_identity = (
+            closed.st_dev,
+            closed.st_ino,
+            closed.st_size,
+            closed.st_mtime_ns,
+            closed.st_ctime_ns,
+        )
         if opened_identity != closed_identity:
             raise SnapshotError("snapshot-error", f"untracked file moved while reading: {src}")
         return bytes(body)
@@ -1374,7 +1516,7 @@ def _allocation_for(check: Check, budget: int, parallel_checks: int) -> int:
         return 1
     if parallel_checks <= 1:
         return budget
-    return max(1, budget // 2)
+    return max(2, budget // 2) if budget >= 2 else 1
 
 
 def run_check(
@@ -1394,11 +1536,24 @@ def run_check(
         "cwd": check.cwd,
     }
     try:
+        if check.jobs_flag is not None and granted < 2:
+            record.update(
+                status="failed",
+                failure_class="scheduler-error",
+                reason=(
+                    "a nested coordinator needs at least two process slots: "
+                    "one for the coordinator and one for its child"
+                ),
+                duration_seconds=0.0,
+            )
+            return record
         argv = list(check.argv)
         if check.jobs_flag is not None:
-            argv += [check.jobs_flag, str(granted)]
+            nested_allocation = granted - 1
+            argv += [check.jobs_flag, str(nested_allocation)]
             record["argv"] = argv
-            record["nested_allocation"] = granted
+            record["coordinator_slots"] = 1
+            record["nested_allocation"] = nested_allocation
         if check.requires_executable and shutil.which(check.requires_executable) is None:
             record.update(
                 status="unavailable",
@@ -1513,6 +1668,7 @@ def execute(
     lock = threading.Lock()
     grouped: dict[str, list[Check]] = {}
     singles: list[Check] = []
+    check_map_by_id = {check.id: check for check in checks}
     for check in checks:
         if check.group is None:
             singles.append(check)
@@ -1520,7 +1676,7 @@ def execute(
             grouped.setdefault(check.group, []).append(check)
     for members in grouped.values():
         members.sort(key=lambda c: c.order)
-    units = len(singles) + len(grouped)
+    parallel_units = len(singles) + len(grouped)
 
     def guarded(check: Check) -> dict[str, Any]:
         """Never let a worker fault remove a check from the accounting.
@@ -1530,7 +1686,7 @@ def execute(
         green.  A fault is a scheduler error, and it stays in the report.
         """
         try:
-            return run_check(check, snapshot, scheduler, units)
+            return run_check(check, snapshot, scheduler, parallel_units)
         except BaseException as exc:  # noqa: BLE001 - a fault must stay visible
             return {
                 "check": check.id,
@@ -1565,22 +1721,130 @@ def execute(
                         )
                 return
 
-    threads: list[threading.Thread] = []
+    worker_units: list[tuple[threading.Thread, threading.Event, tuple[str, ...]]] = []
+
+    def completed(target: Any, *target_args: Any, event: threading.Event) -> None:
+        try:
+            target(*target_args)
+        finally:
+            event.set()
+
     for check in singles:
-        threads.append(threading.Thread(target=run_single, args=(check,), daemon=False))
+        event = threading.Event()
+        thread = threading.Thread(
+            target=completed, args=(run_single, check), kwargs={"event": event}, daemon=False
+        )
+        worker_units.append((thread, event, (check.id,)))
     for gid, members in grouped.items():
-        threads.append(threading.Thread(target=run_group, args=(gid, members), daemon=False))
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join()
-    # Prove the disjoint union of selection and completion before any caller
-    # reads an outcome: a check with no terminal record is a scheduler error,
-    # not an absence that quietly aggregates green.
-    recorded = {r["check"] for r in results}
+        event = threading.Event()
+        thread = threading.Thread(
+            target=completed,
+            args=(run_group, gid, members),
+            kwargs={"event": event},
+            daemon=False,
+        )
+        worker_units.append((thread, event, tuple(check.id for check in members)))
+
+    launch_faults: dict[str, str] = {}
+    started_units: list[tuple[threading.Thread, threading.Event, tuple[str, ...]]] = []
+    pending_interrupt: BaseException | None = None
+    for thread, event, check_ids in worker_units:
+        try:
+            thread.start()
+        except BaseException as exc:  # noqa: BLE001 - partial launch must drain
+            reason = f"worker thread failed to start: {type(exc).__name__}: {exc}"
+            launched = thread.ident is not None
+            if not launched:
+                try:
+                    launched = thread.is_alive()
+                except RuntimeError:
+                    launched = False
+            if launched:
+                started_units.append((thread, event, check_ids))
+            if not isinstance(exc, Exception):
+                pending_interrupt = exc
+                break
+            if not launched:
+                with lock:
+                    for cid in check_ids:
+                        check = check_map_by_id[cid]
+                        results.append(
+                            {
+                                "check": cid,
+                                "title": check.title,
+                                "status": "failed",
+                                "failure_class": "scheduler-error",
+                                "reason": reason,
+                            }
+                        )
+                event.set()
+            else:
+                for cid in check_ids:
+                    launch_faults[cid] = reason
+        else:
+            started_units.append((thread, event, check_ids))
+
+    # Completion events are owned by the wrapper, not Thread.join.  A join
+    # implementation fault therefore cannot unwind the attempt while work is
+    # still using the snapshot.  After the event, wait until the native thread
+    # is no longer alive before returning to the cleanup boundary.
+    for thread, event, _ in started_units:
+        while True:
+            try:
+                completed_target = event.wait(timeout=0.05)
+                stopped = completed_target and not thread.is_alive()
+            except BaseException as exc:  # noqa: BLE001 - drain before propagating
+                if pending_interrupt is None:
+                    pending_interrupt = exc
+                continue
+            if stopped:
+                break
+    if pending_interrupt is not None:
+        raise pending_interrupt
+
+    if launch_faults:
+        with lock:
+            by_id = {record["check"]: record for record in results}
+            for cid, reason in launch_faults.items():
+                record = by_id.get(cid)
+                if record is None:
+                    check = check_map_by_id[cid]
+                    results.append(
+                        {
+                            "check": cid,
+                            "title": check.title,
+                            "status": "failed",
+                            "failure_class": "scheduler-error",
+                            "reason": reason,
+                        }
+                    )
+                else:
+                    prior = record.get("reason")
+                    record.update(
+                        status="failed",
+                        failure_class="scheduler-error",
+                        reason=f"{prior}; {reason}" if prior else reason,
+                    )
+    # Prove the exact disjoint union of selection and terminal records before
+    # any caller reads an outcome.  A set-only comparison hides duplicates and
+    # retains foreign ids; normalise each selected id to exactly one record and
+    # make either condition a scheduler error.
+    selected_ids = set(check_map_by_id)
+    foreign_ids = sorted(
+        str(record.get("check"))
+        for record in results
+        if record.get("check") not in selected_ids
+    )
+    buckets: dict[str, list[dict[str, Any]]] = {cid: [] for cid in selected_ids}
+    for record in results:
+        cid = record.get("check")
+        if cid in buckets:
+            buckets[cid].append(record)
+    normalised: list[dict[str, Any]] = []
     for check in checks:
-        if check.id not in recorded:
-            results.append(
+        records = buckets[check.id]
+        if not records:
+            normalised.append(
                 {
                     "check": check.id,
                     "title": check.title,
@@ -1589,7 +1853,31 @@ def execute(
                     "reason": "the scheduler returned no terminal record for this check",
                 }
             )
-    results.sort(key=lambda r: r["check"])
+        elif len(records) > 1:
+            normalised.append(
+                {
+                    "check": check.id,
+                    "title": check.title,
+                    "status": "failed",
+                    "failure_class": "scheduler-error",
+                    "reason": (
+                        f"the scheduler returned {len(records)} duplicate terminal "
+                        "records for this check"
+                    ),
+                }
+            )
+        else:
+            normalised.append(records[0])
+    if foreign_ids and normalised:
+        first = normalised[0]
+        prior = first.get("reason")
+        detail = f"the scheduler returned foreign terminal id(s): {foreign_ids}"
+        first.update(
+            status="failed",
+            failure_class="scheduler-error",
+            reason=f"{prior}; {detail}" if prior else detail,
+        )
+    results = sorted(normalised, key=lambda record: record["check"])
     return results, scheduler
 
 
@@ -1645,27 +1933,82 @@ def confine_report_path(root: Path, rel_path: str) -> str:
     return safe
 
 
+def require_ignored_report_path(root: Path, rel_path: str) -> str:
+    """Reports may live only at an ignored, untracked repository path."""
+    safe = confine_report_path(root, rel_path)
+    tracked = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", safe],
+        cwd=str(root),
+        env=_git_env(),
+        capture_output=True,
+        shell=False,
+    )
+    if tracked.returncode == 0:
+        raise PlanError(
+            "unsafe-report-path", f"report path must not replace a tracked path: {safe}"
+        )
+    if tracked.returncode != 1:
+        raise PlanError(
+            "git-failed", "cannot establish whether the report path is tracked"
+        )
+    ignored = subprocess.run(
+        ["git", "check-ignore", "--quiet", "--no-index", "--", safe],
+        cwd=str(root),
+        env=_git_env(),
+        capture_output=True,
+        shell=False,
+    )
+    if ignored.returncode == 1:
+        raise PlanError(
+            "unsafe-report-path", f"report path must be ignored by this repository: {safe}"
+        )
+    if ignored.returncode != 0:
+        raise PlanError(
+            "git-failed", "cannot establish whether the report path is ignored"
+        )
+    return safe
+
+
 def write_report(root: Path, rel_path: str, payload: Mapping[str, Any]) -> str:
     safe = confine_report_path(root, rel_path)
-    target = root / safe
-    target.parent.mkdir(parents=True, exist_ok=True)
-    base = root.resolve()
-    resolved = target.parent.resolve()
-    if resolved != base and base not in resolved.parents:
-        raise PlanError("unsafe-path", f"report path leaves the repository: {safe}")
-    tmp = target.parent / f".{target.name}.{uuid.uuid4().hex}.partial"
+    parts = safe.split("/")
+    parent_fd = _open_confined_directory(root, parts[:-1], create=True)
+    target_name = parts[-1]
+    tmp_name = f".{target_name}.{uuid.uuid4().hex}.partial"
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
-    fd = os.open(tmp, flags, 0o644)
+    fd = -1
     try:
+        fd = os.open(tmp_name, flags, 0o644, dir_fd=parent_fd)
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            fd = -1
             json.dump(payload, handle, indent=2, sort_keys=True)
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
+        try:
+            os.replace(
+                tmp_name,
+                target_name,
+                src_dir_fd=parent_fd,
+                dst_dir_fd=parent_fd,
+            )
+            os.fsync(parent_fd)
+        except BaseException:
+            try:
+                os.unlink(tmp_name, dir_fd=parent_fd)
+            except FileNotFoundError:
+                pass
+            raise
     except BaseException:
-        tmp.unlink(missing_ok=True)
+        if fd >= 0:
+            os.close(fd)
+        try:
+            os.unlink(tmp_name, dir_fd=parent_fd)
+        except FileNotFoundError:
+            pass
         raise
-    os.replace(tmp, target)
+    finally:
+        os.close(parent_fd)
     return safe
 
 
@@ -1723,7 +2066,14 @@ def emit(args: argparse.Namespace, plan: Mapping[str, Any], run: Mapping[str, An
         print(render_human(plan, run))
 
 
-def refusal(args: argparse.Namespace, code: str, message: str, detail: Any = None) -> int:
+def refusal(
+    args: argparse.Namespace,
+    code: str,
+    message: str,
+    detail: Any = None,
+    *,
+    root: Path | None = None,
+) -> int:
     payload = {
         "schema": RUN_SCHEMA,
         "outcome": "refused",
@@ -1732,6 +2082,11 @@ def refusal(args: argparse.Namespace, code: str, message: str, detail: Any = Non
         "message": message,
         "detail": detail,
     }
+    if root is not None and args.report:
+        try:
+            persist_run_report(root, args.report, payload)
+        except (PlanError, OSError) as exc:
+            payload["report_error"] = str(exc)
     if args.format == "json":
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
@@ -1782,33 +2137,53 @@ def repository_root() -> Path:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
+    root: Path | None = None
+    report_ready = False
     try:
         root = repository_root()
+        if args.report is not None:
+            args.report = require_ignored_report_path(root, args.report)
+            report_ready = True
+            if not args.plan:
+                persist_run_report(
+                    root,
+                    args.report,
+                    {
+                        "schema": RUN_SCHEMA,
+                        "outcome": "incomplete",
+                        "failure_class": "scheduler-error",
+                        "code": "run-incomplete",
+                        "message": "the invocation has not reached a terminal report",
+                    },
+                )
         check_map = load_map(root, args.map)
+        require_tracked_map(root, check_map)
         refuse_stale_commands(root, check_map)
         # With no scope and no --full, the actual diff is the whole request:
         # selecting everything by default would defeat the point of the map.
         selection = build_selection(root, check_map, args.scope, args.base, args.full)
         checks = selected_checks(check_map, selection)
-        if args.report is not None:
-            confine_report_path(root, args.report)
     except PlanError as exc:
-        return refusal(args, exc.code, exc.message, exc.detail)
+        return refusal(
+            args,
+            exc.code,
+            exc.message,
+            exc.detail,
+            root=root if report_ready else None,
+        )
+    except OSError as exc:
+        return refusal(
+            args,
+            "unsafe-report-path",
+            str(exc),
+            root=root if report_ready else None,
+        )
 
     capacity = capacity_plan(args.jobs, item_count=_runnable_slot_cap(checks))
     plan = plan_record(check_map, selection, checks, capacity)
 
     if args.plan:
         emit(args, plan, None)
-        return 0
-    if not checks:
-        run = dict(plan, schema=RUN_SCHEMA, outcome="nothing-selected", checks=[], failure_classes=[])
-        if args.report:
-            try:
-                persist_run_report(root, args.report, run)
-            except (PlanError, OSError) as exc:
-                return refusal(args, "unsafe-report-path", str(exc))
-        emit(args, plan, run)
         return 0
 
     attempts: list[dict[str, Any]] = []
@@ -1820,7 +2195,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         # PlanError, and an escape from here would exit 1 with a traceback: the
         # same code a red run uses, so a caller could not tell a failed check
         # from a runner that never ran one.
-        return refusal(args, exc.code, exc.message, exc.detail)
+        return refusal(args, exc.code, exc.message, exc.detail, root=root)
 
 
 def _run_attempts(
@@ -1836,23 +2211,101 @@ def _run_attempts(
     pinned_base = selection.base
     for attempt in range(1, MAX_ATTEMPTS + 1):
         nonce = uuid.uuid4().hex
-        before = source_identity(root)
-        if attempt > 1:
-            # A superseded attempt re-derives its plan: the source that moved may
-            # own checks the first plan never selected.
-            try:
-                selection = build_selection(
-                    root, check_map, args.scope, pinned_base, args.full
+        # Bind authority construction to a source identity on both sides.  A
+        # map or command change during loading/planning consumes the attempt
+        # without executing stale authority; every retry reloads all of it.
+        authority_before = source_identity(root)
+        try:
+            check_map = load_map(root, args.map)
+            require_tracked_map(root, check_map)
+            refuse_stale_commands(root, check_map)
+            selection = build_selection(
+                root, check_map, args.scope, pinned_base, args.full
+            )
+            checks = selected_checks(check_map, selection)
+            capacity = capacity_plan(
+                args.jobs, item_count=_runnable_slot_cap(checks)
+            )
+            plan = plan_record(check_map, selection, checks, capacity)
+        except PlanError as exc:
+            return refusal(args, exc.code, exc.message, exc.detail, root=root)
+        authority_after = source_identity(root)
+        if authority_after != authority_before:
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "outcome": "superseded",
+                    "phase": "planning",
+                    "source_before": authority_before,
+                }
+            )
+            if attempt == MAX_ATTEMPTS:
+                run = dict(
+                    plan,
+                    schema=RUN_SCHEMA,
+                    outcome="unstable-source",
+                    failure_classes=["unstable-source"],
+                    checks=[],
+                    attempts=attempts,
                 )
-                checks = selected_checks(check_map, selection)
-                plan = plan_record(check_map, selection, checks, capacity)
-            except PlanError as exc:
-                return refusal(args, exc.code, exc.message, exc.detail)
+                if args.report:
+                    try:
+                        persist_run_report(root, args.report, run)
+                    except (PlanError, OSError) as exc:
+                        return refusal(
+                            args, "unsafe-report-path", str(exc), root=root
+                        )
+                emit(args, plan, run)
+                return 3
+            continue
+        before = authority_after
+        if not checks:
+            settled_after = source_identity(root)
+            if settled_after != before:
+                attempts.append(
+                    {
+                        "attempt": attempt,
+                        "outcome": "superseded",
+                        "phase": "nothing-selected",
+                        "source_before": before,
+                    }
+                )
+                if attempt < MAX_ATTEMPTS:
+                    continue
+                run = dict(
+                    plan,
+                    schema=RUN_SCHEMA,
+                    outcome="unstable-source",
+                    failure_classes=["unstable-source"],
+                    checks=[],
+                    attempts=attempts,
+                )
+                exit_code = 3
+            else:
+                run = dict(
+                    plan,
+                    schema=RUN_SCHEMA,
+                    source_identity=before,
+                    outcome="nothing-selected",
+                    failure_classes=[],
+                    checks=[],
+                    attempts=attempts,
+                )
+                exit_code = 0
+            if args.report:
+                try:
+                    persist_run_report(root, args.report, run)
+                except (PlanError, OSError) as exc:
+                    return refusal(
+                        args, "unsafe-report-path", str(exc), root=root
+                    )
+            emit(args, plan, run)
+            return exit_code
         try:
             snapshot = make_snapshot(root, nonce)
         except SnapshotError as exc:
             remove_snapshot(root, nonce)
-            return refusal(args, exc.code, exc.message)
+            return refusal(args, exc.code, exc.message, root=root)
         try:
             results, scheduler = execute(checks, snapshot, capacity["effective_budget"])
             after = source_identity(root)
@@ -1870,6 +2323,13 @@ def _run_attempts(
                     checks=[],
                     attempts=attempts,
                 )
+                if args.report:
+                    try:
+                        persist_run_report(root, args.report, run)
+                    except (PlanError, OSError) as exc:
+                        return refusal(
+                            args, "unsafe-report-path", str(exc), root=root
+                        )
                 emit(args, plan, run)
                 return 3
             if cleanup == "removed":
@@ -1883,7 +2343,12 @@ def _run_attempts(
             classes = sorted(set(classes) | {"superseded"})
         unknown = [c for c in classes if c not in FAILURE_CLASSES]
         if unknown:
-            return refusal(args, "unknown-failure-class", f"undeclared failure class: {unknown}")
+            return refusal(
+                args,
+                "unknown-failure-class",
+                f"undeclared failure class: {unknown}",
+                root=root,
+            )
         not_started = [r for r in results if r.get("status") == "not-started"]
         outcome = "green" if not classes and not not_started else "red"
         run = dict(
@@ -1919,7 +2384,7 @@ def _run_attempts(
             try:
                 persist_run_report(root, args.report, run)
             except (PlanError, OSError) as exc:
-                return refusal(args, "unsafe-report-path", str(exc))
+                return refusal(args, "unsafe-report-path", str(exc), root=root)
         emit(args, plan, run)
         return 0 if outcome == "green" else 1
     return 3

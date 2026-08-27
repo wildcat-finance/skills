@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import errno
 import os
+import stat
 import subprocess
 import sys
 import threading
@@ -316,8 +317,8 @@ class ExecutionTests(unittest.TestCase):
             requires_executable=None, group=None, order=0, timeout_seconds=60,
         )
         record = run_checks.run_check(check, REPO_ROOT, run_checks.Scheduler(6), 1)
-        self.assertEqual(record["nested_allocation"], 6)
-        self.assertIn("--jobs 6", record["output"]["head"])
+        self.assertEqual(record["nested_allocation"], 5)
+        self.assertIn("--jobs 5", record["output"]["head"])
 
 
 class BoundedOutputTests(unittest.TestCase):
@@ -622,6 +623,7 @@ class ReportTests(unittest.TestCase):
             TemporaryRepositoryMixin().write_map(
                 root, ["python3", "-c", "print('report')"]
             )
+            (root / ".gitignore").write_text("out/\n", encoding="utf-8")
             TemporaryRepositoryMixin().git(root, "add", "-A")
             TemporaryRepositoryMixin().git(root, "commit", "--quiet", "-m", "base")
             proc = TemporaryRepositoryMixin().run_cli(
@@ -639,6 +641,7 @@ class ReportTests(unittest.TestCase):
             helper = TemporaryRepositoryMixin()
             root = helper.make_repo(tmp)
             helper.write_map(root, ["python3", "-c", "pass"])
+            (root / ".gitignore").write_text("out/\n", encoding="utf-8")
             helper.git(root, "add", "-A")
             helper.git(root, "commit", "--quiet", "-m", "base")
             proc = helper.run_cli(
@@ -821,7 +824,16 @@ class CommandLineTests(unittest.TestCase):
         selected = {c["id"] for c in payload["selected_checks"]}
         self.assertIn("hexaemeron-suite", selected)
         self.assertIn("hexaemeron", payload["selected_scopes"])
-        self.assertTrue(payload["omitted_checks"], "a scoped plan must omit something")
+        authority_changed = {
+            "scripts/run_checks.py", "tests/check-map-v1.json"
+        }.intersection(payload["changed_paths"])
+        if authority_changed:
+            self.assertEqual(
+                payload["omitted_checks"], [],
+                "a runner/map change must force complete self-audit",
+            )
+        else:
+            self.assertTrue(payload["omitted_checks"], "a scoped plan must omit something")
 
     def test_plan_accounts_for_every_selected_check_exactly_once(self) -> None:
         proc = self.run_cli("--full", "--plan", "--format", "json")
@@ -1145,15 +1157,28 @@ class SupersessionTests(TemporaryRepositoryMixin, unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = self.make_repo(tmp)
             self.write_map(root, self._mutating_argv(root, once=False))
+            (root / ".gitignore").write_text("out/\n", encoding="utf-8")
             self.git(root, "add", "-A")
             self.git(root, "commit", "--quiet", "-m", "base")
 
-            proc = self.run_cli(root, "--scope", "one", "--format", "json")
+            proc = self.run_cli(
+                root,
+                "--scope",
+                "one",
+                "--format",
+                "json",
+                "--report",
+                "out/report.json",
+            )
             self.assertEqual(proc.returncode, 3, proc.stdout + proc.stderr)
             payload = json.loads(proc.stdout)
             self.assertEqual(payload["outcome"], "unstable-source")
             self.assertEqual(payload["failure_classes"], ["unstable-source"])
             self.assertNotIn("test-failure", payload["failure_classes"])
+            self.assertEqual(
+                json.loads((root / "out" / "report.json").read_text(encoding="utf-8")),
+                payload,
+            )
 
     def test_a_stable_source_reports_no_superseded_attempt(self) -> None:
         import tempfile
@@ -1844,3 +1869,585 @@ class RoundSixBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
             with self.assertRaises(run_checks.PlanError) as caught:
                 run_checks.load_map(root, "map.json")
             self.assertEqual(caught.exception.code, "map-invalid")
+
+
+class RoundEightBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
+    """Parent-red guards for independently bounded round-eight fixes."""
+
+    def test_runner_and_map_authority_changes_select_every_declared_check(self) -> None:
+        check_map = run_checks.load_map(REPO_ROOT)
+        expected = set(check_map.checks)
+        for authority_path in ("scripts/run_checks.py", "tests/check-map-v1.json"):
+            with self.subTest(path=authority_path):
+                selection = run_checks.build_selection(
+                    REPO_ROOT,
+                    check_map,
+                    [],
+                    None,
+                    False,
+                    observed=[authority_path],
+                )
+                selected = {check.id for check in run_checks.selected_checks(check_map, selection)}
+                self.assertEqual(
+                    selected,
+                    expected,
+                    "changing execution authority did not select every governed check",
+                )
+
+    def test_an_ignored_custom_map_cannot_escape_source_identity(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            (root / ".gitignore").write_text("ignored/\n", encoding="utf-8")
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            ignored_map = root / "ignored" / "check-map.json"
+            ignored_map.parent.mkdir()
+            ignored_map.write_bytes((root / "tests" / "check-map-v1.json").read_bytes())
+
+            proc = self.run_cli(
+                root,
+                "--scope",
+                "one",
+                "--plan",
+                "--format",
+                "json",
+                "--map",
+                "ignored/check-map.json",
+            )
+            self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+            payload = json.loads(proc.stdout)
+            self.assertEqual(payload["code"], "map-untracked")
+
+    def test_map_tracking_probe_treats_the_name_as_a_literal_path(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            (root / ".gitignore").write_text("ignored/\n", encoding="utf-8")
+            ignored = root / "ignored"
+            ignored.mkdir()
+            body = (root / "tests" / "check-map-v1.json").read_bytes()
+            (ignored / "tracked.json").write_bytes(body)
+            self.git(root, "add", "-A")
+            self.git(root, "add", "-f", "ignored/tracked.json")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            (ignored / "*.json").write_bytes(body)
+
+            proc = self.run_cli(
+                root,
+                "--scope",
+                "one",
+                "--plan",
+                "--format",
+                "json",
+                "--map",
+                "ignored/*.json",
+            )
+            self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+            self.assertEqual(json.loads(proc.stdout)["code"], "map-untracked")
+
+    def test_map_tracking_probe_requires_an_exact_index_entry(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            body = (root / "tests" / "check-map-v1.json").read_bytes()
+            authority = root / "authority"
+            authority.mkdir()
+            decoy = authority / "child.json"
+            decoy.write_bytes(body)
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            decoy.unlink()
+            authority.rmdir()
+            authority.write_bytes(body)
+
+            check_map = run_checks.load_map(root, "authority")
+            with self.assertRaises(run_checks.PlanError) as caught:
+                run_checks.require_tracked_map(root, check_map)
+            self.assertEqual(caught.exception.code, "map-untracked")
+
+    def test_a_retry_reloads_the_map_instead_of_reusing_stale_authority(self) -> None:
+        import argparse
+        from unittest import mock
+
+        check_map = run_checks.load_map(REPO_ROOT)
+        selection = run_checks.build_selection(
+            REPO_ROOT, check_map, ["root"], None, False, observed=[]
+        )
+        checks = run_checks.selected_checks(check_map, selection)
+        capacity = run_checks.capacity_plan(1, run_checks._runnable_slot_cap(checks))
+        plan = run_checks.plan_record(check_map, selection, checks, capacity)
+        args = argparse.Namespace(
+            scope=["root"], base=None, full=False, report=None, format="json",
+            jobs=1, map=run_checks.DEFAULT_MAP_PATH,
+        )
+        identities = iter(("first", "moved", "second", "second", "second"))
+        reloads: list[str] = []
+        executions: list[list[str]] = []
+
+        def reload_map(root: Path, map_path: str = run_checks.DEFAULT_MAP_PATH):
+            reloads.append(map_path)
+            return check_map
+
+        def execute_once(selected, snapshot, budget):
+            executions.append([check.id for check in selected])
+            return [], run_checks.Scheduler(budget)
+
+        with (
+            mock.patch.object(run_checks, "source_identity", side_effect=lambda root: next(identities)),
+            mock.patch.object(run_checks, "make_snapshot", side_effect=lambda root, nonce: root),
+            mock.patch.object(
+                run_checks,
+                "execute",
+                side_effect=execute_once,
+            ),
+            mock.patch.object(run_checks, "remove_snapshot", return_value="removed"),
+            mock.patch.object(run_checks, "load_map", side_effect=reload_map),
+            mock.patch.object(run_checks, "changed_paths", return_value=[]),
+            mock.patch.object(run_checks, "emit"),
+        ):
+            run_checks._run_attempts(
+                args, REPO_ROOT, check_map, selection, checks, capacity, plan, []
+            )
+        self.assertEqual(
+            reloads,
+            [run_checks.DEFAULT_MAP_PATH, run_checks.DEFAULT_MAP_PATH],
+            "each attempt must reload its authority inside the identity bracket",
+        )
+        self.assertEqual(len(executions), 1, "stale authority executed before retry")
+
+    def test_an_outside_map_path_is_refused_before_it_is_read(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            root = base / "repo"
+            root.mkdir()
+            outside = base / "outside.json"
+            outside.write_text(
+                json.dumps(
+                    {
+                        "schema": run_checks.MAP_SCHEMA,
+                        "checks": {"probe": {"argv": ["python3", "-c", "pass"]}},
+                        "groups": {},
+                        "scopes": {"one": {"checks": ["probe"]}},
+                        "dependencies": {},
+                        "owners": [{"path": "src", "scope": "one"}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            with self.assertRaises(run_checks.PlanError) as caught:
+                run_checks.load_map(root, "../outside.json")
+            self.assertEqual(caught.exception.code, "unsafe-path")
+
+    def test_map_read_identity_includes_ctime(self) -> None:
+        import tempfile
+        from types import SimpleNamespace
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            payload = {
+                "schema": run_checks.MAP_SCHEMA,
+                "checks": {"probe": {"argv": ["python3", "-c", "pass"]}},
+                "groups": {},
+                "scopes": {"one": {"checks": ["probe"]}},
+                "dependencies": {},
+                "owners": [{"path": "src", "scope": "one"}],
+            }
+            (root / "map.json").write_text(json.dumps(payload), encoding="utf-8")
+            real_fstat = os.fstat
+            regular_reads = {"count": 0}
+
+            def changed_ctime(fd: int):
+                info = real_fstat(fd)
+                if not stat.S_ISREG(info.st_mode):
+                    return info
+                regular_reads["count"] += 1
+                return SimpleNamespace(
+                    st_mode=info.st_mode,
+                    st_dev=info.st_dev,
+                    st_ino=info.st_ino,
+                    st_size=info.st_size,
+                    st_mtime_ns=info.st_mtime_ns,
+                    st_ctime_ns=info.st_ctime_ns + (regular_reads["count"] - 1),
+                )
+
+            with (
+                mock.patch.object(os, "fstat", side_effect=changed_ctime),
+                self.assertRaises(run_checks.PlanError) as caught,
+            ):
+                run_checks.load_map(root, "map.json")
+            self.assertEqual(caught.exception.code, "map-unreadable")
+
+    def test_a_command_only_check_still_validates_its_cwd(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            payload = {
+                "schema": run_checks.MAP_SCHEMA,
+                "checks": {
+                    "probe": {
+                        "argv": ["python3", "-c", "pass"],
+                        "cwd": "missing",
+                        "kind": "command",
+                    }
+                },
+                "groups": {},
+                "scopes": {"one": {"checks": ["probe"]}},
+                "dependencies": {},
+                "owners": [{"path": "src", "scope": "one"}],
+            }
+            (root / "map.json").write_text(json.dumps(payload), encoding="utf-8")
+            check_map = run_checks.load_map(root, "map.json")
+            with self.assertRaises(run_checks.PlanError) as caught:
+                run_checks.refuse_stale_commands(root, check_map)
+            self.assertEqual(caught.exception.code, "stale-command")
+
+    def test_nested_allocation_reserves_one_slot_for_its_coordinator(self) -> None:
+        check = run_checks.Check(
+            id="nested",
+            title="Nested",
+            argv=(sys.executable, "-c", "import sys; print(sys.argv[-1])"),
+            cwd=".",
+            kind="suite",
+            script=None,
+            jobs_flag="--jobs",
+            requires_executable=None,
+            group=None,
+            order=0,
+            timeout_seconds=10,
+        )
+        record = run_checks.run_check(check, REPO_ROOT, run_checks.Scheduler(6), 1)
+        self.assertEqual(record["status"], "passed", record)
+        self.assertEqual(record["slots"], 6)
+        self.assertEqual(record["nested_allocation"], 5)
+        self.assertIn("5", record["output"]["head"].splitlines())
+
+    def test_budget_one_refuses_a_nested_coordinator_before_launch(self) -> None:
+        check = run_checks.Check(
+            id="nested",
+            title="Nested",
+            argv=(sys.executable, "-c", "raise SystemExit(99)"),
+            cwd=".",
+            kind="suite",
+            script=None,
+            jobs_flag="--jobs",
+            requires_executable=None,
+            group=None,
+            order=0,
+            timeout_seconds=10,
+        )
+        record = run_checks.run_check(check, REPO_ROOT, run_checks.Scheduler(1), 1)
+        self.assertEqual(record.get("failure_class"), "scheduler-error", record)
+        self.assertIn("two process slots", record.get("reason", ""))
+        self.assertNotIn("exit_code", record, "the nested coordinator was launched")
+
+    def test_a_later_thread_start_fault_waits_for_started_work_and_accounts_all(self) -> None:
+        from unittest import mock
+
+        checks = [
+            run_checks.Check(
+                id=f"probe-{index}", title=f"Probe {index}", argv=("true",), cwd=".",
+                kind="lint", script=None, jobs_flag=None, requires_executable=None,
+                group=None, order=0, timeout_seconds=10,
+            )
+            for index in range(2)
+        ]
+        real_start = threading.Thread.start
+        starts = {"count": 0}
+
+        def fail_second(thread: threading.Thread) -> None:
+            starts["count"] += 1
+            if starts["count"] == 2:
+                raise RuntimeError("thread launch refused")
+            real_start(thread)
+
+        def bounded_work(check, snapshot, scheduler, parallel_checks):
+            time.sleep(0.12)
+            return {"check": check.id, "title": check.title, "status": "passed"}
+
+        started = time.monotonic()
+        with (
+            mock.patch.object(run_checks, "run_check", side_effect=bounded_work),
+            mock.patch.object(threading.Thread, "start", new=fail_second),
+        ):
+            results, _ = run_checks.execute(checks, REPO_ROOT, 2)
+        self.assertGreaterEqual(time.monotonic() - started, 0.1)
+        self.assertEqual({record["check"] for record in results}, {"probe-0", "probe-1"})
+        self.assertTrue(any(record.get("failure_class") == "scheduler-error" for record in results))
+
+    def test_start_cancellation_drains_started_work_then_propagates(self) -> None:
+        from unittest import mock
+
+        checks = [
+            run_checks.Check(
+                id=f"probe-{index}", title=f"Probe {index}", argv=("true",), cwd=".",
+                kind="lint", script=None, jobs_flag=None, requires_executable=None,
+                group=None, order=0, timeout_seconds=10,
+            )
+            for index in range(2)
+        ]
+        real_start = threading.Thread.start
+        starts = {"count": 0}
+
+        def cancel_second(thread: threading.Thread) -> None:
+            starts["count"] += 1
+            if starts["count"] == 2:
+                raise KeyboardInterrupt("cancel launch")
+            real_start(thread)
+
+        def bounded_work(check, snapshot, scheduler, parallel_checks):
+            time.sleep(0.12)
+            return {"check": check.id, "title": check.title, "status": "passed"}
+
+        started = time.monotonic()
+        with (
+            mock.patch.object(run_checks, "run_check", side_effect=bounded_work),
+            mock.patch.object(threading.Thread, "start", new=cancel_second),
+            self.assertRaises(KeyboardInterrupt),
+        ):
+            run_checks.execute(checks, REPO_ROOT, 2)
+        self.assertGreaterEqual(time.monotonic() - started, 0.1)
+
+    def test_post_launch_start_fault_remains_scheduler_evidence(self) -> None:
+        from unittest import mock
+
+        check = run_checks.Check(
+            id="probe", title="Probe", argv=("true",), cwd=".", kind="lint",
+            script=None, jobs_flag=None, requires_executable=None, group=None,
+            order=0, timeout_seconds=10,
+        )
+        real_start = threading.Thread.start
+
+        def start_then_fault(thread: threading.Thread) -> None:
+            real_start(thread)
+            raise RuntimeError("ambiguous start result")
+
+        def bounded_work(check, snapshot, scheduler, parallel_checks):
+            time.sleep(0.05)
+            return {"check": check.id, "title": check.title, "status": "passed"}
+
+        with (
+            mock.patch.object(run_checks, "run_check", side_effect=bounded_work),
+            mock.patch.object(threading.Thread, "start", new=start_then_fault),
+        ):
+            results, _ = run_checks.execute([check], REPO_ROOT, 1)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].get("failure_class"), "scheduler-error")
+        self.assertIn("ambiguous start result", results[0].get("reason", ""))
+
+    def test_join_fault_does_not_escape_before_worker_completion(self) -> None:
+        from unittest import mock
+
+        check = run_checks.Check(
+            id="probe", title="Probe", argv=("true",), cwd=".", kind="lint",
+            script=None, jobs_flag=None, requires_executable=None, group=None,
+            order=0, timeout_seconds=10,
+        )
+
+        def bounded_work(check, snapshot, scheduler, parallel_checks):
+            time.sleep(0.05)
+            return {"check": check.id, "title": check.title, "status": "passed"}
+
+        with (
+            mock.patch.object(run_checks, "run_check", side_effect=bounded_work),
+            mock.patch.object(threading.Thread, "join", side_effect=RuntimeError("join fault")),
+        ):
+            results, _ = run_checks.execute([check], REPO_ROOT, 1)
+        self.assertEqual(results, [{"check": "probe", "title": "Probe", "status": "passed"}])
+
+    def test_duplicate_terminal_records_are_not_accepted_as_exact_once(self) -> None:
+        from unittest import mock
+
+        checks = [
+            run_checks.Check(
+                id=f"probe-{index}", title=f"Probe {index}", argv=("true",), cwd=".",
+                kind="lint", script=None, jobs_flag=None, requires_executable=None,
+                group=None, order=0, timeout_seconds=10,
+            )
+            for index in range(2)
+        ]
+
+        def duplicate(check, snapshot, scheduler, parallel_checks):
+            return {"check": "probe-0", "title": check.title, "status": "passed"}
+
+        with mock.patch.object(run_checks, "run_check", side_effect=duplicate):
+            results, _ = run_checks.execute(checks, REPO_ROOT, 2)
+        self.assertEqual([record["check"] for record in results], ["probe-0", "probe-1"])
+        self.assertTrue(
+            all(record.get("failure_class") == "scheduler-error" for record in results),
+            results,
+        )
+        self.assertIn("duplicate", results[0].get("reason", ""))
+
+    def test_foreign_terminal_record_cannot_join_the_selected_union(self) -> None:
+        from unittest import mock
+
+        check = run_checks.Check(
+            id="probe", title="Probe", argv=("true",), cwd=".", kind="lint",
+            script=None, jobs_flag=None, requires_executable=None, group=None,
+            order=0, timeout_seconds=10,
+        )
+        with mock.patch.object(
+            run_checks,
+            "run_check",
+            return_value={"check": "foreign", "title": "Foreign", "status": "passed"},
+        ):
+            results, _ = run_checks.execute([check], REPO_ROOT, 1)
+        self.assertEqual([record["check"] for record in results], ["probe"])
+        self.assertEqual(results[0].get("failure_class"), "scheduler-error")
+        self.assertIn("foreign", results[0].get("reason", ""))
+
+    def test_report_target_must_be_ignored_and_cannot_overwrite_source(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            target = root / "src" / "kept.txt"
+            before = target.read_bytes()
+            proc = self.run_cli(
+                root, "--scope", "one", "--format", "json", "--report", "src/kept.txt"
+            )
+            self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+            self.assertEqual(target.read_bytes(), before)
+            self.assertEqual(json.loads(proc.stdout)["outcome"], "refused")
+
+            unowned = root / "report.json"
+            proc = self.run_cli(
+                root, "--scope", "one", "--format", "json", "--report", "report.json"
+            )
+            self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+            self.assertFalse(unowned.exists())
+            self.assertEqual(json.loads(proc.stdout)["outcome"], "refused")
+
+    def test_report_ownership_git_probe_error_refuses(self) -> None:
+        from types import SimpleNamespace
+        from unittest import mock
+
+        with (
+            mock.patch.object(
+                run_checks.subprocess,
+                "run",
+                side_effect=(
+                    SimpleNamespace(returncode=128, stdout=b"", stderr=b"index corrupt"),
+                    SimpleNamespace(returncode=0, stdout=b"", stderr=b""),
+                ),
+            ),
+            self.assertRaises(run_checks.PlanError) as caught,
+        ):
+            run_checks.require_ignored_report_path(REPO_ROOT, ".elenchus/probe.json")
+        self.assertEqual(caught.exception.code, "git-failed")
+
+        with (
+            mock.patch.object(
+                run_checks.subprocess,
+                "run",
+                side_effect=(
+                    SimpleNamespace(returncode=1, stdout=b"", stderr=b""),
+                    SimpleNamespace(returncode=128, stdout=b"", stderr=b"ignore corrupt"),
+                ),
+            ),
+            self.assertRaises(run_checks.PlanError) as caught,
+        ):
+            run_checks.require_ignored_report_path(REPO_ROOT, ".elenchus/probe.json")
+        self.assertEqual(caught.exception.code, "git-failed")
+
+    def test_initial_incomplete_report_survives_an_unhandled_cancellation(self) -> None:
+        import tempfile
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            (root / ".gitignore").write_text("out/\n", encoding="utf-8")
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            with (
+                mock.patch.object(run_checks, "repository_root", return_value=root),
+                mock.patch.object(
+                    run_checks, "_run_attempts", side_effect=KeyboardInterrupt("cancelled")
+                ),
+                self.assertRaises(KeyboardInterrupt),
+            ):
+                run_checks.main(
+                    ["--scope", "one", "--format", "json", "--report", "out/report.json"]
+                )
+            payload = json.loads((root / "out" / "report.json").read_text(encoding="utf-8"))
+            self.assertEqual(payload["outcome"], "incomplete")
+
+    def test_refusal_replaces_a_prior_green_report(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            (root / ".gitignore").write_text("out/\n", encoding="utf-8")
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            target = root / "out" / "report.json"
+            target.parent.mkdir()
+            target.write_text(
+                json.dumps({"schema": run_checks.RUN_SCHEMA, "outcome": "green"}),
+                encoding="utf-8",
+            )
+            proc = self.run_cli(
+                root, "--scope", "missing", "--format", "json", "--report", "out/report.json"
+            )
+            self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+            self.assertEqual(json.loads(target.read_text(encoding="utf-8"))["outcome"], "refused")
+
+    def test_report_write_uses_the_opened_parent_after_path_rebinding(self) -> None:
+        import tempfile
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            outside = Path(tmp) / "outside"
+            root.mkdir()
+            outside.mkdir()
+            (root / "out").mkdir()
+            real_open = run_checks._open_confined_directory
+            swapped = {"done": False}
+
+            def open_then_swap(repo: Path, parts, *, create: bool) -> int:
+                fd = real_open(repo, parts, create=create)
+                if tuple(parts) == ("out",) and not swapped["done"]:
+                    (root / "out").rename(root / "held")
+                    (root / "out").symlink_to(outside, target_is_directory=True)
+                    swapped["done"] = True
+                return fd
+
+            with mock.patch.object(
+                run_checks, "_open_confined_directory", side_effect=open_then_swap
+            ):
+                run_checks.write_report(root, "out/report.json", {"schema": "bound"})
+            self.assertTrue((root / "held" / "report.json").is_file())
+            self.assertEqual(list(outside.iterdir()), [])
+
+    def test_failed_report_replacement_removes_its_partial(self) -> None:
+        import tempfile
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with (
+                mock.patch.object(os, "replace", side_effect=OSError("replace refused")),
+                self.assertRaises(OSError),
+            ):
+                run_checks.write_report(root, "out/report.json", {"schema": "x"})
+            leftovers = list((root / "out").glob("*.partial")) + list(
+                (root / "out").glob(".*.partial")
+            )
+            self.assertEqual(leftovers, [])
