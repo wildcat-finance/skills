@@ -120,8 +120,9 @@ corpus's own absence discipline applied to the corpus.
 `plugins/probitas` shipped and nothing under `plugins/pandects/`.
 
 **Toolchain.** Solidity 0.8.28 through `forge 1.7.1`, with no external Solidity
-dependency. Python 3.9 through 3.13, standard library only, for the catalogue
-checker, matching the CI matrix the other plugins use.
+dependency. The catalogue checker uses only the standard library and the exact
+interpreter in the suite
+[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).
 
 **Ruled out.** Replacing an engine, writing a harness generator, or shipping a
 generic assertion library. Formal proof obligations. Wildcat-shaped law

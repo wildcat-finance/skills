@@ -268,12 +268,15 @@ Installation, host-specific invocation, and publishing instructions live in
 Requirements apply only to the skills and operations named in the last column.
 Checked-in examples and verification paths may need less.
 
+[`pyproject.toml`](./pyproject.toml) declares the supported CPython minor, and
+[`.python-version`](./.python-version) is the single source for the exact patch.
+Run every Python-backed skill, repository check, and documented command with
+that pin. [ADR-038](./docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md)
+records the boundary and the alternatives that lost.
+
 | Requirement | Skills | When it is needed |
 | --- | --- | --- |
-| Python 3 | Alexandria, Ariadne, Brevitas, Hermes, Hexaemeron, Horos, Janus, Pandects | Their standard-library tools and checks |
-| Python 3.9 or later | Berean, Probitas, Tabularium | Their release, dossier, and verification tools |
-| Python 3.10 or later | Lemma | All Lemma commands |
-| Python 3.11 or later plus its pinned packages | Lazarus | Capture, verification, replay, and release |
+| [Pinned CPython](./.python-version) | Every Python-backed skill and repository check | All supported Python execution; the minor contract lives in `pyproject.toml` |
 | Git | Hermes, Hexaemeron | Worktree, diff, and receipt checks |
 | GitHub CLI (`gh`) | Hexaemeron | Issue, pull request, and integration phases |
 | Foundry | Hermes, Janus, Pandects; Ariadne and Hexaemeron when working with Foundry projects | Solidity builds, tests, measurements, and captures |

@@ -221,7 +221,10 @@ From the repository root:
 python3 -m unittest discover -s plugins/tabularium/tests -t plugins/tabularium
 ```
 
-Python 3.9 or later, standard library only. The tests make no network request.
+Run the tests with the exact interpreter in the suite
+[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version). The
+implementation uses only the standard library, and the tests make no network
+request.
 
 ## Reading further
 

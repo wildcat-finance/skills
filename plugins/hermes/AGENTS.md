@@ -21,8 +21,11 @@ usage. It is the only instruction copy; do not add a sibling browsing README.
 
 - The agent needs text-file read and write access plus a shell in the user's
   target repository.
-- The target needs Git, Python 3, Foundry, and a clean working tree. If one is
-  absent, follow the refusal in `SKILL.md` rather than estimating a result.
+- The target needs Git, Foundry, and a clean working tree. Run the harness with
+  the exact interpreter in the suite
+  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).
+  If one is absent, follow the refusal in `SKILL.md` rather than estimating a
+  result.
 - Resolve `scripts/hermes.py` and `references/optimisation-catalogue.md` from
   `skills/hermes/`, regardless of the current working directory.
 - Run the harness in the target Foundry repository. Do not use this plugin

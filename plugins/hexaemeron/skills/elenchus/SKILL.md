@@ -228,7 +228,7 @@ The worked example is
 `replay` on the shipped Goldfinch fixture, asserts the recorded slot value and
 the `-32070` miss over loopback, and skips by name where the Lazarus
 dependencies are absent. In this checkout it runs with
-`uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt python -m unittest plugins.hexaemeron.tests.test_elenchus_rpc_boundary_fixture`.
+`uv run --no-project --python "$(cat .python-version)" --with-requirements plugins/lazarus/requirements.txt python -m unittest plugins.hexaemeron.tests.test_elenchus_rpc_boundary_fixture`.
 
 ## Three rounds, then stop
 

@@ -84,9 +84,10 @@ shows a user can still leave after a credential lapses or a provider is removed.
 
 ## Use
 
-Janus needs [Foundry](https://getfoundry.sh/) and Python 3. The harness has no
-external Solidity dependency and the validator and reporter use only the Python
-standard library. Ask:
+Janus needs [Foundry](https://getfoundry.sh/) and the exact interpreter in the
+suite [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).
+The harness has no external Solidity dependency, and the validator and reporter
+use only the standard library. Ask:
 
 ```text
 Use $janus to check this hook against a conformance manifest for what it may observe and change around a host action.

@@ -304,7 +304,8 @@ class ScaffoldTests(unittest.TestCase):
         workflow = (support.REPO_ROOT / ".github/workflows/lazarus.yml").read_text(
             encoding="utf-8"
         )
-        self.assertIn('python-version: ["3.11", "3.13"]', workflow)
+        self.assertIn('python-version-file: ".python-version"', workflow)
+        self.assertNotIn("matrix.python-version", workflow)
         self.assertIn(
             "python3 -m pip install --requirement plugins/lazarus/requirements.lock",
             workflow,

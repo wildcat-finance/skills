@@ -6,23 +6,27 @@ on:
       - "plugins/**"
       - "tests/**"
       - "repo_contract.py"
+      - ".python-version"
+      - "pyproject.toml"
       - ".claude-plugin/**"
       - ".agents/**"
       - "docs/**"
       - "AGENTS.md"
       - "README.md"
-      - ".github/workflows/repo.yml"
+      - ".github/workflows/*.yml"
   pull_request:
     paths:
       - "plugins/**"
       - "tests/**"
       - "repo_contract.py"
+      - ".python-version"
+      - "pyproject.toml"
       - ".claude-plugin/**"
       - ".agents/**"
       - "docs/**"
       - "AGENTS.md"
       - "README.md"
-      - ".github/workflows/repo.yml"
+      - ".github/workflows/*.yml"
 
 permissions:
   contents: read
@@ -30,14 +34,10 @@ permissions:
 jobs:
   invariants:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version-file: ".python-version"
       - name: Repository-wide invariant suite
         run: python3 -m unittest discover -s tests -v

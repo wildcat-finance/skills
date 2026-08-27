@@ -239,7 +239,9 @@ From the repository root:
 python3 -m unittest discover -s plugins/probitas/tests -t plugins/probitas
 ```
 
-Python 3.9 or later, standard library only. No install step, no lockfile, no
+Run the tests with the exact interpreter in the suite
+[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version). The
+implementation uses only the standard library: no install step, lockfile, or
 dependency tree. Someone deciding whether to trust a counterparty should not
 first have to decide whether to trust forty transitive packages.
 

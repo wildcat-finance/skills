@@ -24,8 +24,10 @@ Markdown.
   from `$PLUGIN_ROOT`, regardless of the current working directory.
 - Treat the directory named by the user as the input and output target. Do not
   use this plugin checkout as the target unless the user explicitly names it.
-- Python 3.10 or later is required. Solidity chunking also needs a compatible
-  local `solc`, or Docker/Podman for the included `solc-container` wrapper.
+- Use the exact interpreter in the suite
+  [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).
+  Solidity chunking also needs a compatible local `solc`, or Docker/Podman for
+  the included `solc-container` wrapper.
 
 ## Interpretation
 

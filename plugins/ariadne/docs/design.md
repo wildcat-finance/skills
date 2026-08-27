@@ -123,10 +123,11 @@ rather than a degraded one.
 
 ## Constraints
 
-Standard library only, on Python 3.9 through 3.13. That rules out both a JSON
-Schema library and an in-process signing library, and decides the two choices
-above. Tests touch no network and require no `forge`: the Foundry output they
-read is committed.
+The implementation uses only the standard library and the exact interpreter in
+the suite [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).
+That rules out both a JSON Schema library and an in-process signing library,
+and decides the two choices above. Tests touch no network and require no
+`forge`: the Foundry output they read is committed.
 
 ## Where the risk is
 

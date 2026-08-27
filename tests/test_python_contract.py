@@ -1,0 +1,280 @@
+"""The suite has one Python contract and one exact execution image.
+
+The repository runs every Python workflow on the exact patch in
+``.python-version`` and keeps the durable minor contract in ``pyproject.toml``.
+Current runtime prose points to those files instead of carrying another
+interpreter claim. Historical evidence keeps the versions it actually
+observed.
+
+The dependency half of this gate is deliberately narrower than a package
+audit. It proves that every declared Lazarus dependency is an exact pin, that
+the lock contains the same direct pin, and that CI installs the lock rather
+than resolving the direct requirements again. It does not claim that the
+packages are trustworthy or free of advisories.
+"""
+
+from pathlib import Path
+import re
+import sys
+import tomllib
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PYTHON_VERSION = ROOT / ".python-version"
+PYPROJECT = ROOT / "pyproject.toml"
+WORKFLOWS = ROOT / ".github" / "workflows"
+README = ROOT / "README.md"
+LAZARUS = ROOT / "plugins" / "lazarus"
+
+REQUIRED_MINOR = "==3.13.*"
+EXACT_VERSION = "3.13.15"
+PYTHON_WORKFLOWS = {
+    "contributors.yml",
+    "janus.yml",
+    "lazarus.yml",
+    "pandects.yml",
+    "repo.yml",
+}
+PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml"}
+DEPENDENCY_FILES = {
+    "plugins/lazarus/requirements.lock",
+    "plugins/lazarus/requirements.txt",
+}
+PIN_REFERENCING_PROSE = {
+    "AGENTS.md",
+    "README.md",
+    "docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md",
+    "plugins/ariadne/docs/design.md",
+    "plugins/berean/README.md",
+    "plugins/berean/skills/berean/SKILL.md",
+    "plugins/brevitas/AGENTS.md",
+    "plugins/hermes/AGENTS.md",
+    "plugins/hexaemeron/skills/elenchus/SKILL.md",
+    "plugins/hexaemeron/skills/protasis/SKILL.md",
+    "plugins/janus/README.md",
+    "plugins/lazarus/README.md",
+    "plugins/lemma/AGENTS.md",
+    "plugins/lemma/README.md",
+    "plugins/pandects/docs/design.md",
+    "plugins/probitas/README.md",
+    "plugins/probitas/docs/adding-a-venue.md",
+    "plugins/tabularium/README.md",
+}
+EXACT_PIN = re.compile(
+    r"(?P<name>[a-z0-9]+(?:[-_.][a-z0-9]+)*)"
+    r"(?P<extras>\[[a-z0-9,-]+\])?=="
+    r"(?P<version>\d+\.\d+\.\d+)"
+)
+RUNTIME_VERSION_CLAIM = re.compile(
+    r"(?i)(?:\b(?:cpython|python)\s+(?:version(?:s)?\b|3(?:\.\d+){0,2}\b)"
+    r"|\bsupported\s+python\s+versions\b"
+    r"|\buv\s+run\s+--python\s+3(?:\.\d+){1,2}\b)"
+)
+
+
+def exact_pins(text, source):
+    """Return normalised package names and refuse every non-exact line."""
+    pins = {}
+    for number, raw in enumerate(text.splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        match = EXACT_PIN.fullmatch(line)
+        if match is None:
+            raise ValueError(f"{source}:{number}: not an exact package pin: {line}")
+        name = re.sub(r"[-_.]+", "-", match.group("name")).lower()
+        if name in pins:
+            raise ValueError(f"{source}:{number}: duplicate package pin: {name}")
+        pins[name] = line
+    if not pins:
+        raise ValueError(f"{source}: no package pins")
+    return pins
+
+
+def dependency_drift(direct_text, lock_text):
+    """Name direct pins absent from, or different in, the resolved lock."""
+    direct = exact_pins(direct_text, "requirements.txt")
+    locked = exact_pins(lock_text, "requirements.lock")
+    return {
+        name: {"direct": pin, "locked": locked.get(name)}
+        for name, pin in direct.items()
+        if locked.get(name) != pin
+    }
+
+
+def is_current_runtime_prose(path):
+    """Exclude immutable evidence, receipted records, fixtures, and vendored skills."""
+    relative = path.relative_to(ROOT)
+    parts = relative.parts
+    name = relative.name.lower()
+    if "audit" in parts or "baseline" in parts:
+        return False
+    if "tests" in parts and "fixtures" in parts:
+        return False
+    if name in {"evolution.md", "promise_machine.md"}:
+        return False
+    if name in {"study.md", "runbook.md", "proof.md"}:
+        return False
+    if name.endswith(("-study.md", "-runbook.md", "-proof.md")):
+        return False
+    if parts[:3] == ("docs", "promise-machine", "evidence"):
+        return False
+    vendored = (
+        ("plugins", "hexaemeron", "skills", "fizz"),
+        ("plugins", "hexaemeron", "skills", "solidity-auditor"),
+        ("plugins", "hexaemeron", "skills", "x-ray"),
+    )
+    return not any(parts[: len(prefix)] == prefix for prefix in vendored)
+
+
+class PythonRuntimeContractTests(unittest.TestCase):
+    def test_durable_minor_contract_is_exact(self):
+        document = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+        self.assertEqual(
+            document,
+            {
+                "project": {
+                    "name": "wildcat-skills",
+                    "version": "0",
+                    "requires-python": REQUIRED_MINOR,
+                }
+            },
+        )
+
+    def test_exact_execution_pin_is_exact_and_matches_the_minor(self):
+        raw = PYTHON_VERSION.read_bytes()
+        self.assertEqual(raw, (EXACT_VERSION + "\n").encode("ascii"))
+        major, minor, patch = (int(part) for part in EXACT_VERSION.split("."))
+        self.assertEqual(REQUIRED_MINOR, f"=={major}.{minor}.*")
+        self.assertGreaterEqual(patch, 0)
+
+    def test_the_suite_is_running_on_the_exact_cpython_image(self):
+        expected = tuple(int(part) for part in EXACT_VERSION.split("."))
+        self.assertEqual(sys.implementation.name, "cpython")
+        self.assertEqual(
+            sys.version_info[:3],
+            expected,
+            f"run the suite with the CPython pin in {PYTHON_VERSION}",
+        )
+
+    def test_every_python_workflow_reads_the_exact_pin(self):
+        found = set()
+        invokes_python = set()
+        for path in sorted(WORKFLOWS.glob("*.yml")):
+            text = path.read_text(encoding="utf-8")
+            command_lines = [
+                line
+                for line in text.splitlines()
+                if not line.lstrip().startswith("#")
+                and "actions/setup-python@" not in line
+                and "python-version" not in line
+            ]
+            if any(
+                re.search(r"\bpython(?:3(?:\.\d+)*)?\b", line)
+                for line in command_lines
+            ):
+                invokes_python.add(path.name)
+            setup_count = text.count("uses: actions/setup-python@")
+            if not setup_count:
+                continue
+            found.add(path.name)
+            with self.subTest(workflow=path.name):
+                self.assertEqual(
+                    text.count('python-version-file: ".python-version"'),
+                    setup_count,
+                )
+                self.assertNotRegex(text, r"(?m)^\s+python-version:")
+                self.assertNotIn("matrix.python-version", text)
+        self.assertEqual(found, PYTHON_WORKFLOWS)
+        self.assertEqual(invokes_python, found)
+
+    def test_pull_request_workflows_run_when_either_contract_file_changes(self):
+        for name in sorted(PULL_REQUEST_WORKFLOWS):
+            text = (WORKFLOWS / name).read_text(encoding="utf-8")
+            with self.subTest(workflow=name):
+                self.assertEqual(text.count('- ".python-version"'), 2)
+                self.assertEqual(text.count('- "pyproject.toml"'), 2)
+
+    def test_root_gate_runs_when_any_workflow_changes(self):
+        text = (WORKFLOWS / "repo.yml").read_text(encoding="utf-8")
+        self.assertEqual(text.count('- ".github/workflows/*.yml"'), 2)
+
+    def test_readme_points_to_both_contract_layers_and_the_decision(self):
+        text = README.read_text(encoding="utf-8")
+        self.assertIn("[`pyproject.toml`](./pyproject.toml)", text)
+        self.assertIn("[`.python-version`](./.python-version)", text)
+        self.assertIn("[ADR-038]", text)
+
+    def test_current_runtime_prose_points_to_the_pin(self):
+        for relative in sorted(PIN_REFERENCING_PROSE):
+            path = ROOT / relative
+            with self.subTest(path=relative):
+                self.assertTrue(path.is_file())
+                self.assertIn(".python-version", path.read_text(encoding="utf-8"))
+
+        stale = {}
+        for path in ROOT.rglob("*.md"):
+            if not is_current_runtime_prose(path):
+                continue
+            match = RUNTIME_VERSION_CLAIM.search(path.read_text(encoding="utf-8"))
+            if match is not None:
+                stale[path.relative_to(ROOT).as_posix()] = match.group(0)
+        self.assertEqual(stale, {})
+
+
+class PythonDependencyContractTests(unittest.TestCase):
+    def test_the_dependency_manifest_inventory_is_closed(self):
+        found = {
+            path.relative_to(ROOT).as_posix()
+            for path in ROOT.glob("plugins/*/requirements*")
+            if path.is_file()
+        }
+        self.assertEqual(found, DEPENDENCY_FILES)
+
+    def test_every_lazarus_direct_pin_matches_the_lock(self):
+        direct = (LAZARUS / "requirements.txt").read_text(encoding="utf-8")
+        locked = (LAZARUS / "requirements.lock").read_text(encoding="utf-8")
+        self.assertEqual(dependency_drift(direct, locked), {})
+
+    def test_dependency_manifests_point_to_the_interpreter_pin(self):
+        for name in ("requirements.txt", "requirements.lock"):
+            text = (LAZARUS / name).read_text(encoding="utf-8")
+            with self.subTest(name=name):
+                self.assertIn("../../.python-version", text.splitlines()[0])
+
+    def test_a_changed_direct_version_is_reported_as_drift(self):
+        drift = dependency_drift(
+            "jsonschema==4.25.2\n",
+            "attrs==26.1.0\njsonschema==4.25.1\n",
+        )
+        self.assertEqual(
+            drift,
+            {
+                "jsonschema": {
+                    "direct": "jsonschema==4.25.2",
+                    "locked": "jsonschema==4.25.1",
+                }
+            },
+        )
+
+    def test_an_unpinned_requirement_is_refused(self):
+        with self.assertRaisesRegex(ValueError, "not an exact package pin"):
+            exact_pins("jsonschema>=4.25.1\n", "requirements.txt")
+
+    def test_lazarus_ci_installs_only_the_resolved_lock(self):
+        text = (WORKFLOWS / "lazarus.yml").read_text(encoding="utf-8")
+        self.assertIn(
+            "python3 -m pip install --requirement plugins/lazarus/requirements.lock",
+            text,
+        )
+        self.assertNotIn(
+            "python3 -m pip install --requirement plugins/lazarus/requirements.txt",
+            text,
+        )
+        self.assertIn("plugins/lazarus/requirements.txt", text)
+        self.assertIn("plugins/lazarus/requirements.lock", text)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -184,5 +184,7 @@ python3 -m unittest discover -s tests
 python3 -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus
 ```
 
-The CI job installs the fully resolved `requirements.lock` environment under
-supported Python versions before running both suites.
+The CI job selects the exact interpreter in the suite
+[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version),
+installs the fully resolved `requirements.lock` environment, and then runs both
+suites.

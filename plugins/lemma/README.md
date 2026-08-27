@@ -21,9 +21,11 @@ Lemma turns Solidity compiler inputs and Markdown documents into JSONL chunks.
 Each chunk uses the same schema and records enough source information for a
 downstream system to distinguish quoted source text from assembled text.
 
-It does not embed, index, retrieve, or answer from the chunks. Python 3.10 or
-later is the only runtime dependency. Solidity chunking also needs `solc`; the
-included wrapper can run the pinned compiler with Docker or Podman.
+It does not embed, index, retrieve, or answer from the chunks. Its only runtime
+dependency is the exact interpreter in the suite
+[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version).
+Solidity chunking also needs `solc`; the included wrapper can run the pinned
+compiler with Docker or Podman.
 
 The plugin and its canonical skill are both named `lemma`, giving the qualified
 name `lemma:lemma` (`/lemma:lemma` in Claude Code). The repeated name keeps

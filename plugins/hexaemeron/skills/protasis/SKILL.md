@@ -65,7 +65,7 @@ that you will proceed on them unless corrected.
 Assuming, unless corrected:
 1. Foundry, not Hardhat; the repo has foundry.toml and no hardhat.config.
 2. Solidity 0.8.x with checked arithmetic; unchecked blocks are opt-in per site.
-3. Python 3.11 and stdlib unittest, matching every other plugin here.
+3. The exact interpreter in the repository's `.python-version`, with stdlib unittest.
 4. An archive RPC is available for the capture step; without one, step 3 changes.
 ```
 

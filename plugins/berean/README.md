@@ -104,8 +104,9 @@ python3 scripts/berean.py run-evals examples/goldfinch-demo-v0/release
 python3 examples/goldfinch-demo-v0/demo.py
 ```
 
-Berean needs Python 3.9 or later and nothing else. No command reaches the
-network.
+Run Berean with the exact interpreter in the suite
+[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version). It
+has no other dependency, and no command reaches the network.
 
 ## Tests
 

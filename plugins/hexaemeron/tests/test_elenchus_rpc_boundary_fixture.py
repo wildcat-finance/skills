@@ -45,7 +45,8 @@ SECTION_HEADING = "## Pin an RPC-boundary failure into a fixture"
 NEXT_HEADING = "## Three rounds, then stop"
 LAZARUS_COMMAND = "python3 plugins/lazarus/scripts/lazarus.py"
 UV_COMMAND = (
-    "uv run --python 3.12.13 --with-requirements plugins/lazarus/requirements.txt"
+    'uv run --no-project --python "$(cat .python-version)" '
+    "--with-requirements plugins/lazarus/requirements.txt"
 )
 EXAMPLE_MODULE = "plugins/hexaemeron/tests/test_elenchus_rpc_boundary_fixture.py"
 ENVIRONMENT_SENTENCE = (
@@ -228,7 +229,8 @@ class LazarusDependencyGuardTests(unittest.TestCase):
         self.assertEqual(
             skip_reason(["eth_hash", "trie"], executable="/opt/py/bin/python"),
             "Lazarus dependencies are not importable from /opt/py/bin/python: "
-            "eth_hash, trie; run under uv run --python 3.12.13 "
+            'eth_hash, trie; run under uv run --no-project --python '
+            '"$(cat .python-version)" '
             "--with-requirements plugins/lazarus/requirements.txt",
         )
         reason = skip_reason(list(LAZARUS_IMPORTS))

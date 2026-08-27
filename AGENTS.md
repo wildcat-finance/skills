@@ -153,6 +153,11 @@ these instructions.
 
 Run the checks that cover every changed area.
 
+Every `python3` command below means the exact interpreter recorded in
+[`.python-version`](.python-version). The supported minor is declared in
+[`pyproject.toml`](pyproject.toml); do not substitute a different ambient
+interpreter.
+
 ### Suites
 
 ```bash

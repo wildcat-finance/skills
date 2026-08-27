@@ -60,8 +60,9 @@ and block is not evidence.
 
 ## Commands
 
-Run everything from `$PLUGIN_ROOT` with Python 3.9 or later and no other
-dependency:
+Run everything from `$PLUGIN_ROOT` with the exact interpreter in the suite
+[pin](https://github.com/wildcat-finance/skills/blob/main/.python-version) and
+no other dependency:
 
 ```text
 python3 scripts/berean.py build-corpus <tree> --out <manifest>
