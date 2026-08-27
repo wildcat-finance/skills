@@ -1523,3 +1523,185 @@ class RoundFiveReducedGuards(TemporaryRepositoryMixin, unittest.TestCase):
             self.assertEqual(record.get("status"), "failed")
             self.assertEqual(record.get("failure_class"), "scheduler-error")
             self.assertIn("capture", record.get("reason", ""))
+
+
+class RoundSixBoundedGuards(TemporaryRepositoryMixin, unittest.TestCase):
+    """Small fail-closed guards that do not depend on the open containment design."""
+
+    def test_cleanup_disposition_cannot_leave_an_otherwise_green_run_green(self) -> None:
+        import contextlib
+        import io
+        import tempfile
+
+        for disposition in ("retained", "not-owned"):
+            with self.subTest(disposition=disposition), tempfile.TemporaryDirectory() as tmp:
+                root = self.make_repo(tmp)
+                self.write_map(root, ["python3", "-c", "pass"])
+                self.git(root, "add", "-A")
+                self.git(root, "commit", "--quiet", "-m", "base")
+                real_remove = run_checks.remove_snapshot
+
+                def failed_cleanup(repo: Path, nonce: str) -> str:
+                    real_remove(repo, nonce)
+                    return disposition
+
+                previous = Path.cwd()
+                run_checks.remove_snapshot = failed_cleanup
+                stream = io.StringIO()
+                try:
+                    os.chdir(root)
+                    with contextlib.redirect_stdout(stream):
+                        code = run_checks.main(["--scope", "one", "--format", "json"])
+                finally:
+                    os.chdir(previous)
+                    run_checks.remove_snapshot = real_remove
+                report = json.loads(stream.getvalue())
+                self.assertEqual(code, 1)
+                self.assertEqual(report["outcome"], "red")
+                self.assertEqual(report["snapshot_cleanup"], disposition)
+                self.assertIn("snapshot-error", report["failure_classes"])
+
+    def test_stdout_eof_does_not_shorten_the_declared_check_timeout(self) -> None:
+        check = run_checks.Check(
+            id="early-eof",
+            title="Early EOF",
+            argv=(
+                sys.executable,
+                "-c",
+                "import os,time;os.close(1);os.close(2);time.sleep(0.25)",
+            ),
+            cwd=".",
+            kind="lint",
+            script=None,
+            jobs_flag=None,
+            requires_executable=None,
+            group=None,
+            order=0,
+            timeout_seconds=2,
+        )
+        real_drain = run_checks.DRAIN_SECONDS
+        run_checks.DRAIN_SECONDS = 0.03
+        try:
+            record = run_checks.run_check(
+                check, Path.cwd(), run_checks.Scheduler(1), 1
+            )
+        finally:
+            run_checks.DRAIN_SECONDS = real_drain
+        self.assertEqual(record.get("status"), "passed", record)
+        self.assertGreaterEqual(record.get("duration_seconds", 0), 0.2)
+
+    def test_unhashable_group_value_refuses_as_a_named_map_error(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            payload = {
+                "schema": run_checks.MAP_SCHEMA,
+                "checks": {
+                    "probe": {
+                        "argv": ["python3", "-c", "pass"],
+                        "group": {"not": "a string"},
+                    }
+                },
+                "groups": {},
+                "scopes": {"one": {"checks": ["probe"]}},
+                "dependencies": {},
+                "owners": [{"path": "src", "scope": "one"}],
+            }
+            (root / "map.json").write_text(json.dumps(payload), encoding="utf-8")
+            try:
+                run_checks.load_map(root, "map.json")
+            except BaseException as exc:
+                self.assertIsInstance(exc, run_checks.PlanError)
+                self.assertEqual(exc.code, "map-invalid")
+            else:
+                self.fail("an unhashable group value was accepted")
+
+    def test_unhashable_references_refuse_as_named_map_errors(self) -> None:
+        import copy
+        import tempfile
+
+        base = {
+            "schema": run_checks.MAP_SCHEMA,
+            "checks": {"probe": {"argv": ["python3", "-c", "pass"]}},
+            "groups": {},
+            "scopes": {"one": {"checks": ["probe"]}},
+            "dependencies": {},
+            "owners": [{"path": "src", "scope": "one"}],
+        }
+        mutations = {
+            "group member": lambda body: body.update(
+                groups={"ordered": {"ordered": [{"not": "a check id"}]}}
+            ),
+            "scope check": lambda body: body.update(
+                scopes={"one": {"checks": [{"not": "a check id"}]}}
+            ),
+            "dependency consumer": lambda body: body.update(
+                dependencies={"one": [{"not": "a scope id"}]}
+            ),
+            "owner path": lambda body: body.update(
+                owners=[{"path": {"not": "a path"}, "scope": "one"}]
+            ),
+            "owner scope": lambda body: body.update(
+                owners=[{"path": "src", "scope": {"not": "a scope id"}}]
+            ),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name, mutate in mutations.items():
+                with self.subTest(field=name):
+                    payload = copy.deepcopy(base)
+                    mutate(payload)
+                    (root / "map.json").write_text(json.dumps(payload), encoding="utf-8")
+                    try:
+                        run_checks.load_map(root, "map.json")
+                    except BaseException as exc:
+                        self.assertIsInstance(exc, run_checks.PlanError)
+                        self.assertEqual(exc.code, "map-invalid")
+                    else:
+                        self.fail(f"unhashable {name} was accepted")
+
+    def test_every_check_must_be_reachable_from_at_least_one_scope(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            payload = {
+                "schema": run_checks.MAP_SCHEMA,
+                "checks": {
+                    "selected": {"argv": ["python3", "-c", "pass"]},
+                    "orphan": {"argv": ["python3", "-c", "raise SystemExit(1)"]},
+                },
+                "groups": {},
+                "scopes": {"one": {"checks": ["selected"]}},
+                "dependencies": {},
+                "owners": [{"path": "src", "scope": "one"}],
+            }
+            (root / "map.json").write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaises(run_checks.PlanError) as caught:
+                run_checks.load_map(root, "map.json")
+            self.assertEqual(caught.exception.code, "map-invalid")
+
+    def test_a_scope_cannot_select_only_part_of_an_ordered_group(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            payload = {
+                "schema": run_checks.MAP_SCHEMA,
+                "checks": {
+                    "first": {"argv": ["python3", "-c", "pass"], "group": "ordered"},
+                    "second": {"argv": ["python3", "-c", "pass"], "group": "ordered"},
+                },
+                "groups": {"ordered": {"ordered": ["first", "second"]}},
+                "scopes": {
+                    "partial": {"checks": ["second"]},
+                    "complete": {"checks": ["first", "second"]},
+                },
+                "dependencies": {},
+                "owners": [{"path": "src", "scope": "partial"}],
+            }
+            (root / "map.json").write_text(json.dumps(payload), encoding="utf-8")
+            with self.assertRaises(run_checks.PlanError) as caught:
+                run_checks.load_map(root, "map.json")
+            self.assertEqual(caught.exception.code, "map-invalid")

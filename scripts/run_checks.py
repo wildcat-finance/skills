@@ -242,6 +242,8 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
         if script is not None:
             script = _safe_relpath(script, field_name=f"check {cid} script")
         group = body.get("group")
+        if group is not None and (not isinstance(group, str) or not group):
+            raise PlanError("map-invalid", f"check {cid} group must be a non-empty string")
         if group is not None and group not in groups_raw:
             raise PlanError("map-invalid", f"check {cid} names unknown group {group}")
         timeout_seconds = _bounded_int(
@@ -270,6 +272,8 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
         if not isinstance(body, dict) or not isinstance(body.get("ordered"), list):
             raise PlanError("map-invalid", f"group {gid} needs an ordered list")
         ordered = body["ordered"]
+        if not all(isinstance(cid, str) and cid for cid in ordered):
+            raise PlanError("map-invalid", f"group {gid} ordered members must be strings")
         for cid in ordered:
             if cid not in checks:
                 raise PlanError("map-invalid", f"group {gid} names unknown check {cid}")
@@ -306,12 +310,32 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
     for sid, body in raw_scopes.items():
         if not SCOPE_ID_RE.match(sid):
             raise PlanError("map-invalid", f"scope id is not well formed: {sid}")
-        if not isinstance(body, dict) or not isinstance(body.get("checks"), list):
-            raise PlanError("map-invalid", f"scope {sid} needs a checks list")
+        if (
+            not isinstance(body, dict)
+            or not isinstance(body.get("checks"), list)
+            or not all(isinstance(cid, str) and cid for cid in body["checks"])
+        ):
+            raise PlanError("map-invalid", f"scope {sid} needs a string checks list")
         for cid in body["checks"]:
             if cid not in checks:
                 raise PlanError("map-invalid", f"scope {sid} names unknown check {cid}")
         scopes[sid] = Scope(sid, str(body.get("title", sid)), tuple(body["checks"]))
+
+    referenced_checks = {cid for scope in scopes.values() for cid in scope.checks}
+    orphan_checks = sorted(set(checks) - referenced_checks)
+    if orphan_checks:
+        raise PlanError(
+            "map-invalid", f"checks are unreachable from every scope: {orphan_checks}"
+        )
+    for sid, scope in scopes.items():
+        members = set(scope.checks)
+        for gid, ordered in groups.items():
+            selected = members.intersection(ordered)
+            if selected and selected != set(ordered):
+                raise PlanError(
+                    "map-invalid",
+                    f"scope {sid} selects only part of ordered group {gid}",
+                )
 
     deps_raw = data.get("dependencies") or {}
     if not isinstance(deps_raw, dict):
@@ -320,8 +344,12 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
     for sid, consumers in deps_raw.items():
         if sid not in scopes:
             raise PlanError("map-invalid", f"dependency edge from unknown scope {sid}")
-        if not isinstance(consumers, list):
-            raise PlanError("map-invalid", f"dependencies for {sid} must be a list")
+        if not isinstance(consumers, list) or not all(
+            isinstance(consumer, str) and consumer for consumer in consumers
+        ):
+            raise PlanError(
+                "map-invalid", f"dependencies for {sid} must be a string list"
+            )
         for consumer in consumers:
             if consumer not in scopes:
                 raise PlanError("map-invalid", f"dependency edge to unknown scope {consumer}")
@@ -335,8 +363,13 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
     for entry in owners_raw:
         if not isinstance(entry, dict):
             raise PlanError("map-invalid", "each owner entry must be an object")
-        path = _safe_relpath(str(entry.get("path", "")), field_name="owner path")
+        raw_path = entry.get("path")
+        if not isinstance(raw_path, str):
+            raise PlanError("map-invalid", "owner path must be a string")
+        path = _safe_relpath(raw_path, field_name="owner path")
         scope = entry.get("scope")
+        if not isinstance(scope, str):
+            raise PlanError("map-invalid", f"owner {path} scope must be a string")
         if scope not in scopes:
             raise PlanError("map-invalid", f"owner {path} names unknown scope {scope}")
         if path in seen_paths:
@@ -1253,6 +1286,7 @@ def _capture_output(
     selector.register(fd, selectors.EVENT_READ)
     timed_out = False
     retained = False
+    pipe_eof = False
     drain_deadline: float | None = None
     try:
         while True:
@@ -1267,6 +1301,15 @@ def _capture_output(
             if drain_deadline is not None and now > drain_deadline:
                 retained = True
                 break
+            if pipe_eof:
+                # EOF proves only that no process retains the captured pipe; it
+                # does not prove the declared command has completed.  Keep its
+                # own timeout authoritative instead of replacing it with the
+                # short post-leader descriptor-drain interval.
+                if proc.poll() is not None:
+                    break
+                time.sleep(0.05)
+                continue
             if not selector.select(timeout=0.25):
                 continue
             try:
@@ -1274,7 +1317,9 @@ def _capture_output(
             except BlockingIOError:
                 continue
             if not chunk:
-                break
+                selector.unregister(fd)
+                pipe_eof = True
+                continue
             buffer.feed(chunk)
     finally:
         selector.close()
@@ -1755,9 +1800,10 @@ def _run_attempts(
             after = source_identity(root)
         finally:
             cleanup = remove_snapshot(root, nonce)
-        if after != before:
+        moved = after != before
+        if moved:
             attempts.append({"attempt": attempt, "outcome": "superseded", "source_before": before})
-            if attempt == MAX_ATTEMPTS:
+            if cleanup == "removed" and attempt == MAX_ATTEMPTS:
                 run = dict(
                     plan,
                     schema=RUN_SCHEMA,
@@ -1768,10 +1814,15 @@ def _run_attempts(
                 )
                 emit(args, plan, run)
                 return 3
-            continue
+            if cleanup == "removed":
+                continue
         classes = sorted(
             {r["failure_class"] for r in results if r.get("failure_class")}
         )
+        if cleanup != "removed":
+            classes = sorted(set(classes) | {"snapshot-error"})
+        if moved:
+            classes = sorted(set(classes) | {"superseded"})
         unknown = [c for c in classes if c not in FAILURE_CLASSES]
         if unknown:
             return refusal(args, "unknown-failure-class", f"undeclared failure class: {unknown}")
