@@ -118,6 +118,7 @@ def gate_1_subjects(statement, limits=None):
     faults = []
     claim_limit = _limit(limits, "claims")
     subject_limit = _limit(limits, "subjects")
+    digest_algorithm_limit = _limit(limits, "digest_algorithms")
     if claim_limit is not None and len(found) > claim_limit:
         faults.append(
             "claims has %d entries; this predicate reads at most %d"
@@ -129,6 +130,28 @@ def gate_1_subjects(statement, limits=None):
         if subject_limit is not None
         else statement.subjects
     )
+    comparable_subjects = []
+    oversized_subjects = []
+    for index, entry in enumerate(checked_subjects):
+        if (
+            digest_algorithm_limit is not None
+            and len(entry.digest) > digest_algorithm_limit
+        ):
+            oversized_subjects.append((index, len(entry.digest)))
+        else:
+            comparable_subjects.append(entry)
+    if oversized_subjects:
+        first_index, first_count = oversized_subjects[0]
+        faults.append(
+            "%d statement subject digest set(s) exceed the %d-algorithm "
+            "limit; subject %d has %d"
+            % (
+                len(oversized_subjects),
+                digest_algorithm_limit,
+                first_index + 1,
+                first_count,
+            )
+        )
     for index, claim in enumerate(checked_claims):
         name = core_predicate.label(claim, index, "claim")
         if not isinstance(claim, dict):
@@ -148,7 +171,18 @@ def gate_1_subjects(statement, limits=None):
         except digests.DigestError as error:
             faults.append("%s: %s" % (name, error))
             continue
-        if not any(digests.agree(entry.digest, subject) for entry in checked_subjects):
+        if (
+            digest_algorithm_limit is not None
+            and len(subject) > digest_algorithm_limit
+        ):
+            faults.append(
+                "%s digest set has %d algorithms; this predicate reads at most %d"
+                % (name, len(subject), digest_algorithm_limit)
+            )
+            continue
+        if not any(
+            digests.agree(entry.digest, subject) for entry in comparable_subjects
+        ):
             faults.append(
                 "%s names %s, which is not a subject of this statement"
                 % (name, digests.short(subject))

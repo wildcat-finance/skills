@@ -47,6 +47,10 @@ empty or dot segments, parent traversal, oversized values and duplicate paths
 fail. Every component digest must appear in the in-toto subject array, and every
 subject must name a declared component.
 
+Digest maps carry at most eight algorithms. Three slots cover Ariadne's current
+supported algorithms and five remain for transition metadata; wider claim or
+subject maps fail before claim-by-subject matching begins.
+
 The corpus block carries its own `path`, `corpus_version`, semantic
 `corpus_digest`, `manifest`, and non-empty `components`. A non-null reads block
 carries `component`, `chain_id`, `block_number`, non-zero `block_hash`, and

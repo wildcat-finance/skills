@@ -665,6 +665,10 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
         component = self.schema["$defs"]["component"]["properties"]
         self.assertEqual(component["bytes"]["maximum"], grounded_agent.MAX_COMPONENT_BYTES)
         self.assertEqual(self.schema["$defs"]["path"]["maxLength"], grounded_agent.MAX_PATH)
+        self.assertEqual(
+            self.schema["$defs"]["digest"].get("maxProperties"),
+            getattr(grounded_agent, "MAX_DIGEST_ALGORITHMS", 8),
+        )
         corpus = self.properties["given"]["properties"]["corpus"]["properties"]["components"]
         answers = self.properties["produced"]["properties"]["answers"]
         self.assertEqual(corpus["maxItems"], grounded_agent.MAX_COMPONENTS)
@@ -838,6 +842,9 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
                 "claims": grounded_agent.MAX_CLAIMS,
                 "commands": grounded_agent.MAX_COMMANDS,
                 "command_words": grounded_agent.MAX_COMMAND_WORDS,
+                "digest_algorithms": getattr(
+                    grounded_agent, "MAX_DIGEST_ALGORITHMS", 8
+                ),
             },
         )
 

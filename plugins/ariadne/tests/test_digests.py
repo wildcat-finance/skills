@@ -77,6 +77,20 @@ class AgreementTests(unittest.TestCase):
         right = {"sha256": SHA256_OF_EMPTY, "sha512": "c" * 128}
         self.assertFalse(digests.agree(left, right))
 
+    def test_agreement_does_not_rescan_the_wider_digest_set(self):
+        """One wide claim compared with many subjects stays linear in its input."""
+
+        class RefuseIteration(dict):
+            def __iter__(self):
+                raise AssertionError("the wider digest set was iterated")
+
+        wide = RefuseIteration(
+            {"sha256": SHA256_OF_EMPTY, **{"unknown-%d" % i: "a" for i in range(32)}}
+        )
+        narrow = {"sha256": SHA256_OF_EMPTY}
+        self.assertTrue(digests.agree(wide, narrow))
+        self.assertTrue(digests.agree(narrow, wide))
+
 
 class FileAndTreeTests(unittest.TestCase):
     def test_a_fifo_is_refused_rather_than_read(self):

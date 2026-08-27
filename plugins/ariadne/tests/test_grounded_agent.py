@@ -17,7 +17,7 @@ from . import run_tests as delivery_runner
 from . import support  # noqa: F401  (sets sys.path)
 
 import ariadne  # noqa: E402
-from ariadne_lib import envelope, registry, statement, verify  # noqa: E402
+from ariadne_lib import digests, envelope, registry, statement, verify  # noqa: E402
 from ariadne_lib.predicates import grounded_agent as agent  # noqa: E402
 
 
@@ -531,6 +531,39 @@ class ComponentTests(unittest.TestCase):
         gate_one = next(gate for gate in routed.gates if gate.number == 1)
         self.assertFalse(gate_one.passed)
         self.assertIn("reads at most %d" % limit, gate_one.detail)
+
+    def test_core_digest_width_bounds_matching_work(self):
+        body = predicate()
+        covered = body["release"]["document"]["sha256"]
+        limit = getattr(agent, "MAX_DIGEST_ALGORITHMS", 8)
+        wide = {
+            "sha256": covered,
+            **{
+                "future-%d" % index: "a"
+                for index in range(limit)
+            },
+        }
+        body["claims"] = [
+            {
+                "name": "wide digest claim",
+                "subject": wide,
+                "disposition": "passed",
+            }
+        ]
+        outer = subjects(body)
+        outer[0]["digest"] = dict(wide)
+        with mock.patch(
+            "ariadne_lib.gates.digests.agree", wraps=digests.agree
+        ) as agree:
+            routed = report(body, outer)
+        gate_one = next(gate for gate in routed.gates if gate.number == 1)
+        self.assertFalse(gate_one.passed)
+        self.assertIn("algorithm", gate_one.detail)
+        self.assertFalse(agree.called)
+        field_gate = next(
+            gate for gate in routed.gates if gate.name == "predicate-fields"
+        )
+        self.assertFalse(field_gate.passed)
 
 
 class OptionalEvidenceTests(unittest.TestCase):

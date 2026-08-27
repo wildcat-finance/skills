@@ -725,6 +725,7 @@
     "digest": {
       "type": "object",
       "minProperties": 1,
+      "maxProperties": 8,
       "propertyNames": {
         "type": "string",
         "minLength": 1

@@ -133,6 +133,10 @@ MAX_POLICY_ITEMS = 256
 MAX_COMMAND_WORDS = 128
 MAX_CLAIMS = 1024
 MAX_COMMANDS = 1024
+# Digest maps stay extensible without letting each claim-by-subject comparison
+# multiply an input-sized algorithm list.  Three slots cover every algorithm
+# Ariadne currently proves; five remain for transition metadata.
+MAX_DIGEST_ALGORITHMS = 8
 
 CLAIM_REQUIRED_FIELDS = ("name", "subject", "disposition")
 COMMAND_REQUIRED_FIELDS = ("name", "argv", "determinism")
@@ -141,6 +145,7 @@ CORE_LIMITS = {
     "claims": MAX_CLAIMS,
     "commands": MAX_COMMANDS,
     "command_words": MAX_COMMAND_WORDS,
+    "digest_algorithms": MAX_DIGEST_ALGORITHMS,
 }
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -520,11 +525,26 @@ def _adapter_faults(predicate):
         faults.append("adapter command must be 1 to %d argv strings" % MAX_COMMAND_WORDS)
     elif not all(stated(word) for word in command):
         faults.append("adapter command entries must be non-blank bounded strings")
-    try:
-        digests.check(adapter.get("parameters_digest"))
-    except digests.DigestError as error:
-        faults.append("adapter parameters_digest: %s" % error)
+    _bounded_digest(
+        adapter.get("parameters_digest"), "adapter parameters_digest", faults
+    )
     return faults
+
+
+def _bounded_digest(value, label, faults):
+    """Validate one digest map and retain the predicate's work ceiling."""
+    try:
+        digests.check(value)
+    except digests.DigestError as error:
+        faults.append("%s: %s" % (label, error))
+        return False
+    if len(value) > MAX_DIGEST_ALGORITHMS:
+        faults.append(
+            "%s has %d algorithms; at most %d are accepted"
+            % (label, len(value), MAX_DIGEST_ALGORITHMS)
+        )
+        return False
+    return True
 
 
 def _core_block_faults(predicate):
@@ -540,10 +560,7 @@ def _core_block_faults(predicate):
                 continue
             if not portable_name(claim.get("name")):
                 faults.append("%s name is not a portable bounded label" % label)
-            try:
-                digests.check(claim.get("subject"))
-            except digests.DigestError as error:
-                faults.append("%s subject: %s" % (label, error))
+            _bounded_digest(claim.get("subject"), "%s subject" % label, faults)
             disposition = claim.get("disposition")
             if disposition not in core_predicate.DISPOSITIONS:
                 faults.append("%s disposition is outside the core vocabulary" % label)
@@ -583,10 +600,7 @@ def _core_block_faults(predicate):
                 faults.append("%s determinism is outside the core vocabulary" % label)
             output = command.get("output_digest")
             if "output_digest" in command:
-                try:
-                    digests.check(output)
-                except digests.DigestError as error:
-                    faults.append("%s output_digest: %s" % (label, error))
+                _bounded_digest(output, "%s output_digest" % label, faults)
             elif determinism == "exact":
                 faults.append("%s exact command needs an output_digest" % label)
             detail = command.get("detail")
