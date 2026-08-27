@@ -30,6 +30,17 @@ a five-minute primer for the Shoggoth, the Interceptor, Hex, and Fiat. It
 includes two infographics, a [short printable PDF](./docs/pdf/a-child-or-a-golden-retriever.pdf),
 and a [one-page quick-start](./docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf).
 
+To install the whole collective through the Agent Skills convention, select
+the one dependency-closed router:
+
+```bash
+npx skills add wildcat-finance/skills --skill promise-machine
+```
+
+The router verifies its local runtime before it selects a specialist. See the
+[installation guide](./INSTALL.md#local-agents) for the non-interactive Codex
+command and the boundary of that package.
+
 ## So, You Want To Build God?
 
 Ask the Atlas for a number. Pick your harness. Finish what you start.
@@ -324,6 +335,9 @@ The Pashov suite keeps its upstream invocation and operating instructions.
 .claude-plugin/marketplace.json   one entry per plugin
 .agents/plugins/marketplace.json  the same set, host-neutral
 .agents/skills/promise-machine/   the sole host-neutral suite router
+├── PORTABLE.md                   isolated-install path and refusal boundary
+├── scripts/verify_runtime.py     installed byte-manifest check
+└── runtime/                      generated dependency-closed fallback
 plugins/<name>/
 ├── .claude-plugin/plugin.json    host manifests; discovery and installation only
 ├── .codex-plugin/plugin.json
@@ -338,9 +352,11 @@ Hexaemeron also carries the Pashov suite as a vendored, upstream-owned set.
 Those skill directories keep their own MIT `LICENSE` and `NOTICE.md`; the
 first-party Apache licence does not replace or govern them.
 
-Codex, Claude Code, and portable agents load the same canonical skill
-directories. Host manifests handle discovery and installation only. The target
-repository's own instructions and the active skill's checks still apply.
+Codex, Claude Code, and portable agents load the same canonical skill bytes.
+Host manifests handle plugin discovery. A copy-mode Agent Skills install uses
+the router's generated, manifested fallback because an installer copies only
+the selected directory. The target repository's own instructions and the
+active skill's checks still apply.
 
 ## Wildcat Commons
 

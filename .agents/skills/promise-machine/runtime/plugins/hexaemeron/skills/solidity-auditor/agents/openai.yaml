@@ -1,0 +1,4 @@
+interface:
+  display_name: "Solidity Auditor (Pashov)"
+  short_description: "Parallelised security audit of Solidity code while you develop"
+  default_prompt: "Use the solidity-auditor skill from $hexaemeron to audit the Solidity in this repository."

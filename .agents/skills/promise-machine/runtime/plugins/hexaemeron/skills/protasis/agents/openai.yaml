@@ -1,0 +1,4 @@
+interface:
+  display_name: "Protasis"
+  short_description: "Holds a study and runbook to a content contract"
+  default_prompt: "Use $hexaemeron:protasis to check whether a study and runbook are ready to build from."

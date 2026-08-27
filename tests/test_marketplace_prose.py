@@ -117,6 +117,7 @@ def mutable_marketplace_surface(plugin_root, path):
 # clone. Listing names is what let that happen, so nested checkouts are now
 # detected rather than enumerated, and the names below are only the fast path.
 NESTED_CHECKOUT_NAMES = {".git", ".hexaemeron", ".claude", "tmp"}
+PORTABLE_RUNTIME = (".agents", "skills", "promise-machine", "runtime")
 
 
 def _inside_nested_checkout(relative, root):
@@ -133,7 +134,10 @@ def _inside_nested_checkout(relative, root):
 def repository_markdown(root):
     """Every shipped Markdown file, skipping checkouts of this repository."""
     for path in sorted(root.rglob("*.md")):
-        if not _inside_nested_checkout(path.relative_to(root), root):
+        relative = path.relative_to(root)
+        if relative.parts[: len(PORTABLE_RUNTIME)] == PORTABLE_RUNTIME:
+            continue
+        if not _inside_nested_checkout(relative, root):
             yield path
 
 

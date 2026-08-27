@@ -24,6 +24,8 @@ plugins/*/harness/cache/
 # broad engine rule above while making every Berean corpus visible to Git.
 !plugins/berean/**/corpus/
 !plugins/berean/**/corpus/**
+!.agents/skills/promise-machine/runtime/plugins/berean/**/corpus/
+!.agents/skills/promise-machine/runtime/plugins/berean/**/corpus/**
 
 # search-record.json is not output. It is shipped evidence, it is tracked, and
 # tests/test_search_record.py holds it against the catalogue's law count and

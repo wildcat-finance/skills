@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/compound-v3-method-receipt-v1.schema.json",
+  "title": "Alexandria Compound v3 Phase 0 method receipt",
+  "type": "object", "additionalProperties": false,
+  "required": ["format", "release_id", "registry_commit", "client", "gates", "transactions"],
+  "properties": {
+    "format": {"const": "alexandria-compound-v3-method-receipt/v1"},
+    "release_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "registry_commit": {"const": "f766f51583c23acc33b2a7824654ef2029a96804"},
+    "client": {"type": "string", "pattern": "^reth/"},
+    "gates": {
+      "type": "object", "additionalProperties": false,
+      "required": ["archive_state", "nested_calls", "ordered_storage", "provider_reported_finality", "rpc_modules"],
+      "properties": {
+        "archive_state": {"const": "passed"}, "nested_calls": {"const": "passed"},
+        "ordered_storage": {"const": "passed"}, "provider_reported_finality": {"const": "passed"},
+        "rpc_modules": {"const": "unsupported"}
+      }
+    },
+    "transactions": {
+      "type": "array", "minItems": 2, "maxItems": 2,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["label", "transaction_hash", "block_number", "block_hash", "implementation", "implementation_code_sha256", "call_count", "sstore_count"],
+        "properties": {
+          "label": {"enum": ["old", "recent"]}, "transaction_hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+          "block_number": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"}, "block_hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+          "implementation": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"}, "implementation_code_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "call_count": {"type": "integer", "minimum": 1}, "sstore_count": {"type": "integer", "minimum": 1}
+        }
+      }
+    }
+  }
+}

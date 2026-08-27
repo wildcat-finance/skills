@@ -1,0 +1,4 @@
+interface:
+  display_name: "Imprimatur"
+  short_description: "Three-tier lint over the tells that mark prose as machine-written"
+  default_prompt: "Use the imprimatur skill from $hexaemeron to lint this draft and rewrite every hard hit."

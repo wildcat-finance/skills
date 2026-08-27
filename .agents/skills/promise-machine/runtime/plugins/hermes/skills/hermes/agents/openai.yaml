@@ -1,0 +1,4 @@
+interface:
+  display_name: "Hermes"
+  short_description: "Fail-closed Solidity gas optimisation with measured Foundry evidence."
+  default_prompt: "Use Hermes to optimise one Solidity gas class, measure the saving and retain the complete fail-closed Foundry record."

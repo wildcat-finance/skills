@@ -1,0 +1,238 @@
+{
+  "version": "0.1.0",
+  "observables": "ICreditObservables",
+  "families": {
+    "conservation": "What the system holds, owes and has promised, held against each other.",
+    "accrual": "How debt and claims move with time.",
+    "claims": "What a recorded withdrawal claim is owed, and in what order."
+  },
+  "laws": [
+    {
+      "id": "conservation/value-conserved/v1",
+      "family": "conservation",
+      "statement": "Assets held plus debt owed equals lender claims plus accrued fees.",
+      "component": "src/laws/ValueConserved.sol",
+      "specimen": "specimens/MintedClaims.sol",
+      "counterexample": "test/counterexamples/Conservation.t.sol",
+      "applicability": {
+        "accounting_model": "a pooled lender claim denominated in one asset, where borrowers owe that same asset and fees accrue out of lender yield",
+        "assumes": [
+          "every quantity is denominated in the asset the system reports",
+          "a written-down debt is written down against claims in the same state transition",
+          "collateral posted by borrowers, if any, is not counted in assets held"
+        ],
+        "requires": [
+          "totalAssets",
+          "totalDebt",
+          "totalLenderClaims",
+          "accruedFees"
+        ]
+      },
+      "bounds": "exact"
+    },
+    {
+      "id": "conservation/reserves-backed-by-claims/v1",
+      "family": "conservation",
+      "statement": "Assets reserved never exceed the lender claims recorded.",
+      "component": "src/laws/ReservesBackedByClaims.sol",
+      "specimen": "specimens/OverReserved.sol",
+      "counterexample": "test/counterexamples/Conservation.t.sol",
+      "applicability": {
+        "accounting_model": "a system that earmarks held assets against recorded withdrawal claims",
+        "assumes": [
+          "a reservation is made against a claim that has been recorded",
+          "a system with no withdrawal queue reports zero reserved"
+        ],
+        "requires": [
+          "reservedAssets",
+          "totalLenderClaims"
+        ]
+      },
+      "bounds": "exact"
+    },
+    {
+      "id": "conservation/held-assets-partitioned/v1",
+      "family": "conservation",
+      "statement": "Reserved assets plus borrowable assets never exceed assets held.",
+      "component": "src/laws/HeldAssetsPartitioned.sol",
+      "specimen": "specimens/OverPromised.sol",
+      "counterexample": "test/counterexamples/Conservation.t.sol",
+      "applicability": {
+        "accounting_model": "a system where borrower liquidity and withdrawal reservations are drawn from the same held assets",
+        "assumes": [
+          "borrowable assets are what a borrower may take right now, not a credit limit",
+          "reserved assets are unavailable to the borrower"
+        ],
+        "requires": [
+          "reservedAssets",
+          "borrowableAssets",
+          "totalAssets"
+        ]
+      },
+      "bounds": "exact"
+    },
+    {
+      "id": "accrual/debt-falls-only-against-payment/v1",
+      "family": "accrual",
+      "statement": "Debt falls only against held assets rising by at least the fall.",
+      "component": "src/laws/DebtFallsOnlyAgainstPayment.sol",
+      "specimen": "specimens/DebtForgiven.sol",
+      "counterexample": "test/counterexamples/Accrual.t.sol",
+      "applicability": {
+        "accounting_model": "a pooled lender claim denominated in one asset, where borrowers owe that same asset and fees accrue out of lender yield",
+        "assumes": [
+          "the two observations are one system and its own past, in that order",
+          "assets a borrower repays are held by the system rather than forwarded",
+          "no third party settles debt outside the system's own accounting",
+          "the two observations bracket a single operation; an offsetting movement inside one batched transition would hide a violation from a law that compares totals"
+        ],
+        "requires": [
+          "totalDebt",
+          "totalAssets"
+        ]
+      },
+      "bounds": "exact"
+    },
+    {
+      "id": "accrual/no-accrual-at-rest/v1",
+      "family": "accrual",
+      "statement": "At equal observation times, debt rises only against held assets leaving.",
+      "component": "src/laws/NoAccrualAtRest.sol",
+      "specimen": "specimens/AccruesAtRest.sol",
+      "counterexample": "test/counterexamples/Accrual.t.sol",
+      "applicability": {
+        "accounting_model": "a pooled lender claim denominated in one asset, where borrowers owe that same asset and fees accrue out of lender yield",
+        "assumes": [
+          "the two observations are one system and its own past, in that order",
+          "observedAt advances only with real elapsed time, never per call",
+          "a borrowing removes from held assets what it adds to debt",
+          "the two observations bracket a single operation; an offsetting movement inside one batched transition would hide a violation from a law that compares totals"
+        ],
+        "requires": [
+          "totalDebt",
+          "totalAssets",
+          "observedAt"
+        ]
+      },
+      "bounds": "exact"
+    },
+    {
+      "id": "accrual/path-independent/v1",
+      "family": "accrual",
+      "statement": "One long step and the same span in equal small steps agree on debt, within one unit per step less one.",
+      "component": "src/laws/AccrualPathIndependent.sol",
+      "specimen": "specimens/CompoundsPerStep.sol",
+      "counterexample": "test/counterexamples/Accrual.t.sol",
+      "applicability": {
+        "accounting_model": "a pooled lender claim denominated in one asset, where borrowers owe that same asset and fees accrue out of lender yield, accruing linearly on principal rather than compounding",
+        "assumes": [
+          "the two observations are two systems, not one system and its past",
+          "both began from the same state and were advanced over the same span",
+          "the span divides evenly into the number of subdivisions",
+          "the rate did not change during the span",
+          "the law is deployed with the subdivision count the run actually used; nothing in either observation reveals a mismatch, and a mismatch silently changes the bound"
+        ],
+        "requires": [
+          "totalDebt",
+          "observedAt"
+        ]
+      },
+      "bounds": {
+        "tolerance": "one unit of the asset per subdivision, less one",
+        "arithmetic": "linear accrual on principal truncates once per step: the subdivided run accrues n*floor(x) where the single run accrues floor(n*x), and those differ by at most n-1"
+      }
+    },
+    {
+      "id": "claims/recorded-claim-never-shrinks/v1",
+      "family": "claims",
+      "statement": "A recorded claim keeps its owed amount and never loses payment already made.",
+      "component": "src/laws/RecordedClaimNeverShrinks.sol",
+      "specimen": "specimens/ClaimHaircut.sol",
+      "counterexample": "test/counterexamples/Claims.t.sol",
+      "applicability": {
+        "accounting_model": "a pooled lender claim denominated in one asset, with withdrawals recorded as an ordered queue of individual claims that keep their position once made",
+        "assumes": [
+          "the two observations are one system and its own past, in that order",
+          "a claim keeps its index once recorded, including after it is paid in full",
+          "both observations read the queue rather than the core observables alone",
+          "the two observations bracket a single operation; an offsetting movement inside one batched transition would hide a violation from a law that compares totals",
+          "the queue is short enough to read in one call; a law that runs out of gas traversing it reverts, and a revert is no verdict"
+        ],
+        "requires": [
+          "withdrawalQueue.claimCount",
+          "withdrawalQueue.claimAt"
+        ]
+      },
+      "bounds": "exact"
+    },
+    {
+      "id": "claims/queue-order-preserved/v1",
+      "family": "claims",
+      "statement": "No withdrawal claim is paid while an older claim is still owed something.",
+      "component": "src/laws/QueueOrderPreserved.sol",
+      "specimen": "specimens/QueueJumped.sol",
+      "counterexample": "test/counterexamples/Claims.t.sol",
+      "applicability": {
+        "accounting_model": "a pooled lender claim denominated in one asset, with withdrawals recorded as an ordered queue of individual claims that keep their position once made",
+        "assumes": [
+          "the queue is ordered oldest first",
+          "partial payment is recorded against the claim rather than held elsewhere",
+          "the system promises order, rather than paying pro rata",
+          "the queue is short enough to read in one call; a law that runs out of gas traversing it reverts, and a revert is no verdict"
+        ],
+        "requires": [
+          "withdrawalQueue.claimCount",
+          "withdrawalQueue.claimAt"
+        ]
+      },
+      "bounds": "exact"
+    },
+    {
+      "id": "claims/reserves-cover-payable/v1",
+      "family": "claims",
+      "statement": "Reserved assets cover everything still owed on the claims declared payable.",
+      "component": "src/laws/ReservesCoverPayableClaims.sol",
+      "specimen": "specimens/PayableBeyondReserves.sol",
+      "counterexample": "test/counterexamples/Claims.t.sol",
+      "applicability": {
+        "accounting_model": "a pooled lender claim denominated in one asset, with withdrawals recorded as an ordered queue of individual claims that keep their position once made",
+        "assumes": [
+          "payableThrough is what the system declares, not something derived from the reserves",
+          "reserved assets are held against the queue and against nothing else",
+          "a claim is never paid more than it is owed; no law in the corpus covers that yet",
+          "the queue is short enough to read in one call; a law that runs out of gas traversing it reverts, and a revert is no verdict"
+        ],
+        "requires": [
+          "reservedAssets",
+          "withdrawalQueue.claimCount",
+          "withdrawalQueue.claimAt",
+          "withdrawalQueue.payableThrough"
+        ]
+      },
+      "bounds": "exact"
+    },
+    {
+      "id": "claims/pooled-claims-cover-open-batches/v1",
+      "family": "claims",
+      "statement": "Pooled lender claims cover everything still owed on open withdrawal batches.",
+      "component": "src/laws/PooledClaimsCoverOpenBatches.sol",
+      "specimen": "specimens/FeeFromQueued.sol",
+      "counterexample": "test/counterexamples/Claims.t.sol",
+      "applicability": {
+        "accounting_model": "a pooled lender claim denominated in one asset, with withdrawals recorded as an ordered queue of individual claims that keep their position once made",
+        "assumes": [
+          "an amount recorded against a withdrawal is already owed by the pool, so nothing may reduce the pool beneath it",
+          "a fee is capped against the pooled claim the open batches are not already owed, rather than against what has been set aside; an earmark cannot exceed what is held, so the two part company exactly when the system is illiquid",
+          "a claim is never paid more than it is owed; no law in the corpus covers that yet",
+          "the queue is short enough to read in one call; a law that runs out of gas traversing it reverts, and a revert is no verdict"
+        ],
+        "requires": [
+          "totalLenderClaims",
+          "withdrawalQueue.claimCount",
+          "withdrawalQueue.claimAt"
+        ]
+      },
+      "bounds": "exact"
+    }
+  ]
+}

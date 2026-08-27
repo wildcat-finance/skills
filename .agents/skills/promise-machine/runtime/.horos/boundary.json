@@ -1,0 +1,103 @@
+{
+  "counts": {
+    "bytes_binary": 17,
+    "bytes_content_addressed": 94,
+    "bytes_generated": 1139,
+    "bytes_lockfile": 254,
+    "bytes_vendored": 94,
+    "files_skipped_unreadable": 0,
+    "files_walked": 838
+  },
+  "entries": [
+    {
+      "bytes": 949,
+      "category": "generated",
+      "evidence": "marker 'auto-generated' on a comment-led line in the first 4096 bytes",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/skills/fizz/templates/FoundryTester.sol"
+    },
+    {
+      "bytes": 53,
+      "category": "generated",
+      "evidence": "sourcemap: name ends .map and prefix carries \"mappings\"",
+      "grade": "hard",
+      "path": "plugins/horos/examples/fixture/app.js.map"
+    },
+    {
+      "bytes": 17,
+      "category": "binary",
+      "evidence": "file signature woff2",
+      "grade": "hard",
+      "path": "plugins/horos/examples/fixture/assets/font.woff2"
+    },
+    {
+      "bytes": 74,
+      "category": "generated",
+      "evidence": "directory name dist corroborated by sample: 1 of 1 files minified, binary or generated",
+      "files": 1,
+      "grade": "hard",
+      "path": "plugins/horos/examples/fixture/dist/"
+    },
+    {
+      "bytes": 63,
+      "category": "generated",
+      "evidence": "marker 'do not edit' on a comment-led line in the first 4096 bytes",
+      "grade": "hard",
+      "path": "plugins/horos/examples/fixture/gen/api.py"
+    },
+    {
+      "bytes": 10,
+      "category": "vendored",
+      "evidence": "linguist-vendored for 'lib/**' in plugins/horos/examples/fixture/.gitattributes",
+      "files": 1,
+      "grade": "hard",
+      "path": "plugins/horos/examples/fixture/lib/"
+    },
+    {
+      "bytes": 84,
+      "category": "vendored",
+      "evidence": "directory name node_modules corroborated by package-manager structure (left-pad/package.json)",
+      "files": 2,
+      "grade": "hard",
+      "path": "plugins/horos/examples/fixture/node_modules/"
+    },
+    {
+      "bytes": 49,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/horos/examples/fixture/store/blobs/sha256/3e02003799bc454870aca53af1adccdf0c695a00528998235c47d4ba0d006f89"
+    },
+    {
+      "bytes": 45,
+      "category": "content_addressed",
+      "evidence": "sha256 digest of the file's own bytes equals its name",
+      "grade": "hard",
+      "path": "plugins/horos/examples/fixture/store/objects/sha256/7d/7d2aa7ee1155c6102a2dbb74ff9efa27115cec234f2ea4555a0d3a92663d7e82"
+    },
+    {
+      "bytes": 54,
+      "category": "lockfile",
+      "evidence": "lockfile name yarn.lock",
+      "grade": "hard",
+      "path": "plugins/horos/examples/fixture/yarn.lock"
+    },
+    {
+      "bytes": 54,
+      "category": "lockfile",
+      "evidence": "lockfile name yarn.lock",
+      "grade": "hard",
+      "path": "plugins/horos/examples/scoped-entry/packages/one/yarn.lock"
+    },
+    {
+      "bytes": 146,
+      "category": "lockfile",
+      "evidence": "lockfile name go.sum",
+      "grade": "hard",
+      "path": "plugins/horos/examples/scoped-entry/packages/two/go.sum"
+    }
+  ],
+  "schema": 2,
+  "tool": "horos",
+  "universe": "filesystem"
+}

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/compound-v3-registry-v1.schema.json",
+  "title": "Alexandria pinned Compound v3 production registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "source", "entries"],
+  "properties": {
+    "format": {"const": "alexandria-compound-v3-registry/v1"},
+    "source": {
+      "type": "object", "additionalProperties": false,
+      "required": ["repository", "commit", "tree", "deployments_tree"],
+      "properties": {
+        "repository": {"const": "https://github.com/compound-finance/comet"},
+        "commit": {"const": "f766f51583c23acc33b2a7824654ef2029a96804"},
+        "tree": {"const": "1101bf195fce18dc1feb3e56c992adfddac27b0e"},
+        "deployments_tree": {"const": "cf2dc2381d00a3c60563f4b5aa486412ddd40d62"}
+      }
+    },
+    "entries": {"type": "array", "minItems": 28, "maxItems": 28, "items": {"$ref": "#/$defs/entry"}}
+  },
+  "$defs": {
+    "address": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
+    "file": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "blob_sha1", "bytes", "sha256"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^deployments/[a-z0-9.]+/[a-z0-9.]+/(roots\\.json|configuration\\.json|deploy\\.ts|relations\\.ts)$"},
+        "blob_sha1": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "entry": {
+      "type": "object", "additionalProperties": false,
+      "required": ["network", "chain_id", "market", "proxy", "bulker", "base_token", "files"],
+      "properties": {
+        "network": {"type": "string", "minLength": 1}, "chain_id": {"type": "integer", "minimum": 1},
+        "market": {"type": "string", "minLength": 1}, "proxy": {"$ref": "#/$defs/address"},
+        "bulker": {"oneOf": [{"$ref": "#/$defs/address"}, {"type": "null"}]},
+        "base_token": {"$ref": "#/$defs/address"},
+        "files": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/file"}}
+      }
+    }
+  }
+}

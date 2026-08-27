@@ -122,12 +122,34 @@ the keys are documented in Anthropic's
 
 ### Local agents
 
-Agents that support the open Agent Skills convention discover the single
-[Promise Machine router](./.agents/skills/promise-machine/SKILL.md). Point the
-agent at this repository and include `.agents/skills` in its project skill
-search path. The router reads the root and selected plugin runtime contracts
-before it loads one canonical skill. It does not copy their instructions or
-carry a separate behavioural version.
+Install the collective from skills.sh by selecting the single
+[Promise Machine router](./.agents/skills/promise-machine/SKILL.md):
+
+```bash
+npx skills add wildcat-finance/skills --skill promise-machine
+```
+
+For a non-interactive project-local Codex install:
+
+```bash
+npx skills add wildcat-finance/skills \
+  --skill promise-machine --agent codex --copy -y
+python3 .agents/skills/promise-machine/scripts/verify_runtime.py
+```
+
+The installer copies only the selected directory. This router therefore ships
+a generated runtime containing the suite law, plugin contracts, canonical
+skills, and their operational files. It verifies those bytes before routing
+and carries no separate behavioural version. The skills.sh page places
+canonical specialist source entries below the supported collective installer;
+do not install one of those entries alone when its scripts or parent contract
+are required.
+
+The portable package omits host manifests, development suites, historical
+audit records, and Alexandria's 16 MB Compound v3 Phase 0 offline trace
+inputs and built release. Use a full source checkout when an operation needs
+one of those surfaces. To use a checkout directly, point the agent at this
+repository and include `.agents/skills` in its project skill search path.
 
 A file-reading agent without automatic skill discovery should begin with
 [AGENTS.md](./AGENTS.md). That file identifies the entrypoints, path rules, and

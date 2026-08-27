@@ -108,6 +108,8 @@ def is_current_runtime_prose(path):
     relative = path.relative_to(ROOT)
     parts = relative.parts
     name = relative.name.lower()
+    if parts[:4] == (".agents", "skills", "promise-machine", "runtime"):
+        return False
     if "audit" in parts or "baseline" in parts:
         return False
     if "tests" in parts and "fixtures" in parts:

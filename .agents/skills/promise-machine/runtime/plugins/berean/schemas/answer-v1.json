@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://berean.wildcat.finance/answer/v1/schema.json",
+  "title": "Berean answer record v1",
+  "description": "One answer or refusal for berean-answer/v1: classified sentences, embedded citations, block-bound reads and declared disagreements. The verifier enforces this shape plus the cross-checks a schema cannot express: citation spans against the pinned corpus, request keys against the preserved records, and the kind-dependent emptiness rules. On a user_supplied sentence, evidence carries question:<start>-<end> byte spans of question rather than artefact ids; each span must re-slice to whole, non-blank UTF-8.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "question", "kind", "refusal", "sentences", "citations", "reads", "discrepancies"],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "id": { "type": "string", "pattern": "\\S" }
+  },
+  "properties": {
+    "format": { "const": "berean-answer/v1" },
+    "question": { "type": "string", "pattern": "\\S" },
+    "kind": { "enum": ["answer", "refusal"] },
+    "refusal": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["boundary", "detail"],
+          "properties": {
+            "boundary": { "type": "string", "pattern": "\\S" },
+            "detail": { "type": "string", "pattern": "\\S" }
+          }
+        }
+      ]
+    },
+    "sentences": {
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["text", "source_class", "evidence"],
+        "properties": {
+          "text": { "type": "string", "pattern": "\\S" },
+          "source_class": { "enum": ["document", "chain_read", "calculation", "user_supplied"] },
+          "evidence": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+        }
+      }
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "format", "doc", "byte_start", "byte_end", "sha256", "display_text"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "format": { "const": "berean-citation/v1" },
+          "doc": { "type": "string", "pattern": "^[^/\\\\][^\\\\]*$" },
+          "byte_start": { "type": "integer", "minimum": 0 },
+          "byte_end": { "type": "integer", "minimum": 1 },
+          "sha256": { "$ref": "#/$defs/sha256" },
+          "display_text": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "reads": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "chain_id", "block_number", "request_key"],
+        "properties": {
+          "id": { "$ref": "#/$defs/id" },
+          "chain_id": { "type": "integer", "minimum": 0 },
+          "block_number": { "type": "integer", "minimum": 0 },
+          "request_key": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "discrepancies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["subject", "document_evidence", "chain_evidence", "note"],
+        "properties": {
+          "subject": { "type": "string", "pattern": "\\S" },
+          "document_evidence": { "$ref": "#/$defs/id" },
+          "chain_evidence": { "$ref": "#/$defs/id" },
+          "note": { "type": "string", "pattern": "\\S" }
+        }
+      }
+    }
+  }
+}
