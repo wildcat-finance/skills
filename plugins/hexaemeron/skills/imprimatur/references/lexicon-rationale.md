@@ -89,11 +89,13 @@ view. If quotation or inline-code masking changed any byte inside the span,
 the candidate is discarded; a short masked span must not become an ordinary
 three-space separator.
 
-Straight, smart double, and smart single quotations all remain mentions. In a
-smart single quotation, the last right mark before another opening mark or
-line ending closes the bounded span, so internal apostrophes remain inside. This keeps
+Straight, smart double, and smart single quotations all remain mentions. A
+word-internal right mark and the fixed `’n’` form stay inside a smart single
+quotation. Any other right mark closes it. That rule keeps
 “`‘O’Reilly says because this repository has no hand-off’`” masked without
-hiding the same causal clause when it follows the closing quote.
+hiding a later causal clause merely because a possessive right mark follows
+it. A plural possessive inside a smart single quotation is ambiguous, so the
+linter prefers a visible diagnostic to a false-clean result.
 
 Markdown code masking retains CR and LF bytes while it blanks fenced or
 indented code. Generic input counts LF, CR, and CRLF as line endings, so the

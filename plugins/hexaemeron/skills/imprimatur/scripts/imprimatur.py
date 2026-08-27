@@ -220,9 +220,11 @@ def _quoted_pattern(line_terminators: frozenset[str]) -> re.Pattern[str]:
         rf"`[^`{excluded}]+`"  # inline code
         rf"|\"[^\"{excluded}]{{1,120}}\""  # double quotes
         rf"|\u201c[^\u201d{excluded}]{{1,120}}\u201d"  # smart quotes
-        # Take the last right mark before another opening mark or line ending,
-        # so apostrophes inside `‘O’Reilly’s note’` stay inside the mention.
-        rf"|\u2018[^\u2018{excluded}]{{1,120}}\u2019"
+        # Word-internal apostrophes and the fixed `’n’` form stay inside a
+        # mention. A right mark after a word otherwise closes it: greedily
+        # taking the last mark can hide later prose before a possessive.
+        rf"|\u2018(?:[^\u2018\u2019{excluded}]|\u2019n\u2019|"
+        rf"\u2019(?=\w)(?!n\u2019)){{1,120}}\u2019(?![\w])"
         rf"|(?<![\w'])'[^'{excluded}]{{1,120}}'(?![\w])"  # not apostrophes
     )
 

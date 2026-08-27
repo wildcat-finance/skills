@@ -1045,8 +1045,9 @@ class SourceExtractionTests(unittest.TestCase):
     def test_causal_structural_match_masks_smart_single_quotes_not_apostrophes(self):
         source = (
             "// ‘O’Reilly says because this repository has no checked hand-off’\n"
-            "// ‘developers’ guidance says because this repository has no hand-off’\n"
+            "// ‘rock ’n’ roll says because this repository has no hand-off’\n"
             "// ‘O’Reilly says hello’ because this repository has no checked hand-off\n"
+            "// ‘quoted’ because this repository has no hand-off for developers’ tools\n"
         )
         hits = [
             hit
@@ -1054,7 +1055,7 @@ class SourceExtractionTests(unittest.TestCase):
             if hit["family"] == "causal_subject_has_no"
         ]
         self.assertEqual(
-            [(3, 26)],
+            [(3, 26), (4, 13)],
             [(hit["line"], hit["col"]) for hit in hits],
         )
 

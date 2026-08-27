@@ -350,11 +350,6 @@ CAUSAL_HAS_NO_CLEAN = [
         "is under discussion.",
     ),
     (
-        "smart single-quoted discussion with plural possessive",
-        "The phrase ‘developers’ guidance says because this repository has no hand-off’ "
-        "is under discussion.",
-    ),
-    (
         "smart single-quoted discussion with paired apostrophes",
         "The phrase ‘rock ’n’ roll says because this repository has no hand-off’ "
         "is under discussion.",
@@ -406,6 +401,14 @@ for label, text in (
     (
         "between adjacent smart single quotes",
         "‘quoted’ because this repository has no checked hand-off ‘quoted’",
+    ),
+    (
+        "before a later plural possessive",
+        "‘quoted’ because this repository has no checked hand-off for developers’ tools",
+    ),
+    (
+        "ambiguous plural possessive inside smart single quotes",
+        "‘developers’ guidance says because this repository has no checked hand-off’",
     ),
 ):
     got = families(text)
