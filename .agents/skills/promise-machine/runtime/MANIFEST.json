@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 847,
-  "total_bytes": 11017657,
+  "file_count": 848,
+  "total_bytes": 11021215,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 3198,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "f03d1b727daef7ab7c98a2272fbf3fdfab0698b994d9ec35b8830098914dee0f",
+      "sha256": "5012e3d36fec3c7cfdf8cac8996c90e92b6460769401b692b019173f5b987004",
       "source": null
     },
     {
@@ -1051,15 +1051,15 @@
       "source": "plugins/brevitas/README.md"
     },
     {
-      "bytes": 1748,
+      "bytes": 2947,
       "path": "plugins/brevitas/skills/brevitas/EVOLUTION.md",
-      "sha256": "a0877121a03d245a6e2169228bf82917192831aa37ad9285269b15e30e4a4923",
+      "sha256": "fd3101e081161dd160d04764dbf7c455f91b9015b80f9296847fd1fad660f445",
       "source": "plugins/brevitas/skills/brevitas/EVOLUTION.md"
     },
     {
-      "bytes": 420,
+      "bytes": 527,
       "path": "plugins/brevitas/skills/brevitas/Makefile",
-      "sha256": "daf1a128663f73d0905e30b2d27698c29247352b237605d80d695d0a0008c119",
+      "sha256": "68d21d0f8142d909639e7e0172725cf7608f02cc0d3f8e4216d6c682afece38f",
       "source": "plugins/brevitas/skills/brevitas/Makefile"
     },
     {
@@ -1073,6 +1073,12 @@
       "path": "plugins/brevitas/skills/brevitas/agents/openai.yaml",
       "sha256": "65f9c3831046c4652690da4bc669cfe8ffe4cbe57837122d800156c70990e131",
       "source": "plugins/brevitas/skills/brevitas/agents/openai.yaml"
+    },
+    {
+      "bytes": 2252,
+      "path": "plugins/brevitas/skills/brevitas/evals/README.md",
+      "sha256": "57f37db716acc8a39f85ad162f4c0395301ff0398a9828eba741251fa22b224e",
+      "source": "plugins/brevitas/skills/brevitas/evals/README.md"
     },
     {
       "bytes": 280,
