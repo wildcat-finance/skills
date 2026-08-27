@@ -2,13 +2,11 @@
 
 ## Status
 
-Proposed, 2026-08-24. Recorded for
-[skills#558](https://github.com/wildcat-finance/skills/issues/558) and
-[skills#565](https://github.com/wildcat-finance/skills/issues/565). Depends on
-[ADR-028](ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md),
-[ADR-029](ADR-029-separate-the-checkpoint-protocol-from-its-authority-service.md),
-and
-[ADR-030](ADR-030-use-s3-object-lock-behind-replaceable-digitalocean-compute.md).
+Retired, 2026-08-27. The proposal below was never accepted and no longer
+governs. [ADR-028](ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md)
+replaces its external acceptance fence with two explicit checkpoint
+boundaries and same-ledger verification. The remaining body is preserved as
+historical rationale.
 
 PR #569 published this record as ADR-026. It moved to ADR-031 so the five
 Wave Delta records stay contiguous and in reading order once the collisions on
