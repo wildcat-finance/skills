@@ -87,6 +87,11 @@ TRUE_POSITIVES = [
         "The fallback remains because the repository\nhas no checked hand-off.",
         "causal_subject_has_no",
     ),
+    (
+        "causal has no wrapped negation",
+        "The fallback remains because the repository has\nno checked hand-off.",
+        "causal_subject_has_no",
+    ),
     ("em dash", "The market cleared — eventually.", "em_dash"),
     ("apology theatre", "I apologise for the confusion in the last message.", "apology_theatre"),
     ("generic title case", "## Evidence Changes Everything", "title_case_heading"),
@@ -286,8 +291,20 @@ CAUSAL_HAS_NO_CLEAN = [
         'The phrase "because this repository has no checked Atlas hand-off" is under discussion.',
     ),
     (
+        "smart quoted discussion",
+        "The phrase “because this repository has no checked Atlas hand-off” is under discussion.",
+    ),
+    (
         "inline code",
         "The old form was `because this repository has no checked Atlas hand-off`.",
+    ),
+    (
+        "inline code does not join prose",
+        "The route is manual because this repository `still` has no checked hand-off.",
+    ),
+    (
+        "blank paragraph does not join clauses",
+        "The route stays manual because the repository\n\nhas no checked hand-off.",
     ),
     (
         "subject longer than eight tokens",
@@ -327,6 +344,21 @@ check(
     len(causal_source_hits) == 1
     and (causal_source_hits[0]["line"], causal_source_hits[0]["col"]) == (2, 4),
     f"got {causal_source_hits}",
+)
+
+split_causal_source = (
+    "// The fallback stays because the repository\n"
+    'const mode = "manual";\n'
+    "// has no checked hand-off.\n"
+)
+split_causal_hits = [
+    hit for hit in build(split_causal_source, source_suffix=".ts")["hits"]
+    if hit["family"] == "causal_subject_has_no"
+]
+check(
+    "source/typescript separate comments do not join across code",
+    split_causal_hits == [],
+    f"got {split_causal_hits}",
 )
 
 python_source = (

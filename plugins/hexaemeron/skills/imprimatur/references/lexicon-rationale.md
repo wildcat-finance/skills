@@ -79,6 +79,11 @@ The family stays narrow. It covers one bounded causal form, not standalone
 subject from the verb. Those neighbouring forms need their own evidence before
 they become lint rules.
 
+Separators are one to three horizontal spaces or one line ending with at most
+three spaces on either side. This admits an ordinary wrapped line without
+joining separate paragraphs, masked inline material, or comment fragments
+across an intervening source line.
+
 ## The gated tier
 
 Nine families are banned outright. Four are gated, because they are real terms in the domains this organisation writes about, and a lexicon that fires on "orthogonal" in a maths context is a lexicon that gets uninstalled in a week.
