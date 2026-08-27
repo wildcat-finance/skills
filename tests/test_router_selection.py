@@ -194,6 +194,49 @@ def pair_faults(document: dict) -> list:
     return faults
 
 
+def run_faults(runs: list, expected: str) -> list:
+    """Hold every recorded run block to its field set, digest and arithmetic.
+
+    The promise files a run's counts under `measured`, which establishes that a
+    value was observed under a recorded method. A block whose counts cannot all
+    be true measured nothing, so the arithmetic the study gives them is checked
+    here: every case the run covered was passed or failed, and a run records
+    every failing case id.
+    """
+    faults = []
+    for index, run in enumerate(runs):
+        where = f"{CORPUS_PATH}#runs[{index}]"
+        if not isinstance(run, dict) or set(run) != RUN_FIELDS:
+            faults.append(f"{where}: fields are not exactly {sorted(RUN_FIELDS)}")
+            continue
+        if run["corpus_sha256"] != expected:
+            faults.append(
+                f"{where}: recorded against corpus {run['corpus_sha256'][:12]} "
+                f"and the cases on disk digest to {expected[:12]}"
+            )
+        counts = {}
+        for field in ("cases", "passed", "failed"):
+            value = run[field]
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                faults.append(f"{where}: {field} is not a count, it is {value!r}")
+            else:
+                counts[field] = value
+        if len(counts) == 3 and counts["passed"] + counts["failed"] != counts["cases"]:
+            faults.append(
+                f"{where}: {counts['passed']} passed and {counts['failed']} failed "
+                f"do not account for {counts['cases']} cases"
+            )
+        failures = run["failures"]
+        if not isinstance(failures, list):
+            faults.append(f"{where}: failures is not a list")
+        elif "failed" in counts and len(failures) != counts["failed"]:
+            faults.append(
+                f"{where}: {counts['failed']} failed but {len(failures)} failing "
+                f"case id(s) are recorded; a run records every one of them"
+            )
+    return faults
+
+
 class RouterSelectionCorpus(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -316,19 +359,18 @@ class RouterSelectionCorpus(unittest.TestCase):
         move the value it pins. A block whose digest disagrees with the bytes on
         disk was graded against a different corpus and is not evidence about
         this one.
+
+        The counts are held to the arithmetic the study gives them: every case
+        the run covered was either passed or failed, and a run with failures
+        records every failing case id. The promise files those counts under
+        `measured`, which establishes that a value was observed under a recorded
+        method, so a block whose counts cannot all be true is not a measurement
+        of anything. The completeness of the block and the shape of each failure
+        entry belong to step 3's own method.
         """
-        expected = corpus_digest(self.document["cases"])
-        wrong = []
-        for index, run in enumerate(self.document["runs"]):
-            where = f"{CORPUS_PATH}#runs[{index}]"
-            if not isinstance(run, dict) or set(run) != RUN_FIELDS:
-                wrong.append(f"{where}: fields are not exactly {sorted(RUN_FIELDS)}")
-                continue
-            if run["corpus_sha256"] != expected:
-                wrong.append(
-                    f"{where}: recorded against corpus {run['corpus_sha256'][:12]} "
-                    f"and the cases on disk digest to {expected[:12]}"
-                )
+        wrong = run_faults(
+            self.document["runs"], corpus_digest(self.document["cases"])
+        )
         self.assertEqual(
             wrong, [],
             "a recorded run block does not describe the corpus in this file; "
@@ -388,6 +430,36 @@ class RouterSelectionCorpus(unittest.TestCase):
                     pair_faults(document), [],
                     f"a pair carrying a {label} was accepted; pairs quote prose "
                     f"exactly as cases do and are held to the same shape",
+                )
+
+        # A run block that parses can still record counts that cannot all be
+        # true. The promise files those counts under `measured`, so each shape
+        # below is exercised against the validator rather than trusted to a
+        # corpus that records no run yet.
+        digest = "0" * 64
+        honest = {"model": "m", "date": "2026-08-27", "prompt_template_sha256": "0" * 64,
+                  "corpus_sha256": digest, "cases": 24, "passed": 24, "failed": 0,
+                  "failures": []}
+        self.assertEqual(
+            run_faults([honest], digest), [],
+            "an internally consistent run block was rejected",
+        )
+        for label, block in {
+            "passed and failed exceeding cases": dict(honest, passed=24, failed=24),
+            "passed exceeding cases": dict(honest, passed=99, failed=0, cases=24),
+            "a negative failure count": dict(honest, passed=29, failed=-5),
+            "counts recorded as strings": dict(honest, passed="24", failed="0"),
+            "a boolean count": dict(honest, passed=True, failed=0, cases=1),
+            "fewer failing ids than failures": dict(honest, passed=23, failed=1, failures=[]),
+            "more failing ids than failures": dict(honest, failures=["RS-01"]),
+            "failures that are not a list": dict(honest, failures={}),
+            "a digest from another corpus": dict(honest, corpus_sha256="f" * 64),
+        }.items():
+            with self.subTest(run=label):
+                self.assertNotEqual(
+                    run_faults([block], digest), [],
+                    f"a run block recording {label} was accepted, so a value the "
+                    f"promise calls measured need not be internally true",
                 )
 
         for label, pair in {

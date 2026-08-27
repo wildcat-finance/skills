@@ -65,9 +65,16 @@ recomputes from the cases on disk.
 
 ## Evidence classes
 
-`checked` for the shape, the id uniqueness, the canonical names, the quoted
-sentences and the recomputed digest. `recorded` for a run block: the model, the
-date and the failures it names are preserved from the run that produced them.
+`checked` for the shape, the id uniqueness, the canonical names and the quoted
+sentences. `recomputed` for the corpus digest, which is derived again from the
+cases on disk rather than read from the file that carries it. `recorded` for a
+run block: the model, the date and the failures it names are preserved from the
+run that produced them. `measured` for that block's counts, which are observed
+by running one model against one corpus digest under one prompt template.
+
+The last two classes name a surface this contract covers, not one it asserts is
+populated. While `runs` is empty the reporter prints `not-run`, there is no
+score to cite, and nothing here is `proved` at any point.
 
 ## Boundary
 

@@ -371,3 +371,67 @@ context that saw the expected selections would be evidence about nothing.
 hypomnema: none, and the reason is that this step records a measurement rather
 than a decision, and the boundary that governs how it may be cited was written
 into `PROMISE_MACHINE.md` in step 1.
+### Amendment -- 2026-08-27
+
+**What changed.** Complete replacement Exit: Six surfaces, then the commands. The corpus exists under schema
+`promise-machine-router-selection/v1` carrying a `pairs` block and 24 cases,
+one for each router row, with the Pashov row's case naming one of the five
+vendored canonical skills rather than the row's unnamed phrase. The checker
+holds the corpus to its shape, to real canonical skill names, and to sentences
+that still occur verbatim in the file each case names. The reporter prints the
+coverage table and, with no run recorded yet, the word `not-run`.
+`PROMISE_MACHINE.md` carries `### promise-machine-router-selection` with all
+nine required fields, its `Evidence classes` naming `checked`, `measured`,
+`recomputed` and `recorded` and never `proved`, and its `Boundary` stating in one sentence that a recorded
+score is never a gate. `tests/promise_machine_coverage.json` carries the
+`router_selection` capability entry naming that promise id, the corpus fixture
+with its digest, `tests/test_router_selection.py` with its six selectors, and
+`docs/promise-machine/router-selection-v1.md` with its digest. ADR-041 records
+why the promise sits in the root law and why the router gets none. Both syncs
+have run, in the order law then mirror then boundary. Then:
+
+```bash
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py sync --check
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py coverage --check
+/Users/kethcode/.local/bin/python3.13 scripts/portable_promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 plugins/horos/skills/horos/scripts/horos.py check .
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+/Users/kethcode/.local/bin/python3.13 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.13 tests/emit_router_selection_report.py
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py PROMISE_MACHINE.md docs/router-selection/study.md docs/router-selection/runbook.md docs/promise-machine/router-selection-v1.md docs/decisions/ADR-041-grade-router-selection-as-a-root-capability.md
+/Users/kethcode/.local/bin/python3.13 plugins/brevitas/skills/brevitas/scripts/brevitas.py PROMISE_MACHINE.md
+/Users/kethcode/.local/bin/python3.13 plugins/brevitas/skills/brevitas/scripts/brevitas.py docs/promise-machine/router-selection-v1.md
+/Users/kethcode/.local/bin/python3.13 plugins/brevitas/skills/brevitas/scripts/brevitas.py docs/decisions/ADR-041-grade-router-selection-as-a-root-capability.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
+git diff --check
+rm -rf .elenchus uv.lock
+git status --short
+```
+
+Every one exits zero, the root suite reporting 444 tests, `git diff --check`
+printing nothing and `git status --short` printing nothing. The two committed
+study and runbook copies are linted rather than rewritten: they are the
+receipted bytes, and Imprimatur already scores the study clean at 100.
+
+**Why.** Two corrections to step 1's exit, both found by its own audit round.
+The receipted study assigns the recorded grading run the evidence class
+`measured`, which the root law defines as a value observed under a recorded
+method and environment, and the task issue asks for the corpus to be scored at
+that class and never at `proved`. This exit named only `checked` and
+`recorded`, so the promise as landed understated the evidence the delivery
+produces, and step 3, which records the run, cannot reach `PROMISE_MACHINE.md`
+under its own files. The same sentence settles the parallel case the round
+raised: the promise's own promise and evidence lines say the corpus digest is
+derived again from named inputs, which is `recomputed` rather than `checked`.
+The second correction is mechanical. `brevitas.py` takes one optional
+positional argument, so the single line naming three documents exits 2 with
+`unrecognized arguments`, and the three documents are now named one per line,
+which is the form that was actually run.
+
+**Steps touched.** Step 1 only. Steps 2 and 3 are unchanged.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds.
