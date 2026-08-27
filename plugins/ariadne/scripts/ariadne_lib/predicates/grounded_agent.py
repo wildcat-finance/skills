@@ -134,6 +134,7 @@ MAX_COMMAND_WORDS = 128
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 HASH32 = re.compile(r"^0x[0-9a-f]{64}$")
 ADDRESS = re.compile(r"^0x[0-9a-f]{40}$")
+CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 ZERO_HASH = "0x" + "0" * 64
 
 
@@ -147,12 +148,12 @@ def stated(value, limit=MAX_TEXT):
 
 
 def portable_name(value):
-    """A bounded visible label with no control, format or private-use codepoint."""
+    """A bounded label with one ASCII graphic and no C0 or C1 control."""
     if not stated(value, MAX_NAME) or value != value.strip():
         return False
     if not any("!" <= char <= "~" for char in value):
         return False
-    return not any(unicodedata.category(char).startswith("C") for char in value)
+    return CONTROL.search(value) is None
 
 
 def usable_path(value):
@@ -560,10 +561,21 @@ def optional_faults(predicate):
                 release = predicate.get("release")
                 if (
                     terminal.get("action") == "promote"
+                    and evaluations is None
+                ):
+                    faults.append("a promote terminal requires evaluations")
+                if (
+                    terminal.get("action") == "promote"
                     and isinstance(release, dict)
                     and terminal.get("target_release_digest") != release.get("release_digest")
                 ):
                     faults.append("a promote terminal must target this release digest")
+                if (
+                    terminal.get("action") == "rollback"
+                    and isinstance(release, dict)
+                    and terminal.get("target_release_digest") == release.get("release_digest")
+                ):
+                    faults.append("a rollback terminal must target another release")
         if promotion_reason is not None:
             faults.append(
                 "promotion_absence_reason must be null when promotion is present"

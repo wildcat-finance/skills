@@ -670,6 +670,44 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
         self.assertEqual(corpus["maxItems"], grounded_agent.MAX_COMPONENTS)
         self.assertEqual(answers["maxItems"], grounded_agent.MAX_COMPONENTS)
 
+    def test_portable_name_and_path_patterns_match_the_module(self):
+        import re
+
+        name_pattern = re.compile(self.schema["$defs"]["portableName"]["pattern"])
+        for value, expected in (
+            ("release-v1", True),
+            ("e\u0301 release", True),
+            ("x\u200b", True),
+            ("x\ue000", True),
+            ("\u200b", False),
+            ("\ue000", False),
+            (" leading", False),
+            ("trailing ", False),
+            ("line\nbreak", False),
+        ):
+            with self.subTest(kind="name", value=repr(value)):
+                self.assertEqual(bool(name_pattern.search(value)), expected)
+                self.assertEqual(grounded_agent.portable_name(value), expected)
+
+        path_pattern = re.compile(self.schema["$defs"]["path"]["pattern"])
+        for value, expected in (
+            ("corpus/terms.md", True),
+            ("corpus/e\u0301-terms.md", True),
+            ("corpus/x\u200b.json", True),
+            ("corpus/x\ue000.json", True),
+            ("corpus/ leading.json", False),
+            ("corpus/trailing.json ", False),
+            ("corpus/line\nbreak.json", False),
+            ("corpus/\u200b", False),
+            ("corpus//terms.md", False),
+            ("corpus/terms.md\\", False),
+            ("../outside.json", False),
+            ("corpus\\outside.json", False),
+        ):
+            with self.subTest(kind="path", value=repr(value)):
+                self.assertEqual(bool(path_pattern.search(value)), expected)
+                self.assertEqual(grounded_agent.usable_path(value), expected)
+
     def test_policy_vocabularies_match_the_checked_copies(self):
         rules = self.properties["policy"]["properties"]["rules"]["properties"]
         self.assertEqual(

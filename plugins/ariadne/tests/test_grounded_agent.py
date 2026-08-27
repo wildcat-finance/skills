@@ -462,6 +462,23 @@ class OptionalEvidenceTests(unittest.TestCase):
         body["produced"]["promotion"]["terminal"]["action"] = "rollback"
         self.assertTrue(named("optional-evidence", body).passed)
 
+    def test_a_promote_terminal_requires_the_release_evaluations(self):
+        body = predicate()
+        body["produced"]["evaluations"] = None
+        body["produced"]["evaluations_absence_reason"] = "no evaluation was produced"
+        finalise(body)
+        found = named("optional-evidence", body)
+        self.assertFalse(found.passed)
+        self.assertIn("promote terminal requires evaluations", found.detail)
+
+    def test_a_rollback_terminal_cannot_restore_the_current_release(self):
+        body = predicate()
+        terminal = body["produced"]["promotion"]["terminal"]
+        terminal["action"] = "rollback"
+        found = named("optional-evidence", body)
+        self.assertFalse(found.passed)
+        self.assertIn("rollback terminal must target another release", found.detail)
+
 
 class GateTwoAndFiveTests(unittest.TestCase):
     def test_gate_two_requires_format_policy_adapter_and_parameters(self):
