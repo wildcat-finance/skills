@@ -1418,6 +1418,67 @@ def source_identity(root: Path) -> str:
         raise PlanError(exc.code, exc.message) from exc
 
 
+_SNAPSHOT_OWNERSHIP: dict[tuple[str, str], dict[str, tuple[int, int]]] = {}
+"""Creation identities for live snapshot trees, keyed by (root, nonce).
+
+Cleanup consults this so a substituted sibling carrying a copied sentinel is
+preserved rather than removed (S2-R8-20): the parent directory and sentinel
+must be the exact inodes this process created.
+"""
+
+
+def _fd_identity(fd: int) -> tuple[int, int]:
+    info = os.fstat(fd)
+    return (info.st_dev, info.st_ino)
+
+
+def _create_owned_parent(root: Path, nonce: str) -> None:
+    """Create the runner parent component by component and record its identity.
+
+    ``mkdir(parents=True)`` resolves every component through the filesystem,
+    so a symlinked ``tmp`` or ``check-runner`` would redirect creation and
+    later cleanup outside the repository (S2-R8-18).  The descriptor walk
+    opens each component no-follow, creates the nonce directory relative to
+    the proved chain, and records the (device, inode) identity cleanup must
+    see again.
+    """
+    chain = [part for part in RUNNER_PARENT.split("/") if part]
+    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
+    try:
+        runner_fd = _open_confined_directory(root, chain, create=True)
+    except PlanError as exc:
+        raise SnapshotError("snapshot-error", exc.message) from exc
+    nonce_fd = -1
+    sentinel_fd = -1
+    try:
+        os.mkdir(nonce, 0o755, dir_fd=runner_fd)
+        nonce_fd = os.open(nonce, directory_flags | no_follow, dir_fd=runner_fd)
+        sentinel_fd = os.open(
+            SENTINEL_NAME,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | no_follow,
+            0o644,
+            dir_fd=nonce_fd,
+        )
+        payload = memoryview((nonce + "\n").encode("utf-8"))
+        while payload:
+            payload = payload[os.write(sentinel_fd, payload):]
+        _SNAPSHOT_OWNERSHIP[(str(root), nonce)] = {
+            "parent": _fd_identity(nonce_fd),
+            "sentinel": _fd_identity(sentinel_fd),
+        }
+    except OSError as exc:
+        raise SnapshotError(
+            "snapshot-error", f"cannot create the snapshot parent: {exc}"
+        ) from exc
+    finally:
+        if sentinel_fd >= 0:
+            os.close(sentinel_fd)
+        if nonce_fd >= 0:
+            os.close(nonce_fd)
+        os.close(runner_fd)
+
+
 def _reconstruct_index(root: Path, target: Path) -> None:
     """Copy the source's zero-stage index into the snapshot record for record.
 
@@ -1548,8 +1609,7 @@ def make_snapshot(
     """
     parent = root / RUNNER_PARENT / nonce
     try:
-        parent.mkdir(parents=True, exist_ok=False)
-        (parent / SENTINEL_NAME).write_text(nonce + "\n", encoding="utf-8")
+        _create_owned_parent(root, nonce)
         target = parent / "snapshot"
         proc = subprocess.run(
             ["git", "clone", "--quiet", "--no-hardlinks", "--local", str(root), str(target)],
@@ -1606,23 +1666,75 @@ def make_snapshot(
 
 
 def remove_snapshot(root: Path, nonce: str) -> str:
-    """Remove only a tree this runner created and can still prove it owns."""
-    parent = root / RUNNER_PARENT / nonce
-    sentinel = parent / SENTINEL_NAME
+    """Remove only a tree this runner created and can still prove it owns.
+
+    Ownership is proved descriptor-relative: every component opens no-follow,
+    the sentinel must be a regular file naming the nonce, and where this
+    process created the tree the parent directory and sentinel must carry the
+    exact device and inode recorded at creation.  A substituted sibling that
+    copied the sentinel after learning the nonce is therefore preserved, and
+    removal itself runs relative to the proved parent so a rebound pathname
+    cannot redirect it (S2-R8-20).
+    """
+    recorded = _SNAPSHOT_OWNERSHIP.get((str(root), nonce))
+    chain = [part for part in RUNNER_PARENT.split("/") if part]
+    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    no_follow = getattr(os, "O_NOFOLLOW", 0)
     try:
-        if parent.is_symlink() or not parent.is_dir():
+        runner_fd = _open_confined_directory(root, chain, create=False)
+    except PlanError:
+        return "not-owned"
+    nonce_fd = -1
+    try:
+        try:
+            nonce_fd = os.open(nonce, directory_flags | no_follow, dir_fd=runner_fd)
+        except OSError:
             return "not-owned"
-        if not sentinel.is_file() or sentinel.is_symlink():
+        parent_info = os.fstat(nonce_fd)
+        if not stat.S_ISDIR(parent_info.st_mode):
             return "not-owned"
-        if sentinel.read_text(encoding="utf-8").strip() != nonce:
-            return "not-owned"
+        sentinel_fd = -1
+        try:
+            try:
+                sentinel_fd = os.open(
+                    SENTINEL_NAME, os.O_RDONLY | no_follow, dir_fd=nonce_fd
+                )
+            except OSError:
+                return "not-owned"
+            sentinel_info = os.fstat(sentinel_fd)
+            if not stat.S_ISREG(sentinel_info.st_mode) or sentinel_info.st_size > 4096:
+                return "not-owned"
+            body = bytearray()
+            while len(body) <= 4096:
+                chunk = os.read(sentinel_fd, 4096)
+                if not chunk:
+                    break
+                body.extend(chunk)
+            if body.decode("utf-8", "replace").strip() != nonce:
+                return "not-owned"
+        finally:
+            if sentinel_fd >= 0:
+                os.close(sentinel_fd)
+        if recorded is not None:
+            if recorded["parent"] != (parent_info.st_dev, parent_info.st_ino):
+                return "not-owned"
+            if recorded["sentinel"] != (
+                sentinel_info.st_dev,
+                sentinel_info.st_ino,
+            ):
+                return "not-owned"
+        try:
+            shutil.rmtree(nonce, dir_fd=runner_fd)
+        except OSError:
+            return "retained"
+        _SNAPSHOT_OWNERSHIP.pop((str(root), nonce), None)
+        return "removed"
     except OSError:
         return "not-owned"
-    try:
-        shutil.rmtree(parent)
-    except OSError:
-        return "retained"
-    return "removed"
+    finally:
+        if nonce_fd >= 0:
+            os.close(nonce_fd)
+        os.close(runner_fd)
 
 
 class Scheduler:
@@ -1813,17 +1925,45 @@ def run_check(
                 duration_seconds=0.0,
             )
             return record
-        workdir = snapshot if check.cwd == "." else snapshot / check.cwd
+        # Bind the declared cwd to the exact validated directory (S2-R8-17):
+        # the no-follow walk proves every component inside the snapshot, the
+        # descriptor is inherited by the child, and a trampoline fchdirs
+        # through it before exec, so nothing re-resolves the pathname between
+        # validation and execution.
+        cwd_parts = [] if check.cwd == "." else check.cwd.split("/")
+        try:
+            workdir_fd = _open_confined_directory(snapshot, cwd_parts, create=False)
+        except PlanError as exc:
+            record.update(
+                status="failed",
+                failure_class="scheduler-error",
+                reason=f"declared cwd did not bind inside the snapshot: {exc.message}",
+                duration_seconds=round(time.monotonic() - started, 3),
+            )
+            return record
+        launcher = [
+            sys.executable,
+            "-c",
+            "import os, sys\n"
+            "fd = int(sys.argv[1])\n"
+            "os.fchdir(fd)\n"
+            "os.close(fd)\n"
+            "os.execvp(sys.argv[2], sys.argv[2:])",
+            str(workdir_fd),
+        ] + argv
         buffer = CaptureBuffer()
-        proc = subprocess.Popen(
-            argv,
-            cwd=str(workdir),
-            env=_child_env(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            shell=False,
-            start_new_session=True,
-        )
+        try:
+            proc = subprocess.Popen(
+                launcher,
+                env=_child_env(),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                shell=False,
+                start_new_session=True,
+                pass_fds=(workdir_fd,),
+            )
+        finally:
+            os.close(workdir_fd)
         capture_error: OSError | None = None
         try:
             termination = "not-required"

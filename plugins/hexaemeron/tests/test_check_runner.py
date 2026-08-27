@@ -694,6 +694,128 @@ class SnapshotOwnershipTests(unittest.TestCase):
             self.assertTrue(parent.exists())
 
 
+class _PathAuthorityCases:
+    """Creation, execution and cleanup stay descriptor-bound to owned paths.
+
+    Round 8 findings S2-R8-17, S2-R8-18 and S2-R8-20: a declared cwd must
+    bind to the exact validated snapshot directory, the runner parent must be
+    proved component by component at creation, and cleanup must remove only
+    the identical tree this runner created.
+    """
+
+    def _probe_check(self, cwd: str) -> "run_checks.Check":
+        return run_checks.Check(
+            id="probe",
+            title="Probe",
+            argv=("python3", "-c", "import os, sys; sys.stdout.write(os.getcwd())"),
+            cwd=cwd,
+            kind="command",
+            script=None,
+            jobs_flag=None,
+            requires_executable=None,
+            group=None,
+            order=0,
+            timeout_seconds=60,
+        )
+
+    def test_a_symlinked_declared_cwd_refuses_instead_of_escaping(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            outside = Path(tmp) / "outside"
+            outside.mkdir()
+            snapshot = Path(tmp) / "snapshot"
+            snapshot.mkdir()
+            (snapshot / "sub").symlink_to(outside)
+            record = run_checks.run_check(
+                self._probe_check("sub"), snapshot, run_checks.Scheduler(2), 1
+            )
+            self.assertEqual(record.get("status"), "failed")
+            self.assertEqual(record.get("failure_class"), "scheduler-error")
+            self.assertIn("cwd", record.get("reason", ""))
+
+    def test_a_declared_cwd_executes_in_the_validated_directory(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            snapshot = Path(tmp) / "snapshot"
+            (snapshot / "sub").mkdir(parents=True)
+            record = run_checks.run_check(
+                self._probe_check("sub"), snapshot, run_checks.Scheduler(2), 1
+            )
+            self.assertEqual(record.get("status"), "passed", record)
+            observed = record["output"]["head"]
+            self.assertEqual(
+                Path(observed).resolve(), (snapshot / "sub").resolve()
+            )
+
+    def test_a_symlinked_runner_parent_refuses_snapshot_creation(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            outside = Path(tmp) / "outside"
+            outside.mkdir()
+            (root / "tmp").symlink_to(outside)
+            nonce = "redirect" + os.urandom(5).hex()
+            with self.assertRaises(run_checks.SnapshotError) as caught:
+                run_checks.make_snapshot(root, nonce)
+            self.assertEqual(caught.exception.code, "snapshot-error")
+            self.assertEqual(
+                list(outside.iterdir()), [],
+                "snapshot creation escaped through a symlinked runner parent",
+            )
+
+    def test_a_substituted_snapshot_tree_is_not_removed(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            nonce = "swap" + os.urandom(5).hex()
+            run_checks.make_snapshot(root, nonce)
+            parent = root / run_checks.RUNNER_PARENT / nonce
+            stolen = root / run_checks.RUNNER_PARENT / "stolen"
+            os.rename(parent, stolen)
+            substitute = parent
+            substitute.mkdir()
+            (substitute / run_checks.SENTINEL_NAME).write_text(
+                nonce + "\n", encoding="utf-8"
+            )
+            victim = substitute / "victim.txt"
+            victim.write_text("precious\n", encoding="utf-8")
+            try:
+                self.assertEqual(
+                    run_checks.remove_snapshot(root, nonce),
+                    "not-owned",
+                    "cleanup removed a substituted tree carrying a copied sentinel",
+                )
+                self.assertTrue(victim.exists(), "the substitute tree was removed")
+            finally:
+                import shutil as _shutil
+
+                _shutil.rmtree(stolen, ignore_errors=True)
+                _shutil.rmtree(substitute, ignore_errors=True)
+
+    def test_cleanup_still_removes_the_identical_created_tree(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            nonce = "keep" + os.urandom(5).hex()
+            run_checks.make_snapshot(root, nonce)
+            self.assertEqual(run_checks.remove_snapshot(root, nonce), "removed")
+            self.assertFalse((root / run_checks.RUNNER_PARENT / nonce).exists())
+
+
 class SourceIdentityTests(unittest.TestCase):
     """Source movement is observable, and the identity covers untracked content."""
 
@@ -1282,6 +1404,10 @@ class SourceAuthorityTests(TemporaryRepositoryMixin, unittest.TestCase):
             with self.assertRaises(run_checks.PlanError) as caught:
                 run_checks.source_identity(root)
             self.assertEqual(caught.exception.code, "snapshot-error")
+
+
+class PathAuthorityTests(TemporaryRepositoryMixin, _PathAuthorityCases, unittest.TestCase):
+    """Bind the descriptor-authority cases to the repository fixture mixin."""
 
 
 class SupersessionTests(TemporaryRepositoryMixin, unittest.TestCase):
