@@ -29,7 +29,7 @@ import sys
 import threading
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -221,6 +221,7 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
         raise PlanError("map-invalid", "groups must be an object")
 
     checks: dict[str, Check] = {}
+    explicit_order: dict[str, int] = {}
     raw_checks = data.get("checks")
     if not isinstance(raw_checks, dict) or not raw_checks:
         raise PlanError("map-invalid", "checks must be a non-empty object")
@@ -246,6 +247,8 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
         )
         if timeout_seconds < 1:
             raise PlanError("map-invalid", f"check {cid} timeout_seconds must be positive")
+        if "order" in body:
+            explicit_order[cid] = _bounded_int(body, "order", 0, cid=cid)
         checks[cid] = Check(
             id=cid,
             title=str(body.get("title", cid)),
@@ -270,6 +273,28 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
                 raise PlanError("map-invalid", f"group {gid} names unknown check {cid}")
             if checks[cid].group != gid:
                 raise PlanError("map-invalid", f"check {cid} does not declare group {gid}")
+        if len(set(ordered)) != len(ordered):
+            raise PlanError("map-invalid", f"group {gid} names a check twice in its ordered list")
+        # A check may not join a group by the back reference alone: a member the
+        # ordered list omits has no declared position, and would otherwise be
+        # sequenced by a default the map never states.
+        omitted = sorted(cid for cid, c in checks.items() if c.group == gid and cid not in ordered)
+        if omitted:
+            raise PlanError(
+                "map-invalid", f"group {gid} omits declared member(s) from its ordered list: {omitted}"
+            )
+        # The ordered list is the declaration, so it is what execution follows.
+        # ``order`` is an optional restatement of it and must not contradict it:
+        # a member with no ``order`` would otherwise fall back to a default that
+        # sequences the group by check id, silently inverting the declaration.
+        restated = [cid for cid in ordered if cid in explicit_order]
+        if sorted(restated, key=lambda c: (explicit_order[c], c)) != restated:
+            raise PlanError(
+                "ordered-conflict",
+                f"group {gid} order fields contradict its declared sequence: {ordered}",
+            )
+        for position, cid in enumerate(ordered):
+            checks[cid] = replace(checks[cid], order=position)
         groups[gid] = tuple(ordered)
 
     scopes: dict[str, Scope] = {}
@@ -607,6 +632,12 @@ def make_snapshot(root: Path, nonce: str) -> Path:
         return target
     except OSError as exc:
         raise SnapshotError("snapshot-error", f"cannot build the snapshot: {exc}") from exc
+    except PlanError as exc:
+        # Git capture inside the snapshot raises PlanError -- an oversized
+        # `git diff HEAD` is the reachable case.  Left as PlanError it slips past
+        # the caller's `except SnapshotError`, so the parent directory and its
+        # sentinel are never removed and a whole clone is leaked on disk.
+        raise SnapshotError("snapshot-error", f"cannot build the snapshot: {exc.message}") from exc
 
 
 def _copy_untracked(root: Path, target: Path) -> None:
@@ -677,24 +708,42 @@ class Scheduler:
             self._condition.notify_all()
 
 
-def _terminate_group(proc: subprocess.Popen[bytes]) -> None:
-    """Signal the check's whole process group, not only its leader.
+def _terminate_group(proc: subprocess.Popen[bytes]) -> str:
+    """Signal the check's whole process group -- never a pid already reaped.
 
     Every check leads its own session, so a descendant that keeps running after
     the leader exits is still reachable through the group.  ``proc.kill()``
     alone reaches the leader and leaves that descendant holding the output
     descriptor, which is what kept a wedged check outside every bound.
+
+    The group may only be derived from a leader the runner still owns.
+    ``Popen.poll`` and ``Popen.wait`` reap the leader and hand its pid back to
+    the kernel for reuse, so ``os.getpgid(proc.pid)`` after that point can
+    resolve an unrelated process and ``os.killpg`` would then signal a process
+    group belonging to somebody else.  Once the leader is reaped the runner has
+    no safe handle at all, and saying so is the only correct action -- which is
+    also what the retained-descriptor diagnostic already reports.
+
+    Returns the disposition, so a caller can record what actually happened
+    rather than imply the descendant was dealt with.
     """
+    if proc.returncode is not None:
+        return "not-signalled: the check leader was already reaped"
+    try:
+        pgid = os.getpgid(proc.pid)
+    except OSError:
+        return "not-signalled: the check leader is gone"
     for sig in (signal.SIGTERM, signal.SIGKILL):
         try:
-            os.killpg(os.getpgid(proc.pid), sig)
+            os.killpg(pgid, sig)
         except OSError:
-            return
+            return "not-signalled: the process group is gone"
         try:
             proc.wait(timeout=DRAIN_SECONDS)
-            return
+            return "terminated"
         except subprocess.TimeoutExpired:
             continue
+    return "unresponsive"
 
 
 def _capture_output(
@@ -802,8 +851,9 @@ def run_check(
             timed_out, retained = _capture_output(
                 proc, buffer, started + check.timeout_seconds
             )
+            termination = "not-required"
             if retained:
-                _terminate_group(proc)
+                termination = _terminate_group(proc)
             try:
                 proc.wait(timeout=DRAIN_SECONDS)
             except subprocess.TimeoutExpired:
@@ -825,6 +875,7 @@ def run_check(
         record["exit_code"] = proc.returncode
         record["duration_seconds"] = round(time.monotonic() - started, 3)
         record["descriptor_retained"] = retained
+        record["termination"] = termination
         if retained:
             # ADR-038: a retained output descriptor is a bounded red result with
             # an explicit detachment diagnostic, never a pass.  The runner does
@@ -1164,6 +1215,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
 
     attempts: list[dict[str, Any]] = []
+    try:
+        return _run_attempts(args, root, check_map, selection, checks, capacity, plan, attempts)
+    except PlanError as exc:
+        # Every refusal leaves by the declared route.  Git capture around the
+        # attempt loop -- `source_identity` before and after execution -- raises
+        # PlanError, and an escape from here would exit 1 with a traceback: the
+        # same code a red run uses, so a caller could not tell a failed check
+        # from a runner that never ran one.
+        return refusal(args, exc.code, exc.message, exc.detail)
+
+
+def _run_attempts(
+    args: argparse.Namespace,
+    root: Path,
+    check_map: CheckMap,
+    selection: Selection,
+    checks: Sequence[Check],
+    capacity: Mapping[str, Any],
+    plan: Mapping[str, Any],
+    attempts: list[dict[str, Any]],
+) -> int:
     for attempt in range(1, MAX_ATTEMPTS + 1):
         nonce = uuid.uuid4().hex
         before = source_identity(root)
@@ -1221,6 +1293,20 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "budget": scheduler.budget,
                 "slot_high_water": scheduler.high_water,
                 "queue_high_water": scheduler.queue_high_water,
+            },
+            # The composed run reaches a nested runner that does keep a timing
+            # cache, so a reader cannot assume the question does not arise.
+            # State this runner's own disposition rather than leave it to be
+            # inferred from the absence of a field.
+            cache={
+                "result_cache": "none",
+                "selection_input": False,
+                "detail": (
+                    "run_checks.py holds no cache: no verdict, duration or membership is "
+                    "read from or written to one, and selection derives only from the map "
+                    "and the current diff.  A nested runner's own timing cache is reported "
+                    "in that runner's record, inside this check's captured output."
+                ),
             },
         )
         if args.report:

@@ -970,3 +970,248 @@ class AggregationTests(TemporaryRepositoryMixin, unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DescendantSignalSafetyTests(unittest.TestCase):
+    """A process group is only ever signalled through a leader the runner owns.
+
+    Regression for the round 2 finding that the descendant-lifetime guard added
+    in round 1 derived a process group from an already-reaped pid.  ``poll`` and
+    ``wait`` reap the leader and return its pid to the kernel; ``getpgid`` on a
+    recycled pid resolves a stranger's group, and the runner then delivered
+    SIGTERM and SIGKILL to it.
+    """
+
+    class _Reaped:
+        """A Popen whose child has already been reaped: returncode is set."""
+
+        pid = 424242
+        returncode = 0
+
+        def wait(self, timeout: float | None = None) -> int:
+            return 0
+
+    def _record_signals(self) -> tuple[list, object]:
+        sent: list = []
+        real_getpgid, real_killpg = os.getpgid, os.killpg
+
+        def spy_getpgid(pid: int) -> int:
+            return 999_999  # model a pid the kernel has handed to a stranger
+
+        def spy_killpg(pgid: int, sig: int) -> None:
+            sent.append((pgid, int(sig)))
+
+        os.getpgid, os.killpg = spy_getpgid, spy_killpg
+        self.addCleanup(lambda: (setattr(os, "getpgid", real_getpgid),
+                                 setattr(os, "killpg", real_killpg)))
+        return sent, None
+
+    def test_a_reaped_leader_is_never_signalled(self) -> None:
+        sent, _ = self._record_signals()
+        disposition = run_checks._terminate_group(self._Reaped())  # type: ignore[arg-type]
+        self.assertEqual(
+            sent, [], "the runner signalled a process group derived from a reaped pid"
+        )
+        self.assertIn("reaped", disposition)
+
+    def test_a_detached_descendant_leaves_a_reaped_leader_unsignalled(self) -> None:
+        """The real path: leader exits, a setsid descendant holds the descriptor.
+
+        ``_capture_output`` reaps the leader, waits out the bounded drain, and
+        only then asks for termination -- by which point the pid is stale.
+        """
+        script = Path(self.enterContext(__import__("tempfile").TemporaryDirectory()))
+        (script / "detach.py").write_text(
+            "import os, sys, time\n"
+            "if os.fork() == 0:\n"
+            "    os.setsid()\n"          # leave the leader's group entirely
+            "    time.sleep(30)\n"       # keep holding the inherited stdout
+            "    os._exit(0)\n"
+            "sys.stdout.write('leader done\\n'); sys.stdout.flush()\n"
+            "os._exit(0)\n",
+            encoding="utf-8",
+        )
+        check = run_checks.Check(
+            id="detached", title="Detached", argv=("python3", "detach.py"), cwd=".",
+            kind="command", script=None, jobs_flag=None, requires_executable=None,
+            group=None, order=0, timeout_seconds=30,
+        )
+        sent, _ = self._record_signals()
+        record = run_checks.run_check(check, script, run_checks.Scheduler(2), 1)
+        self.assertEqual(
+            sent, [], "a stale pid's process group was signalled after the leader was reaped"
+        )
+        # The honest verdict is unchanged: a retained descriptor stays a bounded
+        # red with an explicit disposition, never a pass.
+        self.assertEqual(record["status"], "failed")
+        self.assertEqual(record["failure_class"], "scheduler-error")
+        self.assertTrue(record["descriptor_retained"])
+        self.assertIn("reaped", record["termination"])
+
+
+class OrderedGroupDeclarationTests(unittest.TestCase):
+    """The declared ``ordered`` list is what execution follows.
+
+    Regression for the round 2 finding that ``execute`` sequenced group members
+    by the optional ``order`` integer while ignoring the mandatory ``ordered``
+    declaration.  A group that stated its sequence only in ``ordered`` ran in
+    check-id order instead, silently inverting the declaration.
+    """
+
+    def _map(self, tmp: Path, checks: dict, ordered: list) -> Path:
+        body = {
+            "schema": "wildcat.check-map.v1",
+            "checks": checks,
+            "groups": {"chain": {"title": "Chain", "ordered": ordered}},
+            "scopes": {"one": {"title": "One", "checks": sorted(checks)}},
+            "dependencies": {},
+            "owners": [{"path": "one", "scope": "one"}],
+        }
+        (tmp / "m.json").write_text(json.dumps(body), encoding="utf-8")
+        return tmp
+
+    def test_a_group_stating_only_ordered_runs_in_that_order(self) -> None:
+        tmp = Path(self.enterContext(__import__("tempfile").TemporaryDirectory()))
+        trace = tmp / "trace.txt"
+        # The declared sequence is the reverse of check-id order, and no member
+        # restates it with an "order" field.  Each member appends its own name,
+        # so the file records the sequence execution actually chose.
+        def appender(name: str) -> list[str]:
+            return [
+                "python3", "-c",
+                f"open({str(trace)!r}, 'a').write({name!r} + '\\n')",
+            ]
+
+        checks = {
+            "zeta-setup": {"argv": appender("zeta-setup"), "group": "chain"},
+            "alpha-apply": {"argv": appender("alpha-apply"), "group": "chain"},
+        }
+        check_map = run_checks.load_map(
+            self._map(tmp, checks, ["zeta-setup", "alpha-apply"]), "m.json"
+        )
+        # Go through the real pipeline: selected_checks sorts by check id, and
+        # that ordering is what reached execute() in the shipped run.
+        selection = run_checks.build_selection(
+            tmp, check_map, ["one"], None, False, observed=[]
+        )
+        selected = run_checks.selected_checks(check_map, selection)
+        self.assertEqual([c.id for c in selected], ["alpha-apply", "zeta-setup"])
+        results, _ = run_checks.execute(selected, REPO_ROOT, 2)
+        self.assertTrue(all(r["status"] == "passed" for r in results), results)
+        self.assertEqual(
+            trace.read_text(encoding="utf-8").split(),
+            ["zeta-setup", "alpha-apply"],
+            "execution ignored the declared ordered list and sequenced by check id",
+        )
+
+    def test_an_order_field_contradicting_the_declaration_refuses(self) -> None:
+        tmp = Path(self.enterContext(__import__("tempfile").TemporaryDirectory()))
+        checks = {
+            "build": {"argv": ["true"], "group": "chain", "order": 9},
+            "test": {"argv": ["true"], "group": "chain", "order": 1},
+        }
+        with self.assertRaises(run_checks.PlanError) as caught:
+            run_checks.load_map(self._map(tmp, checks, ["build", "test"]), "m.json")
+        self.assertEqual(caught.exception.code, "ordered-conflict")
+
+    def test_a_member_missing_from_the_ordered_list_refuses(self) -> None:
+        tmp = Path(self.enterContext(__import__("tempfile").TemporaryDirectory()))
+        checks = {
+            "build": {"argv": ["true"], "group": "chain"},
+            "stray": {"argv": ["true"], "group": "chain"},
+        }
+        with self.assertRaises(run_checks.PlanError) as caught:
+            run_checks.load_map(self._map(tmp, checks, ["build"]), "m.json")
+        self.assertEqual(caught.exception.code, "map-invalid")
+
+    def test_the_repository_map_group_still_loads_and_agrees(self) -> None:
+        check_map = run_checks.load_map(REPO_ROOT)
+        for gid, ordered in check_map.groups.items():
+            by_order = sorted(
+                (c for c in check_map.checks.values() if c.group == gid),
+                key=lambda c: c.order,
+            )
+            self.assertEqual([c.id for c in by_order], list(ordered))
+
+
+class GitCaptureRefusalTests(unittest.TestCase):
+    """A git capture fault refuses by name and leaks no snapshot.
+
+    Regression for the round 2 finding that a ``PlanError`` from git capture --
+    an oversized ``git diff HEAD`` is the reachable case -- escaped ``main`` as
+    a traceback with exit code 1, the same code a red run uses, and when it
+    arose inside ``make_snapshot`` the owned tree and its sentinel were left on
+    disk because the caller only caught ``SnapshotError``.
+    """
+
+    def test_git_capture_inside_the_snapshot_becomes_a_snapshot_error(self) -> None:
+        root = run_checks.repository_root()
+        real_git = run_checks.git
+
+        def oversized(r, *args, **kwargs):
+            if args[:2] == ("diff", "HEAD"):
+                raise run_checks.PlanError("git-oversized", "too much output")
+            return real_git(r, *args, **kwargs)
+
+        run_checks.git = oversized
+        self.addCleanup(lambda: setattr(run_checks, "git", real_git))
+        nonce = "audit" + os.urandom(6).hex()
+        parent = root / run_checks.RUNNER_PARENT / nonce
+        try:
+            with self.assertRaises(run_checks.SnapshotError) as caught:
+                run_checks.make_snapshot(root, nonce)
+            self.assertEqual(caught.exception.code, "snapshot-error")
+            self.assertEqual(
+                run_checks.remove_snapshot(root, nonce),
+                "removed",
+                "the caller could not clean up the tree it owns",
+            )
+            self.assertFalse(parent.exists(), "the snapshot tree was leaked")
+        finally:
+            if parent.exists():
+                __import__("shutil").rmtree(parent, ignore_errors=True)
+
+    def test_git_capture_around_the_attempt_loop_refuses_rather_than_raising(self) -> None:
+        """The attempt loop sits outside main's covered region.
+
+        Shrinking the byte bound alone would refuse during selection and never
+        reach the loop, so fail the capture the loop itself performs: the
+        ``source_identity`` call taken before and after execution.
+        """
+        real_identity = run_checks.source_identity
+
+        def oversized(root: Path) -> str:
+            raise run_checks.PlanError("git-oversized", "git diff HEAD produced too much output")
+
+        run_checks.source_identity = oversized
+        self.addCleanup(lambda: setattr(run_checks, "source_identity", real_identity))
+        code = run_checks.main(["--scope", "hexaemeron", "--format", "json"])
+        self.assertEqual(code, 2, "a git capture fault must refuse, not exit as a red run")
+
+
+class CacheDispositionTests(TemporaryRepositoryMixin, unittest.TestCase):
+    """The run record states this runner's cache disposition explicitly.
+
+    The step's ephoros discipline names cache among what the reports bind, and
+    the composed run reaches a nested runner that does keep a timing cache, so
+    the question is not vacuous and absence is not an answer.
+    """
+
+    def test_the_runner_reads_no_cache_at_all(self) -> None:
+        source = (REPO_ROOT / "scripts" / "run_checks.py").read_text(encoding="utf-8")
+        self.assertNotIn("timings-v1", source)
+
+    def test_a_completed_run_binds_its_cache_disposition(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "print('probe')"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            proc = self.run_cli(root, "--scope", "one", "--format", "json")
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            report = json.loads(proc.stdout)
+            self.assertIn("cache", report, "the run record binds no cache disposition")
+            self.assertEqual(report["cache"]["result_cache"], "none")
+            self.assertIs(report["cache"]["selection_input"], False)
