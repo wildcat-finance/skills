@@ -1,3 +1,5 @@
+![Lazarus](./assets/characters/lazarus.png)
+
 # Lazarus
 
 <!-- marketplace-context:start -->

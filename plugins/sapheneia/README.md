@@ -1,3 +1,5 @@
+![Sapheneia](./assets/characters/sapheneia.png)
+
 # Sapheneia
 
 <!-- marketplace-context:start -->

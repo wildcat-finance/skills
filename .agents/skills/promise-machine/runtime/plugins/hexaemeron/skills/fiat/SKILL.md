@@ -10,6 +10,10 @@ metadata:
   version: "5.30.1"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/fiat.png" width="1200">
+</p>
+
 # Fiat
 
 ## Where this sits

@@ -1,3 +1,5 @@
+![Ariadne](./assets/characters/ariadne.png)
+
 # Ariadne
 
 <!-- marketplace-context:start -->

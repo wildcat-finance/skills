@@ -5,6 +5,10 @@ metadata:
   version: "0.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/brevitas.png" width="1200">
+</p>
+
 # Brevitas
 
 ## Frontier

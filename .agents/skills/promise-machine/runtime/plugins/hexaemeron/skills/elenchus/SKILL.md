@@ -13,6 +13,10 @@ metadata:
   version: "1.3.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/elenchus.png" width="1200">
+</p>
+
 # Elenchus
 
 From *elenchus*, the cross-examination that refutes a claim. You hold a belief

@@ -13,6 +13,10 @@ metadata:
   version: "0.3.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/tabularium.png" width="1200">
+</p>
+
 # Tabularium
 
 ## Frontier

@@ -1,3 +1,5 @@
+![Horos](./assets/characters/horos.png)
+
 # Horos
 
 <!-- marketplace-context:start -->

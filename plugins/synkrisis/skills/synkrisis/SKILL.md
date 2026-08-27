@@ -13,6 +13,10 @@ metadata:
   version: "0.1.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/synkrisis.png" width="1200">
+</p>
+
 # Synkrisis
 
 ## Frontier

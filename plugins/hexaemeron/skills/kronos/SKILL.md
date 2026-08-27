@@ -11,6 +11,10 @@ metadata:
   version: "0.7.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/kronos.png" width="1200">
+</p>
+
 # Kronos
 
 ## Where this sits

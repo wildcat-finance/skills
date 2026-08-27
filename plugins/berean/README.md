@@ -1,3 +1,5 @@
+![Berean](./assets/characters/berean.png)
+
 # Berean
 
 <!-- marketplace-context:start -->
