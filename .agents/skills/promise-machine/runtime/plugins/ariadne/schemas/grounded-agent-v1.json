@@ -1,0 +1,732 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ariadne.wildcat.finance/grounded-agent/v1/schema.json",
+  "title": "Ariadne grounded-agent predicate v1",
+  "description": "The https://ariadne.wildcat.finance/grounded-agent/v1 predicate binds a berean-release/v1 identity and its exact byte subjects without projecting evaluation conclusions.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "release",
+    "given",
+    "produced",
+    "policy",
+    "adapter",
+    "comparison",
+    "claims",
+    "commands"
+  ],
+  "properties": {
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "release_version",
+        "release_digest",
+        "document"
+      ],
+      "properties": {
+        "format": {
+          "const": "berean-release/v1"
+        },
+        "release_version": {
+          "$ref": "#/$defs/portableName"
+        },
+        "release_digest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "document": {
+          "$ref": "#/$defs/component"
+        }
+      }
+    },
+    "given": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "corpus",
+        "reads",
+        "reads_absence_reason"
+      ],
+      "properties": {
+        "corpus": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "corpus_version",
+            "corpus_digest",
+            "manifest",
+            "components"
+          ],
+          "properties": {
+            "path": {
+              "$ref": "#/$defs/path"
+            },
+            "corpus_version": {
+              "$ref": "#/$defs/portableName"
+            },
+            "corpus_digest": {
+              "$ref": "#/$defs/sha256"
+            },
+            "manifest": {
+              "$ref": "#/$defs/component"
+            },
+            "components": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 1024,
+              "items": {
+                "$ref": "#/$defs/component"
+              }
+            }
+          }
+        },
+        "reads": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "component",
+                "chain_id",
+                "block_number",
+                "block_hash",
+                "source"
+              ],
+              "properties": {
+                "component": {
+                  "$ref": "#/$defs/component"
+                },
+                "chain_id": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "block_number": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "block_hash": {
+                  "$ref": "#/$defs/hash32"
+                },
+                "source": {
+                  "$ref": "#/$defs/stated"
+                }
+              }
+            }
+          ]
+        },
+        "reads_absence_reason": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/stated"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "reads": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reads_absence_reason": {
+                "$ref": "#/$defs/stated"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "reads": {
+                "type": "object"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "reads_absence_reason": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "produced": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answers",
+        "evaluations",
+        "evaluations_absence_reason",
+        "promotion",
+        "promotion_absence_reason"
+      ],
+      "properties": {
+        "answers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1024,
+          "items": {
+            "$ref": "#/$defs/component"
+          }
+        },
+        "evaluations": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "cases",
+                "report"
+              ],
+              "properties": {
+                "cases": {
+                  "$ref": "#/$defs/component"
+                },
+                "report": {
+                  "$ref": "#/$defs/component"
+                }
+              }
+            }
+          ]
+        },
+        "evaluations_absence_reason": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/stated"
+            }
+          ]
+        },
+        "promotion": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "component",
+                "format",
+                "terminal"
+              ],
+              "properties": {
+                "component": {
+                  "$ref": "#/$defs/component"
+                },
+                "format": {
+                  "const": "berean-promotion/v1"
+                },
+                "terminal": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "sequence",
+                    "action",
+                    "target_release_digest"
+                  ],
+                  "properties": {
+                    "sequence": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "action": {
+                      "enum": [
+                        "promote",
+                        "rollback"
+                      ]
+                    },
+                    "target_release_digest": {
+                      "$ref": "#/$defs/sha256"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "promotion_absence_reason": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/stated"
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "evaluations": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evaluations_absence_reason": {
+                "$ref": "#/$defs/stated"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "evaluations": {
+                "type": "object"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "evaluations_absence_reason": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "promotion": {
+                "type": "null"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "promotion_absence_reason": {
+                "$ref": "#/$defs/stated"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "promotion": {
+                "type": "object"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "promotion_absence_reason": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "question_families",
+        "refusal_conditions",
+        "rules",
+        "allowlists",
+        "retention"
+      ],
+      "properties": {
+        "question_families": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/stated"
+          }
+        },
+        "refusal_conditions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "items": {
+            "$ref": "#/$defs/stated"
+          }
+        },
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_classes",
+            "evidence_classes"
+          ],
+          "properties": {
+            "source_classes": {
+              "const": [
+                "document",
+                "chain_read",
+                "calculation",
+                "user_supplied"
+              ]
+            },
+            "evidence_classes": {
+              "const": [
+                "proof-backed",
+                "header-bound",
+                "recorded-rpc"
+              ]
+            }
+          }
+        },
+        "allowlists": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "chains",
+            "contracts"
+          ],
+          "properties": {
+            "chains": {
+              "type": "array",
+              "maxItems": 256,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "contracts": {
+              "type": "array",
+              "maxItems": 256,
+              "items": {
+                "type": "string",
+                "pattern": "^0x[0-9a-f]{40}$"
+              }
+            }
+          }
+        },
+        "retention": {
+          "enum": [
+            "none",
+            "answers-only"
+          ]
+        }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "tool",
+        "tool_version",
+        "command",
+        "parameters_digest"
+      ],
+      "properties": {
+        "tool": {
+          "$ref": "#/$defs/portableName"
+        },
+        "tool_version": {
+          "$ref": "#/$defs/portableName"
+        },
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 128,
+          "items": {
+            "$ref": "#/$defs/stated"
+          }
+        },
+        "parameters_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline",
+        "current",
+        "first_capture_reason"
+      ],
+      "properties": {
+        "baseline": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/comparisonSide"
+            }
+          ]
+        },
+        "current": {
+          "$ref": "#/$defs/comparisonSide"
+        },
+        "first_capture_reason": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/stated"
+            }
+          ]
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "subject",
+          "disposition"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/portableName"
+          },
+          "subject": {
+            "$ref": "#/$defs/digest"
+          },
+          "disposition": {
+            "enum": [
+              "passed",
+              "failed",
+              "skipped",
+              "timed_out",
+              "redacted"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "detail": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "argv",
+          "determinism"
+        ],
+        "properties": {
+          "name": {
+            "$ref": "#/$defs/portableName"
+          },
+          "argv": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 128,
+            "items": {
+              "$ref": "#/$defs/stated"
+            }
+          },
+          "determinism": {
+            "enum": [
+              "exact",
+              "nondeterministic"
+            ]
+          },
+          "output_digest": {
+            "$ref": "#/$defs/digest"
+          },
+          "detail": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "baseline": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "first_capture_reason": {
+                "$ref": "#/$defs/stated"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "baseline": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "comparison": {
+            "properties": {
+              "first_capture_reason": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "hash32": {
+      "type": "string",
+      "pattern": "^0x(?!0{64}$)[0-9a-f]{64}$"
+    },
+    "stated": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "\\S"
+    },
+    "portableName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^(?=.*[!-~])(?!.*[\\u0000-\\u001f\\u007f-\\u009f])\\S(?:.*\\S)?$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?![^/\\\\]:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?=[^\\u0000/\\\\]*[!-.0-\\[\\]-~])[^\\u0000/\\\\]+(?:/(?=[^\\u0000/\\\\]*[!-.0-\\[\\]-~])[^\\u0000/\\\\]+)*$"
+    },
+    "digest": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "type": "string",
+        "minLength": 1
+      },
+      "properties": {
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sha384": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{96}$"
+        },
+        "sha512": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{128}$"
+        }
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]+$"
+      },
+      "anyOf": [
+        {
+          "required": [
+            "sha256"
+          ]
+        },
+        {
+          "required": [
+            "sha384"
+          ]
+        },
+        {
+          "required": [
+            "sha512"
+          ]
+        }
+      ]
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "path",
+        "sha256",
+        "bytes"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/portableName"
+        },
+        "path": {
+          "$ref": "#/$defs/path"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 536870912
+        }
+      }
+    },
+    "comparisonSide": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "release_digest"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/portableName"
+        },
+        "release_digest": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    }
+  }
+}

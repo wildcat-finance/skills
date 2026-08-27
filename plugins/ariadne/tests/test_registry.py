@@ -88,6 +88,21 @@ class DefaultRegistryTests(unittest.TestCase):
         )
         self.assertTrue(len(shipped) >= 2)
 
+    def test_the_default_registry_holds_all_five_public_contracts(self):
+        from ariadne_lib import predicates
+
+        expected = {
+            predicates.dataset.TYPE,
+            predicates.grounded_agent.TYPE,
+            predicates.solidity_release.TYPE,
+            predicates.state_fixture.TYPE,
+            predicates.state_fixture_v2.TYPE,
+        }
+        self.assertEqual(
+            {type_uri for type_uri, _ in registry.DEFAULT.entries()}, expected
+        )
+        self.assertEqual(len(registry.DEFAULT), 5)
+
     def test_state_fixture_versions_are_distinct_registered_contracts(self):
         from ariadne_lib import predicates
 

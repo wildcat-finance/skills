@@ -5,8 +5,8 @@ module owns its own field table and its own checks, and the core knows only how
 to find it and what to ask of it. Adding a predicate costs a module and a
 registration, which is what the dataset and state-fixture predicates each cost.
 
-Four are registered: the Solidity release, the dataset and the two explicitly
-versioned state-fixture predicates.
+Five are registered: the Solidity release, the dataset, the grounded-agent
+release and the two explicitly versioned state-fixture predicates.
 `ariadne predicates`
 lists whatever is there rather than a table somebody maintains. An unknown
 predicate type is reported rather than raised: a verifier that meets a type it

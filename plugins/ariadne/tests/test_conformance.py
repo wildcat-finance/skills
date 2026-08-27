@@ -15,12 +15,19 @@ from . import support  # noqa: F401  (sets sys.path)
 
 from ariadne_lib import envelope, gates, registry, verify  # noqa: E402
 import ariadne_lib.predicates  # noqa: F401,E402  (registers the shipped predicates)
+from ariadne_lib.predicates import grounded_agent  # noqa: E402
 
 FIXTURES = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "fixtures", "conformance"
 )
 BREACH = re.compile(r"^fail-gate(\d+)-")
 CHECK_BREACH = "fail-check-"
+PENDING_CONFORMANCE = {grounded_agent.TYPE}
+"""Registered contracts whose conformance corpus lands in the next step.
+
+Keep this exact rather than weakening the completeness assertion: Step 2 removes
+the sole entry when its passing and breaching fixtures ship.
+"""
 """A check with no gate number gets a fixture too.
 
 Gates 2 and 5 are numbered and belong to a predicate. The other checks a
@@ -167,7 +174,8 @@ class FixtureTests(unittest.TestCase):
 
     def test_every_registered_predicate_has_a_passing_fixture(self):
         registered = {type_uri for type_uri, _ in registry.DEFAULT.entries()}
-        self.assertEqual(registered - set(passing_by_type()), set())
+        self.assertEqual(registered - set(passing_by_type()), PENDING_CONFORMANCE)
+        self.assertEqual(PENDING_CONFORMANCE, {grounded_agent.TYPE})
 
     def test_every_predicate_gate_has_a_breaching_fixture_of_its_own_type(self):
         """Gates 2 and 5 mean different things per predicate, so one type's

@@ -10,6 +10,7 @@ Every shipped predicate needs a schema and a drift class. The completeness test
 at the bottom fails when one ships without them.
 """
 
+import ast
 import json
 import os
 import unittest
@@ -19,6 +20,7 @@ from . import support  # noqa: F401  (sets sys.path)
 from ariadne_lib import core_predicate  # noqa: E402
 from ariadne_lib import registry  # noqa: E402
 from ariadne_lib.predicates import dataset  # noqa: E402
+from ariadne_lib.predicates import grounded_agent  # noqa: E402
 from ariadne_lib.predicates import solidity_release as release  # noqa: E402
 from ariadne_lib.predicates import state_fixture  # noqa: E402
 
@@ -29,12 +31,14 @@ SCHEMA = os.path.join(SCHEMAS, "solidity-release-v1.json")
 DATASET_SCHEMA = os.path.join(SCHEMAS, "dataset-v1.json")
 STATE_FIXTURE_SCHEMA = os.path.join(SCHEMAS, "state-fixture-v1.json")
 STATE_FIXTURE_V2_SCHEMA = os.path.join(SCHEMAS, "state-fixture-v2.json")
+GROUNDED_AGENT_SCHEMA = os.path.join(SCHEMAS, "grounded-agent-v1.json")
 
 SHIPPED = (
     (release, SCHEMA),
     (dataset, DATASET_SCHEMA),
     (state_fixture, STATE_FIXTURE_SCHEMA),
     (state_fixture.V2, STATE_FIXTURE_V2_SCHEMA),
+    (grounded_agent, GROUNDED_AGENT_SCHEMA),
 )
 """Each shipped predicate and its published schema."""
 
@@ -592,6 +596,205 @@ class StateFixtureV2SchemaDriftTests(unittest.TestCase):
                 "sha512": "^[0-9a-f]{128}$",
             },
         )
+
+
+class GroundedAgentSchemaDriftTests(unittest.TestCase):
+    def setUp(self):
+        self.schema = read_schema(GROUNDED_AGENT_SCHEMA)
+        self.properties = self.schema["properties"]
+
+    def test_the_schema_names_the_predicate_type(self):
+        self.assertIn(grounded_agent.TYPE, self.schema["$id"])
+        self.assertIn(grounded_agent.BEREAN_FORMAT, self.schema["description"])
+
+    def test_the_top_level_fields_match_the_module(self):
+        self.assertEqual(
+            sorted(self.properties), sorted(grounded_agent.PREDICATE_FIELDS)
+        )
+        self.assertEqual(
+            self.schema["required"], list(grounded_agent.REQUIRED_FIELDS)
+        )
+
+    def test_every_closed_nested_field_table_matches(self):
+        component = self.schema["$defs"]["component"]
+        cases = (
+            (self.properties["release"], grounded_agent.RELEASE_FIELDS),
+            (self.properties["given"], grounded_agent.GIVEN_FIELDS),
+            (
+                self.properties["given"]["properties"]["corpus"],
+                grounded_agent.CORPUS_FIELDS,
+            ),
+            (
+                self.properties["given"]["properties"]["reads"]["oneOf"][1],
+                grounded_agent.READS_FIELDS,
+            ),
+            (self.properties["produced"], grounded_agent.PRODUCED_FIELDS),
+            (
+                self.properties["produced"]["properties"]["evaluations"]["oneOf"][1],
+                grounded_agent.EVALUATIONS_FIELDS,
+            ),
+            (
+                self.properties["produced"]["properties"]["promotion"]["oneOf"][1],
+                grounded_agent.PROMOTION_FIELDS,
+            ),
+            (
+                self.properties["produced"]["properties"]["promotion"]["oneOf"][1]["properties"]["terminal"],
+                grounded_agent.PROMOTION_TERMINAL_FIELDS,
+            ),
+            (self.properties["policy"], grounded_agent.POLICY_FIELDS),
+            (
+                self.properties["policy"]["properties"]["rules"],
+                grounded_agent.RULES_FIELDS,
+            ),
+            (
+                self.properties["policy"]["properties"]["allowlists"],
+                grounded_agent.ALLOWLIST_FIELDS,
+            ),
+            (self.properties["adapter"], grounded_agent.ADAPTER_FIELDS),
+            (self.properties["comparison"], grounded_agent.COMPARISON_FIELDS),
+            (self.schema["$defs"]["comparisonSide"], grounded_agent.COMPARISON_SIDE_FIELDS),
+            (component, grounded_agent.COMPONENT_FIELDS),
+        )
+        for shape, fields in cases:
+            with self.subTest(fields=fields):
+                self.assertEqual(shape["required"], list(fields))
+                self.assertEqual(sorted(shape["properties"]), sorted(fields))
+                self.assertIs(shape["additionalProperties"], False)
+
+    def test_component_and_collection_bounds_match(self):
+        component = self.schema["$defs"]["component"]["properties"]
+        self.assertEqual(component["bytes"]["maximum"], grounded_agent.MAX_COMPONENT_BYTES)
+        self.assertEqual(self.schema["$defs"]["path"]["maxLength"], grounded_agent.MAX_PATH)
+        corpus = self.properties["given"]["properties"]["corpus"]["properties"]["components"]
+        answers = self.properties["produced"]["properties"]["answers"]
+        self.assertEqual(corpus["maxItems"], grounded_agent.MAX_COMPONENTS)
+        self.assertEqual(answers["maxItems"], grounded_agent.MAX_COMPONENTS)
+
+    def test_policy_vocabularies_match_the_checked_copies(self):
+        rules = self.properties["policy"]["properties"]["rules"]["properties"]
+        self.assertEqual(
+            rules["source_classes"]["const"], list(grounded_agent.BEREAN_SOURCE_CLASSES)
+        )
+        self.assertEqual(
+            rules["evidence_classes"]["const"], list(grounded_agent.BEREAN_EVIDENCE_CLASSES)
+        )
+        self.assertEqual(
+            self.properties["policy"]["properties"]["retention"]["enum"],
+            list(grounded_agent.BEREAN_RETENTION),
+        )
+
+    def test_comparison_requires_explicit_absence_and_current(self):
+        self.assertEqual(
+            self.properties["comparison"]["required"],
+            list(grounded_agent.COMPARISON_FIELDS),
+        )
+        self.assertEqual(
+            self.schema["$defs"]["comparisonSide"]["required"],
+            list(grounded_agent.COMPARISON_SIDE_FIELDS),
+        )
+
+    def test_optional_blocks_pair_null_with_a_stated_reason(self):
+        given = self.properties["given"]
+        produced = self.properties["produced"]
+        expected = (
+            (given, "reads", "reads_absence_reason"),
+            (produced, "evaluations", "evaluations_absence_reason"),
+            (produced, "promotion", "promotion_absence_reason"),
+        )
+        for shape, block, reason in expected:
+            rules = shape["allOf"]
+            null_rules = [
+                rule
+                for rule in rules
+                if rule["if"]["properties"].get(block) == {"type": "null"}
+            ]
+            object_rules = [
+                rule
+                for rule in rules
+                if rule["if"]["properties"].get(block) == {"type": "object"}
+            ]
+            with self.subTest(block=block):
+                self.assertEqual(len(null_rules), 1)
+                self.assertEqual(
+                    null_rules[0]["then"]["properties"][reason],
+                    {"$ref": "#/$defs/stated"},
+                )
+                self.assertEqual(len(object_rules), 1)
+                self.assertEqual(
+                    object_rules[0]["then"]["properties"][reason],
+                    {"type": "null"},
+                )
+
+    def test_core_vocabularies_match(self):
+        claims = self.properties["claims"]["items"]["properties"]
+        commands = self.properties["commands"]["items"]["properties"]
+        self.assertEqual(claims["disposition"]["enum"], list(core_predicate.DISPOSITIONS))
+        self.assertEqual(commands["determinism"]["enum"], list(core_predicate.DETERMINISM))
+        self.assertEqual(sorted(claims), sorted(core_predicate.CLAIM_FIELDS))
+        self.assertEqual(sorted(commands), sorted(core_predicate.COMMAND_FIELDS))
+
+    def test_the_schema_is_committed_as_readable_json(self):
+        with open(GROUNDED_AGENT_SCHEMA, "rb") as handle:
+            raw = handle.read()
+        self.assertTrue(raw.endswith(b"\n"))
+        self.assertEqual(
+            json.loads(raw.decode("utf-8"))["$schema"],
+            "https://json-schema.org/draft/2020-12/schema",
+        )
+
+
+def literal_assignments(path):
+    """Literal public constants from a sibling module, without importing it."""
+    with open(path, "rb") as handle:
+        tree = ast.parse(handle.read(), filename=path)
+    found = {}
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if not isinstance(target, ast.Name):
+            continue
+        try:
+            found[target.id] = ast.literal_eval(node.value)
+        except (ValueError, TypeError):
+            continue
+    return found
+
+
+class BereanPublicConstantDriftTests(unittest.TestCase):
+    def setUp(self):
+        repo = os.path.dirname(os.path.dirname(os.path.dirname(SCHEMAS)))
+        self.library = os.path.join(repo, "plugins", "berean", "scripts", "berean_lib")
+        if not os.path.isdir(self.library):
+            self.skipTest("the sibling Berean plugin is not installed")
+
+    def test_release_constants_match_without_a_runtime_import(self):
+        values = literal_assignments(os.path.join(self.library, "release.py"))
+        expected = {
+            "FORMAT": grounded_agent.BEREAN_FORMAT,
+            "FIELDS": grounded_agent.BEREAN_RELEASE_FIELDS,
+            "CORPUS_FIELDS": grounded_agent.BEREAN_CORPUS_FIELDS,
+            "READS_FIELDS": grounded_agent.BEREAN_READS_FIELDS,
+            "ANSWER_FIELDS": grounded_agent.BEREAN_ANSWER_FIELDS,
+            "RULES_FIELDS": grounded_agent.BEREAN_RULES_FIELDS,
+            "ALLOWLIST_FIELDS": grounded_agent.BEREAN_ALLOWLIST_FIELDS,
+            "EVALS_FIELDS": grounded_agent.BEREAN_EVALS_FIELDS,
+            "RETENTION": grounded_agent.BEREAN_RETENTION,
+            "RELEASE_DOCUMENT": grounded_agent.BEREAN_RELEASE_DOCUMENT,
+            "PROMOTIONS_FILE": grounded_agent.BEREAN_PROMOTIONS_FILE,
+        }
+        for name, copied in expected.items():
+            with self.subTest(name=name):
+                self.assertEqual(values[name], copied)
+
+    def test_evidence_and_promotion_vocabularies_match(self):
+        answers = literal_assignments(os.path.join(self.library, "answers.py"))
+        reads = literal_assignments(os.path.join(self.library, "reads.py"))
+        promotion = literal_assignments(os.path.join(self.library, "promote.py"))
+        self.assertEqual(answers["SOURCE_CLASSES"], grounded_agent.BEREAN_SOURCE_CLASSES)
+        self.assertEqual(reads["EVIDENCE_CLASSES"], grounded_agent.BEREAN_EVIDENCE_CLASSES)
+        self.assertEqual(promotion["FORMAT"], grounded_agent.BEREAN_PROMOTION_FORMAT)
+        self.assertEqual(promotion["ACTIONS"], grounded_agent.BEREAN_PROMOTION_ACTIONS)
 
 
 class CompletenessTests(unittest.TestCase):

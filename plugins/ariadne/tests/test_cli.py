@@ -59,6 +59,7 @@ class PredicatesTests(unittest.TestCase):
             [entry["type"] for entry in found],
             [
                 "https://ariadne.wildcat.finance/dataset/v1",
+                "https://ariadne.wildcat.finance/grounded-agent/v1",
                 "https://ariadne.wildcat.finance/solidity-release/v1",
                 "https://ariadne.wildcat.finance/state-fixture/v1",
                 "https://ariadne.wildcat.finance/state-fixture/v2",
