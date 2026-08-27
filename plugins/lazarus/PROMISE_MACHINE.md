@@ -232,6 +232,20 @@ findings. The checker reaches no network and executes no evidence command.
 - Recovery: Read the stop, which names the identity or field at fault; extend the host set in `hexctl.py` and `scripts/contributors.py` together for an unknown host, set a token or wait for the named reset for a rate limit, and rerun with `--write` for a stale artefact. The generator never repairs an input.
 - Exceptions: none
 
+## Router selection promise
+
+### promise-machine-router-selection
+
+- Promise: A successful `python3 -m unittest tests.test_router_selection` establishes that `tests/fixtures/router-selection/cases.json` declares schema `promise-machine-router-selection/v1`, that every case carries the seven fields that schema names with a unique id and a recognised expectation, that every canonical name a case expects or contests and every name a pair separates is the frontmatter name of a real `SKILL.md` under `plugins/`, that every quoted deciding sentence still occurs in the section of the file its entry names, and that any recorded run block carries a corpus digest recomputed from the cases on disk.
+- Evidence: The one fixed repository-relative corpus path, the closed quotable set of `AGENTS.md` and `.agents/skills/promise-machine/SKILL.md`, the canonical skill names discovered under `plugins/`, the whitespace-collapsed sentence search inside each named section, the recomputed cases digest, the malformed-corpus guard and zero command exit.
+- Evidence classes: checked, recorded
+- Boundary: The check establishes nothing about how any agent routes, that the corpus is representative of real requests, or that a case expects the selection a reader would agree with. A recorded score is evidence about one model, one prompt template, one corpus digest and one date, and it is never a gate.
+- Authorises: Reporting the corpus coverage and the latest recorded run through `tests/emit_router_selection_report.py`, and citing a recorded run with the model, date and corpus digest it names attached.
+- Consequence: 0
+- Refuses: An absent, unreadable, non-UTF-8 or non-JSON corpus, a top-level value that is not an object, a missing or mistyped `cases`, `pairs` or `runs` key, an empty case list, a case whose field set or expectation the schema does not name, a repeated case id, a quoted path outside the closed set, a canonical name no `SKILL.md` declares, a sentence its named section no longer contains, and a run block whose digest disagrees with the cases on disk.
+- Recovery: Read the failure, which names the case or pair, the file and the sentence it looked for; requote the current sentence or retire the case rather than rewording the source the corpus grades, correct a canonical name that no longer resolves, and regrade a stale run block instead of editing its digest to agree.
+- Exceptions: none
+
 ## Installation copies
 
 The root `PROMISE_MACHINE.md` is the authored source. Each
