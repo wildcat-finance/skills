@@ -58,6 +58,12 @@ names. It says nothing about how an agent routes.
 - Leave selection ungraded and keep checking resolution alone. That is the
   state this record exists to leave behind.
 
+These four are the options for where the promise lives. The design options that
+lost are in section 4 of the committed
+[study](../router-selection/study.md): a deterministic matcher scored against
+the corpus, Berean's evaluation harness, and Brevitas's `run_evals.py`. The
+study gives the reason each one lost.
+
 ## Consequences
 
 The corpus, the checker and the contract document are bound to one promise id
