@@ -1,10 +1,10 @@
 {
   "contract": "promise-machine/v1",
   "contributor_ranking": {
-    "contract": "promise-machine-contributor-ranking/v1",
+    "contract": "promise-machine-contributor-ranking/v2",
     "documentation": {
-      "path": "docs/promise-machine/contributors-v1.md",
-      "sha256": "3723d4c12a6f4f8f98131bc26fec713530d0b149b9c9d7c849b308eb5b0fb7a9"
+      "path": "docs/promise-machine/contributors-v2.md",
+      "sha256": "59115e89ad02c767538fcf06f0d7f449b4c8ea19adbda5cd99f75f9fce96e469"
     },
     "fixtures": [
       {
@@ -18,32 +18,41 @@
       {
         "path": "tests/fixtures/contributors/contributors.json",
         "sha256": "f7f3d9e21eb378d53cfb74b1df5555dd759ce85ce5f04c78d99dab0e1e5f6110"
+      },
+      {
+        "path": "tests/fixtures/contributors/wave-atlas-pulls.json",
+        "sha256": "77ec0be964a0ee086152a167bc1224ff6d1d7790c9cc60e0a68ea914b4df4a8e"
       }
     ],
     "promise_id": "promise-machine-contributor-ranking",
     "runtime": {
       "path": "scripts/contributors.py",
-      "sha256": "ac9071956715f8854687714474451a5380ee79869668c84361908c4d00a6aab9"
+      "sha256": "4b04d98ccee2f530e9d301144a45cdac34f4f7c19ece5fdabe06ab909ff8827a"
     },
     "tests": {
       "path": "tests/test_contributors.py",
       "selectors": [
+        "test_a_merged_wave_atlas_pr_qualifies_its_human_author",
         "test_a_rerun_that_changed_nothing_produces_no_diff",
         "test_an_interrupted_write_leaves_the_original_intact",
         "test_check_names_the_file_that_is_out_of_date",
         "test_closed_issue_coverage_reads_every_page",
+        "test_closed_unmerged_wave_atlas_pr_does_not_qualify_its_author",
         "test_coverage_past_the_search_cap_is_a_caveat_not_a_stop",
         "test_equal_counts_order_deterministically",
         "test_names_a_reason_for_every_exclusion",
         "test_no_api_field_other_than_login_reaches_the_payload",
         "test_no_excluded_login_reaches_either_artefact",
         "test_one_human_split_across_two_emails_ranks_once",
+        "test_payload_names_every_repository_behind_the_pr_total",
         "test_ranks_only_the_human_contributors",
         "test_readme_block_carries_handles_and_no_aggregate",
         "test_shoggoth_is_never_ranked",
         "test_stops_on_a_changed_member_of_a_known_set",
+        "test_stops_on_a_duplicate_supplemental_repository",
         "test_stops_on_a_readme_that_is_not_utf8",
         "test_stops_on_a_repository_carrying_query_syntax",
+        "test_stops_on_a_supplemental_repository_carrying_query_syntax",
         "test_stops_on_an_unknown_account_type",
         "test_stops_on_api_failure",
         "test_stops_on_bad_login_grammar",
@@ -51,14 +60,19 @@
         "test_stops_on_markers_in_the_wrong_order",
         "test_stops_on_one_marker_without_the_other",
         "test_stops_on_owner_in_output",
+        "test_stops_on_an_unknown_wave_atlas_bot",
         "test_stops_on_unknown_identity",
+        "test_stops_when_a_merged_wave_atlas_pr_has_no_author",
         "test_the_digest_changes_when_the_ranking_changes",
         "test_the_digest_covers_the_ranking_and_nothing_else",
-        "test_the_real_reader_stops_on_an_unroutable_host"
+        "test_the_real_reader_stops_on_an_unroutable_host",
+        "test_wave_atlas_prs_add_to_an_existing_contributor_once",
+        "test_wave_atlas_pull_requests_read_every_page",
+        "test_wave_atlas_runtime_and_shoggoth_prs_are_excluded_once"
       ],
-      "sha256": "2c33623f9a75737b4bdc29734010dc0bae87016928ff346beda8db3633f6ba6d"
+      "sha256": "dd479fbaac231f90181363dbb91bbe124f69a7c978117562ef08f3b149ae4a5c"
     },
-    "transition": "place every contributor row in exactly one of ranked, excluded with a named reason, or refused, and render both artefacts from that one computation without strengthening what the counts mean"
+    "transition": "place every Skills contributor row and every merged supplemental pull-request author in exactly one of ranked, excluded with a named reason, or refused, then render both artefacts from that one computation without strengthening what either count means"
   },
   "evidence": {
     "alexandria-m": {

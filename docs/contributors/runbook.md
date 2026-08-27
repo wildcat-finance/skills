@@ -15,6 +15,16 @@ Every step's exit runs the root suite, the Promise Machine checks, and the
 Phylax sweep, so no step hands the next a tree that fails a gate the repository
 already enforces.
 
+## 2026-08-28 amendment: Wave Atlas contributor evidence
+
+The refresh now reads every closed pull-request page from
+`wildcat-finance/shoggoth-wave-atlas`, counts only merged rows, and classifies
+their author accounts through the existing exclusions. A human author of a
+merged Atlas PR enters the ranking even with zero Skills commits. Skills commit
+counts remain the first ordering key; merged PR counts from Skills and Wave
+Atlas are summed for the second key. The public Atlas read uses the existing job
+token and does not widen the workflow's permissions.
+
 ## Audit boundary
 
 The run produces Python, Markdown, JSON and GitHub Actions YAML. It produces no
@@ -248,7 +258,7 @@ generator into the Promise Machine, and run the demo path.
   reduces a contributor's count and this repository cannot detect it.
 - `docs/how-to-help-shoggoth.md` states what the generated list establishes and
   what it does not.
-- `docs/promise-machine/contributors-v1.md` states the generator's promise,
+- `docs/promise-machine/contributors-v2.md` states the generator's promise,
   evidence, boundary and refusals, and `tests/promise_machine_coverage.json`
   carries its row.
 - `python3 scripts/promise_machine.py check` and
@@ -271,7 +281,7 @@ python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins scripts tests
 
 **Files.** Create
 `docs/decisions/ADR-019-rank-contributors-by-resolved-identity.md`,
-`docs/promise-machine/contributors-v1.md`. Change `README.md`,
+`docs/promise-machine/contributors-v2.md`. Change `README.md`,
 `docs/how-to-help-shoggoth.md`, `tests/promise_machine_coverage.json`,
 `tests/test_contributors.py`.
 

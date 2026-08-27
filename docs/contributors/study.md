@@ -20,6 +20,22 @@ Assuming, unless corrected:
 6. GitHub Actions is the trigger host. The generated pull request touches only
    `CONTRIBUTORS.md` and `README.md`, so `GITHUB_TOKEN` suffices at run time.
 
+## 2026-08-28 amendment: include Wave Atlas pull requests
+
+The contributor surface now also includes human accounts that author merged
+pull requests in `wildcat-finance/shoggoth-wave-atlas`. The original commit
+dimension stays bound to `wildcat-finance/skills`; the merged-pull-request
+dimension combines both repositories. This keeps the existing resolved-commit
+evidence intact while recognising people whose completed work lands through
+the Atlas repository itself.
+
+The supplemental repository is public, so the daily job needs no new secret or
+permission. It reads every page of closed pull requests, counts only rows with
+`merged_at`, and applies the same owner, Shoggoth and runtime-host exclusions to
+the PR author. A merged Atlas PR is sufficient evidence to rank its human author
+even if that login has no Skills commit. This establishes only who opened the
+merged PR, not who authored every commit, reviewed it or otherwise helped.
+
 ## 1. Problem statement
 
 `README.md:57` tells a prospective contributor that a merged job with their
