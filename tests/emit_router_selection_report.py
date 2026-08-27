@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Print what the router-selection corpus covers and whether a run is recorded.
 
-Two questions a person actually asks, and this answers both. Which cases exist,
-and for which canonical selection? And what did the last grading run find? With
-no run recorded the answer is the word `not-run`, which is an answer rather than
-an empty report.
+Three questions a person actually asks, and this answers all of them. Which
+cases exist, and for which canonical selection? Which sibling boundary does the
+corpus declare, and which case makes something choose across it? And what did
+the last grading run find? With no run recorded the answer is the word
+`not-run`, which is an answer rather than an empty report.
+
+The pair lines are what a maintainer reads after rewording a boundary sentence:
+they name the pair and the case that contests it, so the reader can go to that
+case rather than to the whole corpus.
 
 Every line names its subject and the corpus path, so a line pasted into an issue
 still says what it is about. No line carries a request phrasing or a deciding
@@ -57,6 +62,21 @@ def report(document: dict) -> list[str]:
                 f"selection={key}",
                 f"cases={len(selections[key])}",
                 "contested=" + (",".join(probed) if probed else "none"),
+            )
+        )
+    for pair in document["pairs"]:
+        members = sorted(pair.get("skills") or [])
+        holders = sorted(
+            case.get("id")
+            for case in cases
+            if isinstance(case.get("contested"), list)
+            and set(members) <= set(case["contested"])
+        )
+        lines.append(
+            line(
+                f"pair={pair.get('id')}",
+                "skills=" + (",".join(members) if members else "none"),
+                "contested-by=" + (",".join(holders) if holders else "none"),
             )
         )
     runs = document["runs"]
