@@ -1,11 +1,11 @@
 name: Refresh the contributor list
 
-# Weekly, not per merge. Almost every merge here is the Shoggoth's own and
-# changes no ranking, so a per-merge trigger would open an empty pull request
-# most times it ran.
+# Daily at 04:17 UTC, not per merge. Almost every merge here is the Shoggoth's
+# own and changes no ranking, so a per-merge trigger would open an empty pull
+# request most times it ran.
 on:
   schedule:
-    - cron: "17 4 * * 0"
+    - cron: "17 4 * * *"
   workflow_dispatch:
 
 # The generated pull request touches CONTRIBUTORS.md and README.md only. It
@@ -80,7 +80,7 @@ jobs:
           branch="contributors/refresh-${DIGEST:0:12}"
 
           # Opening a second pull request for a ranking already proposed would
-          # add noise every week until someone merged the first one.
+          # add noise every day until someone merged the first one.
           existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$branch" \
             --state open --json number --jq 'length')
           if [ "$existing" != "0" ]; then

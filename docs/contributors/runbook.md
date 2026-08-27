@@ -8,7 +8,7 @@ Base: `main` at `dd23413ef6e9021bd80b930ad57e1766bf166f0b`
 ## Scope
 
 Five steps. Step 1 scaffolds and commits the spec. Steps 2 and 3 build the
-generator and its two rendered artefacts. Step 4 adds the weekly trigger. Step 5
+generator and its two rendered artefacts. Step 4 adds the daily trigger. Step 5
 records the decisions and runs the demo path from the study's problem statement.
 
 Every step's exit runs the root suite, the Promise Machine checks, and the
@@ -177,9 +177,9 @@ interrupted-write and marker-boundary guards land here. hypomnema: the
 generated-file convention goes in the `CONTRIBUTORS.md` header comment and the
 generator docstring, per the study's item 12.
 
-## Step 4: Refresh weekly and open a pull request only on change
+## Step 4: Refresh daily and open a pull request only on change
 
-**Goal.** Run the generator on a weekly schedule and on manual dispatch,
+**Goal.** Run the generator on a daily schedule and on manual dispatch,
 opening a pull request only when the ranking actually changed.
 
 **Entry.** Step 3's exit state on branch
@@ -187,7 +187,7 @@ opening a pull request only when the ranking actually changed.
 
 **Exit.** All of these hold:
 
-- `.github/workflows/contributors.yml` runs on `schedule` with one weekly cron
+- `.github/workflows/contributors.yml` runs on `schedule` with one daily cron
   and on `workflow_dispatch`.
 - `permissions` is declared explicitly as `contents: write` and
   `pull-requests: write` and nothing else.
@@ -200,7 +200,7 @@ opening a pull request only when the ranking actually changed.
   count, and whether a pull request was opened, so a no-op run is
   distinguishable from a failed one.
 - A test parses the workflow YAML and asserts the permission set, the
-  repository guard, the concurrency group, the weekly schedule and the presence
+  repository guard, the concurrency group, the daily schedule and the presence
   of `workflow_dispatch`.
 - The root suite, both Promise Machine checks and the Phylax sweep each exit 0.
 
@@ -209,7 +209,7 @@ opening a pull request only when the ranking actually changed.
 
 **Tests.** Extend `tests/test_contributors.py` with the workflow-shape tests:
 permissions exactly the two write scopes, repository guard present, concurrency
-group present, schedule weekly, `workflow_dispatch` present, and no `secrets.`
+group present, schedule daily, `workflow_dispatch` present, and no `secrets.`
 reference other than none at all. Expected count at least 6 new tests, root
 total at least 219.
 
@@ -243,7 +243,7 @@ generator into the Promise Machine, and run the demo path.
   the decision, the rejected trailer option with the counts that disprove it,
   and the dependency on issue #466.
 - `README.md:57`'s recognition sentence names `CONTRIBUTORS.md`, states that
-  the list is regenerated weekly, and names the GitHub-side condition the
+  the list is regenerated daily, and names the GitHub-side condition the
   repository cannot control, which is that a merge discarding authorship
   reduces a contributor's count and this repository cannot detect it.
 - `docs/how-to-help-shoggoth.md` states what the generated list establishes and

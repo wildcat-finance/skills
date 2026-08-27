@@ -126,7 +126,7 @@ class GuardOrder(unittest.TestCase):
     Some host logins are deliberately not valid GitHub logins. If the ranking
     pipeline validated grammar first, a known runtime identity would trip the
     bad-grammar stop and fail the whole run instead of being dropped quietly,
-    which is the difference between a working weekly refresh and a red job.
+    which is the difference between a working scheduled refresh and a red job.
     """
 
     def test_a_host_login_that_fails_grammar_is_still_recognised_as_a_host(self):
@@ -280,7 +280,7 @@ class RecordedDecisions(unittest.TestCase):
             head,
             "the recognition sentence must name the list, not just imply one exists",
         )
-        self.assertIn("weekly", head)
+        self.assertIn("daily", head)
 
     def test_the_readme_claim_names_the_condition_it_cannot_control(self):
         """Asserts the substance, not one wording.
@@ -1071,7 +1071,7 @@ class WorkflowShape(unittest.TestCase):
             "the workflow must hold no scope beyond what it uses",
         )
 
-    def test_it_runs_weekly_and_on_demand(self):
+    def test_it_runs_daily_and_on_demand(self):
         trigger = self.block("on")
         dispatch = [line for line in trigger if line.startswith("workflow_dispatch")]
         self.assertTrue(dispatch, "workflow_dispatch is missing, so it cannot be run on demand")
@@ -1079,10 +1079,11 @@ class WorkflowShape(unittest.TestCase):
         self.assertEqual(len(crons), 1, f"expected exactly one schedule, got {crons}")
         fields = crons[0].split('"')[1].split()
         self.assertEqual(len(fields), 5, f"malformed cron: {crons[0]}")
-        self.assertNotEqual(
-            fields[4], "*", "a day-of-week of * is daily or hourly, not the weekly cadence asked for"
+        self.assertEqual(
+            fields,
+            ["17", "4", "*", "*", "*"],
+            "the contributor refresh must run once a day at 04:17 UTC",
         )
-        self.assertNotEqual(fields[2], "*/1", "not weekly")
 
     def test_it_is_guarded_to_the_canonical_repository(self):
         self.assertIn(

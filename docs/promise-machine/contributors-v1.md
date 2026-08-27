@@ -44,7 +44,7 @@ completeness.
 
 Writing `CONTRIBUTORS.md` and the marked region of `README.md`, and nothing
 outside those two targets. It authorises no push, no merge and no other
-repository mutation; the weekly workflow performs those separately under its own
+repository mutation; the daily workflow performs those separately under its own
 declared permissions.
 
 ## Refuses
