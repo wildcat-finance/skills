@@ -365,6 +365,20 @@ class SubprocessBoundTests(unittest.TestCase):
         self.assertEqual(record["failure_class"], "command-failure")
         self.assertEqual(record["reason"], "timeout")
 
+    def test_a_timeout_records_its_actual_termination_disposition(self) -> None:
+        check = run_checks.Check(
+            id="timed", title="Timed",
+            argv=("python3", "-c", "import time; time.sleep(30)"),
+            cwd=".", kind="lint", script=None, jobs_flag=None,
+            requires_executable=None, group=None, order=0, timeout_seconds=1,
+        )
+        record = run_checks.run_check(check, REPO_ROOT, run_checks.Scheduler(1), 1)
+        self.assertEqual(record["reason"], "timeout")
+        self.assertEqual(
+            record["termination"],
+            "leader-exited-after-group-sigterm; process-group-exit-unproved",
+        )
+
     def test_a_retained_descriptor_is_a_scheduler_error_not_a_pass(self) -> None:
         program = (
             "import os, time\n"
@@ -488,6 +502,60 @@ class MalformedMapFieldTests(unittest.TestCase):
             self.assertEqual(check_map.checks["probe"].jobs_flag, "--jobs")
             self.assertEqual(check_map.checks["probe"].timeout_seconds, 30)
 
+    def test_unknown_fields_refuse_at_every_schema_level(self) -> None:
+        import copy
+        import tempfile
+
+        payload = {
+            "schema": run_checks.MAP_SCHEMA,
+            "checks": {
+                "first": {
+                    "title": "First",
+                    "argv": ["python3", "-c", "pass"],
+                    "cwd": ".",
+                    "kind": "suite",
+                    "group": "chain",
+                },
+                "second": {
+                    "title": "Second",
+                    "argv": ["python3", "-c", "pass"],
+                    "cwd": ".",
+                    "kind": "lint",
+                    "group": "chain",
+                },
+            },
+            "groups": {"chain": {"title": "Chain", "ordered": ["first", "second"]}},
+            "scopes": {"one": {"title": "One", "checks": ["first", "second"]}},
+            "dependencies": {},
+            "owners": [{"path": "src", "scope": "one"}],
+        }
+        mutations = {
+            "top level": lambda body: body.update(dependecies={}),
+            "check": lambda body: body["checks"]["first"].update(jobs_falg="--jobs"),
+            "group": lambda body: body["groups"]["chain"].update(ordred=["first", "second"]),
+            "scope": lambda body: body["scopes"]["one"].update(cheks=["first", "second"]),
+            "owner": lambda body: body["owners"][0].update(scpoe="one"),
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for name, mutate in mutations.items():
+                with self.subTest(level=name):
+                    candidate = copy.deepcopy(payload)
+                    mutate(candidate)
+                    (root / "map.json").write_text(json.dumps(candidate), encoding="utf-8")
+                    with self.assertRaises(run_checks.PlanError) as caught:
+                        run_checks.load_map(root, "map.json")
+                    self.assertEqual(caught.exception.code, "map-invalid")
+
+    def test_kind_is_a_closed_enum(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._map_with(tmp, {"kind": "sutie"})
+            with self.assertRaises(run_checks.PlanError) as caught:
+                run_checks.load_map(root, "map.json")
+            self.assertEqual(caught.exception.code, "map-invalid")
+
 
 class ReportTests(unittest.TestCase):
     """Reports are confined, atomic and never left half written."""
@@ -545,6 +613,43 @@ class ReportTests(unittest.TestCase):
             entries = sorted(p.name for p in (root / "out").iterdir())
             self.assertEqual(entries, ["report.json"])
             self.assertEqual(json.loads((root / "out/report.json").read_text())["schema"], "second")
+
+    def test_persisted_report_matches_the_emitted_record(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = TemporaryRepositoryMixin().make_repo(tmp)
+            TemporaryRepositoryMixin().write_map(
+                root, ["python3", "-c", "print('report')"]
+            )
+            TemporaryRepositoryMixin().git(root, "add", "-A")
+            TemporaryRepositoryMixin().git(root, "commit", "--quiet", "-m", "base")
+            proc = TemporaryRepositoryMixin().run_cli(
+                root, "--scope", "one", "--format", "json", "--report", "out/report.json"
+            )
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            emitted = json.loads(proc.stdout)
+            persisted = json.loads((root / "out" / "report.json").read_text(encoding="utf-8"))
+            self.assertEqual(persisted, emitted)
+
+    def test_nothing_selected_still_writes_the_requested_report(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            helper = TemporaryRepositoryMixin()
+            root = helper.make_repo(tmp)
+            helper.write_map(root, ["python3", "-c", "pass"])
+            helper.git(root, "add", "-A")
+            helper.git(root, "commit", "--quiet", "-m", "base")
+            proc = helper.run_cli(
+                root, "--format", "json", "--report", "out/nothing-selected.json"
+            )
+            self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+            emitted = json.loads(proc.stdout)
+            self.assertEqual(emitted["outcome"], "nothing-selected")
+            target = root / "out" / "nothing-selected.json"
+            self.assertTrue(target.is_file())
+            self.assertEqual(json.loads(target.read_text(encoding="utf-8")), emitted)
 
 
 class SnapshotOwnershipTests(unittest.TestCase):
@@ -877,6 +982,40 @@ class DiffCaptureTests(TemporaryRepositoryMixin, unittest.TestCase):
 
             self.assertIn("src/later.txt", run_checks.changed_paths(root, base))
             self.assertNotIn("src/later.txt", run_checks.changed_paths(root, None))
+
+    def test_a_mutable_base_name_is_pinned_to_one_commit(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self.make_repo(tmp)
+            self.write_map(root, ["python3", "-c", "pass"])
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "base")
+            base_commit = subprocess.run(
+                ["git", "rev-parse", "HEAD"], cwd=str(root), capture_output=True,
+                text=True, check=True, shell=False,
+            ).stdout.strip()
+            self.git(root, "branch", "comparison-base", base_commit)
+            (root / "src" / "later.txt").write_text("later\n", encoding="utf-8")
+            self.git(root, "add", "-A")
+            self.git(root, "commit", "--quiet", "-m", "later")
+
+            check_map = run_checks.load_map(root)
+            first = run_checks.build_selection(
+                root, check_map, [], "comparison-base", False
+            )
+            self.assertEqual(first.base, base_commit)
+            self.assertIn("src/later.txt", first.changed_paths)
+
+            self.git(root, "branch", "-f", "comparison-base", "HEAD")
+            retry = run_checks.build_selection(
+                root, check_map, [], first.base, False
+            )
+            self.assertEqual(retry.base, base_commit)
+            self.assertIn(
+                "src/later.txt", retry.changed_paths,
+                "a retry re-resolved the mutable name instead of retaining the pinned base",
+            )
 
 
 class SnapshotFidelityTests(TemporaryRepositoryMixin, unittest.TestCase):

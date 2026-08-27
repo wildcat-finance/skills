@@ -61,6 +61,19 @@ FAILURE_CLASSES = (
     "superseded",
     "unstable-source",
 )
+MAP_FIELDS = frozenset(
+    {"schema", "description", "decision_record", "checks", "groups", "scopes", "dependencies", "owners"}
+)
+CHECK_FIELDS = frozenset(
+    {
+        "title", "argv", "cwd", "kind", "script", "jobs_flag",
+        "requires_executable", "group", "order", "timeout_seconds",
+    }
+)
+GROUP_FIELDS = frozenset({"title", "ordered"})
+SCOPE_FIELDS = frozenset({"title", "checks"})
+OWNER_FIELDS = frozenset({"path", "scope"})
+CHECK_KINDS = frozenset({"suite", "build", "lint", "command"})
 GIT_ENV_PREFIXES = ("GIT_",)
 GIT_ENV_KEEP = {"GIT_EXEC_PATH"}
 
@@ -169,6 +182,14 @@ def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return seen
 
 
+def _refuse_unknown_fields(
+    body: Mapping[str, Any], allowed: frozenset[str], *, label: str
+) -> None:
+    unknown = sorted(set(body) - allowed)
+    if unknown:
+        raise PlanError("map-invalid", f"{label} has unknown field(s): {unknown}")
+
+
 def _safe_relpath(value: str, *, field_name: str) -> str:
     if not isinstance(value, str) or not value:
         raise PlanError("unsafe-path", f"{field_name} must be a non-empty string")
@@ -217,6 +238,7 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
         raise PlanError("map-invalid", f"{map_path} is not valid JSON: {exc}") from exc
     if not isinstance(data, dict) or data.get("schema") != MAP_SCHEMA:
         raise PlanError("map-invalid", f"{map_path} is not {MAP_SCHEMA}")
+    _refuse_unknown_fields(data, MAP_FIELDS, label="check map")
 
     groups_raw = data.get("groups") or {}
     if not isinstance(groups_raw, dict):
@@ -232,6 +254,7 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
             raise PlanError("map-invalid", f"check id is not well formed: {cid}")
         if not isinstance(body, dict):
             raise PlanError("map-invalid", f"check {cid} must be an object")
+        _refuse_unknown_fields(body, CHECK_FIELDS, label=f"check {cid}")
         argv = body.get("argv")
         if not isinstance(argv, list) or not argv or not all(isinstance(a, str) and a for a in argv):
             raise PlanError("map-invalid", f"check {cid} needs a non-empty string argv")
@@ -253,12 +276,17 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
             raise PlanError("map-invalid", f"check {cid} timeout_seconds must be positive")
         if "order" in body:
             explicit_order[cid] = _bounded_int(body, "order", 0, cid=cid)
+        kind = body.get("kind", "suite")
+        if not isinstance(kind, str) or kind not in CHECK_KINDS:
+            raise PlanError(
+                "map-invalid", f"check {cid} kind must be one of {sorted(CHECK_KINDS)}"
+            )
         checks[cid] = Check(
             id=cid,
             title=str(body.get("title", cid)),
             argv=tuple(argv),
             cwd=cwd,
-            kind=str(body.get("kind", "suite")),
+            kind=kind,
             script=script,
             jobs_flag=_optional_string(body, "jobs_flag", cid=cid),
             requires_executable=_optional_string(body, "requires_executable", cid=cid),
@@ -271,6 +299,7 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
     for gid, body in groups_raw.items():
         if not isinstance(body, dict) or not isinstance(body.get("ordered"), list):
             raise PlanError("map-invalid", f"group {gid} needs an ordered list")
+        _refuse_unknown_fields(body, GROUP_FIELDS, label=f"group {gid}")
         ordered = body["ordered"]
         if not all(isinstance(cid, str) and cid for cid in ordered):
             raise PlanError("map-invalid", f"group {gid} ordered members must be strings")
@@ -316,6 +345,7 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
             or not all(isinstance(cid, str) and cid for cid in body["checks"])
         ):
             raise PlanError("map-invalid", f"scope {sid} needs a string checks list")
+        _refuse_unknown_fields(body, SCOPE_FIELDS, label=f"scope {sid}")
         for cid in body["checks"]:
             if cid not in checks:
                 raise PlanError("map-invalid", f"scope {sid} names unknown check {cid}")
@@ -363,6 +393,7 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
     for entry in owners_raw:
         if not isinstance(entry, dict):
             raise PlanError("map-invalid", "each owner entry must be an object")
+        _refuse_unknown_fields(entry, OWNER_FIELDS, label="owner entry")
         raw_path = entry.get("path")
         if not isinstance(raw_path, str):
             raise PlanError("map-invalid", "owner path must be a string")
@@ -517,7 +548,11 @@ def build_selection(
     or a test exercising one named change class, drives the same closure the
     command line does.
     """
-    selection = Selection(requested=list(requested), base=base, full=full)
+    # Resolve a human-readable ref exactly once at the selection boundary.  The
+    # resulting commit identity, not the mutable name, drives the diff, every
+    # retry, and the plan/run record.
+    pinned_base = resolve_base(root, base) if base is not None else None
+    selection = Selection(requested=list(requested), base=pinned_base, full=full)
     for scope in requested:
         if scope not in check_map.scopes:
             raise PlanError("unknown-scope", f"unknown scope: {scope}")
@@ -527,7 +562,7 @@ def build_selection(
             selection.add_reason(scope, "full")
 
     if observed is None:
-        observed = changed_paths(root, base)
+        observed = changed_paths(root, pinned_base)
     selection.changed_paths = list(observed)
     for path in observed:
         scope = owner_of(check_map, path)
@@ -1258,7 +1293,11 @@ def _terminate_group(proc: subprocess.Popen[bytes]) -> str:
             return "not-signalled: the process group is gone"
         try:
             proc.wait(timeout=DRAIN_SECONDS)
-            return "terminated"
+            signal_name = signal.Signals(sig).name.lower()
+            return (
+                f"leader-exited-after-group-{signal_name}; "
+                "process-group-exit-unproved"
+            )
         except subprocess.TimeoutExpired:
             continue
     return "unresponsive"
@@ -1266,7 +1305,7 @@ def _terminate_group(proc: subprocess.Popen[bytes]) -> str:
 
 def _capture_output(
     proc: subprocess.Popen[bytes], buffer: CaptureBuffer, deadline: float
-) -> tuple[bool, bool]:
+) -> tuple[bool, bool, str]:
     """Read the child's output without ever blocking past its deadline.
 
     A blocking ``read(n)`` returns only at ``n`` bytes or at end of file, so a
@@ -1274,18 +1313,22 @@ def _capture_output(
     end could block completion for ever.  Polling the descriptor instead keeps
     the deadline authoritative whatever the child does or does not print.
 
-    Returns ``(timed_out, retained)``: whether the deadline passed with the
-    check still running, and whether the descriptor was still held after the
-    leader exited and the bounded drain interval elapsed.
+    Returns ``(timed_out, retained, termination)``: whether the deadline passed
+    with the check still running, whether the descriptor was still held after
+    the leader exited and the bounded drain interval elapsed, and the exact
+    termination disposition observed inside this function.  A leader exit is
+    named as such; it is never promoted into proof that the process group
+    drained.
     """
     fd = proc.stdout.fileno() if proc.stdout is not None else -1
     if fd < 0:
-        return False, False
+        return False, False, "not-required"
     os.set_blocking(fd, False)
     selector = selectors.DefaultSelector()
     selector.register(fd, selectors.EVENT_READ)
     timed_out = False
     retained = False
+    termination = "not-required"
     pipe_eof = False
     drain_deadline: float | None = None
     try:
@@ -1293,7 +1336,7 @@ def _capture_output(
             now = time.monotonic()
             if not timed_out and drain_deadline is None and now > deadline:
                 timed_out = True
-                _terminate_group(proc)
+                termination = _terminate_group(proc)
                 drain_deadline = now + DRAIN_SECONDS
             if drain_deadline is None and proc.poll() is not None:
                 # The leader is gone; every reader gets one bounded interval.
@@ -1323,7 +1366,7 @@ def _capture_output(
             buffer.feed(chunk)
     finally:
         selector.close()
-    return timed_out, retained
+    return timed_out, retained, termination
 
 
 def _allocation_for(check: Check, budget: int, parallel_checks: int) -> int:
@@ -1379,7 +1422,7 @@ def run_check(
         try:
             termination = "not-required"
             try:
-                timed_out, retained = _capture_output(
+                timed_out, retained, termination = _capture_output(
                     proc, buffer, started + check.timeout_seconds
                 )
             except OSError as exc:
@@ -1626,6 +1669,13 @@ def write_report(root: Path, rel_path: str, payload: Mapping[str, Any]) -> str:
     return safe
 
 
+def persist_run_report(root: Path, rel_path: str, payload: dict[str, Any]) -> None:
+    """Bind the path before serialisation so disk and emitted evidence agree."""
+    safe = confine_report_path(root, rel_path)
+    payload["report_path"] = safe
+    write_report(root, safe, payload)
+
+
 def render_human(plan: Mapping[str, Any], run: Mapping[str, Any] | None) -> str:
     captured = (run or plan).get("source_identity")
     lines = [
@@ -1753,6 +1803,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 0
     if not checks:
         run = dict(plan, schema=RUN_SCHEMA, outcome="nothing-selected", checks=[], failure_classes=[])
+        if args.report:
+            try:
+                persist_run_report(root, args.report, run)
+            except (PlanError, OSError) as exc:
+                return refusal(args, "unsafe-report-path", str(exc))
         emit(args, plan, run)
         return 0
 
@@ -1778,6 +1833,7 @@ def _run_attempts(
     plan: Mapping[str, Any],
     attempts: list[dict[str, Any]],
 ) -> int:
+    pinned_base = selection.base
     for attempt in range(1, MAX_ATTEMPTS + 1):
         nonce = uuid.uuid4().hex
         before = source_identity(root)
@@ -1785,7 +1841,9 @@ def _run_attempts(
             # A superseded attempt re-derives its plan: the source that moved may
             # own checks the first plan never selected.
             try:
-                selection = build_selection(root, check_map, args.scope, args.base, args.full)
+                selection = build_selection(
+                    root, check_map, args.scope, pinned_base, args.full
+                )
                 checks = selected_checks(check_map, selection)
                 plan = plan_record(check_map, selection, checks, capacity)
             except PlanError as exc:
@@ -1859,7 +1917,7 @@ def _run_attempts(
         )
         if args.report:
             try:
-                run["report_path"] = write_report(root, args.report, run)
+                persist_run_report(root, args.report, run)
             except (PlanError, OSError) as exc:
                 return refusal(args, "unsafe-report-path", str(exc))
         emit(args, plan, run)
