@@ -1619,7 +1619,7 @@ def run_check(
                 reason=f"capture failed: {capture_error}",
             )
         elif retained:
-            # ADR-038: a retained output descriptor is a bounded red result with
+            # ADR-041: a retained output descriptor is a bounded red result with
             # an explicit detachment diagnostic, never a pass.  The runner does
             # not claim to have terminated a descendant that left the group.
             record.update(

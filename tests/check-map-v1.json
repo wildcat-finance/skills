@@ -1,7 +1,7 @@
 {
   "schema": "wildcat.check-map.v1",
   "description": "Declared ownership, checks and named consumers for this repository. Path ownership resolves by longest matching prefix; every tracked and relevant untracked path must resolve to exactly one scope.",
-  "decision_record": "docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md",
+  "decision_record": "docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md",
   "checks": {
     "root-suite": {
       "title": "Root repository suite",

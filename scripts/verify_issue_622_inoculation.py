@@ -35,7 +35,7 @@ EXPECTED_CUMULATIVE_TREE = "8ed805f1546e525469a923217dd85798294e48a6"
 EXPECTED_ARCHIVE_REF = "archive/622-affected-scope-parallel-runner-attempt-1"
 EXPECTED_ARCHIVE_COMMIT = "f78f6b4c990c41629f4b77ceafe4977f016aeba1"
 EXPECTED_ARCHIVE_TREE = "7507f0e13b3c6f846adf9fe7d075a8ce0e7baa82"
-TRANSFORM_ID = "adr-035-selector-to-adr-038"
+TRANSFORM_ID = "adr-035-selector-to-adr-041"
 ADR_SOURCE = (
     "docs/decisions/"
     "ADR-035-select-and-schedule-repository-checks-from-one-graph.md"
@@ -51,7 +51,7 @@ PACKET_ADR_PATH = (
 )
 ADR_TARGET = (
     "docs/decisions/"
-    "ADR-038-select-and-schedule-repository-checks-from-one-graph.md"
+    "ADR-041-select-and-schedule-repository-checks-from-one-graph.md"
 )
 RUNNER_PATH = "plugins/hexaemeron/tests/run_tests.py"
 PARALLEL_GUARD_PATH = "plugins/hexaemeron/tests/test_parallel_test_runner.py"
@@ -87,12 +87,17 @@ GUARD_PATH_BY_OWNER = {
 #   ADR-037 path to ADR-038 because current main introduced an unrelated
 #   ADR-037 decision after the patch preimage; the logical ADR-035 source and
 #   every immutable audit prefix keep their recorded bytes.
+# - The same collision recurred: current main later introduced an unrelated
+#   ADR-038 (with ADR-039 and ADR-040 behind it), so the live decision moved
+#   again to ADR-041, the next free number across both branches.  The heading
+#   moves with the filename, so the current digest changes with the rename
+#   while the archived ADR-035 source bytes stay fixed.
 EXPECTED_CHANGED_CURRENT_SHA256 = {
     "docs/affected-scope-test-runner/runbook.md": (
         "295358d66202f3e36e906c28e4e8544d52722edd3db2356460b01ad0ebe02caa"
     ),
     ADR_SOURCE: (
-        "e0dcf0a23fee11bab1ebcccc9aab816eebf58f8530c9fb5a94c52529fd308cca"
+        "089046388d57dd7c639a160b7fe5e83d804db789b0cef036cb8a1cd34bca4994"
     ),
     RUNNER_PATH: (
         "3c83bfaa7f067f00f304eeac64867f4710846caa913d6ce14e6eca7024b5d63f"
@@ -181,7 +186,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "46085b12fdac754fd73a50d972c273d82e83395af142b0fe69055f907e486a3f"
     ),
     RECORD_PATH: (
-        "50975274a563b30bfd1843559d68e4d3c300ebf8902601a40b032f92f01324ee"
+        "a3e97f1f27f53468717ddc0614f48c27f3f34a510b2be04c2f1120db9e0c0e55"
     ),
     "tests/promise_machine_coverage.json": (
         "75d32ba009e23fea97262443d876fa8a65947cf3516b5b2e11af3dba8af6ea5f"
@@ -196,7 +201,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "62474514841dbd702e6ffbc3598c33b34b1334c9d8a4d525d1d7558c91f2285c"
     ),
     PACKET_ADR_PATH: (
-        "e0dcf0a23fee11bab1ebcccc9aab816eebf58f8530c9fb5a94c52529fd308cca"
+        "089046388d57dd7c639a160b7fe5e83d804db789b0cef036cb8a1cd34bca4994"
     ),
 }
 EXPECTED_GUARD_SHA256 = {

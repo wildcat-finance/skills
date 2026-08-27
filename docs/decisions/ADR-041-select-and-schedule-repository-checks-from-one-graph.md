@@ -1,4 +1,4 @@
-# ADR-038: Select and schedule repository checks from one graph
+# ADR-041: Select and schedule repository checks from one graph
 
 ## Status
 
