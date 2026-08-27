@@ -14,6 +14,7 @@ import os
 import subprocess
 import sys
 import threading
+import time
 import unittest
 from pathlib import Path
 
@@ -51,6 +52,46 @@ class CheckMapContractTests(unittest.TestCase):
         ).stdout.split("\n")
         unowned = [p for p in listing if p and run_checks.owner_of(self.check_map, p) is None]
         self.assertEqual(unowned, [], f"paths without a declared owner: {unowned[:10]}")
+
+    def test_a_written_elenchus_report_does_not_refuse_the_plan(self) -> None:
+        """Regression: the step's own runner contract broke its own planner.
+
+        ``run_tests.py --elenchus-report .elenchus/<step>.json`` leaves a
+        relevant untracked file behind.  While that path was neither ignored
+        nor owned it reached the planner as an unowned changed path, so every
+        plan refused with ``unknown-ownership`` once Elenchus had run once.
+        """
+        report = REPO_ROOT / ".elenchus" / "probe.json"
+        report.parent.mkdir(parents=True, exist_ok=True)
+        created = not report.exists()
+        if created:
+            report.write_text("{}\n", encoding="utf-8")
+        try:
+            observed = run_checks.changed_paths(REPO_ROOT, None)
+            self.assertNotIn(
+                ".elenchus/probe.json", observed,
+                "an Elenchus report must not look like a source change",
+            )
+        finally:
+            if created:
+                report.unlink()
+
+    def test_relevant_untracked_paths_also_resolve_to_an_owner(self) -> None:
+        """Totality over ``git ls-files`` alone does not cover what the planner reads.
+
+        ``changed_paths`` unions tracked changes with relevant untracked files,
+        so an unowned untracked path refuses just as hard as a tracked one.
+        """
+        untracked = subprocess.run(
+            ["git", "ls-files", "--others", "--exclude-standard"],
+            cwd=str(REPO_ROOT), capture_output=True, text=True, shell=False, check=True,
+        ).stdout.split("\n")
+        unowned = [
+            p for p in untracked
+            if p and not run_checks.is_runner_owned(p)
+            and run_checks.owner_of(self.check_map, p) is None
+        ]
+        self.assertEqual(unowned, [], f"untracked paths with no declared owner: {unowned[:10]}")
 
     def test_owner_resolution_prefers_the_longest_prefix(self) -> None:
         self.assertEqual(run_checks.owner_of(self.check_map, "scripts/contributors.py"), "root")
@@ -299,8 +340,181 @@ class BoundedOutputTests(unittest.TestCase):
         self.assertEqual(record["head"], "short")
 
 
+class SubprocessBoundTests(unittest.TestCase):
+    """A check is bounded by its own deadline, whatever it prints or retains.
+
+    Regression for the audit finding that ``timeout_seconds`` bounded nothing:
+    the deadline was only consulted after a blocking ``read(65_536)`` returned,
+    so a quiet check outlived it and a descendant holding the write end blocked
+    completion for ever while the record still claimed a pass.
+    """
+
+    def test_a_quiet_check_is_stopped_at_its_deadline(self) -> None:
+        check = run_checks.Check(
+            id="quiet", title="Quiet",
+            argv=("python3", "-c", "import time; time.sleep(30)"),
+            cwd=".", kind="suite", script=None, jobs_flag=None,
+            requires_executable=None, group=None, order=0, timeout_seconds=2,
+        )
+        started = time.monotonic()
+        record = run_checks.run_check(check, REPO_ROOT, run_checks.Scheduler(2), 1)
+        elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 20, f"the deadline did not bound the check: {elapsed:.1f}s")
+        self.assertEqual(record["status"], "failed")
+        self.assertEqual(record["failure_class"], "command-failure")
+        self.assertEqual(record["reason"], "timeout")
+
+    def test_a_retained_descriptor_is_a_scheduler_error_not_a_pass(self) -> None:
+        program = (
+            "import os, time\n"
+            "if os.fork() == 0:\n"
+            "    time.sleep(30)\n"
+            "    os._exit(0)\n"
+            "os._exit(0)\n"
+        )
+        check = run_checks.Check(
+            id="detached", title="Detached", argv=("python3", "-c", program),
+            cwd=".", kind="suite", script=None, jobs_flag=None,
+            requires_executable=None, group=None, order=0, timeout_seconds=2,
+        )
+        started = time.monotonic()
+        record = run_checks.run_check(check, REPO_ROOT, run_checks.Scheduler(2), 1)
+        elapsed = time.monotonic() - started
+        self.assertLess(elapsed, 20, f"a retained descriptor blocked completion: {elapsed:.1f}s")
+        self.assertNotEqual(record["status"], "passed")
+        self.assertEqual(record["failure_class"], "scheduler-error")
+        self.assertTrue(record["descriptor_retained"])
+        self.assertIn("retained", record["reason"])
+
+    def test_an_ordinary_check_is_not_charged_the_drain_interval(self) -> None:
+        check = run_checks.Check(
+            id="prompt", title="Prompt", argv=("python3", "-c", "print('done')"),
+            cwd=".", kind="lint", script=None, jobs_flag=None,
+            requires_executable=None, group=None, order=0, timeout_seconds=60,
+        )
+        started = time.monotonic()
+        record = run_checks.run_check(check, REPO_ROOT, run_checks.Scheduler(2), 1)
+        self.assertEqual(record["status"], "passed")
+        self.assertFalse(record["descriptor_retained"])
+        self.assertIn("done", record["output"]["head"])
+        self.assertLess(time.monotonic() - started, run_checks.DRAIN_SECONDS)
+
+
+class WorkerAccountingTests(unittest.TestCase):
+    """Selection and completion are a disjoint union before any green.
+
+    Regression for the audit finding that a worker fault removed the check from
+    ``results`` entirely, so a selected check could vanish while the run still
+    aggregated green.
+    """
+
+    def _faulting_check(self) -> run_checks.Check:
+        # A non-OSError raised inside run_check used to kill the worker thread.
+        return run_checks.Check(
+            id="faulting", title="Faulting", argv=("python3", "-c", "pass"),
+            cwd=".", kind="suite", script=None, jobs_flag=None,
+            requires_executable=None, group=None, order=0,
+            timeout_seconds="not-a-number",  # type: ignore[arg-type]
+        )
+
+    def test_a_faulting_worker_stays_in_the_report_as_a_scheduler_error(self) -> None:
+        good = run_checks.Check(
+            id="good", title="Good", argv=("python3", "-c", "pass"), cwd=".",
+            kind="lint", script=None, jobs_flag=None, requires_executable=None,
+            group=None, order=0, timeout_seconds=60,
+        )
+        results, _ = run_checks.execute([good, self._faulting_check()], REPO_ROOT, 4)
+        recorded = {r["check"] for r in results}
+        self.assertEqual(recorded, {"good", "faulting"}, "a selected check was dropped")
+        by_id = {r["check"]: r for r in results}
+        self.assertEqual(by_id["faulting"]["failure_class"], "scheduler-error")
+        classes = {r["failure_class"] for r in results if r.get("failure_class")}
+        self.assertIn("scheduler-error", classes, "the fault must keep the run out of green")
+
+    def test_every_emitted_failure_class_is_declared(self) -> None:
+        results, _ = run_checks.execute([self._faulting_check()], REPO_ROOT, 2)
+        for record in results:
+            if record.get("failure_class"):
+                self.assertIn(record["failure_class"], run_checks.FAILURE_CLASSES)
+
+
+class MalformedMapFieldTests(unittest.TestCase):
+    """A malformed field refuses by name instead of raising out of main().
+
+    Regression for the audit finding that an unvalidated ``jobs_flag`` reached
+    ``subprocess.Popen`` and that a non-numeric ``timeout_seconds`` escaped as a
+    bare ValueError rather than an ``invalid-plan`` refusal.
+    """
+
+    def _map_with(self, tmp: str, body: dict) -> Path:
+        payload = {
+            "schema": "wildcat.check-map.v1",
+            "checks": {"probe": dict({"title": "Probe", "argv": ["python3", "-c", "pass"],
+                                      "cwd": ".", "kind": "lint"}, **body)},
+            "groups": {},
+            "scopes": {"one": {"title": "One", "checks": ["probe"]}},
+            "dependencies": {},
+            "owners": [{"path": "src", "scope": "one"}],
+        }
+        root = Path(tmp)
+        (root / "map.json").write_text(json.dumps(payload))
+        return root
+
+    def test_non_string_and_non_integer_fields_refuse(self) -> None:
+        import tempfile
+
+        for body in (
+            {"jobs_flag": 7},
+            {"jobs_flag": ["--jobs"]},
+            {"requires_executable": 7},
+            {"timeout_seconds": "soon"},
+            {"timeout_seconds": 0},
+            {"order": "first"},
+        ):
+            with self.subTest(body=body):
+                with tempfile.TemporaryDirectory() as tmp:
+                    root = self._map_with(tmp, body)
+                    with self.assertRaises(run_checks.PlanError) as caught:
+                        run_checks.load_map(root, "map.json")
+                    self.assertEqual(caught.exception.code, "map-invalid")
+
+    def test_a_well_formed_optional_field_still_loads(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._map_with(tmp, {"jobs_flag": "--jobs", "timeout_seconds": 30})
+            check_map = run_checks.load_map(root, "map.json")
+            self.assertEqual(check_map.checks["probe"].jobs_flag, "--jobs")
+            self.assertEqual(check_map.checks["probe"].timeout_seconds, 30)
+
+
 class ReportTests(unittest.TestCase):
     """Reports are confined, atomic and never left half written."""
+
+    def test_a_symlinked_component_cannot_redirect_the_report(self) -> None:
+        """Regression: the lexical check could not see a link out of the tree."""
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            root.mkdir()
+            outside = Path(tmp) / "outside"
+            outside.mkdir()
+            (root / "reports").symlink_to(outside, target_is_directory=True)
+            with self.assertRaises(run_checks.PlanError) as caught:
+                run_checks.write_report(root, "reports/run.json", {"schema": "x"})
+            self.assertEqual(caught.exception.code, "unsafe-path")
+            self.assertEqual(list(outside.iterdir()), [], "the report escaped the repository")
+
+    def test_a_symlinked_component_refuses_before_execution(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "repo"
+            root.mkdir()
+            (root / "out").symlink_to(Path(tmp), target_is_directory=True)
+            with self.assertRaises(run_checks.PlanError):
+                run_checks.confine_report_path(root, "out/run.json")
 
     def test_unsafe_report_targets_refuse(self) -> None:
         for candidate in ("../escape.json", "/etc/passwd", ".git/config", "a/../../b.json"):

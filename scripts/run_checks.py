@@ -21,7 +21,9 @@ import hashlib
 import json
 import os
 import re
+import selectors
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -178,6 +180,23 @@ def _safe_relpath(value: str, *, field_name: str) -> str:
     return "/".join(parts)
 
 
+def _optional_string(body: Mapping[str, Any], key: str, *, cid: str) -> str | None:
+    value = body.get(key)
+    if value is None:
+        return None
+    if not isinstance(value, str) or not value:
+        raise PlanError("map-invalid", f"check {cid} {key} must be a non-empty string")
+    return value
+
+
+def _bounded_int(body: Mapping[str, Any], key: str, default: int, *, cid: str) -> int:
+    """A malformed number must refuse by name rather than raise out of main()."""
+    value = body.get(key, default)
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise PlanError("map-invalid", f"check {cid} {key} must be an integer")
+    return value
+
+
 def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
     """Read, validate and digest the declared check map."""
     target = root / map_path
@@ -222,6 +241,11 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
         group = body.get("group")
         if group is not None and group not in groups_raw:
             raise PlanError("map-invalid", f"check {cid} names unknown group {group}")
+        timeout_seconds = _bounded_int(
+            body, "timeout_seconds", DEFAULT_TIMEOUT_SECONDS, cid=cid
+        )
+        if timeout_seconds < 1:
+            raise PlanError("map-invalid", f"check {cid} timeout_seconds must be positive")
         checks[cid] = Check(
             id=cid,
             title=str(body.get("title", cid)),
@@ -229,11 +253,11 @@ def load_map(root: Path, map_path: str = DEFAULT_MAP_PATH) -> CheckMap:
             cwd=cwd,
             kind=str(body.get("kind", "suite")),
             script=script,
-            jobs_flag=body.get("jobs_flag"),
-            requires_executable=body.get("requires_executable"),
+            jobs_flag=_optional_string(body, "jobs_flag", cid=cid),
+            requires_executable=_optional_string(body, "requires_executable", cid=cid),
             group=group,
-            order=int(body.get("order", 0)),
-            timeout_seconds=int(body.get("timeout_seconds", DEFAULT_TIMEOUT_SECONDS)),
+            order=_bounded_int(body, "order", 0, cid=cid),
+            timeout_seconds=timeout_seconds,
         )
 
     groups: dict[str, tuple[str, ...]] = {}
@@ -653,6 +677,78 @@ class Scheduler:
             self._condition.notify_all()
 
 
+def _terminate_group(proc: subprocess.Popen[bytes]) -> None:
+    """Signal the check's whole process group, not only its leader.
+
+    Every check leads its own session, so a descendant that keeps running after
+    the leader exits is still reachable through the group.  ``proc.kill()``
+    alone reaches the leader and leaves that descendant holding the output
+    descriptor, which is what kept a wedged check outside every bound.
+    """
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(os.getpgid(proc.pid), sig)
+        except OSError:
+            return
+        try:
+            proc.wait(timeout=DRAIN_SECONDS)
+            return
+        except subprocess.TimeoutExpired:
+            continue
+
+
+def _capture_output(
+    proc: subprocess.Popen[bytes], buffer: CaptureBuffer, deadline: float
+) -> tuple[bool, bool]:
+    """Read the child's output without ever blocking past its deadline.
+
+    A blocking ``read(n)`` returns only at ``n`` bytes or at end of file, so a
+    quiet check could outlive its timeout and a descendant retaining the write
+    end could block completion for ever.  Polling the descriptor instead keeps
+    the deadline authoritative whatever the child does or does not print.
+
+    Returns ``(timed_out, retained)``: whether the deadline passed with the
+    check still running, and whether the descriptor was still held after the
+    leader exited and the bounded drain interval elapsed.
+    """
+    fd = proc.stdout.fileno() if proc.stdout is not None else -1
+    if fd < 0:
+        return False, False
+    os.set_blocking(fd, False)
+    selector = selectors.DefaultSelector()
+    selector.register(fd, selectors.EVENT_READ)
+    timed_out = False
+    retained = False
+    drain_deadline: float | None = None
+    try:
+        while True:
+            now = time.monotonic()
+            if not timed_out and drain_deadline is None and now > deadline:
+                timed_out = True
+                _terminate_group(proc)
+                drain_deadline = now + DRAIN_SECONDS
+            if drain_deadline is None and proc.poll() is not None:
+                # The leader is gone; every reader gets one bounded interval.
+                drain_deadline = now + DRAIN_SECONDS
+            if drain_deadline is not None and now > drain_deadline:
+                retained = True
+                break
+            if not selector.select(timeout=0.25):
+                continue
+            try:
+                chunk = os.read(fd, 65_536)
+            except BlockingIOError:
+                continue
+            except OSError:
+                break
+            if not chunk:
+                break
+            buffer.feed(chunk)
+    finally:
+        selector.close()
+    return timed_out, retained
+
+
 def _allocation_for(check: Check, budget: int, parallel_checks: int) -> int:
     if check.jobs_flag is None:
         return 1
@@ -702,24 +798,46 @@ def run_check(
             shell=False,
             start_new_session=True,
         )
-        timed_out = False
         try:
-            assert proc.stdout is not None
-            deadline = started + check.timeout_seconds
-            for chunk in iter(lambda: proc.stdout.read(65_536), b""):
-                buffer.feed(chunk)
-                if time.monotonic() > deadline:
-                    timed_out = True
-                    proc.kill()
-                    break
-            proc.wait(timeout=DRAIN_SECONDS + check.timeout_seconds)
+            timed_out, retained = _capture_output(
+                proc, buffer, started + check.timeout_seconds
+            )
+            if retained:
+                _terminate_group(proc)
+            try:
+                proc.wait(timeout=DRAIN_SECONDS)
+            except subprocess.TimeoutExpired:
+                _terminate_group(proc)
+                try:
+                    proc.wait(timeout=DRAIN_SECONDS)
+                except subprocess.TimeoutExpired:
+                    pass
+        except BaseException:
+            # A fault after the child started must not leave it running: the
+            # worker guard would otherwise report a scheduler error while the
+            # check kept holding resources.
+            _terminate_group(proc)
+            raise
         finally:
             if proc.stdout is not None:
                 proc.stdout.close()
         record["output"] = buffer.record()
         record["exit_code"] = proc.returncode
         record["duration_seconds"] = round(time.monotonic() - started, 3)
-        if timed_out:
+        record["descriptor_retained"] = retained
+        if retained:
+            # ADR-038: a retained output descriptor is a bounded red result with
+            # an explicit detachment diagnostic, never a pass.  The runner does
+            # not claim to have terminated a descendant that left the group.
+            record.update(
+                status="failed",
+                failure_class="scheduler-error",
+                reason=(
+                    "an output descriptor was retained after the check leader exited; "
+                    "a detached descendant may still be running"
+                ),
+            )
+        elif timed_out:
             record.update(status="failed", failure_class="command-failure", reason="timeout")
         elif proc.returncode == 0:
             record["status"] = "passed"
@@ -766,14 +884,32 @@ def execute(
         members.sort(key=lambda c: c.order)
     units = len(singles) + len(grouped)
 
+    def guarded(check: Check) -> dict[str, Any]:
+        """Never let a worker fault remove a check from the accounting.
+
+        An unhandled exception here used to kill the thread and drop the record
+        entirely, so a selected check could vanish and the run still aggregate
+        green.  A fault is a scheduler error, and it stays in the report.
+        """
+        try:
+            return run_check(check, snapshot, scheduler, units)
+        except BaseException as exc:  # noqa: BLE001 - a fault must stay visible
+            return {
+                "check": check.id,
+                "title": check.title,
+                "status": "failed",
+                "failure_class": "scheduler-error",
+                "reason": f"the worker faulted: {type(exc).__name__}: {exc}",
+            }
+
     def run_single(check: Check) -> None:
-        record = run_check(check, snapshot, scheduler, units)
+        record = guarded(check)
         with lock:
             results.append(record)
 
     def run_group(gid: str, members: list[Check]) -> None:
         for index, check in enumerate(members):
-            record = run_check(check, snapshot, scheduler, units)
+            record = guarded(check)
             record["group"] = gid
             with lock:
                 results.append(record)
@@ -800,6 +936,21 @@ def execute(
         thread.start()
     for thread in threads:
         thread.join()
+    # Prove the disjoint union of selection and completion before any caller
+    # reads an outcome: a check with no terminal record is a scheduler error,
+    # not an absence that quietly aggregates green.
+    recorded = {r["check"] for r in results}
+    for check in checks:
+        if check.id not in recorded:
+            results.append(
+                {
+                    "check": check.id,
+                    "title": check.title,
+                    "status": "failed",
+                    "failure_class": "scheduler-error",
+                    "reason": "the scheduler returned no terminal record for this check",
+                }
+            )
     results.sort(key=lambda r: r["check"])
     return results, scheduler
 
@@ -838,10 +989,32 @@ def plan_record(
     }
 
 
-def write_report(root: Path, rel_path: str, payload: Mapping[str, Any]) -> str:
+def confine_report_path(root: Path, rel_path: str) -> str:
+    """Refuse a report target that leaves the repository through a symlink.
+
+    ``_safe_relpath`` is lexical, so it cannot see that an existing directory
+    component is a link out of the tree.  Checking the components before
+    anything is created keeps the refusal ahead of execution.
+    """
     safe = _safe_relpath(rel_path, field_name="report path")
+    probe = root
+    for part in safe.split("/")[:-1]:
+        probe = probe / part
+        if probe.is_symlink():
+            raise PlanError(
+                "unsafe-path", f"report path traverses a symlink: {safe}"
+            )
+    return safe
+
+
+def write_report(root: Path, rel_path: str, payload: Mapping[str, Any]) -> str:
+    safe = confine_report_path(root, rel_path)
     target = root / safe
     target.parent.mkdir(parents=True, exist_ok=True)
+    base = root.resolve()
+    resolved = target.parent.resolve()
+    if resolved != base and base not in resolved.parents:
+        raise PlanError("unsafe-path", f"report path leaves the repository: {safe}")
     tmp = target.parent / f".{target.name}.{uuid.uuid4().hex}.partial"
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
     fd = os.open(tmp, flags, 0o644)
@@ -973,7 +1146,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         selection = build_selection(root, check_map, args.scope, args.base, args.full)
         checks = selected_checks(check_map, selection)
         if args.report is not None:
-            _safe_relpath(args.report, field_name="report path")
+            confine_report_path(root, args.report)
     except PlanError as exc:
         return refusal(args, exc.code, exc.message, exc.detail)
 
