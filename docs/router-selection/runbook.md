@@ -691,3 +691,92 @@ only place the copy can be brought back to the receipted bytes.
 **Steps touched.** Step 3.
 
 **Still holding.** Step 3: entry holds; exit holds.
+### Amendment -- 2026-08-27
+
+**What changed.** Complete replacement Exit: Five surfaces, then the commands. The corpus carries one run block
+naming `model`, `date`, `prompt_template_sha256`, `corpus_sha256`, `cases`,
+`passed`, `failed` and `failures`, where `failures` lists each failing case id
+with the canonical skill actually selected. The grading was performed as the
+study specifies: each `request` field alone was presented to a fresh agent
+context loaded with the router, `AGENTS.md` and the plugin runtime contracts,
+and with neither the corpus nor the study. The score is recorded evidence about
+one model on one date and is not a gate; no surface calls it proved. The
+checker gains the method that refuses an incomplete block, and the refusals
+that method adds are named on the promise and on the contract document, so the
+two-direction property the earlier rounds established still holds. The prompt template the run block
+pins is committed beside the corpus, pinned by the capability entry, and held
+equal to the block's `prompt_template_sha256` by the completeness method, so
+the digest names bytes a reader can retrieve rather than bytes that existed
+once. The
+committed copy of the runbook at `docs/router-selection/runbook.md` carries the
+receipted bytes again, which its own step could not do because each amendment
+landed after that step closed. Then:
+
+```bash
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py sync --check
+/Users/kethcode/.local/bin/python3.13 scripts/portable_promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 plugins/horos/skills/horos/scripts/horos.py check .
+/Users/kethcode/.local/bin/python3.13 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.13 tests/emit_router_selection_report.py
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py coverage --check
+/Users/kethcode/.local/bin/python3.13 scripts/promise_machine.py check
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py PROMISE_MACHINE.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/promise-machine/router-selection-v1.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/router-selection/runbook.md
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+/Users/kethcode/.local/bin/python3.13 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+git diff --check
+rm -rf .elenchus uv.lock
+git status --short
+```
+
+Every one exits zero and the root suite reports 449 tests. The second command
+is the demo path: it prints the coverage table and then the run block rather
+than `not-run`, which is how this step is checkable even though the score
+inside the block is not. The syncs and the Horos check are present because naming the new
+refusals moves the root law, which the generated copies and the portable mirror
+follow.
+
+Complete replacement Files: Ten entries, and nothing outside them.
+
+- `tests/fixtures/router-selection/cases.json`, change: the recorded run block.
+- `tests/test_router_selection.py`, change: the run-block completeness method.
+- `tests/promise_machine_coverage.json`, change: the corpus digest moved and
+  one selector was added.
+- `PROMISE_MACHINE.md`, change: the `Refuses` line names what the run-block
+  completeness method refuses, because naming every refusal on both surfaces is
+  a standing rule the earlier rounds established.
+- `docs/promise-machine/router-selection-v1.md`, change: the same refusals in
+  the contract document's own sections, and the two wrapping irregularities
+  this run introduced into it.
+- `plugins/*/PROMISE_MACHINE.md`, change, fourteen files: generated
+  byte-identical copies of the root law, written only by
+  `scripts/promise_machine.py sync`.
+- `.agents/skills/promise-machine/runtime/`, change: the portable mirror, whose
+  payload carries the root law, so `scripts/portable_promise_machine.py sync`
+  runs in this same commit.
+- `.horos/boundary.json` and `.horos/candidates.json`, change: the mirror's
+  recorded byte and file counts move with it, so `horos.py scan . --write` runs
+  in this same commit and writes both files.
+- `docs/router-selection/runbook.md`, change: the committed copy returns to the
+  receipted bytes, which every amendment after step 1 left behind.
+- `tests/fixtures/router-selection/prompt-template.txt`, create: the exact
+  prompt the graded context received, whose digest the recorded run block
+  already names, committed so that digest resolves to retrievable bytes and
+  pinned by the capability entry like the other fixtures.
+
+**Why.** The recorded run block names a prompt template by digest, and the
+promise says a recorded score is evidence about one model, one prompt
+template, one corpus digest and one date. The template was written to a
+scratch directory outside the repository, so that digest named bytes no reader
+could retrieve, and the claim rested on nothing a later run could check. This
+delivery exists because a boundary stated in prose that nothing binds is not
+evidence; a digest bound to a file that is not there is the same defect in the
+artefact that argues against it. The template is committed beside the corpus,
+pinned by the capability entry, and held equal to the block's recorded digest
+by the completeness method, which makes a regrade under a different prompt
+commit that prompt.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds.

@@ -43,6 +43,9 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 # One fixed repository-relative corpus, resolved from a constant. No argument,
 # no glob and no caller-supplied component reaches this path.
 CORPUS_PATH = "tests/fixtures/router-selection/cases.json"
+# The prompt the graded context received, committed beside the corpus and
+# reached the same way: one fixed constant, no argument, no caller component.
+PROMPT_TEMPLATE_PATH = "tests/fixtures/router-selection/prompt-template.txt"
 SCHEMA = "promise-machine-router-selection/v1"
 
 ROUTER_PATH = ".agents/skills/promise-machine/SKILL.md"
@@ -136,6 +139,23 @@ def corpus_digest(cases: list) -> str:
     """
     payload = json.dumps(cases, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def prompt_template_digest() -> str:
+    """Digest the committed prompt template.
+
+    A run block names the prompt it was graded under by digest. The digest is
+    only evidence if the bytes it names are in the repository, so the checker
+    reads them rather than trusting the recorded value.
+    """
+    path = REPOSITORY_ROOT / PROMPT_TEMPLATE_PATH
+    try:
+        raw = path.read_bytes()
+    except OSError as error:
+        raise CorpusError(
+            f"{PROMPT_TEMPLATE_PATH} could not be read: {error}"
+        ) from error
+    return hashlib.sha256(raw).hexdigest()
 
 
 def canonical_skill_names() -> dict:
@@ -261,7 +281,7 @@ def run_faults(runs: list, expected: str) -> list:
     return faults
 
 
-def run_completeness_faults(runs: list, case_ids: set, names: set) -> list:
+def run_completeness_faults(runs: list, case_ids: set, names: set, template: str) -> list:
     """Hold every recorded run block to its identity fields and its failures.
 
     `run_faults` holds a block's field set, its digest and the arithmetic
@@ -271,6 +291,12 @@ def run_completeness_faults(runs: list, case_ids: set, names: set) -> list:
     it. A block nobody can read back to the run that produced it is not
     evidence about one model on one date, which is the only thing a recorded
     score is.
+
+    The recorded prompt-template digest is held equal to the digest of the
+    template committed beside the corpus. A digest naming bytes the repository
+    does not hold is the defect this corpus exists to argue against, one level
+    up: a claim bound to nothing a later reader can retrieve. Holding them
+    equal makes a regrade under a different prompt commit that prompt.
     """
     faults = []
     for index, run in enumerate(runs):
@@ -284,11 +310,18 @@ def run_completeness_faults(runs: list, case_ids: set, names: set) -> list:
         date = run.get("date")
         if not isinstance(date, str) or not ISO_DATE.match(date):
             faults.append(f"{where}: date is not a YYYY-MM-DD date, it is {date!r}")
-        template = run.get("prompt_template_sha256")
-        if not isinstance(template, str) or not SHA256.match(template):
+        recorded = run.get("prompt_template_sha256")
+        if not isinstance(recorded, str) or not SHA256.match(recorded):
             faults.append(
                 f"{where}: prompt_template_sha256 is not a sha256 digest, it is "
-                f"{template!r}; without it the prompt the run used is unrecoverable"
+                f"{recorded!r}; without it the prompt the run used is unrecoverable"
+            )
+        elif recorded != template:
+            faults.append(
+                f"{where}: prompt_template_sha256 records {recorded}, and "
+                f"{PROMPT_TEMPLATE_PATH} digests to {template}; a score is evidence "
+                f"about the prompt that produced it, so commit the prompt this run "
+                f"used rather than editing the block to agree"
             )
         covered = run.get("cases")
         if isinstance(covered, int) and not isinstance(covered, bool) and covered < 1:
@@ -622,6 +655,7 @@ class RouterSelectionCorpus(unittest.TestCase):
             self.document["runs"],
             {case.get("id") for case in self.document["cases"]},
             set(canonical_skill_names()),
+            prompt_template_digest(),
         )
         self.assertEqual(
             faults, [],

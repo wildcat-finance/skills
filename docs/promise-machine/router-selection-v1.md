@@ -72,8 +72,9 @@ pair the corpus declares is contested by at least one case, whose `contested`
 list holds all of the skills that pair separates. And that any recorded run
 block carries the eight fields above with a `corpus_sha256` that recomputes from
 the cases on disk, names the model, date and prompt-template digest a reader
-needs to recount it, and names each of its failures by a case id this corpus
-holds and a canonical skill that resolves.
+needs to recount it, carries a prompt-template digest equal to the digest of the
+template committed beside the corpus, and names each of its failures by a case
+id this corpus holds and a canonical skill that resolves.
 
 ## Evidence classes
 
@@ -105,10 +106,10 @@ Reporting the corpus's coverage and the latest recorded run through
 model, date and corpus digest it names attached. Nothing else.
 
 The `router_selection` capability entry pins that reporter's bytes beside the
-corpus, the guard fixtures, the checker and this document. Without the pin the
-authorised surface was the one surface nothing held: the reporter could be
-rewritten to echo a request or a deciding sentence, which is the contamination
-the report exists to avoid, and no digest would move.
+corpus, the prompt template, the guard fixtures, the checker and this document.
+Without the pin the authorised surface was the one surface nothing held: the
+reporter could be rewritten to echo a request or a deciding sentence, which is
+the contamination the report exists to avoid, and no digest would move.
 
 ## Refuses
 
@@ -151,13 +152,18 @@ On completeness, which the run-block check adds. A run block that is not an
 object. A `model` that is absent, empty or not a string, a `date` that is not a
 `YYYY-MM-DD` date, or a `prompt_template_sha256` that is not a lowercase sha256
 digest: a score whose model, date or prompt nobody can recover is not evidence
-about any of them. A run covering no cases at all, whose counts agree with each
-other while measuring nothing. A failure entry whose field set is not exactly
-`case` and `selected`, since the entries are model output written into a
-committed file and the shape is closed rather than free text. A failure naming a
-case id this corpus does not hold. The same case id named by two failures, which
-would make the failing cases uncountable. And a failure recording a selection no
-`SKILL.md` declares.
+about any of them. An absent or unreadable prompt template, or a
+`prompt_template_sha256` that is not the digest of the template committed beside
+the corpus: a digest naming bytes the repository does not hold is evidence about
+no prompt at all, which is the defect this corpus exists to argue against, one
+level up. Holding the two equal makes a regrade under a different prompt commit
+that prompt. A run covering no cases at all, whose counts agree with each other
+while measuring nothing. A failure entry whose field set is not exactly `case`
+and `selected`, since the entries are model output written into a committed file
+and the shape is closed rather than free text. A failure naming a case id this
+corpus does not hold. The same case id named by two failures, which would make
+the failing cases uncountable. And a failure recording a selection no `SKILL.md`
+declares.
 
 ## Recovery
 
