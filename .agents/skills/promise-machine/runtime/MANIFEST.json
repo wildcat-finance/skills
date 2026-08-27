@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11075092,
+  "total_bytes": 11083394,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -583,9 +583,9 @@
       "source": "plugins/ariadne/schemas/dataset-v1.json"
     },
     {
-      "bytes": 17578,
+      "bytes": 18559,
       "path": "plugins/ariadne/schemas/grounded-agent-v1.json",
-      "sha256": "ab7161cb51c229a32a0bc6fd341f181f0bce7abb37573202b299f57bfd826b26",
+      "sha256": "2433fa5ec043ba5674f9e51fe4902660855acba35460f089d91b18afa894069d",
       "source": "plugins/ariadne/schemas/grounded-agent-v1.json"
     },
     {
@@ -673,9 +673,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/envelope.py"
     },
     {
-      "bytes": 11630,
+      "bytes": 13798,
       "path": "plugins/ariadne/scripts/ariadne_lib/gates.py",
-      "sha256": "5853b9027b773fd6360ca41f20f02d29c458e9de1aaf07c02c65a6bdfbd0e7a0",
+      "sha256": "795355639acdce1005252a2e36fcfe2f494aebc2aa529b2a87907653ec83ddef",
       "source": "plugins/ariadne/scripts/ariadne_lib/gates.py"
     },
     {
@@ -691,9 +691,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py"
     },
     {
-      "bytes": 33931,
+      "bytes": 39046,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py",
-      "sha256": "641bd2b2daaae012269c2a08b955dd41ab8d4df8897ce3374781eea95a76db78",
+      "sha256": "a64e8204c2edac0f1fbf6f3190ffe765060627f919f2fb16d487ed1b1a5bfde8",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py"
     },
     {
@@ -739,9 +739,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/statement.py"
     },
     {
-      "bytes": 5072,
+      "bytes": 5110,
       "path": "plugins/ariadne/scripts/ariadne_lib/verify.py",
-      "sha256": "a434eb1dbbf328a64d5b364d83135b09c508cda0462297a742ce8f5dfa5b98be",
+      "sha256": "175188e32c60a7178f4a42cd2ce529a128df173a31f8414cc08f694b45f3b91c",
       "source": "plugins/ariadne/scripts/ariadne_lib/verify.py"
     },
     {

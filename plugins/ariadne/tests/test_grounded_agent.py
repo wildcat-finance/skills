@@ -5,7 +5,9 @@ import copy
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
+import stat
 from types import SimpleNamespace
 import tempfile
 import unittest
@@ -261,6 +263,104 @@ class ClosedShapeTests(unittest.TestCase):
             with self.subTest(path=".".join(path)):
                 self.assertFalse(named("predicate-fields", body).passed)
 
+    def test_core_blocks_follow_the_published_bounded_contract(self):
+        body = predicate()
+        digest = {"sha256": body["release"]["document"]["sha256"]}
+        cases = (
+            {"claims": [{"subject": digest, "disposition": "passed"}]},
+            {
+                "claims": [
+                    {"name": " ", "subject": digest, "disposition": "passed"}
+                ]
+            },
+            {
+                "claims": [
+                    {
+                        "name": "failed claim",
+                        "subject": digest,
+                        "disposition": "failed",
+                    }
+                ]
+            },
+            {
+                "claims": [
+                    {
+                        "name": "failed claim",
+                        "subject": digest,
+                        "disposition": "failed",
+                        "reason": "x" * (agent.MAX_TEXT + 1),
+                    }
+                ]
+            },
+            {
+                "claims": [
+                    {
+                        "name": "claim with null detail",
+                        "subject": digest,
+                        "disposition": "passed",
+                        "detail": None,
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {"argv": ["tool"], "determinism": "nondeterministic"}
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": " ",
+                        "argv": ["tool"],
+                        "determinism": "nondeterministic",
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": "command with null digest",
+                        "argv": ["tool"],
+                        "determinism": "nondeterministic",
+                        "output_digest": None,
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": "command with null detail",
+                        "argv": ["tool"],
+                        "determinism": "nondeterministic",
+                        "detail": None,
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": "oversized argv",
+                        "argv": ["x"] * (agent.MAX_COMMAND_WORDS + 1),
+                        "determinism": "nondeterministic",
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": "exact command",
+                        "argv": ["tool"],
+                        "determinism": "exact",
+                    }
+                ]
+            },
+        )
+        for index, replacement in enumerate(cases):
+            candidate = predicate()
+            candidate.update(replacement)
+            with self.subTest(case=index):
+                self.assertFalse(named("predicate-fields", candidate).passed)
+
 
 class SemanticDigestTests(unittest.TestCase):
     def test_semantic_and_release_json_byte_digests_are_distinct(self):
@@ -414,6 +514,23 @@ class ComponentTests(unittest.TestCase):
             faults, _, _ = agent.component_faults(built_statement)
         self.assertFalse(covers.called)
         self.assertTrue(any("statement names" in fault for fault in faults))
+
+    def test_core_claim_coverage_obeys_the_predicate_limit(self):
+        body = predicate()
+        limit = getattr(agent, "MAX_CLAIMS", 1024)
+        covered = {"sha256": body["release"]["document"]["sha256"]}
+        body["claims"] = [
+            {
+                "name": "covered-subject-%d" % index,
+                "subject": covered,
+                "disposition": "passed",
+            }
+            for index in range(limit + 1)
+        ]
+        routed = report(body)
+        gate_one = next(gate for gate in routed.gates if gate.number == 1)
+        self.assertFalse(gate_one.passed)
+        self.assertIn("reads at most %d" % limit, gate_one.detail)
 
 
 class OptionalEvidenceTests(unittest.TestCase):
@@ -706,6 +823,44 @@ class RunnerTests(unittest.TestCase):
                     ),
                 )
             self.assertFalse((outside / "result.json").exists())
+
+    def test_a_report_without_a_proved_inode_is_not_unlinked(self):
+        with tempfile.TemporaryDirectory(prefix="ariadne-runner-") as directory:
+            root = Path(directory).resolve()
+            report_path = root / "reports" / "result.json"
+            with mock.patch.object(delivery_runner, "worktree_root", return_value=root):
+                target = delivery_runner.report_target(
+                    ["--elenchus-report", str(report_path)]
+                )
+
+            real_fstat = os.fstat
+
+            def fail_regular_file(descriptor):
+                found = real_fstat(descriptor)
+                if stat.S_ISREG(found.st_mode):
+                    raise OSError("identity unavailable")
+                return found
+
+            with mock.patch.object(
+                delivery_runner.os, "fstat", side_effect=fail_regular_file
+            ), mock.patch.object(
+                delivery_runner.os, "unlink", wraps=os.unlink
+            ) as unlink, self.assertRaises(OSError):
+                delivery_runner.write_report(
+                    target,
+                    delivery_runner.result_payload(
+                        SimpleNamespace(
+                            testsRun=1,
+                            failures=[],
+                            errors=[],
+                            skipped=[],
+                            expectedFailures=[],
+                            unexpectedSuccesses=[],
+                        )
+                    ),
+                )
+            self.assertFalse(unlink.called)
+            self.assertTrue(report_path.exists())
 
     def test_a_successful_runner_writes_a_fresh_complete_report(self):
         suite = unittest.TestSuite([unittest.FunctionTestCase(lambda: None)])

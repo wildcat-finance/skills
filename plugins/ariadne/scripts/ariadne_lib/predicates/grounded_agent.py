@@ -13,7 +13,7 @@ import posixpath
 import re
 import unicodedata
 
-from .. import digests
+from .. import core_predicate, digests
 from ..gates import Gate
 
 TYPE = "https://ariadne.wildcat.finance/grounded-agent/v1"
@@ -131,6 +131,17 @@ MAX_NAME = 256
 MAX_TEXT = 4096
 MAX_POLICY_ITEMS = 256
 MAX_COMMAND_WORDS = 128
+MAX_CLAIMS = 1024
+MAX_COMMANDS = 1024
+
+CLAIM_REQUIRED_FIELDS = ("name", "subject", "disposition")
+COMMAND_REQUIRED_FIELDS = ("name", "argv", "determinism")
+CORE_LIMITS = {
+    "subjects": MAX_SUBJECTS,
+    "claims": MAX_CLAIMS,
+    "commands": MAX_COMMANDS,
+    "command_words": MAX_COMMAND_WORDS,
+}
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 HASH32 = re.compile(r"^0x[0-9a-f]{64}$")
@@ -198,6 +209,23 @@ def _shape(value, label, fields, faults):
     if missing:
         faults.append("%s is missing %s" % (label, ", ".join(missing)))
     unknown = sorted(set(value) - set(fields))
+    if unknown:
+        faults.append(
+            "%s carries fields this type does not define: %s"
+            % (label, ", ".join(unknown))
+        )
+    return not missing
+
+
+def _record_shape(value, label, required, allowed, faults):
+    """Append faults for a closed record with optional allowed fields."""
+    if not isinstance(value, dict):
+        faults.append("%s must be an object" % label)
+        return False
+    missing = [field for field in required if field not in value]
+    if missing:
+        faults.append("%s is missing %s" % (label, ", ".join(missing)))
+    unknown = sorted(set(value) - set(allowed))
     if unknown:
         faults.append(
             "%s carries fields this type does not define: %s"
@@ -284,6 +312,27 @@ def field_faults(predicate):
                 comparison.get("baseline"),
                 "comparison baseline",
                 COMPARISON_SIDE_FIELDS,
+                faults,
+            )
+
+    claims = predicate.get("claims")
+    if _bounded_list(claims, "claims", MAX_CLAIMS, faults):
+        for index, claim in enumerate(claims[:MAX_CLAIMS]):
+            _record_shape(
+                claim,
+                "claim %d" % (index + 1),
+                CLAIM_REQUIRED_FIELDS,
+                core_predicate.CLAIM_FIELDS,
+                faults,
+            )
+    commands = predicate.get("commands")
+    if _bounded_list(commands, "commands", MAX_COMMANDS, faults):
+        for index, command in enumerate(commands[:MAX_COMMANDS]):
+            _record_shape(
+                command,
+                "command %d" % (index + 1),
+                COMMAND_REQUIRED_FIELDS,
+                core_predicate.COMMAND_FIELDS,
                 faults,
             )
     return faults
@@ -475,6 +524,74 @@ def _adapter_faults(predicate):
         digests.check(adapter.get("parameters_digest"))
     except digests.DigestError as error:
         faults.append("adapter parameters_digest: %s" % error)
+    return faults
+
+
+def _core_block_faults(predicate):
+    """Hold this predicate's core blocks to its published bounded schema."""
+    if not isinstance(predicate, dict):
+        return ["predicate must be an object"]
+    faults = []
+    claims = predicate.get("claims")
+    if isinstance(claims, list):
+        for index, claim in enumerate(claims[:MAX_CLAIMS]):
+            label = "claim %d" % (index + 1)
+            if not isinstance(claim, dict):
+                continue
+            if not portable_name(claim.get("name")):
+                faults.append("%s name is not a portable bounded label" % label)
+            try:
+                digests.check(claim.get("subject"))
+            except digests.DigestError as error:
+                faults.append("%s subject: %s" % (label, error))
+            disposition = claim.get("disposition")
+            if disposition not in core_predicate.DISPOSITIONS:
+                faults.append("%s disposition is outside the core vocabulary" % label)
+            reason = claim.get("reason")
+            if "reason" in claim and (
+                not isinstance(reason, str) or len(reason) > MAX_TEXT
+            ):
+                faults.append("%s reason must be a bounded string when present" % label)
+            if disposition in core_predicate.NEEDS_REASON and not stated(reason):
+                faults.append("%s disposition needs a stated bounded reason" % label)
+            detail = claim.get("detail")
+            if "detail" in claim and not isinstance(detail, dict):
+                faults.append("%s detail must be an object when present" % label)
+
+    commands = predicate.get("commands")
+    if isinstance(commands, list):
+        for index, command in enumerate(commands[:MAX_COMMANDS]):
+            label = "command %d" % (index + 1)
+            if not isinstance(command, dict):
+                continue
+            if not portable_name(command.get("name")):
+                faults.append("%s name is not a portable bounded label" % label)
+            argv = command.get("argv")
+            if (
+                not isinstance(argv, list)
+                or not argv
+                or len(argv) > MAX_COMMAND_WORDS
+            ):
+                faults.append(
+                    "%s argv must carry 1 to %d entries"
+                    % (label, MAX_COMMAND_WORDS)
+                )
+            elif not all(stated(word) for word in argv):
+                faults.append("%s argv entries must be bounded stated strings" % label)
+            determinism = command.get("determinism")
+            if determinism not in core_predicate.DETERMINISM:
+                faults.append("%s determinism is outside the core vocabulary" % label)
+            output = command.get("output_digest")
+            if "output_digest" in command:
+                try:
+                    digests.check(output)
+                except digests.DigestError as error:
+                    faults.append("%s output_digest: %s" % (label, error))
+            elif determinism == "exact":
+                faults.append("%s exact command needs an output_digest" % label)
+            detail = command.get("detail")
+            if "detail" in command and not isinstance(detail, dict):
+                faults.append("%s detail must be an object when present" % label)
     return faults
 
 
@@ -683,6 +800,7 @@ def gate_2_environment(statement):
     faults.extend(_given_faults(predicate))
     faults.extend(_policy_faults(predicate))
     faults.extend(_adapter_faults(predicate))
+    faults.extend(_core_block_faults(predicate))
     component_errors, count, _ = component_faults(statement)
     faults.extend(component_errors)
     faults.extend(optional_faults(predicate))
@@ -745,6 +863,7 @@ def gate_5_comparison(statement):
 
 def gate_fields(statement):
     faults = field_faults(statement.predicate)
+    faults.extend(_core_block_faults(statement.predicate))
     return Gate(
         None,
         "predicate-fields",

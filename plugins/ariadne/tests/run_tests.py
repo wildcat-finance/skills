@@ -211,7 +211,6 @@ def write_report(target, payload):
             os.close(descriptor)
             descriptor = None
         except OSError:
-            opened_without_identity = descriptor is not None and created is None
             if descriptor is not None:
                 try:
                     os.close(descriptor)
@@ -219,11 +218,6 @@ def write_report(target, payload):
                     pass
             if created is not None:
                 remove_created_report(parent_fd, parts[-1], created)
-            elif opened_without_identity:
-                try:
-                    os.unlink(parts[-1], dir_fd=parent_fd)
-                except OSError:
-                    pass
             raise
         finally:
             os.close(parent_fd)

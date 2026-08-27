@@ -95,8 +95,8 @@ def report(document, registry=None):
     if registry is None:
         registry = registry_module.DEFAULT
     statement = document.statement
-    found = gates_module.run(statement)
     module = registry.get(statement.predicate_type)
+    found = gates_module.run(statement, getattr(module, "CORE_LIMITS", None))
 
     ran = False
     check = getattr(module, "check", None) if module is not None else None

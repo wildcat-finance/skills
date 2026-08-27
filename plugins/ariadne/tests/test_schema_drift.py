@@ -792,12 +792,81 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
         )
 
     def test_core_vocabularies_match(self):
-        claims = self.properties["claims"]["items"]["properties"]
-        commands = self.properties["commands"]["items"]["properties"]
+        claim_shape = self.properties["claims"]["items"]
+        command_shape = self.properties["commands"]["items"]
+        claims = claim_shape["properties"]
+        commands = command_shape["properties"]
         self.assertEqual(claims["disposition"]["enum"], list(core_predicate.DISPOSITIONS))
         self.assertEqual(commands["determinism"]["enum"], list(core_predicate.DETERMINISM))
         self.assertEqual(sorted(claims), sorted(core_predicate.CLAIM_FIELDS))
         self.assertEqual(sorted(commands), sorted(core_predicate.COMMAND_FIELDS))
+        self.assertEqual(
+            claim_shape["required"],
+            list(
+                getattr(
+                    grounded_agent,
+                    "CLAIM_REQUIRED_FIELDS",
+                    ("name", "subject", "disposition"),
+                )
+            ),
+        )
+        self.assertEqual(
+            command_shape["required"],
+            list(
+                getattr(
+                    grounded_agent,
+                    "COMMAND_REQUIRED_FIELDS",
+                    ("name", "argv", "determinism"),
+                )
+            ),
+        )
+        self.assertEqual(
+            self.properties["claims"].get("maxItems"),
+            getattr(grounded_agent, "MAX_CLAIMS", 1024),
+        )
+        self.assertEqual(
+            self.properties["commands"].get("maxItems"),
+            getattr(grounded_agent, "MAX_COMMANDS", 1024),
+        )
+        self.assertEqual(
+            commands["argv"]["maxItems"], grounded_agent.MAX_COMMAND_WORDS
+        )
+        self.assertEqual(
+            getattr(grounded_agent, "CORE_LIMITS", None),
+            {
+                "subjects": grounded_agent.MAX_SUBJECTS,
+                "claims": grounded_agent.MAX_CLAIMS,
+                "commands": grounded_agent.MAX_COMMANDS,
+                "command_words": grounded_agent.MAX_COMMAND_WORDS,
+            },
+        )
+
+    def test_core_conditional_fields_match_the_verifier(self):
+        claim_rules = self.properties["claims"]["items"].get("allOf", [])
+        command_rules = self.properties["commands"]["items"].get("allOf", [])
+        self.assertIn(
+            {
+                "if": {
+                    "properties": {
+                        "disposition": {
+                            "enum": list(core_predicate.NEEDS_REASON)
+                        }
+                    }
+                },
+                "then": {
+                    "required": ["reason"],
+                    "properties": {"reason": {"$ref": "#/$defs/stated"}},
+                },
+            },
+            claim_rules,
+        )
+        self.assertIn(
+            {
+                "if": {"properties": {"determinism": {"const": "exact"}}},
+                "then": {"required": ["output_digest"]},
+            },
+            command_rules,
+        )
 
     def test_the_schema_is_committed_as_readable_json(self):
         with open(GROUNDED_AGENT_SCHEMA, "rb") as handle:

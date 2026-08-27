@@ -90,7 +90,17 @@ class Gate(object):
         }
 
 
-def gate_1_subjects(statement):
+def _limit(limits, name):
+    """One positive predicate-owned core-work limit, or no extra limit."""
+    if not isinstance(limits, dict):
+        return None
+    value = limits.get(name)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return None
+    return value
+
+
+def gate_1_subjects(statement, limits=None):
     """Every claim names the exact digest it covers.
 
     A result tied to a repository or a branch is the thing this gate exists to
@@ -106,7 +116,20 @@ def gate_1_subjects(statement):
         return Gate(1, "subject-naming", True, "no claims recorded")
 
     faults = []
-    for index, claim in enumerate(found):
+    claim_limit = _limit(limits, "claims")
+    subject_limit = _limit(limits, "subjects")
+    if claim_limit is not None and len(found) > claim_limit:
+        faults.append(
+            "claims has %d entries; this predicate reads at most %d"
+            % (len(found), claim_limit)
+        )
+    checked_claims = found[:claim_limit] if claim_limit is not None else found
+    checked_subjects = (
+        statement.subjects[:subject_limit]
+        if subject_limit is not None
+        else statement.subjects
+    )
+    for index, claim in enumerate(checked_claims):
         name = core_predicate.label(claim, index, "claim")
         if not isinstance(claim, dict):
             faults.append("%s is not an object" % name)
@@ -125,7 +148,7 @@ def gate_1_subjects(statement):
         except digests.DigestError as error:
             faults.append("%s: %s" % (name, error))
             continue
-        if not statement.covers(subject):
+        if not any(digests.agree(entry.digest, subject) for entry in checked_subjects):
             faults.append(
                 "%s names %s, which is not a subject of this statement"
                 % (name, digests.short(subject))
@@ -141,7 +164,7 @@ def gate_1_subjects(statement):
     )
 
 
-def gate_3_absence(statement):
+def gate_3_absence(statement, limits=None):
     """Skipped, failed, timed-out and redacted work stays in the record.
 
     The block itself is required. A predicate that omits `claims` has not
@@ -165,7 +188,15 @@ def gate_3_absence(statement):
 
     faults = []
     counts = {}
-    for index, claim in enumerate(predicate[core_predicate.CLAIMS]):
+    claims = predicate[core_predicate.CLAIMS]
+    claim_limit = _limit(limits, "claims")
+    if claim_limit is not None and len(claims) > claim_limit:
+        faults.append(
+            "claims has %d entries; this predicate reads at most %d"
+            % (len(claims), claim_limit)
+        )
+    checked_claims = claims[:claim_limit] if claim_limit is not None else claims
+    for index, claim in enumerate(checked_claims):
         name = core_predicate.label(claim, index, "claim")
         if not isinstance(claim, dict):
             faults.append("%s is not an object" % name)
@@ -226,7 +257,7 @@ def gate_4_conclusions(statement):
     return Gate(4, "no-conclusions", True, "no verdict keys in the statement")
 
 
-def gate_6_determinism(statement):
+def gate_6_determinism(statement, limits=None):
     """Replay separates what must match byte for byte from what cannot.
 
     Bytecode and unit-test output can require an exact match. Timing and fuzz
@@ -241,7 +272,15 @@ def gate_6_determinism(statement):
 
     faults = []
     counts = {}
-    for index, command in enumerate(found):
+    command_limit = _limit(limits, "commands")
+    word_limit = _limit(limits, "command_words")
+    if command_limit is not None and len(found) > command_limit:
+        faults.append(
+            "commands has %d entries; this predicate reads at most %d"
+            % (len(found), command_limit)
+        )
+    checked_commands = found[:command_limit] if command_limit is not None else found
+    for index, command in enumerate(checked_commands):
         name = core_predicate.label(command, index, "command")
         if not isinstance(command, dict):
             faults.append("%s is not an object" % name)
@@ -252,7 +291,15 @@ def gate_6_determinism(statement):
         argv = command.get("argv")
         if not isinstance(argv, list) or not argv:
             faults.append("%s has no argv; nobody else could run it" % name)
-        elif not all(isinstance(word, str) for word in argv):
+        elif word_limit is not None and len(argv) > word_limit:
+            faults.append(
+                "%s has %d argv entries; this predicate reads at most %d"
+                % (name, len(argv), word_limit)
+            )
+        elif not all(
+            isinstance(word, str)
+            for word in (argv[:word_limit] if word_limit is not None else argv)
+        ):
             faults.append("%s has an argv entry that is not a string" % name)
         determinism = command.get("determinism")
         if determinism is None:
@@ -323,6 +370,12 @@ PREDICATE_GATES = (2, 5)
 """Owned by a predicate: the environment is recoverable, deltas name both sides."""
 
 
-def run(statement):
+def run(statement, limits=None):
     """Every core gate, in order, whatever the predicate type."""
-    return [check(statement) for _, check in CORE_GATES]
+    return [
+        gate_1_subjects(statement, limits),
+        gate_3_absence(statement, limits),
+        gate_4_conclusions(statement),
+        gate_6_determinism(statement, limits),
+        gate_7_authorship(statement),
+    ]

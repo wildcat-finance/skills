@@ -529,6 +529,7 @@
     },
     "claims": {
       "type": "array",
+      "maxItems": 1024,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -560,11 +561,38 @@
           "detail": {
             "type": "object"
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "disposition": {
+                  "enum": [
+                    "failed",
+                    "skipped",
+                    "timed_out",
+                    "redacted"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "reason"
+              ],
+              "properties": {
+                "reason": {
+                  "$ref": "#/$defs/stated"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     "commands": {
       "type": "array",
+      "maxItems": 1024,
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -597,7 +625,23 @@
           "detail": {
             "type": "object"
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "determinism": {
+                  "const": "exact"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "output_digest"
+              ]
+            }
+          }
+        ]
       }
     }
   },
