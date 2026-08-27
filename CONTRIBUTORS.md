@@ -3,26 +3,31 @@
 
 # Contributors
 
-The people who have taken a job from this repository's queue and finished
-it, ranked by merged work. Regenerated daily from the repository's own
-history.
+This list ranks human accounts with resolved commits in Wildcat Skills or
+an authored, merged pull request in Shoggoth Wave Atlas. It is regenerated
+daily from both repositories' public history.
 
-| # | Contributor | Commits | Merged PRs |
+## Ranking
+
+| # | Contributor | Skills commits | Merged PRs across both repos |
 | --- | --- | --- | --- |
 | 1 | [@kethcode](https://github.com/kethcode) | 229 | 46 |
 | 2 | [@radup1337](https://github.com/radup1337) | 21 | 2 |
 | 3 | [@MunamWasi](https://github.com/MunamWasi) | 1 | 1 |
+| 4 | [@clawdina](https://github.com/clawdina) | 0 | 1 |
 
 ## What this establishes
 
-Commit and merged-pull-request counts as GitHub resolves them, with one
-account per person even where the same person committed under several email
-addresses. Runtime host identities are excluded, and so is the repository
-owner. The Shoggoth is excluded too: ADR-016 makes it the author of governed
-agent work, which is not the same as being a person who helped.
+The commit column counts commits GitHub resolves to an account in
+`wildcat-finance/skills`. The merged-PR column combines authored, merged
+pull requests in that repository and `wildcat-finance/shoggoth-wave-atlas`.
+A merged Atlas PR qualifies its human author even with no Skills commit.
+Runtime hosts, the repository owner and the Shoggoth are excluded. ADR-016
+makes the Shoggoth the author of governed agent work, which is not the same
+as being a person who helped.
 
-It does not establish who wrote which line, how much judgement a commit
-carried, or anything about a contributor beyond the account they chose. A
-merge that discards authorship reduces a count here and this repository
-cannot detect that; see issue #466.
+It does not establish who wrote which line, who else worked on a pull
+request, how much judgement a commit carried, or anything about a
+contributor beyond the account they chose. A merge that discards authorship
+reduces a count here and this repository cannot detect that; see issue #466.
 

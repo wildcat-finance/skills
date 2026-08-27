@@ -103,14 +103,16 @@ has to be one GitHub can match to your account, and the list itself is GitHub's
 to compute and publish on its own schedule. A run whose author address matches
 no account records that plainly instead of guessing.
 
-That record is what the contributor list is built from.
-[CONTRIBUTORS.md](./CONTRIBUTORS.md) ranks the humans who have finished a job
-here by merged commits, with merged pull requests as the tie-break, and the
-thanks at the foot of this file name the same people by handle. A daily job
-regenerates both from the repository's own history, so nobody has to remember to
-add anyone and there is nothing to ask for. Runtime host identities, the
-Shoggoth's own account and the repository owner are excluded by name, each with
-its reason shown in the generator's output.
+That record is one source for the contributor list.
+[CONTRIBUTORS.md](./CONTRIBUTORS.md) ranks the humans with resolved commits here
+and the humans who author merged pull requests in
+`wildcat-finance/shoggoth-wave-atlas`. Skills commits are the first ordering
+key; merged pull requests across both repositories are the tie-break. The thanks
+at the foot of this file name the same people by handle. A daily job regenerates
+both from the two repositories' public history, so nobody has to remember to add
+anyone and there is nothing to ask for. Runtime host identities, the Shoggoth's
+own account and the repository owner are excluded by name, each with its reason
+shown in the generator's output.
 
 ## What Is It?
 
@@ -389,6 +391,6 @@ and remains under its upstream MIT licence and notices.
 
 ## Thanks
 
-Thanks to @kethcode, @radup1337 and @MunamWasi.
+Thanks to @kethcode, @radup1337, @MunamWasi and @clawdina.
 
 <!-- contributors:end -->

@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted, 2026-08-24. Numbered 019, having been renumbered twice while two
+Accepted, 2026-08-24; amended 2026-08-28 to include merged pull-request authors
+from Shoggoth Wave Atlas. Numbered 019, having been renumbered twice while two
 concurrent deliveries landed ahead of it. 017 went to
 [ADR-017](ADR-017-gate-durable-agent-prose.md), which gates durable agent prose
 before publication. 018 went to
@@ -70,6 +71,15 @@ Ranking is merged commits, then merged pull requests as tie-break, then login,
 so equal counts order identically on every run and a refresh that changed
 nothing produces no diff.
 
+The commit dimension remains the resolved commit count from
+`wildcat-finance/skills`. The merged-pull-request dimension combines that
+repository with `wildcat-finance/shoggoth-wave-atlas`. A human account that
+authored a merged Wave Atlas pull request qualifies even when it has no Skills
+commit, because the Atlas is itself a contribution surface for this project.
+This is evidence about the account that opened the pull request. It does not
+attribute every commit, review or collaboration on that pull request to the
+opener.
+
 ## Alternatives
 
 - **Filter on `Wildcat-Origin`.** Rejected on the counts above: it ranks no
@@ -90,6 +100,10 @@ nothing produces no diff.
 The list names people rather than transports, and one person split across
 several email addresses appears once. The generator depends on a network read,
 which is what buys identity resolution.
+
+Someone who contributes a merged pull request to Shoggoth Wave Atlas now
+appears in the same list. An account with no Skills commits shows zero in that
+column, and its merged pull request is the evidence that qualifies it.
 
 Two limits are stated in `CONTRIBUTORS.md` itself rather than left implicit. The
 list establishes counts as GitHub resolves them and nothing about how much
