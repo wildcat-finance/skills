@@ -4,7 +4,7 @@
     "contract": "promise-machine-contributor-ranking/v1",
     "documentation": {
       "path": "docs/promise-machine/contributors-v1.md",
-      "sha256": "88a503abed3b32e91b294b2be7af841eb85abd3913b2a125147143a0a4758fd9"
+      "sha256": "3723d4c12a6f4f8f98131bc26fec713530d0b149b9c9d7c849b308eb5b0fb7a9"
     },
     "fixtures": [
       {
@@ -23,7 +23,7 @@
     "promise_id": "promise-machine-contributor-ranking",
     "runtime": {
       "path": "scripts/contributors.py",
-      "sha256": "598393c13401a67dbc34201caf6962de75a411a8ab96cf78c6bc3e7bce4fc2cc"
+      "sha256": "ac9071956715f8854687714474451a5380ee79869668c84361908c4d00a6aab9"
     },
     "tests": {
       "path": "tests/test_contributors.py",
@@ -56,7 +56,7 @@
         "test_the_digest_covers_the_ranking_and_nothing_else",
         "test_the_real_reader_stops_on_an_unroutable_host"
       ],
-      "sha256": "7ca643203c21cd298b95b39bfaba00cd7702dc85cf0c1b82a28aa8a6918b9be2"
+      "sha256": "2c33623f9a75737b4bdc29734010dc0bae87016928ff346beda8db3633f6ba6d"
     },
     "transition": "place every contributor row in exactly one of ranked, excluded with a named reason, or refused, and render both artefacts from that one computation without strengthening what the counts mean"
   },

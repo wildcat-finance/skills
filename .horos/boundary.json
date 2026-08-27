@@ -2,7 +2,7 @@
   "counts": {
     "bytes_binary": 47762926,
     "bytes_content_addressed": 7844971,
-    "bytes_generated": 11295846,
+    "bytes_generated": 11295904,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
@@ -18,7 +18,7 @@
       "path": ".agents/skills/promise-machine/runtime/"
     },
     {
-      "bytes": 1151,
+      "bytes": 1209,
       "category": "generated",
       "evidence": "marker 'do not edit' on a comment-led line in the first 4096 bytes",
       "grade": "hard",

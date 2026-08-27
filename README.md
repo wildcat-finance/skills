@@ -106,7 +106,7 @@ no account records that plainly instead of guessing.
 That record is what the contributor list is built from.
 [CONTRIBUTORS.md](./CONTRIBUTORS.md) ranks the humans who have finished a job
 here by merged commits, with merged pull requests as the tie-break, and the
-thanks at the foot of this file name the same people by handle. A weekly job
+thanks at the foot of this file name the same people by handle. A daily job
 regenerates both from the repository's own history, so nobody has to remember to
 add anyone and there is nothing to ask for. Runtime host identities, the
 Shoggoth's own account and the repository owner are excluded by name, each with
@@ -385,6 +385,6 @@ and remains under its upstream MIT licence and notices.
 
 ## Thanks
 
-Thanks to @kethcode and @radup1337.
+Thanks to @kethcode, @radup1337 and @MunamWasi.
 
 <!-- contributors:end -->

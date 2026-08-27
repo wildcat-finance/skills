@@ -15,8 +15,8 @@ Assuming, unless corrected:
    It writes no credential and needs no write scope of its own.
 4. The repository owner is excluded from both outputs. This came from the
    Creator directly and is not derived from the repository.
-5. The refresh runs weekly and on manual dispatch, not per merge. Also the
-   Creator's decision.
+5. The refresh runs daily and on manual dispatch, not per merge. The Creator
+   changed the original weekly cadence to daily on 27 August 2026.
 6. GitHub Actions is the trigger host. The generated pull request touches only
    `CONTRIBUTORS.md` and `README.md`, so `GITHUB_TOKEN` suffices at run time.
 
@@ -33,7 +33,7 @@ This run builds a generator that reads the repository's own history, ranks the
 human contributors by merged work, and writes two artefacts from one
 computation: a ranked `CONTRIBUTORS.md` at the repository root, and a block at
 the bottom of `README.md` that thanks the same people by GitHub handle and
-carries no other data. A weekly workflow reruns it and opens a pull request only
+carries no other data. A daily workflow reruns it and opens a pull request only
 when the ranking changed.
 
 A working prototype means this command, run in a clean checkout, reproduces the
@@ -305,7 +305,7 @@ argument vector and no shell, on a pinned ref, with bounded output.
 ## 10. The budget, or its absence
 
 None, and here is why. The generator makes a small number of API calls and one
-git log read on a repository with 718 non-merge commits, and it runs weekly. No
+git log read on a repository with 718 non-merge commits, and it runs daily. No
 step in this run is made in the name of speed, so there is nothing for
 [metron](../../plugins/hexaemeron/skills/metron/SKILL.md) to hold a before and after against. If a future
 run adds a full closed-issue crawl over a repository large enough for
@@ -348,7 +348,7 @@ recording the trailer option's rejection with the counts that disprove it, so a
 later round does not reopen a question this study already settled.
 
 The second is that the generated files are the single source of truth and are
-never hand-edited. A hand edit that the next weekly run overwrites is worse than
+never hand-edited. A hand edit that the next daily run overwrites is worse than
 no automation. That goes in a comment at the top of `CONTRIBUTORS.md` and in the
 generator's docstring rather than an ADR, because it is a convention rather than
 a choice between options.
