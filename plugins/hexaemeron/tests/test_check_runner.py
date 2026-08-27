@@ -140,7 +140,6 @@ class MapRefusalTests(unittest.TestCase):
             run_checks.refuse_stale_commands(REPO_ROOT, check_map)
         self.assertEqual(caught.exception.code, "stale-command")
 
-
 class SelectionTests(unittest.TestCase):
     """Requested scope is always widened by the actual diff, then closed."""
 
@@ -194,10 +193,11 @@ class SelectionTests(unittest.TestCase):
         self.assertIn("root", selection.scopes)
         self.assertNotIn("alexandria", selection.scopes)
 
-    def test_full_tolerates_an_unowned_path(self) -> None:
-        selection = self.select(["unowned/thing.txt"], full=True)
-        self.assertEqual(selection.unowned_paths, ["unowned/thing.txt"])
-        self.assertIn("root", selection.scopes)
+    def test_full_refuses_an_unowned_path(self) -> None:
+        """Selecting every check never waives the map's ownership contract."""
+        with self.assertRaises(run_checks.PlanError) as caught:
+            self.select(["unowned/thing.txt"], full=True)
+        self.assertEqual(caught.exception.code, "unknown-ownership")
 
     def test_unknown_scope_refuses(self) -> None:
         with self.assertRaises(run_checks.PlanError) as caught:
@@ -618,6 +618,73 @@ class CapacityTests(unittest.TestCase):
                     run_checks.positive_int(candidate)
         self.assertEqual(run_checks.positive_int("7"), 7)
 
+    def test_automatic_capacity_takes_the_minimum_then_reserves_headroom(self) -> None:
+        self.assertTrue(
+            hasattr(run_checks, "capacity_plan"),
+            "automatic capacity must expose the bounded planning seam",
+        )
+        capacity = run_checks.capacity_plan(
+            None,
+            item_count=12,
+            signals={"affinity": 8, "cgroup_v2": 3, "os_cpu_count": 16},
+        )
+        self.assertEqual(capacity["usable"], 3)
+        self.assertEqual(capacity["reserve"], 1)
+        self.assertEqual(capacity["effective_budget"], 2)
+        self.assertEqual(capacity["source"], "automatic")
+
+    def test_cgroup_v2_capacity_follows_membership_and_ancestor_limits(self) -> None:
+        self.assertTrue(
+            hasattr(run_checks, "_read_small_text"),
+            "cgroup discovery must use a bounded text reader",
+        )
+        reads = {
+            "/proc/self/cgroup": "0::/tenant/job\n",
+            "/proc/self/mountinfo": (
+                "29 23 0:26 /tenant /cg rw,nosuid,nodev - cgroup2 cgroup rw\n"
+            ),
+            "/cg/job/cpu.max": "300000 100000\n",
+            "/cg/cpu.max": "100000 100000\n",
+        }
+        real_read = run_checks._read_small_text
+
+        def read(path, maximum=256):
+            try:
+                return reads[str(path)].strip()
+            except KeyError as exc:
+                raise OSError(str(path)) from exc
+
+        run_checks._read_small_text = read
+        self.addCleanup(lambda: setattr(run_checks, "_read_small_text", real_read))
+        self.assertEqual(run_checks._cgroup_v2_capacity(), 1)
+
+    def test_cgroup_v1_capacity_follows_the_cpu_controller_membership(self) -> None:
+        self.assertTrue(
+            hasattr(run_checks, "_read_small_text"),
+            "cgroup discovery must use a bounded text reader",
+        )
+        reads = {
+            "/proc/self/cgroup": "5:cpu,cpuacct:/tenant/job\n",
+            "/proc/self/mountinfo": (
+                "30 23 0:27 /tenant /cg1 rw - cgroup cgroup rw,cpu,cpuacct\n"
+            ),
+            "/cg1/job/cpu.cfs_quota_us": "400000\n",
+            "/cg1/job/cpu.cfs_period_us": "100000\n",
+            "/cg1/cpu.cfs_quota_us": "200000\n",
+            "/cg1/cpu.cfs_period_us": "100000\n",
+        }
+        real_read = run_checks._read_small_text
+
+        def read(path, maximum=256):
+            try:
+                return reads[str(path)].strip()
+            except KeyError as exc:
+                raise OSError(str(path)) from exc
+
+        run_checks._read_small_text = read
+        self.addCleanup(lambda: setattr(run_checks, "_read_small_text", real_read))
+        self.assertEqual(run_checks._cgroup_v1_capacity(), 2)
+
 
 class CommandLineTests(unittest.TestCase):
     """The documented entrypoints behave as the runbook step states."""
@@ -809,6 +876,91 @@ class DiffCaptureTests(TemporaryRepositoryMixin, unittest.TestCase):
 
             self.assertIn("src/later.txt", run_checks.changed_paths(root, base))
             self.assertNotIn("src/later.txt", run_checks.changed_paths(root, None))
+
+
+class SnapshotFidelityTests(TemporaryRepositoryMixin, unittest.TestCase):
+    """The immutable attempt includes every supported untracked object."""
+
+    def _committed_repo(self, tmp: str) -> Path:
+        root = self.make_repo(tmp)
+        self.write_map(root, ["python3", "-c", "pass"])
+        self.git(root, "add", "-A")
+        self.git(root, "commit", "--quiet", "-m", "base")
+        return root
+
+    def test_a_safe_untracked_symlink_is_recreated_in_the_snapshot(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            (root / "src" / "link.txt").symlink_to("kept.txt")
+            nonce = "symlink" + os.urandom(5).hex()
+            try:
+                snapshot = run_checks.make_snapshot(root, nonce)
+                copied = snapshot / "src" / "link.txt"
+                self.assertTrue(copied.is_symlink())
+                self.assertEqual(os.readlink(copied), "kept.txt")
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+
+    def test_source_identity_binds_an_untracked_symlink_target(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            link = root / "src" / "link.txt"
+            link.symlink_to("kept.txt")
+            before = run_checks.source_identity(root)
+            link.unlink()
+            link.symlink_to("doomed.txt")
+            after = run_checks.source_identity(root)
+            self.assertNotEqual(before, after)
+
+    def test_an_untracked_symlink_outside_the_repository_refuses(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            (root / "src" / "link.txt").symlink_to("../../outside")
+            nonce = "escape" + os.urandom(5).hex()
+            try:
+                with self.assertRaises(run_checks.SnapshotError) as caught:
+                    run_checks.make_snapshot(root, nonce)
+                self.assertEqual(caught.exception.code, "snapshot-error")
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "FIFO creation is not available")
+    def test_an_untracked_special_file_refuses_the_snapshot(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            os.mkfifo(root / "src" / "pipe")
+            nonce = "special" + os.urandom(5).hex()
+            try:
+                with self.assertRaises(run_checks.SnapshotError) as caught:
+                    run_checks.make_snapshot(root, nonce)
+                self.assertEqual(caught.exception.code, "snapshot-error")
+            finally:
+                run_checks.remove_snapshot(root, nonce)
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "FIFO creation is not available")
+    def test_an_ignored_special_file_is_outside_the_snapshot(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = self._committed_repo(tmp)
+            (root / ".gitignore").write_text("src/ignored-pipe\n", encoding="utf-8")
+            self.git(root, "add", ".gitignore")
+            self.git(root, "commit", "--quiet", "-m", "ignore fixture")
+            os.mkfifo(root / "src" / "ignored-pipe")
+            nonce = "ignored" + os.urandom(5).hex()
+            try:
+                snapshot = run_checks.make_snapshot(root, nonce)
+                self.assertFalse((snapshot / "src" / "ignored-pipe").exists())
+            finally:
+                run_checks.remove_snapshot(root, nonce)
 
 
 class SupersessionTests(TemporaryRepositoryMixin, unittest.TestCase):
@@ -1187,6 +1339,27 @@ class GitCaptureRefusalTests(unittest.TestCase):
         self.addCleanup(lambda: setattr(run_checks, "source_identity", real_identity))
         code = run_checks.main(["--scope", "hexaemeron", "--format", "json"])
         self.assertEqual(code, 2, "a git capture fault must refuse, not exit as a red run")
+
+    def test_failed_detached_checkout_refuses_the_snapshot(self) -> None:
+        """A clone at the wrong revision must never be accepted as immutable."""
+        real_run = run_checks.subprocess.run
+
+        def fail_checkout(argv, *args, **kwargs):
+            if list(argv[:4]) == ["git", "checkout", "--quiet", "--detach"]:
+                return subprocess.CompletedProcess(argv, 1, b"", b"checkout refused")
+            return real_run(argv, *args, **kwargs)
+
+        run_checks.subprocess.run = fail_checkout
+        self.addCleanup(lambda: setattr(run_checks.subprocess, "run", real_run))
+        root = run_checks.repository_root()
+        nonce = "checkout" + os.urandom(5).hex()
+        try:
+            with self.assertRaises(run_checks.SnapshotError) as caught:
+                run_checks.make_snapshot(root, nonce)
+            self.assertEqual(caught.exception.code, "snapshot-error")
+            self.assertIn("checkout", caught.exception.message)
+        finally:
+            run_checks.remove_snapshot(root, nonce)
 
 
 class CacheDispositionTests(TemporaryRepositoryMixin, unittest.TestCase):

@@ -24,13 +24,14 @@ import re
 import selectors
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import threading
 import time
 import uuid
 from dataclasses import dataclass, field, replace
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any, Mapping, Sequence
 
 MAP_SCHEMA = "wildcat.check-map.v1"
@@ -44,6 +45,7 @@ MAX_GIT_OUTPUT_BYTES = 8_388_608
 MAX_CAPTURE_HEAD_BYTES = 65_536
 MAX_CAPTURE_TAIL_BYTES = 65_536
 MAX_UNTRACKED_BYTES = 33_554_432
+MAX_WORKTREE_ENTRIES = 100_000
 DEFAULT_TIMEOUT_SECONDS = 1_800
 SAFETY_CAP = 32
 DRAIN_SECONDS = 5.0
@@ -464,6 +466,7 @@ def changed_paths(root: Path, base: str | None) -> list[str]:
     for line in git(root, "diff", "--name-only", "--no-renames", "-z", "--diff-filter=D").split("\0"):
         if line:
             paths.add(line)
+    paths.update(_filesystem_special_paths(root))
     return sorted(p for p in paths if not is_runner_owned(p))
 
 
@@ -499,7 +502,7 @@ def build_selection(
             selection.unowned_paths.append(path)
             continue
         selection.add_reason(scope, f"changed path {path}")
-    if selection.unowned_paths and not full:
+    if selection.unowned_paths:
         raise PlanError(
             "unknown-ownership",
             "changed paths have no declared owner",
@@ -524,66 +527,535 @@ def selected_checks(check_map: CheckMap, selection: Selection) -> list[Check]:
     return sorted(chosen.values(), key=lambda c: c.id)
 
 
-def read_capacity() -> dict[str, Any]:
-    """Derive a conservative budget from CPU and cgroup quota signals."""
-    signals: dict[str, Any] = {"safety_cap": SAFETY_CAP}
+def _positive_capacity(value: Any) -> int | None:
+    """Return one positive integer capacity signal, or no signal."""
+    if isinstance(value, bool):
+        return None
     try:
-        cpus = len(os.sched_getaffinity(0))  # type: ignore[attr-defined]
-        signals["affinity_cpus"] = cpus
-    except (AttributeError, OSError):
-        cpus = os.cpu_count() or 1
-        signals["cpu_count"] = cpus
-    quota = _cgroup_quota()
-    if quota is not None:
-        signals["cgroup_quota_cpus"] = quota
-        cpus = min(cpus, quota)
-    budget = max(1, min(cpus, SAFETY_CAP))
-    signals["effective_budget"] = budget
-    signals["source"] = "automatic"
+        integer = int(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return integer if integer > 0 else None
+
+
+def _read_small_text(path: str | Path, maximum: int = 256) -> str:
+    """Read one bounded ASCII controller value."""
+    with Path(path).open("rb") as handle:
+        body = handle.read(maximum + 1)
+    if len(body) > maximum:
+        raise OSError(f"controller value exceeds {maximum} bytes: {path}")
+    return body.decode("ascii").strip()
+
+
+def _quota_capacity(quota: Any, period: Any) -> int | None:
+    try:
+        quota_value = int(quota)
+        period_value = int(period)
+    except (TypeError, ValueError):
+        return None
+    if quota_value <= 0 or period_value <= 0:
+        return None
+    return max(1, quota_value // period_value)
+
+
+def _canonical_cgroup_member(raw: Any) -> PurePosixPath | None:
+    try:
+        member = PurePosixPath(raw)
+    except (TypeError, ValueError):
+        return None
+    if (
+        not isinstance(raw, str)
+        or not raw.startswith("/")
+        or str(member) != raw
+        or any(part in {"", ".", ".."} for part in member.parts[1:])
+    ):
+        return None
+    return member
+
+
+def _decode_mountinfo_path(raw: str) -> PurePosixPath | None:
+    value = raw
+    for encoded, decoded in (
+        (r"\040", " "),
+        (r"\011", "\t"),
+        (r"\012", "\n"),
+        (r"\134", "\\"),
+    ):
+        value = value.replace(encoded, decoded)
+    if "\\" in value or "\x00" in value:
+        return None
+    return _canonical_cgroup_member(value)
+
+
+def _cgroup_v2_member() -> PurePosixPath | None:
+    try:
+        membership = _read_small_text("/proc/self/cgroup", maximum=4_096)
+    except (OSError, UnicodeError, ValueError):
+        return None
+    matches = []
+    for line in membership.splitlines():
+        parts = line.split(":", 2)
+        if len(parts) == 3 and parts[0] == "0" and parts[1] == "":
+            matches.append(parts[2])
+    if len(matches) != 1:
+        return None
+    return _canonical_cgroup_member(matches[0])
+
+
+def _cgroup_v2_mounts() -> list[tuple[PurePosixPath, PurePosixPath]]:
+    try:
+        mountinfo = _read_small_text("/proc/self/mountinfo", maximum=131_072)
+    except (OSError, UnicodeError, ValueError):
+        return []
+    mounts: list[tuple[PurePosixPath, PurePosixPath]] = []
+    for line in mountinfo.splitlines():
+        fields = line.split()
+        try:
+            separator = fields.index("-")
+        except ValueError:
+            continue
+        if separator < 6 or len(fields) <= separator + 1:
+            continue
+        if fields[separator + 1] != "cgroup2":
+            continue
+        controller_root = _decode_mountinfo_path(fields[3])
+        mount_point = _decode_mountinfo_path(fields[4])
+        if controller_root is None or mount_point is None:
+            continue
+        pair = (controller_root, mount_point)
+        if pair not in mounts:
+            mounts.append(pair)
+    return mounts
+
+
+def _cgroup_v2_cpu_max_paths() -> list[str]:
+    member = _cgroup_v2_member()
+    fallback = (PurePosixPath("/"), PurePosixPath("/sys/fs/cgroup"))
+    mounts = _cgroup_v2_mounts() if member is not None else []
+    if fallback not in mounts:
+        mounts.append(fallback)
+    if member is None:
+        member = PurePosixPath("/")
+
+    result: list[str] = []
+    for controller_root, mount_point in mounts:
+        try:
+            relative = member.relative_to(controller_root)
+        except ValueError:
+            continue
+        base = mount_point.joinpath(*relative.parts)
+        while True:
+            path = str(base / "cpu.max")
+            if path not in result:
+                result.append(path)
+            if base == mount_point or mount_point not in base.parents:
+                break
+            base = base.parent
+    return result
+
+
+def _cgroup_v2_capacity() -> int | None:
+    capacities = []
+    for path in _cgroup_v2_cpu_max_paths():
+        try:
+            values = _read_small_text(path).split()
+        except (OSError, UnicodeError, ValueError):
+            continue
+        if len(values) != 2 or values[0] == "max":
+            continue
+        value = _quota_capacity(values[0], values[1])
+        if value is not None:
+            capacities.append(value)
+    return min(capacities) if capacities else None
+
+
+def _cgroup_v1_cpu_member() -> PurePosixPath | None:
+    try:
+        membership = _read_small_text("/proc/self/cgroup", maximum=4_096)
+    except (OSError, UnicodeError, ValueError):
+        return None
+    matches = []
+    for line in membership.splitlines():
+        parts = line.split(":", 2)
+        if len(parts) != 3 or not parts[0]:
+            continue
+        if "cpu" in (parts[1].split(",") if parts[1] else []):
+            matches.append(parts[2])
+    if len(matches) != 1:
+        return None
+    return _canonical_cgroup_member(matches[0])
+
+
+def _cgroup_v1_cpu_mounts() -> list[tuple[PurePosixPath, PurePosixPath]]:
+    try:
+        mountinfo = _read_small_text("/proc/self/mountinfo", maximum=131_072)
+    except (OSError, UnicodeError, ValueError):
+        return []
+    mounts: list[tuple[PurePosixPath, PurePosixPath]] = []
+    for line in mountinfo.splitlines():
+        fields = line.split()
+        try:
+            separator = fields.index("-")
+        except ValueError:
+            continue
+        if separator < 6 or len(fields) <= separator + 3:
+            continue
+        if fields[separator + 1] != "cgroup":
+            continue
+        if "cpu" not in set(fields[separator + 3].split(",")):
+            continue
+        controller_root = _decode_mountinfo_path(fields[3])
+        mount_point = _decode_mountinfo_path(fields[4])
+        if controller_root is None or mount_point is None:
+            continue
+        pair = (controller_root, mount_point)
+        if pair not in mounts:
+            mounts.append(pair)
+    return mounts
+
+
+def _cgroup_v1_cpu_quota_paths() -> list[tuple[str, str]]:
+    member = _cgroup_v1_cpu_member()
+    mounts = _cgroup_v1_cpu_mounts() if member is not None else []
+    if member is not None:
+        mounts.extend(
+            (PurePosixPath("/"), PurePosixPath(root))
+            for root in (
+                "/sys/fs/cgroup/cpu",
+                "/sys/fs/cgroup/cpu,cpuacct",
+                "/sys/fs/cgroup/cpuacct,cpu",
+            )
+        )
+    else:
+        mounts.append((PurePosixPath("/"), PurePosixPath("/sys/fs/cgroup/cpu")))
+        member = PurePosixPath("/")
+
+    result: list[tuple[str, str]] = []
+    for controller_root, mount_point in mounts:
+        try:
+            relative = member.relative_to(controller_root)
+        except ValueError:
+            continue
+        base = mount_point.joinpath(*relative.parts)
+        while True:
+            pair = (str(base / "cpu.cfs_quota_us"), str(base / "cpu.cfs_period_us"))
+            if pair not in result:
+                result.append(pair)
+            if base == mount_point or mount_point not in base.parents:
+                break
+            base = base.parent
+    return result
+
+
+def _cgroup_v1_capacity() -> int | None:
+    capacities = []
+    for quota_path, period_path in _cgroup_v1_cpu_quota_paths():
+        try:
+            quota = _read_small_text(quota_path)
+            period = _read_small_text(period_path)
+        except (OSError, UnicodeError, ValueError):
+            continue
+        value = _quota_capacity(quota, period)
+        if value is not None:
+            capacities.append(value)
+    return min(capacities) if capacities else None
+
+
+def _capacity_signals() -> dict[str, int]:
+    signals: dict[str, int] = {}
+    process_count = getattr(os, "process_cpu_count", None)
+    if process_count is not None:
+        try:
+            value = _positive_capacity(process_count())
+        except OSError:
+            value = None
+        if value is not None:
+            signals["process_cpu_count"] = value
+    affinity = getattr(os, "sched_getaffinity", None)
+    if affinity is not None:
+        try:
+            value = _positive_capacity(len(affinity(0)))
+        except OSError:
+            value = None
+        if value is not None:
+            signals["affinity"] = value
+    value = _cgroup_v2_capacity()
+    if value is not None:
+        signals["cgroup_v2"] = value
+    value = _cgroup_v1_capacity()
+    if value is not None:
+        signals["cgroup_v1"] = value
+    try:
+        value = _positive_capacity(os.cpu_count())
+    except OSError:
+        value = None
+    if value is not None:
+        signals["os_cpu_count"] = value
     return signals
 
 
-def _cgroup_quota() -> int | None:
-    v2 = Path("/sys/fs/cgroup/cpu.max")
+def capacity_plan(
+    requested: int | None,
+    item_count: int,
+    signals: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Choose a conservative automatic budget or one bounded explicit override."""
+    if requested is not None and (isinstance(requested, bool) or not isinstance(requested, int)):
+        raise ValueError("explicit jobs must be an integer")
+    if requested is not None and requested < 1:
+        raise ValueError("explicit jobs must be positive")
+    if isinstance(item_count, bool) or not isinstance(item_count, int) or item_count < 0:
+        raise ValueError("item count must be a non-negative integer")
+    observed = dict(_capacity_signals() if signals is None else signals)
+    observed = {
+        key: value
+        for key, raw in sorted(observed.items())
+        if (value := _positive_capacity(raw)) is not None
+    }
+    usable = min(observed.values()) if observed else 1
+    if requested is None:
+        reserve = max(1, (usable + 2) // 3) if usable > 1 else 0
+        budget = min(SAFETY_CAP, max(1, usable - reserve))
+        source = "automatic"
+    else:
+        reserve = 0
+        budget = min(requested, SAFETY_CAP)
+        source = "explicit"
+    runnable_cap = max(1, item_count)
+    return {
+        "signals": observed,
+        "usable": usable,
+        "reserve": reserve,
+        "safety_cap": SAFETY_CAP,
+        "runnable_cap": runnable_cap,
+        "effective_budget": min(budget, runnable_cap),
+        "source": source,
+    }
+
+
+def read_capacity() -> dict[str, Any]:
+    """Return the automatic host policy before a concrete plan is selected."""
+    return capacity_plan(None, item_count=SAFETY_CAP)
+
+
+def _runnable_slot_cap(checks: Sequence[Check]) -> int:
+    """Bound outer work; nested runners cap their own rediscovered manifests."""
+    groups = {check.group for check in checks if check.group is not None}
+    singles = [check for check in checks if check.group is None]
+    units = len(groups) + len(singles)
+    if any(check.jobs_flag is not None for check in checks):
+        return SAFETY_CAP
+    return units
+
+
+def _ignored_paths(root: Path) -> tuple[str, ...]:
+    status = git(
+        root,
+        "status",
+        "--porcelain=v1",
+        "-z",
+        "--ignored=matching",
+        "--untracked-files=normal",
+    )
+    return tuple(
+        record[3:].rstrip("/")
+        for record in status.split("\0")
+        if record.startswith("!! ") and record[3:].rstrip("/")
+    )
+
+
+def _filesystem_special_paths(root: Path) -> list[str]:
+    """Find non-ignored objects Git omits, without following links or .git."""
+    ignored = _ignored_paths(root)
+
+    def excluded(rel: str) -> bool:
+        return any(rel == item or rel.startswith(item + "/") for item in ignored)
+
+    special = []
+    stack: list[tuple[Path, str]] = [(root, "")]
+    entries = 0
+    while stack:
+        directory, prefix = stack.pop()
+        try:
+            children = sorted(os.scandir(directory), key=lambda entry: entry.name, reverse=True)
+        except OSError as exc:
+            raise PlanError(
+                "snapshot-error", f"cannot inspect working tree directory {prefix or '.'}: {exc}"
+            ) from exc
+        for entry in children:
+            rel = f"{prefix}/{entry.name}" if prefix else entry.name
+            if rel == ".git" or rel.startswith(".git/") or is_runner_owned(rel) or excluded(rel):
+                continue
+            entries += 1
+            if entries > MAX_WORKTREE_ENTRIES:
+                raise PlanError(
+                    "snapshot-error",
+                    f"working tree exceeds the {MAX_WORKTREE_ENTRIES}-entry inspection bound",
+                )
+            try:
+                info = entry.stat(follow_symlinks=False)
+            except OSError as exc:
+                raise PlanError("snapshot-error", f"cannot inspect working tree path {rel}: {exc}") from exc
+            if stat.S_ISDIR(info.st_mode):
+                stack.append((Path(entry.path), rel))
+            elif not stat.S_ISREG(info.st_mode) and not stat.S_ISLNK(info.st_mode):
+                special.append(rel)
+    if not special:
+        return []
+    encoded = b"\0".join(
+        rel.encode("utf-8", "surrogateescape") for rel in special
+    ) + b"\0"
+    if len(encoded) > MAX_GIT_OUTPUT_BYTES:
+        raise PlanError("git-oversized", "special-file ignore query is too large")
+    proc = subprocess.run(
+        ["git", "check-ignore", "--no-index", "--stdin", "-z"],
+        cwd=str(root),
+        env=_git_env(),
+        input=encoded,
+        capture_output=True,
+        shell=False,
+    )
+    if proc.returncode not in {0, 1}:
+        raise PlanError(
+            "git-failed",
+            "git check-ignore failed: " + proc.stderr.decode("utf-8", "replace").strip(),
+        )
+    if len(proc.stdout) > MAX_GIT_OUTPUT_BYTES:
+        raise PlanError("git-oversized", "git check-ignore produced too much output")
+    ignored_special = {
+        rel
+        for rel in proc.stdout.decode("utf-8", "surrogateescape").split("\0")
+        if rel
+    }
+    return sorted(set(special) - ignored_special)
+
+
+def _untracked_paths(root: Path) -> list[str]:
+    paths = {
+        rel
+        for rel in git(root, "ls-files", "--others", "--exclude-standard", "-z").split("\0")
+        if rel and not is_runner_owned(rel)
+    }
+    paths.update(_filesystem_special_paths(root))
+    return sorted(paths)
+
+
+def _snapshot_relpath(rel: str) -> str:
     try:
-        if v2.is_file():
-            parts = v2.read_text().split()
-            if len(parts) == 2 and parts[0] != "max":
-                return max(1, int(int(parts[0]) / int(parts[1])))
-    except (OSError, ValueError):
-        return None
+        return _safe_relpath(rel, field_name="untracked path")
+    except PlanError as exc:
+        raise SnapshotError("snapshot-error", exc.message) from exc
+
+
+def _confine_untracked_parent(root: Path, rel: str) -> None:
+    base = root.resolve()
     try:
-        quota_file = Path("/sys/fs/cgroup/cpu/cpu.cfs_quota_us")
-        period_file = Path("/sys/fs/cgroup/cpu/cpu.cfs_period_us")
-        if quota_file.is_file() and period_file.is_file():
-            quota = int(quota_file.read_text().strip())
-            period = int(period_file.read_text().strip())
-            if quota > 0 and period > 0:
-                return max(1, quota // period)
-    except (OSError, ValueError):
-        return None
-    return None
+        parent = (root / rel).parent.resolve(strict=True)
+    except OSError as exc:
+        raise SnapshotError(
+            "snapshot-error", f"cannot resolve untracked path parent {rel}: {exc}"
+        ) from exc
+    if parent != base and base not in parent.parents:
+        raise SnapshotError("snapshot-error", f"untracked path leaves the repository: {rel}")
+
+
+def _safe_symlink_target(root: Path, rel: str, raw_target: str) -> None:
+    """Accept only a relative link whose resolved target stays outside Git state."""
+    if not raw_target or os.path.isabs(raw_target):
+        raise SnapshotError(
+            "snapshot-error", f"untracked symlink has an unsafe target: {rel}"
+        )
+    base = root.resolve()
+    try:
+        resolved = ((root / rel).parent / raw_target).resolve(strict=False)
+        relative = resolved.relative_to(base)
+    except (OSError, ValueError) as exc:
+        raise SnapshotError(
+            "snapshot-error", f"untracked symlink leaves the repository: {rel}"
+        ) from exc
+    posix = relative.as_posix()
+    if ".git" in relative.parts or is_runner_owned(posix):
+        raise SnapshotError(
+            "snapshot-error", f"untracked symlink enters runner or Git state: {rel}"
+        )
+
+
+def _read_untracked_regular(src: Path, expected: os.stat_result, maximum: int) -> bytes:
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(src, flags)
+    try:
+        opened = os.fstat(fd)
+        identity = (expected.st_dev, expected.st_ino, expected.st_size, expected.st_mtime_ns)
+        opened_identity = (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mtime_ns)
+        if identity != opened_identity or not stat.S_ISREG(opened.st_mode):
+            raise SnapshotError("snapshot-error", f"untracked file moved while opening: {src}")
+        body = bytearray()
+        while True:
+            chunk = os.read(fd, min(65_536, maximum - len(body) + 1))
+            if not chunk:
+                break
+            body.extend(chunk)
+            if len(body) > maximum:
+                raise SnapshotError(
+                    "snapshot-error", "untracked working files exceed the snapshot bound"
+                )
+        closed = os.fstat(fd)
+        closed_identity = (closed.st_dev, closed.st_ino, closed.st_size, closed.st_mtime_ns)
+        if opened_identity != closed_identity:
+            raise SnapshotError("snapshot-error", f"untracked file moved while reading: {src}")
+        return bytes(body)
+    finally:
+        os.close(fd)
+
+
+def _untracked_entry(root: Path, rel: str, remaining: int) -> tuple[str, bytes, int]:
+    safe = _snapshot_relpath(rel)
+    _confine_untracked_parent(root, safe)
+    src = root / safe
+    try:
+        info = src.lstat()
+    except OSError as exc:
+        raise SnapshotError("snapshot-error", f"cannot inspect untracked path {safe}: {exc}") from exc
+    if stat.S_ISLNK(info.st_mode):
+        try:
+            raw_target = os.readlink(src)
+        except OSError as exc:
+            raise SnapshotError(
+                "snapshot-error", f"cannot read untracked symlink {safe}: {exc}"
+            ) from exc
+        _safe_symlink_target(root, safe, raw_target)
+        body = os.fsencode(raw_target)
+        if len(body) > remaining:
+            raise SnapshotError(
+                "snapshot-error", "untracked working files exceed the snapshot bound"
+            )
+        return "symlink", body, info.st_mode
+    if not stat.S_ISREG(info.st_mode):
+        raise SnapshotError("snapshot-error", f"unsupported untracked special file: {safe}")
+    return "regular", _read_untracked_regular(src, info, remaining), info.st_mode
+
+
+def _digest_field(digest: Any, value: bytes) -> None:
+    digest.update(len(value).to_bytes(8, "big"))
+    digest.update(value)
 
 
 def source_identity(root: Path) -> str:
-    """A digest over HEAD, the full working diff and relevant untracked content."""
+    """A digest over HEAD, the full working diff and every relevant untracked entry."""
     parts = [git(root, "rev-parse", "HEAD").strip()]
     parts.append(hashlib.sha256(git(root, "diff", "HEAD").encode()).hexdigest())
     parts.append(hashlib.sha256(git(root, "diff", "--cached").encode()).hexdigest())
-    untracked = [
-        p
-        for p in git(root, "ls-files", "--others", "--exclude-standard", "-z").split("\0")
-        if p and not is_runner_owned(p)
-    ]
     digest = hashlib.sha256()
-    for rel in sorted(untracked):
-        digest.update(rel.encode())
-        target = root / rel
-        try:
-            if target.is_file() and not target.is_symlink():
-                digest.update(hashlib.sha256(target.read_bytes()).digest())
-        except OSError:
-            digest.update(b"unreadable")
+    consumed = 0
+    try:
+        for rel in _untracked_paths(root):
+            kind, body, _ = _untracked_entry(root, rel, MAX_UNTRACKED_BYTES - consumed)
+            consumed += len(body)
+            _digest_field(digest, rel.encode("utf-8", "surrogateescape"))
+            _digest_field(digest, kind.encode("ascii"))
+            _digest_field(digest, body)
+    except SnapshotError as exc:
+        raise PlanError(exc.code, exc.message) from exc
     parts.append(digest.hexdigest())
     return hashlib.sha256("\0".join(parts).encode()).hexdigest()
 
@@ -604,7 +1076,7 @@ def make_snapshot(root: Path, nonce: str) -> Path:
         if proc.returncode != 0:
             raise SnapshotError("snapshot-error", proc.stderr.decode("utf-8", "replace").strip())
         head = git(root, "rev-parse", "HEAD").strip()
-        subprocess.run(
+        checkout = subprocess.run(
             ["git", "checkout", "--quiet", "--detach", head],
             cwd=str(target),
             env=_git_env(),
@@ -612,6 +1084,13 @@ def make_snapshot(root: Path, nonce: str) -> Path:
             shell=False,
             check=False,
         )
+        if checkout.returncode != 0:
+            detail = checkout.stderr.decode("utf-8", "replace").strip()
+            raise SnapshotError(
+                "snapshot-error", f"cannot checkout the snapshot HEAD: {detail}"
+            )
+        if git(target, "rev-parse", "HEAD").strip() != head:
+            raise SnapshotError("snapshot-error", "the snapshot checked out a different HEAD")
         patch = git(root, "diff", "HEAD")
         if patch.strip():
             applied = subprocess.run(
@@ -642,21 +1121,24 @@ def make_snapshot(root: Path, nonce: str) -> Path:
 
 def _copy_untracked(root: Path, target: Path) -> None:
     copied = 0
-    listing = git(root, "ls-files", "--others", "--exclude-standard", "-z")
-    for rel in sorted(p for p in listing.split("\0") if p and not is_runner_owned(p)):
-        src = root / rel
-        if src.is_symlink() or not src.is_file():
-            continue
-        try:
-            size = src.stat().st_size
-        except OSError:
-            continue
-        copied += size
-        if copied > MAX_UNTRACKED_BYTES:
-            raise SnapshotError("snapshot-error", "untracked working files exceed the snapshot bound")
-        dest = target / rel
+    for rel in _untracked_paths(root):
+        kind, body, mode = _untracked_entry(root, rel, MAX_UNTRACKED_BYTES - copied)
+        copied += len(body)
+        dest = target / _snapshot_relpath(rel)
         dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src, dest)
+        if kind == "symlink":
+            os.symlink(os.fsdecode(body), dest)
+            continue
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(dest, flags, stat.S_IMODE(mode) & 0o777)
+        try:
+            view = memoryview(body)
+            while view:
+                written = os.write(fd, view)
+                view = view[written:]
+            os.fchmod(fd, stat.S_IMODE(mode) & 0o777)
+        finally:
+            os.close(fd)
 
 
 def remove_snapshot(root: Path, nonce: str) -> str:
@@ -1133,7 +1615,7 @@ def refusal(args: argparse.Namespace, code: str, message: str, detail: Any = Non
     payload = {
         "schema": RUN_SCHEMA,
         "outcome": "refused",
-        "failure_class": "invalid-plan",
+        "failure_class": "snapshot-error" if code == "snapshot-error" else "invalid-plan",
         "code": code,
         "message": message,
         "detail": detail,
@@ -1201,9 +1683,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     except PlanError as exc:
         return refusal(args, exc.code, exc.message, exc.detail)
 
-    capacity = read_capacity()
-    if args.jobs is not None:
-        capacity = dict(capacity, source="explicit", effective_budget=min(args.jobs, SAFETY_CAP))
+    capacity = capacity_plan(args.jobs, item_count=_runnable_slot_cap(checks))
     plan = plan_record(check_map, selection, checks, capacity)
 
     if args.plan:
