@@ -7,7 +7,7 @@ on:
       - ".python-version"
       - "pyproject.toml"
       - ".claude-plugin/**"
-      - ".agents/**"
+      - ".agents/skills/promise-machine/SKILL.md"
       - "AGENTS.md"
       - ".github/workflows/lazarus.yml"
   pull_request:
@@ -16,7 +16,7 @@ on:
       - ".python-version"
       - "pyproject.toml"
       - ".claude-plugin/**"
-      - ".agents/**"
+      - ".agents/skills/promise-machine/SKILL.md"
       - "AGENTS.md"
       - ".github/workflows/lazarus.yml"
 
