@@ -1372,6 +1372,63 @@ class SourceAuthorityTests(TemporaryRepositoryMixin, unittest.TestCase):
             finally:
                 run_checks.remove_snapshot(root, nonce)
 
+    def test_snapshot_carries_the_source_default_branch_baseline(self) -> None:
+        """A clone of a worktree maps only local branches into origin/*.
+
+        Checks that compare against the fetched default branch -- the
+        decision-record numbering guard is the live case -- silently skip
+        inside such a snapshot, and the inoculation probe then refuses the
+        skipped guard.  The snapshot must mirror the source's
+        refs/remotes/origin/main so those checks observe the same baseline
+        the source does.
+        """
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            upstream = self.make_repo(tmp)
+            self.write_map(upstream, ["python3", "-c", "pass"])
+            self.git(upstream, "add", "-A")
+            self.git(upstream, "commit", "--quiet", "-m", "base")
+            self.git(upstream, "branch", "-M", "main")
+            primary = Path(tmp) / "primary"
+            subprocess.run(
+                ["git", "clone", "--quiet", str(upstream), str(primary)],
+                check=True, shell=False, capture_output=True,
+            )
+            for key, value in (
+                ("user.email", "fixture@example.invalid"),
+                ("user.name", "Fixture"),
+                ("commit.gpgsign", "false"),
+            ):
+                self.git(primary, "config", key, value)
+            consumer = Path(tmp) / "linked"
+            self.git(primary, "worktree", "add", "--quiet", "-b", "work", str(consumer))
+            # Like the live run worktree: the fetched default branch exists
+            # only as a remote-tracking ref, never as a local head a clone
+            # would map into origin/*.
+            self.git(primary, "checkout", "--quiet", "--detach")
+            self.git(primary, "branch", "-D", "main")
+            baseline = subprocess.run(
+                ["git", "rev-parse", "refs/remotes/origin/main"],
+                cwd=str(consumer), capture_output=True, text=True,
+                check=True, shell=False,
+            ).stdout.strip()
+            nonce = "baseline" + os.urandom(5).hex()
+            try:
+                snapshot = run_checks.make_snapshot(consumer, nonce)
+                mirrored = subprocess.run(
+                    ["git", "rev-parse", "--verify", "--quiet",
+                     "refs/remotes/origin/main"],
+                    cwd=str(snapshot), capture_output=True, text=True,
+                    shell=False,
+                )
+                self.assertEqual(
+                    mirrored.stdout.strip(), baseline,
+                    "the snapshot lost the source's default-branch baseline",
+                )
+            finally:
+                run_checks.remove_snapshot(consumer, nonce)
+
     def test_snapshot_refuses_when_source_moved_since_the_bound_identity(self) -> None:
         import tempfile
 

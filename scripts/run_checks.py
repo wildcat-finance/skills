@@ -1519,6 +1519,46 @@ def _reconstruct_index(root: Path, target: Path) -> None:
         )
 
 
+BASELINE_REF = "refs/remotes/origin/main"
+"""The fetched default-branch baseline some declared checks compare against."""
+
+
+def _mirror_baseline_ref(root: Path, target: Path) -> None:
+    """Carry the source's default-branch baseline into the snapshot.
+
+    Cloning maps only local heads into origin/*, and a linked run worktree
+    typically holds the fetched default branch as a remote-tracking ref
+    alone, so the clone silently loses it.  A check that compares against
+    that baseline -- the decision-record numbering guard is the live case --
+    would then skip inside the snapshot while passing in the source, and the
+    inoculation probe rightly refuses a skipped guard.  The local clone
+    copies the complete object store, so the commit is already present.
+    """
+    probe = subprocess.run(
+        ["git", "rev-parse", "--verify", "--quiet", BASELINE_REF + "^{commit}"],
+        cwd=str(root),
+        env=_git_env(),
+        capture_output=True,
+        shell=False,
+    )
+    if probe.returncode != 0:
+        return
+    baseline = probe.stdout.decode("ascii", "replace").strip()
+    written = subprocess.run(
+        ["git", "update-ref", BASELINE_REF, baseline],
+        cwd=str(target),
+        env=_git_env(),
+        capture_output=True,
+        shell=False,
+    )
+    if written.returncode != 0:
+        raise SnapshotError(
+            "snapshot-error",
+            "cannot mirror the default-branch baseline: "
+            + written.stderr.decode("utf-8", "replace").strip(),
+        )
+
+
 def _remove_head_only_paths(root: Path, target: Path) -> None:
     """Delete checkout files whose paths left the source index.
 
@@ -1639,6 +1679,7 @@ def make_snapshot(
             raise SnapshotError("snapshot-error", "the snapshot checked out a different HEAD")
         _reconstruct_index(root, target)
         _remove_head_only_paths(root, target)
+        _mirror_baseline_ref(root, target)
         inventory: list[tuple[str, str, str, str, int]] = []
 
         def place_and_record(kind_tag: str, rel: str, kind: str, body: bytes, mode: int) -> None:
