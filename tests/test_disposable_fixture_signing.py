@@ -107,8 +107,12 @@ class HostileCase(unittest.TestCase):
         than once, so two subtests cannot land in each other's sentinel.
         """
         directory = self.workspace / (name or arm)
-        directory.mkdir()
         try:
+            # Inside the try: creating the directory is part of writing the
+            # configuration, and a full or read-only TMPDIR fails here rather
+            # than in write_arm. Outside it, that raised a bare PermissionError
+            # instead of the diagnostic this guard promises.
+            directory.mkdir()
             return harness.write_arm(directory, arm)
         except (OSError, ValueError) as error:
             self.fail(
