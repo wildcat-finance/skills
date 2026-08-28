@@ -59,7 +59,7 @@ def check(digests):
                 "digest value for %s is not lowercase hex; case-insensitive "
                 "comparison is how two different digests come to look equal" % algorithm
             )
-        if not HEX.match(value):
+        if not HEX.fullmatch(value):
             raise DigestError("digest value for %s is not hex" % algorithm)
         if algorithm in ALGORITHMS:
             expected = ALGORITHMS[algorithm][1]

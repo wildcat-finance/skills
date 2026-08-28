@@ -17,7 +17,7 @@ import unittest
 
 from . import support  # noqa: F401  (sets sys.path)
 
-from ariadne_lib import core_predicate  # noqa: E402
+from ariadne_lib import core_predicate, digests  # noqa: E402
 from ariadne_lib import registry  # noqa: E402
 from ariadne_lib.predicates import dataset  # noqa: E402
 from ariadne_lib.predicates import grounded_agent  # noqa: E402
@@ -674,6 +674,30 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
         self.assertEqual(corpus["maxItems"], grounded_agent.MAX_COMPONENTS)
         self.assertEqual(answers["maxItems"], grounded_agent.MAX_COMPONENTS)
 
+    def test_digest_and_hash_tokens_are_bounded_through_their_absolute_end(self):
+        definitions = self.schema["$defs"]
+        for name, length in (("sha256", 64), ("hash32", 66)):
+            with self.subTest(shape=name):
+                self.assertEqual(definitions[name].get("minLength"), length)
+                self.assertEqual(definitions[name].get("maxLength"), length)
+
+        digest = definitions["digest"]
+        for algorithm, (_, length) in digests.ALGORITHMS.items():
+            with self.subTest(algorithm=algorithm):
+                shape = digest["properties"][algorithm]
+                self.assertEqual(shape.get("minLength"), length)
+                self.assertEqual(shape.get("maxLength"), length)
+        self.assertEqual(
+            digest["additionalProperties"].get("not"),
+            {"pattern": "[^0-9a-f]"},
+        )
+
+        contracts = self.properties["policy"]["properties"]["allowlists"][
+            "properties"
+        ]["contracts"]["items"]
+        self.assertEqual(contracts.get("minLength"), 42)
+        self.assertEqual(contracts.get("maxLength"), 42)
+
     def test_portable_name_and_path_patterns_match_the_module(self):
         import re
 
@@ -918,6 +942,13 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
         for collection in ("claims", "commands"):
             detail = self.properties[collection]["items"]["properties"]["detail"]
             self.assertIn(recursive, detail["allOf"])
+
+        self.assertEqual(
+            self.schema["$defs"]["digest"]["propertyNames"].get("not", {}).get(
+                "enum"
+            ),
+            refused,
+        )
 
     def test_the_schema_is_committed_as_readable_json(self):
         with open(GROUNDED_AGENT_SCHEMA, "rb") as handle:

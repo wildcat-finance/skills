@@ -57,14 +57,16 @@ AUTHORSHIP_KEYS = frozenset(
 def scanned(statement):
     """Every key inside a statement that a producer chooses the content of.
 
-    The predicate, and also each subject's annotations and other descriptor
-    fields. A verdict smuggled into `subject[0].annotations` is the same
-    smuggling as one in the predicate, and scanning only the predicate would
-    have left the shorter route open.
+    The predicate, and also each subject's digest algorithms, annotations and
+    other descriptor fields. A verdict smuggled into a subject digest or
+    `subject[0].annotations` is the same smuggling as one in the predicate, and
+    scanning only the predicate would have left the shorter route open.
     """
     for pair in core_predicate.walk(statement.predicate):
         yield pair
     for subject in statement.subjects:
+        for pair in core_predicate.walk(subject.digest):
+            yield pair
         for pair in core_predicate.walk(subject.extra):
             yield pair
 

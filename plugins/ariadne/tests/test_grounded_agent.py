@@ -502,6 +502,42 @@ class ComponentTests(unittest.TestCase):
         self.assertIn("claim 1", found.detail)
         self.assertIn("conflicting sha256 identities", found.detail)
 
+    def test_a_claim_cannot_contradict_a_known_alias_via_a_sparse_duplicate(self):
+        cases = (
+            ("sha384", "1" * 96, "2" * 96),
+            ("transition", "a", "b"),
+        )
+        for algorithm, established, contradicted in cases:
+            body = predicate()
+            outer = subjects(body)
+            identity = outer[0]["digest"]["sha256"]
+            outer[0]["digest"][algorithm] = established
+            outer.append(
+                {
+                    "name": "sparse duplicate for %s" % algorithm,
+                    "digest": {"sha256": identity},
+                }
+            )
+            body["claims"] = [
+                {
+                    "name": "contradictory alias",
+                    "subject": {
+                        "sha256": identity,
+                        algorithm: contradicted,
+                    },
+                    "disposition": "passed",
+                }
+            ]
+            with self.subTest(algorithm=algorithm):
+                routed = report(body, outer)
+                gate_one = next(gate for gate in routed.gates if gate.number == 1)
+                self.assertTrue(gate_one.passed)
+                found = next(
+                    gate for gate in routed.gates if gate.name == "components"
+                )
+                self.assertFalse(found.passed)
+                self.assertIn("known digest alias", found.detail)
+
     def test_unsafe_component_paths_are_refused(self):
         for path in (
             "/absolute.json",
@@ -828,6 +864,29 @@ class GateTwoAndFiveTests(unittest.TestCase):
             with self.subTest(path=".".join(path)):
                 self.assertFalse(numbered(2, body).passed)
 
+    def test_digest_maps_require_hex_through_the_absolute_end(self):
+        malformed = {"sha256": "a" * 63 + "\n"}
+
+        body = predicate()
+        body["adapter"]["parameters_digest"] = malformed
+        self.assertFalse(report(body).ok)
+        self.assertIn("not hex", numbered(2, body).detail)
+
+        body = predicate()
+        body["commands"] = [
+            {
+                "name": "malformed output digest",
+                "argv": ["true"],
+                "determinism": "exact",
+                "output_digest": malformed,
+            }
+        ]
+        routed = report(body)
+        self.assertFalse(routed.ok)
+        gate_six = next(gate for gate in routed.gates if gate.number == 6)
+        self.assertFalse(gate_six.passed)
+        self.assertIn("not hex", gate_six.detail)
+
     def test_gate_five_accepts_first_capture_and_baseline_branches(self):
         first = predicate()
         self.assertTrue(numbered(5, first).passed)
@@ -941,6 +1000,58 @@ class EvidenceBoundaryTests(unittest.TestCase):
         outer = subjects(body)
         outer[0]["annotations"] = {"evaluation": {"failed": 0}}
         self.assertFalse(named("evidence-boundary", body, outer).passed)
+
+    def test_berean_results_cannot_hide_in_digest_algorithm_names(self):
+        for key in agent.FORBIDDEN_BEREAN_RESULT_KEYS:
+            for surface in ("adapter", "claim", "command", "outer subject"):
+                body = predicate()
+                outer = None
+                if surface == "adapter":
+                    body["adapter"]["parameters_digest"][key] = "10"
+                elif surface == "claim":
+                    body["claims"] = [
+                        {
+                            "name": "evaluation result",
+                            "subject": {
+                                "sha256": body["release"]["document"]["sha256"],
+                                key: "10",
+                            },
+                            "disposition": "passed",
+                        }
+                    ]
+                elif surface == "command":
+                    body["commands"] = [
+                        {
+                            "name": "evaluation result",
+                            "argv": ["true"],
+                            "determinism": "exact",
+                            "output_digest": {
+                                "sha256": hex_digest("command output"),
+                                key: "10",
+                            },
+                        }
+                    ]
+                else:
+                    outer = subjects(body)
+                    outer[0]["digest"][key] = "10"
+                with self.subTest(key=key, surface=surface):
+                    found = named("evidence-boundary", body, outer)
+                    self.assertFalse(found.passed)
+                    self.assertIn(key, found.detail)
+
+    def test_core_gates_scan_outer_subject_digest_algorithms(self):
+        for key, number in (("score", 4), ("author", 7)):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["digest"][key] = "10"
+            with self.subTest(key=key, gate=number):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == number
+                )
+                self.assertFalse(gate.passed)
+                self.assertIn(key, gate.detail)
 
 
 class GroundedReplayBoundaryTests(unittest.TestCase):

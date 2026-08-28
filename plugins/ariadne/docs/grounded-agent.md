@@ -49,8 +49,8 @@ and duplicate paths fail. Every component digest must appear in the in-toto
 subject array, and every subject must name a declared component. Subject aliases
 may add digest algorithms, but cannot give one `sha256` conflicting aliases or
 map one supported digest to different `sha256` identities. A claim likewise
-cannot combine supported aliases that the statement has already assigned to
-different `sha256` identities.
+cannot contradict an alias already assigned to its `sha256` identity or combine
+supported aliases assigned to different `sha256` identities.
 
 Digest maps carry at most eight algorithms. Three slots cover Ariadne's current
 supported algorithms and five remain for transition metadata; wider claim or
@@ -69,9 +69,9 @@ a rollback cannot be the first record, and either terminal action requires the
 release's evaluation files. It deliberately has no `score`, `grade`, `verdict`,
 `threshold`, or `result count`. Those are evaluation conclusions, not Ariadne
 identity metadata. The exact Berean threshold and result-count keys are also
-refused recursively in claim details, command details and subject descriptor
-extensions, so an open core field cannot restore the projection that the closed
-promotion block omits.
+refused recursively in claim details, command details, digest maps and subject
+descriptor extensions, so an open structured field cannot restore the
+projection that the closed promotion block omits.
 
 ## Gate 2: recoverable environment
 

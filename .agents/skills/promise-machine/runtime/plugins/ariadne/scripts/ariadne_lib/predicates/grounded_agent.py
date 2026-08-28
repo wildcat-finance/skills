@@ -480,6 +480,21 @@ def component_faults(statement):
                 "claim %d maps supported digests to conflicting sha256 identities"
                 % (index + 1)
             )
+        elif len(owners) == 1:
+            owner = next(iter(owners))
+            aliases = aliases_by_sha256.get(owner, {})
+            contradicts_alias = False
+            for position, (algorithm, value) in enumerate(claim_digest.items()):
+                if position >= MAX_DIGEST_ALGORITHMS:
+                    break
+                if algorithm in aliases and aliases[algorithm] != value:
+                    contradicts_alias = True
+                    break
+            if contradicts_alias:
+                faults.append(
+                    "claim %d contradicts a known digest alias for its sha256 identity"
+                    % (index + 1)
+                )
 
     names = {}
     paths = {}
@@ -616,14 +631,24 @@ def _result_projection_faults(statement):
     surfaces = []
     predicate = statement.predicate
     if isinstance(predicate, dict):
+        adapter = predicate.get("adapter")
+        if isinstance(adapter, dict):
+            surfaces.append(adapter.get("parameters_digest"))
         for field, limit in (("claims", MAX_CLAIMS), ("commands", MAX_COMMANDS)):
             entries = predicate.get(field)
             if not isinstance(entries, list):
                 continue
             for entry in entries[:limit]:
-                if isinstance(entry, dict) and isinstance(entry.get("detail"), dict):
-                    surfaces.append(entry["detail"])
+                if not isinstance(entry, dict):
+                    continue
+                surfaces.append(entry.get("detail"))
+                surfaces.append(
+                    entry.get("subject")
+                    if field == "claims"
+                    else entry.get("output_digest")
+                )
     for subject in statement.subjects[:MAX_SUBJECTS]:
+        surfaces.append(subject.digest)
         surfaces.append(subject.extra)
 
     found = set()

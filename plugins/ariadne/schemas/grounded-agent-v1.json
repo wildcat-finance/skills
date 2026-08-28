@@ -451,6 +451,8 @@
               "maxItems": 256,
               "items": {
                 "type": "string",
+                "minLength": 42,
+                "maxLength": 42,
                 "pattern": "^0x[0-9a-f]{40}$"
               }
             }
@@ -712,10 +714,14 @@
   "$defs": {
     "sha256": {
       "type": "string",
+      "minLength": 64,
+      "maxLength": 64,
       "pattern": "^[0-9a-f]{64}$"
     },
     "hash32": {
       "type": "string",
+      "minLength": 66,
+      "maxLength": 66,
       "pattern": "^0x(?!0{64}$)[0-9a-f]{64}$"
     },
     "stated": {
@@ -742,25 +748,43 @@
       "maxProperties": 8,
       "propertyNames": {
         "type": "string",
-        "minLength": 1
+        "minLength": 1,
+        "not": {
+          "enum": [
+            "thresholds",
+            "cases",
+            "passed",
+            "failed",
+            "failures_allowed"
+          ]
+        }
       },
       "properties": {
         "sha256": {
           "type": "string",
+          "minLength": 64,
+          "maxLength": 64,
           "pattern": "^[0-9a-f]{64}$"
         },
         "sha384": {
           "type": "string",
+          "minLength": 96,
+          "maxLength": 96,
           "pattern": "^[0-9a-f]{96}$"
         },
         "sha512": {
           "type": "string",
+          "minLength": 128,
+          "maxLength": 128,
           "pattern": "^[0-9a-f]{128}$"
         }
       },
       "additionalProperties": {
         "type": "string",
-        "pattern": "^[0-9a-f]+$"
+        "pattern": "^[0-9a-f]+$",
+        "not": {
+          "pattern": "[^0-9a-f]"
+        }
       },
       "anyOf": [
         {
