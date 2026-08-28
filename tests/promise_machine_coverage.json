@@ -451,6 +451,31 @@
       "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
       "selector": "test_unrelated_and_stale_amendments_are_not_selected_for_a_packet"
     },
+    "fiat-version-resolution-m": {
+      "claim": "A run without a receipted relation block cannot manufacture version-resolution authority.",
+      "path": "plugins/hexaemeron/tests/test_version_relations.py",
+      "selector": "test_literal_only_run_cannot_manufacture_a_resolution_receipt"
+    },
+    "fiat-version-resolution-o": {
+      "claim": "The resolution promise stays at consequence two and does not claim a reservation or product edit.",
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "selector": "test_version_resolution_has_a_narrow_consequence_two_promise"
+    },
+    "fiat-version-resolution-p": {
+      "claim": "One stable all-target result appends one event and state receipt without changing product bytes.",
+      "path": "plugins/hexaemeron/tests/test_version_relations.py",
+      "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit"
+    },
+    "fiat-version-resolution-r": {
+      "claim": "A ledger-durable interrupted resolution completes state once through its labelled pending record.",
+      "path": "plugins/hexaemeron/tests/test_version_relations.py",
+      "selector": "test_pending_resolution_after_ledger_completes_state_once"
+    },
+    "fiat-version-resolution-s": {
+      "claim": "A receipt whose candidate head no longer matches the run ref cannot authorise integration.",
+      "path": "plugins/hexaemeron/tests/test_version_relations.py",
+      "selector": "test_active_resolution_refuses_stale_head_evidence"
+    },
     "fiat-observation-m": {
       "claim": "A requested observation claim without a selected binding refuses while ordinary controller verification remains available.",
       "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
@@ -1472,6 +1497,22 @@
     },
     {
       "cases": {
+        "M": "fiat-version-resolution-m",
+        "O": "fiat-version-resolution-o",
+        "P": "fiat-version-resolution-p",
+        "R": "fiat-version-resolution-r",
+        "S": "fiat-version-resolution-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-version-resolution",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "fiat-amendment-m",
         "O": "fiat-amendment-o",
         "P": "fiat-amendment-p",
@@ -2448,7 +2489,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f"
+      "sha256": "4a884afe1c133cd863666d154db843c4c0d6cf64672f9340250010588e10e983"
     },
     "validator": {
       "path": "scripts/run_observation.py",
@@ -2774,7 +2815,21 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work and any unrun external check"
       },
-      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
+      "sha256": "4a884afe1c133cd863666d154db843c4c0d6cf64672f9340250010588e10e983",
+      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+    },
+    "fiat-version-resolution": {
+      "bindings": {
+        "evidence_classes": "stable exact-object checks and append-only recorded receipt joined to the canonical Evidence classes field",
+        "evidence_references": "runbook and relation digests, stable base and run refs, native ledger and skill blobs, exact history rows, signed sync and path revalidation when required, pending subject and done:version-resolution event",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to done:version-resolution and the canonical promise heading",
+        "scope": "one relation-bearing run, one coherent base and candidate pair, and every declared target",
+        "subject": "exact runbook, relation source, base ref and commit, candidate head, target rows and skill metadata",
+        "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
+        "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
+      },
+      "sha256": "4a884afe1c133cd863666d154db843c4c0d6cf64672f9340250010588e10e983",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -2788,7 +2843,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
+      "sha256": "4a884afe1c133cd863666d154db843c4c0d6cf64672f9340250010588e10e983",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -2802,7 +2857,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
+      "sha256": "4a884afe1c133cd863666d154db843c4c0d6cf64672f9340250010588e10e983",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -2816,7 +2871,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
+      "sha256": "4a884afe1c133cd863666d154db843c4c0d6cf64672f9340250010588e10e983",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -2830,7 +2885,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
+      "sha256": "4a884afe1c133cd863666d154db843c4c0d6cf64672f9340250010588e10e983",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {

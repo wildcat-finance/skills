@@ -320,6 +320,29 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("worker directive shapes stay unchanged", flat)
         self.assertIn("no Git version evidence is read", flat)
 
+    def test_version_resolution_has_a_narrow_consequence_two_promise(self):
+        promise = self.fiat.split("### fiat-version-resolution", 1)[1]
+        promise = promise.split("### ", 1)[0]
+        self.assertIn("- Consequence: 2", promise)
+        self.assertIn("- Authorises:", promise)
+        self.assertIn("newest still-current receipt", promise)
+        self.assertIn("does not reserve a label", promise)
+        self.assertIn("subject-labelled pending record", promise)
+        self.assertIn("ninth resolution", promise)
+
+    def test_resolution_transition_and_final_replay_are_explicit(self):
+        flat = " ".join(self.fiat.split())
+        push = " ".join(self.push_discipline.split())
+        self.assertIn("`resolve-versions`", self.fiat)
+        self.assertIn("`done resolve-versions`", self.fiat)
+        for text in (flat, push):
+            self.assertIn("subject-labelled pending", text)
+            self.assertIn("eight", text)
+        self.assertIn("[base, candidate]", flat)
+        self.assertIn("[checked base, checked candidate]", push)
+        self.assertIn("All targets pass or none are recorded", push)
+        self.assertIn("performs none of these version reads", push)
+
     def test_observation_binding_is_optional_and_non_authorising(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("Observation is never a phase gate", self.fiat)
