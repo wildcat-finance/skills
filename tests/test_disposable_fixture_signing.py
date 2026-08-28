@@ -1,0 +1,329 @@
+"""A disposable git fixture must not sign its commits.
+
+A test that creates a repository and commits into it inherits whatever signing
+configuration the contributor has. On a GPG contributor that stalls the suite on
+a pinentry prompt; on an SSH contributor it quietly signs fixture history with a
+real identity. Fixture history is not signing evidence either way, so a fixture
+declares ``git config --local commit.gpgsign false`` immediately after the
+repository comes into existence, whichever verb created it.
+
+This is the guard for that rule. It is the only test here that fails when the
+cause is signing rather than the change under test, and it answers four
+questions for whoever is reading a red suite.
+
+- *Did this fail because of my change, or because of my signing setup?* This
+  module failing, and nothing else, means signing.
+- *Was the signer actually reached?* Every failure message carries the sentinel
+  path and what the sentinel recorded, not merely whether it was empty.
+- *Is this green for the right reason?* ``NegativeControl`` is the answer. It
+  fails saying the hostile configuration failed to be hostile, which points at
+  the harness rather than at the fix, and needs a different repair.
+- *Did a fixture commit get signed with my key?* The positive case reads ``%G?``
+  and requires exactly ``N``. A commit that succeeds but is signed still breaks
+  the rule.
+
+Nothing here skips. A guard that skips when it cannot build its hostile
+configuration reports as a pass and reads as evidence, so a missing git or an
+unwritable configuration fails and names the precondition that was missing.
+"""
+
+from collections import namedtuple
+from pathlib import Path
+import importlib.util
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+
+ROOT = Path(__file__).resolve().parents[1]
+HARNESS = ROOT / "tests" / "hostile_signing_harness.py"
+
+GIT = shutil.which("git")
+
+# Bounded so a reintroduced pinentry stall fails this guard instead of hanging
+# it. Git against a two-file repository needs a fraction of a second; a single
+# representative test from another suite is given room to be slow.
+GIT_TIMEOUT_SECONDS = 60
+SUITE_TIMEOUT_SECONDS = 300
+
+
+def load_harness():
+    """Load the harness by path, so the guard proves the module a shell runs."""
+    spec = importlib.util.spec_from_file_location("hostile_signing_harness", HARNESS)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+harness = load_harness()
+
+
+CoveredSuite = namedtuple("CoveredSuite", ("label", "top_level", "test"))
+
+# The suites the rule has been applied to, and for each one a representative
+# test that commits fixture history. Running it under the hostile configuration
+# is what fails when a construction site in that suite forgets the rule.
+# ``top_level`` is the unittest top-level directory, relative to the repository
+# root, that ``test`` is resolved from.
+COVERED_SUITES = ()
+
+
+class HostileCase(unittest.TestCase):
+    """Each case builds its own hostile configuration in its own directory."""
+
+    def setUp(self):
+        if GIT is None:
+            self.fail(
+                "this guard fails rather than skips: git is not available, so "
+                "the hostile signing configuration cannot be exercised and a "
+                "skip here would report as a pass"
+            )
+        self.workspace = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve()
+
+    def hostile(self, arm):
+        """Write one arm into a fresh directory belonging to this case."""
+        directory = self.workspace / arm
+        directory.mkdir()
+        try:
+            return harness.write_arm(directory, arm)
+        except (OSError, ValueError) as error:
+            self.fail(
+                "this guard fails rather than skips: the hostile "
+                f"{arm} configuration could not be written ({error})"
+            )
+
+    def recorded(self, files):
+        """What the hostile signer recorded, for a failure message to carry."""
+        return files.sentinel.read_text(encoding="utf-8")
+
+    def git(self, root, environment, *arguments):
+        """One bounded git call against a disposable repository. Fixed argv, no shell."""
+        return subprocess.run(
+            [GIT, "-C", str(root), *arguments],
+            capture_output=True,
+            text=True,
+            timeout=GIT_TIMEOUT_SECONDS,
+            env=environment,
+        )
+
+    def git_or_fail(self, root, environment, *arguments):
+        """The same call, where anything but success is a missing precondition."""
+        result = self.git(root, environment, *arguments)
+        if result.returncode != 0:
+            self.fail(
+                "this guard fails rather than skips: `git "
+                f"{' '.join(arguments)}` could not build the disposable "
+                f"repository ({result.stderr.strip()})"
+            )
+        return result
+
+    def fixture(self, files, declare):
+        """Build a disposable repository under the hostile arm and commit once.
+
+        ``declare`` chooses whether the repository states the rule the way a
+        fixture is meant to. Returns the repository root and the commit's
+        completed process, so a caller can read the code git actually exited on.
+        """
+        root = files.config.parent / ("declared" if declare else "undeclared")
+        root.mkdir()
+        environment = harness.child_environment(files.config)
+        self.git_or_fail(root, environment, "init", "-q")
+        if declare:
+            self.git_or_fail(
+                root, environment, "config", "--local", "commit.gpgsign", "false"
+            )
+        (root / "fixture.txt").write_text("fixture history\n", encoding="utf-8")
+        self.git_or_fail(root, environment, "add", "fixture.txt")
+        return root, self.git(root, environment, "commit", "-qm", "fixture history")
+
+
+class HostileHarness(HostileCase):
+    """The harness writes what it claims to write, and writes it nowhere else."""
+
+    def test_the_openpgp_arm_points_gpg_program_at_the_recording_signer(self):
+        files = self.hostile(harness.OPENPGP)
+        text = files.config.read_text(encoding="utf-8")
+        self.assertIn("gpgsign = true", text)
+        self.assertIn("format = openpgp", text)
+        self.assertIn(f'program = "{files.signer}"', text)
+        self.assertTrue(os.access(files.signer, os.X_OK), f"{files.signer} is not executable")
+        self.assertEqual(self.recorded(files), "")
+
+    def test_the_ssh_arm_points_gpg_ssh_program_at_the_recording_signer(self):
+        files = self.hostile(harness.SSH)
+        text = files.config.read_text(encoding="utf-8")
+        self.assertIn("gpgsign = true", text)
+        self.assertIn("format = ssh", text)
+        self.assertIn('[gpg "ssh"]', text)
+        self.assertIn(f'program = "{files.signer}"', text)
+        self.assertTrue(os.access(files.signer, os.X_OK), f"{files.signer} is not executable")
+        self.assertEqual(self.recorded(files), "")
+
+    def test_the_unsigned_control_arm_commits_without_reaching_the_signer(self):
+        files = self.hostile(harness.UNSIGNED)
+        _, result = self.fixture(files, declare=False)
+        self.assertEqual(
+            result.returncode,
+            0,
+            "the unsigned control arm asks for no signature, so a fixture commit "
+            f"must succeed under it. git said: {result.stderr.strip()}",
+        )
+        self.assertEqual(
+            self.recorded(files),
+            "",
+            "the sentinel records signing attempts, not commits, but the "
+            f"unsigned control arm reached the signer at {files.signer}. "
+            f"Sentinel {files.sentinel} holds: {self.recorded(files)!r}",
+        )
+
+    def test_the_harness_leaves_the_running_process_environment_alone(self):
+        before = dict(os.environ)
+        files = self.hostile(harness.OPENPGP)
+        environment = harness.child_environment(files.config)
+        self.assertEqual(
+            dict(os.environ),
+            before,
+            "the harness changed this process's environment, so a failure part "
+            "way through a test could leave the contributor's git pointed at a "
+            "temporary file",
+        )
+        self.assertEqual(environment["GIT_CONFIG_GLOBAL"], str(files.config))
+        self.assertEqual(environment["GIT_CONFIG_SYSTEM"], os.devnull)
+        self.assertNotIn("GIT_CONFIG_COUNT", environment)
+
+    def test_the_emit_entry_point_writes_the_arm_the_negative_control_proves(self):
+        directory = self.workspace / "emitted"
+        directory.mkdir()
+        result = subprocess.run(
+            [sys.executable, str(HARNESS), "--emit", str(directory)],
+            capture_output=True,
+            text=True,
+            timeout=GIT_TIMEOUT_SECONDS,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        signer = directory / harness.SIGNER_NAME
+        sentinel = directory / harness.SENTINEL_NAME
+        self.assertTrue(os.access(signer, os.X_OK), f"{signer} is not executable")
+        self.assertEqual(sentinel.read_text(encoding="utf-8"), "")
+        self.assertEqual(
+            (directory / harness.CONFIG_NAME).read_text(encoding="utf-8"),
+            harness.config_text(harness.EMITTED_ARM, signer),
+            "the emitted configuration is not the arm this module proves "
+            "hostile, so a later step would run its suites under something no "
+            "test here has exercised",
+        )
+
+
+class NegativeControl(HostileCase):
+    """Without the rule, a fixture commit reaches the hostile signer and fails.
+
+    This is the assertion that makes every other assertion in this module mean
+    something. If it passes, the hostile configuration is not hostile, and the
+    positive case below is green for no reason at all.
+    """
+
+    def test_the_hostile_signer_is_reached_without_the_local_declaration(self):
+        for arm in (harness.OPENPGP, harness.SSH):
+            with self.subTest(arm=arm):
+                files = self.hostile(arm)
+                _, result = self.fixture(files, declare=False)
+                recorded = self.recorded(files)
+                self.assertNotEqual(
+                    result.returncode,
+                    0,
+                    f"the hostile {arm} configuration failed to be hostile: a "
+                    "fixture commit that declares nothing still succeeded, so "
+                    "the rest of this module proves nothing. Repair the harness, "
+                    f"not the fixtures. Sentinel {files.sentinel} holds: "
+                    f"{recorded!r}",
+                )
+                self.assertNotEqual(
+                    recorded,
+                    "",
+                    f"the hostile {arm} configuration failed to be hostile: the "
+                    f"signing program at {files.signer} was never reached, so "
+                    "the commit failed for some other reason and this guard is "
+                    f"measuring the wrong thing. git said: {result.stderr.strip()}",
+                )
+
+
+class LocalDeclaration(HostileCase):
+    """With the rule, the same construction commits, unsigned, untouched by the signer."""
+
+    def test_the_local_declaration_defeats_the_hostile_signer(self):
+        for arm in (harness.OPENPGP, harness.SSH):
+            with self.subTest(arm=arm):
+                files = self.hostile(arm)
+                root, result = self.fixture(files, declare=True)
+                recorded = self.recorded(files)
+                self.assertEqual(
+                    result.returncode,
+                    0,
+                    "a fixture that declares `git config --local commit.gpgsign "
+                    f"false` still could not commit under inherited {arm} "
+                    f"signing. git said: {result.stderr.strip()}. Sentinel "
+                    f"{files.sentinel} holds: {recorded!r}",
+                )
+                self.assertEqual(
+                    recorded,
+                    "",
+                    "`commit.gpgsign false` was declared and the signer at "
+                    f"{files.signer} was reached anyway. Sentinel "
+                    f"{files.sentinel} holds: {recorded!r}",
+                )
+                status = self.git(
+                    root,
+                    harness.child_environment(files.config),
+                    "log",
+                    "-1",
+                    "--format=%G?",
+                )
+                self.assertEqual(
+                    status.stdout.strip(),
+                    "N",
+                    "the fixture commit carries a signature. A commit that "
+                    "succeeds but is signed still breaks the rule, because it "
+                    "signs fixture history with the contributor's real identity",
+                )
+
+
+class CoveredSuites(HostileCase):
+    """Every suite the rule has been applied to still runs under inherited signing."""
+
+    def test_each_covered_suite_runs_clean_under_the_hostile_configuration(self):
+        files = self.hostile(harness.EMITTED_ARM)
+        environment = harness.child_environment(files.config)
+        for suite in COVERED_SUITES:
+            with self.subTest(suite=suite.label):
+                result = subprocess.run(
+                    [sys.executable, "-m", "unittest", suite.test],
+                    cwd=str(ROOT / suite.top_level),
+                    capture_output=True,
+                    text=True,
+                    timeout=SUITE_TIMEOUT_SECONDS,
+                    env=environment,
+                )
+                recorded = self.recorded(files)
+                self.assertEqual(
+                    result.returncode,
+                    0,
+                    f"{suite.label} does not survive inherited signing: "
+                    f"{suite.test} exited {result.returncode}. A construction "
+                    "site in that suite is missing `git config --local "
+                    f"commit.gpgsign false`. Sentinel {files.sentinel} holds: "
+                    f"{recorded!r}. It said: {result.stderr.strip()}",
+                )
+                self.assertEqual(
+                    recorded,
+                    "",
+                    f"{suite.label} reached the signer at {files.signer} while "
+                    f"running {suite.test}. Sentinel {files.sentinel} holds: "
+                    f"{recorded!r}",
+                )
+
+
+if __name__ == "__main__":
+    unittest.main()
