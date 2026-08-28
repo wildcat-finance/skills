@@ -94,7 +94,7 @@ python3 scripts/ariadne.py replay <statement.json> [--allow-execution --project 
 `predicates` lists the predicate types this build understands. Five are registered:
 `https://ariadne.wildcat.finance/solidity-release/v1`,
 `https://ariadne.wildcat.finance/dataset/v1`,
-`https://ariadne.wildcat.finance/state-fixture/v1`, and
+`https://ariadne.wildcat.finance/state-fixture/v1`,
 `https://ariadne.wildcat.finance/state-fixture/v2`, and
 `https://ariadne.wildcat.finance/grounded-agent/v1`. A statement of any other type
 still parses and still gets its core gates.

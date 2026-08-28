@@ -98,6 +98,22 @@ The other core gates remain in force. Gate 4 refuses conclusion vocabulary such
 as a `score`, `grade` or `verdict` anywhere in the predicate. Gate 7 refuses
 authorship or verification identity keys that Ariadne did not authenticate.
 
+## Why this interface
+
+The accepted design is option 3: a format-bound local adapter for
+`berean-release/v1`. Ariadne can recompute the named semantic and component
+digests, preserve explicit absences, and bind the exact evidence this predicate
+needs without importing or executing Berean or adopting Berean's substantive
+verdicts.
+
+Option 1, a recursive directory digest, was rejected because it would hide which
+corpus, reads, answers, evaluations, promotion state, and absences the digest
+covered. Option 2, importing Berean's verifier or invoking its CLI, would couple
+separately installed plugins and let foreign executable policy determine
+Ariadne's claim. Option 4, a generic agent-release abstraction, would turn a
+hypothetical second producer into public API and widen the audit surface before
+another format exists.
+
 ## Predicate checks
 
 After gates 2 and 5, named checks report the closed field shape, component and

@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11140688,
+  "total_bytes": 11141525,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -517,9 +517,9 @@
       "source": "plugins/ariadne/docs/design.md"
     },
     {
-      "bytes": 6338,
+      "bytes": 7165,
       "path": "plugins/ariadne/docs/grounded-agent.md",
-      "sha256": "21cc9fbb4ea5d4d146f924efc2de725db644dac1999f6384913c581d938698a7",
+      "sha256": "ade233f0faa51484edd85d90cb042480fc310ba3d0fe14ab131cd7ded8e89032",
       "source": "plugins/ariadne/docs/grounded-agent.md"
     },
     {
@@ -691,9 +691,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py"
     },
     {
-      "bytes": 47417,
+      "bytes": 47431,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py",
-      "sha256": "e1e24b42e716032bda4543d77ad71abce36cb1a861edaf0e8225baa1729b0931",
+      "sha256": "533c780600c806896fadfe9da07d7d5bc48bc31eafe331b265a6570fe8ed4a63",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py"
     },
     {
@@ -751,9 +751,9 @@
       "source": "plugins/ariadne/skills/ariadne/EVOLUTION.md"
     },
     {
-      "bytes": 21337,
+      "bytes": 21333,
       "path": "plugins/ariadne/skills/ariadne/SKILL.md",
-      "sha256": "a515b4869a15a485a9b51373fc0946cf5ce8804fded556978acdd0d44e36ef72",
+      "sha256": "ebb0fbca4562574cd4419339f8905f5f1b12e72fadc3f52f383848089f1a52d2",
       "source": "plugins/ariadne/skills/ariadne/SKILL.md"
     },
     {

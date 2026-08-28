@@ -634,9 +634,9 @@ def _policy_faults(predicate):
 def _berean_result_keys(value, budget):
     """The closed Berean result vocabulary projected through an open object.
 
-    Compatibility and case folding treat demonstrably equivalent identifier
-    spellings as the same finite wire key. Oversized keys are refused by core
-    gates 4 and 7 before either classifier normalises them.
+    Compatibility normalisation and case folding map identifier spellings that
+    they make equivalent to the same finite wire key. Oversized keys are
+    refused by core gates 4 and 7 before either classifier normalises them.
     """
     found = set()
     pending = [value]
