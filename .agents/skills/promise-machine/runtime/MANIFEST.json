@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 929,
-  "total_bytes": 20215339,
+  "file_count": 930,
+  "total_bytes": 20315827,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "5b661db752923946489b704877cdc13f78d4a9360cf022e9e05f83a8770bbb4e",
+      "sha256": "73092c9828695f09ca475d118447215e3b0d52fe8c282df711e4498a389000ba",
       "source": null
     },
     {
@@ -4369,9 +4369,9 @@
       "source": "plugins/pandects/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 17261,
+      "bytes": 17647,
       "path": "plugins/pandects/README.md",
-      "sha256": "17dbe6d328039ee236646fcd261a4f08d20055821f893230f10d7b5c41fd38d9",
+      "sha256": "66eaa50e4f80583eb246be99caaf3ea2ba4c9a1c1d828de4eea5fe9a92209672",
       "source": "plugins/pandects/README.md"
     },
     {
@@ -4429,6 +4429,12 @@
       "source": "plugins/pandects/assets/characters/pandects.png"
     },
     {
+      "bytes": 36695,
+      "path": "plugins/pandects/catalogue/exercise.json",
+      "sha256": "76767aac21f88f3c4e0b9e9bc2e8a190024b5531a4edda18f1f36b275f167b4f",
+      "source": "plugins/pandects/catalogue/exercise.json"
+    },
+    {
       "bytes": 11518,
       "path": "plugins/pandects/catalogue/pandects.json",
       "sha256": "0bdca07560610ab4b237499db1ae7b85be8c07fd7ddf7aa22617e17c5161c725",
@@ -4447,9 +4453,9 @@
       "source": "plugins/pandects/docs/catalogue.md"
     },
     {
-      "bytes": 13261,
+      "bytes": 13278,
       "path": "plugins/pandects/docs/design.md",
-      "sha256": "8a77aaf4d85374bce4564f3e4846c08271df64801afcd0841fbcf0fd4bb1a75d",
+      "sha256": "ae081758fd65f3064826e4ebcdc7bb69cdbef2bdd06c574e33a6097b8a5d8777",
       "source": "plugins/pandects/docs/design.md"
     },
     {
@@ -4489,9 +4495,9 @@
       "source": "plugins/pandects/integrations/wildcat/WildcatMarketModel.sol"
     },
     {
-      "bytes": 6134,
+      "bytes": 6265,
       "path": "plugins/pandects/scripts/pandects.py",
-      "sha256": "33b3a2f58f986f8833aa7f89a75314ce6a4d4e46fa5032852feb8b70012fe15e",
+      "sha256": "6c9a7281ce34020d3926ce319aad2d31031bf733456b1d90bd0baec3ec77b585",
       "source": "plugins/pandects/scripts/pandects.py"
     },
     {
@@ -4507,9 +4513,9 @@
       "source": "plugins/pandects/scripts/pandects_lib/catalogue.py"
     },
     {
-      "bytes": 10720,
+      "bytes": 15996,
       "path": "plugins/pandects/scripts/pandects_lib/checker.py",
-      "sha256": "14030e9793b5f34c2cb92a69ca714bc72e09184e4b1adc4b6cc853862a51a3f8",
+      "sha256": "81896bc6ed3d95f469ed75fb0e07936478bd20dd7ba2c15de42c9650a5b53c0c",
       "source": "plugins/pandects/scripts/pandects_lib/checker.py"
     },
     {
@@ -4519,9 +4525,9 @@
       "source": "plugins/pandects/scripts/pandects_lib/render.py"
     },
     {
-      "bytes": 11283,
+      "bytes": 17501,
       "path": "plugins/pandects/scripts/pandects_lib/run.py",
-      "sha256": "34bf877604438c8de64c75126e19845bbfaa792ed297c2aefa879647df03a74e",
+      "sha256": "28e879937b065391ccd6f861d0efb88b42acac16072783a25dee4301b70f6d86",
       "source": "plugins/pandects/scripts/pandects_lib/run.py"
     },
     {
@@ -4531,9 +4537,9 @@
       "source": "plugins/pandects/scripts/pandects_lib/safejson.py"
     },
     {
-      "bytes": 827,
+      "bytes": 52367,
       "path": "plugins/pandects/search-record.json",
-      "sha256": "de3094b5af4e4f09d49e34c7f574a9f99c46f86d7f8bd0c74d2c4d87f5b5a2e8",
+      "sha256": "d0b21e4602ccfd8c34cbb9a265cdf37ff3feb73ef6c377dbb59fa4d23e146d0c",
       "source": "plugins/pandects/search-record.json"
     },
     {
@@ -4543,9 +4549,9 @@
       "source": "plugins/pandects/skills/pandects/EVOLUTION.md"
     },
     {
-      "bytes": 16484,
+      "bytes": 16585,
       "path": "plugins/pandects/skills/pandects/SKILL.md",
-      "sha256": "79e415fc05ba32bd957006d29cfc1f5f515d1e45d81f57c45233d54f27e9ca0e",
+      "sha256": "62dae4f6857983cb6fdc00a17ecda5c6cbbabe47fdec75210957433c0aadb645",
       "source": "plugins/pandects/skills/pandects/SKILL.md"
     },
     {
@@ -4765,9 +4771,9 @@
       "source": "plugins/pandects/test/SoundInvariant.t.sol"
     },
     {
-      "bytes": 18628,
+      "bytes": 18752,
       "path": "plugins/pandects/test/Wildcat.t.sol",
-      "sha256": "9a216134c32bf409f6eddb443fe4d91a8924b4e9229f427ef847dae4920b8936",
+      "sha256": "d2e6818e92929e5ecca550f0520927f72a0ab59030853bc6bf236f7753caa5b6",
       "source": "plugins/pandects/test/Wildcat.t.sol"
     },
     {

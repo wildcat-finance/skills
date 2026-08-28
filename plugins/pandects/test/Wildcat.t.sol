@@ -31,6 +31,8 @@ import {WildcatMarketCampaign} from "../src/campaigns/Wildcat.sol";
 /// `queue-order-preserved` is true here at a unit the corpus does not name, and
 /// `path-independent` is true here only under a condition.
 contract WildcatTest {
+    event log_named_uint(string key, uint256 val);
+
     Law internal conserved;
     Law internal backed;
     Law internal partitioned;
@@ -320,6 +322,7 @@ contract WildcatTest {
         require(campaign.echidna_debt_falls_only_against_payment(), "the payment law failed");
         require(campaign.echidna_no_accrual_at_rest(), "the rest law failed");
         require(campaign.echidna_recorded_claim_never_shrinks(), "the claim law failed");
+        emit log_named_uint("recordedCalls", campaign.recordedCalls());
     }
 
     // -- what the design actually does ------------------------------------------

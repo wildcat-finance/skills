@@ -218,7 +218,12 @@ python3 scripts/pandects.py run --out search-record.json
 
 The record names the engine, the argv, the determinism class, the
 configuration read out of `foundry.toml` rather than restated, the sequence
-length, and a digest of the corpus that was searched.
+length, and a digest of the corpus that was searched. Each Foundry command
+also lists the catalogue laws its readable test summaries exercise and the
+declared surfaces that support them. A passed surface attributes every law it
+maps to. A failed surface attributes a law only when it maps to that law alone.
+Evaluation counts for passing `invariant_*` functions and positive succession
+call counts appear only when the output exposes them.
 
 `run` knows one engine, and it is Foundry. It emits no entry for Echidna or
 Medusa, and an engine that did not run is absent from a record rather than

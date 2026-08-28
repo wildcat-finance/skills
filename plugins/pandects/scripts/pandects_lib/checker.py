@@ -24,10 +24,19 @@ import os
 import re
 
 from .catalogue import EXACT, REQUIRED_APPLICABILITY
+from . import safejson
 
 ID_IN_SOLIDITY = re.compile(
     r"function\s+id\s*\(\s*\)[^{]*\{[^}]*return\s+\"([^\"]+)\"", re.DOTALL
 )
+
+EXERCISE_KINDS = {
+    "invariant-fuzz",
+    "deterministic",
+    "deterministic-transition",
+    "driver-adapter",
+    "probe",
+}
 
 BROKEN_MARKER = "deliberately broken"
 
@@ -57,6 +66,10 @@ class Finding(object):
 
     def line(self):
         return "%s: %s -- %s" % (self.law, self.part, self.detail)
+
+
+class ExerciseMapError(ValueError):
+    """An exercise map that cannot be loaded as a declared map."""
 
 
 def read(path):
@@ -104,6 +117,140 @@ def resolve(root, relative):
     if shared != root:
         return None
     return target
+
+
+def exercise_path(root, catalogue):
+    """The confined exercise map beside a file-backed catalogue, or None."""
+    if not catalogue.path:
+        return None
+    sibling = os.path.join(os.path.dirname(catalogue.path), "exercise.json")
+    return resolve(root, sibling)
+
+
+def load_exercise(root, catalogue, required=False):
+    """Load the sibling exercise map without treating absence as a check finding."""
+    sibling = os.path.join(
+        os.path.dirname(catalogue.path) if catalogue.path else "catalogue",
+        "exercise.json",
+    )
+    path = exercise_path(root, catalogue)
+    if path is None or not os.path.isfile(path):
+        if required:
+            raise ExerciseMapError("missing Foundry exercise map at %s" % sibling)
+        return None
+    try:
+        raw = safejson.load_file(path)
+    except safejson.InputError as error:
+        raise ExerciseMapError("%s: %s" % (path, error))
+    if not isinstance(raw, dict):
+        raise ExerciseMapError("%s: exercise map is not an object" % path)
+    if raw.get("engine") != "foundry":
+        raise ExerciseMapError("%s: exercise map engine is not 'foundry'" % path)
+    if not isinstance(raw.get("laws"), dict):
+        raise ExerciseMapError("%s: exercise map laws is not an object" % path)
+    return raw
+
+
+def solidity_test_sources(root):
+    """Readable Solidity sources below the confined test directory."""
+    tests = resolve(root, "test")
+    if tests is None or not os.path.isdir(tests):
+        return []
+    sources = []
+    for directory, names, files in os.walk(tests):
+        names.sort()
+        for name in sorted(files):
+            if not name.endswith(".sol"):
+                continue
+            source = read(os.path.join(directory, name))
+            if source is not None:
+                sources.append(source)
+    return sources
+
+
+def surface_exists(sources, contract, function):
+    """Whether one test source declares both the named contract and function."""
+    if not isinstance(contract, str) or not isinstance(function, str):
+        return False
+    contract_pattern = re.compile(
+        r"\b(?:abstract\s+)?contract\s+%s\b" % re.escape(contract)
+    )
+    function_pattern = re.compile(
+        r"\bfunction\s+%s\s*\(" % re.escape(function)
+    )
+    return any(
+        contract_pattern.search(source) and function_pattern.search(source)
+        for source in sources
+    )
+
+
+def check_exercise(root, catalogue, exercise, findings):
+    """Validate law coverage and declared Foundry test surfaces."""
+    declared = exercise["laws"]
+    catalogue_ids = {law.id for law in catalogue.laws}
+    declared_ids = set(declared)
+
+    for identifier in sorted(declared_ids - catalogue_ids):
+        findings.append(
+            Finding(
+                identifier,
+                "exercise map",
+                "map law %s is not in the catalogue" % identifier,
+            )
+        )
+    for identifier in sorted(catalogue_ids - declared_ids):
+        findings.append(
+            Finding(
+                identifier,
+                "exercise map",
+                "catalogue law %s is absent from the exercise map" % identifier,
+            )
+        )
+
+    sources = solidity_test_sources(root)
+    for identifier in sorted(declared_ids):
+        entry = declared[identifier]
+        surfaces = entry.get("surfaces") if isinstance(entry, dict) else None
+        if not isinstance(surfaces, list) or not surfaces:
+            findings.append(
+                Finding(
+                    identifier,
+                    "exercise map",
+                    "law has no declared Foundry surface",
+                )
+            )
+            continue
+        for index, surface in enumerate(surfaces):
+            if not isinstance(surface, dict):
+                findings.append(
+                    Finding(
+                        identifier,
+                        "exercise surface",
+                        "surface %d is not an object" % (index + 1),
+                    )
+                )
+                continue
+            contract = surface.get("contract")
+            function = surface.get("function")
+            kind = surface.get("kind")
+            if kind not in EXERCISE_KINDS:
+                findings.append(
+                    Finding(
+                        identifier,
+                        "exercise surface",
+                        "surface %s.%s has kind %r outside the fixed vocabulary"
+                        % (contract, function, kind),
+                    )
+                )
+            if not surface_exists(sources, contract, function):
+                findings.append(
+                    Finding(
+                        identifier,
+                        "exercise surface",
+                        "no test contract %r declares function %r"
+                        % (contract, function),
+                    )
+                )
 
 
 def check_component(root, law, findings):
@@ -297,4 +444,7 @@ def check(root, catalogue):
         check_applicability(law, findings)
         check_bounds(law, findings)
     orphans(root, catalogue, findings)
+    exercise = load_exercise(root, catalogue)
+    if exercise is not None:
+        check_exercise(root, catalogue, exercise, findings)
     return findings

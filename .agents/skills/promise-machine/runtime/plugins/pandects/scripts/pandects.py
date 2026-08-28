@@ -65,7 +65,11 @@ def cmd_check(args):
     if found is None:
         return USAGE_ERROR
 
-    findings = checker.check(PLUGIN_ROOT, found)
+    try:
+        findings = checker.check(PLUGIN_ROOT, found)
+    except checker.ExerciseMapError as error:
+        print("%s" % error, file=sys.stderr)
+        return USAGE_ERROR
     if args.json:
         print(
             json.dumps(
