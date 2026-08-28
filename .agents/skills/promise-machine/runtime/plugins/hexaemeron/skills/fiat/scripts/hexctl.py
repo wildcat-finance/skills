@@ -3672,6 +3672,7 @@ def done_push(args, state: dict) -> None:
     if not args.head_commit:
         die("--head-commit is required")
     stacked = run_branch_of(state) is not None
+    expected_issue = expected_task_issue(state)
     if stacked:
         expected_base = step_pr_base(state, step)
         if not args.pr_base:
@@ -3697,7 +3698,6 @@ def done_push(args, state: dict) -> None:
                 "--merge-commit is required; the pull request is not terminal "
                 "until merged"
             )
-        expected_issue = expected_task_issue(state)
         if state["receipts"].get("task_issue") is not None and not args.closed_issue_url:
             die("--closed-issue-url is required because a task_issue receipt exists")
         if expected_issue and args.closed_issue_url != expected_issue:
@@ -3727,6 +3727,7 @@ def done_push(args, state: dict) -> None:
         expected_base=(args.pr_base if stacked else state["base"]),
         expected_head_sha=verified_commits[-1],
         expected_merge_sha=args.merge_commit,
+        expected_closing_issue=(expected_issue if not stacked else None),
     )
     github_verified, attribution = verified_github_attribution(
         args.dir, verified_commits
@@ -3804,7 +3805,8 @@ def _integrate_directive(state: dict) -> dict:
             ),
         }
     then = "hexctl done integrate --pr-url <url> --merge-commit <sha>"
-    if expected_task_issue(state):
+    task_issue = expected_task_issue(state)
+    if task_issue:
         then += " --closed-issue-url <url>"
     final_step = state["steps"][-1]["n"]
     merge_records = as_dict(as_dict(state.get("integrate")).get("merges"))
@@ -3828,7 +3830,7 @@ def _integrate_directive(state: dict) -> dict:
             "--reason <bounded-repair-reason>"
         )
         sync_recovery = "supersede-sync-and-revalidate"
-    return {
+    directive = {
         "do": "integrate",
         "run_branch": run_branch,
         "base": integration_base,
@@ -3855,6 +3857,18 @@ def _integrate_directive(state: dict) -> dict:
         },
         "then": then,
     }
+    identity = github_issue_identity(task_issue)
+    if identity is not None:
+        issue_repository, issue_number = identity
+        directive["task_issue_closure"] = {
+            "issue": task_issue,
+            "required_before_merge": f"Closes {issue_repository}#{issue_number}",
+            "gate": (
+                "done integrate reads the final pull request body and refuses "
+                "without a recognised closing reference to this exact issue"
+            ),
+        }
+    return directive
 
 
 def product_evidence_record(state: dict, product_head: str) -> dict:
@@ -5266,6 +5280,7 @@ def done_integrate(args, state: dict) -> None:
         expected_head_sha=remote_tip,
         expected_merge_sha=args.merge_commit,
         expected_head_label="remote run branch tip",
+        expected_closing_issue=expected_issue,
     )
     github_verified = verify_github_commits(args.dir, [args.merge_commit])
     attribution = merged_attribution(args.dir, state, args.merge_commit)
@@ -7199,6 +7214,13 @@ GITHUB_SSH_RE = re.compile(
 GITHUB_PR_RE = re.compile(
     r"^https://github\.com/(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/pull/(?P<number>[1-9][0-9]*)/?$"
 )
+GITHUB_ISSUE_RE = re.compile(
+    r"^https://github\.com/(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/issues/(?P<number>[1-9][0-9]*)/?$"
+)
+GITHUB_CLOSING_KEYWORD_RE = re.compile(
+    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+",
+    re.IGNORECASE,
+)
 
 
 def require_full_sha(value: object, label: str) -> str:
@@ -7236,6 +7258,78 @@ def github_repository(base_dir: str) -> str:
     if repository.casefold() != target.casefold():
         die("GitHub repository identity does not match target origin")
     return target
+
+
+def github_issue_identity(issue_url: object) -> tuple[str, str] | None:
+    """Return the repository and number for one canonical GitHub issue URL.
+
+    ``task_issue`` predates the GitHub delivery gate and deliberately accepts
+    other HTTP issue trackers. Those keep their explicit closure receipt. A
+    GitHub issue gets the stronger pull-request closing-reference rule.
+    """
+    if not isinstance(issue_url, str):
+        return None
+    match = GITHUB_ISSUE_RE.fullmatch(issue_url)
+    if match is None:
+        return None
+    return match.group("repo"), match.group("number")
+
+
+def github_issue_closing_references(
+    issue_url: object, pull_request_repository: str
+) -> tuple[str, ...]:
+    identity = github_issue_identity(issue_url)
+    if identity is None:
+        return ()
+    issue_repository, number = identity
+    references = [f"{issue_repository}#{number}"]
+    if issue_repository.casefold() == pull_request_repository.casefold():
+        references.insert(0, f"#{number}")
+    return tuple(references)
+
+
+def markdown_prose_lines(body: str) -> list[str]:
+    """Return lines where GitHub can interpret a closing keyword.
+
+    A keyword displayed as an example in a fence, inline code, an HTML comment,
+    or a quotation is evidence about syntax, not an instruction to close.
+    """
+    without_comments = re.sub(r"<!--.*?-->", "", body, flags=re.DOTALL)
+    lines = []
+    fence = None
+    for line in without_comments.splitlines():
+        stripped = line.lstrip()
+        marker = stripped[:3]
+        if marker in ("```", "~~~"):
+            fence = None if fence == marker else marker if fence is None else fence
+            continue
+        if fence is not None or stripped.startswith(">"):
+            continue
+        lines.append(re.sub(r"`+[^`\n]*`+", "", line))
+    return lines
+
+
+def pull_request_closing_reference(
+    body: str, issue_url: object, repository: str
+) -> dict | None:
+    references = github_issue_closing_references(issue_url, repository)
+    if not references:
+        return None
+    alternatives = "|".join(re.escape(reference) for reference in references)
+    pattern = re.compile(
+        GITHUB_CLOSING_KEYWORD_RE.pattern
+        + rf"(?P<reference>{alternatives})(?![A-Za-z0-9_.#/-])",
+        GITHUB_CLOSING_KEYWORD_RE.flags,
+    )
+    for line in markdown_prose_lines(body):
+        match = pattern.search(line)
+        if match is not None:
+            return {
+                "issue_url": issue_url,
+                "reference": match.group("reference"),
+                "body_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
+            }
+    return None
 
 
 def pull_request_target(pr_url: object, repository: str) -> tuple[str, str]:
@@ -7276,6 +7370,7 @@ def inspect_pull_request(
     expected_head_sha: str | None,
     expected_merge_sha: str | None,
     expected_head_label: str = "verified pushed branch tip",
+    expected_closing_issue: str | None = None,
 ) -> dict:
     head_sha = (
         require_full_sha(expected_head_sha, "pull request head")
@@ -7312,6 +7407,21 @@ def inspect_pull_request(
         die("pull request topology is missing its body")
     if HOST_BYLINE_RE.search(body):
         die(f"pull request body carries a runtime-host byline. {CAUSE_HOST_PR_BYLINE}")
+    closing_issue = None
+    if expected_closing_issue is not None:
+        references = github_issue_closing_references(
+            expected_closing_issue, repository
+        )
+        if references:
+            closing_issue = pull_request_closing_reference(
+                body, expected_closing_issue, repository
+            )
+            if closing_issue is None:
+                canonical = f"Closes {references[-1]}"
+                die(
+                    "pull request body has no recognised closing reference for "
+                    f"the recorded task_issue; add `{canonical}` before merge"
+                )
     returned_url = payload.get("html_url")
     if not isinstance(returned_url, str):
         die("pull request topology is missing its URL")
@@ -7341,7 +7451,7 @@ def inspect_pull_request(
             die("pull request is not the expected merged topology")
     elif merged:
         die("step pull request was already merged before integrate")
-    return {
+    record = {
         "url": url,
         "head": expected_head,
         "base": expected_base,
@@ -7350,6 +7460,9 @@ def inspect_pull_request(
         "merge_sha": returned_merge,
         "author_login": author_login,
     }
+    if closing_issue is not None:
+        record["closing_issue"] = closing_issue
+    return record
 
 
 def github_commit_payload(base_dir: str, repository: str, commit_sha: str) -> dict:
