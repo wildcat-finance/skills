@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 13936109,
+    "bytes_blob": 14010410,
     "bytes_generated": 98
   },
   "entries": [
@@ -42,7 +42,14 @@
       "path": "audit/rounds/fiat-383-prove-receipts-against-the-captured-header-s.synopsis.md"
     },
     {
-      "bytes": 65257,
+      "bytes": 69458,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 34729",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-409-chunk-corpora-carry-dataset-provenance.md"
+    },
+    {
+      "bytes": 70100,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
