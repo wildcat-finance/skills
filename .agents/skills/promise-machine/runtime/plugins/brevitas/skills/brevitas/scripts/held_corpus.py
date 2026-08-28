@@ -692,7 +692,7 @@ def _validate_spans(value: Any, output: str, *, case_id: str) -> int:
     if sorted(order for order, _ in spans) != expected_orders:
         raise CorpusError("HC030", "protected-span-orders-invalid", case_id=case_id)
     positions = [output.index(text) for _, text in sorted(spans)]
-    if positions != sorted(positions):
+    if any(left >= right for left, right in zip(positions, positions[1:])):
         raise CorpusError("HC033", "protected-spans-reordered", case_id=case_id)
     return len(spans)
 

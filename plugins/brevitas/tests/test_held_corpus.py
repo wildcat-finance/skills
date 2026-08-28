@@ -408,6 +408,24 @@ class HeldCorpusTests(unittest.TestCase):
 
         self.expect_failure("HC032", change)
 
+    def test_equal_start_protected_spans_are_refused(self) -> None:
+        def change(root: Path, manifest: dict[str, Any]) -> None:
+            case = manifest["cases"][0]
+            output = b"abc\n"
+            self.fixture_path(root, case).write_bytes(output)
+            self.refresh_digest(case, "output", output)
+            case["protected_spans"] = [
+                {
+                    "order": order,
+                    "kind": "causal-mechanism",
+                    "text": text,
+                    "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                }
+                for order, text in enumerate(("abc", "ab"), start=1)
+            ]
+
+        self.expect_failure("HC033", change)
+
     def test_reordered_protected_span_is_refused(self) -> None:
         def change(_root: Path, manifest: dict[str, Any]) -> None:
             spans = manifest["cases"][0]["protected_spans"]
