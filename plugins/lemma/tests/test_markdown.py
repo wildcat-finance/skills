@@ -14,8 +14,10 @@ No compiler needed, so this always runs. Exit code is the failure count.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import io
+import json
 import contextlib
 import os
 import pathlib
@@ -625,14 +627,21 @@ def test_summary_fail_loud(tmp: pathlib.Path) -> None:
     root2.mkdir()
     (root2 / "p.md").write_text(f"# T\n\n{LONG}", encoding="utf-8")
     out = tmp / "nope.jsonl"
+    # --source-ref is required alongside --out, so both invocations carry one:
+    # without it each would exit 1 on the missing flag rather than on the
+    # navigation this case is about.
+    ref = "example/docs@" + "a" * 40
     r = subprocess.run([sys.executable, script, "--root", str(root2),
-                        "--exclude", "zz", "--out", str(out)],
+                        "--exclude", "zz", "--source-ref", ref,
+                        "--out", str(out)],
                        capture_output=True, text=True)
-    check("CLI: missing default SUMMARY exits 1", r.returncode == 1,
+    check("CLI: missing default SUMMARY exits 1",
+          r.returncode == 1 and "SUMMARY" in r.stderr,
           f"rc={r.returncode} stderr={r.stderr[:120]}")
     check("CLI: nothing written on a failed build", not out.exists(), str(out))
     r2 = subprocess.run([sys.executable, script, "--root", str(root2),
                          "--exclude", "zz", "--summary", "",
+                         "--source-ref", ref,
                          "--out", str(out)], capture_output=True, text=True)
     check("CLI: --summary '' builds and writes",
           r2.returncode == 0 and out.exists(),
@@ -904,6 +913,114 @@ def test_strong_section_boundaries() -> None:
 
 # --------------------------------------------------------------------------
 
+def _rebuilt_id(records: list[dict]) -> str:
+    """Recompute the corpus identifier from the chunks on disk.
+
+    Spelled out here rather than called out of the chunker, so the record
+    cannot agree with itself by construction: this is the definition, and the
+    emitter has to meet it. The two stamped fields are excluded because the
+    identifier is stamped onto the chunks it digests, and a digest covering
+    them would have to cover itself.
+    """
+    digest = hashlib.sha256()
+    for record in records:
+        bare = {k: v for k, v in record.items()
+                if k not in ("source_ref", "corpus_build_id")}
+        digest.update(json.dumps(bare, sort_keys=True).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def test_provenance_emitted(tmp: pathlib.Path) -> None:
+    print("\nM25 — a delivered corpus carries the record of what produced it")
+    script = str(ROOT / "chunkers" / "markdown.py")
+    root = tmp / "src"
+    root.mkdir()
+    (root / "a.md").write_text(f"# A\n\n{LONG}", encoding="utf-8")
+    (root / "b.md").write_text(f"# B\n\n{LONG}", encoding="utf-8")
+    common = [sys.executable, script, "--root", str(root),
+              "--summary", "", "--exclude", "matches-nothing"]
+    ref = "example/corpus@" + "d" * 40
+
+    bare_dir = tmp / "bare"
+    bare_dir.mkdir()
+    r = subprocess.run(common + ["--out", str(bare_dir / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("no --source-ref: exit is nonzero", r.returncode != 0,
+          str(r.returncode))
+    check("no --source-ref: the refusal names the missing flag",
+          "--source-ref" in r.stderr, r.stderr[-200:])
+    check("no --source-ref: the output directory is left empty",
+          list(bare_dir.iterdir()) == [],
+          str(sorted(p.name for p in bare_dir.iterdir())))
+
+    good = tmp / "good"
+    good.mkdir()
+    out = good / "chunks.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref, "--out", str(out)],
+                       capture_output=True, text=True)
+    check("with --source-ref: exit 0", r.returncode == 0,
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    names = sorted(p.name for p in good.iterdir())
+    check("a delivered corpus is exactly two files",
+          names == ["chunks.jsonl", "provenance.jsonl"], str(names))
+
+    prov = good / "provenance.jsonl"
+    lines = prov.read_text(encoding="utf-8").splitlines() if prov.exists() else []
+    check("the record is one line of JSON", len(lines) == 1, str(len(lines)))
+    record = json.loads(lines[0]) if len(lines) == 1 else {}
+    problems = md._schema.validate_provenance(record)
+    check("the record validates", problems == [], str(problems[:3]))
+
+    written = ([json.loads(line) for line
+                in out.read_text(encoding="utf-8").splitlines()]
+               if out.exists() else [])
+    check("corpus_build_id is recomputed from the chunks written",
+          bool(written) and record.get("corpus_build_id") == _rebuilt_id(written),
+          str(record.get("corpus_build_id")))
+    check("chunk_count matches the file beside the record",
+          bool(written) and record.get("chunk_count") == len(written),
+          f"{record.get('chunk_count')} vs {len(written)}")
+
+    check("every emitted chunk carries the stamped ref",
+          bool(written) and all(c.get("source_ref") == record.get("source_ref")
+                                for c in written),
+          str({c.get("source_ref") for c in written}))
+    check("every emitted chunk carries the stamped build identifier",
+          bool(written) and all(
+              c.get("corpus_build_id") == record.get("corpus_build_id")
+              for c in written),
+          str({c.get("corpus_build_id") for c in written}))
+
+    unstamped = md.chunk_tree(str(root), ["matches-nothing"], None)
+    check("chunk_tree leaves provenance unset",
+          all(c.corpus_build_id is None and c.source_ref is None
+              for c in unstamped))
+
+    compiler = record.get("compiler") or {}
+    check("no compiler applies to a Markdown corpus",
+          compiler.get("applicable") is False, str(compiler))
+    check("the absence carries the reason it is an absence",
+          isinstance(compiler.get("reason"), str)
+          and bool(compiler["reason"].strip()), str(compiler.get("reason")))
+    check("the record carries no compiler version at all",
+          "reported_version" not in compiler, str(sorted(compiler)))
+
+    alt = tmp / "alt"
+    alt.mkdir()
+    named = alt / "named.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref,
+                                 "--out", str(alt / "chunks.jsonl"),
+                                 "--provenance", str(named)],
+                       capture_output=True, text=True)
+    check("--provenance writes where it is told",
+          r.returncode == 0 and named.exists(),
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    check("--provenance leaves no record at the default path",
+          not (alt / "provenance.jsonl").exists(),
+          str(sorted(p.name for p in alt.iterdir())))
+
+
 def main() -> int:
     test_fences()
     test_byte_exact()
@@ -940,6 +1057,8 @@ def main() -> int:
     test_lazy_list_continuation()
     test_multiline_code_span()
     test_strong_section_boundaries()
+    with tempfile.TemporaryDirectory() as td:
+        test_provenance_emitted(pathlib.Path(td))
     print(f"\n{len(FAILURES)} failure(s)" + (": " + ", ".join(FAILURES) if FAILURES else ""))
     return len(FAILURES)
 

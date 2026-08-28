@@ -16,6 +16,7 @@ Exit code is the number of failures, so CI can gate on it.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import pathlib
@@ -953,10 +954,15 @@ def test_cli_integration(solc: str, tmp: pathlib.Path) -> None:
         paths.append(_write_input(tmp, f"cli-{i}.json",
                                   {"src/C.sol": base.format(v)}))
 
+    # --source-ref is required alongside --out, so every invocation here
+    # carries one: without it each would exit on the missing flag rather than
+    # on the build condition the case is named for.
+    ref = "example/repo@" + "b" * 40
     out = tmp / "conflict.jsonl"
     r = subprocess.run([sys.executable, script,
                         "--input", paths[0], "--input", paths[1],
                         "--solc", solc, "--include", "src/**",
+                        "--source-ref", ref,
                         "--out", str(out)], capture_output=True, text=True)
     check("conflict: exit code is nonzero", r.returncode == 1, str(r.returncode))
     check("conflict: no output file written", not out.exists(), str(out))
@@ -965,6 +971,7 @@ def test_cli_integration(solc: str, tmp: pathlib.Path) -> None:
     out2 = tmp / "typo.jsonl"
     r = subprocess.run([sys.executable, script, "--input", paths[0],
                         "--solc", solc, "--include", "typo/**",
+                        "--source-ref", ref,
                         "--out", str(out2)], capture_output=True, text=True)
     check("empty selection: exit code is nonzero", r.returncode == 1,
           str(r.returncode))
@@ -973,6 +980,7 @@ def test_cli_integration(solc: str, tmp: pathlib.Path) -> None:
     out3 = tmp / "ok.jsonl"
     r = subprocess.run([sys.executable, script, "--input", paths[0],
                         "--solc", solc, "--include", "src/**",
+                        "--source-ref", ref,
                         "--out", str(out3)], capture_output=True, text=True)
     check("healthy build: exit 0 and output written",
           r.returncode == 0 and out3.exists(),
@@ -1176,14 +1184,167 @@ def test_compiler_version_is_checked(solc: str, tmp: pathlib.Path) -> None:
     out = tmp / "version.jsonl"
     r = subprocess.run([sys.executable, str(ROOT / "chunkers" / "solidity.py"),
                         "--input", f, "--solc", solc, "--include", "src/**",
-                        "--expect-solc", other, "--out", str(out)],
+                        "--expect-solc", other,
+                        "--source-ref", "example/repo@" + "c" * 40,
+                        "--out", str(out)],
                        capture_output=True, text=True)
     check("CLI: mismatch exits nonzero and writes nothing",
-          r.returncode == 1 and not out.exists(),
-          f"rc={r.returncode} exists={out.exists()}")
+          r.returncode == 1 and not out.exists() and f"expected {other}" in r.stderr,
+          f"rc={r.returncode} exists={out.exists()} stderr={r.stderr[:120]}")
 
 
 # --------------------------------------------------------------------------
+
+def _rebuilt_id(records: list[dict]) -> str:
+    """Recompute the corpus identifier from the chunks on disk.
+
+    Spelled out here rather than called out of the chunker, so the record
+    cannot agree with itself by construction: this is the definition, and the
+    emitter has to meet it. The two stamped fields are excluded because the
+    identifier is stamped onto the chunks it digests, and a digest covering
+    them would have to cover itself.
+    """
+    digest = hashlib.sha256()
+    for record in records:
+        bare = {k: v for k, v in record.items()
+                if k not in ("source_ref", "corpus_build_id")}
+        digest.update(json.dumps(bare, sort_keys=True).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def test_provenance_refusal(tmp: pathlib.Path) -> None:
+    print("\nI31 — --out without --source-ref refuses before the compiler runs")
+    script = str(ROOT / "chunkers" / "solidity.py")
+    bare_dir = tmp / "bare"
+    bare_dir.mkdir()
+    # A compiler that cannot exist and an input that was never written: if the
+    # refusal happens where it must, neither is ever reached.
+    r = subprocess.run([sys.executable, script,
+                        "--input", str(tmp / "never-written.json"),
+                        "--solc", str(tmp / "no-such-solc"),
+                        "--include", "src/**",
+                        "--out", str(bare_dir / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("no --source-ref: exit is nonzero", r.returncode != 0,
+          str(r.returncode))
+    check("no --source-ref: the refusal names the missing flag",
+          "--source-ref" in r.stderr, r.stderr[-200:])
+    # Without this the case passes for the wrong reason: a run that dies
+    # reaching for a compiler that is not there also exits nonzero and also
+    # writes nothing.
+    check("no --source-ref: the compiler is never consulted",
+          "no-such-solc" not in r.stderr, r.stderr[-200:])
+    check("no --source-ref: the output directory is left empty",
+          list(bare_dir.iterdir()) == [],
+          str(sorted(p.name for p in bare_dir.iterdir())))
+
+
+def test_provenance_emitted(solc: str, tmp: pathlib.Path) -> None:
+    print("\nI32 — a delivered corpus carries the record of what produced it")
+    schema = sys.modules["lemma_schema"]
+    script = str(ROOT / "chunkers" / "solidity.py")
+    source = _write_input(tmp, "prov.json", {
+        "src/C.sol": _SPDX + "contract C {\n"
+        "    /// @notice returns one\n"
+        "    function f() external pure returns (uint256) { return 1; }\n"
+        "}\n"})
+    ref = "https://example.invalid/owner/repo@" + "d" * 40
+    common = [sys.executable, script, "--input", source, "--solc", solc,
+              "--include", "src/**"]
+
+    good = tmp / "prov-out"
+    good.mkdir()
+    out = good / "chunks.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref, "--out", str(out)],
+                       capture_output=True, text=True)
+    check("with --source-ref: exit 0", r.returncode == 0,
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    names = sorted(p.name for p in good.iterdir())
+    check("a delivered corpus is exactly two files",
+          names == ["chunks.jsonl", "provenance.jsonl"], str(names))
+
+    prov = good / "provenance.jsonl"
+    lines = prov.read_text(encoding="utf-8").splitlines() if prov.exists() else []
+    check("the record is one line of JSON", len(lines) == 1, str(len(lines)))
+    record = json.loads(lines[0]) if len(lines) == 1 else {}
+    problems = schema.validate_provenance(record)
+    check("the record validates", problems == [], str(problems[:3]))
+
+    written = ([json.loads(line) for line
+                in out.read_text(encoding="utf-8").splitlines()]
+               if out.exists() else [])
+    check("corpus_build_id is recomputed from the chunks written",
+          bool(written) and record.get("corpus_build_id") == _rebuilt_id(written),
+          str(record.get("corpus_build_id")))
+    check("chunk_count matches the file beside the record",
+          bool(written) and record.get("chunk_count") == len(written),
+          f"{record.get('chunk_count')} vs {len(written)}")
+    check("every emitted chunk carries the stamped ref",
+          bool(written) and all(c.get("source_ref") == record.get("source_ref")
+                                for c in written),
+          str({c.get("source_ref") for c in written}))
+    check("every emitted chunk carries the stamped build identifier",
+          bool(written) and all(
+              c.get("corpus_build_id") == record.get("corpus_build_id")
+              for c in written),
+          str({c.get("corpus_build_id") for c in written}))
+
+    reported = cs.solc_version(solc)
+    compiler = record.get("compiler") or {}
+    check("an ungated run records the compiler as applicable",
+          compiler.get("applicable") is True, str(compiler))
+    check("an ungated run records the version the compiler reported",
+          compiler.get("reported_version") == reported,
+          str(compiler.get("reported_version")))
+    check("an ungated run records the --solc argument as given",
+          compiler.get("invocation") == solc, str(compiler.get("invocation")))
+    check("an ungated run records no pin", compiler.get("pin") is None
+          and compiler.get("pin_match") is None, str(compiler.get("pin")))
+    check("an ungated run says why nothing was gated",
+          isinstance(compiler.get("reason"), str)
+          and bool(compiler["reason"].strip()), str(compiler.get("reason")))
+
+    gated = tmp / "prov-gated"
+    gated.mkdir()
+    # A proper prefix of the reported version, which is what --expect-solc is
+    # in practice: the gate compares with startswith, never for equality.
+    pin = reported.split("+")[0]
+    r = subprocess.run(common + ["--source-ref", ref, "--expect-solc", pin,
+                                 "--out", str(gated / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("a gated run exits 0", r.returncode == 0,
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    gprov = gated / "provenance.jsonl"
+    glines = (gprov.read_text(encoding="utf-8").splitlines()
+              if gprov.exists() else [])
+    grecord = json.loads(glines[0]) if len(glines) == 1 else {}
+    gcompiler = grecord.get("compiler") or {}
+    check("a gated run records the pin it gated on",
+          gcompiler.get("pin") == pin, str(gcompiler.get("pin")))
+    check("a gated run names the pin a prefix pin",
+          gcompiler.get("pin_match") == "prefix",
+          str(gcompiler.get("pin_match")))
+    check("a gated run keeps the reported version beside the pin",
+          gcompiler.get("reported_version") == reported
+          and reported.startswith(pin), str(gcompiler.get("reported_version")))
+    check("a gated record validates", schema.validate_provenance(grecord) == [],
+          str(schema.validate_provenance(grecord)[:3]))
+
+    alt = tmp / "prov-alt"
+    alt.mkdir()
+    named = alt / "named.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref,
+                                 "--out", str(alt / "chunks.jsonl"),
+                                 "--provenance", str(named)],
+                       capture_output=True, text=True)
+    check("--provenance writes where it is told",
+          r.returncode == 0 and named.exists(),
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    check("--provenance leaves no record at the default path",
+          not (alt / "provenance.jsonl").exists(),
+          str(sorted(p.name for p in alt.iterdir())))
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -1194,6 +1355,8 @@ def main() -> int:
     test_stripper()
     test_comment_separator()
     test_provenance_record()
+    with tempfile.TemporaryDirectory() as td:
+        test_provenance_refusal(pathlib.Path(td))
     if args.solc:
         with tempfile.TemporaryDirectory() as td:
             test_merge_semantics(args.solc, pathlib.Path(td))
@@ -1223,6 +1386,7 @@ def main() -> int:
                 test_abi_checks_parameter_types(args.solc, tmp)
                 test_unattached_comment_syntax(args.solc, tmp)
                 test_compiler_version_is_checked(args.solc, tmp)
+                test_provenance_emitted(args.solc, tmp)
             except (RuntimeError, FileNotFoundError) as e:
                 check("compiler tests ran", False, str(e)[:200])
     else:

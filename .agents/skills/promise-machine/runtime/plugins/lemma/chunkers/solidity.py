@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import hashlib
 import importlib.util
 import json
 import pathlib
@@ -955,7 +956,8 @@ def dedupe(chunks: list[Chunk]) -> tuple[list[Chunk], int]:
 
 def build(inputs: list[str], solc: str, includes: list[str],
           no_dedupe: bool = False,
-          expect_solc: str | None = None) -> tuple[list[Chunk], int]:
+          expect_solc: str | None = None,
+          observed: dict | None = None) -> tuple[list[Chunk], int]:
     """
     The whole pipeline behind the CLI: chunk each compilation unit, merge,
     deduplicate, compose embeddings. Raises ChunkError for every condition
@@ -963,10 +965,17 @@ def build(inputs: list[str], solc: str, includes: list[str],
     tests call this — the same function, not a re-enactment of it.
     Fatal-condition tests that recreate the checks by hand keep passing however
     badly this code regresses.
+
+    `observed` is an out-parameter for facts the caller has to record but
+    cannot recover afterwards, on the same footing as `glob_hits` below. The
+    compiler version is the one of them so far: asking the compiler a second
+    time from main() would record a version the gate never checked.
     """
     if not inputs:
         raise ChunkError("no compilation units given")
     version = require_solc_version(solc, expect_solc)
+    if observed is not None:
+        observed["compiler_version"] = version
     print(f"  compiler      : {version}"
           + (f"  (matches --expect-solc {expect_solc})" if expect_solc
              else "  (unpinned — pass --expect-solc to gate on it)"))
@@ -1025,6 +1034,121 @@ def build(inputs: list[str], solc: str, includes: list[str],
     return chunks, dropped
 
 
+# --------------------------------------------------------------------------
+# corpus provenance: what the pipeline records beside the chunks
+# --------------------------------------------------------------------------
+
+PROVENANCE_FILENAME = "provenance.jsonl"
+# The two fields stamp() writes onto every chunk. The build identifier digests
+# everything else, because an identifier that is stamped onto the chunks it
+# digests cannot also cover itself.
+_STAMPED = ("source_ref", "corpus_build_id")
+
+
+def skill_version() -> str:
+    """The governed version of the lemma skill, read rather than repeated.
+
+    A version copied into this file is a version that can drift from the one
+    the promise machine governs, and a record carrying a drifted version is a
+    guess wearing the shape of a fact. It is read from the skill's frontmatter,
+    which travels beside this chunker in the plugin and in the portable
+    runtime alike.
+    """
+    manifest = (pathlib.Path(__file__).resolve().parent.parent
+                / "skills" / "lemma" / "SKILL.md")
+    text = manifest.read_text(encoding="utf-8") if manifest.is_file() else ""
+    found = re.search(r'^  version: "([^"]+)"$', text, re.M)
+    if not found:
+        raise ChunkError(
+            f"no governed version in {manifest} — the record states which "
+            "chunker built the corpus and there is nothing here to state")
+    return found.group(1)
+
+
+def corpus_build_id(records: list[dict]) -> str:
+    """Digest the chunks as the chunker produced them, less the stamped pair.
+
+    Keys are sorted so the digest survives a change in field order, and each
+    record ends with a newline so two adjacent chunks cannot be reshuffled into
+    the same bytes.
+    """
+    digest = hashlib.sha256()
+    for record in records:
+        bare = {k: v for k, v in record.items() if k not in _STAMPED}
+        digest.update(json.dumps(bare, sort_keys=True).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def compiler_block(args, version: str) -> dict:
+    """What the compiler was, and whether the run gated on it.
+
+    A gated run records the pin; an ungated one records why there is none. The
+    version is the same string the gate compared, so the block cannot describe
+    a check that was made against something else.
+    """
+    if args.expect_solc:
+        return _schema.compiler_reported(args.solc, version,
+                                         pin=args.expect_solc)
+    return _schema.compiler_reported(
+        args.solc, version,
+        unpinned_reason="no --expect-solc was given, so the compiler is "
+                        "recorded but nothing was checked against it")
+
+
+def deliver(chunks: list[Chunk], args, *, inputs: list[dict],
+            include: list[str], units_present: list[str],
+            compiler: dict) -> None:
+    """Write the corpus and the record of what produced it.
+
+    The order is the substance. The record is built and validated before
+    anything reaches disk, so a run that cannot produce a complete one leaves
+    no directory a capture would read as a whole corpus. The chunks are then
+    stamped with the values the record carries — the stripped ref, not the raw
+    one — so the two files cannot disagree about the origin. The identifier is
+    recomputed from the file that was actually written, and a disagreement
+    takes the corpus away rather than delivering it beside a record describing
+    chunks nobody wrote.
+    """
+    record = _schema.provenance_record(
+        chunker="solidity",
+        chunker_version=skill_version(),
+        source_ref=args.source_ref,
+        corpus_build_id=corpus_build_id([c.to_dict() for c in chunks]),
+        chunk_count=len(chunks),
+        inputs=inputs,
+        include=include,
+        units_present=units_present,
+        units_selected=sorted({c.path for c in chunks}),
+        compiler=compiler)
+    faults = _schema.validate_provenance(record)
+    if faults:
+        raise ChunkError("the provenance record is incomplete, so nothing was "
+                         "written:\n  " + "\n  ".join(faults))
+
+    _schema.stamp(chunks, source_ref=record["source_ref"],
+                  corpus_build_id=record["corpus_build_id"])
+    with open(args.out, "w") as f:
+        for c in chunks:
+            f.write(json.dumps(c.to_dict()) + "\n")
+    print(f"  written       : {args.out}")
+
+    with open(args.out) as f:
+        on_disk = [json.loads(line) for line in f]
+    if corpus_build_id(on_disk) != record["corpus_build_id"]:
+        pathlib.Path(args.out).unlink()
+        raise ChunkError(
+            f"{args.out} does not digest to the identifier the record carries, "
+            "so the corpus has been removed rather than delivered beside a "
+            "record describing chunks nobody wrote")
+
+    path = args.provenance or str(
+        pathlib.Path(args.out).parent / PROVENANCE_FILENAME)
+    with open(path, "w") as f:
+        f.write(json.dumps(record) + "\n")
+    print(f"  provenance    : {path}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--input", required=True, action="append",
@@ -1038,12 +1162,31 @@ def main() -> int:
     ap.add_argument("--expect-solc", metavar="VERSION",
                     help="refuse to build unless solc reports this version, "
                          "e.g. 0.8.25; fail the build on any other compiler")
+    ap.add_argument("--source-ref", metavar="REF",
+                    help="what was chunked: a tag, a commit or a URL. Required "
+                         "with --out. Recorded as given, less any URL "
+                         "userinfo; nothing resolves or checks it")
+    ap.add_argument("--provenance", metavar="PATH",
+                    help=f"where to write the provenance record; defaults to "
+                         f"{PROVENANCE_FILENAME} beside --out")
     args = ap.parse_args()
 
+    # Before the compiler is consulted and before anything is written: a
+    # corpus delivered with no origin is the defect this record exists to
+    # close, and refusing late would leave a directory behind.
+    if args.out and not args.source_ref:
+        print("\nFATAL: --out was given without --source-ref, so nothing was "
+              "written.\n  A corpus with no recorded origin is one nobody can "
+              "check afterwards.\n  Pass --source-ref with the tag, commit or "
+              "URL that was chunked.", file=sys.stderr)
+        return 1
+
+    observed: dict = {}
     try:
         chunks, dropped = build(args.input, args.solc, args.include,
                                 no_dedupe=args.no_dedupe,
-                                expect_solc=args.expect_solc)
+                                expect_solc=args.expect_solc,
+                                observed=observed)
     except ChunkError as e:
         print(f"\nFATAL: {e}", file=sys.stderr)
         return 1
@@ -1095,10 +1238,23 @@ def main() -> int:
     print("  by kind       : " + ", ".join(f"{k}={v}" for k, v in sorted(kinds.items())))
 
     if args.out and not problems and not oversize:
-        with open(args.out, "w") as f:
-            for c in chunks:
-                f.write(json.dumps(c.to_dict()) + "\n")
-        print(f"  written       : {args.out}")
+        try:
+            digested, present = [], set()
+            for path in sorted(args.input):
+                blob = pathlib.Path(path).read_bytes()
+                digested.append({"path": path,
+                                 "sha256": hashlib.sha256(blob).hexdigest()})
+                present |= set(json.loads(blob).get("sources") or {})
+            deliver(chunks, args, inputs=digested,
+                    # An empty --include selects every source unit, so that is
+                    # the pattern the record has to carry: a record whose
+                    # coverage is blank describes a corpus of unknown extent.
+                    include=args.include or ["**"],
+                    units_present=sorted(present),
+                    compiler=compiler_block(args, observed["compiler_version"]))
+        except (ChunkError, ValueError, OSError) as e:
+            print(f"\nFATAL: {e}", file=sys.stderr)
+            return 1
     elif args.out:
         print("  NOT WRITTEN   : refusing to emit a corpus that fails its own checks")
 

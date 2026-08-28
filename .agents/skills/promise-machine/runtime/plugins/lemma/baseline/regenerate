@@ -31,6 +31,12 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# The corpus this script chunks is the invented one in this directory, so the
+# ref that names it is a literal rather than anything read out of git. Asking
+# git would make the recorded origin depend on the state of the working tree,
+# and a dirty tree would put a commit on a corpus that is not the commit's.
+REF="lemma-synthetic-baseline-corpus"
+
 OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
 
@@ -42,9 +48,10 @@ python3 baseline/standard_input.py \
     --src baseline/solidity/src --out "$OUT/standard-input.json"
 python3 chunkers/solidity.py \
     --input "$OUT/standard-input.json" \
-    --solc "$SOLC" "${gate[@]}" --include 'src/**' --out "$OUT/solidity.jsonl"
+    --solc "$SOLC" "${gate[@]}" --include 'src/**' \
+    --source-ref "$REF" --out "$OUT/solidity.jsonl"
 echo
 echo "=== Markdown ==="
 python3 chunkers/markdown.py \
     --root baseline/docs --summary SUMMARY.md \
-    --exclude SUMMARY.md --out "$OUT/markdown.jsonl"
+    --exclude SUMMARY.md --source-ref "$REF" --out "$OUT/markdown.jsonl"

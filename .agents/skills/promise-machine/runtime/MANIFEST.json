@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 909,
-  "total_bytes": 20099724,
+  "total_bytes": 20113533,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4273,9 +4273,9 @@
       "source": "plugins/lemma/baseline/docs/user-guide/troubleshooting.md"
     },
     {
-      "bytes": 1671,
+      "bytes": 2066,
       "path": "plugins/lemma/baseline/regenerate",
-      "sha256": "25d0c3168488bb7da62e0a4a35dfa8336ffef8e15046314b3b58162341169e83",
+      "sha256": "247b8a8f537d697cfa4c82a2adec324200452af69d10b633dbea01e7d6f59b51",
       "source": "plugins/lemma/baseline/regenerate"
     },
     {
@@ -4309,15 +4309,15 @@
       "source": "plugins/lemma/baseline/standard_input.py"
     },
     {
-      "bytes": 50772,
+      "bytes": 56872,
       "path": "plugins/lemma/chunkers/markdown.py",
-      "sha256": "23da00bcabea1dcd0882ef0da66589cd23340277ec96823a967134fbda84d7a0",
+      "sha256": "29d2ffdd7d47b578b80be969aa29a93030f49600a3c58d450d47da3562f92748",
       "source": "plugins/lemma/chunkers/markdown.py"
     },
     {
-      "bytes": 47677,
+      "bytes": 54991,
       "path": "plugins/lemma/chunkers/solidity.py",
-      "sha256": "53e3b3c9a01d3d081066198c69e62d3c4a0b95d3901f719583a7fe1b13130978",
+      "sha256": "4b29f918b8cd972f29fa70772c52f57d4052b976f6d93cf9529a6ca2b19e73ea",
       "source": "plugins/lemma/chunkers/solidity.py"
     },
     {
