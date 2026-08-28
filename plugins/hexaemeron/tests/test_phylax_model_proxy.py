@@ -1679,6 +1679,23 @@ class ProviderBoundaryTests(unittest.TestCase):
                 self.assertEqual(code, event.code)
                 self.assertTrue(response.closed)
 
+    def test_pre_response_transport_refusal_records_mapped_request(self):
+        exchange = HTTPSExchangeFixture(error=TimeoutError(self.credential))
+        provider, request, actual_exchange, _response = self.session(
+            exchange=exchange
+        )
+
+        with self.assertRaisesRegex(PolicyError, "MP306") as caught:
+            provider.generate(request)
+
+        self.assertNotIn(self.credential, str(caught.exception))
+        self.assertEqual(1, len(actual_exchange.requests))
+        event = provider.events[-1]
+        self.assertEqual(len(actual_exchange.requests[0].body), event.request_bytes)
+        self.assertEqual(0, event.response_bytes)
+        self.assertEqual(10_000, event.duration_ns)
+        self.assertEqual("provider-only", event.disclosure_state)
+
     def test_unexpected_status_type_encoding_and_headers_refuse(self):
         status_cases = (True, "200", 201, 204, 299, 400, 500)
         for status in status_cases:

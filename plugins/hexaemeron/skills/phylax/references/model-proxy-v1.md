@@ -260,9 +260,10 @@ byte counts, input and output token counts, and monotonic duration in
 nanoseconds. A pre-admission or credential-source refusal says `not-read`;
 another attempted provider exchange says `provider-only`. No event contains a
 prompt, output, credential, URL, header, address, provider request id, or raw
-error. When an exchange returned a response before refusing its status,
-headers, or body, the value-free transport refusal preserves the confirmed
-mapped-request bytes, body bytes read, and bounded duration for that event
+error. Once the connector hands a mapped request to the exchange, a value-free
+transport refusal preserves that request's byte count and bounded duration even
+when no response object returns. If a response did return before its status,
+headers, or body refused, the same refusal also preserves the body bytes read
 rather than recording zero disclosure.
 
 ## Content-free frame events

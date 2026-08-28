@@ -430,11 +430,13 @@ class HTTPSConnector:
         )
         response: HTTPSResponse | None = None
         started: object = None
+        request_handed_to_exchange = False
         length = 0
         failure: PolicyError | None = None
         failure_duration = 0
         try:
             started = self._clock()
+            request_handed_to_exchange = True
             response = self._exchange(request, self._context, self._timeout)
             if (
                 isinstance(response.status, bool)
@@ -502,7 +504,7 @@ class HTTPSConnector:
                     pass
         if failure is None:
             refuse("MP306", "provider.transport")
-        if response is not None:
+        if response is not None or request_handed_to_exchange:
             raise TransportRefusal(
                 failure.code,
                 failure.field,
