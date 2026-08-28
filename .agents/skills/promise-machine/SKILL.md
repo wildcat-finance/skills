@@ -91,3 +91,13 @@ If no row matches, stop at inspection and explain the uncovered boundary. Do
 not improvise a new suite capability, collapse two siblings into a generalist,
 or treat this router as permission to run Fiat, Kronos, a worker, or any
 external action.
+
+If two rows both match, name both rows and the boundary sentence that separates
+them before selecting either. Select one row only when its boundary sentence
+excludes what the other row claims. When neither sentence excludes the other,
+stop at inspection and report which two rows matched and which sentence you
+read. Never select both rows, widen one row until it covers the request, or
+fall back to a third row that covers neither. A boundary sentence is one
+sentence of the marketplace boundaries in the root runtime contract, or one
+Request predicate from a table above. Two adjacent table rows are not one
+sentence, and neither are two list items.

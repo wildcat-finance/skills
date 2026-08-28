@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 13672822,
+    "bytes_blob": 13815034,
     "bytes_generated": 98
   },
   "entries": [
@@ -47,6 +47,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-429-audit-record-schema-timestamp-synopsis.synopsis.md"
+    },
+    {
+      "bytes": 70765,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 68717",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-499-grade-router-selection-not-just-resolution.md"
+    },
+    {
+      "bytes": 71447,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-499-grade-router-selection-not-just-resolution.synopsis.md"
     },
     {
       "bytes": 23166,

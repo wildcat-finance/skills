@@ -465,30 +465,15 @@
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "selector": "test_post_amendment_drift_refuses_next_and_verify"
     },
-    "fiat-runbook-amendment-m": {
-      "claim": "Missing exact-prefix evidence or changed step topology refuses the runbook amendment before mutation.",
-      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-      "selector": "test_prefix_forgery_and_appended_step_topology_refuse_without_mutation"
+    "fiat-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "selector": "test_done_out_of_order_rejected"
     },
-    "fiat-runbook-amendment-o": {
-      "claim": "The receipt claims checked continuity and source carriage without claiming semantic completeness or command success.",
-      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-      "selector": "test_runbook_amendment_has_a_narrow_consequence_two_promise"
-    },
-    "fiat-runbook-amendment-p": {
-      "claim": "A valid complete replacement is receipted and reaches Mason and Warden as the same exact digest-bound source.",
-      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-      "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly"
-    },
-    "fiat-runbook-amendment-r": {
-      "claim": "An interrupted runbook replacement remains labelled and finishes exactly once through the named rerun.",
-      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-      "selector": "test_interrupted_runbook_replacement_recovers_once"
-    },
-    "fiat-runbook-amendment-s": {
-      "claim": "Unrelated and stale-study amendment evidence cannot enter the current step packet or clear a later block.",
-      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
-      "selector": "test_unrelated_and_stale_amendments_are_not_selected_for_a_packet"
+    "fiat-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "selector": "test_verify_preserves_receipt_assertions_without_proving_them"
     },
     "fiat-observation-m": {
       "claim": "A requested observation claim without a selected binding refuses while ordinary controller verification remains available.",
@@ -515,16 +500,6 @@
       "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
       "selector": "test_bound_run_contract_and_event_count_are_recomputed"
     },
-    "fiat-m": {
-      "claim": "Missing required evidence is refused rather than treated as success.",
-      "path": "plugins/hexaemeron/tests/test_hexctl.py",
-      "selector": "test_done_out_of_order_rejected"
-    },
-    "fiat-o": {
-      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
-      "path": "plugins/hexaemeron/tests/test_hexctl.py",
-      "selector": "test_verify_preserves_receipt_assertions_without_proving_them"
-    },
     "fiat-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
@@ -534,6 +509,31 @@
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "selector": "test_halt_blocks_progress_and_resume_restores"
+    },
+    "fiat-runbook-amendment-m": {
+      "claim": "Missing exact-prefix evidence or changed step topology refuses the runbook amendment before mutation.",
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "selector": "test_prefix_forgery_and_appended_step_topology_refuse_without_mutation"
+    },
+    "fiat-runbook-amendment-o": {
+      "claim": "The receipt claims checked continuity and source carriage without claiming semantic completeness or command success.",
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "selector": "test_runbook_amendment_has_a_narrow_consequence_two_promise"
+    },
+    "fiat-runbook-amendment-p": {
+      "claim": "A valid complete replacement is receipted and reaches Mason and Warden as the same exact digest-bound source.",
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly"
+    },
+    "fiat-runbook-amendment-r": {
+      "claim": "An interrupted runbook replacement remains labelled and finishes exactly once through the named rerun.",
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "selector": "test_interrupted_runbook_replacement_recovers_once"
+    },
+    "fiat-runbook-amendment-s": {
+      "claim": "Unrelated and stale-study amendment evidence cannot enter the current step packet or clear a later block.",
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "selector": "test_unrelated_and_stale_amendments_are_not_selected_for_a_packet"
     },
     "fiat-s": {
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
@@ -1202,6 +1202,54 @@
       "selector": "test_a_payload_asserting_its_own_verification_fails"
     }
   ],
+  "router_selection": {
+    "contract": "promise-machine-router-selection/v1",
+    "documentation": {
+      "path": "docs/promise-machine/router-selection-v1.md",
+      "sha256": "2c63c754874a8e206f6dbf4714eaaaa640241493942b9f475e66d1339617a56d"
+    },
+    "fixtures": [
+      {
+        "path": "tests/fixtures/router-selection/cases.json",
+        "sha256": "04ee42c9ec24743af72d092a21b3cf878ac665eaab2ce91c9524531a74e4b26d"
+      },
+      {
+        "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
+        "sha256": "ca60f7d10a3749c164440cfdf9b6e9be59e3517a063758f5811d1dde2dcafcbf"
+      },
+      {
+        "path": "tests/fixtures/router-selection/guard-missing-row.json",
+        "sha256": "d4518faedfb84602de11d176ec898a4937673a5ed71490e57933a2fd9d4b8168"
+      },
+      {
+        "path": "tests/fixtures/router-selection/prompt-template.txt",
+        "sha256": "8aee7ba8d711ea11fcd94a9db9ccc52001f39261ffcb71777285e4daf4fb5add"
+      }
+    ],
+    "promise_id": "promise-machine-router-selection",
+    "reporter": {
+      "path": "tests/emit_router_selection_report.py",
+      "sha256": "8a378e814639d59dd5b5336c48b29c41f2843e00e3440d71ab28ed230b41650f"
+    },
+    "tests": {
+      "path": "tests/test_router_selection.py",
+      "selectors": [
+        "test_a_malformed_corpus_fails_by_name_rather_than_reading_as_empty",
+        "test_a_recorded_run_block_matches_the_corpus_digest",
+        "test_a_router_row_with_no_case_fails_the_coverage_check",
+        "test_an_altered_deciding_sentence_fails_the_prose_binding_check",
+        "test_every_case_carries_the_required_fields_and_a_unique_id",
+        "test_every_deciding_sentence_occurs_in_the_file_it_names",
+        "test_every_declared_pair_has_at_least_one_contested_case",
+        "test_every_expected_canonical_name_is_a_real_canonical_skill",
+        "test_every_router_row_is_named_by_at_least_one_case",
+        "test_the_corpus_declares_the_supported_schema",
+        "test_the_recorded_run_block_is_complete_and_names_its_failures"
+      ],
+      "sha256": "e0cebf8aaa3efd0fcc2a205f994550f6a454dc1bf14eec7be94388910628dea1"
+    },
+    "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
+  },
   "rows": [
     {
       "cases": {
@@ -2538,70 +2586,6 @@
       "skill_path": "plugins/hexaemeron/skills/vulgate/SKILL.md"
     }
   ],
-  "run_observation_binding": {
-    "contract": "fiat-run-observation-binding/v1",
-    "controller": {
-      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "4ac36284ce936e8909a2cfab36a3de542bcb57b72f074c3a0992f2977d31925d"
-    },
-    "validator": {
-      "path": "scripts/run_observation.py",
-      "sha256": "712f2afc40f7703cc64a92cd850559684a28f1b98e3241652a67ac6b48124d40"
-    },
-    "documentation": {
-      "path": "docs/fiat-run-observation-binding-v1.md",
-      "sha256": "eb6b6f9431e0b1f12d9d6d30f572b8b08689a730ca4c2df3a68263de8c936e4f"
-    },
-    "decision": {
-      "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
-      "sha256": "50e8e9fae79554af9ad8b9a342393db2c657f0cac0f550db4bd6e2d1c3044e98"
-    },
-    "fixture_manifest": {
-      "path": "plugins/hexaemeron/tests/fixtures/run-observation-binding/cases.json",
-      "sha256": "12a3eb914926275e8b40fc23c5ae82e5121c0e4c554ef10ce3a8a37aa17d4a67"
-    },
-    "reporter": {
-      "path": "plugins/hexaemeron/tests/run_tests.py",
-      "sha256": "2329a9f8e65726419d004e00baa5e0ff8825a68352826446b1973f3bba25456f"
-    },
-    "tests": [
-      {
-        "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
-        "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9",
-        "selectors": [
-          "test_binding_validates_the_captured_bytes_not_a_later_path_snapshot",
-          "test_binding_finally_rechecks_the_named_bytes_after_validation",
-          "test_status_exposes_a_stable_run_id_without_persisting_it",
-          "test_normal_prefix_binds_to_the_selected_receipt",
-          "test_legacy_run_stays_valid_until_the_dependent_claim_is_requested",
-          "test_replacement_and_truncation_break_only_the_dependent_claim",
-          "test_reordered_events_break_only_the_dependent_claim",
-          "test_bound_run_contract_and_event_count_are_recomputed",
-          "test_appended_bytes_remain_explicitly_unbound",
-          "test_later_receipt_binds_only_a_strict_extension_of_the_same_stream",
-          "test_multiple_bindings_report_only_the_latest_unbound_tail",
-          "test_verification_recomputes_monotonic_stream_relationships",
-          "test_verification_recomputes_the_structural_validation_gate",
-          "test_verification_finally_rechecks_named_bytes_after_validation",
-          "test_verification_joins_each_binding_to_one_exact_ledger_record",
-          "test_verification_refuses_an_orphaned_observation_record",
-          "test_symlinked_file_and_parent_are_refused_before_receipt",
-          "test_final_read_refuses_parent_escape_during_second_snapshot",
-          "test_receipted_elenchus_reporter_accepts_positional_target"
-        ]
-      },
-      {
-        "path": "tests/test_run_observation.py",
-        "sha256": "649f68ee35e11ccd17db40e4b14f6f6c0c4d429c5e0f1740fdeca669a8fa0db1",
-        "selectors": [
-          "test_captured_byte_and_stable_path_validation_are_equivalent",
-          "test_safe_unfinished_prefix_is_accepted_without_weakening_full_check",
-          "test_prefix_still_refuses_an_unclosed_capability"
-        ]
-      }
-    ],
-    "transition": "record only the exact checked prefix against one selected receipt without advancing Fiat or strengthening delivery evidence"
-  },
   "run_observation": {
     "contract": "promise-machine-run-observation/v1",
     "documentation": {
@@ -2689,6 +2673,70 @@
       "sha256": "649f68ee35e11ccd17db40e4b14f6f6c0c4d429c5e0f1740fdeca669a8fa0db1"
     },
     "transition": "treat only the named bytes as structurally conforming and pass the bounded result without strengthening it"
+  },
+  "run_observation_binding": {
+    "contract": "fiat-run-observation-binding/v1",
+    "controller": {
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "sha256": "4ac36284ce936e8909a2cfab36a3de542bcb57b72f074c3a0992f2977d31925d"
+    },
+    "decision": {
+      "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
+      "sha256": "50e8e9fae79554af9ad8b9a342393db2c657f0cac0f550db4bd6e2d1c3044e98"
+    },
+    "documentation": {
+      "path": "docs/fiat-run-observation-binding-v1.md",
+      "sha256": "eb6b6f9431e0b1f12d9d6d30f572b8b08689a730ca4c2df3a68263de8c936e4f"
+    },
+    "fixture_manifest": {
+      "path": "plugins/hexaemeron/tests/fixtures/run-observation-binding/cases.json",
+      "sha256": "12a3eb914926275e8b40fc23c5ae82e5121c0e4c554ef10ce3a8a37aa17d4a67"
+    },
+    "reporter": {
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "sha256": "2329a9f8e65726419d004e00baa5e0ff8825a68352826446b1973f3bba25456f"
+    },
+    "tests": [
+      {
+        "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
+        "selectors": [
+          "test_binding_validates_the_captured_bytes_not_a_later_path_snapshot",
+          "test_binding_finally_rechecks_the_named_bytes_after_validation",
+          "test_status_exposes_a_stable_run_id_without_persisting_it",
+          "test_normal_prefix_binds_to_the_selected_receipt",
+          "test_legacy_run_stays_valid_until_the_dependent_claim_is_requested",
+          "test_replacement_and_truncation_break_only_the_dependent_claim",
+          "test_reordered_events_break_only_the_dependent_claim",
+          "test_bound_run_contract_and_event_count_are_recomputed",
+          "test_appended_bytes_remain_explicitly_unbound",
+          "test_later_receipt_binds_only_a_strict_extension_of_the_same_stream",
+          "test_multiple_bindings_report_only_the_latest_unbound_tail",
+          "test_verification_recomputes_monotonic_stream_relationships",
+          "test_verification_recomputes_the_structural_validation_gate",
+          "test_verification_finally_rechecks_named_bytes_after_validation",
+          "test_verification_joins_each_binding_to_one_exact_ledger_record",
+          "test_verification_refuses_an_orphaned_observation_record",
+          "test_symlinked_file_and_parent_are_refused_before_receipt",
+          "test_final_read_refuses_parent_escape_during_second_snapshot",
+          "test_receipted_elenchus_reporter_accepts_positional_target"
+        ],
+        "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9"
+      },
+      {
+        "path": "tests/test_run_observation.py",
+        "selectors": [
+          "test_captured_byte_and_stable_path_validation_are_equivalent",
+          "test_safe_unfinished_prefix_is_accepted_without_weakening_full_check",
+          "test_prefix_still_refuses_an_unclosed_capability"
+        ],
+        "sha256": "649f68ee35e11ccd17db40e4b14f6f6c0c4d429c5e0f1740fdeca669a8fa0db1"
+      }
+    ],
+    "transition": "record only the exact checked prefix against one selected receipt without advancing Fiat or strengthening delivery evidence",
+    "validator": {
+      "path": "scripts/run_observation.py",
+      "sha256": "712f2afc40f7703cc64a92cd850559684a28f1b98e3241652a67ac6b48124d40"
+    }
   },
   "run_observation_capture": {
     "contract": "promise-machine-run-observation-capture/v1",
@@ -2885,16 +2933,16 @@
       "sha256": "4ac36284ce936e8909a2cfab36a3de542bcb57b72f074c3a0992f2977d31925d",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
-    "fiat-study-amendment": {
+    "fiat-run-observation-binding": {
       "bindings": {
-        "evidence_classes": "checked structure and recorded operator verdicts joined to the canonical Evidence classes field",
-        "evidence_references": "prefix digest, amendment fields, Protasis exit, write-ahead record, state receipt and ledger event",
+        "evidence_classes": "checked prefix and recorded binding joined to the canonical Evidence classes field",
+        "evidence_references": "validator result, exact bytes, interval, counts, digest, receipt hash and record:run-observation event",
         "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading and amend:study event",
-        "scope": "one append-only final amendment and every unbuilt-step verdict",
-        "subject": "current study receipt, captured candidate bytes and canonical study path",
-        "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
-        "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
+        "promise_id": "coverage key joined to the canonical promise heading and binding contract",
+        "scope": "one selected run-local prefix and its immediately preceding Fiat receipt",
+        "subject": "controller run identity, companion path, bound prefix digest and selected receipt hash",
+        "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
+        "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
       "sha256": "4ac36284ce936e8909a2cfab36a3de542bcb57b72f074c3a0992f2977d31925d",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
@@ -2913,16 +2961,16 @@
       "sha256": "4ac36284ce936e8909a2cfab36a3de542bcb57b72f074c3a0992f2977d31925d",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
-    "fiat-run-observation-binding": {
+    "fiat-study-amendment": {
       "bindings": {
-        "evidence_classes": "checked prefix and recorded binding joined to the canonical Evidence classes field",
-        "evidence_references": "validator result, exact bytes, interval, counts, digest, receipt hash and record:run-observation event",
+        "evidence_classes": "checked structure and recorded operator verdicts joined to the canonical Evidence classes field",
+        "evidence_references": "prefix digest, amendment fields, Protasis exit, write-ahead record, state receipt and ledger event",
         "exception": "canonical Exceptions field",
-        "promise_id": "coverage key joined to the canonical promise heading and binding contract",
-        "scope": "one selected run-local prefix and its immediately preceding Fiat receipt",
-        "subject": "controller run identity, companion path, bound prefix digest and selected receipt hash",
-        "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
-        "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
+        "promise_id": "coverage key joined to the canonical promise heading and amend:study event",
+        "scope": "one append-only final amendment and every unbuilt-step verdict",
+        "subject": "current study receipt, captured candidate bytes and canonical study path",
+        "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
+        "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
       "sha256": "4ac36284ce936e8909a2cfab36a3de542bcb57b72f074c3a0992f2977d31925d",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
