@@ -19,6 +19,7 @@ subject's debt.  An event outside this closed vocabulary is never ignored.
 
 from collections import defaultdict
 import json
+import math
 import os
 import re
 import time
@@ -44,6 +45,7 @@ MAX_COLLECTION_SECONDS = 120
 MAX_TIMESTAMP = 253_402_300_799
 MAX_MARKETS = 500
 MAX_SUBJECTS = 100
+MAX_UINT256 = (1 << 256) - 1
 
 EVENT_TYPES = frozenset(
     {
@@ -141,14 +143,17 @@ def _integer_value(value, where, *, maximum=None):
     if isinstance(value, bool) or isinstance(value, float):
         raise MidnightShapeError(f"{where} is not an exact integer")
     if isinstance(value, str):
-        if not value.isdigit():
+        if re.fullmatch(r"[0-9]+", value) is None:
             raise MidnightShapeError(f"{where} is not an exact integer")
+        if len(value) > 78:
+            raise MidnightShapeError(f"{where} is outside the accepted range")
         integer = int(value)
     elif isinstance(value, int):
         integer = value
     else:
         raise MidnightShapeError(f"{where} is not an exact integer")
-    if integer < 0 or (maximum is not None and integer > maximum):
+    upper = MAX_UINT256 if maximum is None else maximum
+    if integer < 0 or integer > upper:
         raise MidnightShapeError(f"{where} is outside the accepted range")
     return integer
 
@@ -157,6 +162,27 @@ def _integer(mapping, key, where, *, maximum=None):
     return _integer_value(
         _require(mapping, key, where), f"{where}.{key}", maximum=maximum
     )
+
+
+def _signed_integer(mapping, key, where):
+    value = _require(mapping, key, where)
+    if isinstance(value, bool) or isinstance(value, float):
+        raise MidnightShapeError(f"{where}.{key} is not an exact signed integer")
+    if isinstance(value, str):
+        if re.fullmatch(r"-?[0-9]+", value) is None:
+            raise MidnightShapeError(
+                f"{where}.{key} is not an exact signed integer"
+            )
+        if len(value.removeprefix("-")) > 78:
+            raise MidnightShapeError(f"{where}.{key} is outside the int256 range")
+        integer = int(value)
+    elif isinstance(value, int):
+        integer = value
+    else:
+        raise MidnightShapeError(f"{where}.{key} is not an exact signed integer")
+    if integer < -(1 << 255) or integer > (1 << 255) - 1:
+        raise MidnightShapeError(f"{where}.{key} is outside the int256 range")
+    return integer
 
 
 def _boolean(mapping, key, where):
@@ -219,10 +245,13 @@ def _trade_data(data, where):
         "take_units",
         "buyer_pending_fee_increase",
         "seller_pending_fee_decrease",
-        "total_units_delta",
         "consumed",
     ):
         _integer(data, key, where)
+    # EventsLib.Take declares this full-trade field as int256.  It is not the
+    # account-attributed debt delta, but a negative value is still a valid
+    # response shape and must not make an otherwise known event disappear.
+    _signed_integer(data, "total_units_delta", where)
     _hex_32(data, "group", where, "group id")
 
 
@@ -278,9 +307,43 @@ def _json_complexity(value, where):
             stack.extend((child, depth + 1) for child in item)
 
 
+def _json_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise MidnightShapeError("JSON object repeats a field name")
+        result[key] = value
+    return result
+
+
+def _json_integer(value):
+    if len(value.removeprefix("-")) > 78:
+        raise MidnightShapeError("JSON integer exceeds the uint256 digit ceiling")
+    return int(value)
+
+
+def _json_float(value):
+    number = float(value)
+    if not math.isfinite(number):
+        raise MidnightShapeError("JSON contains a non-finite numeric value")
+    return number
+
+
+def _json_constant(_value):
+    raise MidnightShapeError("JSON contains a non-standard numeric constant")
+
+
 def _decode_json(raw, where):
     try:
-        value = json.loads(raw)
+        value = json.loads(
+            raw,
+            object_pairs_hook=_json_object,
+            parse_int=_json_integer,
+            parse_float=_json_float,
+            parse_constant=_json_constant,
+        )
+    except MidnightShapeError:
+        raise
     except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as error:
         raise MidnightShapeError(f"{where} is not valid bounded JSON") from error
     _json_complexity(value, where)
@@ -353,7 +416,11 @@ class _RequestBudget:
     def __init__(self, timeout):
         if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
             raise MidnightShapeError("timeout must be a positive number")
-        if timeout <= 0 or timeout > MAX_COLLECTION_SECONDS:
+        if (
+            (isinstance(timeout, float) and not math.isfinite(timeout))
+            or timeout <= 0
+            or timeout > MAX_COLLECTION_SECONDS
+        ):
             raise MidnightShapeError("timeout is outside the accepted range")
         self.per_request = float(timeout)
         self.deadline = time.monotonic() + MAX_COLLECTION_SECONDS
@@ -364,10 +431,13 @@ class _RequestBudget:
         self.requests += 1
         if self.requests > MAX_HTTP_REQUESTS:
             raise MidnightShapeError("Morpho collection exceeded its request ceiling")
+        return min(self.per_request, self.remaining())
+
+    def remaining(self):
         remaining = self.deadline - time.monotonic()
         if remaining <= 0:
             raise MidnightShapeError("Morpho collection exceeded its time ceiling")
-        return min(self.per_request, remaining)
+        return remaining
 
     def consume(self, size):
         self.bytes += size
@@ -398,15 +468,19 @@ def _request_json(url, budget, stage):
                 )
             length = response.headers.get("Content-Length")
             if length is not None:
-                if not length.isdigit():
+                if not isinstance(length, str) or re.fullmatch(r"[0-9]+", length) is None:
                     raise MidnightShapeError(
                         f"Morpho {stage} Content-Length is malformed"
                     )
-                if int(length) > MAX_RESPONSE_BYTES:
+                if (
+                    len(length) > len(str(MAX_RESPONSE_BYTES))
+                    or int(length) > MAX_RESPONSE_BYTES
+                ):
                     raise MidnightShapeError(
                         f"Morpho {stage} response exceeds the byte ceiling"
                     )
             raw = response.read(MAX_RESPONSE_BYTES + 1)
+            budget.remaining()
     except MidnightShapeError:
         raise
     except urllib.error.HTTPError as error:
@@ -419,7 +493,9 @@ def _request_json(url, budget, stage):
     if len(raw) > MAX_RESPONSE_BYTES:
         raise MidnightShapeError(f"Morpho {stage} response exceeds the byte ceiling")
     budget.consume(len(raw))
-    return _decode_json(raw, f"Morpho {stage} response")
+    value = _decode_json(raw, f"Morpho {stage} response")
+    budget.remaining()
+    return value
 
 
 def _page(value, where):
@@ -470,7 +546,7 @@ class _LiveSource:
             seen_cursors.add(next_cursor)
             cursor = next_cursor
         raise MidnightShapeError(
-            f"transactions did not terminate after {MAX_PAGES} pages for {subject}"
+            f"transactions did not terminate after {MAX_PAGES} pages"
         )
 
     def market(self, market_id):
@@ -489,6 +565,9 @@ class _LiveSource:
             self.budget,
             "position",
         )
+
+    def complete(self):
+        self.budget.remaining()
 
 
 def _read_fixture(directory):
@@ -537,16 +616,20 @@ class _FixtureSource:
         self.endpoint = "fixture:" + sanitise.clean(name, max_length=60)
 
     def transactions(self, subject):
+        if subject not in self._transactions:
+            raise MidnightShapeError(
+                "fixture transactions have no requested subject"
+            )
         pages = _list(
-            _require(self._transactions, subject, "fixture.transactions"),
-            f"fixture.transactions[{subject}]",
+            self._transactions[subject],
+            "fixture transaction pages",
         )
         rows = []
         seen_cursors = set()
         for page_number, raw in enumerate(pages):
             if page_number >= MAX_PAGES:
                 raise MidnightShapeError(
-                    f"transactions did not terminate after {MAX_PAGES} pages for {subject}"
+                    f"transactions did not terminate after {MAX_PAGES} pages"
                 )
             data, cursor = _page(raw, f"fixture transactions page {page_number}")
             rows.extend(data)
@@ -565,14 +648,19 @@ class _FixtureSource:
         return _require(self._markets, market_id, "fixture.markets")
 
     def token(self, token):
-        return _require(self._tokens, f"{CHAIN_ID}:{token}", "fixture.tokens")
+        key = f"{CHAIN_ID}:{token}"
+        if key not in self._tokens:
+            raise MidnightShapeError("fixture tokens have no requested loan token")
+        return self._tokens[key]
 
     def position(self, market_id, subject):
-        return _require(
-            self._positions,
-            f"{market_id}:{subject}",
-            "fixture.positions",
-        )
+        key = f"{market_id}:{subject}"
+        if key not in self._positions:
+            raise MidnightShapeError("fixture positions have no requested subject")
+        return self._positions[key]
+
+    def complete(self):
+        return None
 
 
 def _transaction(raw, subject, index):
@@ -592,9 +680,7 @@ def _transaction(raw, subject, index):
     data = _mapping(_require(item, "data", where), f"{where}.data")
     account = _address(data, "account", f"{where}.data")
     if account != subject:
-        raise MidnightShapeError(
-            f"{where}.data.account {account} is not subject {subject}"
-        )
+        raise MidnightShapeError(f"{where}.data.account is not the requested subject")
     if kind in _AMBIGUOUS:
         raise MidnightShapeError(
             "exit_borrow_secondary has no proven account-attributed debt-unit "
@@ -610,7 +696,7 @@ def _transaction(raw, subject, index):
         expected = buyer if _TRADE_SIDE[kind] == "buyer" else seller
         if expected != subject:
             raise MidnightShapeError(
-                f"{where}.{_TRADE_SIDE[kind]} is not subject {subject}"
+                f"{where}.{_TRADE_SIDE[kind]} is not the requested subject"
             )
     elif kind in _PRIMARY_OR_COLLATERAL:
         if kind.startswith("exit_"):
@@ -661,21 +747,35 @@ def _transaction(raw, subject, index):
     elif kind in _LIQUIDATIONS:
         repaid = _integer(data, "repaid_units", f"{where}.data")
         seized = _integer(data, "seized_assets", f"{where}.data")
-        if repaid == 0:
-            raise MidnightShapeError(f"{where}.data.repaid_units is zero")
         collateral = _address(data, "collateral", f"{where}.data")
         post_maturity = _boolean(data, "post_maturity_mode", f"{where}.data")
         bad_debt = _integer(data, "bad_debt", f"{where}.data")
+        pure_bad_debt = _boolean(
+            data, "pure_bad_debt_realization", f"{where}.data"
+        )
+        if repaid == 0 and bad_debt == 0:
+            raise MidnightShapeError(
+                f"{where}.data liquidation has no debt-unit reduction"
+            )
+        expected_pure_bad_debt = repaid == 0 and seized == 0 and bad_debt > 0
+        if pure_bad_debt != expected_pure_bad_debt:
+            raise MidnightShapeError(
+                f"{where}.data pure_bad_debt_realization is inconsistent"
+            )
+        # Midnight.liquidate removes realized bad debt before the separately
+        # repaid units.  Both quantities therefore reduce this borrower's debt.
+        debt_reduction = repaid + bad_debt
         shared.update(
-            delta=-repaid,
+            delta=-debt_reduction,
             claim="liquidation",
             mode="liquidation",
             values={
                 "repaid_debt_units": repaid,
+                "realized_bad_debt_units": bad_debt,
                 "seized_collateral": seized,
                 "collateral_token": collateral,
                 "post_maturity_mode": post_maturity,
-                "bad_debt": bad_debt,
+                "pure_bad_debt_realization": pure_bad_debt,
                 "collateralised": True,
             },
         )
@@ -816,10 +916,12 @@ def _records_for_market(subject, provenance, events, market, token, position, ob
         if event["kind"] == "borrow" and event["created_at"] > maturity:
             raise MidnightShapeError("debt increased after market maturity")
         if event["kind"] in _LIQUIDATIONS:
-            expected_mode = event["created_at"] > maturity
-            if event["values"]["post_maturity_mode"] != expected_mode:
+            if (
+                event["values"]["post_maturity_mode"]
+                and event["created_at"] <= maturity
+            ):
                 raise MidnightShapeError(
-                    "liquidation post_maturity_mode disagrees with immutable maturity"
+                    "liquidation post_maturity_mode precedes immutable maturity"
                 )
 
     ordered = sorted(events, key=lambda item: (item["created_at"], item["event_id"]))
@@ -993,7 +1095,7 @@ def _collect(addresses, config, state):
         if provenance not in PROVENANCE_TIERS:
             raise MidnightShapeError("subject provenance tier is invalid")
         if subject in subjects and subjects[subject] != provenance:
-            raise MidnightShapeError(f"{subject} has conflicting provenance")
+            raise MidnightShapeError("one subject address has conflicting provenance")
         subjects[subject] = provenance
     if not subjects:
         raise MidnightShapeError("at least one subject address is required")
@@ -1025,7 +1127,7 @@ def _collect(addresses, config, state):
             event = _transaction(raw, subject, index)
             if event["event_id"] in seen_ids:
                 raise MidnightShapeError(
-                    f"duplicate transaction event id {event['event_id']!r} for {subject}"
+                    f"duplicate transaction event id {event['event_id']!r}"
                 )
             seen_ids.add(event["event_id"])
             if event["delta"] is not None:
@@ -1059,7 +1161,7 @@ def _collect(addresses, config, state):
             events = by_market[market_id]
             if not any(event["kind"] == "borrow" for event in events):
                 raise MidnightShapeError(
-                    f"{subject} has debt reductions without a recorded borrow in {market_id}"
+                    f"debt reductions have no recorded borrow in {market_id}"
                 )
             market = market_cache[market_id]
             position = _position(
@@ -1092,6 +1194,7 @@ def _collect(addresses, config, state):
         "API-scoped history only, not archive-chain completeness; "
         f"{len(records)} record(s)"
     )
+    source.complete()
     return records, Coverage(
         venue=VENUE,
         status="checked" if records else "empty",

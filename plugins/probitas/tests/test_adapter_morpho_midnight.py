@@ -65,6 +65,12 @@ class MutationCase(unittest.TestCase):
         if match is not None:
             self.assertIn(match, str(caught.exception))
 
+    def assert_adapted(self, mutate, case="midnight-cleared"):
+        try:
+            return self.adapt(mutate, case=case)
+        except MidnightShapeError as error:
+            self.fail(f"adapter unexpectedly refused the guarded specimen: {error}")
+
 
 class TestSourceDatedSpecimens(unittest.TestCase):
     def test_every_specimen_names_its_source_date_and_official_origin(self):
@@ -243,6 +249,15 @@ class TestVocabularyAndAttribution(MutationCase):
                 )
                 self.assertEqual(len(records), 7)
 
+    def test_signed_full_trade_delta_does_not_replace_account_units(self):
+        def mutate(payload):
+            event = self.ignored_event("exit_lend_secondary", 98)
+            event["data"]["total_units_delta"] = "-10"
+            payload["transactions"][SUBJECT][0]["data"].append(event)
+
+        records, _ = self.assert_adapted(mutate)
+        self.assertEqual(len(records), 7)
+
     def test_an_unknown_type_never_disappears_as_empty(self):
         self.assert_refused(
             lambda payload: payload["transactions"][SUBJECT][0]["data"][0].update(
@@ -264,7 +279,7 @@ class TestVocabularyAndAttribution(MutationCase):
             lambda payload: payload["transactions"][SUBJECT][0]["data"][0][
                 "data"
             ].update(account=OTHER),
-            match="is not subject",
+            match="is not the requested subject",
         )
 
     def test_a_borrow_must_name_the_subject_as_seller(self):
@@ -272,7 +287,7 @@ class TestVocabularyAndAttribution(MutationCase):
             lambda payload: payload["transactions"][SUBJECT][0]["data"][0][
                 "data"
             ].update(seller="0x" + "ee" * 20),
-            match="seller is not subject",
+            match="seller is not the requested subject",
         )
 
     def test_a_primary_exit_must_name_the_subject_on_behalf(self):
@@ -326,14 +341,61 @@ class TestExactAccounting(MutationCase):
             match="increased after market maturity",
         )
 
-    def test_liquidation_mode_must_match_the_immutable_maturity(self):
-        self.assert_refused(
+    def test_normal_liquidation_mode_remains_valid_after_maturity(self):
+        records, _ = self.assert_adapted(
             lambda payload: payload["transactions"][SUBJECT][0]["data"][2][
                 "data"
             ].update(post_maturity_mode=False),
             case="midnight-late",
-            match="disagrees with immutable maturity",
         )
+        self.assertEqual(outcomes(records)[0].values["settlement_mode"], "liquidation")
+
+    def test_post_maturity_mode_requires_time_after_maturity(self):
+        self.assert_refused(
+            lambda payload: payload["transactions"][SUBJECT][0]["data"][2].update(
+                created_at=1784300400
+            ),
+            case="midnight-late",
+            match="precedes immutable maturity",
+        )
+
+    def test_bad_debt_and_repaid_units_both_reduce_borrower_debt(self):
+        def mutate(payload):
+            borrow = payload["transactions"][SUBJECT][0]["data"][0]["data"]
+            borrow["units"] = str(int(borrow["units"]) + 7)
+            liquidation = payload["transactions"][SUBJECT][0]["data"][2]["data"]
+            liquidation["bad_debt"] = "7"
+
+        records, _ = self.assert_adapted(mutate, case="midnight-late")
+        outcome = outcomes(records)[0]
+        liquidation = next(
+            record
+            for record in records
+            if record.claim == "liquidation"
+            and record.values["realized_bad_debt_units"] == "7"
+        )
+        self.assertEqual(outcome.values["debt_units_at_observation"], "0")
+        self.assertEqual(liquidation.values["repaid_debt_units"], "135118071440")
+
+    def test_pure_bad_debt_realization_can_have_zero_repaid_units(self):
+        def mutate(payload):
+            liquidation = payload["transactions"][SUBJECT][0]["data"][-1]["data"]
+            liquidation.update(
+                repaid_units="0",
+                bad_debt="409804616",
+                pure_bad_debt_realization=True,
+            )
+
+        records, _ = self.assert_adapted(mutate, case="midnight-late")
+        pure = [
+            record
+            for record in records
+            if record.claim == "liquidation"
+            and record.values["pure_bad_debt_realization"] is True
+        ]
+        self.assertEqual(len(pure), 1)
+        self.assertEqual(pure[0].values["repaid_debt_units"], "0")
+        self.assertEqual(pure[0].values["realized_bad_debt_units"], "409804616")
 
     def test_current_position_must_reconcile(self):
         self.assert_refused(
@@ -366,7 +428,7 @@ class TestExactAccounting(MutationCase):
                 payload["transactions"][SUBJECT][0]["data"][2]
             ]
 
-        self.assert_refused(mutate, match="without a recorded borrow")
+        self.assert_refused(mutate, match="no recorded borrow")
 
     def test_float_and_boolean_units_are_never_coerced(self):
         for value in (1.5, True):
@@ -379,13 +441,43 @@ class TestExactAccounting(MutationCase):
                 )
 
     def test_decimal_and_negative_strings_are_never_coerced(self):
-        for value in ("1.0", "-1"):
+        for value in ("1.0", "-1", "\u0661", "9" * 79):
             with self.subTest(value=value):
                 self.assert_refused(
                     lambda payload, v=value: payload["transactions"][SUBJECT][0][
                         "data"
                     ][0]["data"].update(units=v),
-                    match="not an exact integer",
+                )
+
+    def test_integer_widths_are_uint256_and_int256(self):
+        for value in (str((1 << 256) - 1),):
+            records, _ = self.assert_adapted(
+                lambda payload, v=value: payload["transactions"][SUBJECT][0][
+                    "data"
+                ][0]["data"].update(buyer_assets=v)
+            )
+            self.assertEqual(len(records), 7)
+        self.assert_refused(
+            lambda payload: payload["transactions"][SUBJECT][0]["data"][0][
+                "data"
+            ].update(buyer_assets=str(1 << 256)),
+            match="accepted range",
+        )
+
+        for value in (str(-(1 << 255)), str((1 << 255) - 1)):
+            records, _ = self.assert_adapted(
+                lambda payload, v=value: payload["transactions"][SUBJECT][0][
+                    "data"
+                ][0]["data"].update(total_units_delta=v)
+            )
+            self.assertEqual(len(records), 7)
+        for value in (str(-(1 << 255) - 1), str(1 << 255)):
+            with self.subTest(value=value):
+                self.assert_refused(
+                    lambda payload, v=value: payload["transactions"][SUBJECT][0][
+                        "data"
+                    ][0]["data"].update(total_units_delta=v),
+                    match="int256 range",
                 )
 
 
@@ -732,6 +824,21 @@ class TestRestBoundary(unittest.TestCase):
         with self.assertRaisesRegex(MidnightShapeError, "not valid bounded JSON"):
             self.request(FakeResponse(raw=b"{"))
 
+    def test_duplicate_fields_and_non_standard_numbers_are_refused(self):
+        cases = (
+            (b'{"chain_id":1,"chain_id":8453}', "repeats a field name"),
+            (b'{"harmless_extra":NaN}', "non-standard numeric constant"),
+            (b'{"harmless_extra":Infinity}', "non-standard numeric constant"),
+            (b'{"harmless_extra":-Infinity}', "non-standard numeric constant"),
+            (b'{"harmless_extra":1e999}', "non-finite numeric value"),
+            (b'{"harmless_extra":-1e999}', "non-finite numeric value"),
+            (b'{"harmless_extra":' + b"9" * 79 + b"}", "digit ceiling"),
+        )
+        for raw, message in cases:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(MidnightShapeError, message):
+                    self.request(FakeResponse(raw=raw))
+
     def test_content_length_and_actual_response_bytes_are_bounded(self):
         with self.assertRaisesRegex(MidnightShapeError, "byte ceiling"):
             self.request(
@@ -745,6 +852,20 @@ class TestRestBoundary(unittest.TestCase):
             )
         with self.assertRaisesRegex(MidnightShapeError, "byte ceiling"):
             self.request(FakeResponse(raw=b"x" * (midnight.MAX_RESPONSE_BYTES + 1)))
+        for length, message in (("\u00b2", "malformed"), ("9" * 100, "byte ceiling")):
+            with self.subTest(length=length):
+                with self.assertRaises(Exception) as caught:
+                    self.request(
+                        FakeResponse(
+                            {},
+                            headers={
+                                "Content-Type": "application/json",
+                                "Content-Length": length,
+                            },
+                        )
+                    )
+                self.assertIsInstance(caught.exception, MidnightShapeError)
+                self.assertIn(message, str(caught.exception))
 
     def test_total_bytes_request_count_and_time_have_ceiling_guards(self):
         budget = self.budget()
@@ -758,8 +879,49 @@ class TestRestBoundary(unittest.TestCase):
             with self.assertRaisesRegex(MidnightShapeError, "time ceiling"):
                 budget.next_timeout()
 
+    def test_response_finishing_after_the_collection_deadline_is_refused(self):
+        budget = self.budget()
+        opener = FakeOpener([FakeResponse({"ok": True})])
+        with mock.patch.object(midnight, "_OPENER", opener), mock.patch.object(
+            midnight.time,
+            "monotonic",
+            side_effect=[budget.deadline - 1, budget.deadline + 1],
+        ):
+            with self.assertRaisesRegex(MidnightShapeError, "time ceiling"):
+                midnight._request_json(
+                    "https://api.morpho.org/v0/midnight/example",
+                    budget,
+                    "test",
+                )
+
+    def test_collection_deadline_is_checked_before_successful_return(self):
+        payload = load()
+        position = payload["positions"][f"{MARKET}:{SUBJECT}"]
+        responses = [
+            FakeResponse(payload["transactions"][SUBJECT][0]),
+            FakeResponse(payload["markets"][MARKET]),
+            FakeResponse(payload["tokens"][f"8453:{TOKEN}"]),
+            FakeResponse(position),
+        ]
+        opener = FakeOpener(responses)
+        ticks = [0] + [1] * 12 + [midnight.MAX_COLLECTION_SECONDS + 1]
+        with mock.patch.object(midnight, "_OPENER", opener), mock.patch.object(
+            midnight.time, "time", return_value=payload["source"]["observed_at"]
+        ), mock.patch.object(midnight.time, "monotonic", side_effect=ticks):
+            with self.assertRaisesRegex(MidnightShapeError, "time ceiling"):
+                adapter(SUBJECTS, {"timeout": 5})
+
     def test_timeout_configuration_is_strict(self):
-        for value in (True, 0, -1, midnight.MAX_COLLECTION_SECONDS + 1, "5"):
+        for value in (
+            True,
+            0,
+            -1,
+            float("nan"),
+            float("inf"),
+            float("-inf"),
+            midnight.MAX_COLLECTION_SECONDS + 1,
+            "5",
+        ):
             with self.subTest(value=value):
                 with self.assertRaises(MidnightShapeError):
                     midnight._RequestBudget(value)
@@ -858,6 +1020,48 @@ class TestNoPartialRecords(MutationCase):
         )
         self.assertIn("not an exact integer", coverage.note)
         self.assertNotIn(sentinel, coverage.note)
+
+    def test_misattributed_account_addresses_are_not_echoed(self):
+        with self.assertRaises(MidnightShapeError) as caught:
+            self.adapt(
+                lambda payload: payload["transactions"][SUBJECT][0]["data"][0][
+                    "data"
+                ].update(account=OTHER)
+            )
+        message = str(caught.exception)
+        self.assertIn("not the requested subject", message)
+        self.assertNotIn(SUBJECT, message)
+        self.assertNotIn(OTHER, message)
+
+    def test_missing_fixture_subject_addresses_are_not_echoed(self):
+        cases = (
+            (
+                lambda payload: payload["transactions"].pop(SUBJECT),
+                "requested subject",
+            ),
+            (
+                lambda payload: payload["transactions"].__setitem__(SUBJECT, {}),
+                "transaction pages",
+            ),
+            (
+                lambda payload: payload["positions"].pop(f"{MARKET}:{SUBJECT}"),
+                "requested subject",
+            ),
+        )
+        for mutate, expected in cases:
+            with self.subTest(mutate=mutate):
+                with self.assertRaises(MidnightShapeError) as caught:
+                    self.adapt(mutate)
+                message = str(caught.exception)
+                self.assertIn(expected, message)
+                self.assertNotIn(SUBJECT, message)
+
+    def test_missing_fixture_token_addresses_are_not_echoed(self):
+        with self.assertRaises(MidnightShapeError) as caught:
+            self.adapt(lambda payload: payload["tokens"].clear())
+        message = str(caught.exception)
+        self.assertIn("requested loan token", message)
+        self.assertNotIn(TOKEN, message)
 
     def test_adapter_returns_one_coverage_row_with_its_record_count(self):
         records, coverage = collect("midnight-late")

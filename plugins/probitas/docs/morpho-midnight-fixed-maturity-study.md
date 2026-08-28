@@ -312,3 +312,17 @@ The completed frontier and its successor are historical state, not a code commen
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** The Step 2 event mapping and hostile-input controls are corrected. Wherever the design or glossary says a partial or full liquidation decreases only `repaid_units`, the exact borrower-debt decrease is `repaid_units + bad_debt`, with both fields validated as `uint256`. A source-consistent pure bad-debt realization may therefore carry zero `repaid_units` and positive `bad_debt`; it remains labelled liquidation. `post_maturity_mode: true` is valid only strictly after maturity, but `false` may remain valid after maturity for an unhealthy borrower, so the timestamp and mode are not an equivalence. Known trade-shaped events validate full-trade `total_units_delta` as signed `int256` while account-attributed `data.units`, not that full-trade value, controls the subject's debt ledger.
+
+The JSON and integer boundary now explicitly refuses duplicate object names, `NaN`, positive or negative infinity, non-ASCII integer text, and values outside `uint256` or `int256` before conversion. The same ASCII and pre-conversion size rules cover numeric HTTP metadata such as `Content-Length`. The time budget is checked before and after the response read, after decode and before a successful derived return. Requested subject identity remains in structured normal evidence, but bounded refusal strings do not echo requested or returned addresses, response bodies, fixture paths or malformed raw values. This completes the pinned-source statement, the JSON-decode and unit-ledger boundary rows, and Signals 1 and 2 without changing the API-scoped evidence boundary or due-time definition.
+
+The source inventory also includes the [Python 3.13 JSON standard-compliance notes](https://docs.python.org/3.13/library/json.html#standard-compliance-and-interoperability), read 2026-08-28. They document that the default decoder accepts non-finite number tokens and repeated object names with the last value winning, which is why the adapter must override both behaviours.
+
+**Why.** Warden round 1 compared the prototype with pinned `morpho-org/midnight@c89663aeff053d480689aa082abbcd9254d9e0e9`. `src/Midnight.sol` separately subtracts realized bad debt and repaid units, permits zero-transfer pure bad-debt realization, and makes post-maturity mode a one-way condition; `src/libraries/EventsLib.sol` declares `totalUnitsDelta` as `int256`. The earlier shorthand omitted or over-constrained those semantics. The same audit reduced permissive Python JSON and integer parsing, incomplete deadline checks and address-bearing refusal text to guarded causes. The product goal, maturity equality, chain, API source and settlement-language boundary do not change.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit broken. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
