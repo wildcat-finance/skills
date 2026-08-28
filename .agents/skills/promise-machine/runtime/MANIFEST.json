@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 870,
-  "total_bytes": 11164033,
+  "file_count": 848,
+  "total_bytes": 11021215,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 3198,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "449d2f37058cdec86b5bcb127b2b8395ba7f2648deb175a63f86b083dd4fff40",
+      "sha256": "5012e3d36fec3c7cfdf8cac8996c90e92b6460769401b692b019173f5b987004",
       "source": null
     },
     {
@@ -1075,130 +1075,10 @@
       "source": "plugins/brevitas/skills/brevitas/agents/openai.yaml"
     },
     {
-      "bytes": 5247,
+      "bytes": 2252,
       "path": "plugins/brevitas/skills/brevitas/evals/README.md",
-      "sha256": "d96841846327bd7230302d9c230bc062e6ffa639b7aaf49c35e4d0ce34fcafd2",
+      "sha256": "57f37db716acc8a39f85ad162f4c0395301ff0398a9828eba741251fa22b224e",
       "source": "plugins/brevitas/skills/brevitas/evals/README.md"
-    },
-    {
-      "bytes": 1848,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/output-gpt-5.6-sol.md",
-      "sha256": "208bd97e5bd99bffe84ae1722346c4682df3039c0d85e134a2db994c31b00b82",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/output-gpt-5.6-sol.md"
-    },
-    {
-      "bytes": 1310,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/output-gpt-5.6-terra.md",
-      "sha256": "0f6e4dfbf1ebd9fa74d45d06f0732e2c192d870c71024f2c9e9b9efdb5fd6ae2",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/output-gpt-5.6-terra.md"
-    },
-    {
-      "bytes": 724,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/prompt.md",
-      "sha256": "c1de50a294c6968d4c550a697f71f244c4918a2e10c9676c30620d0a651ff7ac",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/prompt.md"
-    },
-    {
-      "bytes": 2680,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/source.md",
-      "sha256": "4c4cb2d17c7cc841091a18eff6fb34f2adbec37d79508732265abe98b8dce7af",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/source.md"
-    },
-    {
-      "bytes": 3542,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/output-gpt-5.6-sol.md",
-      "sha256": "57fe3259bb50ebed4700dfb011bf972bdcaa58bdd98e1289b40b0cc516bf473d",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/output-gpt-5.6-sol.md"
-    },
-    {
-      "bytes": 3935,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/output-gpt-5.6-terra.md",
-      "sha256": "1af1dc51a117f401b20c64a817c738a45941a941efe020641f6ba13a8e4b02cf",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/output-gpt-5.6-terra.md"
-    },
-    {
-      "bytes": 786,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/prompt.md",
-      "sha256": "623f06d8e962bb476354ccd7476cdd9cee1c62bdf62244ed7900df8a4ca1d367",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/prompt.md"
-    },
-    {
-      "bytes": 3220,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/source.md",
-      "sha256": "fd2da6de2e7a0412f2683b65b101eb3a09d475c013b7ad162c550b74678eda3d",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/source.md"
-    },
-    {
-      "bytes": 2608,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/output-gpt-5.6-sol.md",
-      "sha256": "5695824d97d89d133a0163f522e474c2157dea5fbd1e71d49e2124550fb39a06",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/output-gpt-5.6-sol.md"
-    },
-    {
-      "bytes": 2264,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/output-gpt-5.6-terra.md",
-      "sha256": "0b4b4fee99d19554330047e5a887a9450426a05473a861e3fa0956e26339a082",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/output-gpt-5.6-terra.md"
-    },
-    {
-      "bytes": 720,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/prompt.md",
-      "sha256": "9befc842268fa856aaddd9d9075c66b52c0ae695b9918b29e30d59b1c5bbbc49",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/prompt.md"
-    },
-    {
-      "bytes": 3091,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/source.md",
-      "sha256": "bb559f90b310638524f6fdd87d5d1e36744b4373edd8e057288b49c0b87f1d11",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/source.md"
-    },
-    {
-      "bytes": 2071,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/output-gpt-5.6-sol.md",
-      "sha256": "cd0b0f1a4ec3cdfbf06d9b068666658fc95443c588c5ee3f68a1671f70d80f3e",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/output-gpt-5.6-sol.md"
-    },
-    {
-      "bytes": 1602,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/output-gpt-5.6-terra.md",
-      "sha256": "8cfe0bb891d0216f6044b20cc4c740f41a3b2e962af1ac886e46c9f2ee69ff1a",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/output-gpt-5.6-terra.md"
-    },
-    {
-      "bytes": 761,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/prompt.md",
-      "sha256": "56a4b340ed1cccf649425ed32fb0545f7894a16fb3798c568734cafe7e569942",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/prompt.md"
-    },
-    {
-      "bytes": 2237,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/source.md",
-      "sha256": "7e27b44cb2346573a6ef7b34330eab5bffb9feb1c0aebc9749e42c5ea4be8cac",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/source.md"
-    },
-    {
-      "bytes": 4084,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/output-gpt-5.6-sol.md",
-      "sha256": "cfc021b8ecbf773330c77bbf562545bb0cc8a4d7bc54cdfcf894131f8f8a8f1f",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/output-gpt-5.6-sol.md"
-    },
-    {
-      "bytes": 3815,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/output-gpt-5.6-terra.md",
-      "sha256": "265a0801b00cf88c99b49f99e3867cafb20743ce8e9cf3debc2008ccd9a903b8",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/output-gpt-5.6-terra.md"
-    },
-    {
-      "bytes": 808,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/prompt.md",
-      "sha256": "c590229e7a5637589a8b2514d0bcf51bd3e459e8902f88a1b22aacbb4ea2188d",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/prompt.md"
-    },
-    {
-      "bytes": 5036,
-      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/source.md",
-      "sha256": "03485343c2a33b65ac53e6ce7458f6167de6f85cd2cd779fca24e461ace8f88f",
-      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/source.md"
     },
     {
       "bytes": 280,
@@ -1255,27 +1135,15 @@
       "source": "plugins/brevitas/skills/brevitas/evals/cases/xray-replay-authority/target.md"
     },
     {
-      "bytes": 56411,
-      "path": "plugins/brevitas/skills/brevitas/evals/corpus.json",
-      "sha256": "ca152210fa7c4ffa12d15e31eb89da5b749cbb60c2a9f0a10e5b9eb64fac05e1",
-      "source": "plugins/brevitas/skills/brevitas/evals/corpus.json"
-    },
-    {
       "bytes": 16709,
       "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
       "sha256": "f3e7bff6570a379b0c06e19de00eaef7a359ec8a9caf18d69132baf382cc7249",
       "source": "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
     },
     {
-      "bytes": 35445,
-      "path": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py",
-      "sha256": "1346e2c4bee3d5dab5a7a903b0af4023e7214b2c03a05fb1d30527213f3cb3d0",
-      "source": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py"
-    },
-    {
-      "bytes": 3048,
+      "bytes": 2223,
       "path": "plugins/brevitas/skills/brevitas/scripts/run_evals.py",
-      "sha256": "e3076e31ae852f5b6e690a8c5e331a5b0bc16dabb7a751664fe37748cb45ab99",
+      "sha256": "7d6acd4f1642763c75c9ac8aba0ff663b00edde288f73be6fda9ccaa4d7b1185",
       "source": "plugins/brevitas/skills/brevitas/scripts/run_evals.py"
     },
     {
