@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11114769,
+  "total_bytes": 11114953,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -517,9 +517,9 @@
       "source": "plugins/ariadne/docs/design.md"
     },
     {
-      "bytes": 6327,
+      "bytes": 6338,
       "path": "plugins/ariadne/docs/grounded-agent.md",
-      "sha256": "5d4af49a4159a5e3afcada41c5f0cec848ad402c866396b4d79814bd248eb0e0",
+      "sha256": "21cc9fbb4ea5d4d146f924efc2de725db644dac1999f6384913c581d938698a7",
       "source": "plugins/ariadne/docs/grounded-agent.md"
     },
     {
@@ -583,9 +583,9 @@
       "source": "plugins/ariadne/schemas/dataset-v1.json"
     },
     {
-      "bytes": 20382,
+      "bytes": 20436,
       "path": "plugins/ariadne/schemas/grounded-agent-v1.json",
-      "sha256": "25e2915eebab618c43dc6defb8280741b9127e2ad86f8337adf6038e4d52eded",
+      "sha256": "cf3fddff7a314f1d56702d3e9f165db8125bd9a77bef34b50cd8ed4c18fb1643",
       "source": "plugins/ariadne/schemas/grounded-agent-v1.json"
     },
     {
@@ -691,9 +691,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py"
     },
     {
-      "bytes": 47045,
+      "bytes": 47164,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py",
-      "sha256": "1dbeb39aff6b700c01bf9453be85e7aacf18f2b88f4521dd4ff66f5aa4146034",
+      "sha256": "399d16b7964ea765051297a340759c42c9ac975d361de9554038ad7235a6a5b7",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py"
     },
     {

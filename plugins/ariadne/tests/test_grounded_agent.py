@@ -1165,12 +1165,27 @@ class EvidenceBoundaryTests(unittest.TestCase):
         outer[0]["annotations"] = {"evaluation": {"failed": 0}}
         self.assertFalse(named("evidence-boundary", body, outer).passed)
 
+    def test_berean_failure_identities_are_result_projection(self):
+        body = predicate()
+        body["claims"] = [
+            {
+                "name": "evaluation failures",
+                "subject": {"sha256": body["release"]["document"]["sha256"]},
+                "disposition": "passed",
+                "detail": {"evaluation": {"failures": ["case-17"]}},
+            }
+        ]
+        found = named("evidence-boundary", body)
+        self.assertFalse(found.passed, found.detail)
+        self.assertIn("failures", found.detail)
+
     def test_berean_result_keys_refuse_compatibility_equivalent_spellings(self):
         aliases = (
             ("THRESHOLDS", "thresholds"),
             ("\uff43\uff41\uff53\uff45\uff53", "cases"),
             ("pa\u017f\u017fed", "passed"),
             ("\uff26\uff21\uff29\uff2c\uff25\uff24", "failed"),
+            ("\uff26\uff21\uff29\uff2c\uff35\uff32\uff25\uff33", "failures"),
             ("failures\uff3fallowed", "failures_allowed"),
         )
         for key, canonical in aliases:

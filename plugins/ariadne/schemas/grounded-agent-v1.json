@@ -755,6 +755,7 @@
             "cases",
             "passed",
             "failed",
+            "failures",
             "failures_allowed"
           ]
         }
@@ -818,6 +819,7 @@
                   "cases",
                   "passed",
                   "failed",
+                  "failures",
                   "failures_allowed"
                 ]
               }

@@ -931,9 +931,13 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
             refused,
             list(
                 getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ())
+                + getattr(
+                    grounded_agent, "BEREAN_EVALUATION_REPORT_ONLY_FIELDS", ()
+                )
                 + getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ())
             ),
         )
+        self.assertIn("failures", refused)
         recursive = {"$ref": "#/$defs/noBereanResults"}
         self.assertEqual(
             result_shape["allOf"][0]["then"]["additionalProperties"], recursive
@@ -1020,6 +1024,15 @@ class BereanPublicConstantDriftTests(unittest.TestCase):
         self.assertEqual(
             promotion["EVALS_FIELDS"][2:],
             getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ()),
+        )
+        self.assertEqual(
+            tuple(
+                field
+                for field in promotion["REPORT_FIELDS"]
+                if field not in promotion["EVALS_FIELDS"]
+                and field not in ("format", "corpus_digest", "answers_digest")
+            ),
+            getattr(grounded_agent, "BEREAN_EVALUATION_REPORT_ONLY_FIELDS", ()),
         )
         self.assertEqual(
             promotion["THRESHOLD_FIELDS"],

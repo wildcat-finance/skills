@@ -74,8 +74,8 @@ A non-null promotion block binds the exact `promotions.jsonl` component, the
 a rollback cannot be the first record, and either terminal action requires the
 release's evaluation files. It deliberately has no `score`, `grade`, `verdict`,
 `threshold`, or `result count`. Those are evaluation conclusions, not Ariadne
-identity metadata. The exact Berean threshold and result-count keys are also
-refused recursively in claim details, command details, digest maps and subject
+identity metadata. Exact Berean threshold, result-count, and failure-list keys
+are also refused recursively in claim details, command details, digest maps and subject
 descriptor extensions, so an open structured field cannot restore the
 projection that the closed promotion block omits.
 
