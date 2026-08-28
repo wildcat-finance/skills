@@ -385,7 +385,26 @@ def provenance_record(*, chunker: str, chunker_version: str, source_ref: str,
     character is refused for the same reason one line further on: `_URL` cannot
     span a newline, so such a ref never reaches the strip and any userinfo in
     it would be written verbatim.
+
+    The list-shaped arguments are refused here for a related reason. `list()`
+    and `sorted()` spread a bare string into one entry per character, so
+    `include="**/*.sol"` became eight one-character patterns. Three of the four
+    were then caught downstream by a cross-check that happened to disagree;
+    `include` has no cross-check and validated clean, which is a record naming
+    a coverage its corpus never had.
     """
+    for name, value in (("--include", include),
+                        ("units_present", units_present),
+                        ("units_selected", units_selected)):
+        if not isinstance(value, list) or not all(_named(u) for u in value):
+            raise ValueError(
+                f"{name} is {value!r}; it is a list of strings, and a bare "
+                "string spreads into one entry per character rather than "
+                "naming anything")
+    if not isinstance(inputs, list) or not all(
+            isinstance(entry, dict) for entry in inputs):
+        raise ValueError(
+            f"--inputs is {inputs!r}; it is a list of {{path, sha256}} objects")
     ref = source_ref.strip()
     if not ref:
         raise ValueError(
@@ -464,7 +483,10 @@ def validate_provenance(record: dict) -> list[str]:
         for entry in inputs:
             if not isinstance(entry, dict) or not _named(entry.get("path")):
                 problems.append(f"input has no path: {entry!r}")
-            elif not _SHA256.fullmatch(str(entry.get("sha256", ""))):
+            # str() here read a 64-digit number as a digest, because every
+            # decimal digit is also a hexadecimal one.
+            elif not (isinstance(entry.get("sha256"), str)
+                      and _SHA256.fullmatch(entry["sha256"])):
                 problems.append(
                     f"input {entry['path']}: sha256 {entry.get('sha256')!r} is "
                     "not 64 hexadecimal characters")
@@ -473,10 +495,17 @@ def validate_provenance(record: dict) -> list[str]:
     if not isinstance(selection, dict):
         problems.append(f"selection is {selection!r}, not an object")
     else:
-        if not selection.get("include"):
+        include = selection.get("include")
+        if not include:
             problems.append(
                 "selection.include is empty — nothing says which source units "
                 "the corpus was meant to cover")
+        elif not isinstance(include, list) or not all(
+                _named(pattern) for pattern in include):
+            # The one field in this block with no type test and no cross-check
+            # to catch it afterwards.
+            problems.append(
+                f"selection.include is {include!r}, not a list of patterns")
         # All three are compared as sets below. A value that is not a list of
         # strings took the validator down with a TypeError instead of
         # reporting the problem it exists to report.

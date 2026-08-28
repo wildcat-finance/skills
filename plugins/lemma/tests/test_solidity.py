@@ -634,14 +634,48 @@ def test_provenance_record() -> None:
     check("a ref carrying a control character is refused",
           "control character" in refusal, f"refusal was {refusal!r}")
 
-    # eleven — the whole userinfo goes, whatever shape it has. Recorded
-    # because `ssh://git@host/...` is a clean ref that the strip changes, and
-    # the prose has to say so rather than name only `user:token@`.
+    # eleven — this pins a known loss, not a decision. `ssh://git@host/o/r.git`
+    # is a clean ref and the strip removes the `git` user it needs to clone,
+    # because the rule is "drop the userinfo" and a bare user is userinfo. The
+    # behaviour is recorded rather than endorsed: it was found in audit, it is
+    # not what a reader wants, and a later run may decide to keep a userinfo
+    # carrying no secret. Until then this holds the loss visible, so a change
+    # to it is deliberate and shows up here rather than in a corpus.
     ssh = schema.provenance_record(
         source_ref="ssh://git@github.com/wildcat-finance/skills.git", **fields)
-    check("the strip takes the whole userinfo, a bare user included",
+    check("known loss pinned: the strip takes a bare user with the userinfo",
           ssh["source_ref"] == "ssh://github.com/wildcat-finance/skills.git",
           repr(ssh["source_ref"]))
+
+    # twelve — `list()` and `sorted()` spread a bare string into one entry per
+    # character. `include` was the one that then validated clean, so a record
+    # could name eight one-character patterns as the coverage it was built to.
+    spread = {}
+    for field, value in (("include", "**/*.sol"), ("units_present", "A.sol"),
+                         ("units_selected", "A.sol"),
+                         ("inputs", {"path": "a.json"})):
+        kw = dict(fields, source_ref="o/r@sha")
+        kw[field] = value
+        try:
+            schema.provenance_record(**kw)
+            spread[field] = "accepted"
+        except ValueError:
+            pass
+    loose = dict(record)
+    loose["selection"] = dict(record["selection"], include="**/*.sol")
+    check("no list-shaped argument spreads a bare string into characters",
+          not spread and bool(schema.validate_provenance(loose)),
+          f"builder accepted {sorted(spread)}, validator said "
+          f"{schema.validate_provenance(loose)}")
+
+    # thirteen — str() read a 64-digit number as a digest, because every
+    # decimal digit is also a hexadecimal one
+    digits = int("1234567890" * 6 + "1234")
+    numeric = dict(record, inputs=[{"path": "a.json", "sha256": digits}])
+    check("a sha256 that is not a string is refused, digits included",
+          len(str(digits)) == 64 and bool(schema.validate_provenance(numeric)),
+          f"{len(str(digits))} digits, validator said "
+          f"{schema.validate_provenance(numeric)}")
 
 
 def test_surface_accuracy(solc: str, tmp: pathlib.Path) -> None:
