@@ -2539,7 +2539,7 @@
       },
       {
         "path": "tests/test_run_observation.py",
-        "sha256": "649f68ee35e11ccd17db40e4b14f6f6c0c4d429c5e0f1740fdeca669a8fa0db1",
+        "sha256": "7717137fe1a1b1d5f3b1d0747ef95bd79ef08d3f97ec8ae3b4b07379a0679db0",
         "selectors": [
           "test_captured_byte_and_stable_path_validation_are_equivalent",
           "test_safe_unfinished_prefix_is_accepted_without_weakening_full_check",
@@ -2633,7 +2633,7 @@
         "test_runbook_separates_direct_and_elenchus_report_targets",
         "test_unhashable_and_non_string_typed_fields_refuse_without_crashing"
       ],
-      "sha256": "649f68ee35e11ccd17db40e4b14f6f6c0c4d429c5e0f1740fdeca669a8fa0db1"
+      "sha256": "7717137fe1a1b1d5f3b1d0747ef95bd79ef08d3f97ec8ae3b4b07379a0679db0"
     },
     "transition": "treat only the named bytes as structurally conforming and pass the bounded result without strengthening it"
   },
@@ -2689,7 +2689,7 @@
           "test_writer_refuses_bypass_and_never_writes_a_gap",
           "test_schema_and_runtime_document_the_same_closed_vocabulary"
         ],
-        "sha256": "8a3e8608a875667a393fa301c8da4fe014e88af7fab31190b134fe4ddc94079c"
+        "sha256": "431d2114d2b9f49a1a857dd03a2cba1957a39303048f61be9aae23d39650da0d"
       },
       {
         "path": "tests/test_run_observation_capture_inoculation.py",
