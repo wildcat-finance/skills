@@ -14,6 +14,8 @@ Every gate returns rather than raises. A verifier's job is to report all five
 lines, not to stop at the first thing it disliked.
 """
 
+import re
+
 from . import core_predicate, digests
 
 CONCLUSION_KEYS = frozenset(
@@ -37,6 +39,15 @@ CONCLUSION_KEYS = frozenset(
     }
 )
 """Gate 4. Normalised, so `risk_free` and `riskFree` are the same key."""
+
+CONCLUSION_COMPOUND_SUFFIXES = frozenset(
+    {"level", "outcome", "result", "state", "status", "value"}
+)
+CONCLUSION_COMPOUND_KEYS = frozenset(
+    root + suffix
+    for root in CONCLUSION_KEYS
+    for suffix in CONCLUSION_COMPOUND_SUFFIXES
+)
 
 AUTHORSHIP_KEYS = frozenset(
     {
@@ -105,10 +116,95 @@ as `signature_verified` and `signer`. The roots and suffixes stay finite so a
 generic business `status` or `identity` field is not reclassified by accident.
 """
 
+AUTHORSHIP_DIRECT_TOKENS = frozenset(
+    {
+        "author",
+        "authors",
+        "authorship",
+        "authenticated",
+        "attested",
+        "attester",
+        "creator",
+        "notarised",
+        "notarized",
+        "notary",
+        "publisher",
+        "signed",
+        "signatory",
+        "signer",
+        "verified",
+        "verifier",
+    }
+)
+AUTHORSHIP_RELATION_TOKENS = frozenset(
+    {
+        "attestation",
+        "authentication",
+        "notarisation",
+        "notarization",
+        "signature",
+        "signing",
+        "verification",
+    }
+)
+AUTHORSHIP_ASSERTION_TOKENS = frozenset(
+    {"actor", "by", "identity", "name", "status", "valid", "validity", "verified"}
+)
+AUTHORSHIP_CHAIN_KEYS = frozenset(
+    root + middle + final
+    for root in AUTHORSHIP_COMPOUND_ROOTS
+    for middle in AUTHORSHIP_RELATION_TOKENS | AUTHORSHIP_ASSERTION_TOKENS | {""}
+    for final in AUTHORSHIP_ASSERTION_TOKENS
+)
+"""Unseparated direct compounds that tokenisation cannot recover.
+
+The finite roots and final assertion terms close forms such as
+`signatureverificationstatus` without turning an unrelated prefix such as
+`authorization` into `author`.
+"""
+
+KEY_TOKEN = re.compile(
+    r"[A-Z]+(?=[A-Z][a-z]|[0-9]|[^A-Za-z0-9]|$)|[A-Z]?[a-z]+|[0-9]+"
+)
+
+
+def key_tokens(key):
+    """ASCII identifier words without confusing a substring for a claim."""
+    if not isinstance(key, str):
+        return ()
+    return tuple(found.group(0).lower() for found in KEY_TOKEN.finditer(key))
+
+
+def conclusion_key(key):
+    """A direct conclusion key or a structured conclusion compound."""
+    normal = core_predicate.normalise_key(key)
+    if normal in CONCLUSION_KEYS or normal in CONCLUSION_COMPOUND_KEYS:
+        return True
+    tokens = key_tokens(key)
+    if tokens and tokens[-1] in CONCLUSION_KEYS:
+        return True
+    return bool(
+        tokens
+        and tokens[-1] in CONCLUSION_COMPOUND_SUFFIXES
+        and any(token in CONCLUSION_KEYS for token in tokens[:-1])
+    )
+
 
 def authorship_key(key):
     normal = core_predicate.normalise_key(key)
-    return normal in AUTHORSHIP_KEYS or normal in AUTHORSHIP_COMPOUND_KEYS
+    if (
+        normal in AUTHORSHIP_KEYS
+        or normal in AUTHORSHIP_COMPOUND_KEYS
+        or normal in AUTHORSHIP_CHAIN_KEYS
+    ):
+        return True
+    tokens = frozenset(key_tokens(key))
+    if tokens & AUTHORSHIP_DIRECT_TOKENS:
+        return True
+    return bool(
+        tokens & AUTHORSHIP_RELATION_TOKENS
+        and tokens & AUTHORSHIP_ASSERTION_TOKENS
+    )
 
 
 def scanned(statement):
@@ -363,7 +459,7 @@ def gate_4_conclusions(statement):
     """
     faults = []
     for key, _ in scanned(statement):
-        if core_predicate.normalise_key(key) in CONCLUSION_KEYS:
+        if conclusion_key(key):
             faults.append(key)
     if faults:
         return Gate(

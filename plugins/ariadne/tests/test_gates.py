@@ -158,6 +158,27 @@ class GateFourTests(unittest.TestCase):
             gate = only(4, {"claims": [], "commands": [], key: True})
             self.assertFalse(gate.passed, key)
 
+    def test_structured_conclusion_compounds_fail(self):
+        for key in (
+            "security_verdict",
+            "riskScore",
+            "safety-conclusion",
+            "approval_status",
+            "securityRating",
+            "assurance_level",
+            "audit_recommendation",
+        ):
+            gate = only(4, {"claims": [], "commands": [], key: "positive"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_neutral_status_and_conclusion_process_metadata_pass(self):
+        for key in ("status", "identity", "approval_workflow", "score_method"):
+            gate = only(4, {"claims": [], "commands": [], key: "recorded"})
+            with self.subTest(key=key):
+                self.assertTrue(gate.passed, gate.detail)
+
     def test_a_verdict_in_a_subject_annotation_fails_too(self):
         """The shorter route: a subject's annotations are producer-chosen too."""
         gate = only(
@@ -254,6 +275,35 @@ class GateSevenTests(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertFalse(gate.passed, gate.detail)
                 self.assertIn(key, gate.detail)
+
+    def test_direct_authorship_names_and_multitoken_status_claims_fail(self):
+        for key in (
+            "author_name",
+            "publisherName",
+            "SIGNER-NAME",
+            "signature_verification_status",
+            "signatureValidationStatus",
+            "signatureverificationstatus",
+            "attestation-verification-status",
+            "is_verified",
+            "signed_by_identity",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "someone"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_neutral_identity_and_signature_metadata_pass(self):
+        for key in (
+            "identity",
+            "status",
+            "signature_algorithm",
+            "verification_method",
+            "attestation_format",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "recorded"})
+            with self.subTest(key=key):
+                self.assertTrue(gate.passed, gate.detail)
 
     def test_an_author_in_a_subject_annotation_fails_too(self):
         gate = only(

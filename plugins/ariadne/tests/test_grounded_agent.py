@@ -1006,6 +1006,52 @@ class EvidenceBoundaryTests(unittest.TestCase):
                 self.assertFalse(gate.passed, gate.detail)
                 self.assertIn(key, gate.detail)
 
+    def test_core_gate_four_refuses_structured_conclusion_compounds(self):
+        for key in (
+            "security_verdict",
+            "riskScore",
+            "safety-conclusion",
+            "approval_status",
+            "securityRating",
+            "assurance_level",
+            "audit_recommendation",
+        ):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {key: "positive"}
+            with self.subTest(key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 4
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_core_gate_seven_refuses_multitoken_identity_and_status_claims(self):
+        for key in (
+            "author_name",
+            "publisherName",
+            "SIGNER-NAME",
+            "signature_verification_status",
+            "signatureValidationStatus",
+            "signatureverificationstatus",
+            "attestation-verification-status",
+            "is_verified",
+            "signed_by_identity",
+        ):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {key: "someone"}
+            with self.subTest(key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 7
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
     def test_berean_results_cannot_hide_in_open_extension_objects(self):
         body = predicate()
         body["claims"] = [
