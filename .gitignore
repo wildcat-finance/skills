@@ -37,6 +37,10 @@ plugins/*/harness/cache/
 # a plugin that wants its own tmp/ still decides for itself.
 /tmp/
 
+# Demo output. The Synkrisis example commands write their cohort here; the
+# committed expected copies live under the plugin's examples tree.
+/build/
+
 # Orphaned atomic-write temporaries from scripts/contributors.py. A hard-killed
 # run leaves one; it must never be committed and must never look like a change.
 .CONTRIBUTORS.md.*

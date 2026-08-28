@@ -1156,19 +1156,19 @@
       "selector": "test_labelled_subject_mismatch_cases"
     },
     "synkrisis-scaffold-p": {
-      "claim": "The declared scaffold behaviour, one stable refusal per specified operation, is exercised positively.",
+      "claim": "The declared scaffold behaviour, one stable refusal per held operation, is exercised positively.",
       "path": "plugins/synkrisis/tests/test_scaffold.py",
-      "selector": "test_every_operation_refuses_with_the_scaffold_code"
+      "selector": "test_every_held_operation_refuses_with_the_scaffold_code"
     },
     "synkrisis-scaffold-m": {
-      "claim": "Plausible-looking inputs do not stand in for an implementation; the refusal still fires.",
+      "claim": "Plausible-looking inputs do not stand in for an implementation; the held operations still refuse.",
       "path": "plugins/synkrisis/tests/test_scaffold.py",
-      "selector": "test_operations_refuse_even_with_plausible_inputs"
+      "selector": "test_held_operations_refuse_even_with_plausible_inputs"
     },
     "synkrisis-scaffold-o": {
-      "claim": "The nearest overclaim, a written artefact from an unbuilt operation, remains unavailable.",
+      "claim": "The nearest overclaim, a written artefact from a held operation, remains unavailable.",
       "path": "plugins/synkrisis/tests/test_scaffold.py",
-      "selector": "test_no_operation_writes_an_output"
+      "selector": "test_no_held_operation_writes_an_output"
     },
     "synkrisis-scaffold-r": {
       "claim": "Every refusal names the committed runbook step whose delivery recovers the operation.",
@@ -1211,7 +1211,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "04ee42c9ec24743af72d092a21b3cf878ac665eaab2ce91c9524531a74e4b26d"
+        "sha256": "486f11499adedfd883eb9aec35555911c6555b919ff165cd9a22244b53f5564b"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1219,11 +1219,11 @@
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "d4518faedfb84602de11d176ec898a4937673a5ed71490e57933a2fd9d4b8168"
+        "sha256": "0deaeed95a63440158282800270ff41e5fb2ed1703bc88f02de2429b9284cf31"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
-        "sha256": "8aee7ba8d711ea11fcd94a9db9ccc52001f39261ffcb71777285e4daf4fb5add"
+        "sha256": "171c0c6cf0cfc542cd3f52a3598b3d4de644bae02a88f2237c3ba0e75a16ab12"
       }
     ],
     "promise_id": "promise-machine-router-selection",

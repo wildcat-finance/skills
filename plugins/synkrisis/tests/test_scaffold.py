@@ -1,4 +1,4 @@
-"""Step 1 scaffold contract: packaging, routing, ledger, spec, refusing stub."""
+"""Step 2 scaffold contract: packaging, routing, ledger, spec, held refusals."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def run_cli(*arguments, cwd):
 
 class HostSurfaceTests(unittest.TestCase):
     def test_manifest_versions_agree_across_hosts_and_marketplace(self):
-        assert_version_agreement(self, "synkrisis", expected="0.1.0")
+        assert_version_agreement(self, "synkrisis", expected="0.2.0")
 
     def test_host_descriptions_agree(self):
         assert_host_descriptions_agree(self, "synkrisis")
@@ -96,12 +96,15 @@ class HostSurfaceTests(unittest.TestCase):
 
 
 class SpecificationTests(unittest.TestCase):
-    def test_study_runbook_and_first_decision_record_are_committed(self):
+    def test_specification_and_decision_records_are_committed(self):
         for path in (
             REPO_ROOT / "docs" / "synkrisis" / "study.md",
             REPO_ROOT / "docs" / "synkrisis" / "runbook.md",
             PLUGIN / "docs" / "decisions"
             / "ADR-001-keep-cross-run-diagnosis-separate.md",
+            PLUGIN / "docs" / "decisions"
+            / "ADR-002-declare-cohort-comparability.md",
+            PLUGIN / "docs" / "schema-compatibility.md",
         ):
             with self.subTest(path=path.relative_to(REPO_ROOT)):
                 self.assertTrue(path.is_file())
@@ -112,23 +115,53 @@ class SpecificationTests(unittest.TestCase):
             with self.subTest(link=link):
                 self.assertTrue((SKILL.parent / link).resolve().is_file())
 
-    def test_the_runbook_names_every_specified_operation_step(self):
+    def test_the_runbook_records_two_delivered_and_three_held_steps(self):
         runbook = (REPO_ROOT / "docs" / "synkrisis" / "runbook.md").read_text(
             encoding="utf-8"
         )
         for heading in ("Step 1", "Step 2", "Step 3", "Step 4", "Step 5"):
             self.assertIn(f"## {heading}:", runbook)
-        self.assertIn("(delivered)", runbook)
-        self.assertEqual(runbook.count("(held)"), 4)
+        self.assertEqual(runbook.count("(delivered)"), 2)
+        self.assertEqual(runbook.count("(held)"), 3)
+
+    def test_reference_schemas_parse_and_declare_their_identities(self):
+        expected = {
+            "policy-v1.schema.json": "synkrisis-policy/v1",
+            "cohort-v1.schema.json": "synkrisis-cohort/v1",
+        }
+        for name, identity in expected.items():
+            with self.subTest(schema=name):
+                document = read_json(PLUGIN / "references" / name)
+                self.assertEqual(
+                    document["properties"]["schema"]["const"], identity
+                )
+
+    def test_example_records_pass_the_producer_validator(self):
+        records = sorted((PLUGIN / "examples" / "cross-run-v0" / "records").glob("*.jsonl"))
+        self.assertEqual(len(records), 5)
+        for record in records:
+            with self.subTest(record=record.name):
+                completed = subprocess.run(  # phylax: allow subprocess: fixed argv local checker, no shell
+                    [
+                        sys.executable,
+                        str(REPO_ROOT / "scripts" / "run_observation.py"),
+                        "check",
+                        str(record.relative_to(REPO_ROOT)),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    cwd=REPO_ROOT,
+                )
+                self.assertEqual(
+                    completed.returncode, 0, completed.stdout + completed.stderr
+                )
 
 
-class ScaffoldRefusalTests(unittest.TestCase):
-    """The stub's one promise: refuse with the step named, and write nothing."""
+class HeldOperationTests(unittest.TestCase):
+    """The scaffold promise, narrowed: every held operation refuses and writes nothing."""
 
-    def operations(self, root):
+    def held_operations(self):
         return {
-            "cohort": ("cohort", "--manifest", "manifest.json", "--policy",
-                       "policy.json", "--out", "out/cohort.json"),
             "diagnose": ("diagnose", "--cohort", "cohort.json", "--rules",
                          "rules.json", "--out", "out/findings.json"),
             "render": ("render", "findings.json", "--out", "out/report.md"),
@@ -146,9 +179,9 @@ class ScaffoldRefusalTests(unittest.TestCase):
                 self.assertIn(operation, completed.stdout)
             self.assertEqual(os.listdir(scratch), [])
 
-    def test_every_operation_refuses_with_the_scaffold_code(self):
+    def test_every_held_operation_refuses_with_the_scaffold_code(self):
         with tempfile.TemporaryDirectory() as scratch:
-            for operation, arguments in self.operations(scratch).items():
+            for operation, arguments in self.held_operations().items():
                 with self.subTest(operation=operation):
                     completed = run_cli(*arguments, cwd=scratch)
                     self.assertEqual(completed.returncode, 1)
@@ -157,35 +190,34 @@ class ScaffoldRefusalTests(unittest.TestCase):
                         "promise-machine-run-observation/v1", completed.stdout
                     )
 
-    def test_operations_refuse_even_with_plausible_inputs(self):
+    def test_held_operations_refuse_even_with_plausible_inputs(self):
         with tempfile.TemporaryDirectory() as scratch:
             root = Path(scratch)
             for name in ("manifest.json", "policy.json", "cohort.json",
                          "rules.json", "findings.json"):
                 (root / name).write_text("{}\n", encoding="utf-8")
             (root / "report.md").write_text("# report\n", encoding="utf-8")
-            for operation, arguments in self.operations(scratch).items():
+            for operation, arguments in self.held_operations().items():
                 with self.subTest(operation=operation):
                     completed = run_cli(*arguments, cwd=scratch)
                     self.assertEqual(completed.returncode, 1)
                     self.assertIn("SK000", completed.stdout)
 
-    def test_no_operation_writes_an_output(self):
+    def test_no_held_operation_writes_an_output(self):
         with tempfile.TemporaryDirectory() as scratch:
             before = sorted(os.listdir(scratch))
-            for arguments in self.operations(scratch).values():
+            for arguments in self.held_operations().values():
                 run_cli(*arguments, cwd=scratch)
             self.assertEqual(sorted(os.listdir(scratch)), before)
 
     def test_refusal_names_the_pending_runbook_step(self):
         expected = {
-            "cohort": "Step 2",
             "diagnose": "Step 3",
             "render": "Step 4",
             "verify": "Step 4",
         }
         with tempfile.TemporaryDirectory() as scratch:
-            for operation, arguments in self.operations(scratch).items():
+            for operation, arguments in self.held_operations().items():
                 with self.subTest(operation=operation):
                     completed = run_cli(*arguments, "--json", cwd=scratch)
                     document = json.loads(completed.stdout)
@@ -195,7 +227,7 @@ class ScaffoldRefusalTests(unittest.TestCase):
     def test_refusal_output_names_code_producer_path_and_recovery(self):
         with tempfile.TemporaryDirectory() as scratch:
             completed = run_cli(
-                *self.operations(scratch)["cohort"], "--json", cwd=scratch
+                *self.held_operations()["diagnose"], "--json", cwd=scratch
             )
             self.assertEqual(completed.returncode, 1)
             document = json.loads(completed.stdout)

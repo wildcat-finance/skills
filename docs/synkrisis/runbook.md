@@ -2,9 +2,9 @@
 
 Derived from [the committed study](study.md) and the runbook attached to
 [issue #449](https://github.com/wildcat-finance/skills/issues/449). Five
-steps, dependency order, each landing only with its exit gates green. Step 1
-is delivered; Steps 2 through 5 are held, and the evolution ledger's Next
-Fiat job names the next one.
+steps, dependency order, each landing only with its exit gates green. Steps 1
+and 2 are delivered; Steps 3 through 5 are held, and the evolution ledger's
+Next Fiat job names the next one.
 
 ## Step 1: Scaffold Synkrisis and commit its specification (delivered)
 
@@ -22,11 +22,11 @@ that implements it and writing nothing; the scaffold suite under
 check` and `coverage --check` exit 0, with the plugin discovered from disk
 and the scaffold's single refusal promise bound to evidence.
 
-## Step 2: Validate observations and construct one declared cohort (held)
+## Step 2: Validate observations and construct one declared cohort (delivered)
 
 **Goal.** One deterministic cohort from a complete declared manifest and one
 comparison policy, without interpreting events.
-**Exit.** `synkrisis.py cohort` checks producer identity, declared
+**Exit, held at delivery.** `synkrisis.py cohort` checks producer identity, declared
 validation, redaction and binding results, recomputed digests and bound
 prefixes, run and event identity, path form, caps and equality dimensions;
 classifies every declared run as included, excluded or unknown with the

@@ -41,8 +41,9 @@ named skill, while Lemma stops after producing
 source-linked chunks. Horos decides what an agent does not read. Janus checks
 what a contract hook may observe and change around a host action, where
 Pandects supplies the economic laws such a transition must preserve. Synkrisis
-reserves the cross-run comparison boundary, but its current scaffold refuses
-cohort, diagnosis, render, and verification operations. Its specified future
+owns the cross-run comparison boundary: it builds one checked cohort from
+declared run observations, while its diagnosis, render, and verification
+operations stay held runbook steps that refuse. Its specified future
 findings remain bounded inferences: capture, redaction, receipt binding, causal
 triage, and every decision to act stay with their owners. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
