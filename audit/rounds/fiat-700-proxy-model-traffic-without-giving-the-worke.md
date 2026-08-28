@@ -65,3 +65,19 @@ Elenchus verdict: guarded
 | S2-R2-01 | medium | plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py | The core accepted any exact unconsumed issued request, so after one concatenated read a caller could encode sequence 2 before sequence 1. That reordered responses and supplied the multiplexing the Step 2 exit says is unavailable. | fixed in this commit; admission-order response guard parent-red and fixed-green |
 
 Leads not pursued: the three round-1 policy-replay, one-shot request-object, and invalid-manifest-path failures remain guarded on this tree. Replay establishes that the frame policy matches the captured accepted-job evidence, not that #698 signed it or that #702 supplied it through the trusted supervisor channel. The Python objects remain a trusted-process interface rather than a sandbox against arbitrary code already executing inside the proxy; #699 must keep the guest behind the serialised frame channel. Thread-safe admission and response scheduling, aggregate quotas, output reservation, cancellation, expiry, receipt durability, and cleanup remain Step 4 work rather than framing claims.
+
+## Step 2, round 3 -- 2026-08-28T09:40:23Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: jobspec-substitution=reviewed; policy-derivation-drift=reviewed; transport-confusion=reviewed; frame-exhaustion=reviewed; schema-smuggling=reviewed; credential-crossing=not-applicable; origin-confusion=not-applicable; dns-rebinding=not-applicable; redirect-tunnel=not-applicable; feature-escape=reviewed; quota-race=not-applicable; token-undercount=reviewed; cancellation-race=not-applicable; expiry-replay=not-applicable; response-flood=not-applicable; response-schema=reviewed; cross-job-state=reviewed; receipt-content=not-applicable; diagnostic-consent=reviewed; provider-retention=not-applicable; provider-exfiltration=not-applicable; dependency-smuggling=reviewed; partial-receipt=not-applicable; secret-response-echo=not-applicable; cleanup-gap=not-applicable
+
+Not checked: the Pashov Solidity suite was waived because issue #700 is an off-chain model-proxy delivery and Step 2 produces no Solidity; live credentials, DNS, TLS, HTTP, redirects, provider-native requests and responses, atomic aggregate quotas, concurrent calls, cancellation, runtime expiry, durable receipts, secret-echo checks, and terminal cleanup belong to Steps 3 and 4; the #698 signed-JobSpec join, #699 VM channel, #702 Fiat adapter, a live provider, and arbitrary code inside the trusted proxy process were not exercised; provider non-retention and non-exfiltration are not claimed
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: S2-R1-01, S2-R1-02, S2-R1-03, and S2-R2-01 remain closed on this exact tree: accepted-evidence replay rejects self-consistent policy substitution; exact-object issuance and one-shot consumption reject copied and reused requests; an invalid manifest scalar path returns `MP218`; and `_next_response_sequence` rejects response inversion. Replay establishes a match to the captured accepted-job evidence, not that #698 signed it or that #702 supplied it through the trusted supervisor channel. The Python objects remain a trusted-process interface rather than a sandbox against arbitrary code already executing inside the proxy; #699 must keep the guest behind the serialised frame channel. Thread-safe admission and response scheduling, aggregate quotas, output reservation, cancellation, expiry, receipt durability, and cleanup remain Step 4 work rather than framing claims.
