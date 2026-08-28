@@ -183,7 +183,11 @@ def plan(statement):
         # Win32 filename lookup ignores trailing spaces and periods. Normalise
         # them before checking executable and batch suffixes so a plan cannot
         # disagree with the program family that Windows would start.
-        program = argv[0].lower().rstrip(" .")
+        # Case-insensitive filesystems can resolve compatibility case forms as
+        # the same executable name.  APFS, for example, resolves long-s `ſh`
+        # to `/bin/sh`; Unicode case folding closes that direct-shell spelling
+        # without compatibility-normalising unrelated program names.
+        program = argv[0].casefold().rstrip(" .")
         if program.endswith(WINDOWS_BATCH_SUFFIXES):
             steps.append(Step(name, argv, SKIP_BATCH))
             continue

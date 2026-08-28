@@ -125,6 +125,20 @@ class PlanTests(unittest.TestCase):
             self.assertFalse(steps[0].runnable, name)
             self.assertIn("shell", steps[0].action)
 
+    def test_casefold_equivalent_shell_names_are_refused(self):
+        """Case-insensitive filesystems can resolve long s as ASCII s."""
+        names = [
+            name.replace("s", "\u017f", 1)
+            for name in sorted(replay.SHELL_NAMES)
+            if "s" in name
+        ]
+        names.extend(("\u017fh.EXE.", "power\u017fhell.com "))
+        for name in names:
+            with self.subTest(name=name):
+                steps = replay.plan(built([command(argv=[name, "-c", "echo hi"])]))
+                self.assertFalse(steps[0].runnable, name)
+                self.assertIn("shell", steps[0].action)
+
     def test_a_windows_batch_program_is_refused_everywhere(self):
         """Windows may invoke these through a shell despite `shell=False`."""
         for name in ("build.bat", "BUILD.CMD", "build.bat.", "BUILD.CMD "):
