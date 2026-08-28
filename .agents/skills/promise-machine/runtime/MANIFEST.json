@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 929,
-  "total_bytes": 20279752,
+  "total_bytes": 20308783,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1825,15 +1825,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 38323,
+      "bytes": 39625,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "ca0ee8fac15189802d1ff5459db62a3951de55bd60c34a697e7ab02442db6594",
+      "sha256": "6a851ba4588992f27ebc3a96a4b3a4651ab2edbf338ee7cc3f21c0e6561e4f99",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 47677,
+      "bytes": 48548,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "a1b3b33215f830fd7f4a46fdd1a6433a4bfc15e97225f5048d80c9dd59217389",
+      "sha256": "62e845a7b0fbdc52f3c98d536b84c1248d7f9ed95627d26a0f5d00746ec56edc",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1891,9 +1891,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 297268,
+      "bytes": 324126,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "4ac36284ce936e8909a2cfab36a3de542bcb57b72f074c3a0992f2977d31925d",
+      "sha256": "62b22ddac2f3ee7e5ea96e06901e478deeeb46c39161e9648e40f78cb478585b",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {

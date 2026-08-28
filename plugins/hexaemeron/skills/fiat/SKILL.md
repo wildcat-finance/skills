@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.30.1"
+  version: "5.31.1"
 ---
 
 <p align="center">
@@ -521,7 +521,11 @@ and receipt it with `done sync-run`; never rebase or rewrite the signed stack.
 Base advancement does not invalidate the signed implementation or completed
 audit. The sync receipt keeps their exact-tree digests and adds a bounded
 integration-revalidation record over the computed upstream, product and overlap
-path sets. Reopen only evidence whose declared dependency changed or whose
+path sets. Version 1 keeps its exact individual-path form and 500-path limit.
+Version 2 may cover a larger required set only through a source-registered
+generator prefix: the controller proves the complete final manifest and Git
+tree, while every path outside that prefix remains individually listed and
+checked under the same 500-path limit. Reopen only evidence whose declared dependency changed or whose
 revalidation failed. A base advance by itself does not authorise a carryover,
 another study, or another product audit. If a pushed sync exposes a failed
 composition check, repair only that surface, reconstruct the two-parent merge
@@ -667,12 +671,12 @@ the study and runbook live.
 
 ### fiat-final-integration
 
-- Promise: A successful integration receipt establishes that every stacked step was merged in controller order, the run branch passed its required gates, any completed product evidence remained bound to its exact product head across the active signed base-sync merge, every superseded failed composition remained recorded and unavailable for integration, the computed product/base overlap and declared affected paths received bounded green composition checks, every identity the push receipts recorded remains attributable from the recorded merge, and exactly one recorded merge landed the run on the named base under the user's delivery authority.
-- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, computed product, upstream, overlap and product-to-sync composition paths, a digest-bound integration-revalidation artefact whose affected paths equal the composition surface plus every overlap and whose green checks cover all of them, stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each identity, final controller state and verified ledger.
+- Promise: A successful integration receipt establishes that every stacked step was merged in controller order, the run branch passed its required gates, any completed product evidence remained bound to its exact product head across the active signed base-sync merge, every superseded failed composition remained recorded and unavailable for integration, and the computed product/base overlap received bounded green composition checks. Version 1 requires exact individual coverage. Version 2 requires exact individual coverage outside every selected source-registered prefix and exact manifest, blob, digest and Git-tree evidence for each complete final aggregate. Every identity the push receipts recorded remains attributable from the recorded merge, and exactly one recorded merge landed the run on the named base under the user's delivery authority.
+- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, computed product, upstream, overlap and product-to-sync composition paths, and a digest-bound integration-revalidation artefact. A version-1 artefact names every affected path and the green checks that cover it. A version-2 artefact adds source-registered aggregate identities, exact final manifest and Git-object evidence, aggregate file and tree digests, the final Git tree id, exact outside paths, and green checks covering both classes. The receipt also carries stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each identity, final controller state and verified ledger.
 - Evidence classes: checked, recorded
 - Boundary: Exact-tree implementation and audit evidence remains evidence about the recorded product head when the base advances; it does not automatically apply to bytes changed while composing that head with the new base. The revalidation receipt establishes only the named checks over the computed and declared integration surface. Integration establishes the recorded repository transition; it does not prove the software defect-free, make audit judgements independent or authorise a deployment, financial action or another repository. The attribution result establishes that the base carries each recorded identity by ancestry or by a recorded merge's author or trailer; it does not establish that GitHub will resolve that identity to an account or list it as a contributor.
 - Authorises: Publication of the complete run to the named base and a final report limited to the merged artefacts and recorded evidence.
 - Consequence: 3
-- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync receipt, an affected-path manifest that differs from the computed composition surface plus overlap, a failed or uncovered integration check, a merge that leaves a recorded identity carried by nothing, or integration without explicit delivery authority.
+- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync receipt, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a merge that leaves a recorded identity carried by nothing, or integration without explicit delivery authority.
 - Recovery: Leave the stack open; if only the base advanced, merge the exact remote base into the completed run with the recorded product head as first parent, determine the affected surface, rerun its integration-sensitive checks, and receipt that revalidation without rebuilding or re-auditing unchanged product bytes. If that composition later fails a required check, repair the affected surface, reproduce the signed two-parent merge, rerun bounded revalidation and supersede the exact active sync with a reason; the old receipt remains in the ledger. Restore another required branch or check, retarget and merge in controller order, or halt with the exact blocker before any base mutation.
 - Exceptions: none

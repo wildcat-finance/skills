@@ -1,0 +1,44 @@
+{
+  "schema": "fiat-710-generator-aggregate-fixture/v1",
+  "source_qualification": "deterministic reconstruction from reachable Git objects; the original ignored operator artefact was unavailable",
+  "entry_controller": "fiat-v5.30.1",
+  "merge_base": "b245d68e7e8c9d07b0dbbaa67e57b05cd00b18ef",
+  "product_merge": "6f9f800c79efed5642f73ca3e2a80786b12ce276",
+  "base_head": "bec742ac17a5fdd95f0242d2b7ba894828cebf22",
+  "sync_commit": "f0a84ca343b8d9ed477bc1cb4d0dd6a49bbe3897",
+  "counts": {
+    "product_paths": 53,
+    "upstream_paths": 1087,
+    "overlap_paths": 5,
+    "composition_paths": 1095,
+    "required_paths": 1095,
+    "aggregate_owned_paths": 887,
+    "outside_paths": 208
+  },
+  "inventory_sha256": {
+    "product_paths": "79237b2bd07fc76b8de868f87a077545393b33bac97e49f175ad433f5b04fb0c",
+    "upstream_paths": "56e1dbd29e5f780977e3a3200c69c35e1ed7774a416843b5d3875af2920a356c",
+    "overlap_paths": "f9212e3b26a5729837ae3850967d43ec8a258fe18213960eb5cf34ad46e91086",
+    "composition_paths": "e9d5617e6db2fd91fab605517019a0172868b88abdf373453b83eaa11915c588",
+    "required_paths": "e9d5617e6db2fd91fab605517019a0172868b88abdf373453b83eaa11915c588",
+    "aggregate_owned_paths": "d47d479b9d68e1095b833dc97da89b1eb4e57027eb0cc9ef3165ba7f7e1ef421",
+    "outside_paths": "8b3e8cf458fbf36ed46cab5d1d12e7e873fd788d7b0f67fa893fbae590b7457f"
+  },
+  "aggregate": {
+    "id": "promise-machine-portable-runtime-v1",
+    "prefix": ".agents/skills/promise-machine/runtime/",
+    "generator": "scripts/portable_promise_machine.py",
+    "manifest": "MANIFEST.json",
+    "manifest_sha256": "7f03a24cf128b93c124d61a3cadbfec7368f0922931705d204845b2126e05ca6",
+    "file_count": 887,
+    "tree_sha256": "f69ec4719fb73e4ce5620aa199b3e00aa4458b99228cb052f97cfc8e72152de3",
+    "git_tree": "5b8cea1a952767e095ee16ab5800ae28993c2617",
+    "payload_file_count": 886,
+    "payload_total_bytes": 19933502,
+    "total_bytes": 20161661
+  },
+  "entry_v1_refusal": {
+    "exit": 2,
+    "stderr": "hexctl: error: integration path delta exceeds 500 paths"
+  }
+}
