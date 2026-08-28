@@ -30,6 +30,7 @@ import importlib.util
 import json
 import pathlib
 import re
+import shlex
 import subprocess
 import sys
 
@@ -1212,6 +1213,68 @@ def record_path(args) -> str:
     return str(chosen)
 
 
+def capture_flags(record: dict, out: str) -> list[str]:
+    """The `capture-dataset` flags for the corpus that was just written.
+
+    The operator's next command is Ariadne's, and every value it needs about
+    this corpus is already known here. Composing the flags by hand is where
+    the seam leaks: the coverage bounds are a count over a sorted list, the
+    gaps are the runs that list omits, and neither is work worth doing twice.
+
+    Everything but the release directory is read from the record, so the
+    locator printed is the stripped ref rather than the one that was typed,
+    and no path, pattern or version the record does not hold can appear here.
+    The release is the directory `--out` names, which the line above this one
+    has already printed, so naming it discloses nothing further.
+
+    Coverage reads the source unit dimension: the bounds are the 1-based index
+    range over the sorted units the input declared, and each run of excluded
+    units is a gap naming the include patterns the selection was made under.
+    An interval printed with no gaps reads as complete, which is the reading
+    `predicates/dataset.py:385` refuses, so an excluded unit is named rather
+    than dropped from an interval that would then describe the whole input.
+
+    `--gap` and `--input` are `key=value` pairs that `ariadne.py:132` splits on
+    commas, so the values built here carry no comma of their own. A comma
+    inside a recorded pattern, path or ref is the one thing this form cannot
+    carry, and it arrives at that parser as a key it does not define.
+    """
+    selection = record["selection"]
+    present = selection["units_present"]
+    excluded = set(selection["units_excluded"])
+    include = " ".join(selection["include"])
+
+    gaps: list[list[int]] = []
+    for index, unit in enumerate(present, 1):
+        if unit not in excluded:
+            continue
+        if gaps and gaps[-1][1] == index - 1:
+            gaps[-1][1] = index
+        else:
+            gaps.append([index, index])
+
+    flags = [
+        f"--release {shlex.quote(str(pathlib.Path(out).parent))}",
+        "--producer-tool lemma",
+        f"--producer-version {shlex.quote(record['chunker_version'])}",
+        "--producer-command python3",
+        f"--producer-command chunkers/{record['chunker']}.py",
+        "--parameter " + shlex.quote(f"include={include}"),
+        "--coverage-dimension 'source unit'",
+        "--coverage-start 1",
+        f"--coverage-end {len(present)}",
+    ]
+    for start, end in gaps:
+        flags.append("--gap " + shlex.quote(
+            f"start={start},end={end},reason=present in the input and not "
+            f"selected under include {include}"))
+    for entry in record["inputs"]:
+        flags.append("--input " + shlex.quote(
+            f"name={entry['path']},locator={record['source_ref']},"
+            f"file={entry['path']}"))
+    return flags
+
+
 def deliver(chunks: list[Chunk], args, *, inputs: list[dict],
             include: list[str], units_present: list[str],
             compiler: dict) -> None:
@@ -1273,6 +1336,9 @@ def deliver(chunks: list[Chunk], args, *, inputs: list[dict],
             f"at {args.out} has been removed rather than left behind with "
             "nothing beside it to say what produced it") from e
     print(f"  provenance    : {path}")
+    print("  capture flags : hand these to ariadne capture-dataset")
+    for flag in capture_flags(record, args.out):
+        print(f"      {flag}")
 
 
 def main() -> int:

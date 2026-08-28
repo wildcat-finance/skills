@@ -1379,6 +1379,39 @@ def test_provenance_emitted(solc: str, tmp: pathlib.Path) -> None:
           isinstance(compiler.get("reason"), str)
           and bool(compiler["reason"].strip()), str(compiler.get("reason")))
 
+    # The operator's next command is Ariadne's, and the flags it needs are
+    # the ones a hand-composed command gets wrong: the release the corpus
+    # landed in, the pattern the selection was made under, the version that
+    # produced it, and one input per digested file. `r` is still the good
+    # delivery above, so this reads that run's own output.
+    flags = r.stdout
+    check("the printed flags name the directory the corpus was written to",
+          f"--release {good}" in flags, flags[-400:])
+    param_line = next((line for line in flags.splitlines()
+                       if "--parameter " in line), "")
+    check("the printed flags name the include pattern the run used",
+          "include=src/**" in param_line, param_line or "no --parameter printed")
+    check("the printed flags carry the version the record carries",
+          f"--producer-version {record.get('chunker_version')}" in flags,
+          flags[-400:])
+    check("the printed coverage reads the source unit dimension",
+          "--coverage-dimension 'source unit'" in flags
+          and "--coverage-start 1" in flags
+          and f"--coverage-end {len(record['selection']['units_present'])}"
+          in flags, flags[-400:])
+    check("one input flag per file the record digested",
+          flags.count("--input ") == len(record.get("inputs") or []),
+          f"{flags.count('--input ')} printed vs "
+          f"{len(record.get('inputs') or [])} digested")
+    check("each input flag names the file the record digested",
+          bool(record.get("inputs")) and all(
+              f"file={entry['path']}" in flags for entry in record["inputs"]),
+          flags[-400:])
+    # The print reads the record, not argv, so the locator it carries is the
+    # stripped ref rather than the one that was typed.
+    check("the printed locator is the ref the record carries",
+          f"locator={record.get('source_ref')}" in flags, flags[-400:])
+
     gated = tmp / "prov-gated"
     gated.mkdir()
     # A proper prefix of the reported version, which is what --expect-solc is

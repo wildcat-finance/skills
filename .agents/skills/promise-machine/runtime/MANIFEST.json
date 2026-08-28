@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 909,
-  "total_bytes": 20127511,
+  "total_bytes": 20133623,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4309,15 +4309,15 @@
       "source": "plugins/lemma/baseline/standard_input.py"
     },
     {
-      "bytes": 62709,
+      "bytes": 65765,
       "path": "plugins/lemma/chunkers/markdown.py",
-      "sha256": "481e3f3ec9c355af18cd0070297b2b4eb865738b24d61f449651b46f662eb4bc",
+      "sha256": "8c1456e4dafbc8842014a2fd4e74a0ec0a95f447420a31af15d02570d839c0a2",
       "source": "plugins/lemma/chunkers/markdown.py"
     },
     {
-      "bytes": 60828,
+      "bytes": 63884,
       "path": "plugins/lemma/chunkers/solidity.py",
-      "sha256": "cd7bad2bb89fbaaa4a77326f52838a2d69c789093d52bbb5847eda98f943fc2a",
+      "sha256": "e39f7892a41558a18e8e9cc2dce85c9937ff1b7f513903b862721805c5e81724",
       "source": "plugins/lemma/chunkers/solidity.py"
     },
     {
