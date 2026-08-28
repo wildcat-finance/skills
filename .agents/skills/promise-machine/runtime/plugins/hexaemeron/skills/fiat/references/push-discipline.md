@@ -343,6 +343,27 @@ With every step merged, the run branch holds the whole delivery. Open one pull
 request from the run branch into the recorded base, using the prose phase's
 run-level title and body, and apply the same provenance markers:
 
+If the run records a GitHub `task_issue`, the body must contain one recognised
+closing keyword followed by that exact issue reference. Use the directive's
+canonical full form on its own prose line:
+
+```text
+Closes owner/repository#number
+```
+
+GitHub recognises `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`,
+`resolve`, `resolves`, and `resolved`, case-insensitively and with an optional colon. A
+link to the issue, a bare issue number, or a sentence such as "no other issue
+work remains" does not trigger closure. Nor does syntax shown as inline code,
+in a fenced example, in a quotation, or in an HTML comment. Read the actual
+pull-request body back before merge and check the closing line there. Step pull
+requests do not carry it: only the final integration pull request owns job
+completion.
+
+GitHub interprets a closing keyword only when the pull request targets the
+repository's default branch. If this run intentionally targets another branch,
+the explicit task-issue closure and readback below still remain required.
+
 An exact commit recorded as `state.base` remains the immutable starting point;
 it is not a remote branch name. For such a pinned run, `config.git.base` names
 the integration branch, and the integrate directive, sync receipt and terminal
@@ -460,22 +481,28 @@ report `verified: true` and `reason: valid` for the merge commit. Then delete
 the run branch and every step branch where policy permits:
 this is the one place branch cleanup happens, and by now nothing is stacked on
 any of them, so deleting cannot close a pull request that still has work to do.
-If a `task_issue` receipt exists, close that exact issue now with a short
-comment linking the merged pull request. Complete the draft created during the
+If a `task_issue` receipt exists, read that exact issue now. A final pull request
+into the default branch should already have closed it through the checked body
+reference; if the run intentionally targeted another branch, close that exact
+issue explicitly. In either case, add the short comment linking the merged pull
+request. Complete the draft created during the
 prose phase, with the exact issue URL, pull request URL, identifiers, status,
 and unresolved work in its protected inventory. Run the exact publication
 sequence `Sapheneia -> Imprimatur -> Vulgate -> Imprimatur`, compare the
 protected inventory after both semantic passes, and require the final lint to
 exit clean on the exact candidate file. Then post those exact checked bytes
-verbatim and read the remote comment back to compare its body before closing
-the issue; after closing, read back the issue URL and closed state as well. A failed
+verbatim and read the remote comment back to compare its body; read back the
+issue URL and closed state as well. A failed
 comparison or readback stops the closure.
 
-The later `done integrate --closed-issue-url <url>` receipt records the issue
-URL supplied after that remote check. It does not make the comment
-controller-attested, prove the Sapheneia or Vulgate semantics, or attest the
-posted bytes. Report the remote comment and issue readback as their own
-evidence. This is the only merge into the base in the whole run.
+The later `done integrate --closed-issue-url <url>` receipt reads the final
+pull-request body and, for a recorded GitHub task issue, refuses unless that
+body contains a recognised closing reference to the exact issue. Its receipt
+keeps the matched reference and body digest. The closure URL is supplied after
+the remote checks. The receipt does not make the comment controller-attested,
+prove the Sapheneia or Vulgate semantics, or attest the posted bytes. Report
+the remote comment and issue readback as their own evidence. This is the only
+merge into the base in the whole run.
 
 ```text
 hexctl done integrate --pr-url <url> --merge-commit <sha> \

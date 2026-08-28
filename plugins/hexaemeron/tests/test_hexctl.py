@@ -198,8 +198,17 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             url = args[args.index("--pr-url") + 1]
             merge = args[args.index("--merge-commit") + 1]
             head = pending_refs.get(state["run_branch"], self.fake_sha(state["run_branch"]))
+            body = "Delivery evidence."
+            match = re.fullmatch(
+                r"https://github\.com/([^/]+/[^/]+)/issues/([1-9][0-9]*)/?",
+                state["receipts"].get("task_issue") or "",
+            )
+            if match is not None:
+                body += f"\n\nCloses {match.group(1)}#{match.group(2)}"
+            body += "\n\n<!-- wildcat-origin: shoggoth -->"
             pending_prs[url] = self.fake_pr(
-                url, state["run_branch"], self.integration_base(state), head, merge
+                url, state["run_branch"], self.integration_base(state), head, merge,
+                body=body,
             )
         env = dict(self.env)
         env["FAKE_GIT_REFS"] = json.dumps(pending_refs)
@@ -313,7 +322,7 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
         return ref if re.fullmatch(r"[0-9a-f]{40}", ref) else hashlib.sha1(ref.encode()).hexdigest()
 
     @staticmethod
-    def fake_pr(url, head, base, head_sha, merge_sha=None):
+    def fake_pr(url, head, base, head_sha, merge_sha=None, *, body=None):
         """One pull request as the REST endpoint spells it.
 
         REST fills `merge_commit_sha` on an open pull request too, with the
@@ -325,7 +334,7 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             "state": "closed" if merge_sha else "open",
             "merged": bool(merge_sha),
             "user": {"login": "shoggoth-wildcat"},
-            "body": "Delivery evidence.\n\n<!-- wildcat-origin: shoggoth -->",
+            "body": body or "Delivery evidence.\n\n<!-- wildcat-origin: shoggoth -->",
             "head": {"ref": head, "sha": head_sha},
             "base": {"ref": base},
             "merge_commit_sha": merge_sha if merge_sha else "f" * 40,
@@ -3998,6 +4007,15 @@ class TestProseAndPush(HexctlCase):
         self.finish_step(1)
         proc = self.run_ctl("reset", expect=2)
         self.assertIn("integrate", proc.stderr)
+
+
+try:
+    from .task_issue_closure_cases import build_task_issue_closure_tests
+except ImportError:
+    from task_issue_closure_cases import build_task_issue_closure_tests
+
+
+TestTaskIssueClosure = build_task_issue_closure_tests(globals())
 
 
 class TestControls(HexctlCase):

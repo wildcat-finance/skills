@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.31.1"
+  version: "5.33.1"
 ---
 
 <p align="center">
@@ -339,7 +339,7 @@ Act on the single directive it prints, then receipt it. The directory:
 | `push` | Stage and commit final changes, push the step branch, open its stacked PR against `pr_base`, and leave it open | [push-discipline.md](references/push-discipline.md) | `done push --pr-url <url> --head-commit <sha> --pr-base <ref>` |
 | `merge-step` | Merge the named step's PR into the run branch, bottom of the stack first | [push-discipline.md](references/push-discipline.md) | `done merge-step --step <n> --merge-commit <sha>` |
 | `sync-run` | When the base advanced and the integration PR conflicts, preserve the completed product evidence and receipt a signed two-parent merge plus bounded integration revalidation; supersede a failed composition receipt only with the exact active SHA, a reason and fresh evidence | [push-discipline.md](references/push-discipline.md) | `done sync-run --commit <sha> --base-commit <sha> --revalidation .hexaemeron/integration-revalidation.json [--supersede-sync <sha> --reason <text>]` |
-| `integrate` | Open and merge one PR from the run branch into the base, name what the run leaves unfinished in `.hexaemeron/run-pr.md`, then clean up and close any recorded task issue | [push-discipline.md](references/push-discipline.md) | `done integrate --pr-url <url> --merge-commit <sha> [--closed-issue-url <url>]` |
+| `integrate` | Open and merge one PR from the run branch into the base, name what the run leaves unfinished in `.hexaemeron/run-pr.md`, require a recognised closing reference in that PR when the run records a GitHub task issue, then clean up and close any recorded task issue | [push-discipline.md](references/push-discipline.md) | `done integrate --pr-url <url> --merge-commit <sha> [--closed-issue-url <url>]` |
 | `audit-verdict` | Max rounds hit with findings open | ask the user | `done audit --no-further-leads --reason ...` or `halt --reason ...` |
 | `blocked` | A receipted study or runbook amendment broke the current step; inspect it, halt, or use the runbook repair below | below | -- |
 | `halted` | Report the reason; wait for the user | -- | `resume --note ...` when cleared |
@@ -478,10 +478,13 @@ goes, before the masks run. Every prose artefact in scope plus the PR title and
 body, through
 the `imprimatur` lint first and the `vulgate` mask second, content held
 constant. Both are bundled: run the lint script by path, read the mask's
-SKILL.md by path and apply it. When the run has a task issue, draft its closing
-comment here under the repository's Sapheneia, Imprimatur, Vulgate, Imprimatur
-publication order; fill the exact integration URL and status, then rerun that
-whole order immediately before posting. The receipt refuses a skills list
+SKILL.md by path and apply it. When the run has a task issue, put GitHub's
+recognised closing syntax for that exact issue in the run-level pull-request
+body and draft its closing comment here under the repository's Sapheneia,
+Imprimatur, Vulgate, Imprimatur publication order. A link, an issue number, or
+prose saying that no work remains does not replace `Closes
+owner/repository#number`. Fill the exact integration URL and status, then rerun
+that whole order immediately before posting. The receipt refuses a skills list
 missing either configured id.
 
 **Push.** Stage and commit every intended final change with a valid local
@@ -515,7 +518,12 @@ step's, and delete no branch here; receipt each merge before starting the next.
 Deleting a merged step's branch closes the pull request stacked on it, and a
 closed pull request whose base ref is gone can be neither reopened nor
 retargeted, so the order is not a preference. With the stack landed, open one
-pull request from the run branch into the recorded base. When a run was pinned
+pull request from the run branch into the recorded base. If `task_issue` names
+a GitHub issue, use the integrate directive's exact `Closes
+owner/repository#number` line in that pull request body and read the remote body
+back before merge. `done integrate` reads the merged pull request and refuses
+without a recognised `close`, `fix`, or `resolve` form for that exact issue;
+mentions, links, quoted text and code examples do not satisfy the gate. When a run was pinned
 to an exact starting commit, that commit remains the starting-base evidence and
 `config.git.base` names the branch the run integrates into; the directive,
 sync receipt and final receipt keep both identities. If concurrent work
@@ -526,7 +534,11 @@ and receipt it with `done sync-run`; never rebase or rewrite the signed stack.
 Base advancement does not invalidate the signed implementation or completed
 audit. The sync receipt keeps their exact-tree digests and adds a bounded
 integration-revalidation record over the computed upstream, product and overlap
-path sets. Reopen only evidence whose declared dependency changed or whose
+path sets. Version 1 keeps its exact individual-path form and 500-path limit.
+Version 2 may cover a larger required set only through a source-registered
+generator prefix: the controller proves the complete final manifest and Git
+tree, while every path outside that prefix remains individually listed and
+checked under the same 500-path limit. Reopen only evidence whose declared dependency changed or whose
 revalidation failed. A base advance by itself does not authorise a carryover,
 another study, or another product audit. If a pushed sync exposes a failed
 composition check, repair only that surface, reconstruct the two-parent merge
@@ -539,7 +551,10 @@ Then name everything the run
 left unfinished in its body under `## Carried forward`, wait for its gates,
 merge it without bypassing them, require GitHub to report `verified: true` and
 `reason: valid` for every pushed commit and merge SHA, delete the run branch and the step branches
-where policy allows, and close any recorded task issue. That merge is the only
+where policy allows, and verify or close any recorded task issue. GitHub only
+acts on the closing keyword when the pull request targets the repository's
+default branch; a run aimed elsewhere still owes the explicit closure receipt.
+That merge is the only
 one into the base for the whole run. A routine publish or closure action is not
 a handoff to a human. Before closing a task issue, post its exact checked
 closing-comment bytes, read the comment and issue state back from GitHub, and
@@ -690,12 +705,12 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 
 ### fiat-final-integration
 
-- Promise: A successful integration receipt establishes that every stacked step was merged in controller order, the run branch passed its required gates, any completed product evidence remained bound to its exact product head across the active signed base-sync merge, every superseded failed composition remained recorded and unavailable for integration, the computed product/base overlap and declared affected paths received bounded green composition checks, every identity the push receipts recorded remains attributable from the recorded merge, and exactly one recorded merge landed the run on the named base under the user's delivery authority.
-- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, computed product, upstream, overlap and product-to-sync composition paths, a digest-bound integration-revalidation artefact whose affected paths equal the composition surface plus every overlap and whose green checks cover all of them, stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each identity, final controller state and verified ledger.
+- Promise: A successful integration receipt establishes that every stacked step was merged in controller order, the run branch passed its required gates, any completed product evidence remained bound to its exact product head across the active signed base-sync merge, every superseded failed composition remained recorded and unavailable for integration, and the computed product/base overlap received bounded green composition checks. Version 1 requires exact individual coverage. Version 2 requires exact individual coverage outside every selected source-registered prefix and exact manifest, blob, digest and Git-tree evidence for each complete final aggregate. Every identity the push receipts recorded remains attributable from the recorded merge, and exactly one recorded merge landed the run on the named base under the user's delivery authority.
+- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, computed product, upstream, overlap and product-to-sync composition paths, and a digest-bound integration-revalidation artefact. A version-1 artefact names every affected path and the green checks that cover it. A version-2 artefact adds source-registered aggregate identities, exact final manifest and Git-object evidence, aggregate file and tree digests, the final Git tree id, exact outside paths, and green checks covering both classes. The receipt also carries stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each identity, final controller state and verified ledger.
 - Evidence classes: checked, recorded
 - Boundary: Exact-tree implementation and audit evidence remains evidence about the recorded product head when the base advances; it does not automatically apply to bytes changed while composing that head with the new base. The revalidation receipt establishes only the named checks over the computed and declared integration surface. Integration establishes the recorded repository transition; it does not prove the software defect-free, make audit judgements independent or authorise a deployment, financial action or another repository. The attribution result establishes that the base carries each recorded identity by ancestry or by a recorded merge's author or trailer; it does not establish that GitHub will resolve that identity to an account or list it as a contributor.
 - Authorises: Publication of the complete run to the named base and a final report limited to the merged artefacts and recorded evidence.
 - Consequence: 3
-- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync receipt, an affected-path manifest that differs from the computed composition surface plus overlap, a failed or uncovered integration check, a merge that leaves a recorded identity carried by nothing, or integration without explicit delivery authority.
+- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync receipt, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a merge that leaves a recorded identity carried by nothing, or integration without explicit delivery authority.
 - Recovery: Leave the stack open; if only the base advanced, merge the exact remote base into the completed run with the recorded product head as first parent, determine the affected surface, rerun its integration-sensitive checks, and receipt that revalidation without rebuilding or re-auditing unchanged product bytes. If that composition later fails a required check, repair the affected surface, reproduce the signed two-parent merge, rerun bounded revalidation and supersede the exact active sync with a reason; the old receipt remains in the ledger. Restore another required branch or check, retarget and merge in controller order, or halt with the exact blocker before any base mutation.
 - Exceptions: none

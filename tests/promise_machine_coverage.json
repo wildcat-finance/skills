@@ -335,6 +335,31 @@
       "path": "plugins/lemma/tests/test_markdown.py",
       "selector": "test_heading_path"
     },
+    "chunk-provenance-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "selector": "test_provenance_refusal"
+    },
+    "chunk-provenance-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/lemma/tests/test_markdown.py",
+      "selector": "test_provenance_emitted"
+    },
+    "chunk-provenance-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "selector": "test_provenance_emitted"
+    },
+    "chunk-provenance-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/lemma/tests/test_markdown.py",
+      "selector": "test_delivery_refusals"
+    },
+    "chunk-provenance-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "selector": "test_provenance_paths"
+    },
     "chunk-solidity-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/lemma/tests/test_solidity.py",
@@ -2284,6 +2309,22 @@
     },
     {
       "cases": {
+        "M": "chunk-provenance-m",
+        "O": "chunk-provenance-o",
+        "P": "chunk-provenance-p",
+        "R": "chunk-provenance-r",
+        "S": "chunk-provenance-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "lemma-corpus-provenance",
+      "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "chunk-markdown-m",
         "O": "chunk-markdown-o",
         "P": "chunk-markdown-p",
@@ -2803,7 +2844,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "4b2aacc42c0c57c09325deaa0cb986cac095eb05a7adf75fce47e3894aaf1869"
+      "sha256": "0141f2c18364318332b548f0cb29535924e4e56f7ed15e4e7175f68636a0d1ff"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -3041,7 +3082,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work and any unrun external check"
       },
-      "sha256": "4b2aacc42c0c57c09325deaa0cb986cac095eb05a7adf75fce47e3894aaf1869",
+      "sha256": "0141f2c18364318332b548f0cb29535924e4e56f7ed15e4e7175f68636a0d1ff",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -3055,7 +3096,7 @@
         "transition": "local archive, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "4b2aacc42c0c57c09325deaa0cb986cac095eb05a7adf75fce47e3894aaf1869",
+      "sha256": "0141f2c18364318332b548f0cb29535924e4e56f7ed15e4e7175f68636a0d1ff",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -3069,7 +3110,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "4b2aacc42c0c57c09325deaa0cb986cac095eb05a7adf75fce47e3894aaf1869",
+      "sha256": "0141f2c18364318332b548f0cb29535924e4e56f7ed15e4e7175f68636a0d1ff",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -3083,7 +3124,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "4b2aacc42c0c57c09325deaa0cb986cac095eb05a7adf75fce47e3894aaf1869",
+      "sha256": "0141f2c18364318332b548f0cb29535924e4e56f7ed15e4e7175f68636a0d1ff",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -3097,7 +3138,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "4b2aacc42c0c57c09325deaa0cb986cac095eb05a7adf75fce47e3894aaf1869",
+      "sha256": "0141f2c18364318332b548f0cb29535924e4e56f7ed15e4e7175f68636a0d1ff",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -3111,7 +3152,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "4b2aacc42c0c57c09325deaa0cb986cac095eb05a7adf75fce47e3894aaf1869",
+      "sha256": "0141f2c18364318332b548f0cb29535924e4e56f7ed15e4e7175f68636a0d1ff",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {

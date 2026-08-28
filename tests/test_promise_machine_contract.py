@@ -555,6 +555,7 @@ class PromiseStructureTests(unittest.TestCase):
                 "lemma-solidity-chunks",
                 "lemma-markdown-chunks",
                 "lemma-chunk-validation",
+                "lemma-corpus-provenance",
             },
             "plugins/pandects/skills/pandects/SKILL.md": {
                 "pandects-law-contract",

@@ -31,8 +31,21 @@ while [ $# -gt 0 ]; do
   esac
 done
 
+# The corpus this script chunks is the invented one in this directory, so the
+# ref that names it is a literal rather than anything read out of git. Asking
+# git would make the recorded origin depend on the state of the working tree,
+# and a dirty tree would put a commit on a corpus that is not the commit's.
+REF="lemma-synthetic-baseline-corpus"
+
 OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
+
+# A delivered corpus is a directory holding chunks and the record of what
+# produced them, and the record's name does not vary with the corpus's. Two
+# chunkers writing into one directory would therefore share one record, and
+# the second would overwrite the first, leaving the Solidity corpus beside a
+# record of the Markdown one. Each gets its own directory instead.
+mkdir -p "$OUT/solidity" "$OUT/markdown"
 
 gate=()
 [ -n "$EXPECT" ] && gate=(--expect-solc "$EXPECT")
@@ -42,9 +55,11 @@ python3 baseline/standard_input.py \
     --src baseline/solidity/src --out "$OUT/standard-input.json"
 python3 chunkers/solidity.py \
     --input "$OUT/standard-input.json" \
-    --solc "$SOLC" "${gate[@]}" --include 'src/**' --out "$OUT/solidity.jsonl"
+    --solc "$SOLC" "${gate[@]}" --include 'src/**' \
+    --source-ref "$REF" --out "$OUT/solidity/chunks.jsonl"
 echo
 echo "=== Markdown ==="
 python3 chunkers/markdown.py \
     --root baseline/docs --summary SUMMARY.md \
-    --exclude SUMMARY.md --out "$OUT/markdown.jsonl"
+    --exclude SUMMARY.md --source-ref "$REF" \
+    --out "$OUT/markdown/chunks.jsonl"
