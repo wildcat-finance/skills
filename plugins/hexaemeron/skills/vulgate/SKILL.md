@@ -27,6 +27,10 @@ bounded durable record. Hypomnema decides what must be written and where it
 belongs. Vulgate changes none of those siblings' facts, format obligations, or
 evidence.
 
+If Synkrisis eventually renders a comparison report, Vulgate may rewrite only
+its surface. The current scaffold emits no report, and the mask cannot add a
+cohort, finding, conclusion, or authority that the source lacks.
+
 **Current state.** Vulgate defines a strict content-preserving voice mask, but its parity check is still a model judgement rather than a repeatable evaluation over facts, commitments, caveats, and registers.
 
 A voice mask: it renders machine-register text into the common tongue. The

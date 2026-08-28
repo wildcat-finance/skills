@@ -43,6 +43,10 @@ rebuildable credit events. Probitas consumes that evidence at the counterparty
 level. It keeps gaps visible and never infers undeclared identity, blesses a
 borrower, sets terms, or replaces the lender's judgement.
 
+Synkrisis does not compare counterparties or dossiers. Its planned subject is
+validated agent-run observations, its current scaffold refuses every
+operation, and neither version can make an underwriting decision.
+
 `$SKILL_DIR` is the directory holding this file. The tool lives at
 `$SKILL_DIR/../../scripts/probitas.py`; resolve it from where you loaded this
 skill.

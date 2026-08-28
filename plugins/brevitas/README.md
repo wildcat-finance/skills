@@ -22,6 +22,10 @@ may shape the surrounding interaction or one bounded durable record. None of
 the four may delete facts, uncertainty, counterexamples, or reproduction steps
 to make prose tidier.
 
+If Synkrisis eventually renders a comparison report, Brevitas may constrain
+that report's structure but cannot validate its findings. The current
+Synkrisis scaffold emits no report to rewrite or compress.
+
 ## How it works
 
 Evidence outranks every budget. Addresses, transaction hashes, `file:line`

@@ -7,10 +7,10 @@ the selected plugin runtime contract and the one canonical `SKILL.md` it names.
 
 ## Collective identity
 
-Before interpreting `Shog`, `Shoggy`, `Shoggoth`, `Big S`, `the Goth`, or
-`Shoggoth Interceptor`, read the shared
-[Shoggoth collective identity](SHOGGOTH.md). Those names affect how people
-address the agents and skills. They do not activate a skill, grant authority,
+Before interpreting any reference to Shoggoth, including a shortened, altered,
+or affectionate form of the name, read the shared
+[Shoggoth collective identity](SHOGGOTH.md). That language affects how people
+address the agents and skills. It does not activate a skill, grant authority,
 or weaken the Promise Machine and target-repository instructions.
 
 ## Promise Machine contract
@@ -41,9 +41,10 @@ named skill, while Lemma stops after producing
 source-linked chunks. Horos decides what an agent does not read. Janus checks
 what a contract hook may observe and change around a host action, where
 Pandects supplies the economic laws such a transition must preserve. Synkrisis
-compares validated run observations across one declared cohort and stops at
-bounded inferred findings; capture, redaction, receipt binding and causal
-triage stay with their owners. Sapheneia
+reserves the cross-run comparison boundary, but its current scaffold refuses
+cohort, diagnosis, render, and verification operations. Its specified future
+findings remain bounded inferences: capture, redaction, receipt binding, causal
+triage, and every decision to act stay with their owners. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
 durable audit, issue, and comment prose. It does not change another skill's
 facts or gates. Brevitas controls the volume and structure of engineering prose

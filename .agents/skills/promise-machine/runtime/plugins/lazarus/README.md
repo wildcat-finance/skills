@@ -21,6 +21,10 @@ state-fixture evidence. Those hand-offs preserve Lazarus's evidence classes:
 the scoped consensus receipt and log projection can be receipt-trie proved,
 while transaction hashes, calls, traces and unrelated RPC fields cannot.
 
+Synkrisis is meant for comparison across validated run-observation records,
+not for comparing Lazarus fixtures or strengthening their evidence classes.
+Its current scaffold refuses every operation and writes nothing.
+
 Lazarus preserves the finite part of historical Ethereum state and RPC
 evidence that one application test needs. A fixture binds an explicit capture
 plan, a fixed block header, exact JSON-RPC records and EIP-1186 account and

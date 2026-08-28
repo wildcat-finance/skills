@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Bounded cross-run diagnosis over validated Promise Machine run observations.
+"""Refusing scaffold for specified cross-run observation comparison.
 
 This is the runbook's Step 1 scaffold. The command declares the complete
 specified surface, four operations over one declared cohort of
@@ -72,7 +72,8 @@ def main(argv=None) -> int:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     cohort_parser = subparsers.add_parser(
-        "cohort", help="classify every declared run under one comparison policy"
+        "cohort",
+        help="specified cohort classifier; this scaffold currently refuses",
     )
     cohort_parser.add_argument("--manifest", required=True)
     cohort_parser.add_argument("--policy", required=True)
@@ -80,7 +81,8 @@ def main(argv=None) -> int:
     cohort_parser.add_argument("--json", action="store_true")
 
     diagnose_parser = subparsers.add_parser(
-        "diagnose", help="apply the digest-bound rule catalogue to one checked cohort"
+        "diagnose",
+        help="specified rule-catalogue pass; this scaffold currently refuses",
     )
     diagnose_parser.add_argument("--cohort", required=True)
     diagnose_parser.add_argument("--rules", required=True)
@@ -88,14 +90,16 @@ def main(argv=None) -> int:
     diagnose_parser.add_argument("--json", action="store_true")
 
     render_parser = subparsers.add_parser(
-        "render", help="render the fixed-template report from one findings document"
+        "render",
+        help="specified fixed-template renderer; this scaffold currently refuses",
     )
     render_parser.add_argument("findings")
     render_parser.add_argument("--out", required=True)
     render_parser.add_argument("--json", action="store_true")
 
     verify_parser = subparsers.add_parser(
-        "verify", help="recompute cohort, findings and report from the original inputs"
+        "verify",
+        help="specified whole-path verifier; this scaffold currently refuses",
     )
     verify_parser.add_argument("--manifest", required=True)
     verify_parser.add_argument("--policy", required=True)

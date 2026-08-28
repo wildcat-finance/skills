@@ -1,7 +1,7 @@
 # Synkrisis runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Synkrisis.** Synkrisis compares validated Promise Machine run observations across one operator-declared cohort and recomputes bounded, evidence-linked findings. Use Ephoros to design what a step emits, Metron for controlled measurement verdicts, Elenchus to work one failure to its cause, and Horos for the reading boundary a finding may point at. **Current frontier:** Synkrisis is a committed specification with a refusing command stub, and none of its runbook's cohort, diagnosis, render or verification steps has yet landed behaviour.
+> **Marketplace context: Synkrisis.** Synkrisis is the declared home for bounded comparison across validated Promise Machine run observations, but this release only specifies that work and refuses every operation. Ephoros designs what a step emits, Metron owns controlled measurement verdicts, Elenchus works one failure to its cause, and Horos owns the reading boundary a future finding may point at. **Current frontier:** Synkrisis is a committed specification with a refusing command stub, and none of its runbook's cohort, diagnosis, render or verification steps has yet landed behaviour.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding

@@ -32,6 +32,10 @@ must preserve, Janus can constrain hook effects, and the Pashov suite can audit
 the resulting contracts. None of them can replace Hermes's sealed baseline or
 accept a gas candidate on its behalf.
 
+A future Synkrisis comparison may point a person towards a repeated run
+pattern, but it cannot replace Hermes's controlled before-and-after evidence.
+The current Synkrisis scaffold refuses every operation and makes no finding.
+
 The ideas are cheap. The evidence is the job.
 
 Use `scripts/hermes.py` for every run. It owns the order, seals the baseline, writes the evidence, and exits non-zero at the first bad gate. Every candidate names a rule from [references/gas-rule-corpus.json](references/gas-rule-corpus.json), the pinned corpus of 120 rules, 28 rejected universal rules and 40 citations transcribed from one source document. Use [references/optimisation-catalogue.md](references/optimisation-catalogue.md) to read the twelve classes those rules map onto.

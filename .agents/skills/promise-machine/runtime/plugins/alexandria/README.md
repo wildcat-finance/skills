@@ -24,6 +24,10 @@ Lazarus is the neighbouring preservation specialist for a different boundary:
 the finite historical Ethereum state and exact RPC traffic one application
 test needs. Alexandria preserves lending datasets and derived source views.
 
+Synkrisis is reserved for a different kind of evidence: validated observations
+from several agent runs. Its present command surface refuses every operation,
+and it cannot reinterpret an Alexandria release or authorise a new capture.
+
 Alexandria keeps heterogeneous lending-protocol captures unchanged. It binds
 each capture to explicit scope and coverage, derives a narrow Tabularium credit
 view and supplies that view to Probitas through a disposable index. Alexandria

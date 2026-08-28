@@ -2,7 +2,7 @@
   "name": "synkrisis",
   "displayName": "Synkrisis",
   "version": "0.1.0",
-  "description": "Bounded cross-run diagnosis: deterministic findings from validated run observations in one declared cohort.",
+  "description": "Refusing scaffold for the specified comparison of validated run observations in one declared cohort.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"

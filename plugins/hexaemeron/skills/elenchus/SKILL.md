@@ -33,6 +33,11 @@ The Pashov suite hunts for security findings, while Elenchus starts only once a
 failure or counterexample exists. Metron handles something that is slow but not
 broken.
 
+The Synkrisis specification allows a future finding to suggest an Elenchus
+hand-off when validated run observations show a repeated pattern. Its current
+scaffold cannot produce that suggestion, and Elenchus still starts only from a
+concrete failure already in hand.
+
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 

@@ -21,6 +21,10 @@ a counterparty dossier, and Ariadne may bind its digest to evidence. Neither
 downstream use permits Tabularium to flatten venue meaning or hide unsupported
 coverage.
 
+Synkrisis is not a release comparator for these datasets. Its planned input is
+validated agent-run observations, its current scaffold refuses every
+operation, and it cannot promote repeated records into a credit claim.
+
 A public record of on-chain credit events that keeps the venue's source record
 beside every common row.
 
