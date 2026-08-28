@@ -88,6 +88,22 @@ COVERED_SUITES = (
             ".test_an_aggregated_directory_counts_only_universe_files"
         ),
     ),
+    CoveredSuite(
+        label="Hexaemeron suite",
+        top_level="plugins/hexaemeron/tests",
+        test=(
+            "test_kronos_scoreboard.DurableHomeTest"
+            ".test_extra_blobs_in_the_state_ref_are_ignored"
+        ),
+    ),
+    CoveredSuite(
+        label="Hermes suite",
+        top_level="plugins/hermes/skills/hermes/scripts",
+        test=(
+            "test_hermes.HermesHarnessTests"
+            ".test_rejects_any_gas_regression_at_gate_three"
+        ),
+    ),
 )
 
 # The two ways a configuration value arrives carrying `git -c` precedence,

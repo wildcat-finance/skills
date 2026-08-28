@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 929,
-  "total_bytes": 20316423,
+  "total_bytes": 20316665,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1381,9 +1381,9 @@
       "source": "plugins/hermes/skills/hermes/scripts/hermes.py"
     },
     {
-      "bytes": 50788,
+      "bytes": 51030,
       "path": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
-      "sha256": "e8182c4748ec5d3b2bac6dd910ba53d79f4d71793cfc317582762190363250b6",
+      "sha256": "ecf885c2e27a346231f0ac0d0f44c84d47845ce13e1a7db535717bdc77b26a81",
       "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py"
     },
     {
