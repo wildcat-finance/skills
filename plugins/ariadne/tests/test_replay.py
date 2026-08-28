@@ -13,7 +13,7 @@ from unittest import mock
 from . import support  # noqa: F401  (sets sys.path)
 
 import ariadne  # noqa: E402
-from ariadne_lib import envelope, replay, statement  # noqa: E402
+from ariadne_lib import envelope, gates, registry, replay, statement  # noqa: E402
 
 ART = {"sha256": hashlib.sha256(b"artefact").hexdigest()}
 OUT = {"sha256": hashlib.sha256(b"output").hexdigest()}
@@ -378,6 +378,59 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("does not verify", err)
         self.assertIn("gate 1", err)
+
+    def test_running_an_unregistered_predicate_is_refused_before_execution(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "unregistered.json")
+            marker = os.path.join(root, "replay-ran")
+            raw = built([command(argv=["touch", "replay-ran"])]).to_json()
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(raw)
+            code, _, err = run(
+                [
+                    "replay",
+                    path,
+                    "--allow-execution",
+                    "--project",
+                    root,
+                ]
+            )
+            self.assertEqual(code, 1)
+            self.assertFalse(os.path.exists(marker))
+            self.assertIn("does not verify", err)
+            self.assertIn("requires registered checks", err)
+            self.assertIn("gates 2 and 5", err)
+
+    def test_running_a_predicate_missing_one_owned_gate_is_refused(self):
+        class Partial(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate that omits gate 5"
+
+            @staticmethod
+            def check(statement):
+                return [gates.Gate(2, "environment", True, "recorded")]
+
+        known = registry.Registry()
+        known.register(Partial)
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "partial.json")
+            marker = os.path.join(root, "replay-ran")
+            raw = built([command(argv=["touch", "replay-ran"])]).to_json()
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(raw)
+            with mock.patch.object(ariadne.registry, "DEFAULT", known):
+                code, _, err = run(
+                    [
+                        "replay",
+                        path,
+                        "--allow-execution",
+                        "--project",
+                        root,
+                    ]
+                )
+            self.assertEqual(code, 1)
+            self.assertFalse(os.path.exists(marker))
+            self.assertIn("requires registered checks", err)
 
     def test_the_json_plan_is_machine_readable(self):
         code, out, _ = run(

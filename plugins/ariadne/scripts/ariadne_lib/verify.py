@@ -27,6 +27,14 @@ class Report(object):
         return all(gate.passed for gate in self.gates)
 
     @property
+    def predicate_gates_checked(self):
+        """Whether a registered predicate reported both gates it owns."""
+        found = {gate.number for gate in self.gates}
+        return self.predicate_module is not None and all(
+            number in found for number in gates_module.PREDICATE_GATES
+        )
+
+    @property
     def ordered(self):
         """Numbered gates in order, then the checks that carry no number.
 

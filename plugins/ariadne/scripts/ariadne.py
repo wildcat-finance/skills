@@ -380,13 +380,20 @@ def cmd_replay(args):
         # instructions from a document on trust, which is the habit this whole
         # tool exists to break.
         report = verify.report(document, registry.DEFAULT)
-        if not report.ok:
+        if not report.ok or not report.predicate_gates_checked:
             print(
                 "refusing to run: this statement does not verify", file=sys.stderr
             )
             for gate in report.ordered:
                 if not gate.passed:
                     print("  %s" % gate.line(), file=sys.stderr)
+            if not report.predicate_gates_checked:
+                print(
+                    "  replay requires registered checks for gates 2 and 5",
+                    file=sys.stderr,
+                )
+            for line in report.unchecked:
+                print("  %s" % gates.one_line(line), file=sys.stderr)
             return GATE_BREACHED
 
     result = replay.replay(
