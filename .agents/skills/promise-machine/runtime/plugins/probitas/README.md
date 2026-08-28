@@ -64,11 +64,11 @@ Gate 3 is the one that does the work. It rebuilds, from the evidence alone, ever
 ## What it ships
 
 - the executable [`probitas.py`](./scripts/probitas.py) collector, renderer and gate checker, standard library only;
-- adapters for [Wildcat](https://wildcat.finance) and Morpho Blue, and eleven further venues carried as named gaps rather than silence;
-- nine synthetic borrower fixtures, including the cured delinquency that a hand-assembled writeup usually reads as a default;
+- adapters for [Wildcat](https://wildcat.finance), Morpho Blue, Euler v1, Euler v2 and Morpho Midnight, and ten further venues carried as named gaps rather than silence;
+- eleven synthetic borrower fixtures, including the cured delinquency that a hand-assembled writeup usually reads as a default;
 - a [committed example dossier](./docs/example-dossier.md) that the tests regenerate and compare, so it cannot drift;
 - [a guide to closing a coverage gap](./docs/adding-a-venue.md) that assumes no knowledge of Wildcat; and
-- 234 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
+- 387 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
 
 ## Day to day
 
@@ -200,7 +200,7 @@ rubric later finds the check already standing.
 
 ## Venues
 
-Fifteen in the registry, four with adapters. The other eleven appear in every
+Fifteen in the registry, five with adapters. The other ten appear in every
 coverage table saying nobody checked, which is gate 2 working rather than an
 omission.
 
@@ -210,14 +210,26 @@ omission.
 - Euler v2: Shipped. Keyless V3 event ledger and liquidation API; Goldsky is not used for history.
 - Centrifuge: Keyless GraphQL, introspects cleanly. The most build-ready of the gaps.
 - Aave v3, Aave v4: Keyless first-party API. v4 went live on mainnet in March 2026.
-- MetaMorpho vaults, Morpho Vaults V2, Morpho Midnight: Three further Morpho surfaces, all keyless, none collected.
+- Morpho Midnight: Shipped. Fixed-maturity markets on a separate keyless REST API, Base only.
+- MetaMorpho vaults, Morpho Vaults V2: Two further Morpho surfaces, both keyless, neither collected.
 - Maple Finance: Answers, but disables introspection and publishes no schema.
 - Compound v3, Goldfinch: Need a paid Graph gateway key.
 - Clearpool: Live, behind a bot challenge. An agreement is the way in, not a workaround.
 - TrueFi: Restructured through a token migration; no public endpoint answered.
 
-Six of the eleven gaps need only an adapter and nothing from anyone: Centrifuge,
-both Aave versions, and Morpho's three other surfaces. The rest wait on a key,
+Morpho Midnight is the fixed-maturity one, and it is why timeliness has an
+answer here at all. Coverage is Base chain id 8453 through the keyless REST API
+alone, with every cursor page exhausted once and the coverage row stating the
+observation time and the returned index bound. The API's history lower bound is
+unpublished, so this is API-scoped history and not archive-chain completeness.
+An incomplete, ambiguous or out-of-bounds response returns no records and a
+named gap rather than a partial answer, and a secondary-market borrow exit is
+refused because its account-attributed debt units are unproved. An overdue
+maturity closed by liquidation reads as settled late through liquidation, never
+as voluntary repayment.
+
+Five of the ten gaps need only an adapter and nothing from anyone: Centrifuge,
+both Aave versions, and Morpho's two other surfaces. The rest wait on a key,
 a schema, or an agreement.
 
 Goldfinch is worth a line of its own. It wound down in June 2026 after

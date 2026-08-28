@@ -111,6 +111,16 @@ The checked-in Alexandria `credit-history-v0` example exercises this explicit
 index path offline and checks the resulting evidence and dossier against fixed
 receipts. It does not alter the normal live and fixture routes.
 
+Morpho Midnight coverage is Base chain id 8453 through its own keyless REST API
+alone. Every cursor page is exhausted once, the coverage row states the
+observation time and the returned index bound, and the API's history lower
+bound is unpublished, so the claim is API-scoped history rather than
+archive-chain completeness. An incomplete, ambiguous or out-of-bounds response
+returns no records and a named gap instead of a partial answer, and a
+secondary-market borrow exit is refused because its account-attributed debt
+units are unproved. An overdue maturity closed by liquidation reads as settled
+late through liquidation, never as voluntary repayment.
+
 `render` builds the document in the order the specification sets: coverage and
 what could not be established stand ahead of anything that reads like a
 conclusion, and findings against addresses the counterparty did not declare sit

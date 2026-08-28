@@ -7,9 +7,9 @@
 Probitas builds a dossier on what a counterparty has done across on-chain
 lending venues: what they borrowed, whether they gave it back, and what could
 not be established. It reads lending venues through small adapters, one
-per venue, and it currently reads four of the fifteen it knows about.
+per venue, and it currently reads five of the fifteen it knows about.
 
-The other eleven are the interesting part of this document. Each one is a named
+The other ten are the interesting part of this document. Each one is a named
 gap in every dossier the tool produces, and closing one is a self-contained
 piece of work that makes every future dossier better. This is what each gap
 actually is, and what it takes to close it.
@@ -114,16 +114,18 @@ refuses floats and for good reason.
 Every activity carries `txHash`, so gate 3 is satisfied by construction on this
 venue the way it is on Wildcat.
 
-**Morpho's other three surfaces.** The shipped adapter covers borrowing on Blue
-markets. MetaMorpho vaults and Vaults V2 are separate surfaces on the same
-keyless API, where a counterparty may appear as a curator rather than a
-borrower, and a curator who allocated into a market that took bad debt made a
-call that cost depositors money. Morpho Midnight is a fourth surface again:
+**Morpho's other two surfaces.** The shipped adapters cover borrowing on Blue
+markets and on Midnight. MetaMorpho vaults and Vaults V2 are separate surfaces
+on the same keyless API, where a counterparty may appear as a curator rather
+than a borrower, and a curator who allocated into a market that took bad debt
+made a call that cost depositors money. Morpho Midnight was the fourth surface:
 fixed-rate, fixed-maturity lending on its own keyless REST API at
-`api.morpho.org/v0/midnight`, on Base. Midnight is the most valuable of the
-three, because a maturity is a date by which the money was due, and that makes
-it the only venue outside Wildcat where repayment timeliness has an answer
-rather than a story about a price.
+`api.morpho.org/v0/midnight`, on Base. It was worth closing first because a
+maturity is a date by which the money was due, and that makes it the only venue
+outside Wildcat where repayment timeliness has an answer rather than a story
+about a price. Its coverage is Base-only and API-scoped, over an unpublished
+history lower bound, and a secondary-market borrow exit is still refused as
+unattributable.
 
 ### Euler: two versions, two data routes
 

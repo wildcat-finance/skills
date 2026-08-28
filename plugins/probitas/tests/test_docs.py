@@ -54,11 +54,11 @@ AGGREGATE_FIXTURE_ANCHORS = frozenset(
     }
 )
 
-# The stacked Step 3 branch contains the new runtime adapter before Step 4
-# publishes its package and marketplace prose. Keep that release boundary
-# explicit instead of teaching the public documents to claim unpublished code.
+# Step 4 publishes the Midnight adapter in the package version and the
+# marketplace prose, so it crosses this release boundary and joins the counts
+# the public documents are allowed to claim.
 PUBLISHED_ADAPTER_IDS = frozenset(
-    {"wildcat", "morpho-blue", "euler-v1", "euler"}
+    {"wildcat", "morpho-blue", "euler-v1", "euler", "morpho-midnight"}
 )
 
 
@@ -116,9 +116,16 @@ class TestTheDocumentsCountCorrectly(unittest.TestCase):
             with self.subTest(venue=venue.id):
                 self.assertIn(venue.name, text)
 
-    def test_only_midnight_awaits_the_step_four_publication_pass(self):
+    def test_the_publication_pass_left_no_adapter_unpublished(self):
+        """Both directions, so neither set can drift from the other.
+
+        Midnight was the one adapter this boundary held back while Step 3
+        shipped its runtime. Step 4 published it, so the sets now agree: a
+        registered adapter the documents do not count, or a counted adapter
+        with no runtime, is a defect either way.
+        """
         runtime = {venue.id for venue in registry.implemented()}
-        self.assertEqual(runtime - PUBLISHED_ADAPTER_IDS, {"morpho-midnight"})
+        self.assertEqual(runtime - PUBLISHED_ADAPTER_IDS, set())
         self.assertEqual(PUBLISHED_ADAPTER_IDS - runtime, set())
 
 

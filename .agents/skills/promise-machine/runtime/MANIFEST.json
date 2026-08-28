@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 912,
-  "total_bytes": 20225899,
+  "total_bytes": 20228254,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4807,9 +4807,9 @@
       "source": "plugins/probitas/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 14915,
+      "bytes": 15749,
       "path": "plugins/probitas/README.md",
-      "sha256": "2b8f9a679dca7aaf691f2a89bee5a05afaba9360b8c2ba6bfa0b3e2560f60cb2",
+      "sha256": "c22da4f288a96509179ee709226b8bc24f24f79a7ff39f4149154552234b3c28",
       "source": "plugins/probitas/README.md"
     },
     {
@@ -4825,9 +4825,9 @@
       "source": "plugins/probitas/assets/dossier-template.md"
     },
     {
-      "bytes": 16884,
+      "bytes": 17029,
       "path": "plugins/probitas/docs/adding-a-venue.md",
-      "sha256": "d69773f9b723abd51119cda2e3dfcd8d5352c4e018da034693ad7737be58b6a6",
+      "sha256": "ec0e31d749301b617264d8d61f88b9777043bf9cea88c73598df37c2ccd41c8b",
       "source": "plugins/probitas/docs/adding-a-venue.md"
     },
     {
@@ -4981,9 +4981,9 @@
       "source": "plugins/probitas/skills/probitas/EVOLUTION.md"
     },
     {
-      "bytes": 11866,
+      "bytes": 12523,
       "path": "plugins/probitas/skills/probitas/SKILL.md",
-      "sha256": "3473d803e1694806570057545708ad5dfe19eb43c4e329070b806981a3a52ff9",
+      "sha256": "53e9b7f52754a990d899c3c2d9a739403a9f4f7c250b8d4597f60dc4f71bd87b",
       "source": "plugins/probitas/skills/probitas/SKILL.md"
     },
     {
@@ -4999,9 +4999,9 @@
       "source": "plugins/probitas/skills/probitas/references/gates.md"
     },
     {
-      "bytes": 7633,
+      "bytes": 8352,
       "path": "plugins/probitas/skills/probitas/references/venues.md",
-      "sha256": "81c9f422aa596655edd64bb5c1dd4fb1c16d3abdf5d24a9dc2c5f1fdbadef894",
+      "sha256": "e0336a0f36ad1b24ca1af228fa1fbdc23297181424386d8e22646d34f1165768",
       "source": "plugins/probitas/skills/probitas/references/venues.md"
     },
     {
