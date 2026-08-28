@@ -31,6 +31,13 @@ gate 1 exists to refuse exactly that kind of name."""
 
 TYPE = "https://ariadne.wildcat.finance/solidity-release/v1"
 SUMMARY = "a Solidity release: source, build, bytecode, deltas, audits, deployments"
+EXPECTED_RESULTS = (
+    (2, "environment"),
+    (5, "deltas"),
+    (None, "predicate-fields"),
+    (None, "audits"),
+    (None, "deployments"),
+)
 
 SOURCE_REQUIRED = ("repository", "commit", "tree_digest")
 BUILD_REQUIRED = (

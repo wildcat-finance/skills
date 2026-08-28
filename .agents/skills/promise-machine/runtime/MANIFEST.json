@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11137179,
+  "total_bytes": 11140688,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -685,33 +685,33 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/__init__.py"
     },
     {
-      "bytes": 23885,
+      "bytes": 24029,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py",
-      "sha256": "fd5ce107bafb891acbbe42c55ccb6b4b7f472d738a0111319913aa526a76996e",
+      "sha256": "c94f8c6ab8d81415c17e03f2ef091c08285c12466cff6cebc0d9d4b8a39e1406",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py"
     },
     {
-      "bytes": 47164,
+      "bytes": 47417,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py",
-      "sha256": "399d16b7964ea765051297a340759c42c9ac975d361de9554038ad7235a6a5b7",
+      "sha256": "e1e24b42e716032bda4543d77ad71abce36cb1a861edaf0e8225baa1729b0931",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py"
     },
     {
-      "bytes": 18248,
+      "bytes": 18395,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/solidity_release.py",
-      "sha256": "15d3645a1ab3e5f233bc529676c56a22b7e7ce3d4df3d2ed3b591562bab3f387",
+      "sha256": "8749a8e68c9855022bdad3c1108544ea517a864f8c90c7ef2b209fa2853d23be",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/solidity_release.py"
     },
     {
-      "bytes": 38868,
+      "bytes": 39217,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/state_fixture.py",
-      "sha256": "60681d63c923e2d097d435d5d9e5dbbcae81d0a24a96ddd5b52f7f9a9a76f667",
+      "sha256": "e5026047f4a48551f4d84a854a339b7af07dd50ca529f7582e28b07b7a2e1aaf",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/state_fixture.py"
     },
     {
-      "bytes": 2439,
+      "bytes": 2604,
       "path": "plugins/ariadne/scripts/ariadne_lib/registry.py",
-      "sha256": "17ba0cf5ceb062e5868894e0d5503da49ada525457c162bcc38b0aa7b2c76d0e",
+      "sha256": "5426a60bcd3f12f4a1af0a6ddbba860865290a190df4d6c1fdad4e93e074a296",
       "source": "plugins/ariadne/scripts/ariadne_lib/registry.py"
     },
     {
@@ -739,9 +739,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/statement.py"
     },
     {
-      "bytes": 7886,
+      "bytes": 10337,
       "path": "plugins/ariadne/scripts/ariadne_lib/verify.py",
-      "sha256": "1f11c1bfbf01d1ec7f35b8ea415e6565486fdab4e667192021e1bc38a1c33a98",
+      "sha256": "72d4d082c67b100a8e812eb2f9401b9dd4abd58062a54abf5524834d2555691d",
       "source": "plugins/ariadne/scripts/ariadne_lib/verify.py"
     },
     {

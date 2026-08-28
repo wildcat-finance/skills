@@ -18,6 +18,16 @@ from ..gates import Gate
 
 TYPE = "https://ariadne.wildcat.finance/grounded-agent/v1"
 SUMMARY = "a grounded-agent release: pinned inputs, produced answers and policy"
+EXPECTED_RESULTS = (
+    (2, "environment"),
+    (5, "comparison"),
+    (None, "predicate-fields"),
+    (None, "components"),
+    (None, "release-digest"),
+    (None, "optional-evidence"),
+    (None, "evidence-boundary"),
+    (None, "subject-names"),
+)
 
 # Public Berean wire constants are copied deliberately.  Ariadne has no runtime
 # dependency on a sibling plugin; a checkout-only drift test compares these with

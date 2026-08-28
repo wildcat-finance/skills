@@ -27,7 +27,47 @@ def _exception_text(error):
         return "<unprintable %s>" % type(error).__name__
 
 
-def _validated_predicate_gates(predicate_type, entries):
+def _declared_results(predicate_type, declared):
+    """Snapshot a module's complete, ordered result contract or fail closed."""
+    if declared is None:
+        return None, None
+    if type(declared) is not tuple:
+        return None, _predicate_failure(
+            predicate_type, "has a malformed declared result contract"
+        )
+
+    expected = []
+    names = set()
+    numbered = []
+    for entry in declared:
+        if type(entry) is not tuple or len(entry) != 2:
+            return None, _predicate_failure(
+                predicate_type, "has a malformed declared result contract"
+            )
+        number, name = entry
+        if (
+            number is not None
+            and (
+                type(number) is not int
+                or number not in gates_module.PREDICATE_GATES
+            )
+        ) or type(name) is not str or not name or name in names:
+            return None, _predicate_failure(
+                predicate_type, "has a malformed declared result contract"
+            )
+        names.add(name)
+        if number is not None:
+            numbered.append(number)
+        expected.append((number, name))
+
+    if tuple(sorted(numbered)) != gates_module.PREDICATE_GATES:
+        return None, _predicate_failure(
+            predicate_type, "has a malformed declared result contract"
+        )
+    return tuple(expected), None
+
+
+def _validated_predicate_gates(predicate_type, entries, expected=None):
     """Snapshot one module's gates only after their shared shape is sound."""
     found = []
     for entry in entries:
@@ -68,6 +108,15 @@ def _validated_predicate_gates(predicate_type, entries):
         # Copy the fields into the verifier's Gate class. A module-provided
         # subclass cannot then change how the report orders or renders it.
         found.append(gates_module.Gate(number, name, passed, detail))
+    if expected is not None and tuple(
+        (gate.number, gate.name) for gate in found
+    ) != expected:
+        return [
+            _predicate_failure(
+                predicate_type,
+                "does not match its declared result contract",
+            )
+        ]
     return found
 
 
@@ -178,8 +227,10 @@ def report(document, registry=None):
     """Run the core gates, then whatever the predicate module adds.
 
     A predicate module contributes by exposing `check(statement)`, returning
-    gates of its own. Registering without one is allowed and reported: gates 2
-    and 5 go on the unchecked list rather than being assumed to hold.
+    gates of its own. A shipped module also declares their complete ordered
+    `(number, name)` set in `EXPECTED_RESULTS`. Registering without a check is
+    allowed and reported: gates 2 and 5 go on the unchecked list rather than
+    being assumed to hold.
     """
     if registry is None:
         registry = registry_module.DEFAULT
@@ -190,6 +241,21 @@ def report(document, registry=None):
     ran = False
     check = getattr(module, "check", None) if module is not None else None
     if callable(check):
+        try:
+            declared = getattr(module, "EXPECTED_RESULTS", None)
+        except Exception:  # noqa: BLE001 -- a broken interface remains a failed check
+            declared = None
+            contract_failure = _predicate_failure(
+                statement.predicate_type,
+                "has a malformed declared result contract",
+            )
+        else:
+            declared, contract_failure = _declared_results(
+                statement.predicate_type, declared
+            )
+        if contract_failure is not None:
+            found.append(contract_failure)
+            return Report(document, found, module, True)
         try:
             added = list(check(statement) or [])
         except Exception as error:  # noqa: BLE001  (see below)
@@ -204,7 +270,9 @@ def report(document, registry=None):
             ]
             ran = True
         else:
-            added = _validated_predicate_gates(statement.predicate_type, added)
+            added = _validated_predicate_gates(
+                statement.predicate_type, added, declared
+            )
             ran = bool(added)
         found.extend(added)
 

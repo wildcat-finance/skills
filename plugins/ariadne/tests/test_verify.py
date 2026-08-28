@@ -122,6 +122,94 @@ class ReportTests(unittest.TestCase):
             True,
         )
 
+    def test_a_declared_result_contract_refuses_missing_duplicate_or_reordered_checks(self):
+        expected = (
+            (2, "environment"),
+            (5, "comparison"),
+            (None, "binding"),
+        )
+        cases = (
+            (
+                "missing",
+                [
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(5, "comparison", True, "recorded"),
+                ],
+            ),
+            (
+                "duplicate",
+                [
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(2, "environment", True, "recorded again"),
+                    gates.Gate(5, "comparison", True, "recorded"),
+                    gates.Gate(None, "binding", True, "recorded"),
+                ],
+            ),
+            (
+                "reordered",
+                [
+                    gates.Gate(5, "comparison", True, "recorded"),
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(None, "binding", True, "recorded"),
+                ],
+            ),
+        )
+        for label, returned in cases:
+            class Regressed(object):
+                TYPE = TYPE
+                SUMMARY = "a predicate whose declared result set regressed"
+                EXPECTED_RESULTS = expected
+
+                @staticmethod
+                def check(statement):
+                    return returned
+
+            known = registry.Registry()
+            known.register(Regressed)
+            with self.subTest(label=label):
+                report = verify.report(document(), known)
+                self.assertFalse(report.ok)
+                self.assertFalse(report.predicate_gates_checked)
+                self.assertEqual(report.missing_predicate_gates, (2, 5))
+                self.assertIn(
+                    "does not match its declared result contract",
+                    "\n".join(report.lines()),
+                )
+
+    def test_a_malformed_declared_result_contract_fails_closed(self):
+        malformed = (
+            [(2, "environment"), (5, "comparison")],
+            ((2, "environment"),),
+            ((2, "environment"), (2, "again"), (5, "comparison")),
+            ((1, "core-owned"), (2, "environment"), (5, "comparison")),
+            ((True, "environment"), (5, "comparison")),
+            ((2, "same"), (5, "same")),
+        )
+        for declared in malformed:
+            class BrokenContract(object):
+                TYPE = TYPE
+                SUMMARY = "a predicate with a malformed result contract"
+                EXPECTED_RESULTS = declared
+
+                @staticmethod
+                def check(statement):
+                    return [
+                        gates.Gate(2, "environment", True, "recorded"),
+                        gates.Gate(5, "comparison", True, "recorded"),
+                    ]
+
+            known = registry.Registry()
+            known.register(BrokenContract)
+            with self.subTest(declared=declared):
+                report = verify.report(document(), known)
+                self.assertFalse(report.ok)
+                self.assertFalse(report.predicate_gates_checked)
+                self.assertEqual(report.missing_predicate_gates, (2, 5))
+                self.assertIn(
+                    "malformed declared result contract",
+                    "\n".join(report.lines()),
+                )
+
     def test_a_predicate_that_raises_fails_its_own_gate_rather_than_the_run(self):
         class Broken(object):
             TYPE = TYPE

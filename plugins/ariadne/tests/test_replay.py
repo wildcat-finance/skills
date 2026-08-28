@@ -432,6 +432,46 @@ class CommandTests(unittest.TestCase):
             self.assertFalse(os.path.exists(marker))
             self.assertIn("requires registered checks", err)
 
+    def test_a_registered_result_contract_cannot_drop_a_named_check_before_execution(self):
+        class Incomplete(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate that dropped its binding check"
+            EXPECTED_RESULTS = (
+                (2, "environment"),
+                (5, "comparison"),
+                (None, "binding"),
+            )
+
+            @staticmethod
+            def check(statement):
+                return [
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(5, "comparison", True, "recorded"),
+                ]
+
+        known = registry.Registry()
+        known.register(Incomplete)
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "incomplete.json")
+            marker = os.path.join(root, "replay-ran")
+            raw = built([command(argv=["touch", "replay-ran"])]).to_json()
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(raw)
+            with mock.patch.object(ariadne.registry, "DEFAULT", known):
+                code, _, err = run(
+                    [
+                        "replay",
+                        path,
+                        "--allow-execution",
+                        "--project",
+                        root,
+                    ]
+                )
+            self.assertEqual(code, 1)
+            self.assertFalse(os.path.exists(marker))
+            self.assertIn("does not verify", err)
+            self.assertIn("requires registered checks", err)
+
     def test_malformed_predicate_gate_verdicts_cannot_authorise_execution(self):
         class Malformed(object):
             TYPE = TYPE

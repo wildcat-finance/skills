@@ -16,9 +16,11 @@ not check.
 
 REQUIRED_ATTRIBUTES = ("TYPE", "SUMMARY")
 
-OPTIONAL_INTERFACE = ("check",)
-"""`check(statement)` returns the predicate's own gates. A module without one
-is registered and the verifier reports gates 2 and 5 as unchecked."""
+OPTIONAL_INTERFACE = ("check", "EXPECTED_RESULTS")
+"""`check(statement)` returns the predicate's own gates. `EXPECTED_RESULTS`
+declares their complete ordered `(number, name)` set. A module without a check
+is registered and the verifier reports gates 2 and 5 as unchecked; a module
+without the declaration retains the legacy check interface."""
 
 
 class RegistryError(ValueError):
