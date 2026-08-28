@@ -3232,6 +3232,51 @@ class LifecycleTests(unittest.TestCase):
             ]
             self.assertEqual("not-read", records[-1]["disclosure_state"])
 
+    def test_invalid_later_credential_preserves_prior_provider_disclosure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            response = BufferedHTTPSResponse(
+                synthetic_provider_response("first prompt", "FIRST")
+            )
+            exchange = HTTPSExchangeFixture(response)
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000, 30_000, 40_000)).__next__,
+            )
+            credentials = iter((self.credential, "invalid"))
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: next(credentials),
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            first, second = runtime.feed(
+                request_frame("first prompt") + request_frame("second prompt")
+            )
+            runtime.finish_input()
+
+            runtime.generate(first)
+            with self.assertRaisesRegex(PolicyError, "MP321"):
+                runtime.generate(second)
+
+            self.assertEqual(1, len(exchange.requests))
+            self.assertEqual(
+                [("MP000", "provider-only"), ("MP321", "not-read")],
+                [
+                    (event.code, event.disclosure_state)
+                    for event in runtime.provider_events
+                ],
+            )
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual("provider-only", records[-1]["disclosure_state"])
+
     def test_provider_usage_under_and_over_reporting_are_terminal(self):
         cases = (
             {"input_tokens": len("usage prompt") - 1, "output_tokens": 5},

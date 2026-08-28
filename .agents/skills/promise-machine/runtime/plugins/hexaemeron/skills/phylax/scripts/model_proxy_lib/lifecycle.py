@@ -171,6 +171,7 @@ class LifecycleController:
         self._owner = object()
         self._active: dict[int, Reservation] = {}
         self._disclosed: set[int] = set()
+        self._provider_disclosed = False
         self._seen: set[int] = set()
         self._requests = 0
         self._request_bytes = 0
@@ -515,6 +516,7 @@ class LifecycleController:
                 self._terminal_locked("MP409", "provider-only")
                 self._release_locked(reservation, rollback=False)
                 refuse("MP409", "lifecycle.provider_usage")
+            self._provider_disclosed = True
             self._output_tokens += event.output_tokens
             self._response_bytes += event.response_bytes
             self._release_locked(reservation, rollback=False)
@@ -556,8 +558,17 @@ class LifecycleController:
                     snapshot = self._terminal_locked("MP409", "provider-only")
                     self._release_locked(reservation, rollback=False)
                     return snapshot
-                disclosure_state = event.disclosure_state
-                if self._terminal is None and disclosure_state == "provider-only":
+                if event.disclosure_state == "provider-only":
+                    self._provider_disclosed = True
+                disclosure_state = (
+                    "provider-only"
+                    if self._provider_disclosed
+                    else event.disclosure_state
+                )
+                if (
+                    self._terminal is None
+                    and event.disclosure_state == "provider-only"
+                ):
                     self._response_bytes += event.response_bytes
             snapshot = self._terminal_locked(code, disclosure_state)
             self._release_locked(reservation, rollback=False)

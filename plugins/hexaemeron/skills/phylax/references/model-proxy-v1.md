@@ -326,6 +326,10 @@ Unused response capacity is then released. A pre-disclosure rollback releases
 all seven resources and the sequence; a disclosed reservation cannot roll
 back.
 
+Terminal disclosure state is monotone across the job. Once a completed or
+refusing provider event records `provider-only`, a later `not-read` refusal
+cannot erase that earlier disclosure from the terminal receipt.
+
 The aggregate checks include active reservations, so concurrent calls cannot
 each observe the same remaining capacity. A count, byte, token, output,
 response, or concurrency excess makes the job terminal. Later admission and
