@@ -202,10 +202,12 @@ class BufferedHTTPSResponse:
         self.position = 0
         self.closed = False
         self.reads = 0
+        self.read_sizes: list[int] = []
         self.oversized_read = oversized_read
 
     def read(self, size: int) -> bytes:
         self.reads += 1
+        self.read_sizes.append(size)
         take = size + 1 if self.oversized_read else size
         chunk = self.body[self.position : self.position + take]
         self.position += len(chunk)
@@ -1396,6 +1398,32 @@ class ProviderBoundaryTests(unittest.TestCase):
         self.assertEqual([], exchange.requests)
         self.assertEqual("not-read", provider.events[0].disclosure_state)
 
+    def test_framing_refusal_poisoned_pending_provider_requests(self):
+        reads = []
+        response = self.response(input_text="safe", output="SAFE")
+        exchange = HTTPSExchangeFixture(response)
+        connector = HTTPSConnector(
+            self.profile,
+            resolver=lambda _hostname, _port: ("8.8.8.8",),
+            exchange=exchange,
+        )
+        provider = ProviderSession(
+            self.policy,
+            connector,
+            credential_source=lambda name: reads.append(name) or self.credential,
+        )
+        request = provider.feed(request_frame("safe"))[0]
+        provider.feed(b"\x00")
+        with self.assertRaisesRegex(PolicyError, "MP202"):
+            provider.finish()
+
+        with self.assertRaises(PolicyError) as caught:
+            provider.generate(request)
+        self.assertEqual("MP320", caught.exception.code)
+        self.assertEqual([], reads)
+        self.assertEqual([], exchange.requests)
+        self.assertFalse(response.closed)
+
     def test_credential_source_failure_is_fixed_and_value_free(self):
         def source(_name):
             raise RuntimeError(self.credential)
@@ -1522,6 +1550,48 @@ class ProviderBoundaryTests(unittest.TestCase):
         self.assertNotIn(self.credential, str(error))
         self.assertTrue(actual.closed)
 
+    def test_resolution_pin_is_reused_for_every_request_in_the_session(self):
+        answers = iter((("8.8.8.8",), ("1.1.1.1",)))
+        resolver_calls = []
+        exchange_addresses = []
+        responses = []
+
+        def changing_resolver(_hostname, _port):
+            answer = next(answers)
+            resolver_calls.append(answer)
+            return answer
+
+        def exchange(request, _context, _timeout):
+            exchange_addresses.append(request.address)
+            mapped = json.loads(request.body)
+            output = mapped["input"].upper()
+            response = BufferedHTTPSResponse(
+                synthetic_provider_response(mapped["input"], output),
+                peer_address=request.address,
+            )
+            responses.append(response)
+            return response
+
+        connector = HTTPSConnector(
+            self.profile,
+            resolver=changing_resolver,
+            exchange=exchange,
+            clock=iter((10_000, 20_000, 30_000, 40_000)).__next__,
+        )
+        provider = ProviderSession(
+            self.policy,
+            connector,
+            credential_source=lambda _name: self.credential,
+        )
+        requests = provider.feed(request_frame("one") + request_frame("two"))
+        provider.finish()
+        provider.generate(requests[0])
+        provider.generate(requests[1])
+
+        self.assertEqual([("8.8.8.8",)], resolver_calls)
+        self.assertEqual(["8.8.8.8", "8.8.8.8"], exchange_addresses)
+        self.assertTrue(all(response.closed for response in responses))
+
     def test_tls_context_certificate_and_hostname_fail_closed(self):
         insecure = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         insecure.check_hostname = False
@@ -1558,6 +1628,40 @@ class ProviderBoundaryTests(unittest.TestCase):
                 self.assert_generate_refused("MP307", response=response)
                 self.assertTrue(response.closed)
                 self.assertEqual(0, response.reads)
+
+    def test_response_refusal_records_confirmed_provider_disclosure(self):
+        cases = (
+            (self.response(status=302), "MP307", 0),
+            (
+                BufferedHTTPSResponse(
+                    b"x" * 8193,
+                    headers=(
+                        ("Content-Type", "application/json"),
+                        ("Transfer-Encoding", "chunked"),
+                    ),
+                    oversized_read=True,
+                ),
+                "MP310",
+                8193,
+            ),
+        )
+        for response, code, expected_response_bytes in cases:
+            with self.subTest(code=code):
+                provider, request, exchange, _response = self.session(
+                    response=response
+                )
+                with self.assertRaisesRegex(PolicyError, code):
+                    provider.generate(request)
+
+                self.assertEqual(1, len(exchange.requests))
+                event = provider.events[-1]
+                self.assertEqual(
+                    len(exchange.requests[0].body), event.request_bytes
+                )
+                self.assertEqual(expected_response_bytes, event.response_bytes)
+                self.assertEqual("provider-only", event.disclosure_state)
+                self.assertEqual(code, event.code)
+                self.assertTrue(response.closed)
 
     def test_unexpected_status_type_encoding_and_headers_refuse(self):
         status_cases = (True, "200", 201, 204, 299, 400, 500)
@@ -1662,6 +1766,19 @@ class ProviderBoundaryTests(unittest.TestCase):
         )
         self.assert_generate_refused("MP310", response=mismatch)
         self.assertTrue(mismatch.closed)
+
+    def test_response_flood_reads_only_one_sentinel_beyond_the_cap(self):
+        maximum = self.policy.document["limits"]["max_response_bytes"]
+        response = BufferedHTTPSResponse(
+            b"x" * (maximum + 1),
+            headers=(
+                ("Content-Type", "application/json"),
+                ("Transfer-Encoding", "chunked"),
+            ),
+        )
+        self.assert_generate_refused("MP310", response=response)
+        self.assertEqual(1, response.read_sizes[-1])
+        self.assertTrue(response.closed)
 
     def test_provider_response_schema_fields_values_and_usage_are_closed(self):
         duplicate = (

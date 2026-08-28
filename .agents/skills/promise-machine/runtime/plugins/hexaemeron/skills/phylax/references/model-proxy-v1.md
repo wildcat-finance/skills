@@ -189,7 +189,8 @@ objects that core issues and will cross the provider boundary only for the
 same unconsumed object. A copied, foreign, unadmitted, or already failed
 request refuses before the credential source is called. A provider refusal
 poisons the session rather than permitting a retry against an ambiguous
-provider state.
+provider state. A framing refusal also poisons the session and clears every
+pending provider admission before another credential read or exchange.
 
 After admission, the session reads the credential from the environment name
 fixed by the registered profile. The synthetic request body is canonical JSON
@@ -212,10 +213,11 @@ The connector re-resolves the registered profile before use, so a
 self-consistent replacement dataclass cannot change its transport authority.
 It fixes HTTPS, port 443, `POST`, `/v1/responses`, the profile hostname, a
 30-second connector timeout, strict certificate verification, and TLS hostname
-verification. It resolves that hostname once per request, bounds the resolver
-iterator, and requires one unique global IP address. Empty, multiple, malformed,
-private, loopback, link-local, multicast, unspecified, reserved, documentation,
-and other non-global answers refuse.
+verification. It resolves that hostname on the first request, bounds the
+resolver iterator, requires one unique global IP address, and reuses that pin
+for every later request handled by the job connector. Empty, multiple,
+malformed, private, loopback, link-local, multicast, unspecified, reserved,
+documentation, and other non-global answers refuse.
 
 The standard-library exchange connects to the selected address directly and
 passes the profile hostname to TLS. It neither consults proxy environment
@@ -254,7 +256,10 @@ byte counts, input and output token counts, and monotonic duration in
 nanoseconds. A pre-admission or credential-source refusal says `not-read`;
 another attempted provider exchange says `provider-only`. No event contains a
 prompt, output, credential, URL, header, address, provider request id, or raw
-error.
+error. When an exchange returned a response before refusing its status,
+headers, or body, the value-free transport refusal preserves the confirmed
+mapped-request bytes, body bytes read, and bounded duration for that event
+rather than recording zero disclosure.
 
 ## Content-free frame events
 
@@ -485,4 +490,6 @@ credential-source failure and absence from retained surfaces, endpoint and
 header authority, resolution and peer pinning, TLS, all 3xx statuses, response
 headers and byte floods, closed response JSON, usage disagreement, secret
 echo, raw-error sanitisation, connection close, and the absence of a live
-socket call.
+socket call. They also show that a framing refusal blocks every pending
+provider call, one job connector keeps its first address pin across requests,
+and a response refusal retains confirmed content-free disclosure counts.

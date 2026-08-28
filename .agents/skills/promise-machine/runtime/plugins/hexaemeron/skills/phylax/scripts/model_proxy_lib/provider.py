@@ -20,7 +20,13 @@ from .errors import PolicyError, refuse
 from .framing import FramingCore, TextRequest
 from .policy import CompiledPolicy, compile_policy_file
 from .profiles import ProviderProfile, resolve_profile
-from .transport import HTTPSConnector, HTTPSRequest, HTTPSResponse, TransportResult
+from .transport import (
+    HTTPSConnector,
+    HTTPSRequest,
+    HTTPSResponse,
+    TransportRefusal,
+    TransportResult,
+)
 
 
 PROVIDER_EVENT_SCHEMA = "model-proxy-provider-event/v1"
@@ -260,7 +266,11 @@ class ProviderSession:
 
         if self._failed:
             refuse("MP320", "provider.session")
-        requests = self._framing.feed(data)
+        try:
+            requests = self._framing.feed(data)
+        except PolicyError:
+            self._poison()
+            raise
         for request in requests:
             self._admitted[request.sequence] = request
         return requests
@@ -268,7 +278,11 @@ class ProviderSession:
     def finish(self) -> None:
         if self._failed:
             refuse("MP320", "provider.session")
-        self._framing.finish()
+        try:
+            self._framing.finish()
+        except PolicyError:
+            self._poison()
+            raise
 
     def generate(self, request: TextRequest) -> bytes:
         """Map one exact admitted request and return one closed guest frame."""
@@ -315,15 +329,25 @@ class ProviderSession:
             except PolicyError as error:
                 self._poison()
                 transport = locals().get("result")
-                if not isinstance(transport, TransportResult):
-                    transport = None
+                if isinstance(error, TransportRefusal):
+                    request_bytes = error.request_bytes
+                    response_bytes = error.response_bytes
+                    duration_ns = error.duration_ns
+                elif isinstance(transport, TransportResult):
+                    request_bytes = transport.request_bytes
+                    response_bytes = transport.response_bytes
+                    duration_ns = transport.duration_ns
+                else:
+                    request_bytes = 0
+                    response_bytes = 0
+                    duration_ns = 0
                 self._record(
                     error.code,
                     "provider-only",
-                    request_bytes=0 if transport is None else transport.request_bytes,
-                    response_bytes=0 if transport is None else transport.response_bytes,
+                    request_bytes=request_bytes,
+                    response_bytes=response_bytes,
                     input_tokens=len(request.input_text),
-                    duration_ns=0 if transport is None else transport.duration_ns,
+                    duration_ns=duration_ns,
                 )
                 raise
             del self._admitted[request.sequence]

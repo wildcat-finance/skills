@@ -9,6 +9,7 @@ import itertools
 import re
 import socket
 import ssl
+import threading
 import time
 from typing import Callable, Iterable, Protocol
 from urllib.parse import urlsplit
@@ -77,6 +78,15 @@ class TransportResult:
     """Bounded body and content-free measurements from one HTTPS exchange."""
 
     body: bytes = field(repr=False)
+    request_bytes: int
+    response_bytes: int
+    duration_ns: int
+
+
+@dataclass(frozen=True, slots=True)
+class TransportRefusal(PolicyError):
+    """A value-free refusal with confirmed content-free transport progress."""
+
     request_bytes: int
     response_bytes: int
     duration_ns: int
@@ -353,10 +363,40 @@ class HTTPSConnector:
         self._context = context
         self._clock = clock
         self._timeout = float(timeout)
+        self._pinned_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None = None
+        self._pin_lock = threading.Lock()
 
     @property
     def profile_identifier(self) -> str:
         return self._profile.identifier
+
+    def _job_address(self) -> ipaddress.IPv4Address | ipaddress.IPv6Address:
+        address = self._pinned_address
+        if address is not None:
+            return address
+        with self._pin_lock:
+            address = self._pinned_address
+            if address is None:
+                address = _resolve_one(
+                    self._resolver, self._profile.hostname, self._profile.port
+                )
+                self._pinned_address = address
+        return address
+
+    def _failure_duration(self, started: object) -> int:
+        if isinstance(started, bool) or not isinstance(started, int):
+            return 0
+        try:
+            finished = self._clock()
+        except Exception:
+            return 0
+        if (
+            isinstance(finished, bool)
+            or not isinstance(finished, int)
+            or finished < started
+        ):
+            return 0
+        return finished - started
 
     def send(
         self,
@@ -377,9 +417,7 @@ class HTTPSConnector:
         ):
             refuse("MP300", "provider.request")
         headers = _request_headers(self._profile, credential)
-        address = _resolve_one(
-            self._resolver, self._profile.hostname, self._profile.port
-        )
+        address = self._job_address()
         request = HTTPSRequest(
             scheme=self._profile.scheme,
             hostname=self._profile.hostname,
@@ -391,6 +429,10 @@ class HTTPSConnector:
             body=body,
         )
         response: HTTPSResponse | None = None
+        started: object = None
+        length = 0
+        failure: PolicyError | None = None
+        failure_duration = 0
         try:
             started = self._clock()
             response = self._exchange(request, self._context, self._timeout)
@@ -413,16 +455,18 @@ class HTTPSConnector:
                 response.headers, max_response_bytes
             )
             chunks: list[bytes] = []
-            length = 0
             while True:
-                chunk = response.read(READ_CHUNK_BYTES)
-                if not isinstance(chunk, bytes) or len(chunk) > READ_CHUNK_BYTES:
+                read_limit = min(
+                    READ_CHUNK_BYTES, max_response_bytes - length + 1
+                )
+                chunk = response.read(read_limit)
+                if not isinstance(chunk, bytes):
+                    refuse("MP310", "provider.response.bytes")
+                length += len(chunk)
+                if len(chunk) > read_limit or length > max_response_bytes:
                     refuse("MP310", "provider.response.bytes")
                 if not chunk:
                     break
-                length += len(chunk)
-                if length > max_response_bytes:
-                    refuse("MP310", "provider.response.bytes")
                 chunks.append(chunk)
             if declared is not None and declared != length:
                 refuse("MP310", "provider.response.bytes")
@@ -441,15 +485,29 @@ class HTTPSConnector:
                 response_bytes=length,
                 duration_ns=finished - started,
             )
-        except PolicyError:
-            raise
+        except PolicyError as error:
+            failure = error
+            failure_duration = self._failure_duration(started)
         except (ssl.CertificateError, ssl.SSLError):
-            refuse("MP305", "provider.tls")
+            failure = PolicyError("MP305", "provider.tls")
+            failure_duration = self._failure_duration(started)
         except Exception:
-            refuse("MP306", "provider.transport")
+            failure = PolicyError("MP306", "provider.transport")
+            failure_duration = self._failure_duration(started)
         finally:
             if response is not None:
                 try:
                     response.close()
                 except Exception:
                     pass
+        if failure is None:
+            refuse("MP306", "provider.transport")
+        if response is not None:
+            raise TransportRefusal(
+                failure.code,
+                failure.field,
+                len(body),
+                length,
+                failure_duration,
+            ) from None
+        raise failure from None
