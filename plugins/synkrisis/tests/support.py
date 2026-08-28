@@ -66,6 +66,10 @@ def example_manifest() -> dict:
     return read_json(EXAMPLE / "manifest.json")
 
 
+def bench():
+    return load_module("bench_synkrisis_under_test", SCRIPTS / "bench_synkrisis.py")
+
+
 def stage_example(root: Path) -> tuple[dict, dict]:
     """Copy the example universe into a scratch root with local paths."""
     manifest = example_manifest()

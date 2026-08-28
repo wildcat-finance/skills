@@ -1,11 +1,10 @@
 # Synkrisis schema compatibility
 
-The public schemas under `references/` are versioned artefacts. Steps 2 and 3
-ship `synkrisis-policy/v1`, `synkrisis-cohort/v1`, `synkrisis-rules/v1` and
-`synkrisis-findings/v1` as JSON Schema documents, and the command checks the
-manifest identity `synkrisis-manifest/v1` directly. The catalogue shipped at
-`references/rules-v1.json` declares the rules identity and is checked against
-it before any rule is applied.
+The four public schemas under `references/` are versioned artefacts:
+`synkrisis-policy/v1`, `synkrisis-cohort/v1`, `synkrisis-rules/v1` and
+`synkrisis-findings/v1`, plus the manifest identity `synkrisis-manifest/v1`
+the command checks directly. The scale-fixture specification
+`synkrisis-scale-fixture/v1` is a test artefact, not a public surface.
 
 ## What a version promises
 
@@ -24,7 +23,8 @@ version change, and lands with a red-to-green guard.
 ## What requires a new version
 
 - Any new, removed, renamed or retyped field in a shipped shape.
-- Any new disposition, reason code or refusal-code semantics change.
+- Any new rule kind, handoff target, disposition, reason code or refusal
+  code semantics change.
 - Any cap raise. The 100-run, 100,000-event, 8 MiB and 64 MiB ceilings come
   from the study; raising one needs a study amendment first, then a `v2`
   identity for the shapes that expose it.
@@ -35,7 +35,8 @@ this record exists to prevent.
 
 ## Digest stability
 
-Cohort documents are canonical JSON: sorted keys, compact separators, ASCII,
-one trailing newline. The manifest, policy and cohort digests are SHA-256
-over exactly those canonical bytes, and the cohort digest covers the cohort
-body with the digest field itself excluded, so any reader can recompute it.
+Cohort and findings documents are canonical JSON: sorted keys, compact
+separators, ASCII, one trailing newline. Digests are SHA-256 over exactly
+those bytes. Fingerprints hash the rule id, the subject and the sorted
+run-and-event references, never a host path or mutable prose, so a harmless
+reordering of the manifest leaves every fingerprint unchanged.

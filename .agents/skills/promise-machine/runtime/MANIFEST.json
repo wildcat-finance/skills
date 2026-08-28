@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 928,
-  "total_bytes": 20205573,
+  "file_count": 929,
+  "total_bytes": 20215339,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "84cff70b5ac2b8516a8cdc5199759ae0abf7db6ee21d61eca0996dbc06030edd",
+      "sha256": "5b661db752923946489b704877cdc13f78d4a9360cf022e9e05f83a8770bbb4e",
       "source": null
     },
     {
@@ -5035,9 +5035,9 @@
       "source": "plugins/sapheneia/skills/sapheneia/agents/openai.yaml"
     },
     {
-      "bytes": 4957,
+      "bytes": 5019,
       "path": "plugins/synkrisis/AGENTS.md",
-      "sha256": "ce2710e1a19e56abe11819000c12183124889c14fcdb3df179ae995cc1abb302",
+      "sha256": "054c8712fd54fe5a24d7a80eec42d07ef0afe1c3e7d4653e32af1100127c3eff",
       "source": "plugins/synkrisis/AGENTS.md"
     },
     {
@@ -5053,9 +5053,9 @@
       "source": "plugins/synkrisis/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 5404,
+      "bytes": 5023,
       "path": "plugins/synkrisis/README.md",
-      "sha256": "24674bbcbcbef4fbd6d261feeee1897247ff1f16730db5eec9feeac93bf7b887",
+      "sha256": "6448576f0a0cf8b678629cb33f709adc1718975a12947b5c095d5b8c1292ffe2",
       "source": "plugins/synkrisis/README.md"
     },
     {
@@ -5089,9 +5089,9 @@
       "source": "plugins/synkrisis/docs/decisions/ADR-004-separate-run-and-reachability-evidence.md"
     },
     {
-      "bytes": 1966,
+      "bytes": 1978,
       "path": "plugins/synkrisis/docs/schema-compatibility.md",
-      "sha256": "ffcd635bd6e40a4d673cfff7c8c7197f6640601762f732d869df2beb2a9a7f84",
+      "sha256": "e3feb571730074fe52ce5c04223aa9a78757a35efb0ca9e089d681bb5bc09e1a",
       "source": "plugins/synkrisis/docs/schema-compatibility.md"
     },
     {
@@ -5185,21 +5185,27 @@
       "source": "plugins/synkrisis/references/rules-v1.json"
     },
     {
+      "bytes": 8766,
+      "path": "plugins/synkrisis/scripts/bench_synkrisis.py",
+      "sha256": "36654fe2369fda03188c1e8be18d91c5a576377966da7f48264518ecf45de518",
+      "source": "plugins/synkrisis/scripts/bench_synkrisis.py"
+    },
+    {
       "bytes": 70533,
       "path": "plugins/synkrisis/scripts/synkrisis.py",
       "sha256": "b61cbe4d1133f94a8c6667898edced652c8924baf938d92fb776b74b90b2c99c",
       "source": "plugins/synkrisis/scripts/synkrisis.py"
     },
     {
-      "bytes": 5255,
+      "bytes": 6096,
       "path": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md",
-      "sha256": "c88a594769ac8e6f1740559edd38730d929bb6dea61fc015b23377d0a9cc6f17",
+      "sha256": "e0a66fb126a60cbc2ba86eb9eda4366150a80ecfcbbd4607ef8174786be71013",
       "source": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md"
     },
     {
-      "bytes": 12817,
+      "bytes": 13283,
       "path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-      "sha256": "6e1b0ddf42ca4ac8898e6b76a181954b24179794d8f155692fa4968fd05f2416",
+      "sha256": "c7554b77521df9fefeb63f2cc13443bb7924edd9cd5d2107722f94114c932398",
       "source": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {
