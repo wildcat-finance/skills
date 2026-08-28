@@ -320,7 +320,7 @@ rather than let a hostile hook through.
 
 None beyond what already ships, and here is why: the suite is invoked from a
 terminal by a developer or CI, never unattended, so there is no three-in-the-
-morning question ([ephoros](../plugins/hexaemeron/skills/ephoros/SKILL.md)
+morning question ([ephoros](../../plugins/hexaemeron/skills/ephoros/SKILL.md)
 owns what a signal must carry, and its contract is for things that run
 unattended). The questions that do get asked afterwards, "which manifest,
 adapter, and search produced this verdict", are already answered by the
@@ -331,7 +331,7 @@ abort with a named error, which is the visibility a terminal run needs.
 ## 9. Boundaries, per capability
 
 One boundary exists and none opens
-([phylax](../plugins/hexaemeron/skills/phylax/SKILL.md) owns the boundary
+([phylax](../../plugins/hexaemeron/skills/phylax/SKILL.md) owns the boundary
 list and the controls). The manifest JSON is repo-local input read through
 Foundry's scoped filesystem cheatcode; `fs_permissions` stays read-only over
 `./manifests` and `./examples` and read-write over `./out`, `ffi` stays
@@ -350,7 +350,7 @@ harness suite completes in well under a second today (24 tests in about 91
 ms wall time at the starting SHA). Manifest parsing per conformance test
 adds milliseconds. If a budget were ever wanted, the measuring command is
 `cd plugins/janus/harness && forge test`, timed the same way before and
-after; [metron](../plugins/hexaemeron/skills/metron/SKILL.md) owns what a
+after; [metron](../../plugins/hexaemeron/skills/metron/SKILL.md) owns what a
 budget carries and how it is checked.
 
 ## 11. The fail-closed posture
@@ -365,7 +365,7 @@ important one: the shipped example's own disagreement class must surface as
 a failed gate, never as a quiet pass.
 
 Guard convention, per
-[elenchus](../plugins/hexaemeron/skills/elenchus/SKILL.md), which owns the
+[elenchus](../../plugins/hexaemeron/skills/elenchus/SKILL.md), which owns the
 triage order and the guard rule: every defect fixed during this run lands
 with a test that fails without the fix. The omitted-entry refusal test is
 exactly such a guard for the disagreement this wish names, and the
@@ -374,7 +374,7 @@ way.
 
 ## 12. Decisions and their homes
 
-[hypomnema](../plugins/hexaemeron/skills/hypomnema/SKILL.md) owns which
+[hypomnema](../../plugins/hexaemeron/skills/hypomnema/SKILL.md) owns which
 decisions earn a record and where each lives. Three here are expensive to
 reverse, because the second-adapter frontier job will consume them:
 

@@ -215,3 +215,38 @@ count, so only the runbook moves.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
 Step 5: entry holds; exit holds. Step 6: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit:
+`docs/janus-manifest-resolution/runbook.md` is a committed copy of the
+receipted runbook current at this step's final push;
+`docs/janus-manifest-resolution/study.md` is the receipted study with its five
+`../plugins/hexaemeron/skills/` links rewritten as
+`../../plugins/hexaemeron/skills/` so each resolves from the committed
+location, and no other byte changed; the portable Promise Machine runtime and
+the Horos boundary are regenerated with `python3
+scripts/portable_promise_machine.py sync` and `python3
+plugins/horos/skills/horos/scripts/horos.py scan . --write` so the repository
+invariant suite (`python3 -m unittest discover -s tests`) passes; `python3
+plugins/janus/scripts/run_forge_tests.py tmp/elenchus/fiat-329-step-1.xml`
+exits 0 and the file it writes is JUnit XML naming 24 passing tests; both
+suites and `janus.py validate` remain green. Complete replacement Files:
+`docs/janus-manifest-resolution/study.md`,
+`docs/janus-manifest-resolution/runbook.md`,
+`plugins/janus/scripts/run_forge_tests.py`,
+`.agents/skills/promise-machine/runtime/MANIFEST.json`,
+`.agents/skills/promise-machine/runtime/.horos/boundary.json`,
+`.agents/skills/promise-machine/runtime/plugins/janus/scripts/run_forge_tests.py`,
+`.horos/boundary.json`.
+**Why.** The repository invariant suite on the pushed step branch failed
+twice: the hypomnema pointer lint, because the study's five plugin links were
+written for `.hexaemeron/` and resolve to nothing from
+`docs/janus-manifest-resolution/`, and the portable-runtime currency check,
+because the new launcher was not synchronised into the portable runtime.
+Byte-identical committed copies and a green invariant suite cannot both hold,
+so the exit names the link rewrite and the two regenerated surfaces.
+**Steps touched.** Step 1.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+Step 5: entry holds; exit holds. Step 6: entry holds; exit holds.
