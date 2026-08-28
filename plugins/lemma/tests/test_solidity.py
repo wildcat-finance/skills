@@ -647,6 +647,21 @@ def test_provenance_record() -> None:
           ssh["source_ref"] == "ssh://github.com/wildcat-finance/skills.git",
           repr(ssh["source_ref"]))
 
+    # fourteen — every other argument refuses by type with a reason naming it;
+    # source_ref reached .strip() first and came back as an AttributeError,
+    # which names neither the flag nor what was wrong with the value.
+    typed = {}
+    for value in (5, None, ["o/r@sha"], {"ref": "o/r@sha"}):
+        try:
+            schema.provenance_record(source_ref=value, **fields)
+            typed[repr(value)] = "accepted"
+        except ValueError as e:
+            typed[repr(value)] = ("--source-ref" in str(e)) or f"unnamed: {e}"
+        except Exception as e:
+            typed[repr(value)] = type(e).__name__
+    check("a source ref that is not a string is refused by the flag's name",
+          all(v is True for v in typed.values()), str(typed))
+
     # twelve — `list()` and `sorted()` spread a bare string into one entry per
     # character. `include` was the one that then validated clean, so a record
     # could name eight one-character patterns as the coverage it was built to.

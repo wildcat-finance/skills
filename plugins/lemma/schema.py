@@ -405,6 +405,13 @@ def provenance_record(*, chunker: str, chunker_version: str, source_ref: str,
             isinstance(entry, dict) for entry in inputs):
         raise ValueError(
             f"--inputs is {inputs!r}; it is a list of {{path, sha256}} objects")
+    # Before .strip(), which is what turned a non-string ref into an
+    # AttributeError naming neither the flag nor the problem, while every other
+    # argument here refuses by type with a reason that names it.
+    if not isinstance(source_ref, str):
+        raise ValueError(
+            f"--source-ref is {source_ref!r}; it is the origin string, and a "
+            "value that is not one carries no ref to strip or to record")
     ref = source_ref.strip()
     if not ref:
         raise ValueError(
