@@ -810,7 +810,8 @@ class ModelProxyRuntime:
     def _await_provider_turn(self, reservation: Reservation) -> None:
         with self._provider_turn_condition:
             while reservation.sequence in self._pending_provider_turns:
-                if self._controller.poll() is not None:
+                self._controller.poll()
+                if self._controller.terminal is not None:
                     return
                 if reservation.sequence == self._next_provider_turn:
                     return

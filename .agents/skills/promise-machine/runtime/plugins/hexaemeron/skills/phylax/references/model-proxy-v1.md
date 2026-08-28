@@ -339,8 +339,9 @@ runtime registers each durable request receipt in a pending-turn set and gives
 the provider session one turn at a time in guest sequence order. Selection
 waits for the next guest sequence rather than choosing whichever higher
 sequence reached the pending set first or relying on the execution lock's
-unspecified waiter order. A waiting higher turn polls the lifecycle clocks, so
-an absent or stalled lower worker cannot hold its reservation beyond the job
+unspecified waiter order. A waiting higher turn observes an existing terminal
+transition and polls the lifecycle clocks, so cancellation wakes it and an
+absent or stalled lower worker cannot hold its reservation beyond the job
 deadline. It commits or refuses that turn against its own provider event before
 the next turn can cross the provider boundary. When no terminal transition has
 won, a successful provider event contributes its confirmed response bytes and

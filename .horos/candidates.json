@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 14038024,
+    "bytes_blob": 14049168,
     "bytes_generated": 98
   },
   "entries": [
@@ -91,14 +91,14 @@
       "path": "audit/rounds/fiat-617-runtime-host-reinstates-the-byline-the-ident.synopsis.md"
     },
     {
-      "bytes": 83014,
+      "bytes": 88564,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 80966",
+      "evidence": "mean line length above 400 in a window at offset 86516",
       "grade": "candidate",
       "path": "audit/rounds/fiat-700-proxy-model-traffic-without-giving-the-worke.md"
     },
     {
-      "bytes": 84158,
+      "bytes": 89752,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
