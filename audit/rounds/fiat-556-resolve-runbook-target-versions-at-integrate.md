@@ -1661,3 +1661,150 @@ than an incomplete receipt. The prose-phase generic file list has a separate
 non-authorising purpose and does not enter this integration proof. Step 4 still
 owns the exact issue-or-document wording in issue #556's eventual generation
 rows.
+
+## Step 3, round 7 -- 2026-08-28
+
+This non-Solidity round started from signed audit tip
+`e9f1a6ac52052d29af0588cebf21e97cfd0b2d26`. Its Shoggoth signature verifies,
+and it carries exactly one required co-author trailer and one origin trailer.
+One high finding was fixed in signed commit
+`ec2fbd73dcd855427fc92ab02ae43a544ab24340`; its Shoggoth signature verifies,
+and it also carries exactly one of each required trailer.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R7-01 | high | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | Integration-sync receipt construction mixed native object checks with replacement-aware parent inspection and ordinary remote reads. In the causal specimens, a replace ref made a wrong native parent order appear correct, a shallow repository reached path proof without complete history, and inherited `GIT_DIR` supplied run and base remote tips from another repository while later native checks inspected the named repository. Literal runs have no later version-relation replay gate, so the receipt boundary itself had to refuse all three substitutions. | fixed in `ec2fbd73dcd855427fc92ab02ae43a544ab24340`: capture and recheck the native repository identity, refuse shallow history before and after evidence collection, use native remote reads, and inspect native parents |
+
+### Evidence
+
+The interrupted causal report
+`.elenchus/fiat-556-step-3-warden-round7-red.json`, SHA-256
+`1fc829c599e9f8b7063915bebe786dbcb2a0acb0256ee455d034d7601b03796b`,
+records `elenchus.unittest.v1`, 1,161 tests, two assertion failures, zero
+errors, and zero skips. The two guards show that replacement-aware parent
+inspection accepted the expected order only through a replace ref and that a
+shallow repository was not refused before native path proof.
+
+A third real-repository guard then set inherited `GIT_DIR` to an attacker
+clone whose `origin` advertised the requested run and base tips. Before the
+repair, ordinary `ls-remote` reads accepted those tips even though native local
+checks inspected the named repository; the guard failed because no refusal
+occurred. After the repair, the three focused causal guards pass together.
+
+The first fixed-tree full-run attempt remains preserved at
+`.elenchus/fiat-556-step-3-warden-round7-green.json`, SHA-256
+`379ad891f3039c2709dd796faa77b7ccca957ae9f7087ad7bab64aa782fceb22`.
+It records 1,162 tests, 13 assertion failures, zero errors, and zero skips.
+All 13 failures were in the adjacent fake-Git publication fixture: it did not
+normalise the new command-scoped `--no-replace-objects ls-remote` form. The
+fixture was extended for that native command shape; its 31 publication-binding
+tests then passed.
+
+The final fixed-tree source-bound report is
+`.elenchus/fiat-556-step-3-warden-round7-green-final.json`, SHA-256
+`cdd7b3b116d63462c29ac6aac510a2b73a35c1deadb47fd2fab4e7124413be8f`.
+It records `elenchus.unittest.v1`, 1,162 tests with zero failures, errors, or
+skips. The pre-existing report at
+`tmp/elenchus/fiat-556-step-3.json`, SHA-256
+`02cae51edd345007bd777c23b4b20c07c9eb9881c6319e00741c3b8d3461415d`,
+was preserved rather than overwritten; it is an earlier 1,145-test green
+report. The source-bound runner's create-only contract refused that occupied
+path, so the fixed-tree rerun used the fresh append-only evidence path above.
+
+Elenchus ran against fix commit
+`ec2fbd73dcd855427fc92ab02ae43a544ab24340`. The exact source-bound command is
+`python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`,
+with report format `unittest-json-v1` and report file
+`tmp/elenchus/fiat-556-step-3.json`. Its exact verdict is `guarded`: the parent
+overlay ran 1,162 tests and recorded three assertion failures, zero errors,
+and zero skips. Those failures are the replacement-object, shallow-history,
+and inherited-repository guards. The parent runner exited 1 because the three
+assertions failed; Elenchus exited 0 under `--require-guard`.
+
+The exact runbook checks are green. Version relations ran 101 tests; the
+controller and Fiat selection pair ran 400; the Promise Machine check reports
+14 clean plugin copies; coverage reports 72 of 72 promises; the root suite ran
+350; and the final Hexaemeron suite ran 1,162. The source-bound fixed-tree
+runner separately ran 1,162. Phylax, Ephoros, and Hypomnema each exit 0.
+Python compilation, controller-binding JSON parsing, and `git diff --check`
+are clean. The controller SHA-256 bound in the coverage inventory is
+`d0e04e77c2074955876c1d04b795578ff860eb991b72418c7495d2235f6544a2`.
+Imprimatur scores the complete record 100.0 out of 100 with zero defects.
+Brevitas reports ten B011 finding-table shape diagnostics: nine in the
+unchanged prefix and this round's required one-row table. It reports no other
+diagnostic; the table row count remains equal to the actual finding count.
+
+### Risk register
+
+`literal-compatibility`, `anchor-substitution`, `remote-evidence-failure`,
+`git-object-shape`, `sync-carriage`, `revalidation-coverage`, and
+`receipt-replay` surfaced S3-R7-01. Sync receipt construction now records the
+native repository identity before evidence collection, refuses shallow
+history before inspecting the receipt, reads both remote tips through the
+replacement-free native relation command boundary, reads the sync commit's
+native parent order, and rechecks complete history and repository identity
+after local, remote, signature, and GitHub verification. The three causal
+guards prove each former acceptance against the unfixed parent.
+
+`relation-block-shape`, `generation-arithmetic`, `frontier-drift`,
+`ledger-history-rewrite`, `metadata-mismatch`, `multi-target-partial`,
+`base-ref-race`, `run-ref-race`, `post-check-race`, `resolution-staleness`,
+`state-history-growth`, `diagnostic-leak`, `promise-overclaim`,
+`self-hosted-collision`, `legacy-state`, and `interrupted-resolution` are
+green. Their earlier focused guards remain green on the complete fixed tree.
+Stable remote observations, native object and signature inspection, exact
+stored sync shapes, complete affected-path coverage, pending recovery before
+live rereads, eight retained receipts and ninth refusal, stale-status and
+packet withholding, terminal `[base, candidate]` parent replay, and
+post-check base-move refusal remain directly exercised.
+
+### Sapheneia durable-record comparison
+
+The frozen subject is this Step 3 round 7 append. Its source inventory was the
+complete current diff, preserved reports, command results, risk-register
+seed, starting and fixes commits, signature and trailer checks, scope boundary,
+negative evidence, qualifications, unknowns, and unpursued leads. The candidate
+retains the required heading, five-column finding table, evidence, risk
+register, scope boundary, and leads-not-pursued field. Item by item:
+
+1. The one finding id, high severity, controller path, three counterexamples,
+   causal mechanism, fix status, and exact fixes commit are present unchanged.
+2. Every named path, SHA-256, commit id, date, schema, test total, failure,
+   error, skip, exit, lint result, verdict, and required trailer count is
+   present unchanged.
+3. The occupied canonical report, failed intermediate fixed-tree run, parent
+   runner exit, non-Solidity waiver, and absence of remote mutation remain
+   explicit negative or qualifying evidence.
+4. All 23 risk ids have an explicit surfaced or green disposition, and every
+   scope exclusion, unknown trust boundary, and unpursued lead is retained.
+5. The prior 108,639-byte, 1,663-line record remains the exact prefix of this
+   append at SHA-256
+   `5db7c2520f1e25e31304962686a9de6da5e857185f82da219a6a8b29eb41abef`.
+
+No protected item or required structural field is missing or mismatched. The
+checked declaration for the owning controller gate is exactly
+`--audit-filter sapheneia:sapheneia`; this round did not call that mutating
+gate.
+
+### Scope boundary
+
+This round read and audited the complete fixed Step 3 tree against the exact
+runbook step and every risk-register item. It preserved and continued the
+interrupted test work and every `.elenchus` evidence file. The fix changes the
+controller, two focused test files, controller digest bindings, and this
+append-only record, all within the Step 3 file set. No Solidity is present, so
+the security suite is waived and the three mandatory lint exits are the
+mechanical audit. No controller command that mutates run state, push, pull
+request, merge, issue change, remote write, or other GitHub mutation ran.
+
+Leads not pursued: a caller controlling process `PATH`, system verifier
+binaries, or signature trust stores controls the operating-system execution
+boundary; the controller does not claim an independent trust root there. A
+writer with coordinated access to controller state, its hash-chained ledger,
+and native Git storage can rewrite all three local evidence classes; no
+external signed state anchor or storage guarantee is claimed. Repository
+configuration that prevents exact path enumeration remains a refusal rather
+than an incomplete receipt. The prose-phase generic file list has a separate
+non-authorising purpose and does not enter this Step 3 proof. Step 4 owns the
+eventual issue-or-document wording for issue #556 generation rows. No further
+in-scope lead remained after the full risk-register review.
