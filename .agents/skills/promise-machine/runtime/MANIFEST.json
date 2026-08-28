@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 930,
-  "total_bytes": 20216953,
+  "file_count": 932,
+  "total_bytes": 20234490,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "73092c9828695f09ca475d118447215e3b0d52fe8c282df711e4498a389000ba",
+      "sha256": "9f633e5a8cc96389ca50ebb3ad9613e4b441e62edfa9022e5f0d111b3f9fb6fd",
       "source": null
     },
     {
@@ -3463,15 +3463,21 @@
       "source": "plugins/janus/harness/src/JanusHarness.sol"
     },
     {
+      "bytes": 8975,
+      "path": "plugins/janus/harness/src/ManifestReader.sol",
+      "sha256": "8f68ac8fca61a0a1a757bb3acd99d0f32cb53796ee716f4e55f742c177c4f421",
+      "source": "plugins/janus/harness/src/ManifestReader.sol"
+    },
+    {
       "bytes": 5621,
       "path": "plugins/janus/harness/src/StateDeltaRecorder.sol",
       "sha256": "2f7d7f38c6dee64b71ae772f2ea81c4106605cf70ba0449988b823b3f22d7865",
       "source": "plugins/janus/harness/src/StateDeltaRecorder.sol"
     },
     {
-      "bytes": 3849,
+      "bytes": 3947,
       "path": "plugins/janus/harness/src/Vm.sol",
-      "sha256": "96d752f8bb81596a463df2e7bee8c50360f1c9a70c20b04950489468d067f7e5",
+      "sha256": "cb74a644a85291b7f21e8e062b91cd6c6e65514260acbfec7a4be44aeb960059",
       "source": "plugins/janus/harness/src/Vm.sol"
     },
     {
@@ -3509,6 +3515,12 @@
       "path": "plugins/janus/harness/test/HostileHooks.t.sol",
       "sha256": "e280ec53d29ddca3a9ecc364830297a09baf0d3abf344e156fb6a3b5fa827baf",
       "source": "plugins/janus/harness/test/HostileHooks.t.sol"
+    },
+    {
+      "bytes": 8464,
+      "path": "plugins/janus/harness/test/ManifestReader.t.sol",
+      "sha256": "aaa6337e8c5616752a5453efcdd5647df15354af26e0ef9a771be0fcf4fcc0ce",
+      "source": "plugins/janus/harness/test/ManifestReader.t.sol"
     },
     {
       "bytes": 789,
