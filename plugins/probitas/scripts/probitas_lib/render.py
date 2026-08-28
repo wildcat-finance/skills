@@ -13,6 +13,7 @@ import json
 import os
 
 from . import formatting, registry, sanitise
+from .evidence import classify_source
 
 TEMPLATE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -90,17 +91,35 @@ def decimals_by_market(records):
         values = record["values"]
         market = values.get("market")
         if market and "token_decimals" in values:
+            symbol = values.get("token_symbol")
             out.setdefault(
-                market, (values["token_decimals"], values.get("token_symbol"))
+                market,
+                (
+                    values["token_decimals"],
+                    sanitise.clean(symbol, max_length=32)
+                    if symbol is not None
+                    else None,
+                ),
             )
     return out
 
 
 def _cite(record):
     source = record["source"]
-    if record["source_kind"] == "transaction":
+    # Gate 3 owns the explicit blank-source diagnostic. Keep that existing
+    # negative specimen renderable without allowing non-empty malformed bytes
+    # into a Markdown citation.
+    if isinstance(source, str) and not source.strip():
+        return "``"
+    try:
+        source_kind = classify_source(source)
+    except ValueError as error:
+        raise RenderError("record source is not a valid citation") from error
+    if source_kind != record.get("source_kind"):
+        raise RenderError("record source kind does not match its citation")
+    if source_kind == "transaction":
         return f"`{formatting.short(source)}`"
-    if record["source_kind"] == "url":
+    if source_kind == "url":
         return f"[source]({source})"
     return f"`{source}`"
 
@@ -230,7 +249,7 @@ def _describe(record, decimals):
 
     if claim == "market_terms":
         return (
-            f"{values.get('market_name', 'market')}, "
+            f"{sanitise.clean(values.get('market_name', 'market'))}, "
             f"reserve ratio {formatting.bips(values['reserve_ratio_bips'])}, "
             f"rate {formatting.bips(values['annual_interest_bips'])}, "
             f"grace period {formatting.duration(values['grace_period_seconds'])}, "
@@ -312,17 +331,22 @@ def _rows(records, decimals):
     return "\n".join(lines)
 
 
-def _subject(payload):
-    lines = [f"**Entity.** {payload['subject']['entity']}", ""]
+def _subject(payload, entity):
+    lines = [f"**Entity.** {entity}", ""]
     for tier, heading in (
         ("declared", "Declared by the counterparty"),
         ("linked", "Provably linked on chain"),
     ):
-        addresses = [
-            a["address"]
-            for a in payload["subject"]["addresses"]
-            if a["provenance"] == tier
-        ]
+        addresses = []
+        for item in payload["subject"]["addresses"]:
+            if item["provenance"] != tier:
+                continue
+            try:
+                addresses.append(sanitise.address(item["address"]))
+            except ValueError as error:
+                raise RenderError(
+                    "subject address is not a 20-byte address"
+                ) from error
         if not addresses:
             continue
         lines.append(f"**{heading}.**")
@@ -339,12 +363,13 @@ def _coverage(payload):
         "| --- | --- | --- | --- | --- |",
     ]
     for row in payload["coverage"]:
+        venue = known.get(row["venue"], row["venue"])
         lines.append(
             "| {} | {} | {} | {} | {} |".format(
-                known.get(row["venue"], row["venue"]),
+                sanitise.clean(venue),
                 sanitise.clean(row["status"]),
                 sanitise.clean(row.get("block_range") or "--"),
-                row.get("records", 0),
+                sanitise.clean(row.get("records", 0)),
                 sanitise.clean(row.get("note") or "--", max_length=400),
             )
         )
@@ -398,13 +423,17 @@ def render(payload):
     ]
     inferred = [r for r in records if tiers.get(r["address"]) == "inferred"]
 
+    entity = sanitise.clean(payload["subject"].get("entity"), max_length=120)
+    if not entity:
+        raise RenderError("subject entity is empty")
     run = payload.get("run") or {}
-    run_line = "Run `{}`.".format(run.get("id") or "unidentified")
+    run_id = sanitise.clean(run.get("id") or "unidentified", max_length=120)
+    run_line = f"Run `{run_id}`."
 
     sections = {
-        "entity": payload["subject"]["entity"],
+        "entity": entity,
         "run_line": run_line,
-        "subject": _subject(payload),
+        "subject": _subject(payload, entity),
         "coverage": _coverage(payload),
         "negative_space": _gaps(payload),
         "history": _rows(history, decimals) if history else NARRATIVE_MARKER,
