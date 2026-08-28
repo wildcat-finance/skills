@@ -67,6 +67,30 @@ class JsonGrammarTests(unittest.TestCase):
                 with self.assertRaises(safejson.InputError):
                     safejson.loads(('{"value": %s}' % value).encode("ascii"))
 
+    def test_exponent_overflow_is_refused_before_it_becomes_infinity(self):
+        for value in ("1e9999", "-1e9999"):
+            with self.subTest(value=value):
+                with self.assertRaises(safejson.InputError):
+                    safejson.loads(('{"value": %s}' % value).encode("ascii"))
+
+    def test_integral_json_number_forms_keep_integer_semantics(self):
+        for value, expected in (("1.0", 1), ("1e2", 100), ("-0.0", 0)):
+            with self.subTest(value=value):
+                parsed = safejson.loads(('{"value": %s}' % value).encode("ascii"))
+                self.assertIs(type(parsed["value"]), int)
+                self.assertEqual(parsed["value"], expected)
+        self.assertIs(type(safejson.loads(b'{"value": 1.5}')["value"]), float)
+
+    def test_an_oversized_integer_is_a_controlled_input_refusal(self):
+        try:
+            safejson.loads(('{"value": %s}' % ("9" * 5000)).encode("ascii"))
+        except safejson.InputError as error:
+            self.assertIn("integer", str(error))
+        except ValueError as error:
+            self.fail("raw ValueError escaped the input boundary: %s" % error)
+        else:
+            self.fail("oversized integer was accepted")
+
 
 class ThroughTheReaderTests(unittest.TestCase):
     """The bounds apply to the envelope and to the payload inside it."""

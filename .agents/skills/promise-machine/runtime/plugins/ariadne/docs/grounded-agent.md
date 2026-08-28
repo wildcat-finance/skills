@@ -41,11 +41,13 @@ reason beside present evidence is contradictory and fails `optional-evidence`.
 ## Components and subjects
 
 Every component carries `name`, release-relative `path`, lowercase `sha256`, and
-a whole-number `bytes` count. Names and paths are bounded, visible and unique
-after Unicode NFC normalisation. Absolute paths, drive paths, backslashes,
-empty or dot segments, parent traversal, oversized values and duplicate paths
-fail. Every component digest must appear in the in-toto subject array, and every
-subject must name a declared component.
+a whole-number `bytes` count. Names and paths are bounded, visible, free of line
+separators, and unique after Unicode NFC normalisation. Absolute paths, drive
+paths, backslashes, empty or dot segments, parent traversal, oversized values
+and duplicate paths fail. Every component digest must appear in the in-toto
+subject array, and every subject must name a declared component. Subject aliases
+may add digest algorithms, but cannot give one `sha256` conflicting aliases or
+map one supported digest to different `sha256` identities.
 
 Digest maps carry at most eight algorithms. Three slots cover Ariadne's current
 supported algorithms and five remain for transition metadata; wider claim or

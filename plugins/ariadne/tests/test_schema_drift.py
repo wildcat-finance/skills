@@ -688,6 +688,8 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
             (" leading", False),
             ("trailing ", False),
             ("line\nbreak", False),
+            ("line\u2028break", False),
+            ("paragraph\u2029break", False),
         ):
             with self.subTest(kind="name", value=repr(value)):
                 self.assertEqual(bool(name_pattern.search(value)), expected)
@@ -702,6 +704,8 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
             ("corpus/ leading.json", False),
             ("corpus/trailing.json ", False),
             ("corpus/line\nbreak.json", False),
+            ("corpus/line\u2028break.json", False),
+            ("corpus/paragraph\u2029break.json", False),
             ("corpus/\u200b", False),
             ("corpus//terms.md", False),
             ("corpus/terms.md\\", False),
@@ -711,6 +715,22 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
             with self.subTest(kind="path", value=repr(value)):
                 self.assertEqual(bool(path_pattern.search(value)), expected)
                 self.assertEqual(grounded_agent.usable_path(value), expected)
+
+    def test_stated_pattern_uses_explicit_predicate_whitespace(self):
+        import re
+
+        stated_pattern = re.compile(self.schema["$defs"]["stated"]["pattern"])
+        for value, expected in (
+            ("ordinary reason", True),
+            ("\ufeff", False),
+            ("\u001c", False),
+            ("\u0085", False),
+            ("\u2028", False),
+            ("a\u2028b", True),
+        ):
+            with self.subTest(value=repr(value)):
+                self.assertEqual(bool(stated_pattern.search(value)), expected)
+                self.assertEqual(grounded_agent.stated(value), expected)
 
     def test_policy_vocabularies_match_the_checked_copies(self):
         rules = self.properties["policy"]["properties"]["rules"]["properties"]

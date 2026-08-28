@@ -445,6 +445,40 @@ class ComponentTests(unittest.TestCase):
         self.assertFalse(found.passed)
         self.assertIn("same sha256", found.detail)
 
+    def test_subject_digest_aliases_cannot_contradict_sha256_identity(self):
+        body = predicate()
+        outer = subjects(body)
+        outer[0]["digest"]["sha384"] = "1" * 96
+        outer.append(
+            {
+                "name": "contradictory alias",
+                "digest": {
+                    "sha256": outer[0]["digest"]["sha256"],
+                    "sha384": "2" * 96,
+                },
+            }
+        )
+        found = named("components", body, outer)
+        self.assertFalse(found.passed)
+        self.assertIn("contradict", found.detail)
+
+        outer = subjects(body)
+        outer[0]["digest"]["sha384"] = "3" * 96
+        outer[1]["digest"]["sha384"] = "3" * 96
+        found = named("components", body, outer)
+        self.assertFalse(found.passed)
+        self.assertIn("conflicting sha256", found.detail)
+
+        outer = subjects(body)
+        outer[0]["digest"]["sha384"] = "4" * 96
+        outer.append(
+            {
+                "name": "consistent alias",
+                "digest": dict(outer[0]["digest"]),
+            }
+        )
+        self.assertTrue(named("components", body, outer).passed)
+
     def test_unsafe_component_paths_are_refused(self):
         for path in (
             "/absolute.json",
@@ -486,6 +520,13 @@ class ComponentTests(unittest.TestCase):
 
     def test_ecmascript_bom_whitespace_is_refused_at_name_and_path_edges(self):
         for value in ("\ufeffname", "name\ufeff"):
+            with self.subTest(kind="name", value=repr(value)):
+                self.assertFalse(agent.portable_name(value))
+            with self.subTest(kind="path", value=repr(value)):
+                self.assertFalse(agent.usable_path(value))
+
+    def test_unicode_line_separators_are_not_portable_names_or_paths(self):
+        for value in ("a\u2028b", "a\u2029b"):
             with self.subTest(kind="name", value=repr(value)):
                 self.assertFalse(agent.portable_name(value))
             with self.subTest(kind="path", value=repr(value)):

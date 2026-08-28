@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11087113,
+  "total_bytes": 11090306,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -517,9 +517,9 @@
       "source": "plugins/ariadne/docs/design.md"
     },
     {
-      "bytes": 5391,
+      "bytes": 5571,
       "path": "plugins/ariadne/docs/grounded-agent.md",
-      "sha256": "607614200a1b3bbcc1e6b0a661b12b6e8af4a68779c5ed7dc81b14aef299f773",
+      "sha256": "a181901e592b4d95e62fcc3aa145cdced4ef6d0bd64f454e1d7d3ad9bc6722b5",
       "source": "plugins/ariadne/docs/grounded-agent.md"
     },
     {
@@ -583,9 +583,9 @@
       "source": "plugins/ariadne/schemas/dataset-v1.json"
     },
     {
-      "bytes": 18585,
+      "bytes": 18728,
       "path": "plugins/ariadne/schemas/grounded-agent-v1.json",
-      "sha256": "737b6ad0241eaf465ec694da09927dcc7ebac8cf4fb61d9316d266a86e1ed762",
+      "sha256": "0e1a417720f52cb758fbdbd9d5873cb18b393d0798034ab8d4dedbcae2dd375d",
       "source": "plugins/ariadne/schemas/grounded-agent-v1.json"
     },
     {
@@ -691,9 +691,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py"
     },
     {
-      "bytes": 39889,
+      "bytes": 41906,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py",
-      "sha256": "7208a26a58260e0cab71fbb03e1be4073341e028cc6170a0cf59d4c03ff53650",
+      "sha256": "93960696589682d05d8747a2d96714b41edb5607bad8312d937b2dd778b8c7f5",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py"
     },
     {
@@ -721,9 +721,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/replay.py"
     },
     {
-      "bytes": 3336,
+      "bytes": 4189,
       "path": "plugins/ariadne/scripts/ariadne_lib/safejson.py",
-      "sha256": "1e2f2978a9585e8349a805035200ac93e68772c88f42092a8d500a6c158d7880",
+      "sha256": "ef3061a3a68f56bcede4f163b2d649598470850eb9aac0a8a52e38d4fcba6788",
       "source": "plugins/ariadne/scripts/ariadne_lib/safejson.py"
     },
     {

@@ -151,7 +151,11 @@ CORE_LIMITS = {
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 HASH32 = re.compile(r"^0x[0-9a-f]{64}$")
 ADDRESS = re.compile(r"^0x[0-9a-f]{40}$")
-CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f]")
+CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
+PREDICATE_WHITESPACE = frozenset(
+    "\t\n\v\f\r\x1c\x1d\x1e\x1f \x85\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005"
+    "\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+)
 ZERO_HASH = "0x" + "0" * 64
 
 
@@ -161,11 +165,15 @@ def whole_number(value):
 
 
 def stated(value, limit=MAX_TEXT):
-    return isinstance(value, str) and 0 < len(value) <= limit and bool(value.strip())
+    return (
+        isinstance(value, str)
+        and 0 < len(value) <= limit
+        and any(char not in PREDICATE_WHITESPACE for char in value)
+    )
 
 
 def portable_name(value):
-    """A bounded label with one ASCII graphic and no C0 or C1 control."""
+    """A bounded label with an ASCII graphic and no control or line separator."""
     if (
         not stated(value, MAX_NAME)
         or value != value.strip()
@@ -405,6 +413,44 @@ def component_faults(statement):
         for subject in bounded_subjects
         if isinstance(subject.digest, dict)
     }
+
+    # sha256 is the component identity in this predicate. Subject aliases may
+    # add algorithms, but they cannot attach two values to one identity or let
+    # one supported digest stand for two sha256 identities. Without this join,
+    # a later claim could select a different alias for the same component.
+    aliases_by_sha256 = {}
+    supported_digest_owners = {}
+    for index, subject in enumerate(bounded_subjects):
+        identity = subject.digest.get("sha256")
+        if not sha256(identity):
+            continue
+        aliases = aliases_by_sha256.setdefault(identity, {})
+        contradicts_identity = False
+        conflicts_with_identity = False
+        for position, (algorithm, value) in enumerate(subject.digest.items()):
+            if position >= MAX_DIGEST_ALGORITHMS:
+                break
+            if algorithm in aliases and aliases[algorithm] != value:
+                contradicts_identity = True
+            else:
+                aliases[algorithm] = value
+            if algorithm in digests.ALGORITHMS:
+                key = (algorithm, value)
+                owner = supported_digest_owners.get(key)
+                if owner is not None and owner != identity:
+                    conflicts_with_identity = True
+                else:
+                    supported_digest_owners[key] = identity
+        if contradicts_identity:
+            faults.append(
+                "statement subject %d contradicts another digest alias for its sha256 identity"
+                % (index + 1)
+            )
+        if conflicts_with_identity:
+            faults.append(
+                "statement subject %d maps a supported digest to conflicting sha256 identities"
+                % (index + 1)
+            )
 
     names = {}
     paths = {}
