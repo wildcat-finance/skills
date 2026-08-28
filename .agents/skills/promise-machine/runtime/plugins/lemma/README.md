@@ -20,8 +20,8 @@ index, retrieve, answer, grade, or promote an agent. Ariadne may later bind a
 release to its evidence; that does not widen what the chunks themselves prove.
 
 Synkrisis does not treat Lemma chunks as run observations or compare corpora.
-Its current release only specifies a future comparison boundary and supplies a
-command scaffold that refuses every operation.
+Its current release builds a checked cohort of declared run observations and
+infers bounded findings over one; its remaining operations refuse.
 
 Lemma turns Solidity compiler inputs and Markdown documents into JSONL chunks.
 Each chunk uses the same schema and records enough source information for a

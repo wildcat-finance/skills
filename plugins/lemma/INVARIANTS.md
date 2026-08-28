@@ -51,7 +51,7 @@ beside it. `schema.provenance_record()` builds that record and
 a reader cannot recover from the chunks themselves: the source ref, the compiler
 identity, the chunker version, and a digest of every input. Both the record and
 `stamp()` belong to the pipeline above `chunk()`, which still leaves
-`source_ref` and `corpus_build_id` unset. ADR-042 records why the compiler and
+`source_ref` and `corpus_build_id` unset. ADR-043 records why the compiler and
 the chunker version sit in a file beside the chunks rather than on every one of
 them.
 

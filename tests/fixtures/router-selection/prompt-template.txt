@@ -1,5 +1,5 @@
 You are routing one request for the Wildcat Labs skills repository at
-/Users/kethcode/wildcat/skills/tmp/fiat/fiat-499-grade-router-selection-not-just-resolution.
+/home/user/skills.
 
 Read these files, in this order, and read nothing else in the repository:
 

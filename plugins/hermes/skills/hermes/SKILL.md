@@ -32,9 +32,9 @@ must preserve, Janus can constrain hook effects, and the Pashov suite can audit
 the resulting contracts. None of them can replace Hermes's sealed baseline or
 accept a gas candidate on its behalf.
 
-A future Synkrisis comparison may point a person towards a repeated run
-pattern, but it cannot replace Hermes's controlled before-and-after evidence.
-The current Synkrisis scaffold refuses every operation and makes no finding.
+A Synkrisis comparison may point a person towards a repeated run pattern, but
+it cannot replace Hermes's controlled before-and-after evidence. A Synkrisis
+finding is an inferred relation between named events, never a measurement.
 
 The ideas are cheap. The evidence is the job.
 

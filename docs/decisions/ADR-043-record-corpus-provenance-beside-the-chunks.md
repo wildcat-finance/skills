@@ -1,4 +1,4 @@
-# ADR-042: Record corpus provenance beside the chunks
+# ADR-043: Record corpus provenance beside the chunks
 
 ## Status
 

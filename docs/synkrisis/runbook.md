@@ -2,9 +2,9 @@
 
 Derived from [the committed study](study.md) and the runbook attached to
 [issue #449](https://github.com/wildcat-finance/skills/issues/449). Five
-steps, dependency order, each landing only with its exit gates green. Step 1
-is delivered; Steps 2 through 5 are held, and the evolution ledger's Next
-Fiat job names the next one.
+steps, dependency order, each landing only with its exit gates green. All
+five are delivered. Each step's exit below names the gate that held it, and
+the evolution ledger's Next Fiat job now names work beyond this runbook.
 
 ## Step 1: Scaffold Synkrisis and commit its specification (delivered)
 
@@ -22,11 +22,11 @@ that implements it and writing nothing; the scaffold suite under
 check` and `coverage --check` exit 0, with the plugin discovered from disk
 and the scaffold's single refusal promise bound to evidence.
 
-## Step 2: Validate observations and construct one declared cohort (held)
+## Step 2: Validate observations and construct one declared cohort (delivered)
 
 **Goal.** One deterministic cohort from a complete declared manifest and one
 comparison policy, without interpreting events.
-**Exit.** `synkrisis.py cohort` checks producer identity, declared
+**Exit, held at delivery.** `synkrisis.py cohort` checks producer identity, declared
 validation, redaction and binding results, recomputed digests and bound
 prefixes, run and event identity, path form, caps and equality dimensions;
 classifies every declared run as included, excluded or unknown with the
@@ -41,11 +41,11 @@ The cohort and policy schemas land under `references/` with the
 schema-compatibility record, and the comparability decision record lands
 beside ADR-001.
 
-## Step 3: Add the bounded diagnostic rule catalogue (held)
+## Step 3: Add the bounded diagnostic rule catalogue (delivered)
 
 **Goal.** Evidence-linked candidate findings recomputed from one checked
 cohort, with no cause, quality judgement or action.
-**Exit.** `synkrisis.py diagnose` validates the digest-bound
+**Exit, held at delivery.** `synkrisis.py diagnose` validates the digest-bound
 `references/rules-v1.json`, applies only rules whose required dimensions and
 minimum sample counts hold, records every refused rule with its reason, and
 emits deterministic findings carrying cohort and rule digests, exact event
@@ -60,11 +60,11 @@ fractions, duplicate rule ids, tampered cohorts and drifted records. The
 checked-rule and issue-437 decision records land, and all Step 2 gates stay
 green.
 
-## Step 4: Render and verify the exact report (held)
+## Step 4: Render and verify the exact report (delivered)
 
 **Goal.** A readable report whose every claim reconstructs from the
 findings, then whole-path verification.
-**Exit.** `synkrisis.py render` uses fixed templates and refuses findings
+**Exit, held at delivery.** `synkrisis.py render` uses fixed templates and refuses findings
 carrying causal language, a strengthened evidence class or unknown fields;
 `synkrisis.py verify` independently recomputes the cohort, findings and
 report bytes from the original manifest, policy, records and catalogue, and
@@ -73,12 +73,12 @@ rule digest, an unsupported producer identity and an edited narrative, each
 with a stable code and recovery. The committed example report is
 byte-recomputed in the suite, and all earlier gates stay green.
 
-## Step 5: Measure, publish and demonstrate the refusal boundary (held)
+## Step 5: Measure, publish and demonstrate the refusal boundary (delivered)
 
 **Goal.** The completed plugin held to its work budget, its three specified
 promises bound to evidence, and the demonstration path proved from clean
 inputs.
-**Exit.** The benchmark materialises the 100-run, 100,000-event universe
+**Exit, held at delivery.** The benchmark materialises the 100-run, 100,000-event universe
 from the committed fixture specification and holds cohort, diagnose and
 verify to 5.0 seconds and 256 MiB on the recorded runner, printing
 interpreter, platform, specification digest, repetitions and observed
