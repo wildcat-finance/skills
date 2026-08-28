@@ -1172,26 +1172,42 @@
     "contract": "promise-machine-router-selection/v1",
     "documentation": {
       "path": "docs/promise-machine/router-selection-v1.md",
-      "sha256": "13dc05800031cab036832defa0e9ecf96778f557eab40a3642a2a59e0bbaabd6"
+      "sha256": "5778f64cad2bebb4c97c140b27f1228ca33519621c4b37010f4ad0e16c024c54"
     },
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "993de095bf64483d3847120ba320b58d6602162cceac45e83a80de415510dfe1"
+        "sha256": "dd95e91d371a0bfd11c2ff029d01f85d256cc2c215ab9117e07d67264e1dbf22"
+      },
+      {
+        "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
+        "sha256": "ca60f7d10a3749c164440cfdf9b6e9be59e3517a063758f5811d1dde2dcafcbf"
+      },
+      {
+        "path": "tests/fixtures/router-selection/guard-missing-row.json",
+        "sha256": "fb1845089a525fa2b0f90e6b3ab91df14cb6861ce929538251d64d1635eaf027"
       }
     ],
     "promise_id": "promise-machine-router-selection",
+    "reporter": {
+      "path": "tests/emit_router_selection_report.py",
+      "sha256": "24c1bbd5423b1464bd21f43083c2743c304dbdf7f6ebfdf7c9c6fa3a49f7758b"
+    },
     "tests": {
       "path": "tests/test_router_selection.py",
       "selectors": [
         "test_a_malformed_corpus_fails_by_name_rather_than_reading_as_empty",
         "test_a_recorded_run_block_matches_the_corpus_digest",
+        "test_a_router_row_with_no_case_fails_the_coverage_check",
+        "test_an_altered_deciding_sentence_fails_the_prose_binding_check",
         "test_every_case_carries_the_required_fields_and_a_unique_id",
         "test_every_deciding_sentence_occurs_in_the_file_it_names",
+        "test_every_declared_pair_has_at_least_one_contested_case",
         "test_every_expected_canonical_name_is_a_real_canonical_skill",
+        "test_every_router_row_is_named_by_at_least_one_case",
         "test_the_corpus_declares_the_supported_schema"
       ],
-      "sha256": "ce2e550444a0585ebbbc15fb582d0c6541711511ac4ccbe04f17dca54dd0a07e"
+      "sha256": "80152eccdf37528733cc4fe3dc3d303958ad952737f3738d7d9c577fcbad8422"
     },
     "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
   },

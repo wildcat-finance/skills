@@ -31,7 +31,7 @@ The corpus is one JSON object with four keys.
 - `deciding_sentence`, an object of `path`, `section` and `text`.
 - `not_established`, the nearest overclaim this selection does not support.
 
-`pairs` is an array of the sibling boundaries the corpus grades. Each pair
+`pairs` is a non-empty array of the sibling boundaries the corpus grades. Each pair
 carries an `id`, the `skills` it separates, and the `deciding_sentence` that
 separates them.
 
@@ -43,6 +43,13 @@ run carries `model`, `date`, `prompt_template_sha256`, `corpus_sha256`,
 
 A case quotes the clause naming its own skill. A pair quotes the whole sentence
 that separates its members, because the separation is what the pair is about.
+Where the two quotable files hold no such sentence, the pair is one the corpus
+declares in order to record that gap, and it quotes the router rule that
+disposes of it instead. `elenchus-metron` is the one such pair: neither name
+occurs anywhere in `AGENTS.md`, and in the router each occurs only in its own
+table row, so nothing separates them and `RS-33` expects a refusal. The checker
+holds every quotation to its occurrence in the named section and does not read
+which of the two a pair carries.
 
 Two files may be quoted: `AGENTS.md` and
 `.agents/skills/promise-machine/SKILL.md`. That set is closed in the checker,
@@ -59,7 +66,10 @@ That the corpus declares this schema. That every case has exactly the fields
 above, with a unique id and an expectation the checker recognises. That every
 canonical name a case expects or contests, and every name a pair separates, is
 the frontmatter name of a real `SKILL.md` under `plugins/`. That every quoted
-sentence still occurs in the section of the file the entry names. And that any
+sentence still occurs in the section of the file the entry names. That every
+row of the router's two selection tables is named by at least one case. That
+every pair the corpus declares is contested by at least one case, whose
+`contested` list holds all of the skills that pair separates. And that any
 recorded run block carries the eight fields above with a `corpus_sha256` that
 recomputes from the cases on disk.
 
@@ -92,6 +102,12 @@ Reporting the corpus's coverage and the latest recorded run through
 `tests/emit_router_selection_report.py`, and citing a recorded run with the
 model, date and corpus digest it names attached. Nothing else.
 
+The `router_selection` capability entry pins that reporter's bytes beside the
+corpus, the guard fixtures, the checker and this document. Without the pin the
+authorised surface was the one surface nothing held: the reporter could be
+rewritten to echo a request or a deciding sentence, which is the contamination
+the report exists to avoid, and no digest would move.
+
 ## Refuses
 
 A corpus that is absent, unreadable, not UTF-8 or not JSON. A corpus declaring a
@@ -112,6 +128,22 @@ non-empty exactly as a case's is. A run block whose field set the schema
 does not name, whose digest disagrees with the cases on disk, or whose case,
 pass and fail counts cannot all be true: every case the run covered was passed
 or failed, and a run records every failing case id.
+
+On coverage, which the two checks over the router's tables and the corpus's
+pairs block add. A router row whose canonical selection no case expects. Two
+rows selecting the same canonical skill, because a named row is matched by its
+skill rather than by its predicate, so one case would stand in for both and the
+second row would arrive graded by nothing. The
+one row that names no canonical skill, the vendored Pashov suite's, quoted by
+no case that selects; a case that refuses does not cover it. A selection cell
+that is neither a canonical name in backticks nor that row's known phrase,
+because a row the check cannot read is a row it would pass unexamined. A router
+carrying no `## Select one runtime contract` section, or that section carrying
+no selection table. A section whose parsed rows and table lines disagree, which
+is what a parser that skipped a row looks like. A corpus declaring no pairs at
+all, refused for the reason an empty case list is. A declared pair no case
+contests in full, since a case holding only some of its members leaves the rest
+ungraded. And a pair carrying no list of separated skills to contest.
 
 ## Recovery
 
