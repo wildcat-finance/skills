@@ -42,6 +42,13 @@ class ProviderProfile:
     retention: str
     allowed_data_classes: tuple[str, ...]
     limit_ceilings: Mapping[str, int]
+    scheme: str
+    hostname: str
+    port: int
+    credential_environment: str
+    authorization_scheme: str
+    provider_request_schema: str
+    provider_response_schema: str
 
     def policy_fields(self) -> dict[str, object]:
         return {
@@ -97,6 +104,13 @@ LOOPBACK_TEXT_V1 = ProviderProfile(
     retention="process-memory-only",
     allowed_data_classes=("synthetic-public",),
     limit_ceilings=_LOOPBACK_CEILINGS,
+    scheme="https",
+    hostname="model-proxy.loopback.invalid",
+    port=443,
+    credential_environment="WILDCAT_MODEL_PROXY_CREDENTIAL",
+    authorization_scheme="Bearer",
+    provider_request_schema="synthetic-provider-request/v1",
+    provider_response_schema="synthetic-provider-response/v1",
 )
 
 
