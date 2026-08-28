@@ -34,6 +34,11 @@ USAGE_ERROR = 2
 READ_ERRORS = (envelope.EnvelopeError, StatementError, safejson.InputError)
 
 
+def print_read_error(path, error):
+    """Emit one line even when a rejected document supplied the reason."""
+    print(gates.one_line("%s: %s" % (path, error)), file=sys.stderr)
+
+
 def load_document(path, max_bytes, max_depth):
     """Read and parse a file, bounded twice: on disk and in the parser."""
     if not os.path.exists(path):
@@ -82,7 +87,7 @@ def cmd_inspect(args):
     try:
         document = load_document(args.file, args.max_bytes, args.max_depth)
     except READ_ERRORS as error:
-        print("%s: %s" % (args.file, error), file=sys.stderr)
+        print_read_error(args.file, error)
         return USAGE_ERROR
 
     found = document.statement
@@ -117,7 +122,7 @@ def cmd_verify(args):
     try:
         document = load_document(args.file, args.max_bytes, args.max_depth)
     except READ_ERRORS as error:
-        print("%s: %s" % (args.file, error), file=sys.stderr)
+        print_read_error(args.file, error)
         return USAGE_ERROR
 
     report = verify.report(document, registry.DEFAULT)
@@ -360,7 +365,7 @@ def cmd_replay(args):
     try:
         document = load_document(args.file, args.max_bytes, args.max_depth)
     except READ_ERRORS as error:
-        print("%s: %s" % (args.file, error), file=sys.stderr)
+        print_read_error(args.file, error)
         return USAGE_ERROR
 
     if args.allow_execution and not args.project:

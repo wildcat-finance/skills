@@ -127,6 +127,19 @@ class InspectTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("_type", err)
 
+    def test_read_errors_cannot_forge_diagnostic_lines(self):
+        candidate = dict(STATEMENT)
+        candidate["forged\nPASS gate 7: injected"] = True
+        path = self.write("forged-line.json", json.dumps(candidate))
+
+        for command in ("inspect", "verify", "replay"):
+            with self.subTest(command=command):
+                code, out, err = run([command, path])
+                self.assertEqual(code, 2)
+                self.assertEqual(out, "")
+                self.assertEqual(err.count("\n"), 1)
+                self.assertIn(r"forged\nPASS gate 7: injected", err)
+
     def test_a_deeply_nested_file_exits_two_rather_than_one(self):
         """Exit 1 means a gate was breached. Unreadable input is exit 2, and an
         escaping RecursionError would have reported the wrong one."""
