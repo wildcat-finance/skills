@@ -13,11 +13,21 @@ import posixpath
 import re
 import unicodedata
 
-from .. import digests
+from .. import core_predicate, digests
 from ..gates import Gate
 
 TYPE = "https://ariadne.wildcat.finance/grounded-agent/v1"
 SUMMARY = "a grounded-agent release: pinned inputs, produced answers and policy"
+EXPECTED_RESULTS = (
+    (2, "environment"),
+    (5, "comparison"),
+    (None, "predicate-fields"),
+    (None, "components"),
+    (None, "release-digest"),
+    (None, "optional-evidence"),
+    (None, "evidence-boundary"),
+    (None, "subject-names"),
+)
 
 # Public Berean wire constants are copied deliberately.  Ariadne has no runtime
 # dependency on a sibling plugin; a checkout-only drift test compares these with
@@ -71,6 +81,23 @@ BEREAN_RELEASE_DOCUMENT = "release.json"
 BEREAN_PROMOTIONS_FILE = "promotions.jsonl"
 BEREAN_PROMOTION_FORMAT = "berean-promotion/v1"
 BEREAN_PROMOTION_ACTIONS = ("promote", "rollback")
+BEREAN_MAX_PROMOTION_RECORDS = 1000
+BEREAN_EVALUATION_RESULT_FIELDS = (
+    "thresholds",
+    "cases",
+    "passed",
+    "failed",
+)
+BEREAN_EVALUATION_REPORT_ONLY_FIELDS = ("failures",)
+BEREAN_THRESHOLD_FIELDS = ("failures_allowed",)
+FORBIDDEN_BEREAN_RESULT_KEYS = frozenset(
+    BEREAN_EVALUATION_RESULT_FIELDS
+    + BEREAN_EVALUATION_REPORT_ONLY_FIELDS
+    + BEREAN_THRESHOLD_FIELDS
+)
+FORBIDDEN_BEREAN_RESULT_KEYS_BY_NORMAL = {
+    core_predicate.compatibility_key(key): key for key in FORBIDDEN_BEREAN_RESULT_KEYS
+}
 
 COMPONENT_FIELDS = ("name", "path", "sha256", "bytes")
 RELEASE_FIELDS = ("format", "release_version", "release_digest", "document")
@@ -130,10 +157,32 @@ MAX_NAME = 256
 MAX_TEXT = 4096
 MAX_POLICY_ITEMS = 256
 MAX_COMMAND_WORDS = 128
+MAX_CLAIMS = 1024
+MAX_COMMANDS = 1024
+# Digest maps stay extensible without letting each claim-by-subject comparison
+# multiply an input-sized algorithm list.  Three slots cover every algorithm
+# Ariadne currently proves; five remain for transition metadata.
+MAX_DIGEST_ALGORITHMS = 8
+
+CLAIM_REQUIRED_FIELDS = ("name", "subject", "disposition")
+COMMAND_REQUIRED_FIELDS = ("name", "argv", "determinism")
+CORE_LIMITS = {
+    "subjects": MAX_SUBJECTS,
+    "claims": MAX_CLAIMS,
+    "commands": MAX_COMMANDS,
+    "command_words": MAX_COMMAND_WORDS,
+    "digest_algorithms": MAX_DIGEST_ALGORITHMS,
+}
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 HASH32 = re.compile(r"^0x[0-9a-f]{64}$")
 ADDRESS = re.compile(r"^0x[0-9a-f]{40}$")
+CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
+SURROGATE = re.compile(r"[\ud800-\udfff]")
+PREDICATE_WHITESPACE = frozenset(
+    "\t\n\v\f\r\x1c\x1d\x1e\x1f \x85\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005"
+    "\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
+)
 ZERO_HASH = "0x" + "0" * 64
 
 
@@ -143,16 +192,28 @@ def whole_number(value):
 
 
 def stated(value, limit=MAX_TEXT):
-    return isinstance(value, str) and 0 < len(value) <= limit and bool(value.strip())
+    return (
+        isinstance(value, str)
+        and 0 < len(value) <= limit
+        and any(char not in PREDICATE_WHITESPACE for char in value)
+    )
 
 
 def portable_name(value):
-    """A bounded visible label with no control, format or private-use codepoint."""
-    if not stated(value, MAX_NAME) or value != value.strip():
+    """A bounded label with an ASCII graphic and no control or line separator."""
+    if (
+        not stated(value, MAX_NAME)
+        or value != value.strip()
+        # JSON Schema patterns use ECMA-262, whose whitespace set includes the
+        # byte-order mark. Python's strip does not, so name and path edges must
+        # refuse it explicitly to keep the two public validators aligned.
+        or value.startswith("\ufeff")
+        or value.endswith("\ufeff")
+    ):
         return False
     if not any("!" <= char <= "~" for char in value):
         return False
-    return not any(unicodedata.category(char).startswith("C") for char in value)
+    return CONTROL.search(value) is None and SURROGATE.search(value) is None
 
 
 def usable_path(value):
@@ -196,6 +257,23 @@ def _shape(value, label, fields, faults):
     if missing:
         faults.append("%s is missing %s" % (label, ", ".join(missing)))
     unknown = sorted(set(value) - set(fields))
+    if unknown:
+        faults.append(
+            "%s carries fields this type does not define: %s"
+            % (label, ", ".join(unknown))
+        )
+    return not missing
+
+
+def _record_shape(value, label, required, allowed, faults):
+    """Append faults for a closed record with optional allowed fields."""
+    if not isinstance(value, dict):
+        faults.append("%s must be an object" % label)
+        return False
+    missing = [field for field in required if field not in value]
+    if missing:
+        faults.append("%s is missing %s" % (label, ", ".join(missing)))
+    unknown = sorted(set(value) - set(allowed))
     if unknown:
         faults.append(
             "%s carries fields this type does not define: %s"
@@ -284,6 +362,27 @@ def field_faults(predicate):
                 COMPARISON_SIDE_FIELDS,
                 faults,
             )
+
+    claims = predicate.get("claims")
+    if _bounded_list(claims, "claims", MAX_CLAIMS, faults):
+        for index, claim in enumerate(claims[:MAX_CLAIMS]):
+            _record_shape(
+                claim,
+                "claim %d" % (index + 1),
+                CLAIM_REQUIRED_FIELDS,
+                core_predicate.CLAIM_FIELDS,
+                faults,
+            )
+    commands = predicate.get("commands")
+    if _bounded_list(commands, "commands", MAX_COMMANDS, faults):
+        for index, command in enumerate(commands[:MAX_COMMANDS]):
+            _record_shape(
+                command,
+                "command %d" % (index + 1),
+                COMMAND_REQUIRED_FIELDS,
+                core_predicate.COMMAND_FIELDS,
+                faults,
+            )
     return faults
 
 
@@ -331,9 +430,97 @@ def component_faults(statement):
             % (len(statement.subjects), MAX_SUBJECTS)
         )
 
+    # `Statement.covers` scans the complete subject list.  Once the public
+    # ceiling is exceeded, calling it once per component would let a refused
+    # statement turn a count bound into component-by-subject work.  Build the
+    # only relation this predicate accepts from the bounded prefix instead.
+    bounded_subjects = statement.subjects[:MAX_SUBJECTS]
+    subject_sha256 = {
+        subject.digest.get("sha256")
+        for subject in bounded_subjects
+        if isinstance(subject.digest, dict)
+    }
+
+    # sha256 is the component identity in this predicate. Subject aliases may
+    # add algorithms, but they cannot attach two values to one identity or let
+    # one supported digest stand for two sha256 identities. Without this join,
+    # a later claim could select a different alias for the same component.
+    aliases_by_sha256 = {}
+    supported_digest_owners = {}
+    for index, subject in enumerate(bounded_subjects):
+        identity = subject.digest.get("sha256")
+        if not sha256(identity):
+            continue
+        aliases = aliases_by_sha256.setdefault(identity, {})
+        contradicts_identity = False
+        conflicts_with_identity = False
+        for position, (algorithm, value) in enumerate(subject.digest.items()):
+            if position >= MAX_DIGEST_ALGORITHMS:
+                break
+            if algorithm in aliases and aliases[algorithm] != value:
+                contradicts_identity = True
+            else:
+                aliases[algorithm] = value
+            if algorithm in digests.ALGORITHMS:
+                key = (algorithm, value)
+                owner = supported_digest_owners.get(key)
+                if owner is not None and owner != identity:
+                    conflicts_with_identity = True
+                else:
+                    supported_digest_owners[key] = identity
+        if contradicts_identity:
+            faults.append(
+                "statement subject %d contradicts another digest alias for its sha256 identity"
+                % (index + 1)
+            )
+        if conflicts_with_identity:
+            faults.append(
+                "statement subject %d maps a supported digest to conflicting sha256 identities"
+                % (index + 1)
+            )
+
+    # A claim can carry more than one algorithm. Gate 1 accepts it when one
+    # statement subject agrees on every shared algorithm, which deliberately
+    # permits transition metadata that the matching subject does not yet carry.
+    # It must not, however, bridge two identities already established by this
+    # statement: that would make one claim about two different byte subjects.
+    claims = core_predicate.claims(statement.predicate) or []
+    for index, claim in enumerate(claims[:MAX_CLAIMS]):
+        claim_digest = claim.get("subject") if isinstance(claim, dict) else None
+        if not isinstance(claim_digest, dict):
+            continue
+        owners = set()
+        for position, (algorithm, value) in enumerate(claim_digest.items()):
+            if position >= MAX_DIGEST_ALGORITHMS:
+                break
+            owner = supported_digest_owners.get((algorithm, value))
+            if owner is not None:
+                owners.add(owner)
+        if len(owners) > 1:
+            faults.append(
+                "claim %d maps supported digests to conflicting sha256 identities"
+                % (index + 1)
+            )
+        elif len(owners) == 1:
+            owner = next(iter(owners))
+            aliases = aliases_by_sha256.get(owner, {})
+            contradicts_alias = False
+            for position, (algorithm, value) in enumerate(claim_digest.items()):
+                if position >= MAX_DIGEST_ALGORITHMS:
+                    break
+                if algorithm in aliases and aliases[algorithm] != value:
+                    contradicts_alias = True
+                    break
+            if contradicts_alias:
+                faults.append(
+                    "claim %d contradicts a known digest alias for its sha256 identity"
+                    % (index + 1)
+                )
+
     names = {}
     paths = {}
-    valid_digests = []
+    valid_digests = set()
+    digest_bytes = {}
     total_bytes = 0
     for label, entry in found:
         if not isinstance(entry, dict):
@@ -365,8 +552,8 @@ def component_faults(statement):
         if not sha256(digest):
             faults.append("%s sha256 is not 64 lowercase hex characters" % label)
         else:
-            valid_digests.append(digest)
-            if not statement.covers({"sha256": digest}):
+            valid_digests.add(digest)
+            if digest not in subject_sha256:
                 faults.append("%s is not a subject of this statement" % label)
         if not whole_number(byte_count) or not 0 <= byte_count <= MAX_COMPONENT_BYTES:
             faults.append(
@@ -375,9 +562,17 @@ def component_faults(statement):
             )
         else:
             total_bytes += byte_count
+            if sha256(digest):
+                if digest in digest_bytes and digest_bytes[digest] != byte_count:
+                    faults.append(
+                        "%s bytes disagree with another component carrying the same sha256"
+                        % label
+                    )
+                else:
+                    digest_bytes[digest] = byte_count
 
-    for index, subject in enumerate(statement.subjects[:MAX_SUBJECTS]):
-        if not any(digests.agree(subject.digest, {"sha256": value}) for value in valid_digests):
+    for index, subject in enumerate(bounded_subjects):
+        if subject.digest.get("sha256") not in valid_digests:
             faults.append(
                 "statement subject %d does not name a declared component"
                 % (index + 1)
@@ -436,6 +631,82 @@ def _policy_faults(predicate):
     return faults
 
 
+def _berean_result_keys(value, budget):
+    """The closed Berean result vocabulary projected through an open object.
+
+    Compatibility and case folding treat demonstrably equivalent identifier
+    spellings as the same finite wire key. Oversized keys are refused by core
+    gates 4 and 7 before either classifier normalises them.
+    """
+    found = set()
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, dict):
+            for key, child in current.items():
+                normal = (
+                    core_predicate.compatibility_key(key)
+                    if budget.accept(key)
+                    else None
+                )
+                if normal in FORBIDDEN_BEREAN_RESULT_KEYS_BY_NORMAL:
+                    found.add(FORBIDDEN_BEREAN_RESULT_KEYS_BY_NORMAL[normal])
+                pending.append(child)
+        elif isinstance(current, list):
+            pending.extend(current)
+    return found
+
+
+def _result_projection_faults(statement):
+    """Refuse Berean thresholds and result counts on open extension surfaces."""
+    surfaces = []
+    predicate = statement.predicate
+    if isinstance(predicate, dict):
+        adapter = predicate.get("adapter")
+        if isinstance(adapter, dict):
+            surfaces.append(adapter.get("parameters_digest"))
+        for field, limit in (("claims", MAX_CLAIMS), ("commands", MAX_COMMANDS)):
+            entries = predicate.get(field)
+            if not isinstance(entries, list):
+                continue
+            for entry in entries[:limit]:
+                if not isinstance(entry, dict):
+                    continue
+                surfaces.append(entry.get("detail"))
+                surfaces.append(
+                    entry.get("subject")
+                    if field == "claims"
+                    else entry.get("output_digest")
+                )
+    for subject in statement.subjects[:MAX_SUBJECTS]:
+        surfaces.append(subject.digest)
+        surfaces.append(subject.extra)
+
+    found = set()
+    budget = core_predicate.StructuredKeyBudget()
+    for surface in surfaces:
+        found.update(_berean_result_keys(surface, budget))
+    faults = []
+    if budget.refused:
+        faults.append(
+            "statement carries %d evidence key(s) outside the %d-character "
+            "scan limit or %d-character aggregate scan budget"
+            % (
+                budget.refused,
+                core_predicate.MAX_STRUCTURED_KEY_CHARACTERS,
+                core_predicate.MAX_STRUCTURED_KEY_CHARACTERS_TOTAL,
+            )
+        )
+    if found:
+        faults.append(
+            "statement projects Berean evaluation threshold or result key(s): %s"
+            % ", ".join(sorted(found))
+        )
+    if not faults:
+        return []
+    return faults
+
+
 def _adapter_faults(predicate):
     adapter = predicate.get("adapter") if isinstance(predicate, dict) else None
     if not isinstance(adapter, dict):
@@ -449,10 +720,87 @@ def _adapter_faults(predicate):
         faults.append("adapter command must be 1 to %d argv strings" % MAX_COMMAND_WORDS)
     elif not all(stated(word) for word in command):
         faults.append("adapter command entries must be non-blank bounded strings")
+    _bounded_digest(
+        adapter.get("parameters_digest"), "adapter parameters_digest", faults
+    )
+    return faults
+
+
+def _bounded_digest(value, label, faults):
+    """Validate one digest map and retain the predicate's work ceiling."""
     try:
-        digests.check(adapter.get("parameters_digest"))
+        digests.check(value)
     except digests.DigestError as error:
-        faults.append("adapter parameters_digest: %s" % error)
+        faults.append("%s: %s" % (label, error))
+        return False
+    if len(value) > MAX_DIGEST_ALGORITHMS:
+        faults.append(
+            "%s has %d algorithms; at most %d are accepted"
+            % (label, len(value), MAX_DIGEST_ALGORITHMS)
+        )
+        return False
+    return True
+
+
+def _core_block_faults(predicate):
+    """Hold this predicate's core blocks to its published bounded schema."""
+    if not isinstance(predicate, dict):
+        return ["predicate must be an object"]
+    faults = []
+    claims = predicate.get("claims")
+    if isinstance(claims, list):
+        for index, claim in enumerate(claims[:MAX_CLAIMS]):
+            label = "claim %d" % (index + 1)
+            if not isinstance(claim, dict):
+                continue
+            if not portable_name(claim.get("name")):
+                faults.append("%s name is not a portable bounded label" % label)
+            _bounded_digest(claim.get("subject"), "%s subject" % label, faults)
+            disposition = claim.get("disposition")
+            if disposition not in core_predicate.DISPOSITIONS:
+                faults.append("%s disposition is outside the core vocabulary" % label)
+            reason = claim.get("reason")
+            if "reason" in claim and (
+                not isinstance(reason, str) or len(reason) > MAX_TEXT
+            ):
+                faults.append("%s reason must be a bounded string when present" % label)
+            if disposition in core_predicate.NEEDS_REASON and not stated(reason):
+                faults.append("%s disposition needs a stated bounded reason" % label)
+            detail = claim.get("detail")
+            if "detail" in claim and not isinstance(detail, dict):
+                faults.append("%s detail must be an object when present" % label)
+
+    commands = predicate.get("commands")
+    if isinstance(commands, list):
+        for index, command in enumerate(commands[:MAX_COMMANDS]):
+            label = "command %d" % (index + 1)
+            if not isinstance(command, dict):
+                continue
+            if not portable_name(command.get("name")):
+                faults.append("%s name is not a portable bounded label" % label)
+            argv = command.get("argv")
+            if (
+                not isinstance(argv, list)
+                or not argv
+                or len(argv) > MAX_COMMAND_WORDS
+            ):
+                faults.append(
+                    "%s argv must carry 1 to %d entries"
+                    % (label, MAX_COMMAND_WORDS)
+                )
+            elif not all(stated(word) for word in argv):
+                faults.append("%s argv entries must be bounded stated strings" % label)
+            determinism = command.get("determinism")
+            if determinism not in core_predicate.DETERMINISM:
+                faults.append("%s determinism is outside the core vocabulary" % label)
+            output = command.get("output_digest")
+            if "output_digest" in command:
+                _bounded_digest(output, "%s output_digest" % label, faults)
+            elif determinism == "exact":
+                faults.append("%s exact command needs an output_digest" % label)
+            detail = command.get("detail")
+            if "detail" in command and not isinstance(detail, dict):
+                faults.append("%s detail must be an object when present" % label)
     return faults
 
 
@@ -551,19 +899,40 @@ def optional_faults(predicate):
                 faults.append("promotion component path must be %s" % BEREAN_PROMOTIONS_FILE)
             terminal = promotion.get("terminal")
             if isinstance(terminal, dict):
-                if not whole_number(terminal.get("sequence")) or terminal.get("sequence", 0) < 1:
-                    faults.append("promotion terminal sequence must be a positive whole number")
-                if terminal.get("action") not in BEREAN_PROMOTION_ACTIONS:
+                sequence = terminal.get("sequence")
+                action = terminal.get("action")
+                if (
+                    not whole_number(sequence)
+                    or not 1 <= sequence <= BEREAN_MAX_PROMOTION_RECORDS
+                ):
+                    faults.append(
+                        "promotion terminal sequence must be a whole number from 1 to %d"
+                        % BEREAN_MAX_PROMOTION_RECORDS
+                    )
+                if action not in BEREAN_PROMOTION_ACTIONS:
                     faults.append("promotion terminal action is outside promote and rollback")
                 if not sha256(terminal.get("target_release_digest")):
                     faults.append("promotion terminal target_release_digest is malformed")
                 release = predicate.get("release")
                 if (
-                    terminal.get("action") == "promote"
+                    action in BEREAN_PROMOTION_ACTIONS
+                    and evaluations is None
+                ):
+                    faults.append("a promotion terminal requires evaluations")
+                if (
+                    action == "promote"
                     and isinstance(release, dict)
                     and terminal.get("target_release_digest") != release.get("release_digest")
                 ):
                     faults.append("a promote terminal must target this release digest")
+                if (
+                    action == "rollback"
+                    and isinstance(release, dict)
+                    and terminal.get("target_release_digest") == release.get("release_digest")
+                ):
+                    faults.append("a rollback terminal must target another release")
+                if action == "rollback" and sequence == 1:
+                    faults.append("a rollback terminal cannot be the first promotion record")
         if promotion_reason is not None:
             faults.append(
                 "promotion_absence_reason must be null when promotion is present"
@@ -640,6 +1009,7 @@ def gate_2_environment(statement):
     faults.extend(_given_faults(predicate))
     faults.extend(_policy_faults(predicate))
     faults.extend(_adapter_faults(predicate))
+    faults.extend(_core_block_faults(predicate))
     component_errors, count, _ = component_faults(statement)
     faults.extend(component_errors)
     faults.extend(optional_faults(predicate))
@@ -702,6 +1072,7 @@ def gate_5_comparison(statement):
 
 def gate_fields(statement):
     faults = field_faults(statement.predicate)
+    faults.extend(_core_block_faults(statement.predicate))
     return Gate(
         None,
         "predicate-fields",
@@ -774,13 +1145,14 @@ def gate_optional_evidence(statement):
 
 def gate_evidence_boundary(statement):
     faults = _policy_faults(statement.predicate)
+    faults.extend(_result_projection_faults(statement))
     return Gate(
         None,
         "evidence-boundary",
         not faults,
         "; ".join(faults)
         if faults
-        else "Berean source and evidence classes are preserved without upgrade",
+        else "Berean source and evidence classes are preserved without upgrade or result projection",
     )
 
 

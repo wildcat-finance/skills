@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11072152,
+  "total_bytes": 11140688,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -517,9 +517,9 @@
       "source": "plugins/ariadne/docs/design.md"
     },
     {
-      "bytes": 5011,
+      "bytes": 6338,
       "path": "plugins/ariadne/docs/grounded-agent.md",
-      "sha256": "7a83cbc79216db88273d3c9caaf31f0fe54948b1a7c29211c58a17d874840be2",
+      "sha256": "21cc9fbb4ea5d4d146f924efc2de725db644dac1999f6384913c581d938698a7",
       "source": "plugins/ariadne/docs/grounded-agent.md"
     },
     {
@@ -583,33 +583,33 @@
       "source": "plugins/ariadne/schemas/dataset-v1.json"
     },
     {
-      "bytes": 16592,
+      "bytes": 39448,
       "path": "plugins/ariadne/schemas/grounded-agent-v1.json",
-      "sha256": "9aef6ca87ddd2c5a29c90cfcd5b7257dbc334730289a14e09f849f8bbc1079b4",
+      "sha256": "946c691ab9d457061e933a2858f4b5ef38cd5c42829cf226c84d1e022249a0d4",
       "source": "plugins/ariadne/schemas/grounded-agent-v1.json"
     },
     {
-      "bytes": 11076,
+      "bytes": 11522,
       "path": "plugins/ariadne/schemas/solidity-release-v1.json",
-      "sha256": "d9b9eafc74bbf50d886d4933f26c47d7de6165b361cf35c8f43b681086b5a956",
+      "sha256": "6a0d6b9d5b98ec49658f5a8cc876f90bf8260c7ad44e1926295433e238ffbc58",
       "source": "plugins/ariadne/schemas/solidity-release-v1.json"
     },
     {
-      "bytes": 13719,
+      "bytes": 13827,
       "path": "plugins/ariadne/schemas/state-fixture-v1.json",
-      "sha256": "a29435b312d68a2c1911bb82192935cddd24849612e31171537a86f1adccda2f",
+      "sha256": "d82bbced823dbd2f09c5c9b804c4f46b3a7a26ff4099a5d6d7f819a7a5092473",
       "source": "plugins/ariadne/schemas/state-fixture-v1.json"
     },
     {
-      "bytes": 7724,
+      "bytes": 7770,
       "path": "plugins/ariadne/schemas/state-fixture-v2.json",
-      "sha256": "eb933ce3f99cfc0a8eafb4636d90a280018000c37a732f4c34293f4161dc9717",
+      "sha256": "ab605b830876f26b4348ed5ad8435559445403c2d1200133538e94434a8b0737",
       "source": "plugins/ariadne/schemas/state-fixture-v2.json"
     },
     {
-      "bytes": 19651,
+      "bytes": 20611,
       "path": "plugins/ariadne/scripts/ariadne.py",
-      "sha256": "ba45c1fcfba8a2bf9cafbcf09b97c752d3c756eee97cd5d4124da94bea359412",
+      "sha256": "e8e38c62307737c32c82caac7782c15032edc6383655c50b96a0ec0b158f8156",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     {
@@ -637,9 +637,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/foundry.py"
     },
     {
-      "bytes": 33706,
+      "bytes": 33710,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py",
-      "sha256": "15b564aa4bc3965306b9459ca1264c0500a1cac0d9d2be1e002a431805a87c1e",
+      "sha256": "ba640ba3e9a4f9c9a56d5127649f89ddd2975105c4e588f49036c2a094bb4677",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py"
     },
     {
@@ -649,9 +649,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/tree.py"
     },
     {
-      "bytes": 4181,
+      "bytes": 5819,
       "path": "plugins/ariadne/scripts/ariadne_lib/core_predicate.py",
-      "sha256": "f53891fdd6f9dc629916ecd738812db5f83d2733afe8b0896179fe7577a97ff9",
+      "sha256": "c99946bbd366365ed89ebada833028a56ccbd80724028b07b8fbe439f9ed51a0",
       "source": "plugins/ariadne/scripts/ariadne_lib/core_predicate.py"
     },
     {
@@ -661,9 +661,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/deltas.py"
     },
     {
-      "bytes": 8186,
+      "bytes": 8544,
       "path": "plugins/ariadne/scripts/ariadne_lib/digests.py",
-      "sha256": "94d6720e58b7a20c2d1fec7b9896adda64d104f13e176d21b7735eae29476e72",
+      "sha256": "68cf7bf2ebabe19d09868c6407861a320c8565b8689049a5b23aa3245e900b9d",
       "source": "plugins/ariadne/scripts/ariadne_lib/digests.py"
     },
     {
@@ -673,9 +673,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/envelope.py"
     },
     {
-      "bytes": 11630,
+      "bytes": 25514,
       "path": "plugins/ariadne/scripts/ariadne_lib/gates.py",
-      "sha256": "5853b9027b773fd6360ca41f20f02d29c458e9de1aaf07c02c65a6bdfbd0e7a0",
+      "sha256": "50b3a8d2b1480a76ec67e29d9efa6bf6611926550693194c0566fdd42c302a04",
       "source": "plugins/ariadne/scripts/ariadne_lib/gates.py"
     },
     {
@@ -685,45 +685,45 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/__init__.py"
     },
     {
-      "bytes": 23885,
+      "bytes": 24029,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py",
-      "sha256": "fd5ce107bafb891acbbe42c55ccb6b4b7f472d738a0111319913aa526a76996e",
+      "sha256": "c94f8c6ab8d81415c17e03f2ef091c08285c12466cff6cebc0d9d4b8a39e1406",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py"
     },
     {
-      "bytes": 32140,
+      "bytes": 47417,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py",
-      "sha256": "303701e7929c562dd7f0482dff10cf6158b492b6e9e438a1ccac988388e0fa5a",
+      "sha256": "e1e24b42e716032bda4543d77ad71abce36cb1a861edaf0e8225baa1729b0931",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py"
     },
     {
-      "bytes": 17785,
+      "bytes": 18395,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/solidity_release.py",
-      "sha256": "a1d006297c644715255736d352fd484f1a76a16eae08014284ca1e3ecc1da353",
+      "sha256": "8749a8e68c9855022bdad3c1108544ea517a864f8c90c7ef2b209fa2853d23be",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/solidity_release.py"
     },
     {
-      "bytes": 38864,
+      "bytes": 39217,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/state_fixture.py",
-      "sha256": "5515a1eac44fd904facb12345e687be9f9e928c46d7ca64bfebe8d00f6d9975f",
+      "sha256": "e5026047f4a48551f4d84a854a339b7af07dd50ca529f7582e28b07b7a2e1aaf",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/state_fixture.py"
     },
     {
-      "bytes": 2439,
+      "bytes": 2604,
       "path": "plugins/ariadne/scripts/ariadne_lib/registry.py",
-      "sha256": "17ba0cf5ceb062e5868894e0d5503da49ada525457c162bcc38b0aa7b2c76d0e",
+      "sha256": "5426a60bcd3f12f4a1af0a6ddbba860865290a190df4d6c1fdad4e93e074a296",
       "source": "plugins/ariadne/scripts/ariadne_lib/registry.py"
     },
     {
-      "bytes": 8665,
+      "bytes": 11909,
       "path": "plugins/ariadne/scripts/ariadne_lib/replay.py",
-      "sha256": "6d3b9d17a9a87dd3a1f3c549b187b430a214ed87312d1383af2ede36caaeded4",
+      "sha256": "c067ccc3af1ad6941fdee90367f509917122a22e7fff3872b910f709474a3cb3",
       "source": "plugins/ariadne/scripts/ariadne_lib/replay.py"
     },
     {
-      "bytes": 3081,
+      "bytes": 4365,
       "path": "plugins/ariadne/scripts/ariadne_lib/safejson.py",
-      "sha256": "f85e323c6680b571d3987cb1da2a3156b02f859757cbdfd0d5bbe6a82c88ebd8",
+      "sha256": "7611de4eddd9e9190b2a37a7f95d389d232c864aef4857e279a376a93e696080",
       "source": "plugins/ariadne/scripts/ariadne_lib/safejson.py"
     },
     {
@@ -739,9 +739,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/statement.py"
     },
     {
-      "bytes": 5072,
+      "bytes": 10337,
       "path": "plugins/ariadne/scripts/ariadne_lib/verify.py",
-      "sha256": "a434eb1dbbf328a64d5b364d83135b09c508cda0462297a742ce8f5dfa5b98be",
+      "sha256": "72d4d082c67b100a8e812eb2f9401b9dd4abd58062a54abf5524834d2555691d",
       "source": "plugins/ariadne/scripts/ariadne_lib/verify.py"
     },
     {
@@ -751,9 +751,9 @@
       "source": "plugins/ariadne/skills/ariadne/EVOLUTION.md"
     },
     {
-      "bytes": 20770,
+      "bytes": 21337,
       "path": "plugins/ariadne/skills/ariadne/SKILL.md",
-      "sha256": "ca048c9d2f33964e50a0b66490a1ee0925c18c897ec771b7ac7a2a284b548195",
+      "sha256": "a515b4869a15a485a9b51373fc0946cf5ce8804fded556978acdd0d44e36ef72",
       "source": "plugins/ariadne/skills/ariadne/SKILL.md"
     },
     {

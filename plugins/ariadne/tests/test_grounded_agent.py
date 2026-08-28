@@ -5,7 +5,9 @@ import copy
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
+import stat
 from types import SimpleNamespace
 import tempfile
 import unittest
@@ -15,7 +17,7 @@ from . import run_tests as delivery_runner
 from . import support  # noqa: F401  (sets sys.path)
 
 import ariadne  # noqa: E402
-from ariadne_lib import envelope, registry, statement, verify  # noqa: E402
+from ariadne_lib import digests, envelope, registry, replay, statement, verify  # noqa: E402
 from ariadne_lib.predicates import grounded_agent as agent  # noqa: E402
 
 
@@ -261,6 +263,104 @@ class ClosedShapeTests(unittest.TestCase):
             with self.subTest(path=".".join(path)):
                 self.assertFalse(named("predicate-fields", body).passed)
 
+    def test_core_blocks_follow_the_published_bounded_contract(self):
+        body = predicate()
+        digest = {"sha256": body["release"]["document"]["sha256"]}
+        cases = (
+            {"claims": [{"subject": digest, "disposition": "passed"}]},
+            {
+                "claims": [
+                    {"name": " ", "subject": digest, "disposition": "passed"}
+                ]
+            },
+            {
+                "claims": [
+                    {
+                        "name": "failed claim",
+                        "subject": digest,
+                        "disposition": "failed",
+                    }
+                ]
+            },
+            {
+                "claims": [
+                    {
+                        "name": "failed claim",
+                        "subject": digest,
+                        "disposition": "failed",
+                        "reason": "x" * (agent.MAX_TEXT + 1),
+                    }
+                ]
+            },
+            {
+                "claims": [
+                    {
+                        "name": "claim with null detail",
+                        "subject": digest,
+                        "disposition": "passed",
+                        "detail": None,
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {"argv": ["tool"], "determinism": "nondeterministic"}
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": " ",
+                        "argv": ["tool"],
+                        "determinism": "nondeterministic",
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": "command with null digest",
+                        "argv": ["tool"],
+                        "determinism": "nondeterministic",
+                        "output_digest": None,
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": "command with null detail",
+                        "argv": ["tool"],
+                        "determinism": "nondeterministic",
+                        "detail": None,
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": "oversized argv",
+                        "argv": ["x"] * (agent.MAX_COMMAND_WORDS + 1),
+                        "determinism": "nondeterministic",
+                    }
+                ]
+            },
+            {
+                "commands": [
+                    {
+                        "name": "exact command",
+                        "argv": ["tool"],
+                        "determinism": "exact",
+                    }
+                ]
+            },
+        )
+        for index, replacement in enumerate(cases):
+            candidate = predicate()
+            candidate.update(replacement)
+            with self.subTest(case=index):
+                self.assertFalse(named("predicate-fields", candidate).passed)
+
 
 class SemanticDigestTests(unittest.TestCase):
     def test_semantic_and_release_json_byte_digests_are_distinct(self):
@@ -336,6 +436,108 @@ class ComponentTests(unittest.TestCase):
             with self.subTest(field=field, value=value):
                 self.assertFalse(named("components", body).passed)
 
+    def test_one_digest_cannot_claim_conflicting_component_byte_counts(self):
+        body = predicate()
+        first, second = body["given"]["corpus"]["components"]
+        second["sha256"] = first["sha256"]
+        second["bytes"] = first["bytes"] + 1
+        found = named("components", body)
+        self.assertFalse(found.passed)
+        self.assertIn("same sha256", found.detail)
+
+    def test_subject_digest_aliases_cannot_contradict_sha256_identity(self):
+        body = predicate()
+        outer = subjects(body)
+        outer[0]["digest"]["sha384"] = "1" * 96
+        outer.append(
+            {
+                "name": "contradictory alias",
+                "digest": {
+                    "sha256": outer[0]["digest"]["sha256"],
+                    "sha384": "2" * 96,
+                },
+            }
+        )
+        found = named("components", body, outer)
+        self.assertFalse(found.passed)
+        self.assertIn("contradict", found.detail)
+
+        outer = subjects(body)
+        outer[0]["digest"]["sha384"] = "3" * 96
+        outer[1]["digest"]["sha384"] = "3" * 96
+        found = named("components", body, outer)
+        self.assertFalse(found.passed)
+        self.assertIn("conflicting sha256", found.detail)
+
+        outer = subjects(body)
+        outer[0]["digest"]["sha384"] = "4" * 96
+        outer.append(
+            {
+                "name": "consistent alias",
+                "digest": dict(outer[0]["digest"]),
+            }
+        )
+        self.assertTrue(named("components", body, outer).passed)
+
+    def test_a_claim_digest_cannot_bridge_two_subject_identities(self):
+        body = predicate()
+        outer = subjects(body)
+        outer[1]["digest"]["sha384"] = "c" * 96
+        body["claims"] = [
+            {
+                "name": "split identity",
+                "subject": {
+                    "sha256": outer[0]["digest"]["sha256"],
+                    "sha384": outer[1]["digest"]["sha384"],
+                },
+                "disposition": "passed",
+            }
+        ]
+        gate_one = next(
+            found for found in report(body, outer).gates if found.number == 1
+        )
+        self.assertTrue(gate_one.passed)
+        found = named("components", body, outer)
+        self.assertFalse(found.passed)
+        self.assertIn("claim 1", found.detail)
+        self.assertIn("conflicting sha256 identities", found.detail)
+
+    def test_a_claim_cannot_contradict_a_known_alias_via_a_sparse_duplicate(self):
+        cases = (
+            ("sha384", "1" * 96, "2" * 96),
+            ("transition", "a", "b"),
+        )
+        for algorithm, established, contradicted in cases:
+            body = predicate()
+            outer = subjects(body)
+            identity = outer[0]["digest"]["sha256"]
+            outer[0]["digest"][algorithm] = established
+            outer.append(
+                {
+                    "name": "sparse duplicate for %s" % algorithm,
+                    "digest": {"sha256": identity},
+                }
+            )
+            body["claims"] = [
+                {
+                    "name": "contradictory alias",
+                    "subject": {
+                        "sha256": identity,
+                        algorithm: contradicted,
+                    },
+                    "disposition": "passed",
+                }
+            ]
+            with self.subTest(algorithm=algorithm):
+                routed = report(body, outer)
+                gate_one = next(gate for gate in routed.gates if gate.number == 1)
+                self.assertTrue(gate_one.passed)
+                found = next(
+                    gate for gate in routed.gates if gate.name == "components"
+                )
+                self.assertFalse(found.passed)
+                self.assertIn("known digest alias", found.detail)
+
     def test_unsafe_component_paths_are_refused(self):
         for path in (
             "/absolute.json",
@@ -375,6 +577,34 @@ class ComponentTests(unittest.TestCase):
         outer[0]["name"] = "\u200b"
         self.assertFalse(named("subject-names", body, outer).passed)
 
+    def test_ecmascript_bom_whitespace_is_refused_at_name_and_path_edges(self):
+        for value in ("\ufeffname", "name\ufeff"):
+            with self.subTest(kind="name", value=repr(value)):
+                self.assertFalse(agent.portable_name(value))
+            with self.subTest(kind="path", value=repr(value)):
+                self.assertFalse(agent.usable_path(value))
+
+    def test_unicode_line_separators_are_not_portable_names_or_paths(self):
+        for value in ("a\u2028b", "a\u2029b"):
+            with self.subTest(kind="name", value=repr(value)):
+                self.assertFalse(agent.portable_name(value))
+            with self.subTest(kind="path", value=repr(value)):
+                self.assertFalse(agent.usable_path(value))
+
+    def test_unicode_surrogates_are_not_portable_names_paths_or_subjects(self):
+        for value in ("a\ud800b", "a\udfffb"):
+            with self.subTest(kind="name", value=repr(value)):
+                self.assertFalse(agent.portable_name(value))
+            with self.subTest(kind="path", value=repr(value)):
+                self.assertFalse(agent.usable_path(value))
+
+        body = predicate()
+        outer = subjects(body)
+        outer[0]["name"] += "\ud800"
+        found = named("subject-names", body, outer)
+        self.assertFalse(found.passed)
+        self.assertIn("portable name", found.detail)
+
     def test_the_component_count_is_bounded_before_full_walk(self):
         body = predicate()
         body["given"]["corpus"]["components"] = [
@@ -384,6 +614,111 @@ class ComponentTests(unittest.TestCase):
         found = numbered(2, body)
         self.assertFalse(found.passed)
         self.assertIn("reads at most", found.detail)
+
+    def test_the_subject_count_bounds_coverage_work_before_full_walk(self):
+        body = predicate()
+        outer = subjects(body)
+        digest = outer[0]["digest"]["sha256"]
+        outer.extend(
+            {
+                "name": "oversized-subject-%d" % index,
+                "digest": {"sha256": digest},
+            }
+            for index in range(agent.MAX_SUBJECTS + 1 - len(outer))
+        )
+        built_statement = built(body, outer)
+        with mock.patch.object(
+            built_statement,
+            "covers",
+            side_effect=AssertionError("unbounded subject scan"),
+        ) as covers:
+            faults, _, _ = agent.component_faults(built_statement)
+        self.assertFalse(covers.called)
+        self.assertTrue(any("statement names" in fault for fault in faults))
+
+    def test_core_claim_coverage_obeys_the_predicate_limit(self):
+        body = predicate()
+        limit = getattr(agent, "MAX_CLAIMS", 1024)
+        covered = {"sha256": body["release"]["document"]["sha256"]}
+        body["claims"] = [
+            {
+                "name": "covered-subject-%d" % index,
+                "subject": covered,
+                "disposition": "passed",
+            }
+            for index in range(limit + 1)
+        ]
+        routed = report(body)
+        gate_one = next(gate for gate in routed.gates if gate.number == 1)
+        self.assertFalse(gate_one.passed)
+        self.assertIn("reads at most %d" % limit, gate_one.detail)
+
+    def test_core_digest_width_bounds_matching_work(self):
+        body = predicate()
+        covered = body["release"]["document"]["sha256"]
+        limit = getattr(agent, "MAX_DIGEST_ALGORITHMS", 8)
+        wide = {
+            "sha256": covered,
+            **{
+                "future-%d" % index: "a"
+                for index in range(limit)
+            },
+        }
+        body["claims"] = [
+            {
+                "name": "wide digest claim",
+                "subject": wide,
+                "disposition": "passed",
+            }
+        ]
+        outer = subjects(body)
+        outer[0]["digest"] = dict(wide)
+        with mock.patch(
+            "ariadne_lib.gates.digests.agree", wraps=digests.agree
+        ) as agree:
+            routed = report(body, outer)
+        gate_one = next(gate for gate in routed.gates if gate.number == 1)
+        self.assertFalse(gate_one.passed)
+        self.assertIn("algorithm", gate_one.detail)
+        self.assertFalse(agree.called)
+        field_gate = next(
+            gate for gate in routed.gates if gate.name == "predicate-fields"
+        )
+        self.assertFalse(field_gate.passed)
+
+    def test_outer_digest_width_is_refused_when_no_claims_are_recorded(self):
+        body = predicate()
+        outer = subjects(body)
+        outer[0]["digest"].update(
+            {
+                "future-%d" % index: "a"
+                for index in range(agent.MAX_DIGEST_ALGORITHMS)
+            }
+        )
+        routed = report(body, outer)
+        gate_one = next(gate for gate in routed.gates if gate.number == 1)
+        self.assertFalse(gate_one.passed)
+        self.assertIn("subject 1", gate_one.detail)
+        self.assertIn("%d-algorithm" % agent.MAX_DIGEST_ALGORITHMS, gate_one.detail)
+
+    def test_hostile_core_labels_cannot_forge_text_report_lines(self):
+        body = predicate()
+        body["claims"] = [
+            {
+                "name": "hostile\nPASS gate 7",
+                "subject": {
+                    "sha256": body["release"]["document"]["sha256"],
+                },
+                "disposition": "failed",
+            }
+        ]
+        routed = report(body)
+        lines = routed.lines()
+        self.assertFalse(routed.ok)
+        self.assertTrue(all(len(line.splitlines()) == 1 for line in lines))
+        rendered = "\n".join(lines)
+        self.assertNotIn("hostile\nPASS gate 7", rendered)
+        self.assertIn(r"hostile\nPASS gate 7", rendered)
 
 
 class OptionalEvidenceTests(unittest.TestCase):
@@ -460,7 +795,55 @@ class OptionalEvidenceTests(unittest.TestCase):
         body["produced"]["promotion"]["terminal"]["target_release_digest"] = hex_digest("other")
         self.assertFalse(named("optional-evidence", body).passed)
         body["produced"]["promotion"]["terminal"]["action"] = "rollback"
+        body["produced"]["promotion"]["terminal"]["sequence"] = 2
         self.assertTrue(named("optional-evidence", body).passed)
+
+    def test_any_promotion_terminal_requires_the_release_evaluations(self):
+        for action in agent.BEREAN_PROMOTION_ACTIONS:
+            body = predicate()
+            terminal = body["produced"]["promotion"]["terminal"]
+            terminal["action"] = action
+            terminal["sequence"] = 2 if action == "rollback" else 1
+            if action == "rollback":
+                terminal["target_release_digest"] = hex_digest("earlier release")
+            body["produced"]["evaluations"] = None
+            body["produced"]["evaluations_absence_reason"] = "no evaluation was produced"
+            finalise(body)
+            with self.subTest(action=action):
+                found = named("optional-evidence", body)
+                self.assertFalse(found.passed)
+                self.assertIn("promotion terminal requires evaluations", found.detail)
+
+    def test_a_rollback_terminal_cannot_restore_the_current_release(self):
+        body = predicate()
+        terminal = body["produced"]["promotion"]["terminal"]
+        terminal["action"] = "rollback"
+        found = named("optional-evidence", body)
+        self.assertFalse(found.passed)
+        self.assertIn("rollback terminal must target another release", found.detail)
+
+    def test_promotion_sequence_matches_the_berean_chain_boundary(self):
+        limit = getattr(agent, "BEREAN_MAX_PROMOTION_RECORDS", None)
+        self.assertEqual(limit, 1000)
+        body = predicate()
+        body["produced"]["promotion"]["terminal"]["sequence"] = (
+            limit
+        )
+        self.assertTrue(named("optional-evidence", body).passed)
+
+        body["produced"]["promotion"]["terminal"]["sequence"] += 1
+        found = named("optional-evidence", body)
+        self.assertFalse(found.passed)
+        self.assertIn(str(limit), found.detail)
+
+        body = predicate()
+        terminal = body["produced"]["promotion"]["terminal"]
+        terminal["action"] = "rollback"
+        terminal["target_release_digest"] = hex_digest("earlier release")
+        terminal["sequence"] = 1
+        found = named("optional-evidence", body)
+        self.assertFalse(found.passed)
+        self.assertIn("cannot be the first", found.detail)
 
 
 class GateTwoAndFiveTests(unittest.TestCase):
@@ -480,6 +863,29 @@ class GateTwoAndFiveTests(unittest.TestCase):
             target[path[-1]] = value
             with self.subTest(path=".".join(path)):
                 self.assertFalse(numbered(2, body).passed)
+
+    def test_digest_maps_require_hex_through_the_absolute_end(self):
+        malformed = {"sha256": "a" * 63 + "\n"}
+
+        body = predicate()
+        body["adapter"]["parameters_digest"] = malformed
+        self.assertFalse(report(body).ok)
+        self.assertIn("not hex", numbered(2, body).detail)
+
+        body = predicate()
+        body["commands"] = [
+            {
+                "name": "malformed output digest",
+                "argv": ["true"],
+                "determinism": "exact",
+                "output_digest": malformed,
+            }
+        ]
+        routed = report(body)
+        self.assertFalse(routed.ok)
+        gate_six = next(gate for gate in routed.gates if gate.number == 6)
+        self.assertFalse(gate_six.passed)
+        self.assertIn("not hex", gate_six.detail)
 
     def test_gate_five_accepts_first_capture_and_baseline_branches(self):
         first = predicate()
@@ -556,6 +962,371 @@ class EvidenceBoundaryTests(unittest.TestCase):
         self.assertFalse(gate.passed)
         self.assertIn("verified_by", gate.detail)
 
+    def test_core_gate_seven_refuses_direct_identity_and_signature_status_keys(self):
+        keys = (
+            "signer",
+            "signatory",
+            "verifier",
+            "attester",
+            "notary",
+            "creator",
+            "publisher",
+            "signed",
+            "signature_verified",
+            "signature_valid",
+            "authenticated_by",
+            "notarised_by",
+            "notarized_by",
+            "author_identity",
+            "authorship_status",
+            "creator_identity",
+            "publisher_status",
+            "signer_identity",
+            "signing_status",
+            "signature_status",
+            "verifier_identity",
+            "verification_status",
+            "attester_identity",
+            "attestation_status",
+            "authentication_status",
+            "notary_identity",
+            "notarisation_status",
+            "notarization_status",
+        )
+        for key in keys:
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {key: "unverified identity"}
+            with self.subTest(key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 7
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_core_gate_four_refuses_structured_conclusion_compounds(self):
+        for key in (
+            "security_verdict",
+            "riskScore",
+            "safety-conclusion",
+            "approval_status",
+            "securityRating",
+            "assurance_level",
+            "audit_recommendation",
+        ):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {key: "positive"}
+            with self.subTest(key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 4
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_core_gate_four_refuses_unseparated_chains_on_open_surfaces(self):
+        for surface, key in (
+            ("annotations", "securityverdictstatus"),
+            ("digest", "auditrecommendationresultstatusvalue"),
+        ):
+            body = predicate()
+            outer = subjects(body)
+            if surface == "annotations":
+                outer[0]["annotations"] = {"nested": {key: "positive"}}
+            else:
+                outer[0]["digest"][key] = "00"
+            with self.subTest(surface=surface, key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 4
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_core_gate_seven_refuses_multitoken_identity_and_status_claims(self):
+        for key in (
+            "author_name",
+            "publisherName",
+            "SIGNER-NAME",
+            "signature_verification_status",
+            "signatureValidationStatus",
+            "signatureverificationstatus",
+            "attestation-verification-status",
+            "is_verified",
+            "signed_by_identity",
+        ):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {key: "someone"}
+            with self.subTest(key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 7
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_core_gate_seven_refuses_unseparated_chains_on_open_surfaces(self):
+        for surface, key in (
+            ("annotations", "signaturesigneridentity"),
+            ("digest", "signatureverificationactorstatusidentity"),
+        ):
+            body = predicate()
+            outer = subjects(body)
+            if surface == "annotations":
+                outer[0]["annotations"] = {"nested": {key: "someone"}}
+            else:
+                outer[0]["digest"][key] = "00"
+            with self.subTest(surface=surface, key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 7
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_core_gates_refuse_compatibility_and_validation_spellings(self):
+        for number, key in (
+            (4, "\uff53\uff43\uff4f\uff52\uff45"),
+            (4, "\u017fcore"),
+            (7, "\uff56\uff45\uff52\uff49\uff46\uff49\uff45\uff44"),
+            (7, "\u017figneridentity"),
+            (7, "signaturevalidationstatus"),
+            (7, "isverified"),
+        ):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {"nested": {key: "structured claim"}}
+            with self.subTest(gate=number, key=key):
+                routed = report(body, outer)
+                gate = next(found for found in routed.gates if found.number == number)
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertFalse(routed.ok)
+
+    def test_core_gates_preserve_neutral_process_and_identity_metadata(self):
+        for number, key in (
+            (4, "score_method_status"),
+            (4, "approval_workflow_status"),
+            (7, "identity_verification_method"),
+            (7, "identity_attestation_format"),
+        ):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {"nested": {key: "configured"}}
+            with self.subTest(gate=number, key=key):
+                routed = report(body, outer)
+                gate = next(found for found in routed.gates if found.number == number)
+                self.assertTrue(gate.passed, gate.detail)
+                self.assertTrue(routed.ok, "\n".join(routed.lines()))
+
+    def test_berean_results_cannot_hide_in_open_extension_objects(self):
+        body = predicate()
+        body["claims"] = [
+            {
+                "name": "evaluation result",
+                "subject": {"sha256": body["release"]["document"]["sha256"]},
+                "disposition": "passed",
+                "detail": {
+                    "evals": {
+                        "thresholds": {"failures_allowed": 0},
+                        "cases": 10,
+                        "passed": 10,
+                        "failed": 0,
+                    }
+                },
+            }
+        ]
+        found = named("evidence-boundary", body)
+        self.assertFalse(found.passed)
+        for key in agent.FORBIDDEN_BEREAN_RESULT_KEYS:
+            with self.subTest(surface="claim detail", key=key):
+                self.assertIn(key, found.detail)
+
+        body = predicate()
+        body["commands"] = [
+            {
+                "name": "recorded evaluation",
+                "argv": ["true"],
+                "determinism": "nondeterministic",
+                "detail": {"nested": [{"passed": 1}]},
+            }
+        ]
+        self.assertFalse(named("evidence-boundary", body).passed)
+
+        body = predicate()
+        outer = subjects(body)
+        outer[0]["annotations"] = {"evaluation": {"failed": 0}}
+        self.assertFalse(named("evidence-boundary", body, outer).passed)
+
+    def test_berean_failure_identities_are_result_projection(self):
+        body = predicate()
+        body["claims"] = [
+            {
+                "name": "evaluation failures",
+                "subject": {"sha256": body["release"]["document"]["sha256"]},
+                "disposition": "passed",
+                "detail": {"evaluation": {"failures": ["case-17"]}},
+            }
+        ]
+        found = named("evidence-boundary", body)
+        self.assertFalse(found.passed, found.detail)
+        self.assertIn("failures", found.detail)
+
+    def test_berean_result_keys_refuse_compatibility_equivalent_spellings(self):
+        aliases = (
+            ("THRESHOLDS", "thresholds"),
+            ("\uff43\uff41\uff53\uff45\uff53", "cases"),
+            ("pa\u017f\u017fed", "passed"),
+            ("\uff26\uff21\uff29\uff2c\uff25\uff24", "failed"),
+            ("\uff26\uff21\uff29\uff2c\uff35\uff32\uff25\uff33", "failures"),
+            ("failures\uff3fallowed", "failures_allowed"),
+        )
+        for key, canonical in aliases:
+            for surface in ("claim detail", "outer subject digest"):
+                body = predicate()
+                outer = None
+                if surface == "claim detail":
+                    body["claims"] = [
+                        {
+                            "name": "evaluation result",
+                            "subject": {
+                                "sha256": body["release"]["document"]["sha256"]
+                            },
+                            "disposition": "passed",
+                            "detail": {"evaluation": {key: 1}},
+                        }
+                    ]
+                else:
+                    outer = subjects(body)
+                    outer[0]["digest"][key] = "10"
+                with self.subTest(surface=surface, key=key):
+                    found = named("evidence-boundary", body, outer)
+                    self.assertFalse(found.passed, found.detail)
+                    self.assertIn(canonical, found.detail)
+
+        for key in ("thre_sholds", "pass_ed", "failure_sallowed"):
+            body = predicate()
+            body["claims"] = [
+                {
+                    "name": "evaluation metadata",
+                    "subject": {
+                        "sha256": body["release"]["document"]["sha256"]
+                    },
+                    "disposition": "passed",
+                    "detail": {key: "not a Berean wire key"},
+                }
+            ]
+            with self.subTest(surface="neutral near miss", key=key):
+                self.assertTrue(named("evidence-boundary", body).passed)
+
+    def test_berean_results_cannot_hide_in_digest_algorithm_names(self):
+        for key in agent.FORBIDDEN_BEREAN_RESULT_KEYS:
+            for surface in ("adapter", "claim", "command", "outer subject"):
+                body = predicate()
+                outer = None
+                if surface == "adapter":
+                    body["adapter"]["parameters_digest"][key] = "10"
+                elif surface == "claim":
+                    body["claims"] = [
+                        {
+                            "name": "evaluation result",
+                            "subject": {
+                                "sha256": body["release"]["document"]["sha256"],
+                                key: "10",
+                            },
+                            "disposition": "passed",
+                        }
+                    ]
+                elif surface == "command":
+                    body["commands"] = [
+                        {
+                            "name": "evaluation result",
+                            "argv": ["true"],
+                            "determinism": "exact",
+                            "output_digest": {
+                                "sha256": hex_digest("command output"),
+                                key: "10",
+                            },
+                        }
+                    ]
+                else:
+                    outer = subjects(body)
+                    outer[0]["digest"][key] = "10"
+                with self.subTest(key=key, surface=surface):
+                    found = named("evidence-boundary", body, outer)
+                    self.assertFalse(found.passed)
+                    self.assertIn(key, found.detail)
+
+    def test_core_gates_scan_outer_subject_digest_algorithms(self):
+        for key, number in (("score", 4), ("author", 7)):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["digest"][key] = "10"
+            with self.subTest(key=key, gate=number):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == number
+                )
+                self.assertFalse(gate.passed)
+                self.assertIn(key, gate.detail)
+
+
+class GroundedReplayBoundaryTests(unittest.TestCase):
+    def test_grounded_output_is_not_compared_to_unrelated_foundry_artifacts(self):
+        expected = {"sha256": hex_digest("unrelated Foundry artifacts")}
+        project = Path(__file__).resolve().parent / "fixtures" / "forge-project" / "v2"
+        body = predicate()
+        body["commands"] = [
+            {
+                "name": "unrelated exact command",
+                "argv": ["true"],
+                "determinism": "exact",
+                "output_digest": expected,
+            }
+        ]
+        self.assertTrue(report(body).ok)
+        with mock.patch.object(
+            ariadne.foundry, "release_subjects", return_value=["unrelated"]
+        ) as release_subjects, mock.patch.object(
+            ariadne.foundry, "bundle", return_value=expected
+        ):
+            found = replay.replay(
+                built(body),
+                allow_execution=True,
+                cwd=str(project),
+                recompute=ariadne.recomputer(str(project)),
+            )
+        self.assertEqual(found.steps[0].status, 0)
+        self.assertIsNone(found.steps[0].compared)
+        self.assertFalse(found.ok)
+        release_subjects.assert_not_called()
+
+    def test_an_all_green_command_with_an_os_invalid_word_is_contained(self):
+        body = predicate()
+        body["commands"] = [
+            {
+                "name": "host argv",
+                "argv": ["printf", "nul\x00word"],
+                "determinism": "exact",
+                "output_digest": {"sha256": hex_digest("expected output")},
+            }
+        ]
+        self.assertTrue(report(body).ok)
+        try:
+            found = replay.replay(built(body), allow_execution=True, cwd=".")
+        except (UnicodeError, ValueError) as error:
+            self.fail("replay let an argv input failure escape: %s" % error)
+        self.assertFalse(found.ok)
+        self.assertEqual(found.steps[0].status, "failed to start")
+
 
 class RunnerTests(unittest.TestCase):
     def test_missing_report_value_is_refused(self):
@@ -628,6 +1399,44 @@ class RunnerTests(unittest.TestCase):
                     ),
                 )
             self.assertFalse((outside / "result.json").exists())
+
+    def test_a_report_without_a_proved_inode_is_not_unlinked(self):
+        with tempfile.TemporaryDirectory(prefix="ariadne-runner-") as directory:
+            root = Path(directory).resolve()
+            report_path = root / "reports" / "result.json"
+            with mock.patch.object(delivery_runner, "worktree_root", return_value=root):
+                target = delivery_runner.report_target(
+                    ["--elenchus-report", str(report_path)]
+                )
+
+            real_fstat = os.fstat
+
+            def fail_regular_file(descriptor):
+                found = real_fstat(descriptor)
+                if stat.S_ISREG(found.st_mode):
+                    raise OSError("identity unavailable")
+                return found
+
+            with mock.patch.object(
+                delivery_runner.os, "fstat", side_effect=fail_regular_file
+            ), mock.patch.object(
+                delivery_runner.os, "unlink", wraps=os.unlink
+            ) as unlink, self.assertRaises(OSError):
+                delivery_runner.write_report(
+                    target,
+                    delivery_runner.result_payload(
+                        SimpleNamespace(
+                            testsRun=1,
+                            failures=[],
+                            errors=[],
+                            skipped=[],
+                            expectedFailures=[],
+                            unexpectedSuccesses=[],
+                        )
+                    ),
+                )
+            self.assertFalse(unlink.called)
+            self.assertTrue(report_path.exists())
 
     def test_a_successful_runner_writes_a_fresh_complete_report(self):
         suite = unittest.TestSuite([unittest.FunctionTestCase(lambda: None)])

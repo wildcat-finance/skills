@@ -214,6 +214,25 @@ class GateTwoTests(unittest.TestCase):
         found = gate(2, body)
         self.assertFalse(found.passed)
 
+    def test_hash_fields_with_a_terminal_line_feed_fail(self):
+        for field, value in (
+            ("block_hash", BLOCK_HASH),
+            ("state_root", STATE_ROOT),
+        ):
+            body = predicate()
+            body["chain"][field] = value + "\n"
+            found = gate(2, body)
+            with self.subTest(field=field):
+                self.assertFalse(found.passed)
+                self.assertIn(field, found.detail)
+
+    def test_an_all_zero_hash_cannot_evade_the_sentinel_with_a_line_feed(self):
+        body = predicate()
+        body["chain"]["block_hash"] = fixture.ZERO_HASH + "\n"
+        found = gate(2, body)
+        self.assertFalse(found.passed)
+        self.assertIn("block_hash", found.detail)
+
     def test_a_state_root_that_is_present_and_malformed_fails(self):
         body = predicate()
         body["chain"]["state_root"] = "0xnope"
@@ -711,6 +730,11 @@ class SchemaAgreementTests(unittest.TestCase):
             "properties"
         ]["path"]
         self.assertIn("pattern", path_shape)
+        chain = schema["properties"]["chain"]["properties"]
+        for field in ("block_hash", "state_root"):
+            with self.subTest(field=field):
+                self.assertEqual(chain[field].get("minLength"), 66)
+                self.assertEqual(chain[field].get("maxLength"), 66)
 
     INEXPRESSIBLE = {
         # A schema describes the predicate body. Whether a component digest also
@@ -885,6 +909,28 @@ class VersionTwoTests(unittest.TestCase):
             if not gate.passed
         ]
         self.assertEqual(failed, [], [gate.line() for gate in failed])
+
+    def test_v2_hashes_with_a_terminal_line_feed_fail(self):
+        for field, value in (
+            ("block_hash", BLOCK_HASH),
+            ("state_root", STATE_ROOT),
+            ("receipts_root", RECEIPTS_ROOT),
+        ):
+            body = predicate_v2()
+            body["chain"][field] = value + "\n"
+            found = gate_v2(2, body)
+            with self.subTest(field=field):
+                self.assertSafeFailure(found, "environment")
+
+    def test_v2_schema_carries_an_exact_hash_width(self):
+        path = os.path.join(
+            support.PLUGIN_ROOT, "schemas", "state-fixture-v2.json"
+        )
+        with open(path, "rb") as handle:
+            schema = json.loads(handle.read().decode("utf-8"))
+        shape = schema["$defs"]["hash32"]
+        self.assertEqual(shape.get("minLength"), 66)
+        self.assertEqual(shape.get("maxLength"), 66)
 
     def test_v2_requires_both_delta_endpoints_even_on_a_first_capture(self):
         for side in ("baseline", "current"):

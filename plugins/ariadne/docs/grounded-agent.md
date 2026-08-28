@@ -41,11 +41,26 @@ reason beside present evidence is contradictory and fails `optional-evidence`.
 ## Components and subjects
 
 Every component carries `name`, release-relative `path`, lowercase `sha256`, and
-a whole-number `bytes` count. Names and paths are bounded, visible and unique
-after Unicode NFC normalisation. Absolute paths, drive paths, backslashes,
-empty or dot segments, parent traversal, oversized values and duplicate paths
-fail. Every component digest must appear in the in-toto subject array, and every
-subject must name a declared component.
+a whole-number `bytes` count. Names and paths are bounded, visible Unicode
+scalar strings, free of line separators, and unique after Unicode NFC
+normalisation. Absolute paths, drive
+paths, backslashes, empty or dot segments, parent traversal, oversized values
+and duplicate paths fail. Every component digest must appear in the in-toto
+subject array, and every subject must name a declared component. Subject aliases
+may add digest algorithms, but cannot give one `sha256` conflicting aliases or
+map one supported digest to different `sha256` identities. A claim likewise
+cannot contradict an alias already assigned to its `sha256` identity or combine
+supported aliases assigned to different `sha256` identities.
+
+Digest maps carry at most eight algorithms. Three slots cover Ariadne's current
+supported algorithms and five remain for transition metadata; wider claim or
+subject maps fail before claim-by-subject matching begins.
+
+Core gates refuse producer-chosen structured keys longer than 4,096 characters
+or past a 262,144-character aggregate key budget before compatibility folding.
+Berean result keys on open extension surfaces are compared after Unicode NFKC
+and case folding, so equivalent spellings cannot reintroduce thresholds or
+result counts under another representation.
 
 The corpus block carries its own `path`, `corpus_version`, semantic
 `corpus_digest`, `manifest`, and non-empty `components`. A non-null reads block
@@ -55,10 +70,14 @@ block carries only `cases` and `report` components.
 
 A non-null promotion block binds the exact `promotions.jsonl` component, the
 `berean-promotion/v1` format and its terminal `sequence`, `action`, and
-`target_release_digest`. It deliberately has no `score`, `grade`, `verdict`,
+`target_release_digest`. Its sequence is bounded by Berean's 1,000-record chain,
+a rollback cannot be the first record, and either terminal action requires the
+release's evaluation files. It deliberately has no `score`, `grade`, `verdict`,
 `threshold`, or `result count`. Those are evaluation conclusions, not Ariadne
-identity metadata. Unknown fields fail before any such vocabulary can acquire
-authority here.
+identity metadata. Exact Berean threshold, result-count, and failure-list keys
+are also refused recursively in claim details, command details, digest maps and subject
+descriptor extensions, so an open structured field cannot restore the
+projection that the closed promotion block omits.
 
 ## Gate 2: recoverable environment
 
@@ -83,8 +102,9 @@ authorship or verification identity keys that Ariadne did not authenticate.
 
 After gates 2 and 5, named checks report the closed field shape, component and
 subject coverage, semantic release digest, explicit optional evidence, unchanged
-evidence boundary, and portable subject names. Each failing line names the
-affected gate or check and the field to repair.
+evidence boundary without evaluation-result projection, and portable subject
+names. Each failing line names the affected gate or check and the field to
+repair.
 
 ## Published schema
 

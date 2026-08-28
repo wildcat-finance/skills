@@ -21,7 +21,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from ariadne_lib import digests, envelope, registry, replay, safejson, verify  # noqa: E402
+from ariadne_lib import digests, envelope, gates, registry, replay, safejson, verify  # noqa: E402
 from ariadne_lib import predicates  # noqa: E402,F401  (registers them)
 from ariadne_lib.capture import dataset as dataset_capture
 from ariadne_lib.capture import state_fixture as state_fixture_capture  # noqa: E402
@@ -32,6 +32,11 @@ GATE_BREACHED = 1
 USAGE_ERROR = 2
 
 READ_ERRORS = (envelope.EnvelopeError, StatementError, safejson.InputError)
+
+
+def print_read_error(path, error):
+    """Emit one line even when a rejected document supplied the reason."""
+    print(gates.one_line("%s: %s" % (path, error)), file=sys.stderr)
 
 
 def load_document(path, max_bytes, max_depth):
@@ -82,7 +87,7 @@ def cmd_inspect(args):
     try:
         document = load_document(args.file, args.max_bytes, args.max_depth)
     except READ_ERRORS as error:
-        print("%s: %s" % (args.file, error), file=sys.stderr)
+        print_read_error(args.file, error)
         return USAGE_ERROR
 
     found = document.statement
@@ -101,12 +106,15 @@ def cmd_inspect(args):
         )
         return 0
 
-    print("predicate type: %s" % found.predicate_type)
+    print("predicate type: %s" % gates.one_line(found.predicate_type))
     print("                %s" % ("registered" if known else "not registered here"))
     print("signatures:     %s" % document.signature_state)
     print("subjects:")
     for entry in found.subjects:
-        print("  %s  %s" % (digests.short(entry.digest), entry.name or "<unnamed>"))
+        print(
+            "  %s  %s"
+            % (digests.short(entry.digest), gates.one_line(entry.name or "<unnamed>"))
+        )
     return 0
 
 
@@ -114,7 +122,7 @@ def cmd_verify(args):
     try:
         document = load_document(args.file, args.max_bytes, args.max_depth)
     except READ_ERRORS as error:
-        print("%s: %s" % (args.file, error), file=sys.stderr)
+        print_read_error(args.file, error)
         return USAGE_ERROR
 
     report = verify.report(document, registry.DEFAULT)
@@ -330,12 +338,20 @@ def recomputer(project):
 
     A build's recorded output digest is over the artefacts rather than over
     what the command printed, so the comparison means recomputing the artefacts
-    the way capture did.
+    the way capture did. Other predicate types do not describe that Foundry
+    bundle, so applying this recomputer to them would compare unrelated bytes.
+    Even a Solidity statement only earns that comparison for the exact command
+    its build environment records.
     """
     if not project:
         return None
 
     def recompute(step):
+        if (
+            step.predicate_type != predicates.solidity_release.TYPE
+            or step.argv != step.build_command
+        ):
+            return None
         try:
             subjects = foundry.release_subjects(foundry.confined(project, "--project"))
         except foundry.CaptureError:
@@ -349,7 +365,7 @@ def cmd_replay(args):
     try:
         document = load_document(args.file, args.max_bytes, args.max_depth)
     except READ_ERRORS as error:
-        print("%s: %s" % (args.file, error), file=sys.stderr)
+        print_read_error(args.file, error)
         return USAGE_ERROR
 
     if args.allow_execution and not args.project:
@@ -364,13 +380,20 @@ def cmd_replay(args):
         # instructions from a document on trust, which is the habit this whole
         # tool exists to break.
         report = verify.report(document, registry.DEFAULT)
-        if not report.ok:
+        if not report.ok or not report.predicate_gates_checked:
             print(
                 "refusing to run: this statement does not verify", file=sys.stderr
             )
             for gate in report.ordered:
                 if not gate.passed:
                     print("  %s" % gate.line(), file=sys.stderr)
+            if not report.predicate_gates_checked:
+                print(
+                    "  replay requires registered checks for gates 2 and 5",
+                    file=sys.stderr,
+                )
+            for line in report.unchecked:
+                print("  %s" % gates.one_line(line), file=sys.stderr)
             return GATE_BREACHED
 
     result = replay.replay(
