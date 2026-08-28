@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 870,
-  "total_bytes": 11162708,
+  "total_bytes": 11163800,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1267,9 +1267,9 @@
       "source": "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
     },
     {
-      "bytes": 34120,
+      "bytes": 35212,
       "path": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py",
-      "sha256": "89d2e7f609fb979df58e4f521d038c95a77709da3e296031f74c917f6356e665",
+      "sha256": "88032719646012fdc3e26c339d0cf4b9e3fda54d7c38ffb978046272b3d9c977",
       "source": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py"
     },
     {

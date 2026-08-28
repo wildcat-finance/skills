@@ -54,8 +54,31 @@ SPAN_KINDS = frozenset(
 ID_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$")
 DIGEST_RE = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
-CODE_RE = re.compile(r"^B[0-9]{3}$")
 LINE_RANGE_RE = re.compile(r"^L([1-9][0-9]*)-L([1-9][0-9]*)$")
+BREVITAS_RULE_CODES = frozenset(
+    {
+        "B001",
+        "B002",
+        "B003",
+        "B004",
+        "B005",
+        "B006",
+        "B007",
+        "B009",
+        "B010",
+        "B011",
+        "B020",
+        "B021",
+        "B022",
+        "B023",
+        "B024",
+        "B025",
+        "B026",
+        "B027",
+        "B030",
+    }
+)
+RULE_CODE_TOKEN_RE = re.compile(r"\bB[0-9]{3}\b")
 FORBIDDEN_METADATA_KEYS = frozenset(
     {
         "api_key",
@@ -78,11 +101,19 @@ FORBIDDEN_BYTES = (
     re.compile(rb"sk-[A-Za-z0-9_-]{20,}"),
     re.compile(rb"\bgh[pousr]_[A-Za-z0-9]{36,255}\b"),
     re.compile(rb"\bgithub_pat_[A-Za-z0-9_]{20,255}\b"),
+    re.compile(rb"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b"),
+    re.compile(rb"\bxox[baprs]-[A-Za-z0-9-]{20,255}\b"),
+    re.compile(rb"\bglpat-[A-Za-z0-9_-]{20,255}\b"),
+    re.compile(
+        rb"\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b"
+    ),
     re.compile(rb"-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----"),
     re.compile(rb"(?i)Bearer[ \t]+[A-Za-z0-9._~+/-]{16,}"),
     re.compile(
         rb"(?i)[\"']?(?:api[_-]?key|access[_-]?token|auth[_-]?token|"
-        rb"session[_-]?id|hidden[_-]?reasoning|chain[_-]?of[_-]?thought)"
+        rb"client[_-]?secret|credentials?|password|secret|session(?:[_-]?id)?|"
+        rb"client[_-]?log|private[_-]?prompt|raw[_-]?request|hidden[_-]?reasoning|"
+        rb"chain[_-]?of[_-]?thought)"
         rb"[\"']?[ \t]*[:=][ \t]*[\"']?[^\s\"']{8,}"
     ),
 )
@@ -259,15 +290,20 @@ def _read_regular_utf8(
     except OSError:
         raise CorpusError("HC021", "fixture-open-refused", case_id=case_id) from None
     try:
-        opened = os.fstat(descriptor)
-        if not stat.S_ISREG(opened.st_mode):
-            raise CorpusError("HC021", "fixture-not-regular", case_id=case_id)
-        if (opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino):
-            raise CorpusError("HC021", "fixture-identity-changed", case_id=case_id)
-        data = os.read(descriptor, byte_limit + 1)
-        after = os.fstat(descriptor)
-    finally:
-        os.close(descriptor)
+        try:
+            opened = os.fstat(descriptor)
+            if not stat.S_ISREG(opened.st_mode):
+                raise CorpusError("HC021", "fixture-not-regular", case_id=case_id)
+            if (opened.st_dev, opened.st_ino) != (before.st_dev, before.st_ino):
+                raise CorpusError("HC021", "fixture-identity-changed", case_id=case_id)
+            data = os.read(descriptor, byte_limit + 1)
+            after = os.fstat(descriptor)
+        finally:
+            os.close(descriptor)
+    except CorpusError:
+        raise
+    except OSError:
+        raise CorpusError("HC021", "fixture-read-refused", case_id=case_id) from None
 
     if len(data) > byte_limit or after.st_size > byte_limit:
         raise CorpusError("HC022", "fixture-oversized", case_id=case_id)
@@ -618,7 +654,8 @@ def _validate_classification(value: Any, *, case_id: str) -> tuple[str, tuple[st
         raise CorpusError("HC015", "classification-outcome-invalid", case_id=case_id)
     expected_codes = classification["expected_codes"]
     if not isinstance(expected_codes, list) or any(
-        not isinstance(code, str) or not CODE_RE.fullmatch(code) for code in expected_codes
+        not isinstance(code, str) or code not in BREVITAS_RULE_CODES
+        for code in expected_codes
     ):
         raise CorpusError("HC016", "classification-codes-invalid", case_id=case_id)
     if expected_codes != sorted(expected_codes):
@@ -632,7 +669,7 @@ def _validate_classification(value: Any, *, case_id: str) -> tuple[str, tuple[st
         not isinstance(rule_citations, list)
         or not rule_citations
         or any(
-            not isinstance(code, str) or not CODE_RE.fullmatch(code)
+            not isinstance(code, str) or code not in BREVITAS_RULE_CODES
             for code in rule_citations
         )
     ):
@@ -646,7 +683,11 @@ def _validate_classification(value: Any, *, case_id: str) -> tuple[str, tuple[st
     basis = classification["basis"]
     if not isinstance(basis, str) or not 1 <= len(basis.encode("utf-8")) <= 512:
         raise CorpusError("HC015", "classification-basis-invalid", case_id=case_id)
-    if any(code not in basis for code in rule_citations):
+    basis_codes = frozenset(RULE_CODE_TOKEN_RE.findall(basis))
+    if (
+        not basis_codes.issubset(BREVITAS_RULE_CODES)
+        or not set(rule_citations).issubset(basis_codes)
+    ):
         raise CorpusError("HC016", "classification-basis-uncited", case_id=case_id)
     return outcome, tuple(expected_codes)
 

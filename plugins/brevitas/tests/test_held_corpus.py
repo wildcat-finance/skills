@@ -8,11 +8,13 @@ import tempfile
 import unittest
 from pathlib import Path
 from typing import Any, Callable
+from unittest import mock
 
 from skills.brevitas.scripts.held_corpus import (
     CorpusError,
     FAMILIES,
     MODEL_IDENTITIES,
+    _read_regular_utf8,
     failure_line,
     result_lines,
     validate_corpus,
@@ -202,6 +204,25 @@ class HeldCorpusTests(unittest.TestCase):
 
         self.expect_failure("HC015", change)
 
+    def test_unknown_rule_citation_is_refused(self) -> None:
+        def change(_root: Path, manifest: dict[str, Any]) -> None:
+            classification = manifest["cases"][0]["classification"]
+            classification["outcome"] = "expected-diagnostics"
+            classification["expected_codes"] = ["B999"]
+            classification["rule_citations"] = ["B999"]
+            classification["basis"] = "B999: fabricated rule citation."
+
+        self.expect_failure("HC016", change)
+
+    def test_rule_citation_requires_a_complete_basis_token(self) -> None:
+        def change(_root: Path, manifest: dict[str, Any]) -> None:
+            classification = manifest["cases"][0]["classification"]
+            classification["expected_codes"] = ["B003"]
+            classification["rule_citations"] = ["B003"]
+            classification["basis"] = "B0030 is not the cited rule."
+
+        self.expect_failure("HC016", change)
+
     def test_zero_or_malformed_source_commit_is_refused(self) -> None:
         for value in ("0" * 40, "not-a-commit"):
             with self.subTest(value=value):
@@ -333,6 +354,27 @@ class HeldCorpusTests(unittest.TestCase):
 
         self.expect_failure("HC021", change)
 
+    def test_fixture_io_error_is_bounded(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "fixture.md").write_text("safe\n", encoding="utf-8")
+
+            with mock.patch.object(os, "read", side_effect=OSError("simulated I/O")):
+                try:
+                    _read_regular_utf8(
+                        root,
+                        "fixture.md",
+                        byte_limit=1024,
+                        case_id="io-probe",
+                    )
+                except Exception as caught:
+                    raised = caught
+                else:
+                    self.fail("fixture I/O failure was accepted")
+
+        self.assertIsInstance(raised, CorpusError)
+        self.assertEqual(getattr(raised, "code", None), "HC021")
+
     def test_oversized_input_is_refused(self) -> None:
         def change(root: Path, manifest: dict[str, Any]) -> None:
             case = manifest["cases"][0]
@@ -462,6 +504,52 @@ class HeldCorpusTests(unittest.TestCase):
                     )
 
                 self.expect_failure("HC013", change)
+
+    def test_common_credential_and_session_bytes_are_refused(self) -> None:
+        markers = {
+            "aws-access-key": b"AK" + b"IA" + b"A" * 16,
+            "slack-bot-token": (
+                b"xo" + b"xb-" + b"1" * 12 + b"-" + b"2" * 12 + b"-" + b"A" * 24
+            ),
+            "gitlab-pat": b"gl" + b"pat-" + b"A" * 20,
+            "jwt": b"e" + b"y" + b"J" + b"A" * 20 + b"." + b"B" * 24 + b"." + b"C" * 24,
+            "credential-assignment": b"credential=" + b"A" * 24,
+            "session-assignment": b"session=" + b"A" * 24,
+        }
+
+        for label, marker in markers.items():
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                (root / "fixture.md").write_bytes(b"captured " + marker + b"\n")
+                with self.assertRaises(CorpusError) as raised:
+                    _read_regular_utf8(
+                        root,
+                        "fixture.md",
+                        byte_limit=1024,
+                        case_id="credential-probe",
+                    )
+                self.assertEqual(raised.exception.code, "HC013")
+
+    def test_adjacent_credential_like_prose_without_values_is_allowed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            data = (
+                b"credential=short session=short AK"
+                + b"IA"
+                + b"A" * 15
+                + b" xoxb-short glpat-short eyJheader.payload\n"
+            )
+            (root / "fixture.md").write_bytes(data)
+
+            actual, text = _read_regular_utf8(
+                root,
+                "fixture.md",
+                byte_limit=1024,
+                case_id="credential-near-miss",
+            )
+
+        self.assertEqual(actual, data)
+        self.assertEqual(text, data.decode("utf-8"))
 
     def test_unclassified_case_is_refused(self) -> None:
         def change(_root: Path, manifest: dict[str, Any]) -> None:
