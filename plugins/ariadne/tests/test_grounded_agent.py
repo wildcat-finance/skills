@@ -1028,6 +1028,26 @@ class EvidenceBoundaryTests(unittest.TestCase):
                 self.assertFalse(gate.passed, gate.detail)
                 self.assertIn(key, gate.detail)
 
+    def test_core_gate_four_refuses_unseparated_chains_on_open_surfaces(self):
+        for surface, key in (
+            ("annotations", "securityverdictstatus"),
+            ("digest", "auditrecommendationresultstatusvalue"),
+        ):
+            body = predicate()
+            outer = subjects(body)
+            if surface == "annotations":
+                outer[0]["annotations"] = {"nested": {key: "positive"}}
+            else:
+                outer[0]["digest"][key] = "00"
+            with self.subTest(surface=surface, key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 4
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
     def test_core_gate_seven_refuses_multitoken_identity_and_status_claims(self):
         for key in (
             "author_name",
@@ -1044,6 +1064,26 @@ class EvidenceBoundaryTests(unittest.TestCase):
             outer = subjects(body)
             outer[0]["annotations"] = {key: "someone"}
             with self.subTest(key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 7
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_core_gate_seven_refuses_unseparated_chains_on_open_surfaces(self):
+        for surface, key in (
+            ("annotations", "signaturesigneridentity"),
+            ("digest", "signatureverificationactorstatusidentity"),
+        ):
+            body = predicate()
+            outer = subjects(body)
+            if surface == "annotations":
+                outer[0]["annotations"] = {"nested": {key: "someone"}}
+            else:
+                outer[0]["digest"][key] = "00"
+            with self.subTest(surface=surface, key=key):
                 gate = next(
                     found
                     for found in report(body, outer).gates

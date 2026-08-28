@@ -173,8 +173,31 @@ class GateFourTests(unittest.TestCase):
                 self.assertFalse(gate.passed, gate.detail)
                 self.assertIn(key, gate.detail)
 
+    def test_unseparated_bounded_conclusion_chains_fail(self):
+        for key in (
+            "securityverdictstatus",
+            "riskscoreresult",
+            "safetyconclusionstate",
+            "auditrecommendationvalue",
+            "verdictresultstatus",
+            "security2verdictstatus",
+            "verdictresultstatus2",
+            "securityauditverdictresultstatusvalue",
+        ):
+            gate = only(4, {"claims": [], "commands": [], key: "positive"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
     def test_neutral_status_and_conclusion_process_metadata_pass(self):
-        for key in ("status", "identity", "approval_workflow", "score_method"):
+        for key in (
+            "status",
+            "identity",
+            "approval_workflow",
+            "score_method",
+            "riskmanagementstatus",
+            "underscorestatus",
+        ):
             gate = only(4, {"claims": [], "commands": [], key: "recorded"})
             with self.subTest(key=key):
                 self.assertTrue(gate.passed, gate.detail)
@@ -293,6 +316,21 @@ class GateSevenTests(unittest.TestCase):
                 self.assertFalse(gate.passed, gate.detail)
                 self.assertIn(key, gate.detail)
 
+    def test_unseparated_bounded_authorship_chains_fail(self):
+        for key in (
+            "signaturesigneridentity",
+            "signatureverificationactorstatus",
+            "attestationverificationactoridentity",
+            "authenticationpublishername",
+            "signature2signeridentity",
+            "signatureverificationactorstatus2",
+            "signatureverificationactorstatusidentity",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "someone"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
     def test_neutral_identity_and_signature_metadata_pass(self):
         for key in (
             "identity",
@@ -300,6 +338,8 @@ class GateSevenTests(unittest.TestCase):
             "signature_algorithm",
             "verification_method",
             "attestation_format",
+            "authorizationstatus",
+            "authorizationstatusidentity",
         ):
             gate = only(7, {"claims": [], "commands": [], key: "recorded"})
             with self.subTest(key=key):

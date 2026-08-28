@@ -48,6 +48,7 @@ CONCLUSION_COMPOUND_KEYS = frozenset(
     for root in CONCLUSION_KEYS
     for suffix in CONCLUSION_COMPOUND_SUFFIXES
 )
+CONCLUSION_CONTEXT_TOKENS = frozenset({"audit", "risk", "safety", "security"})
 
 AUTHORSHIP_KEYS = frozenset(
     {
@@ -150,22 +151,109 @@ AUTHORSHIP_RELATION_TOKENS = frozenset(
 AUTHORSHIP_ASSERTION_TOKENS = frozenset(
     {"actor", "by", "identity", "name", "status", "valid", "validity", "verified"}
 )
-AUTHORSHIP_CHAIN_KEYS = frozenset(
-    root + middle + final
-    for root in AUTHORSHIP_COMPOUND_ROOTS
-    for middle in AUTHORSHIP_RELATION_TOKENS | AUTHORSHIP_ASSERTION_TOKENS | {""}
-    for final in AUTHORSHIP_ASSERTION_TOKENS
-)
-"""Unseparated direct compounds that tokenisation cannot recover.
-
-The finite roots and final assertion terms close forms such as
-`signatureverificationstatus` without turning an unrelated prefix such as
-`authorization` into `author`.
-"""
-
 KEY_TOKEN = re.compile(
     r"[A-Z]+(?=[A-Z][a-z]|[0-9]|[^A-Za-z0-9]|$)|[A-Z]?[a-z]+|[0-9]+"
 )
+
+TOKEN_CONTEXT = 1
+TOKEN_CONCLUSION = 2
+TOKEN_SUFFIX = 4
+TOKEN_AUTHORSHIP_DIRECT = 1
+TOKEN_AUTHORSHIP_RELATION = 2
+TOKEN_AUTHORSHIP_ASSERTION = 4
+
+
+def compile_vocabulary(*groups):
+    """A finite ASCII vocabulary as bounded-memory trie tables."""
+    transitions = [{}]
+    terminals = [0]
+    for flag, words in groups:
+        for word in words:
+            node = 0
+            for character in word:
+                child = transitions[node].get(character)
+                if child is None:
+                    child = len(transitions)
+                    transitions[node][character] = child
+                    transitions.append({})
+                    terminals.append(0)
+                node = child
+            terminals[node] |= flag
+    return tuple(transitions), tuple(terminals)
+
+
+CONCLUSION_VOCABULARY = compile_vocabulary(
+    (TOKEN_CONTEXT, CONCLUSION_CONTEXT_TOKENS),
+    (TOKEN_CONCLUSION, CONCLUSION_KEYS),
+    (TOKEN_SUFFIX, CONCLUSION_COMPOUND_SUFFIXES),
+)
+AUTHORSHIP_VOCABULARY = compile_vocabulary(
+    (TOKEN_AUTHORSHIP_DIRECT, AUTHORSHIP_DIRECT_TOKENS),
+    (TOKEN_AUTHORSHIP_RELATION, AUTHORSHIP_RELATION_TOKENS),
+    (TOKEN_AUTHORSHIP_ASSERTION, AUTHORSHIP_ASSERTION_TOKENS),
+)
+
+
+def conclusion_chain(value):
+    """A whole finite-vocabulary conclusion chain with no separators.
+
+    The trie keeps work linear in the key length and memory bounded by the
+    vocabulary.  Requiring a complete chain avoids finding ``score`` inside an
+    unrelated key such as ``underscorestatus``.
+    """
+    transitions, terminals = CONCLUSION_VOCABULARY
+    # State zero accepts context words; state one accepts state suffixes after
+    # exactly one conclusion word. A root-trie entry marks a word boundary.
+    active = {(0, 0)}
+    for character in value:
+        following = set()
+        for node, state in active:
+            child = transitions[node].get(character)
+            if child is None:
+                continue
+            following.add((child, state))
+            flags = terminals[child]
+            if state == 0:
+                if flags & TOKEN_CONTEXT:
+                    following.add((0, 0))
+                if flags & TOKEN_CONCLUSION:
+                    following.add((0, 1))
+            elif flags & TOKEN_SUFFIX:
+                following.add((0, 1))
+        active = following
+        if not active:
+            return False
+    return (0, 1) in active
+
+
+def authorship_chain(value):
+    """A whole unseparated chain made only from finite authorship words."""
+    transitions, terminals = AUTHORSHIP_VOCABULARY
+    active = {(0, 0)}
+    for character in value:
+        following = set()
+        for node, claims in active:
+            child = transitions[node].get(character)
+            if child is None:
+                continue
+            following.add((child, claims))
+            flags = terminals[child]
+            if flags:
+                following.add((0, claims | flags))
+        active = following
+        if not active:
+            return False
+    return any(
+        node == 0
+        and (
+            claims & TOKEN_AUTHORSHIP_DIRECT
+            or (
+                claims & TOKEN_AUTHORSHIP_RELATION
+                and claims & TOKEN_AUTHORSHIP_ASSERTION
+            )
+        )
+        for node, claims in active
+    )
 
 
 def key_tokens(key):
@@ -178,7 +266,13 @@ def key_tokens(key):
 def conclusion_key(key):
     """A direct conclusion key or a structured conclusion compound."""
     normal = core_predicate.normalise_key(key)
-    if normal in CONCLUSION_KEYS or normal in CONCLUSION_COMPOUND_KEYS:
+    letters = "".join(character for character in normal if not character.isdigit())
+    if any(
+        candidate in CONCLUSION_KEYS
+        or candidate in CONCLUSION_COMPOUND_KEYS
+        or conclusion_chain(candidate)
+        for candidate in (normal, letters)
+    ):
         return True
     tokens = key_tokens(key)
     if tokens and tokens[-1] in CONCLUSION_KEYS:
@@ -192,10 +286,12 @@ def conclusion_key(key):
 
 def authorship_key(key):
     normal = core_predicate.normalise_key(key)
-    if (
-        normal in AUTHORSHIP_KEYS
-        or normal in AUTHORSHIP_COMPOUND_KEYS
-        or normal in AUTHORSHIP_CHAIN_KEYS
+    letters = "".join(character for character in normal if not character.isdigit())
+    if any(
+        candidate in AUTHORSHIP_KEYS
+        or candidate in AUTHORSHIP_COMPOUND_KEYS
+        or authorship_chain(candidate)
+        for candidate in (normal, letters)
     ):
         return True
     tokens = frozenset(key_tokens(key))

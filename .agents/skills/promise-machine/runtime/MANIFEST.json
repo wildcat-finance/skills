@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11105706,
+  "total_bytes": 11108934,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -673,9 +673,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/envelope.py"
     },
     {
-      "bytes": 19861,
+      "bytes": 23089,
       "path": "plugins/ariadne/scripts/ariadne_lib/gates.py",
-      "sha256": "7d62edacf317cfea893dd348b96d24fe74c4995500b91da4a50aa1259d030fdb",
+      "sha256": "2b414458a3c7342d46517e5e57f6f861ed1c67864bab27bf1a59a177979f1768",
       "source": "plugins/ariadne/scripts/ariadne_lib/gates.py"
     },
     {
