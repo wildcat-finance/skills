@@ -230,6 +230,20 @@ _URL = re.compile(r"^([a-zA-Z][a-zA-Z0-9+.-]*)://(.*)$")
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
+def _named(value) -> bool:
+    """True when a field holds a name rather than an absence.
+
+    The presence tests here were spelled `str(value).strip()`, which reads a
+    JSON `null` as the four-character string `None` and passes. A compiler
+    absence carrying `reason: null`, an applicable compiler carrying
+    `invocation: null`, and an input carrying `path: null` all validated clean,
+    while the same records with the key removed were refused. A field either
+    holds a non-blank string or holds nothing, and the two spellings of nothing
+    have to land in the same place.
+    """
+    return isinstance(value, str) and bool(value.strip())
+
+
 def _strip_userinfo(ref: str) -> str:
     """Drop `user:token@` from a ref that parses as a URL, keeping the rest.
 
@@ -248,8 +262,20 @@ def _strip_userinfo(ref: str) -> str:
     carries no credential, and partitioning it would leave `https://7e449ba` —
     an origin silently replaced by a fragment of itself.
 
-    Only the `user:token@host` shape goes. A ref with no scheme is untouched,
-    which leaves `git@host:owner/repo.git` and `owner/repo@sha` verbatim.
+    What goes is the whole userinfo, whatever shape it has, and not only the
+    `user:token@` one. `ssh://git@host/owner/repo.git` becomes
+    `ssh://host/owner/repo.git`, which is a clean ref changed into one that
+    will not clone. A ref with no scheme is untouched, which keeps
+    `git@host:owner/repo.git` and `owner/repo@sha` verbatim and equally keeps
+    the userinfo in a ref nobody spelled as a URL.
+
+    The authority bound has a cost, and it belongs in the same breath as the
+    rule. An unencoded `/`, `?` or `#` ahead of the `@` ends the authority
+    before it, so nothing is stripped: `https://user:pa/ss@host/p` comes back
+    whole where Ariadne's unbounded partition returns `https://host/p`. RFC
+    3986 requires those three percent-encoded inside userinfo, so a conforming
+    ref does not carry them; this strip is a defence against an accident, and
+    that is the accident it does not catch.
     """
     match = _URL.match(ref)
     if not match:
@@ -269,8 +295,13 @@ def compiler_absent(reason: str) -> dict:
     The Markdown chunker parses text; there is no version to record. Writing
     `unknown` here would be a guess wearing the shape of a value, and a reader
     two years later cannot tell one from a compiler actually called `unknown`.
-    An absence says it is an absence and says why.
+    An absence says it is an absence and says why, so a blank reason is
+    refused here rather than left for the validator to find.
     """
+    if not _named(reason):
+        raise ValueError(
+            f"the reason no compiler applies is {reason!r}, which says "
+            "nothing; an absence carries the reason it is an absence")
     return {"applicable": False, "reason": reason}
 
 
@@ -290,7 +321,22 @@ def compiler_reported(invocation: str, reported_version: str, *,
     on `0.8.25` accepts `0.8.25+commit.deadbeef` as readily as the build it was
     meant to name. The version the compiler reported for itself sits beside the
     pin so a reader can see the whole of what was checked.
+
+    A pin that is not a non-blank string is refused rather than recorded.
+    `require_solc_version` reads `if expected and not
+    found.startswith(expected)`, so an empty `--expect-solc` skips the
+    comparison altogether; a block carrying one would name a prefix gate the
+    run never made, which is the first thing this pair exists to prevent.
     """
+    if pin is not None and not _named(pin):
+        raise ValueError(
+            f"a pin of {pin!r} gates nothing: require_solc_version skips the "
+            "comparison when the expected version is empty, so record the "
+            "reason nothing was gated rather than a gate that was not made")
+    if unpinned_reason is not None and not _named(unpinned_reason):
+        raise ValueError(
+            f"the reason nothing was gated is {unpinned_reason!r}, which says "
+            "nothing; an ungated run records why it was ungated")
     if (pin is None) == (unpinned_reason is None):
         raise ValueError(
             "a compiler block records either the pin that was gated on or a "
@@ -335,17 +381,26 @@ def provenance_record(*, chunker: str, chunker_version: str, source_ref: str,
 
     Refusals belong here rather than downstream: a corpus delivered with no
     origin is the defect the record exists to close, and a ref of `"   "`
-    satisfies a presence check while naming nothing.
+    satisfies a presence check while naming nothing. A ref carrying a control
+    character is refused for the same reason one line further on: `_URL` cannot
+    span a newline, so such a ref never reaches the strip and any userinfo in
+    it would be written verbatim.
     """
-    if not source_ref.strip():
+    ref = source_ref.strip()
+    if not ref:
         raise ValueError(
             "--source-ref is empty; a corpus delivered with no origin is the "
             "defect this record exists to close")
+    if any(ch < " " or ch == "\x7f" for ch in ref):
+        raise ValueError(
+            f"--source-ref {ref!r} carries a control character; a ref is one "
+            "line, and a ref that is not one line does not parse as a URL, so "
+            "any userinfo in it would reach disk unstripped")
     return {
         "schema": PROVENANCE_SCHEMA,
         "chunker": chunker,
         "chunker_version": chunker_version,
-        "source_ref": _strip_userinfo(source_ref.strip()),
+        "source_ref": _strip_userinfo(ref),
         "source_ref_origin": REF_ORIGIN,
         "corpus_build_id": corpus_build_id,
         "chunk_count": chunk_count,
@@ -407,7 +462,7 @@ def validate_provenance(record: dict) -> list[str]:
         problems.append("inputs is empty — the record digests nothing")
     else:
         for entry in inputs:
-            if not isinstance(entry, dict) or not str(entry.get("path", "")).strip():
+            if not isinstance(entry, dict) or not _named(entry.get("path")):
                 problems.append(f"input has no path: {entry!r}")
             elif not _SHA256.fullmatch(str(entry.get("sha256", ""))):
                 problems.append(
@@ -422,9 +477,22 @@ def validate_provenance(record: dict) -> list[str]:
             problems.append(
                 "selection.include is empty — nothing says which source units "
                 "the corpus was meant to cover")
-        present = selection.get("units_present") or []
-        selected = selection.get("units_selected") or []
-        excluded = selection.get("units_excluded") or []
+        # All three are compared as sets below. A value that is not a list of
+        # strings took the validator down with a TypeError instead of
+        # reporting the problem it exists to report.
+        units = {}
+        for name in ("units_present", "units_selected", "units_excluded"):
+            value = selection.get(name) or []
+            if not isinstance(value, list) or not all(
+                    isinstance(unit, str) for unit in value):
+                problems.append(
+                    f"selection.{name} is {value!r}, not a list of source-unit "
+                    "names")
+                value = []
+            units[name] = value
+        present, selected, excluded = (units["units_present"],
+                                       units["units_selected"],
+                                       units["units_excluded"])
         if not selected:
             problems.append("selection.units_selected is empty — no corpus")
         stray = sorted(set(selected) - set(present))
@@ -454,7 +522,7 @@ def _compiler_problems(compiler) -> list[str]:
         return [f"compiler block is {compiler!r}; it must say whether a "
                 "compiler applies"]
     if compiler["applicable"] is False:
-        if not str(compiler.get("reason", "")).strip():
+        if not _named(compiler.get("reason")):
             return ["compiler does not apply and no reason says why"]
         return []
     if compiler["applicable"] is not True:
@@ -465,14 +533,24 @@ def _compiler_problems(compiler) -> list[str]:
     reported = compiler.get("reported_version")
     if not isinstance(reported, str) or not reported.strip():
         problems.append(f"compiler applies but reported {reported!r}")
-    if not str(compiler.get("invocation", "")).strip():
+    if not _named(compiler.get("invocation")):
         problems.append("compiler applies but the invocation is not recorded")
     pin, match = compiler.get("pin"), compiler.get("pin_match")
     if pin is None:
         if match is not None:
             problems.append(f"compiler has no pin but claims a {match!r} match")
-        if not str(compiler.get("reason", "")).strip():
+        if not _named(compiler.get("reason")):
             problems.append("compiler was not gated and no reason says why")
+    elif not _named(pin):
+        # `require_solc_version` reads `if expected and not
+        # found.startswith(expected)`, so an empty pin skips the comparison and
+        # a non-string one never reached it. Either way the block names a gate
+        # the run did not make, and comparing it further would only say so
+        # twice.
+        problems.append(
+            f"compiler pin is {pin!r}, which gates nothing; the comparison is "
+            "skipped when the expected version is empty, so record the reason "
+            "nothing was gated")
     else:
         if match != PIN_MATCH:
             problems.append(

@@ -560,6 +560,89 @@ def test_provenance_record() -> None:
           whole == [] and len(problems) >= 3,
           f"whole={whole} broken={len(problems)}: {problems}")
 
+    # seven — a null is not a stated reason. A presence test spelled
+    # `str(value).strip()` reads `None` as the four-character word `None`, so
+    # every absence a reader would take for a value passed it.
+    nulls = {
+        "absence with reason null": {"applicable": False, "reason": None},
+        "ungated with reason null": {"applicable": True, "invocation": "solc",
+                                     "reported_version": "0.8.35+c",
+                                     "pin": None, "pin_match": None,
+                                     "reason": None},
+        "applies with invocation null": {"applicable": True, "invocation": None,
+                                         "reported_version": "0.8.35+c",
+                                         "pin": None, "pin_match": None,
+                                         "reason": "nothing was gated"},
+    }
+    unrefused = [name for name, block in nulls.items()
+                 if not schema.validate_provenance(dict(record, compiler=block))]
+    check("a null reason or invocation is an absence, not a value",
+          not unrefused, f"passed validation: {unrefused}")
+    check("an input whose path is null is refused",
+          bool(schema.validate_provenance(
+              dict(record, inputs=[{"path": None, "sha256": "a" * 64}]))),
+          "a null path satisfied the presence test")
+
+    # eight — `require_solc_version` reads `if expected and not
+    # found.startswith(expected)`, so an empty pin skips the comparison. A
+    # block carrying one names a prefix gate the run never made.
+    refusal = ""
+    try:
+        schema.compiler_reported("solc", "0.8.35+c", pin="")
+    except ValueError as e:
+        refusal = str(e)
+    empty_pin = dict(record, compiler={
+        "applicable": True, "invocation": "solc",
+        "reported_version": "0.8.35+c", "pin": "", "pin_match": "prefix",
+        "reason": None})
+    left = schema.validate_provenance(empty_pin)
+    check("an empty pin is refused by the builder and by the validator",
+          bool(refusal) and bool(left),
+          f"builder said {refusal!r}, validator said {left}")
+
+    # nine — the validator is the gate for a record read back off disk, so a
+    # malformed one has to come back as problems rather than as a traceback.
+    malformed = {
+        "pin is a number": dict(record, compiler={
+            "applicable": True, "invocation": "solc",
+            "reported_version": "0.8.35+c", "pin": 0, "pin_match": "prefix",
+            "reason": None}),
+        "units_present is a number":
+            dict(record, selection=dict(record["selection"], units_present=5)),
+        "units_selected holds a list":
+            dict(record, selection=dict(record["selection"],
+                                        units_selected=[["docs/intro.md"]])),
+    }
+    escaped = []
+    for name, bad in malformed.items():
+        try:
+            if not schema.validate_provenance(bad):
+                escaped.append(f"{name}: no problem reported")
+        except Exception as e:
+            escaped.append(f"{name}: {type(e).__name__}")
+    check("a malformed record comes back as problems, not a traceback",
+          not escaped, str(escaped))
+
+    # ten — the URL pattern cannot span a newline, so a ref carrying one never
+    # reaches the strip and its userinfo would be written verbatim
+    refusal = ""
+    try:
+        schema.provenance_record(
+            source_ref="https://user:t0ken@github.com/o/r\nnote", **fields)
+    except ValueError as e:
+        refusal = str(e)
+    check("a ref carrying a control character is refused",
+          "control character" in refusal, f"refusal was {refusal!r}")
+
+    # eleven — the whole userinfo goes, whatever shape it has. Recorded
+    # because `ssh://git@host/...` is a clean ref that the strip changes, and
+    # the prose has to say so rather than name only `user:token@`.
+    ssh = schema.provenance_record(
+        source_ref="ssh://git@github.com/wildcat-finance/skills.git", **fields)
+    check("the strip takes the whole userinfo, a bare user included",
+          ssh["source_ref"] == "ssh://github.com/wildcat-finance/skills.git",
+          repr(ssh["source_ref"]))
+
 
 def test_surface_accuracy(solc: str, tmp: pathlib.Path) -> None:
     print("\nI14 — callable surface matches what is callable")

@@ -66,8 +66,11 @@ it.
 What a reader may conclude from a record is bounded. The digests bind bytes:
 those inputs and that corpus are the ones digested. The compiler reported that
 version of itself to that invocation, and the caller asserted that ref. Nothing
-fetches or resolves a ref, and a ref spelled as a URL loses only its
-`user:token@` userinfo on the way to disk. A record does not establish that the ref names a
+fetches or resolves a ref, and a ref spelled as a URL loses only its userinfo
+on the way to disk, whatever shape that userinfo has: `ssh://git@host/o/r.git`
+loses the `git` as surely as a token. A ref carrying a control character is
+refused rather than written, because such a ref does not parse as a URL and its
+userinfo would survive. A record does not establish that the ref names a
 real object, that the compiler was honest about its own version, that it was the
 intended compiler where no pin was gated, or that a citation drawn from the
 corpus is faithful.
