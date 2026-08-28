@@ -3198,6 +3198,40 @@ class LifecycleTests(unittest.TestCase):
 
         self.assertEqual([30.0], seen_timeouts)
 
+    def test_invalid_credential_is_not_recorded_as_provider_disclosure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            response = BufferedHTTPSResponse(
+                synthetic_provider_response("credential prompt", "UNUSED")
+            )
+            exchange = HTTPSExchangeFixture(response)
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: "invalid",
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            request = runtime.feed(request_frame("credential prompt"))[0]
+            runtime.finish_input()
+
+            with self.assertRaisesRegex(PolicyError, "MP321"):
+                runtime.generate(request)
+
+            self.assertEqual([], exchange.requests)
+            self.assertEqual("not-read", runtime.provider_events[-1].disclosure_state)
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual("not-read", records[-1]["disclosure_state"])
+
     def test_provider_usage_under_and_over_reporting_are_terminal(self):
         cases = (
             {"input_tokens": len("usage prompt") - 1, "output_tokens": 5},

@@ -424,11 +424,18 @@ class ProviderSession:
                     request_bytes = 0
                     response_bytes = 0
                     duration_ns = 0
+                disclosure_state = (
+                    "not-read"
+                    if error.code == "MP321"
+                    and not isinstance(error, TransportRefusal)
+                    and not isinstance(transport, TransportResult)
+                    else "provider-only"
+                )
                 with self._state_lock:
                     self._poison_locked()
                     self._record_locked(
                         error.code,
-                        "provider-only",
+                        disclosure_state,
                         request_bytes=request_bytes,
                         response_bytes=response_bytes,
                         input_tokens=len(request.input_text),
