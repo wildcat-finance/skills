@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 from pathlib import Path
+import secrets
 import stat
 import sys
 import unittest
@@ -88,14 +89,19 @@ def report_target(argv):
     for operation, name in (
         (os.open, "os.open(dir_fd)"),
         (os.mkdir, "os.mkdir(dir_fd)"),
+        (os.link, "os.link(dir_fd)"),
         (os.stat, "os.stat(dir_fd)"),
         (os.unlink, "os.unlink(dir_fd)"),
     ):
         if operation not in supports_dir_fd:
             missing.append(name)
     supports_follow_symlinks = getattr(os, "supports_follow_symlinks", ())
-    if os.stat not in supports_follow_symlinks:
-        missing.append("os.stat(follow_symlinks)")
+    for operation, name in (
+        (os.link, "os.link(follow_symlinks)"),
+        (os.stat, "os.stat(follow_symlinks)"),
+    ):
+        if operation not in supports_follow_symlinks:
+            missing.append(name)
     if missing:
         parser.error(
             "--elenchus-report requires secure directory operations: "
@@ -182,7 +188,7 @@ def report_root(root, identity):
 
 
 def remove_created_report(parent_fd, name, created):
-    """Remove a failed write only while the name still identifies our inode."""
+    """Remove a private stage only while the name identifies its inode."""
     try:
         current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
     except OSError:
@@ -195,22 +201,48 @@ def remove_created_report(parent_fd, name, created):
         pass
 
 
+def staged_report(parent_fd):
+    """Create an unpredictable private stage beside the report target."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    for _ in range(16):
+        name = f".elenchus-stage-{secrets.token_hex(16)}"
+        try:
+            descriptor = os.open(name, flags, 0o600, dir_fd=parent_fd)
+        except FileExistsError:
+            continue
+        try:
+            created = os.fstat(descriptor)
+        except BaseException:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+            try:
+                os.unlink(name, dir_fd=parent_fd)
+            except OSError:
+                pass
+            raise
+        if stat.S_ISREG(created.st_mode):
+            return name, descriptor, created
+        os.close(descriptor)
+        remove_created_report(parent_fd, name, created)
+        raise OSError("report stage is not a regular file")
+    raise OSError("report stage name could not be allocated")
+
+
 def write_report(target, payload):
-    """Create the declared report through its bound checkout identity."""
+    """Publish a complete report without exposing a partial target."""
     root, identity, parts = target
     if not parts:
         raise OSError("report path has no filename")
     root_fd = report_root(root, identity)
     try:
         parent_fd = report_parent(root_fd, parts[:-1])
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
         descriptor = None
         created = None
+        stage_name = None
         try:
-            descriptor = os.open(parts[-1], flags, 0o600, dir_fd=parent_fd)
-            created = os.fstat(descriptor)
-            if not stat.S_ISREG(created.st_mode):
-                raise OSError("report target is not a regular file")
+            stage_name, descriptor, created = staged_report(parent_fd)
             body = (json.dumps(payload, sort_keys=True) + "\n").encode("utf-8")
             remaining = memoryview(body)
             while remaining:
@@ -218,18 +250,31 @@ def write_report(target, payload):
                 if written <= 0:
                     raise OSError("report write made no progress")
                 remaining = remaining[written:]
+            staged = os.stat(
+                stage_name, dir_fd=parent_fd, follow_symlinks=False
+            )
+            if (staged.st_dev, staged.st_ino) != (
+                created.st_dev,
+                created.st_ino,
+            ):
+                raise OSError("report stage changed during write")
+            os.link(
+                stage_name,
+                parts[-1],
+                src_dir_fd=parent_fd,
+                dst_dir_fd=parent_fd,
+                follow_symlinks=False,
+            )
             os.close(descriptor)
             descriptor = None
-        except OSError:
+        finally:
             if descriptor is not None:
                 try:
                     os.close(descriptor)
                 except OSError:
                     pass
-            if created is not None:
-                remove_created_report(parent_fd, parts[-1], created)
-            raise
-        finally:
+            if stage_name is not None and created is not None:
+                remove_created_report(parent_fd, stage_name, created)
             os.close(parent_fd)
     finally:
         os.close(root_fd)

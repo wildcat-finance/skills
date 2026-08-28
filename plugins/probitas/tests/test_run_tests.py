@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 from types import SimpleNamespace
+import stat
 import tempfile
 import unittest
 from unittest import mock
@@ -159,7 +160,8 @@ class RunnerTests(unittest.TestCase):
             target = self.parse_in(root, report)
 
             def replace_then_fail(_descriptor, _body):
-                report.unlink()
+                if report.exists():
+                    report.unlink()
                 report.write_text("replacement\n", encoding="utf-8")
                 raise OSError("interrupted after replacement")
 
@@ -172,6 +174,96 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual(
                 report.read_text(encoding="utf-8"), "replacement\n"
             )
+
+    def test_cleanup_never_unlinks_a_replacement_after_identity_check(self):
+        with tempfile.TemporaryDirectory(prefix="probitas-runner-") as directory:
+            root = Path(directory).resolve()
+            report = root / "report.json"
+            target = self.parse_in(root, report)
+            original_stat = runner.os.stat
+            created = None
+
+            def replace_then_fail(descriptor, _body):
+                nonlocal created
+                created = runner.os.fstat(descriptor)
+                if report.exists():
+                    report.unlink()
+                report.write_text("replacement\n", encoding="utf-8")
+                raise OSError("interrupted while another writer replaces target")
+
+            def stale_identity(name, *, dir_fd=None, follow_symlinks=True):
+                if (
+                    name == report.name
+                    and dir_fd is not None
+                    and follow_symlinks is False
+                ):
+                    return created
+                return original_stat(
+                    name,
+                    dir_fd=dir_fd,
+                    follow_symlinks=follow_symlinks,
+                )
+
+            with mock.patch.object(
+                runner.os, "write", side_effect=replace_then_fail
+            ), mock.patch.object(
+                runner.os, "stat", side_effect=stale_identity
+            ), self.assertRaises(OSError):
+                runner.write_report(
+                    target, runner.result_payload(sample_result())
+                )
+            self.assertTrue(report.exists())
+            self.assertEqual(
+                report.read_text(encoding="utf-8"), "replacement\n"
+            )
+
+    def test_post_open_inspection_failure_closes_and_removes_the_stage(self):
+        with tempfile.TemporaryDirectory(prefix="probitas-runner-") as directory:
+            root = Path(directory).resolve()
+            report = root / "report.json"
+            target = self.parse_in(root, report)
+            original_fstat = runner.os.fstat
+            opened_file = None
+
+            def fail_file_inspection(descriptor):
+                nonlocal opened_file
+                inspected = original_fstat(descriptor)
+                if stat.S_ISREG(inspected.st_mode):
+                    opened_file = descriptor
+                    raise OSError("inspection failed")
+                return inspected
+
+            with mock.patch.object(
+                runner.os, "fstat", side_effect=fail_file_inspection
+            ), self.assertRaises(OSError):
+                runner.write_report(
+                    target, runner.result_payload(sample_result())
+                )
+            self.assertEqual(list(root.iterdir()), [])
+            with self.assertRaises(OSError):
+                runner.os.write(opened_file, b"still open")
+
+    def test_base_exception_during_write_closes_and_removes_the_stage(self):
+        with tempfile.TemporaryDirectory(prefix="probitas-runner-") as directory:
+            root = Path(directory).resolve()
+            report = root / "report.json"
+            target = self.parse_in(root, report)
+            opened_file = None
+
+            def interrupt(descriptor, _body):
+                nonlocal opened_file
+                opened_file = descriptor
+                raise KeyboardInterrupt
+
+            with mock.patch.object(
+                runner.os, "write", side_effect=interrupt
+            ), self.assertRaises(KeyboardInterrupt):
+                runner.write_report(
+                    target, runner.result_payload(sample_result())
+                )
+            self.assertEqual(list(root.iterdir()), [])
+            with self.assertRaises(OSError):
+                runner.os.write(opened_file, b"still open")
 
     def test_passing_failure_error_and_zero_suites_write_exact_results(self):
         def assertion_failure():
