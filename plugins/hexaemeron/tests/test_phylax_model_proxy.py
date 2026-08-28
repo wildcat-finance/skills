@@ -4062,6 +4062,57 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual("not-read", records[-1]["disclosure_state"])
             self.assertEqual("MP405", records[-1]["outcome_code"])
 
+    def test_expiry_after_provider_completion_withholds_final_response(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            monotonic = MutableClock(self.START_MONOTONIC_NS)
+            exchange = HTTPSExchangeFixture(
+                BufferedHTTPSResponse(
+                    synthetic_provider_response("completion expiry", "TOO LATE")
+                )
+            )
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=monotonic,
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            request = runtime.feed(request_frame("completion expiry"))[0]
+            runtime.finish_input()
+            original_ready = runtime._provider.require_completion_ready
+
+            def expire_before_finish():
+                original_ready()
+                monotonic.set(runtime._controller.elapsed_deadline_ns)
+
+            with mock.patch.object(
+                runtime._provider,
+                "require_completion_ready",
+                side_effect=expire_before_finish,
+            ):
+                with self.assertRaisesRegex(PolicyError, "MP405"):
+                    runtime.generate(request, final=True)
+
+            self.assertEqual("MP405", runtime.terminal.code)
+            self.assertEqual(1, len(exchange.requests))
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual(
+                ["activation", "request", "terminal"],
+                [record["event"] for record in records],
+            )
+            self.assertEqual("MP405", records[-1]["outcome_code"])
+
     def test_clock_failure_after_request_receipt_prevents_disclosure(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

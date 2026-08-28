@@ -971,6 +971,8 @@ class ModelProxyRuntime:
                                 self._finalize_terminal(terminal)
                             raise
                         self._finalize_terminal(snapshot)
+                        if snapshot.code != "MP000":
+                            refuse(snapshot.code, "lifecycle.late_response")
                     else:
                         self._active_locked()
                     return guest_response
