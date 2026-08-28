@@ -1,3 +1,5 @@
+![Brevitas](./assets/characters/brevitas.png)
+
 # Brevitas
 
 <!-- marketplace-context:start -->
@@ -19,6 +21,10 @@ protocol-property discussion, protocol analysis, or specification comment. Saphe
 may shape the surrounding interaction or one bounded durable record. None of
 the four may delete facts, uncertainty, counterexamples, or reproduction steps
 to make prose tidier.
+
+If Synkrisis eventually renders a comparison report, Brevitas may constrain
+that report's structure but cannot validate its findings. The current
+Synkrisis scaffold emits no report to rewrite or compress.
 
 ## How it works
 

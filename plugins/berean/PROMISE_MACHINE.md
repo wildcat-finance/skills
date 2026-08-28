@@ -1,6 +1,10 @@
-# Promise Machine contract
-
 <!-- promise-machine: contract=promise-machine/v1; canonical=PROMISE_MACHINE.md; copies=generated -->
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/wildcat-finance/skills/main/assets/characters/promise-machine-binding.png" width="1200">
+</p>
+
+# Promise Machine contract
 
 This document is the normative contract for every skill distributed as part of
 Wildcat Labs Skills. Plugin-local files with this name are generated,
@@ -131,6 +135,11 @@ In particular:
 - A Fiat run-observation binding preserves the observation validator and
   capture boundaries. It attaches only the checked prefix to one receipt; it
   does not make observation availability or event truth delivery evidence.
+- Synkrisis currently contributes only a specification and a refusing command
+  scaffold. It establishes no cohort, finding, report, or verification, and it
+  cannot turn repeated observations into cause, model quality, or authority to
+  act. Its held implementation must preserve the validated observation and
+  receipt boundaries before any comparison result can enter a hand-off.
 
 Any unexplained strengthening is a conformance failure.
 
@@ -222,13 +231,13 @@ findings. The checker reaches no network and executes no evidence command.
 
 ### promise-machine-contributor-ranking
 
-- Promise: A successful `python3 scripts/contributors.py --check` establishes that every contributor row GitHub returned for the named repository was placed in exactly one of ranked, excluded with a named reason, or refused; that each ranked login is a valid GitHub login absent from the declared runtime-host set, is neither the Shoggoth's account nor the repository owner, and had at least one commit in a bounded sample authored by a non-host identity; that the order is merged commits, then merged pull requests, then login; and that `CONTRIBUTORS.md` and the marked region of `README.md` match that one computation byte for byte.
-- Evidence: The recorded contributors, merged-pull-request and commit-authorship reads, the host-set parity check against `hexctl.py`'s declaration, the login grammar check, the per-identity classification lines, the ranking digest, the byte comparison of both artefacts and zero command exit.
+- Promise: A successful `python3 scripts/contributors.py --check` establishes that every contributor row GitHub returned for `wildcat-finance/skills`, and every merged pull-request author returned for each named supplemental repository, was placed in exactly one of ranked, excluded with a named reason, or refused; that each ranked login is a valid GitHub login absent from the declared runtime-host set and is neither the Shoggoth's account nor the repository owner; that a login qualified either through a resolved Skills commit with at least one bounded non-host authorship sample or by authoring a merged pull request in `wildcat-finance/shoggoth-wave-atlas`; that the order is Skills commits, then merged pull requests across both repositories, then login; and that `CONTRIBUTORS.md` and the marked region of `README.md` match that one computation byte for byte.
+- Evidence: The recorded Skills contributors, per-account Skills merged-pull-request and commit-authorship reads, the complete paginated closed-pull-request read for each supplemental repository, the host-set parity check against `hexctl.py`'s declaration, the login grammar check, the per-identity classification lines, the ranking digest, the byte comparison of both artefacts and zero command exit.
 - Evidence classes: checked, recorded
-- Boundary: Ranking does not establish that the counts fairly measure contribution, that a commit carried judgement, who wrote which line, anything about a person beyond the account they committed under, or that GitHub's resolution of author emails to accounts is correct. It does not detect a merge that discarded commit authorship before the commit reached the default branch, and its authorship corroboration samples at most twenty commits per account rather than all of them.
+- Boundary: Ranking does not establish that the counts fairly measure contribution, that a commit carried judgement, who wrote which line, who else worked on a pull request, anything about a person beyond the account GitHub attached to the commit or pull request, or that GitHub's account resolution is correct. The commit column counts `wildcat-finance/skills` only; it does not count Wave Atlas commits. A pull-request author is the account that opened the PR, not every commit author, reviewer or collaborator. The run does not detect a merge that discarded commit authorship before the commit reached the Skills default branch, and its Skills authorship corroboration samples at most twenty commits per account rather than all of them.
 - Authorises: Writing `CONTRIBUTORS.md` and the marked region of `README.md` and nothing outside those two targets, and reporting the ranking without strengthening what the counts mean.
 - Consequence: 1
-- Refuses: An account type other than User or Bot, a Bot absent from the declared host set, a login failing the GitHub login grammar, a repository argument carrying query syntax, any failed API read including a rate limit, a host set diverged from `hexctl.py` in either direction, an excluded login reaching the ranked output, a `README.md` that is absent or not UTF-8, and a read that would silently truncate.
+- Refuses: An account type other than User or Bot, a Bot absent from the declared host set, a merged pull request without a classifiable author, a login failing the GitHub login grammar, a repository argument carrying query syntax, a duplicate repository source, any failed API read including a rate limit, a host set diverged from `hexctl.py` in either direction, an excluded login reaching the ranked output, a `README.md` that is absent or not UTF-8, and a read that would silently truncate.
 - Recovery: Read the stop, which names the identity or field at fault; extend the host set in `hexctl.py` and `scripts/contributors.py` together for an unknown host, set a token or wait for the named reset for a rate limit, and rerun with `--write` for a stale artefact. The generator never repairs an input.
 - Exceptions: none
 

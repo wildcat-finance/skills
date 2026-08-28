@@ -5,6 +5,10 @@ metadata:
   version: "0.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/sapheneia.png" width="1200">
+</p>
+
 # Sapheneia
 
 ## Frontier
@@ -31,6 +35,10 @@ Warden uses the bounded durable-record operation for Fiat audit records.
 Imprimatur and Vulgate govern wording, and Brevitas governs engineering-prose
 structure. Sapheneia changes none of their facts or gates. Shaping one durable
 record does not activate the session contract.
+
+A future Synkrisis report may pass through the prose layers, but Sapheneia will
+not change its evidence or conclusion. Synkrisis currently emits no report:
+its scaffold refuses cohort, diagnosis, render, and verification operations.
 
 ## Activation contract
 

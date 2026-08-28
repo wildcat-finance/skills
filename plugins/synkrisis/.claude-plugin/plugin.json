@@ -1,0 +1,22 @@
+{
+  "name": "synkrisis",
+  "displayName": "Synkrisis",
+  "version": "0.1.0",
+  "description": "Refusing scaffold for the specified comparison of validated run observations in one declared cohort.",
+  "author": {
+    "name": "Wildcat Labs",
+    "url": "https://wildcat.finance"
+  },
+  "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/synkrisis",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "run-observations",
+    "telemetry",
+    "diagnosis",
+    "comparison",
+    "promise-machine",
+    "agents"
+  ],
+  "skills": "./skills/"
+}

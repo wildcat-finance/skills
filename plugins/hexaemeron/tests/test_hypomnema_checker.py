@@ -117,6 +117,25 @@ class Runbooks(unittest.TestCase):
         self.assertEqual([], codes(
             "Three lines is a runbook: what fired, what to check, who to wake."))
 
+    def test_word_suffixes_do_not_create_runbook_pointers(self):
+        for prefix in ("myrunbook", "ourrunbook"):
+            with self.subTest(prefix=prefix):
+                self.assertEqual([], codes(
+                    f"{prefix}: runbooks/missing.md"))
+
+    def test_a_hyphenated_runbook_token_does_not_create_a_pointer(self):
+        self.assertEqual([], codes(
+            "sub-runbook: runbooks/missing.md"))
+
+    def test_the_left_boundary_preserves_live_runbook_forms(self):
+        for source in (
+            "runbook: runbooks/missing.md",
+            "- runbook: runbooks/missing.md",
+            "annotations.runbook: runbooks/missing.md",
+        ):
+            with self.subTest(source=source):
+                self.assertEqual(["H003"], codes(source))
+
     def test_markdown_h003_is_unchanged(self):
         source = "Alert: pending age. runbook: docs/runbooks/pending.md"
         self.assertEqual(["H003"], codes(source))

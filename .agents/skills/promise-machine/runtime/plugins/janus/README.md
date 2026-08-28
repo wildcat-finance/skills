@@ -1,3 +1,5 @@
+![Janus](./assets/characters/janus.png)
+
 # Janus
 
 <!-- marketplace-context:start -->
@@ -17,6 +19,10 @@ that the host transition must preserve; Hermes can measure a gas change inside
 the implementation; and the Pashov suite can audit the contracts. Those
 siblings do not decide which hook effects the host permits, and a passing Janus
 manifest is not a whole-protocol security verdict.
+
+Synkrisis is specified to compare validated run observations, not Janus
+conformance results into a wider safety claim. Its current command scaffold
+refuses every operation and cannot authorise a hook change.
 
 A conformance suite for what a contract hook may observe and change around a
 host action.

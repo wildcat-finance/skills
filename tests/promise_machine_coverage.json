@@ -1,10 +1,10 @@
 {
   "contract": "promise-machine/v1",
   "contributor_ranking": {
-    "contract": "promise-machine-contributor-ranking/v1",
+    "contract": "promise-machine-contributor-ranking/v2",
     "documentation": {
-      "path": "docs/promise-machine/contributors-v1.md",
-      "sha256": "88a503abed3b32e91b294b2be7af841eb85abd3913b2a125147143a0a4758fd9"
+      "path": "docs/promise-machine/contributors-v2.md",
+      "sha256": "59115e89ad02c767538fcf06f0d7f449b4c8ea19adbda5cd99f75f9fce96e469"
     },
     "fixtures": [
       {
@@ -18,32 +18,41 @@
       {
         "path": "tests/fixtures/contributors/contributors.json",
         "sha256": "f7f3d9e21eb378d53cfb74b1df5555dd759ce85ce5f04c78d99dab0e1e5f6110"
+      },
+      {
+        "path": "tests/fixtures/contributors/wave-atlas-pulls.json",
+        "sha256": "77ec0be964a0ee086152a167bc1224ff6d1d7790c9cc60e0a68ea914b4df4a8e"
       }
     ],
     "promise_id": "promise-machine-contributor-ranking",
     "runtime": {
       "path": "scripts/contributors.py",
-      "sha256": "598393c13401a67dbc34201caf6962de75a411a8ab96cf78c6bc3e7bce4fc2cc"
+      "sha256": "4b04d98ccee2f530e9d301144a45cdac34f4f7c19ece5fdabe06ab909ff8827a"
     },
     "tests": {
       "path": "tests/test_contributors.py",
       "selectors": [
+        "test_a_merged_wave_atlas_pr_qualifies_its_human_author",
         "test_a_rerun_that_changed_nothing_produces_no_diff",
         "test_an_interrupted_write_leaves_the_original_intact",
         "test_check_names_the_file_that_is_out_of_date",
         "test_closed_issue_coverage_reads_every_page",
+        "test_closed_unmerged_wave_atlas_pr_does_not_qualify_its_author",
         "test_coverage_past_the_search_cap_is_a_caveat_not_a_stop",
         "test_equal_counts_order_deterministically",
         "test_names_a_reason_for_every_exclusion",
         "test_no_api_field_other_than_login_reaches_the_payload",
         "test_no_excluded_login_reaches_either_artefact",
         "test_one_human_split_across_two_emails_ranks_once",
+        "test_payload_names_every_repository_behind_the_pr_total",
         "test_ranks_only_the_human_contributors",
         "test_readme_block_carries_handles_and_no_aggregate",
         "test_shoggoth_is_never_ranked",
         "test_stops_on_a_changed_member_of_a_known_set",
+        "test_stops_on_a_duplicate_supplemental_repository",
         "test_stops_on_a_readme_that_is_not_utf8",
         "test_stops_on_a_repository_carrying_query_syntax",
+        "test_stops_on_a_supplemental_repository_carrying_query_syntax",
         "test_stops_on_an_unknown_account_type",
         "test_stops_on_api_failure",
         "test_stops_on_bad_login_grammar",
@@ -51,14 +60,19 @@
         "test_stops_on_markers_in_the_wrong_order",
         "test_stops_on_one_marker_without_the_other",
         "test_stops_on_owner_in_output",
+        "test_stops_on_an_unknown_wave_atlas_bot",
         "test_stops_on_unknown_identity",
+        "test_stops_when_a_merged_wave_atlas_pr_has_no_author",
         "test_the_digest_changes_when_the_ranking_changes",
         "test_the_digest_covers_the_ranking_and_nothing_else",
-        "test_the_real_reader_stops_on_an_unroutable_host"
+        "test_the_real_reader_stops_on_an_unroutable_host",
+        "test_wave_atlas_prs_add_to_an_existing_contributor_once",
+        "test_wave_atlas_pull_requests_read_every_page",
+        "test_wave_atlas_runtime_and_shoggoth_prs_are_excluded_once"
       ],
-      "sha256": "7ca643203c21cd298b95b39bfaba00cd7702dc85cf0c1b82a28aa8a6918b9be2"
+      "sha256": "dd479fbaac231f90181363dbb91bbe124f69a7c978117562ef08f3b149ae4a5c"
     },
-    "transition": "place every contributor row in exactly one of ranked, excluded with a named reason, or refused, and render both artefacts from that one computation without strengthening what the counts mean"
+    "transition": "place every Skills contributor row and every merged supplemental pull-request author in exactly one of ranked, excluded with a named reason, or refused, then render both artefacts from that one computation without strengthening what either count means"
   },
   "evidence": {
     "alexandria-m": {
@@ -1140,6 +1154,26 @@
       "evidence_class": "inferred",
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
+    },
+    "synkrisis-scaffold-p": {
+      "claim": "The declared scaffold behaviour, one stable refusal per specified operation, is exercised positively.",
+      "path": "plugins/synkrisis/tests/test_scaffold.py",
+      "selector": "test_every_operation_refuses_with_the_scaffold_code"
+    },
+    "synkrisis-scaffold-m": {
+      "claim": "Plausible-looking inputs do not stand in for an implementation; the refusal still fires.",
+      "path": "plugins/synkrisis/tests/test_scaffold.py",
+      "selector": "test_operations_refuse_even_with_plausible_inputs"
+    },
+    "synkrisis-scaffold-o": {
+      "claim": "The nearest overclaim, a written artefact from an unbuilt operation, remains unavailable.",
+      "path": "plugins/synkrisis/tests/test_scaffold.py",
+      "selector": "test_no_operation_writes_an_output"
+    },
+    "synkrisis-scaffold-r": {
+      "claim": "Every refusal names the committed runbook step whose delivery recovers the operation.",
+      "path": "plugins/synkrisis/tests/test_scaffold.py",
+      "selector": "test_refusal_names_the_pending_runbook_step"
     }
   },
   "handoffs": [
@@ -1177,7 +1211,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "40ac13d52d578240c7f621434c05ca8320249ab799bda591f2c6f4aa41a47a4b"
+        "sha256": "04ee42c9ec24743af72d092a21b3cf878ac665eaab2ce91c9524531a74e4b26d"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1185,11 +1219,11 @@
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "fb1845089a525fa2b0f90e6b3ab91df14cb6861ce929538251d64d1635eaf027"
+        "sha256": "d4518faedfb84602de11d176ec898a4937673a5ed71490e57933a2fd9d4b8168"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
-        "sha256": "af3cb4c804f4d527535e2d771868aea709042ec08164f31687323c8120928c21"
+        "sha256": "8aee7ba8d711ea11fcd94a9db9ccc52001f39261ffcb71777285e4daf4fb5add"
       }
     ],
     "promise_id": "promise-machine-router-selection",
@@ -2463,6 +2497,25 @@
     },
     {
       "cases": {
+        "M": "synkrisis-scaffold-m",
+        "O": "synkrisis-scaffold-o",
+        "P": "synkrisis-scaffold-p",
+        "R": "synkrisis-scaffold-r",
+        "S": {
+          "not_applicable": true,
+          "reason": "The scaffold holds no earlier artefact that could go stale."
+        },
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "synkrisis-scaffold-refusal",
+      "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "tabularium-m",
         "O": "tabularium-o",
         "P": "tabularium-p",
@@ -2849,7 +2902,7 @@
         "transition": "review acceptance joined to the canonical Authorises field",
         "unknowns": "unexercised failure modes and missing operational evidence"
       },
-      "sha256": "d33af653a1ee0083fd7fa9d19d8292a04585ed137d68ca18a6a1b9d69d786d4f",
+      "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407",
       "source": "plugins/hexaemeron/skills/ephoros/SKILL.md"
     },
     "fiat-final-integration": {
@@ -3031,7 +3084,7 @@
         "transition": "accepted record placement joined to the canonical Authorises field",
         "unknowns": "unresolved decisions and intentionally absent records"
       },
-      "sha256": "9d328f4a07f627ecf6a3f3bcaad65e1ef179f7114a5246bc19836391e06c653c",
+      "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     "janus-bounded-conformance": {
@@ -3129,7 +3182,7 @@
         "transition": "keep or revert decision joined to the canonical Authorises field",
         "unknowns": "noise, unmeasured workloads and unexplained environmental changes"
       },
-      "sha256": "1f801631647bc1550956e03a7f236a1c68f6d299369470cc3a2a538c76fe5333",
+      "sha256": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57",
       "source": "plugins/hexaemeron/skills/metron/SKILL.md"
     },
     "pandects-search-record": {
@@ -3157,7 +3210,7 @@
         "transition": "review acceptance joined to the canonical Authorises field",
         "unknowns": "unreviewed capabilities and unavailable adversarial evidence"
       },
-      "sha256": "d450380b6f0a58468a8574ea7002af8be966204d4b7ba0dff79be43472c5349d",
+      "sha256": "b8943913d56225bdf983f56cec226946168219a401516fcd795a17760f29087f",
       "source": "plugins/hexaemeron/skills/phylax/SKILL.md"
     },
     "probitas-dossier-verification": {

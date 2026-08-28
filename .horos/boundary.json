@@ -1,31 +1,45 @@
 {
   "counts": {
-    "bytes_binary": 47762926,
+    "bytes_binary": 54682866,
     "bytes_content_addressed": 7844971,
-    "bytes_generated": 11382395,
+    "bytes_generated": 20213112,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 1756
+    "files_walked": 1804
   },
   "entries": [
     {
-      "bytes": 11315659,
+      "bytes": 20146042,
       "category": "generated",
       "evidence": "linguist-generated for '.agents/skills/promise-machine/runtime/**' in .gitattributes",
-      "files": 842,
+      "files": 881,
       "grade": "hard",
       "path": ".agents/skills/promise-machine/runtime/"
     },
     {
-      "bytes": 1151,
+      "bytes": 1485,
       "category": "generated",
       "evidence": "marker 'do not edit' on a comment-led line in the first 4096 bytes",
       "grade": "hard",
       "path": "CONTRIBUTORS.md"
     },
     {
-      "bytes": 2334924,
+      "bytes": 269757,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "assets/characters/promise-machine-binding.png"
+    },
+    {
+      "bytes": 242387,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "assets/characters/promise-machine.png"
+    },
+    {
+      "bytes": 255053,
       "category": "binary",
       "evidence": "file signature png",
       "grade": "hard",
@@ -142,6 +156,13 @@
       "evidence": "file signature pdf",
       "grade": "hard",
       "path": "docs/pdf/the-promise-machine-explained-properly.pdf"
+    },
+    {
+      "bytes": 236207,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/alexandria/assets/characters/alexandria.png"
     },
     {
       "bytes": 3795,
@@ -634,6 +655,13 @@
       "path": "plugins/alexandria/examples/compound-v3-phase0-v0/release/objects/sha256/ff/ff544298cc52691fb55e78265bb9f64c492dd41a9938788e6e4e28acf438407f"
     },
     {
+      "bytes": 314982,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/ariadne/assets/characters/ariadne.png"
+    },
+    {
       "bytes": 20086,
       "category": "generated",
       "evidence": "directory name out corroborated by sample: 2 of 2 files minified, binary or generated",
@@ -650,11 +678,151 @@
       "path": "plugins/ariadne/tests/fixtures/forge-project/v2/out/"
     },
     {
+      "bytes": 227051,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/berean/assets/characters/berean.png"
+    },
+    {
+      "bytes": 252746,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/brevitas/assets/characters/brevitas.png"
+    },
+    {
+      "bytes": 257751,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hermes/assets/characters/hermes.png"
+    },
+    {
+      "bytes": 286235,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/elenchus.png"
+    },
+    {
+      "bytes": 299075,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/ephoros.png"
+    },
+    {
+      "bytes": 331406,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/fiat.png"
+    },
+    {
+      "bytes": 426737,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/hexaemeron-overseer.png"
+    },
+    {
+      "bytes": 298992,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/hexaemeron.png"
+    },
+    {
+      "bytes": 302132,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/hypomnema.png"
+    },
+    {
+      "bytes": 264254,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/imprimatur.png"
+    },
+    {
+      "bytes": 312978,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/kronos.png"
+    },
+    {
+      "bytes": 252057,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/mason.png"
+    },
+    {
+      "bytes": 226555,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/metron.png"
+    },
+    {
+      "bytes": 269181,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/phylax.png"
+    },
+    {
+      "bytes": 256887,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/protasis.png"
+    },
+    {
+      "bytes": 294228,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/scribe.png"
+    },
+    {
+      "bytes": 317607,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/surveyor.png"
+    },
+    {
+      "bytes": 243626,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/vulgate.png"
+    },
+    {
+      "bytes": 325678,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/hexaemeron/assets/characters/warden.png"
+    },
+    {
       "bytes": 949,
       "category": "generated",
       "evidence": "marker 'auto-generated' on a comment-led line in the first 4096 bytes",
       "grade": "hard",
       "path": "plugins/hexaemeron/skills/fizz/templates/FoundryTester.sol"
+    },
+    {
+      "bytes": 313921,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/horos/assets/characters/horos.png"
     },
     {
       "bytes": 53,
@@ -735,6 +903,62 @@
       "evidence": "lockfile name go.sum",
       "grade": "hard",
       "path": "plugins/horos/examples/scoped-entry/packages/two/go.sum"
+    },
+    {
+      "bytes": 349681,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/janus/assets/characters/janus.png"
+    },
+    {
+      "bytes": 282087,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/lazarus/assets/characters/lazarus.png"
+    },
+    {
+      "bytes": 225829,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/lemma/assets/characters/lemma.png"
+    },
+    {
+      "bytes": 278892,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/pandects/assets/characters/pandects.png"
+    },
+    {
+      "bytes": 263217,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/probitas/assets/characters/probitas.png"
+    },
+    {
+      "bytes": 229220,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/sapheneia/assets/characters/sapheneia.png"
+    },
+    {
+      "bytes": 303545,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/synkrisis/assets/characters/synkrisis.png"
+    },
+    {
+      "bytes": 244910,
+      "category": "binary",
+      "evidence": "file signature png",
+      "grade": "hard",
+      "path": "plugins/tabularium/assets/characters/tabularium.png"
     }
   ],
   "schema": 2,

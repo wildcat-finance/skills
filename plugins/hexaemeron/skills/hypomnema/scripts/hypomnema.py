@@ -41,6 +41,11 @@ backtick run stays literal text, and a backtick escaped by an odd number of
 backslashes opens nothing. A relative link inside a span is read the same
 way, so H001 passes over it.
 
+The Markdown keyword starts at the beginning of a line or after a character
+other than a word character or hyphen. Word suffixes such as `myrunbook:` and
+hyphenated tokens such as `sub-runbook:` are not pointers; list items and
+dotted forms such as `annotations.runbook:` remain recognised.
+
 An alert runbook is a Markdown file below a directory named `runbooks`.
 It carries non-empty `## What fired`, `## First check` and `## Who to wake`
 sections outside fenced examples. A reasoned pragma suppresses H007 only on
@@ -62,8 +67,8 @@ from urllib.parse import unquote, urlparse
 LINK = re.compile(r"(?<!!)\[(?P<text>[^\]]*)\]\((?P<target>[^)\s]+)(?:\s+\"[^\"]*\")?\)")
 SUPERSEDE = re.compile(r"superseded\s+by\s+(?P<ref>ADR-\d+)", re.IGNORECASE)
 ADR_NUMBER = re.compile(r"ADR-(\d+)", re.IGNORECASE)
-# A path, not whatever word follows a colon: "a runbook: what fired" is prose.
-RUNBOOK = re.compile(r"runbook:\s*[`\"']?(?P<path>[\w./-]+\.md|[\w./-]+/[\w./-]+)[`\"']?",
+# A bounded keyword and a path, not a word suffix or whatever follows a colon.
+RUNBOOK = re.compile(r"(?<![\w-])runbook:\s*[`\"']?(?P<path>[\w./-]+\.md|[\w./-]+/[\w./-]+)[`\"']?",
                      re.IGNORECASE)
 # A quoted specimen is a mention, not a promise that the target exists. The
 # lexicon pass next door already draws this line for a banned term inside

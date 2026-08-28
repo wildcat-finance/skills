@@ -1,3 +1,5 @@
+![Probitas](./assets/characters/probitas.png)
+
 # Probitas
 
 <!-- marketplace-context:start -->
@@ -17,6 +19,10 @@ rebuildable credit events. Probitas consumes that evidence, keeps venue gaps and
 source classes visible, and writes the counterparty-level dossier. It never
 infers undeclared identity, blesses a borrower, sets credit terms, or replaces a
 lender's judgement.
+
+Synkrisis does not compare counterparties or dossiers. Its planned subject is
+validated agent-run observations, its current scaffold refuses every
+operation, and neither version can make an underwriting decision.
 
 A sourced dossier on a counterparty's record across on-chain lending venues,
 built from the addresses they declared.

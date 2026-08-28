@@ -10,6 +10,10 @@ metadata:
   version: "2.3.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/imprimatur.png" width="1200">
+</p>
+
 # Imprimatur
 
 ## Frontier
@@ -27,6 +31,10 @@ fixed, and Imprimatur runs again. Brevitas may impose engineering-prose
 structure after the wording passes; Sapheneia may shape the surrounding
 interaction or one bounded durable record. Fiat and Scribe own the phase order
 and receipt, not this lint.
+
+If Synkrisis eventually renders a comparison report, Imprimatur checks only
+its wording and supported terminology. The current Synkrisis scaffold emits no
+report, and this lint cannot manufacture or validate one.
 
 **Current state.** Imprimatur has a provenance-bound 64-sample evaluation, but labelled-prose-v1 failed the pre-registered annotation-agreement and structural-holdout coverage gates; its holdout is spent and its provisional scores cannot support tuning.
 

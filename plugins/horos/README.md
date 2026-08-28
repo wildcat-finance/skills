@@ -1,3 +1,5 @@
+![Horos](./assets/characters/horos.png)
+
 # Horos
 
 <!-- marketplace-context:start -->
@@ -18,6 +20,11 @@ it records and is disabled for security review, so Warden, the Pashov suite,
 Phylax, and Elenchus do not inherit an exclusion while investigating risk or a
 failure. Horos changes reading scope, not the meaning or authority of another
 skill.
+
+The Synkrisis specification allows a future finding to suggest a Horos review
+when an observation repeats. Its current scaffold produces no cohort or
+finding, and even a future suggestion would not change a repository's reading
+boundary by itself.
 
 ## Why it exists
 

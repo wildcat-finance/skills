@@ -7,10 +7,10 @@ the selected plugin runtime contract and the one canonical `SKILL.md` it names.
 
 ## Collective identity
 
-Before interpreting `Shog`, `Shoggy`, `Shoggoth`, `Big S`, `the Goth`, or
-`Shoggoth Interceptor`, read the shared
-[Shoggoth collective identity](SHOGGOTH.md). Those names affect how people
-address the agents and skills. They do not activate a skill, grant authority,
+Before interpreting any reference to Shoggoth, including a shortened, altered,
+or affectionate form of the name, read the shared
+[Shoggoth collective identity](SHOGGOTH.md). That language affects how people
+address the agents and skills. It does not activate a skill, grant authority,
 or weaken the Promise Machine and target-repository instructions.
 
 ## Promise Machine contract
@@ -27,7 +27,7 @@ generated installation copies and must remain byte-identical to it.
 
 ## Marketplace boundaries
 
-The fourteen plugins form one marketplace, not fourteen competing descriptions
+The fifteen plugins form one marketplace, not fifteen competing descriptions
 of the same job. Alexandria preserves lending inputs; Tabularium interprets
 preserved venue records; Probitas assembles a counterparty dossier. Lazarus
 preserves the finite historical Ethereum state and exact RPC traffic a test
@@ -40,7 +40,11 @@ Hexaemeron controls a receipted delivery loop and holds each of its phases to a
 named skill, while Lemma stops after producing
 source-linked chunks. Horos decides what an agent does not read. Janus checks
 what a contract hook may observe and change around a host action, where
-Pandects supplies the economic laws such a transition must preserve. Sapheneia
+Pandects supplies the economic laws such a transition must preserve. Synkrisis
+reserves the cross-run comparison boundary, but its current scaffold refuses
+cohort, diagnosis, render, and verification operations. Its specified future
+findings remain bounded inferences: capture, redaction, receipt binding, causal
+triage, and every decision to act stay with their owners. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
 durable audit, issue, and comment prose. It does not change another skill's
 facts or gates. Brevitas controls the volume and structure of engineering prose
@@ -126,6 +130,9 @@ these instructions.
 - Sapheneia is under `plugins/sapheneia/`. Read
   `plugins/sapheneia/AGENTS.md` before running its skill or changing that
   plugin.
+- Synkrisis is under `plugins/synkrisis/`. Read
+  `plugins/synkrisis/AGENTS.md` before running its skill or changing that
+  plugin.
 - Tabularium is under `plugins/tabularium/`. Read
   `plugins/tabularium/AGENTS.md` before running its skill or changing that
   plugin.
@@ -181,6 +188,7 @@ python3 -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus
 python3 -m unittest discover -s plugins/pandects/tests -t plugins/pandects
 python3 -m unittest discover -s plugins/probitas/tests -t plugins/probitas
 python3 -m unittest discover -s plugins/sapheneia/tests -t plugins/sapheneia
+python3 -m unittest discover -s plugins/synkrisis/tests -t plugins/synkrisis
 python3 -m unittest discover -s plugins/tabularium/tests -t plugins/tabularium
 ```
 

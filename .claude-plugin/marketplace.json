@@ -307,6 +307,28 @@
         "releases",
         "evaluation"
       ]
+    },
+    {
+      "name": "synkrisis",
+      "displayName": "Synkrisis",
+      "source": "./plugins/synkrisis",
+      "description": "Refusing scaffold for the specified comparison of validated run observations in one declared cohort.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/synkrisis",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "run-observations",
+        "telemetry",
+        "diagnosis",
+        "comparison",
+        "promise-machine",
+        "agents"
+      ]
     }
   ]
 }

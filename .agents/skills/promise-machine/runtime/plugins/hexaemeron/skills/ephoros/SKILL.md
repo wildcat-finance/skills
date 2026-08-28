@@ -13,6 +13,10 @@ metadata:
   version: "1.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/ephoros.png" width="1200">
+</p>
+
 # Ephoros
 
 From *ephoros*, the overseer whose office was to watch and report. Watching is
@@ -29,6 +33,10 @@ Warden reruns its mechanical gate in non-Solidity rounds. Elenchus may add
 temporary instrumentation while chasing one failure; Ephoros decides what
 remains afterwards. Metron measures performance, and Phylax guards the data and
 secrets the telemetry boundary crosses.
+
+The Synkrisis specification allows a future finding to suggest that a signal
+is missing or late. Its current scaffold emits no finding, and even a future
+suggestion cannot decide what telemetry a step keeps.
 
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).

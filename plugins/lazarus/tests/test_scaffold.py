@@ -304,6 +304,27 @@ class ScaffoldTests(unittest.TestCase):
         workflow = (support.REPO_ROOT / ".github/workflows/lazarus.yml").read_text(
             encoding="utf-8"
         )
+
+        def event_paths(source, event):
+            match = re.search(
+                rf"(?m)^  {event}:\n    paths:\n(?P<paths>(?:      - .+\n)+)",
+                source,
+            )
+            self.assertIsNotNone(match)
+            return set(re.findall(r'^      - "([^"]+)"$', match["paths"], re.M))
+
+        repo_workflow = (
+            support.REPO_ROOT / ".github/workflows/repo.yml"
+        ).read_text(encoding="utf-8")
+        router = ".agents/skills/promise-machine/SKILL.md"
+        generated_runtime = ".agents/**"
+        for event in ("push", "pull_request"):
+            with self.subTest(event=event):
+                lazarus_paths = event_paths(workflow, event)
+                self.assertIn(router, lazarus_paths)
+                self.assertNotIn(generated_runtime, lazarus_paths)
+                self.assertIn(generated_runtime, event_paths(repo_workflow, event))
+
         self.assertIn('python-version-file: ".python-version"', workflow)
         self.assertNotIn("matrix.python-version", workflow)
         self.assertIn(

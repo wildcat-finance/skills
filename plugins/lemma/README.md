@@ -1,3 +1,5 @@
+![Lemma](./assets/characters/lemma.png)
+
 # Lemma
 
 <!-- marketplace-context:start -->
@@ -16,6 +18,10 @@ Lemma is a preparation step, not a retrieval system. Berean can use a pinned
 document corpus built from its source-linked output, but Lemma does not embed,
 index, retrieve, answer, grade, or promote an agent. Ariadne may later bind a
 release to its evidence; that does not widen what the chunks themselves prove.
+
+Synkrisis does not treat Lemma chunks as run observations or compare corpora.
+Its current release only specifies a future comparison boundary and supplies a
+command scaffold that refuses every operation.
 
 Lemma turns Solidity compiler inputs and Markdown documents into JSONL chunks.
 Each chunk uses the same schema and records enough source information for a

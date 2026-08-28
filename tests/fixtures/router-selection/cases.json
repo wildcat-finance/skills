@@ -569,16 +569,29 @@
         "text": "If no row matches, stop at inspection and explain the uncovered boundary."
       },
       "not_established": "Refusing does not establish that no skill in the marketplace touches part of the request, only that no row of this router covers what was asked for."
+    },
+    {
+      "id": "RS-37",
+      "family": "plugin-row",
+      "request": "A teammate says we already have something here for looking across runs. Before I plan anything on top of it, I need to know what this repository has actually committed to and what the thing as it stands will refuse to do.",
+      "expect": {"outcome": "select", "canonical": "synkrisis"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Synkrisis reserves the cross-run comparison boundary, but its current scaffold refuses cohort, diagnosis, render, and verification operations."
+      },
+      "not_established": "Selecting Synkrisis does not establish that any comparison can be run today, since its current scaffold refuses cohort, diagnosis, render and verification operations, and it does not establish that a future finding would carry capture, redaction, receipt binding or causal triage, which stay with their owners."
     }
   ],
   "runs": [
     {
       "model": "claude-opus-5[1m]",
       "date": "2026-08-27",
-      "prompt_template_sha256": "af3cb4c804f4d527535e2d771868aea709042ec08164f31687323c8120928c21",
-      "corpus_sha256": "48ebe808dac69df8737bb4fc4b38ba3c2fe08818f7f973004b6619fce730c774",
-      "cases": 36,
-      "passed": 35,
+      "prompt_template_sha256": "8aee7ba8d711ea11fcd94a9db9ccc52001f39261ffcb71777285e4daf4fb5add",
+      "corpus_sha256": "afd5475fb783db408e7ac085b57e61caa1ca1d97b3fe5ade4559056508bb43ad",
+      "cases": 37,
+      "passed": 36,
       "failed": 1,
       "failures": [
         {

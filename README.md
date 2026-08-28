@@ -9,17 +9,18 @@ general assistant wearing a list of names. Each member owns a particular job,
 states what its evidence can support, and stops where another member's work
 begins.
 
-The current distribution contains 14 plugins, 23 first-party skills, four
+The current distribution contains 15 plugins, 24 first-party skills, four
 Fiat worker agents, one portable router, and five untouched skills from the
 vendored Pashov security suite. Together they preserve source material, rebuild
 credit records, check economic and hook boundaries, capture historical chain
 state, test grounded agents, optimise Solidity gas, shape usable prose, and
 carry repository work through a receipted delivery.
 
-`Shog`, `Shoggy`, `Shoggoth`, `Big S`, and `the Goth` may address the active
-member or the whole collective. The complete convention lives in the
-[Shoggoth identity contract](./SHOGGOTH.md). A familiar name does not activate
-a skill or widen anyone's authority.
+Any reference to Shoggoth, including a shortened, altered, or affectionate form
+of the name, may mean the member currently speaking or the collective as a
+whole. Context decides which. The complete convention lives in the
+[Shoggoth identity contract](./SHOGGOTH.md); wording alone never activates a
+skill or widens anyone's authority.
 
 The [Shoggoth Interceptor](https://github.com/laurenceday/shoggoth-interceptor)
 is the same collective operating through an external problem-solving harness.
@@ -103,23 +104,25 @@ has to be one GitHub can match to your account, and the list itself is GitHub's
 to compute and publish on its own schedule. A run whose author address matches
 no account records that plainly instead of guessing.
 
-That record is what the contributor list is built from.
-[CONTRIBUTORS.md](./CONTRIBUTORS.md) ranks the humans who have finished a job
-here by merged commits, with merged pull requests as the tie-break, and the
-thanks at the foot of this file name the same people by handle. A weekly job
-regenerates both from the repository's own history, so nobody has to remember to
-add anyone and there is nothing to ask for. Runtime host identities, the
-Shoggoth's own account and the repository owner are excluded by name, each with
-its reason shown in the generator's output.
+That record is one source for the contributor list.
+[CONTRIBUTORS.md](./CONTRIBUTORS.md) ranks the humans with resolved commits here
+and the humans who author merged pull requests in
+`wildcat-finance/shoggoth-wave-atlas`. Skills commits are the first ordering
+key; merged pull requests across both repositories are the tie-break. The thanks
+at the foot of this file name the same people by handle. A daily job regenerates
+both from the two repositories' public history, so nobody has to remember to add
+anyone and there is nothing to ask for. Runtime host identities, the Shoggoth's
+own account and the repository owner are excluded by name, each with its reason
+shown in the generator's output.
 
 ## What Is It?
 
-The identity contract records the adoption-era roster as 24 members: 15 domain agents and
-9 phase agents. That is a historical adoption count, not today's package count.
-The current repository topology is the 23 first-party skills and four Fiat
-worker agents listed below. Hexaemeron is their delivery plugin, while the
-Promise Machine and its portable router govern how the whole suite is selected
-and composed.
+The identity contract records the current roster as 25 members: 16 domain agents and
+9 phase agents. The repository topology is 24 first-party skills and four Fiat
+worker agents. Synkrisis belongs to the roster now, but its comparison surface
+is still a specification and a refusing command scaffold. Hexaemeron is the
+delivery plugin, while the Promise Machine and its portable router govern how
+the suite is selected and composed.
 
 The collective works alongside the vendored
 [Pashov security suite](https://github.com/pashov/skills). That suite remains
@@ -180,6 +183,10 @@ turn a passing structural check into proof that a domain claim is true.
 - [Horos](./plugins/horos) writes and verifies evidence-backed repository
   boundaries and skeleton maps for oriented reading. Its exclusions reduce cost;
   they never apply during security review.
+- [Synkrisis](./plugins/synkrisis) reserves the boundary for comparing
+  validated run observations across one declared cohort. Today it ships the
+  specification and a command that refuses cohort, diagnosis, render, and
+  verification operations; it produces no finding and cannot authorise work.
 - [Sapheneia](./plugins/sapheneia) shapes the collective's own replies and
   bounded audit records, issues, or comments for AuDHD readers without changing
   their protected evidence.
@@ -258,6 +265,12 @@ historical chain boundary, and Ariadne can bind the resulting release to that
 evidence. Pandects supplies economic laws, Janus checks hook effects against a
 host boundary, and Hermes handles measured gas changes.
 
+Synkrisis is intended to compare validated observations from several completed
+runs after a person declares them comparable. That path is not operational
+yet: the scaffold writes no cohort, finding, or report, and it cannot steer
+Fiat. Ephoros, Metron, Elenchus, Protasis, Phylax, Horos, or human review will
+remain responsible for any later investigation or decision.
+
 For delivery, Protasis shapes the study and runbook before Mason builds a step.
 Phylax, Ephoros, and Metron govern its off-chain boundary, observable behaviour,
 and non-gas performance. Warden applies the relevant security suite; Elenchus
@@ -322,6 +335,7 @@ Use $lazarus to capture this finite historical fixture, verify its proof-backed 
 Use $pandects to check this credit protocol against the executable laws in the corpus.
 Use $probitas to build a sourced dossier on this counterparty from the addresses they declared.
 Use $sapheneia to shape your replies for an AuDHD reader throughout this task.
+Use $synkrisis to inspect the declared cross-run comparison boundary and its current refusals; do not report a cohort or finding until the held implementation lands.
 Use $tabularium to build or verify a reproducible release of sourced credit events without hiding coverage gaps.
 ```
 
@@ -367,7 +381,12 @@ records, state executable credit laws, preserve historical test fixtures,
 assemble evidence-bounded dossiers, evaluate source-grounded assistants, test
 Wildcat hook boundaries, and bind releases to their evidence.
 
-Those tools have all been produced: [Alexandria](./plugins/alexandria),
+Synkrisis reserves a separate boundary for comparing validated observations
+from several agent runs. It is not yet one of the produced Commons tools: the
+current release is a specification and a refusing command scaffold.
+
+The credit and evidence tools named here have all been produced:
+[Alexandria](./plugins/alexandria),
 [Tabularium](./plugins/tabularium), [Pandects](./plugins/pandects),
 [Lazarus](./plugins/lazarus), [Probitas](./plugins/probitas),
 [Berean](./plugins/berean), [Janus](./plugins/janus), and
@@ -385,6 +404,6 @@ and remains under its upstream MIT licence and notices.
 
 ## Thanks
 
-Thanks to @kethcode and @radup1337.
+Thanks to @kethcode, @radup1337, @MunamWasi and @clawdina.
 
 <!-- contributors:end -->

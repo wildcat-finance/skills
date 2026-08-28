@@ -5,6 +5,10 @@ metadata:
   version: "0.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/brevitas.png" width="1200">
+</p>
+
 # Brevitas
 
 ## Frontier
@@ -27,6 +31,10 @@ the register. Sapheneia may separately shape the surrounding interaction or a
 bounded durable record. Brevitas changes volume, structure, and connective
 prose only; it does not alter word choice, voice, AuDHD presentation, or the
 facts another skill established.
+
+If Synkrisis eventually renders a comparison report, this skill may constrain
+its engineering-prose structure without validating the finding. The current
+Synkrisis scaffold emits no report to compress.
 
 ## Precedence
 

@@ -300,6 +300,19 @@
         "text": "Run audit-readiness, Solidity review, or stateful fuzzing"
       },
       "not_established": "Selecting x-ray does not establish that the protocol is secure or ready, only that a readiness report was produced from what the tree shows."
+    },
+    {
+      "id": "RS-37",
+      "family": "plugin-row",
+      "request": "A teammate says we already have something here for looking across runs. Before I plan anything on top of it, I need to know what this repository has actually committed to and what the thing as it stands will refuse to do.",
+      "expect": {"outcome": "select", "canonical": "synkrisis"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Synkrisis reserves the cross-run comparison boundary, but its current scaffold refuses cohort, diagnosis, render, and verification operations."
+      },
+      "not_established": "Selecting Synkrisis does not establish that any comparison can be run today, since its current scaffold refuses cohort, diagnosis, render and verification operations, and it does not establish that a future finding would carry capture, redaction, receipt binding or causal triage, which stay with their owners."
     }
   ],
   "runs": []

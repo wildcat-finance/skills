@@ -2,12 +2,10 @@
 
 ## Status
 
-Proposed, 2026-08-24. Recorded for
-[skills#558](https://github.com/wildcat-finance/skills/issues/558) and
-[skills#566](https://github.com/wildcat-finance/skills/issues/566). Depends on
-[ADR-028](ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md)
-and
-[ADR-031](ADR-031-fence-external-fiat-transitions-on-signed-checkpoint-acceptance.md).
+Retired, 2026-08-27. The proposal below was never accepted and no longer
+governs. [ADR-028](ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md)
+replaces DAG resolution with literal continuation of one controller ledger.
+The remaining body is preserved as historical rationale.
 
 PR #569 published this record as ADR-027. It moved to ADR-032 so the five
 Wave Delta records stay contiguous and in reading order once the collisions on

@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 847,
-  "total_bytes": 11105670,
+  "file_count": 886,
+  "total_bytes": 19932315,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -36,16 +36,16 @@
   ],
   "files": [
     {
-      "bytes": 6017,
+      "bytes": 6608,
       "path": ".agents/skills/promise-machine/SKILL.md",
-      "sha256": "39fdaa996e47e48ce6742c9278bc169d8160edf209baa0d5a40203df79ccb151",
+      "sha256": "1316d34fbbfe19dfcd373d48e6ea233d43ee01e20c41e88d487a0d41fc4771f3",
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
-      "bytes": 3198,
+      "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "f03d1b727daef7ab7c98a2272fbf3fdfab0698b994d9ec35b8830098914dee0f",
+      "sha256": "1e1b342ef79261adae98f3ea51c3750ec7147d578edbde9665d1911f304e7951",
       "source": null
     },
     {
@@ -55,9 +55,9 @@
       "source": ".python-version"
     },
     {
-      "bytes": 11496,
+      "bytes": 12023,
       "path": "AGENTS.md",
-      "sha256": "7d6e9d840205e5181d3e9ca1a1be90228635a853413081500d60f9de1494cc4c",
+      "sha256": "df1eeff8b434fb8dda2d4fc886069aafa5afe0fcc31933325f78a5dfacf5843d",
       "source": "AGENTS.md"
     },
     {
@@ -67,16 +67,22 @@
       "source": "LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3417,
+      "bytes": 3475,
       "path": "SHOGGOTH.md",
-      "sha256": "67a9f77593bbbcb39d9bd66e639ebdc14612fbe207f2530b41615c594518470e",
+      "sha256": "26a70b1524db7a1c0218ebeaa4935bad1b1c208d1e9477fbbb8181205deb1f22",
       "source": "SHOGGOTH.md"
+    },
+    {
+      "bytes": 242387,
+      "path": "assets/characters/promise-machine.png",
+      "sha256": "a735d9284150171401bf22bc4c13e5fffba222b8ae755c36396ccf3e3055beae",
+      "source": "assets/characters/promise-machine.png"
     },
     {
       "bytes": 5015,
@@ -115,16 +121,22 @@
       "source": "plugins/alexandria/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/alexandria/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/alexandria/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 11774,
+      "bytes": 12059,
       "path": "plugins/alexandria/README.md",
-      "sha256": "3551246f54704bb6e4f5eb93aa58b349f99748b8caef10bc97458578efc568a2",
+      "sha256": "f52dee2a19b399c484f7b6764f6a411104d8d31ae2ecf03d1af4925ab656cfe3",
       "source": "plugins/alexandria/README.md"
+    },
+    {
+      "bytes": 236207,
+      "path": "plugins/alexandria/assets/characters/alexandria.png",
+      "sha256": "79409b4703250acc93fda499c9c46082e66dfe8fd32169ba8535f8a76c852b2c",
+      "source": "plugins/alexandria/assets/characters/alexandria.png"
     },
     {
       "bytes": 4401,
@@ -445,9 +457,9 @@
       "source": "plugins/alexandria/skills/alexandria/EVOLUTION.md"
     },
     {
-      "bytes": 15855,
+      "bytes": 16183,
       "path": "plugins/alexandria/skills/alexandria/SKILL.md",
-      "sha256": "7953ce8f7e917651e848167a0083f7a418c968b2a059d60c12a797d222bc8dde",
+      "sha256": "948f67af993351e5abf80bbbe9a095bbcf1fea1da5c352f4fab9fc656cbfa542",
       "source": "plugins/alexandria/skills/alexandria/SKILL.md"
     },
     {
@@ -469,16 +481,22 @@
       "source": "plugins/ariadne/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/ariadne/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/ariadne/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 12021,
+      "bytes": 12300,
       "path": "plugins/ariadne/README.md",
-      "sha256": "f6ea2c88c67cd942a8a094b95f2d23364e36222f6d990b0f88595385c578ee37",
+      "sha256": "8416ebec84ed5d434a407343437e83ca3df46756979f8919136a32b983facd62",
       "source": "plugins/ariadne/README.md"
+    },
+    {
+      "bytes": 314982,
+      "path": "plugins/ariadne/assets/characters/ariadne.png",
+      "sha256": "d121e09507820113c0bf846b725a5d873891933991f2c4854fddcf0b01d6f2b8",
+      "source": "plugins/ariadne/assets/characters/ariadne.png"
     },
     {
       "bytes": 6455,
@@ -733,9 +751,9 @@
       "source": "plugins/ariadne/skills/ariadne/EVOLUTION.md"
     },
     {
-      "bytes": 20145,
+      "bytes": 20478,
       "path": "plugins/ariadne/skills/ariadne/SKILL.md",
-      "sha256": "7bc5555b7147a28458bbea15303bee485c50679d6b293470c077269f8bc70849",
+      "sha256": "c13e3a64dde1a28f7544df23d4a1a3761bb3e3453fd242cc68ea74f07c6d040a",
       "source": "plugins/ariadne/skills/ariadne/SKILL.md"
     },
     {
@@ -757,16 +775,22 @@
       "source": "plugins/berean/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/berean/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/berean/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 6737,
+      "bytes": 6979,
       "path": "plugins/berean/README.md",
-      "sha256": "383a19917ba1ad089781da513e78aba29aff9367a8b639c350e02c0249b63c52",
+      "sha256": "b495cc0ee6e30549449de74c7051d7fb9c9cc507f0f15317951a85330089e08d",
       "source": "plugins/berean/README.md"
+    },
+    {
+      "bytes": 227051,
+      "path": "plugins/berean/assets/characters/berean.png",
+      "sha256": "fbe20c815fff0bc98b835fac2bc378e4afc050c5de24fab2d84b51f7d458f06f",
+      "source": "plugins/berean/assets/characters/berean.png"
     },
     {
       "bytes": 4021,
@@ -1015,9 +1039,9 @@
       "source": "plugins/berean/skills/berean/EVOLUTION.md"
     },
     {
-      "bytes": 11497,
+      "bytes": 11804,
       "path": "plugins/berean/skills/berean/SKILL.md",
-      "sha256": "4d98f289906cd4f94de36ff573ab7f9681838065851ffa6e1bbdb8f4c4f0603f",
+      "sha256": "390756bc1bc9ebeced40fb30e4890466d489e6b5975f40fec1d76b9663884755",
       "source": "plugins/berean/skills/berean/SKILL.md"
     },
     {
@@ -1039,16 +1063,22 @@
       "source": "plugins/brevitas/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/brevitas/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/brevitas/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 4270,
+      "bytes": 4523,
       "path": "plugins/brevitas/README.md",
-      "sha256": "a45f936aac7efc5446068efc85ca7222991061ff3dc09063a36373efe37d465d",
+      "sha256": "c39d165738e5d582b901801d946aa9985532e66879bbb4231111b3679436f8f0",
       "source": "plugins/brevitas/README.md"
+    },
+    {
+      "bytes": 252746,
+      "path": "plugins/brevitas/assets/characters/brevitas.png",
+      "sha256": "f0b7f99c3af45a5f64b85f53892af418a488b492ece17afc20ecfad6ec2c546b",
+      "source": "plugins/brevitas/assets/characters/brevitas.png"
     },
     {
       "bytes": 1748,
@@ -1063,9 +1093,9 @@
       "source": "plugins/brevitas/skills/brevitas/Makefile"
     },
     {
-      "bytes": 7063,
+      "bytes": 7355,
       "path": "plugins/brevitas/skills/brevitas/SKILL.md",
-      "sha256": "4831915e862c0522849892b8d609a75bc060e2bf09431d79e53dfa15305b720d",
+      "sha256": "5233f0abecfce434b734417ff5ece955f5fdeff864413f03c2122c6f7d662b90",
       "source": "plugins/brevitas/skills/brevitas/SKILL.md"
     },
     {
@@ -1153,16 +1183,22 @@
       "source": "plugins/hermes/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/hermes/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/hermes/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3500,
+      "bytes": 3763,
       "path": "plugins/hermes/README.md",
-      "sha256": "c2166b25a3893ff94b412dea447cdce0809ae506d699934945984895767e2838",
+      "sha256": "fd917b14040ef578f2dadec1289472ac9ee5a3fa153e35c70f5cc1e4abf31579",
       "source": "plugins/hermes/README.md"
+    },
+    {
+      "bytes": 257751,
+      "path": "plugins/hermes/assets/characters/hermes.png",
+      "sha256": "4cd680f884bedbdac1fbf7aea4b60e89c531ca4f19dad0bc30912d6a8d482fc6",
+      "source": "plugins/hermes/assets/characters/hermes.png"
     },
     {
       "bytes": 1955,
@@ -1171,9 +1207,9 @@
       "source": "plugins/hermes/skills/hermes/EVOLUTION.md"
     },
     {
-      "bytes": 19209,
+      "bytes": 19524,
       "path": "plugins/hermes/skills/hermes/SKILL.md",
-      "sha256": "4c4923db70c4fa214cd578f086087bfa5facc9d6231ec9fcbd76f6e83c58c756",
+      "sha256": "1c6117a2b1f28025edc2318c0060f9d7ec23762466a064d43ba0b397f1b540c4",
       "source": "plugins/hermes/skills/hermes/SKILL.md"
     },
     {
@@ -1213,9 +1249,9 @@
       "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py"
     },
     {
-      "bytes": 8324,
+      "bytes": 8534,
       "path": "plugins/hexaemeron/AGENTS.md",
-      "sha256": "e1f2b2a7c16edeae2e9dd4a7bfed22d5677cbd8c9865cbdf4c53fd310b2601f5",
+      "sha256": "40a3acb284b429141306320c32e887ff6326f35813380246c268dd2c04f34fc4",
       "source": "plugins/hexaemeron/AGENTS.md"
     },
     {
@@ -1231,40 +1267,136 @@
       "source": "plugins/hexaemeron/PROMISES.md"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/hexaemeron/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/hexaemeron/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 19931,
+      "bytes": 20231,
       "path": "plugins/hexaemeron/README.md",
-      "sha256": "d0c604a209fde04fc37a238701f0b0efc7a827c96843efb532f53c055f65dc8e",
+      "sha256": "740abe47279d4cd9aada913bb71014297a4c7554babc912a811b92b0cc5c8b5e",
       "source": "plugins/hexaemeron/README.md"
     },
     {
-      "bytes": 3628,
+      "bytes": 3784,
       "path": "plugins/hexaemeron/agents/mason.md",
-      "sha256": "879dad2f79398a35c09f0c8c92c8040370055ce7f2b4cd1f31be065ed4f784ee",
+      "sha256": "dde759790427b5041ba224b8a5b4f1a2ae7db1d0a01dc89bd12c20bc244b55aa",
       "source": "plugins/hexaemeron/agents/mason.md"
     },
     {
-      "bytes": 3794,
+      "bytes": 3952,
       "path": "plugins/hexaemeron/agents/scribe.md",
-      "sha256": "c5f15697c5d674b12bd4ffc0627f9f319203d7f3c3fc614893b06a8bc66ed5ad",
+      "sha256": "7cc66896bf7698fadb92cae72589e81753399a4bab1f842d2987b3f39066a721",
       "source": "plugins/hexaemeron/agents/scribe.md"
     },
     {
-      "bytes": 3750,
+      "bytes": 3912,
       "path": "plugins/hexaemeron/agents/surveyor.md",
-      "sha256": "c5ac38284aa1e92346b3a32b6e635a55f193eea8b20f4cf82b7be33a3748f840",
+      "sha256": "99e0a8a16e5485d5e4d095944fb1424d4fdbad7e0f7412458cb18d801edf1486",
       "source": "plugins/hexaemeron/agents/surveyor.md"
     },
     {
-      "bytes": 7052,
+      "bytes": 7210,
       "path": "plugins/hexaemeron/agents/warden.md",
-      "sha256": "8a2da591d1cb9667a5d27affd783f6780e9dc64bc389d680c2b7b8af2ff06883",
+      "sha256": "5de87dab031cac6f08793047acf05c6a919c7119dd98280705cd11249d89a770",
       "source": "plugins/hexaemeron/agents/warden.md"
+    },
+    {
+      "bytes": 286235,
+      "path": "plugins/hexaemeron/assets/characters/elenchus.png",
+      "sha256": "147c5c3c35f2867a0789b944898b89ae12b0a0ea1adcaf2ae2ef27aaa7e41f12",
+      "source": "plugins/hexaemeron/assets/characters/elenchus.png"
+    },
+    {
+      "bytes": 299075,
+      "path": "plugins/hexaemeron/assets/characters/ephoros.png",
+      "sha256": "4e3b7dd3f68f6fedf8746db41fab3861020fb352b79c12047b285fecffb1d5ed",
+      "source": "plugins/hexaemeron/assets/characters/ephoros.png"
+    },
+    {
+      "bytes": 331406,
+      "path": "plugins/hexaemeron/assets/characters/fiat.png",
+      "sha256": "5d9883cb3f6cab89dc9f1d321a10a97260beea975753e54877fddd357c1b2e70",
+      "source": "plugins/hexaemeron/assets/characters/fiat.png"
+    },
+    {
+      "bytes": 426737,
+      "path": "plugins/hexaemeron/assets/characters/hexaemeron-overseer.png",
+      "sha256": "4e09434cccbb7458019712627f26cb209381e293cefdc223903d247b77473e5e",
+      "source": "plugins/hexaemeron/assets/characters/hexaemeron-overseer.png"
+    },
+    {
+      "bytes": 298992,
+      "path": "plugins/hexaemeron/assets/characters/hexaemeron.png",
+      "sha256": "35541601873dd94d31e5c7fbc556433fcf7a955d57625cf0b61e0f946674da6c",
+      "source": "plugins/hexaemeron/assets/characters/hexaemeron.png"
+    },
+    {
+      "bytes": 302132,
+      "path": "plugins/hexaemeron/assets/characters/hypomnema.png",
+      "sha256": "81b56b03451733c26e3a3e76eed7906e6394c6e918a0a9725f93ee0fce189863",
+      "source": "plugins/hexaemeron/assets/characters/hypomnema.png"
+    },
+    {
+      "bytes": 264254,
+      "path": "plugins/hexaemeron/assets/characters/imprimatur.png",
+      "sha256": "33a164386b6a8f60cd78fc6f1d69c53b2ccab7bd40585f3fd960e6950d5ad128",
+      "source": "plugins/hexaemeron/assets/characters/imprimatur.png"
+    },
+    {
+      "bytes": 312978,
+      "path": "plugins/hexaemeron/assets/characters/kronos.png",
+      "sha256": "d35fdc6c9412182bf8874f7cddcd71d6bfc331aa605dc7c41ef85e4bbf7b558b",
+      "source": "plugins/hexaemeron/assets/characters/kronos.png"
+    },
+    {
+      "bytes": 252057,
+      "path": "plugins/hexaemeron/assets/characters/mason.png",
+      "sha256": "802866d2c0df4fc59932bf9b81a65f837357eeaa0ba2c5409e45339f7e11e8f3",
+      "source": "plugins/hexaemeron/assets/characters/mason.png"
+    },
+    {
+      "bytes": 226555,
+      "path": "plugins/hexaemeron/assets/characters/metron.png",
+      "sha256": "aa6d3c0bf7e5069af89e782b8da43400f9b5f913cf3cc254a9842cede47441a8",
+      "source": "plugins/hexaemeron/assets/characters/metron.png"
+    },
+    {
+      "bytes": 269181,
+      "path": "plugins/hexaemeron/assets/characters/phylax.png",
+      "sha256": "e09f2ad9c2aac55af983124adfa18727af55157fe4c143700519e41fbc28eefe",
+      "source": "plugins/hexaemeron/assets/characters/phylax.png"
+    },
+    {
+      "bytes": 256887,
+      "path": "plugins/hexaemeron/assets/characters/protasis.png",
+      "sha256": "35d673ef0db0d8214cf8911d2b70a16d57614b12244d5248ce6040286bfa5b98",
+      "source": "plugins/hexaemeron/assets/characters/protasis.png"
+    },
+    {
+      "bytes": 294228,
+      "path": "plugins/hexaemeron/assets/characters/scribe.png",
+      "sha256": "392e74e166a56893d801b65b6270286877dd30456da6faaa82eef26d336777f9",
+      "source": "plugins/hexaemeron/assets/characters/scribe.png"
+    },
+    {
+      "bytes": 317607,
+      "path": "plugins/hexaemeron/assets/characters/surveyor.png",
+      "sha256": "21e76db29385539ed15ae79704d0eb90f8af016fbb847c303b829ef16a4aa731",
+      "source": "plugins/hexaemeron/assets/characters/surveyor.png"
+    },
+    {
+      "bytes": 243626,
+      "path": "plugins/hexaemeron/assets/characters/vulgate.png",
+      "sha256": "b4f02eb3eb13e67f402577281ebff937322cdeb526985d3fa00106efcd816964",
+      "source": "plugins/hexaemeron/assets/characters/vulgate.png"
+    },
+    {
+      "bytes": 325678,
+      "path": "plugins/hexaemeron/assets/characters/warden.png",
+      "sha256": "d3ca8a4d12ec19daf6b0b8c6e07fa342242f4f9397bc7a1e68944f6478a96c4b",
+      "source": "plugins/hexaemeron/assets/characters/warden.png"
     },
     {
       "bytes": 8842,
@@ -1513,9 +1645,9 @@
       "source": "plugins/hexaemeron/skills/elenchus/EVOLUTION.md"
     },
     {
-      "bytes": 18499,
+      "bytes": 18855,
       "path": "plugins/hexaemeron/skills/elenchus/SKILL.md",
-      "sha256": "0f9cdd28b014e7a1c21856c0f2ff399649e7c792b3eddc161b7012df82b1c899",
+      "sha256": "33f93bd43eb63027de420e21fb312eddae46904fcdd8aefe3766b607d8f1cc2c",
       "source": "plugins/hexaemeron/skills/elenchus/SKILL.md"
     },
     {
@@ -1537,9 +1669,9 @@
       "source": "plugins/hexaemeron/skills/ephoros/EVOLUTION.md"
     },
     {
-      "bytes": 15195,
+      "bytes": 15492,
       "path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-      "sha256": "d33af653a1ee0083fd7fa9d19d8292a04585ed137d68ca18a6a1b9d69d786d4f",
+      "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407",
       "source": "plugins/hexaemeron/skills/ephoros/SKILL.md"
     },
     {
@@ -1561,9 +1693,9 @@
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 47348,
+      "bytes": 47677,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "f3ad9270b983b605d91899c1036471584505b13d9bc3660852ba4d0aa5c20f5c",
+      "sha256": "b133f4c438d786f4e32d6cf92fe0c7acf473a4a74d00a52928ce6ef345918611",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1957,15 +2089,15 @@
       "source": "plugins/hexaemeron/skills/fizz/templates/utils/StringUtils.sol"
     },
     {
-      "bytes": 10844,
+      "bytes": 11633,
       "path": "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md",
-      "sha256": "437a5fd2056a05143e2e4b52e9decfb17ea9a8325090ace3ad5951d631bcfb6a",
+      "sha256": "f06b3c19c05dc58b28a73892a61148d12255555e0c7aec4dcbadab1a17100026",
       "source": "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md"
     },
     {
-      "bytes": 14630,
+      "bytes": 15325,
       "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-      "sha256": "9d328f4a07f627ecf6a3f3bcaad65e1ef179f7114a5246bc19836391e06c653c",
+      "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     {
@@ -1975,9 +2107,9 @@
       "source": "plugins/hexaemeron/skills/hypomnema/agents/openai.yaml"
     },
     {
-      "bytes": 24685,
+      "bytes": 24987,
       "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
-      "sha256": "75cac8ea63ee7c7029167b944b82c853b00950bfc582ccd2ee9e057148784085",
+      "sha256": "15e86a563cf51bb532cc187ec1f6e3804bcbaabaf8236867823bda04c3842728",
       "source": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
     },
     {
@@ -1993,9 +2125,9 @@
       "source": "plugins/hexaemeron/skills/imprimatur/NOTICE.md"
     },
     {
-      "bytes": 11504,
+      "bytes": 11809,
       "path": "plugins/hexaemeron/skills/imprimatur/SKILL.md",
-      "sha256": "e158c97012853e83e53a12ab26527bba88444367773738219c9c63f35dc48360",
+      "sha256": "39c0b5d75af6d80dcbb8322150d4825b3aa73285ce58fa96bcc85df92d62c59a",
       "source": "plugins/hexaemeron/skills/imprimatur/SKILL.md"
     },
     {
@@ -2209,9 +2341,9 @@
       "source": "plugins/hexaemeron/skills/kronos/EVOLUTION.md"
     },
     {
-      "bytes": 18999,
+      "bytes": 19341,
       "path": "plugins/hexaemeron/skills/kronos/SKILL.md",
-      "sha256": "cd780af7ec630e3c127ae43a72950abbfa4b96b0c12928ecd7f007f21dfdb75d",
+      "sha256": "3f72304d47813d19b5f4d19f47d8021400837af19fcced3442dd3f83e0fb4c11",
       "source": "plugins/hexaemeron/skills/kronos/SKILL.md"
     },
     {
@@ -2233,9 +2365,9 @@
       "source": "plugins/hexaemeron/skills/metron/EVOLUTION.md"
     },
     {
-      "bytes": 11442,
+      "bytes": 11774,
       "path": "plugins/hexaemeron/skills/metron/SKILL.md",
-      "sha256": "1f801631647bc1550956e03a7f236a1c68f6d299369470cc3a2a538c76fe5333",
+      "sha256": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57",
       "source": "plugins/hexaemeron/skills/metron/SKILL.md"
     },
     {
@@ -2263,9 +2395,9 @@
       "source": "plugins/hexaemeron/skills/phylax/EVOLUTION.md"
     },
     {
-      "bytes": 21300,
+      "bytes": 21618,
       "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-      "sha256": "d450380b6f0a58468a8574ea7002af8be966204d4b7ba0dff79be43472c5349d",
+      "sha256": "b8943913d56225bdf983f56cec226946168219a401516fcd795a17760f29087f",
       "source": "plugins/hexaemeron/skills/phylax/SKILL.md"
     },
     {
@@ -2287,9 +2419,9 @@
       "source": "plugins/hexaemeron/skills/protasis/EVOLUTION.md"
     },
     {
-      "bytes": 24698,
+      "bytes": 25040,
       "path": "plugins/hexaemeron/skills/protasis/SKILL.md",
-      "sha256": "5084478723a550fcb2b2f16ab1898552f50873d0496094f994909e1081821ea7",
+      "sha256": "95a5fa7f10d56d18c40939414ac8006bfc0de18ef075ee7231754aab7025dde2",
       "source": "plugins/hexaemeron/skills/protasis/SKILL.md"
     },
     {
@@ -2437,9 +2569,9 @@
       "source": "plugins/hexaemeron/skills/vulgate/EVOLUTION.md"
     },
     {
-      "bytes": 7021,
+      "bytes": 7330,
       "path": "plugins/hexaemeron/skills/vulgate/SKILL.md",
-      "sha256": "96592ba6c86c6150e4c2ba12da967d77358cc5ca459f7617aad81a1db5be068c",
+      "sha256": "9761fcbfa6bb4d2da49146b8064774355001cdec31e2b6d10d2fae58fbc74ece",
       "source": "plugins/hexaemeron/skills/vulgate/SKILL.md"
     },
     {
@@ -2521,16 +2653,22 @@
       "source": "plugins/horos/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/horos/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/horos/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 5356,
+      "bytes": 5646,
       "path": "plugins/horos/README.md",
-      "sha256": "2542bda10a1c5684e6b796734b1323f7787a901e974e6b2722ad342b534a09f8",
+      "sha256": "8b3ba30291359eb9669a8f327d17a84fb2e7be3a66869bfca23f7b146e7f7741",
       "source": "plugins/horos/README.md"
+    },
+    {
+      "bytes": 313921,
+      "path": "plugins/horos/assets/characters/horos.png",
+      "sha256": "80c4c84ecb5427ab71b2e2da192a5417ec5fdaef9e3501182a680381aee1c308",
+      "source": "plugins/horos/assets/characters/horos.png"
     },
     {
       "bytes": 5998,
@@ -3037,9 +3175,9 @@
       "source": "plugins/horos/skills/horos/EVOLUTION.md"
     },
     {
-      "bytes": 13446,
+      "bytes": 13759,
       "path": "plugins/horos/skills/horos/SKILL.md",
-      "sha256": "3463165ed3a0e1c08c00c41458cd37987a6328bbbf06639c04ec40480b80e2fb",
+      "sha256": "6328dac3c5127fce2422c20d9a6ee55d42cbd9279b7abc30d21110d59ca9f7cb",
       "source": "plugins/horos/skills/horos/SKILL.md"
     },
     {
@@ -3127,16 +3265,22 @@
       "source": "plugins/janus/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/janus/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/janus/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 5310,
+      "bytes": 5560,
       "path": "plugins/janus/README.md",
-      "sha256": "bb7d5a33c0d5a4f85de31e4c575cdbda3d93a72ec1ef1176e6553cc934dbfaca",
+      "sha256": "6ac4b9446ca5f728a0b4d94e5ce25ecbbbb7a23038949b427418cfe5de11c312",
       "source": "plugins/janus/README.md"
+    },
+    {
+      "bytes": 349681,
+      "path": "plugins/janus/assets/characters/janus.png",
+      "sha256": "8965d9451ac2d44a859bd76c26afb39f1076a49359b3fade05ef5341e0759791",
+      "source": "plugins/janus/assets/characters/janus.png"
     },
     {
       "bytes": 987,
@@ -3259,9 +3403,9 @@
       "source": "plugins/janus/skills/janus/EVOLUTION.md"
     },
     {
-      "bytes": 9350,
+      "bytes": 9650,
       "path": "plugins/janus/skills/janus/SKILL.md",
-      "sha256": "5616fc8ae133ba3f677dbe2343b675ae63502a3b61fafe8bd179910ae0ffe4b9",
+      "sha256": "d3eaaca78a499dc6fc47dbc28e20831def7e0a5f3a46c13bffb5a80c5bb0b678",
       "source": "plugins/janus/skills/janus/SKILL.md"
     },
     {
@@ -3277,16 +3421,22 @@
       "source": "plugins/lazarus/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/lazarus/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/lazarus/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 9535,
+      "bytes": 9798,
       "path": "plugins/lazarus/README.md",
-      "sha256": "8b24fa2f5d5cb306a22bf2dde2e5f930926866c028b4cf86f4c57332fcddbb0c",
+      "sha256": "83b121c4e9f882d986bf8904ea1631adf133e5fdea3686f28b8c32ca9ce5dbb4",
       "source": "plugins/lazarus/README.md"
+    },
+    {
+      "bytes": 282087,
+      "path": "plugins/lazarus/assets/characters/lazarus.png",
+      "sha256": "50a52bbfcece8d1c9a3a4d718943febeffb038643fc53db401a0d1c7e65d8c27",
+      "source": "plugins/lazarus/assets/characters/lazarus.png"
     },
     {
       "bytes": 4079,
@@ -3865,9 +4015,9 @@
       "source": "plugins/lazarus/skills/lazarus/EVOLUTION.md"
     },
     {
-      "bytes": 16255,
+      "bytes": 16563,
       "path": "plugins/lazarus/skills/lazarus/SKILL.md",
-      "sha256": "30bdca90ca14ec3e0c9edd49b4245f55bccb6de409555075fedd98b7f6544a94",
+      "sha256": "bbb195d61057d968c79ffcdefcb4c630f3ff2ee02ebba71b1c4c933c55d6e828",
       "source": "plugins/lazarus/skills/lazarus/SKILL.md"
     },
     {
@@ -3901,16 +4051,22 @@
       "source": "plugins/lemma/NOTICE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/lemma/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/lemma/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 4213,
+      "bytes": 4459,
       "path": "plugins/lemma/README.md",
-      "sha256": "9f7b96ba2e752f1162edf99fa04c5c6aaa1003c8cd03d145b186f15206fd7200",
+      "sha256": "d3bc8079ad7a7ab88bdbe3aa3df5fef5faa95a601f0a62f423113ea3ce62a16e",
       "source": "plugins/lemma/README.md"
+    },
+    {
+      "bytes": 225829,
+      "path": "plugins/lemma/assets/characters/lemma.png",
+      "sha256": "31e5cae757270abb0482cc2d5bf4f72f2fa1586c2b94c3a90e4c4f5d3350095a",
+      "source": "plugins/lemma/assets/characters/lemma.png"
     },
     {
       "bytes": 3259,
@@ -4039,9 +4195,9 @@
       "source": "plugins/lemma/skills/lemma/EVOLUTION.md"
     },
     {
-      "bytes": 7119,
+      "bytes": 7411,
       "path": "plugins/lemma/skills/lemma/SKILL.md",
-      "sha256": "dd6ea8acda920a74350f2f014e426944724acd4e34d97363e1badd48fca7c090",
+      "sha256": "9583f92c3fad2add0f5553a3df4b0fe4c00f3cbccfe250198754c2daaf97e7c0",
       "source": "plugins/lemma/skills/lemma/SKILL.md"
     },
     {
@@ -4069,15 +4225,15 @@
       "source": "plugins/pandects/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/pandects/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/pandects/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 17024,
+      "bytes": 17269,
       "path": "plugins/pandects/README.md",
-      "sha256": "c7d59c453a2d278933e76306dc1ad5880d1bcf7a066a4b68cc7b3c3200c5a28d",
+      "sha256": "93e9c4a7853c0704e56794a5596aa3504b58ba3009a5bcf754b016880b5faec7",
       "source": "plugins/pandects/README.md"
     },
     {
@@ -4127,6 +4283,12 @@
       "path": "plugins/pandects/adapters/medusa/medusa.json",
       "sha256": "79f5b9006e88a04fb8e88802fc07e214ec3743b6e1cd8be4b647394a39daca8c",
       "source": "plugins/pandects/adapters/medusa/medusa.json"
+    },
+    {
+      "bytes": 278892,
+      "path": "plugins/pandects/assets/characters/pandects.png",
+      "sha256": "3a9c0996c2f1bf7804de9f88371fa8a3cc3cd65e02f1b00ba6394ca0629a0af1",
+      "source": "plugins/pandects/assets/characters/pandects.png"
     },
     {
       "bytes": 11518,
@@ -4243,9 +4405,9 @@
       "source": "plugins/pandects/skills/pandects/EVOLUTION.md"
     },
     {
-      "bytes": 16199,
+      "bytes": 16484,
       "path": "plugins/pandects/skills/pandects/SKILL.md",
-      "sha256": "ce518cc5f202bb0bd10c88d8241aadb05681d4bcea5ed43e76106c39be0289c1",
+      "sha256": "79e415fc05ba32bd957006d29cfc1f5f515d1e45d81f57c45233d54f27e9ca0e",
       "source": "plugins/pandects/skills/pandects/SKILL.md"
     },
     {
@@ -4501,16 +4663,22 @@
       "source": "plugins/probitas/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/probitas/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/probitas/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 14504,
+      "bytes": 14765,
       "path": "plugins/probitas/README.md",
-      "sha256": "cd77f8e6890d96c23e34d9bd1c5a7494bb868dc83977df5e7a5ee42e4472568c",
+      "sha256": "7987ca9f30096c3dfa02122353e2ec6105ad6dd2a1ba508e7c29484b5f1b9b74",
       "source": "plugins/probitas/README.md"
+    },
+    {
+      "bytes": 263217,
+      "path": "plugins/probitas/assets/characters/probitas.png",
+      "sha256": "86fdb442170e4477fc99fe42a70904a53f4924c5205ab93f04e28b2a489beceb",
+      "source": "plugins/probitas/assets/characters/probitas.png"
     },
     {
       "bytes": 1786,
@@ -4657,9 +4825,9 @@
       "source": "plugins/probitas/skills/probitas/EVOLUTION.md"
     },
     {
-      "bytes": 11488,
+      "bytes": 11791,
       "path": "plugins/probitas/skills/probitas/SKILL.md",
-      "sha256": "f4c3e1c2b58e829d2f0fd6db0ffb766c5a32d84d2246f19f03a633dc1684957a",
+      "sha256": "aa1c8329abc8f138f0823245c2fe603ac9d655db68d2b71acf297bf25c4c3f71",
       "source": "plugins/probitas/skills/probitas/SKILL.md"
     },
     {
@@ -4693,16 +4861,22 @@
       "source": "plugins/sapheneia/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/sapheneia/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/sapheneia/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3824,
+      "bytes": 4109,
       "path": "plugins/sapheneia/README.md",
-      "sha256": "1dd9fe4e86ea1039c94b0a4155f9663f661164d9d89c6390e79c1019686f6cfe",
+      "sha256": "77a75e6890bad16f72263f1eabbc0835d0579bf2404351f2f24c6a5a040241cb",
       "source": "plugins/sapheneia/README.md"
+    },
+    {
+      "bytes": 229220,
+      "path": "plugins/sapheneia/assets/characters/sapheneia.png",
+      "sha256": "7ea04d29f2e4139385607383dd92b3ef1748265a34f3c5125c4979cc77451aae",
+      "source": "plugins/sapheneia/assets/characters/sapheneia.png"
     },
     {
       "bytes": 1404,
@@ -4711,9 +4885,9 @@
       "source": "plugins/sapheneia/skills/sapheneia/EVOLUTION.md"
     },
     {
-      "bytes": 12828,
+      "bytes": 13152,
       "path": "plugins/sapheneia/skills/sapheneia/SKILL.md",
-      "sha256": "30b16d89417f764d64c458c9fcfe944c870a5147baa705a82d7d90b46c9c4794",
+      "sha256": "cfd89c37e0c4e67be6f707d39f4806ac821c0b72258e4cb84eec945f3b8c2964",
       "source": "plugins/sapheneia/skills/sapheneia/SKILL.md"
     },
     {
@@ -4721,6 +4895,60 @@
       "path": "plugins/sapheneia/skills/sapheneia/agents/openai.yaml",
       "sha256": "7dc44aaf0a94bdac8a92a86a9113a516f508b29ed0e22d98279a40f6a812504e",
       "source": "plugins/sapheneia/skills/sapheneia/agents/openai.yaml"
+    },
+    {
+      "bytes": 4434,
+      "path": "plugins/synkrisis/AGENTS.md",
+      "sha256": "97961f67d423025899f20161d5db1d549da8fd3c3b3f9c4cd54fe604637129f1",
+      "source": "plugins/synkrisis/AGENTS.md"
+    },
+    {
+      "bytes": 11342,
+      "path": "plugins/synkrisis/LICENSE",
+      "sha256": "624ddb0910d0925eafa5ac16a65a1360417e3d7c72aff6df0f3eab475695b68d",
+      "source": "plugins/synkrisis/LICENSE"
+    },
+    {
+      "bytes": 23506,
+      "path": "plugins/synkrisis/PROMISE_MACHINE.md",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
+      "source": "plugins/synkrisis/PROMISE_MACHINE.md"
+    },
+    {
+      "bytes": 3878,
+      "path": "plugins/synkrisis/README.md",
+      "sha256": "63f55d83e8637c02e5978ef6ec5767e8e8e3852619162db3d0b016f562a36c1b",
+      "source": "plugins/synkrisis/README.md"
+    },
+    {
+      "bytes": 303545,
+      "path": "plugins/synkrisis/assets/characters/synkrisis.png",
+      "sha256": "0a0326e5c02b7849e093c046e0ba9aa81e0d2661c025b01d64ee16cc5cf27a6c",
+      "source": "plugins/synkrisis/assets/characters/synkrisis.png"
+    },
+    {
+      "bytes": 2028,
+      "path": "plugins/synkrisis/docs/decisions/ADR-001-keep-cross-run-diagnosis-separate.md",
+      "sha256": "2caab7792e5d32b6b83866836052bb2386c6e86db4b2fc7c51972ae3c4d61fdc",
+      "source": "plugins/synkrisis/docs/decisions/ADR-001-keep-cross-run-diagnosis-separate.md"
+    },
+    {
+      "bytes": 4112,
+      "path": "plugins/synkrisis/scripts/synkrisis.py",
+      "sha256": "ee35657843a6ec513931aa8383645dc6c914d7027bdb0eb34a8969f2f88d44ad",
+      "source": "plugins/synkrisis/scripts/synkrisis.py"
+    },
+    {
+      "bytes": 1595,
+      "path": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md",
+      "sha256": "bd362ae9c90cea4b4b64b5b7d771b06f7324fe22de467486192042a2d7f98081",
+      "source": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md"
+    },
+    {
+      "bytes": 6854,
+      "path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
+      "sha256": "0cd7402b9581e66b049bfb17362e7a3444c6dd020c72589333a340a0dac11c10",
+      "source": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {
       "bytes": 4570,
@@ -4735,16 +4963,22 @@
       "source": "plugins/tabularium/LICENSE"
     },
     {
-      "bytes": 22277,
+      "bytes": 23506,
       "path": "plugins/tabularium/PROMISE_MACHINE.md",
-      "sha256": "95f0a4764276449b9a35844c84285ddd8a6d8e6cb3f5864afc6292c7a0fda531",
+      "sha256": "ff59756800eb33bb63b77b1392af63a381da6060fa630f6c02c380318f75bdfb",
       "source": "plugins/tabularium/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 12304,
+      "bytes": 12575,
       "path": "plugins/tabularium/README.md",
-      "sha256": "207f56bcbfa45a3aa5b9961e6e7a8ccc60b59dbe155606c5195ae98fedc46038",
+      "sha256": "84f101ca3565e96ae34f4411f9d0e17ab8141aa8de100a312d0ae649834bb601",
       "source": "plugins/tabularium/README.md"
+    },
+    {
+      "bytes": 244910,
+      "path": "plugins/tabularium/assets/characters/tabularium.png",
+      "sha256": "138f2c5732d5a12d542975d72430338de8605a53c671de956814ceb5b7756187",
+      "source": "plugins/tabularium/assets/characters/tabularium.png"
     },
     {
       "bytes": 2728,
@@ -5065,9 +5299,9 @@
       "source": "plugins/tabularium/skills/tabularium/EVOLUTION.md"
     },
     {
-      "bytes": 12778,
+      "bytes": 13089,
       "path": "plugins/tabularium/skills/tabularium/SKILL.md",
-      "sha256": "f32c894635919fe437f9994b93b222abe8e5093e472145c65a2d165ebc3909fe",
+      "sha256": "061325b8d183af3bd9b8c1a31bdb1fc97565a5e37d53fb05dd3c9cb78a1896ac",
       "source": "plugins/tabularium/skills/tabularium/SKILL.md"
     },
     {

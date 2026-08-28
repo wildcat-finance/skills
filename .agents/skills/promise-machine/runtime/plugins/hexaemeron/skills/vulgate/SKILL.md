@@ -5,6 +5,10 @@ metadata:
   version: "1.1.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/vulgate.png" width="1200">
+</p>
+
 # Vulgate
 
 ## Frontier
@@ -22,6 +26,10 @@ structure of engineering prose, and Sapheneia may shape the interaction or one
 bounded durable record. Hypomnema decides what must be written and where it
 belongs. Vulgate changes none of those siblings' facts, format obligations, or
 evidence.
+
+If Synkrisis eventually renders a comparison report, Vulgate may rewrite only
+its surface. The current scaffold emits no report, and the mask cannot add a
+cohort, finding, conclusion, or authority that the source lacks.
 
 **Current state.** Vulgate defines a strict content-preserving voice mask, but its parity check is still a model judgement rather than a repeatable evaluation over facts, commitments, caveats, and registers.
 
