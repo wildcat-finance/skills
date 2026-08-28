@@ -97,11 +97,26 @@ class PlanTests(unittest.TestCase):
         for name in (
             "sh",
             "BASH",
+            "ash",
+            "elvish",
+            "ksh93",
+            "mksh",
+            "nu",
+            "osh",
+            "posh",
+            "rbash",
+            "tcsh",
+            "xonsh",
+            "yash",
             "powershell",
+            "powershell_ise.exe",
+            "pwsh-preview.exe",
+            "COMMAND.COM",
             "sh.exe",
             "BASH.EXE",
             "powershell.exe",
             "pwsh.exe",
+            "cmd.exe.",
         ):
             steps = replay.plan(built([command(argv=[name, "-c", "echo hi"])]))
             self.assertFalse(steps[0].runnable, name)
@@ -109,7 +124,7 @@ class PlanTests(unittest.TestCase):
 
     def test_a_windows_batch_program_is_refused_everywhere(self):
         """Windows may invoke these through a shell despite `shell=False`."""
-        for name in ("build.bat", "BUILD.CMD"):
+        for name in ("build.bat", "BUILD.CMD", "build.bat.", "BUILD.CMD "):
             steps = replay.plan(built([command(argv=[name, "untrusted&argument"])]))
             self.assertFalse(steps[0].runnable, name)
             self.assertIn("batch", steps[0].action)

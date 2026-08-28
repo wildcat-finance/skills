@@ -53,12 +53,46 @@ the same answer replayed on another, which is the point of a portable
 format."""
 
 SHELL_NAMES = frozenset(
-    {"sh", "bash", "zsh", "dash", "ksh", "fish", "csh", "cmd", "powershell", "pwsh"}
+    {
+        "ash",
+        "bash",
+        "csh",
+        "dash",
+        "elvish",
+        "fish",
+        "ksh",
+        "ksh93",
+        "lksh",
+        "mksh",
+        "nu",
+        "oksh",
+        "osh",
+        "pdksh",
+        "posh",
+        "rbash",
+        "sh",
+        "tcsh",
+        "xonsh",
+        "yash",
+        "zsh",
+        "cmd",
+        "command",
+        "powershell",
+        "powershell_ise",
+        "pwsh",
+        "pwsh-preview",
+    }
 )
-SHELLS = SHELL_NAMES | frozenset("%s.exe" % name for name in SHELL_NAMES)
+WINDOWS_EXECUTABLE_SUFFIXES = (".com", ".exe")
+SHELLS = SHELL_NAMES | frozenset(
+    "%s%s" % (name, suffix)
+    for name in SHELL_NAMES
+    for suffix in WINDOWS_EXECUTABLE_SUFFIXES
+)
 """Running a shell as the program would hand back exactly what `shell=False`
-was avoiding. This is a guard against the obvious case rather than a sandbox;
-see the note in the module docstring."""
+was avoiding. The portable set covers the common direct POSIX and Windows
+spellings, including Windows executable extensions. This is still a guard
+against direct shell names rather than a sandbox; see the module docstring."""
 
 WINDOWS_BATCH_SUFFIXES = (".bat", ".cmd")
 
@@ -140,7 +174,10 @@ def plan(statement):
         if drive or any(separator in argv[0] for separator in SEPARATORS):
             steps.append(Step(name, argv, SKIP_PATH))
             continue
-        program = argv[0].lower()
+        # Win32 filename lookup ignores trailing spaces and periods. Normalise
+        # them before checking executable and batch suffixes so a plan cannot
+        # disagree with the program family that Windows would start.
+        program = argv[0].lower().rstrip(" .")
         if program.endswith(WINDOWS_BATCH_SUFFIXES):
             steps.append(Step(name, argv, SKIP_BATCH))
             continue
