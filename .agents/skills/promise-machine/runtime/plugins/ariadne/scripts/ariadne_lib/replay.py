@@ -8,14 +8,15 @@ campaign that produced different coverage the second time has not failed.
 
 The commands inside a statement are somebody else's data. They are not
 instructions to this tool, so nothing runs without `--allow-execution`, nothing
-runs through a shell, and three shapes are refused outright:
+runs through a shell, and four shapes are refused outright:
 
 - A command whose arguments were redacted at capture. What is left is a
   different command, and running it while calling it a replay would be a lie.
-- A program name carrying a path separator, which would let a statement point
-  the replay at a binary sitting beside it, or naming a shell, which would hand
-  back what `shell=False` was avoiding.
-- Anything at all when the caller has not asked for execution.
+- A program name carrying a path separator or Windows drive prefix, which would
+  let a statement point the replay at a binary sitting beside it.
+- A known shell name, which would hand back what `shell=False` was avoiding.
+- A Windows batch program, because the operating system may run `.bat` and
+  `.cmd` files through a system shell even when Python was given `shell=False`.
 
 None of that is a sandbox. Replay runs the program named, with the arguments
 given, under the caller's own account. What it offers is that the choice is the
@@ -24,6 +25,7 @@ characters, and an argv value the host cannot encode or start is a contained
 failure rather than an exception from the reader.
 """
 
+import ntpath
 import subprocess
 
 from . import core_predicate, digests, gates
@@ -35,8 +37,9 @@ REDACTION = "<redacted>"
 RUN = "run"
 SKIP_NONDETERMINISTIC = "not run: declared nondeterministic"
 SKIP_REDACTED = "not run: arguments were redacted at capture"
-SKIP_PATH = "not run: the program name carries a path separator"
+SKIP_PATH = "not run: the program name carries a path separator or drive prefix"
 SKIP_SHELL = "not run: the program is a shell, which is what shell=False avoids"
+SKIP_BATCH = "not run: Windows batch programs invoke a system shell"
 SKIP_MALFORMED = "not run: the command has no argv of strings"
 SKIP_STATE_FIXTURE_V2 = (
     "not run: state-fixture/v2 replay is local-file verification only"
@@ -49,12 +52,15 @@ SEPARATORS = ("/", "\\")
 the same answer replayed on another, which is the point of a portable
 format."""
 
-SHELLS = frozenset(
-    {"sh", "bash", "zsh", "dash", "ksh", "fish", "csh", "cmd", "cmd.exe", "powershell", "pwsh"}
+SHELL_NAMES = frozenset(
+    {"sh", "bash", "zsh", "dash", "ksh", "fish", "csh", "cmd", "powershell", "pwsh"}
 )
+SHELLS = SHELL_NAMES | frozenset("%s.exe" % name for name in SHELL_NAMES)
 """Running a shell as the program would hand back exactly what `shell=False`
 was avoiding. This is a guard against the obvious case rather than a sandbox;
 see the note in the module docstring."""
+
+WINDOWS_BATCH_SUFFIXES = (".bat", ".cmd")
 
 
 class Step(object):
@@ -130,10 +136,15 @@ def plan(statement):
         if any(REDACTION in str(word) for word in argv):
             steps.append(Step(name, argv, SKIP_REDACTED))
             continue
-        if any(separator in argv[0] for separator in SEPARATORS):
+        drive, _ = ntpath.splitdrive(argv[0])
+        if drive or any(separator in argv[0] for separator in SEPARATORS):
             steps.append(Step(name, argv, SKIP_PATH))
             continue
-        if argv[0].lower() in SHELLS:
+        program = argv[0].lower()
+        if program.endswith(WINDOWS_BATCH_SUFFIXES):
+            steps.append(Step(name, argv, SKIP_BATCH))
+            continue
+        if program in SHELLS:
             steps.append(Step(name, argv, SKIP_SHELL))
             continue
         steps.append(Step(name, argv, RUN, command.get("output_digest")))
@@ -194,9 +205,16 @@ def compare(step, recomputed):
 
 
 class Result(object):
-    def __init__(self, steps, executed):
+    def __init__(self, steps, execution_allowed):
         self.steps = steps
-        self.executed = executed
+        self.execution_allowed = execution_allowed
+        # Permission to execute is evidence of authority, not evidence that a
+        # process ran. A skipped or failed-to-start plan must not set the
+        # machine-readable execution claim merely because the flag was present.
+        self.executed = any(
+            isinstance(step.status, int) or step.status == "timed out"
+            for step in steps
+        )
 
     @property
     def ok(self):
@@ -207,21 +225,26 @@ class Result(object):
         for step in self.steps:
             if step.status not in (None, 0):
                 return False
+            if step.status == 0 and step.compared is not True:
+                return False
             if step.compared is False:
                 return False
         return True
 
     def lines(self):
         out = [step.line() for step in self.steps]
-        if not self.executed:
+        if not self.execution_allowed:
             out.append(
                 "nothing was run; pass --allow-execution to replay the exact "
                 "commands above"
             )
+        elif not self.executed:
+            out.append("nothing was run; no eligible command started")
         return out
 
     def to_dict(self):
         return {
+            "executionAllowed": self.execution_allowed,
             "executed": self.executed,
             "steps": [step.to_dict() for step in self.steps],
             "ok": self.ok,

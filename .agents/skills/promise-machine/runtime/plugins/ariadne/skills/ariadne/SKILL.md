@@ -145,7 +145,10 @@ all adjustable with `--max-bytes` and `--max-depth`.
 `--allow-execution` it prints the plan and runs nothing, which is the default
 because the commands inside a statement are somebody else's data rather than
 instructions. It never uses a shell, refuses a command whose arguments were
-redacted at capture, and refuses a program name carrying a path separator.
+redacted at capture, refuses a program name carrying a path separator or
+Windows drive prefix, and refuses known shells and Windows batch programs.
+The JSON result reports execution authority as `executionAllowed`; `executed`
+is true only when an eligible process actually started.
 
 Exit codes: 0 success, 1 a gate was breached, 2 usage or validation error.
 

@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11097255,
+  "total_bytes": 11098657,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -715,9 +715,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/registry.py"
     },
     {
-      "bytes": 9157,
+      "bytes": 10352,
       "path": "plugins/ariadne/scripts/ariadne_lib/replay.py",
-      "sha256": "a04e593edf1e91b7341aa3da01ab4c6297be9929652626873452bca6a3bf2fdb",
+      "sha256": "04b8f623c1908123f67443810e93eeb91387fdf4dad6bcce196df172c802e499",
       "source": "plugins/ariadne/scripts/ariadne_lib/replay.py"
     },
     {
@@ -751,9 +751,9 @@
       "source": "plugins/ariadne/skills/ariadne/EVOLUTION.md"
     },
     {
-      "bytes": 20770,
+      "bytes": 20977,
       "path": "plugins/ariadne/skills/ariadne/SKILL.md",
-      "sha256": "ca048c9d2f33964e50a0b66490a1ee0925c18c897ec771b7ac7a2a284b548195",
+      "sha256": "b19a4645da097f3bbf1770c08491f99bdf563988795d813aef81ea59bb24bffb",
       "source": "plugins/ariadne/skills/ariadne/SKILL.md"
     },
     {

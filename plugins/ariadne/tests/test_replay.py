@@ -87,11 +87,32 @@ class PlanTests(unittest.TestCase):
         self.assertFalse(steps[0].runnable)
         self.assertIn("path separator", steps[0].action)
 
+    def test_a_windows_drive_relative_program_is_refused_everywhere(self):
+        """`C:evil` escapes the selected project when its drive differs."""
+        steps = replay.plan(built([command(argv=["C:evil.exe"])]))
+        self.assertFalse(steps[0].runnable)
+        self.assertIn("drive prefix", steps[0].action)
+
     def test_a_shell_named_as_the_program_is_refused(self):
-        for name in ("sh", "BASH", "powershell"):
+        for name in (
+            "sh",
+            "BASH",
+            "powershell",
+            "sh.exe",
+            "BASH.EXE",
+            "powershell.exe",
+            "pwsh.exe",
+        ):
             steps = replay.plan(built([command(argv=[name, "-c", "echo hi"])]))
             self.assertFalse(steps[0].runnable, name)
             self.assertIn("shell", steps[0].action)
+
+    def test_a_windows_batch_program_is_refused_everywhere(self):
+        """Windows may invoke these through a shell despite `shell=False`."""
+        for name in ("build.bat", "BUILD.CMD"):
+            steps = replay.plan(built([command(argv=[name, "untrusted&argument"])]))
+            self.assertFalse(steps[0].runnable, name)
+            self.assertIn("batch", steps[0].action)
 
     def test_a_command_with_no_argv_is_refused(self):
         steps = replay.plan(built([{"name": "x", "determinism": "exact"}]))
@@ -127,6 +148,7 @@ class ExecutionTests(unittest.TestCase):
         found = replay.replay(
             built([command(argv=["touch", marker])]), allow_execution=False
         )
+        self.assertFalse(getattr(found, "execution_allowed", None))
         self.assertFalse(found.executed)
         self.assertFalse(os.path.exists(marker))
         self.assertIn("pass --allow-execution", "\n".join(found.lines()))
@@ -141,15 +163,31 @@ class ExecutionTests(unittest.TestCase):
             allow_execution=True,
             cwd=self.root,
         )
-        self.assertTrue(found.executed)
+        self.assertTrue(getattr(found, "execution_allowed", None))
+        self.assertFalse(found.executed)
         self.assertFalse(found.steps[0].runnable)
         self.assertIn("local-file", found.steps[0].action)
         self.assertFalse(os.path.exists(marker))
+        self.assertIn("nothing was run", "\n".join(found.lines()))
+
+    def test_execution_authority_is_not_reported_as_a_process_execution(self):
+        found = replay.replay(
+            built([command(argv=["powershell.exe", "-c", "echo hi"])]),
+            allow_execution=True,
+            cwd=self.root,
+        )
+        self.assertTrue(getattr(found, "execution_allowed", None))
+        self.assertFalse(found.executed)
+        self.assertTrue(found.ok)
+        self.assertFalse(found.steps[0].runnable)
+        self.assertIn("nothing was run", "\n".join(found.lines()))
+        self.assertFalse(found.to_dict()["executed"])
 
     def test_an_exact_command_runs_and_reports_its_exit_status(self):
         found = replay.replay(
             built([command(argv=["true"])]), allow_execution=True, cwd=self.root
         )
+        self.assertTrue(found.executed)
         self.assertEqual(found.steps[0].status, 0)
 
     def test_a_failing_command_makes_the_result_not_ok(self):
@@ -243,6 +281,7 @@ class ComparisonTests(unittest.TestCase):
         self.assertIsNone(found.steps[0].compared)
         self.assertIn("knows how to recompute", found.steps[0].detail)
         self.assertIn("not compared", found.steps[0].line())
+        self.assertFalse(found.ok)
 
 
 class CommandTests(unittest.TestCase):
@@ -287,6 +326,7 @@ class CommandTests(unittest.TestCase):
         )
         self.assertEqual(code, 0)
         found = json.loads(out)
+        self.assertFalse(found.get("executionAllowed"))
         self.assertFalse(found["executed"])
         self.assertEqual(found["steps"][0]["action"], replay.RUN)
 
