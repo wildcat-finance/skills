@@ -1,10 +1,3 @@
-# Issue 329: janus resolves the manifest's permitted effects into the gate inputs
-
-Rounds for the run on branch
-`fiat/329-janus-resolve-the-manifest-s-permitted-effec`, off `main` at
-`6813bdb36ae27d23606f3449c019e5ab85520212`. Headings carry step and round
-alone, because the file names the run.
-
 ## Step 1, round 1 -- 2026-08-28T09:15:19Z
 
 Audit schema: fiat-audit-round/v2
