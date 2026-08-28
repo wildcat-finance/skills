@@ -13,7 +13,7 @@ from unittest import mock
 from . import support  # noqa: F401  (sets sys.path)
 
 import ariadne  # noqa: E402
-from ariadne_lib import replay, statement  # noqa: E402
+from ariadne_lib import envelope, replay, statement  # noqa: E402
 
 ART = {"sha256": hashlib.sha256(b"artefact").hexdigest()}
 OUT = {"sha256": hashlib.sha256(b"output").hexdigest()}
@@ -300,6 +300,33 @@ class ComparisonTests(unittest.TestCase):
         self.assertIn("knows how to recompute", found.steps[0].detail)
         self.assertIn("not compared", found.steps[0].line())
         self.assertFalse(found.ok)
+
+    def test_solidity_artifacts_are_not_compared_to_a_different_exact_command(self):
+        path = os.path.join(EXAMPLES, "escrow-v1.1.0.json")
+        project = os.path.join(
+            os.path.dirname(__file__), "fixtures", "forge-project", "v2"
+        )
+        with open(path, "rb") as handle:
+            raw = json.load(handle)
+        raw["predicate"]["commands"][0]["argv"] = ["true"]
+        document = envelope.read(json.dumps(raw).encode("utf-8"))
+
+        recorded = raw["predicate"]["commands"][0]["output_digest"]
+        with mock.patch.object(
+            ariadne.foundry, "release_subjects", return_value=["unrelated"]
+        ) as release_subjects, mock.patch.object(
+            ariadne.foundry, "bundle", return_value=recorded
+        ):
+            found = replay.replay(
+                document.statement,
+                allow_execution=True,
+                cwd=project,
+                recompute=ariadne.recomputer(project),
+            )
+        self.assertEqual(found.steps[0].status, 0)
+        self.assertIsNone(found.steps[0].compared)
+        self.assertFalse(found.ok)
+        release_subjects.assert_not_called()
 
 
 class CommandTests(unittest.TestCase):

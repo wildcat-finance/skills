@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11099518,
+  "total_bytes": 11101411,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -607,9 +607,9 @@
       "source": "plugins/ariadne/schemas/state-fixture-v2.json"
     },
     {
-      "bytes": 19724,
+      "bytes": 20131,
       "path": "plugins/ariadne/scripts/ariadne.py",
-      "sha256": "dd707a4af664cbecd63f726490aab0dfbb3975ce838edc071b66a8caff2eb160",
+      "sha256": "8b1d6581c3a33a06db16af9834af7e8045037731d78d42f0e9c8b4be46b4d2e7",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     {
@@ -673,9 +673,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/envelope.py"
     },
     {
-      "bytes": 15899,
+      "bytes": 16182,
       "path": "plugins/ariadne/scripts/ariadne_lib/gates.py",
-      "sha256": "ea357dedb8cc2fa9b4ea5a475275a0f89a4c1a0acd5ac4ad94bd9dc5ced1a5d5",
+      "sha256": "5060c2157a668f19e1eb74952e6184e57978695bf34f9d249deb6ca302734563",
       "source": "plugins/ariadne/scripts/ariadne_lib/gates.py"
     },
     {
@@ -697,9 +697,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py"
     },
     {
-      "bytes": 17785,
+      "bytes": 18240,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/solidity_release.py",
-      "sha256": "a1d006297c644715255736d352fd484f1a76a16eae08014284ca1e3ecc1da353",
+      "sha256": "77af74f51cb06133234020167324f07884e4192617534853ed8a774e83093934",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/solidity_release.py"
     },
     {
@@ -715,9 +715,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/registry.py"
     },
     {
-      "bytes": 11213,
+      "bytes": 11601,
       "path": "plugins/ariadne/scripts/ariadne_lib/replay.py",
-      "sha256": "2a3e845aeac15f3bf60980021a42daf8fad33c87f423e416206e69eb5f4d64c9",
+      "sha256": "8616bb5adc6f967cd9b35413532bba84dc74bb860df49a41cf059949c571ae62",
       "source": "plugins/ariadne/scripts/ariadne_lib/replay.py"
     },
     {
@@ -751,9 +751,9 @@
       "source": "plugins/ariadne/skills/ariadne/EVOLUTION.md"
     },
     {
-      "bytes": 20977,
+      "bytes": 21337,
       "path": "plugins/ariadne/skills/ariadne/SKILL.md",
-      "sha256": "b19a4645da097f3bbf1770c08491f99bdf563988795d813aef81ea59bb24bffb",
+      "sha256": "a515b4869a15a485a9b51373fc0946cf5ce8804fded556978acdd0d44e36ef72",
       "source": "plugins/ariadne/skills/ariadne/SKILL.md"
     },
     {

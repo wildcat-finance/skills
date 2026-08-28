@@ -333,12 +333,20 @@ def recomputer(project):
 
     A build's recorded output digest is over the artefacts rather than over
     what the command printed, so the comparison means recomputing the artefacts
-    the way capture did.
+    the way capture did. Other predicate types do not describe that Foundry
+    bundle, so applying this recomputer to them would compare unrelated bytes.
+    Even a Solidity statement only earns that comparison for the exact command
+    its build environment records.
     """
     if not project:
         return None
 
     def recompute(step):
+        if (
+            step.predicate_type != predicates.solidity_release.TYPE
+            or step.argv != step.build_command
+        ):
+            return None
         try:
             subjects = foundry.release_subjects(foundry.confined(project, "--project"))
         except foundry.CaptureError:

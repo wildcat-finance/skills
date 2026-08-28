@@ -123,6 +123,17 @@ def gate_2_environment(statement):
             isinstance(word, str) for word in command
         ):
             faults.append("build command must be an argv of strings")
+        else:
+            commands = predicate.get("commands")
+            if isinstance(commands, list) and commands and not any(
+                isinstance(entry, dict)
+                and entry.get("determinism") == "exact"
+                and entry.get("argv") == command
+                for entry in commands
+            ):
+                faults.append(
+                    "recorded exact commands do not match the build command"
+                )
         try:
             digests.check(build["dependency_lock_digest"])
         except digests.DigestError as error:

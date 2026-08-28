@@ -962,6 +962,35 @@ class EvidenceBoundaryTests(unittest.TestCase):
         self.assertFalse(gate.passed)
         self.assertIn("verified_by", gate.detail)
 
+    def test_core_gate_seven_refuses_direct_identity_and_signature_status_keys(self):
+        keys = (
+            "signer",
+            "signatory",
+            "verifier",
+            "attester",
+            "notary",
+            "creator",
+            "publisher",
+            "signed",
+            "signature_verified",
+            "signature_valid",
+            "authenticated_by",
+            "notarised_by",
+            "notarized_by",
+        )
+        for key in keys:
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {key: "unverified identity"}
+            with self.subTest(key=key):
+                gate = next(
+                    found
+                    for found in report(body, outer).gates
+                    if found.number == 7
+                )
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
     def test_berean_results_cannot_hide_in_open_extension_objects(self):
         body = predicate()
         body["claims"] = [
@@ -1055,6 +1084,35 @@ class EvidenceBoundaryTests(unittest.TestCase):
 
 
 class GroundedReplayBoundaryTests(unittest.TestCase):
+    def test_grounded_output_is_not_compared_to_unrelated_foundry_artifacts(self):
+        expected = {"sha256": hex_digest("unrelated Foundry artifacts")}
+        project = Path(__file__).resolve().parent / "fixtures" / "forge-project" / "v2"
+        body = predicate()
+        body["commands"] = [
+            {
+                "name": "unrelated exact command",
+                "argv": ["true"],
+                "determinism": "exact",
+                "output_digest": expected,
+            }
+        ]
+        self.assertTrue(report(body).ok)
+        with mock.patch.object(
+            ariadne.foundry, "release_subjects", return_value=["unrelated"]
+        ) as release_subjects, mock.patch.object(
+            ariadne.foundry, "bundle", return_value=expected
+        ):
+            found = replay.replay(
+                built(body),
+                allow_execution=True,
+                cwd=str(project),
+                recompute=ariadne.recomputer(str(project)),
+            )
+        self.assertEqual(found.steps[0].status, 0)
+        self.assertIsNone(found.steps[0].compared)
+        self.assertFalse(found.ok)
+        release_subjects.assert_not_called()
+
     def test_an_all_green_command_with_an_os_invalid_word_is_contained(self):
         body = predicate()
         body["commands"] = [

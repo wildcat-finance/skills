@@ -106,6 +106,8 @@ class Step(object):
         self.argv = argv
         self.action = action
         self.output_digest = output_digest
+        self.predicate_type = None
+        self.build_command = None
         self.status = None
         self.compared = None
         self.detail = ""
@@ -144,6 +146,9 @@ class Step(object):
 def plan(statement):
     """What replay would do with each recorded command, and why."""
     steps = []
+    predicate = statement.predicate if isinstance(statement.predicate, dict) else {}
+    build = predicate.get("build")
+    build_command = build.get("command") if isinstance(build, dict) else None
     commands = core_predicate.commands(statement.predicate) or []
     for index, command in enumerate(commands):
         name = core_predicate.label(command, index, "command")
@@ -186,6 +191,9 @@ def plan(statement):
             steps.append(Step(name, argv, SKIP_SHELL))
             continue
         steps.append(Step(name, argv, RUN, command.get("output_digest")))
+    for step in steps:
+        step.predicate_type = statement.predicate_type
+        step.build_command = build_command
     return steps
 
 

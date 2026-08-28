@@ -145,6 +145,20 @@ class GateTwoTests(unittest.TestCase):
         self.assertFalse(found.passed)
         self.assertIn("argv of strings", found.detail)
 
+    def test_a_recorded_exact_command_must_match_the_build_command(self):
+        body = predicate()
+        body["commands"] = [
+            {
+                "name": "not the declared build",
+                "argv": ["true"],
+                "determinism": "exact",
+                "output_digest": RUNTIME,
+            }
+        ]
+        found = gate(2, body)
+        self.assertFalse(found.passed)
+        self.assertIn("do not match", found.detail)
+
     def test_a_release_subject_not_covered_by_the_statement_fails(self):
         body = predicate()
         found = gate(2, body, subject=[{"name": "Escrow", "digest": CREATION}])

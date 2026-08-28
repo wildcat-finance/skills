@@ -40,15 +40,28 @@ CONCLUSION_KEYS = frozenset(
 
 AUTHORSHIP_KEYS = frozenset(
     {
+        "signed",
         "signedby",
+        "signer",
+        "signatory",
         "verifiedby",
+        "verifier",
         "attestedby",
+        "attester",
         "verified",
         "author",
         "authors",
+        "creator",
+        "publisher",
         "authenticated",
+        "authenticatedby",
+        "signatureverified",
+        "signaturevalid",
         "notarised",
+        "notarisedby",
         "notarized",
+        "notarizedby",
+        "notary",
     }
 )
 """Gate 7. Authorship comes from a signature somebody checked, or from nowhere."""
