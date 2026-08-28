@@ -51,7 +51,7 @@ PACKET_ADR_PATH = (
 )
 ADR_TARGET = (
     "docs/decisions/"
-    "ADR-041-select-and-schedule-repository-checks-from-one-graph.md"
+    "ADR-045-select-and-schedule-repository-checks-from-one-graph.md"
 )
 RUNNER_PATH = "plugins/hexaemeron/tests/run_tests.py"
 PARALLEL_GUARD_PATH = "plugins/hexaemeron/tests/test_parallel_test_runner.py"
@@ -88,9 +88,10 @@ GUARD_PATH_BY_OWNER = {
 #   an unrelated ADR-037 decision after the patch preimage; the logical
 #   ADR-035 source and every immutable audit prefix keep their recorded
 #   bytes.
-# - The same collision recurred: current main later took numbers 038 through
-#   040 for unrelated decisions, so the live decision moved again to ADR-041,
-#   the next free number across both branches.  The heading moves with the
+# - The same collision kept recurring: current main took numbers 038
+#   through 044 for unrelated decisions, so the live decision moved with
+#   each advancement, settling at ADR-045, the next free number across
+#   both branches.  The heading moves with the
 #   filename, so the current digest changes with the rename while the
 #   archived ADR-035 source bytes stay fixed.
 EXPECTED_CHANGED_CURRENT_SHA256 = {
@@ -98,7 +99,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "295358d66202f3e36e906c28e4e8544d52722edd3db2356460b01ad0ebe02caa"
     ),
     ADR_SOURCE: (
-        "089046388d57dd7c639a160b7fe5e83d804db789b0cef036cb8a1cd34bca4994"
+        "244a89e377c50c74e6a94b9b129e7c2607a2b6d0789213272b61997f73b350e7"
     ),
     RUNNER_PATH: (
         "3c83bfaa7f067f00f304eeac64867f4710846caa913d6ce14e6eca7024b5d63f"
@@ -116,7 +117,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
     ),
     "plugins/hexaemeron/tests/test_hexctl.py": (
-        "858dd7f397e4c918117c0afd37cfc1d5ae2502a97d49ef919da3214b78f5c252"
+        "3e0fc237f94f3b5c246f074fbf928ccfd28d0dfd6642858f3236e63989c67f15"
     ),
     "plugins/hexaemeron/tests/test_kronos_scoreboard.py": (
         "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
@@ -131,7 +132,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
     ),
     "tests/promise_machine_coverage.json": (
-        "e8b93f45df72711d82af0342e2da9b8ac8c5c86e0183a0f2b3c5801a7d97f9ae"
+        "e749f49acd9e2d042159f3e8daa5dd794fba9be61c241802963cb08f21fe20ee"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
@@ -168,7 +169,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
     ),
     "plugins/hexaemeron/tests/test_hexctl.py": (
-        "858dd7f397e4c918117c0afd37cfc1d5ae2502a97d49ef919da3214b78f5c252"
+        "3e0fc237f94f3b5c246f074fbf928ccfd28d0dfd6642858f3236e63989c67f15"
     ),
     "plugins/hexaemeron/tests/test_kronos_scoreboard.py": (
         "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
@@ -189,22 +190,22 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "46085b12fdac754fd73a50d972c273d82e83395af142b0fe69055f907e486a3f"
     ),
     RECORD_PATH: (
-        "ea6e460a3162c74549fc82c31e81c80d59e92a211eacd5539d4ebdd48734893f"
+        "7b5b9bc7049cecf2de268a163f7429f0a4e14ff2203cdb32907379414d59f591"
     ),
     "tests/promise_machine_coverage.json": (
-        "e8b93f45df72711d82af0342e2da9b8ac8c5c86e0183a0f2b3c5801a7d97f9ae"
+        "e749f49acd9e2d042159f3e8daa5dd794fba9be61c241802963cb08f21fe20ee"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
     ),
     "docs/affected-scope-test-runner/replacement-study.md": (
-        "78d8c99198aa4d211b43b29cdbd7497ba2dc6ea3ce6e7ee2434c551c5e858178"
+        "2f04503d78b0631500c6bae1b8c82e5174c9c448c49075c6dbba4a68c29de917"
     ),
     "docs/affected-scope-test-runner/replacement-runbook.md": (
-        "a4b4c4f5aa2b80964d372501444d2f788922c69bed972eb4993c31d16a5ce61a"
+        "64a70c6d5486559c3551ef87b083bfdd9e196c0a4ef92f1345a5a64931ea20a4"
     ),
     PACKET_ADR_PATH: (
-        "089046388d57dd7c639a160b7fe5e83d804db789b0cef036cb8a1cd34bca4994"
+        "244a89e377c50c74e6a94b9b129e7c2607a2b6d0789213272b61997f73b350e7"
     ),
 }
 EXPECTED_GUARD_SHA256 = {

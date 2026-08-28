@@ -44,7 +44,7 @@ Before any product test, lint, reporter, acceptance command or audit round:
 4. move only logical
    `docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md`
    to physical
-   `docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md`
+   `docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md`
    and rewrite every imported reference to that decision; and
 5. create the artifact-anchored record and verifier below, then run that
    verifier as the first product command. Any other current-base conflict
@@ -102,7 +102,7 @@ python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENT
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py \
   docs/affected-scope-test-runner/replacement-study.md \
   docs/affected-scope-test-runner/replacement-runbook.md \
-  docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md
+  docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md
 python3 plugins/horos/skills/horos/scripts/horos.py check .
 git diff --check
 ```
@@ -272,7 +272,7 @@ python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py \
   docs/affected-scope-test-runner/replacement-study.md \
   docs/affected-scope-test-runner/replacement-runbook.md \
   docs/affected-scope-test-runner/benchmark.md \
-  docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md
+  docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md
 python3 plugins/horos/skills/horos/scripts/horos.py check .
 git diff --check
 ```
@@ -285,7 +285,7 @@ round over the final tree before prose, push or integration.
 
 **Files.** Modify `AGENTS.md`; add
 `docs/affected-scope-test-runner/benchmark.md`; clarify
-`docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md`
+`docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md`
 and the committed replacement study/runbook copies only where the final
 interfaces or measured evidence require factual updates. Modify an
 implementation or test path only to repair a failure reproduced by the final
@@ -371,7 +371,7 @@ python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENT
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py \
   docs/affected-scope-test-runner/replacement-study.md \
   docs/affected-scope-test-runner/replacement-runbook.md \
-  docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md
+  docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md
 python3 plugins/horos/skills/horos/scripts/horos.py check .
 git diff --check
 ```

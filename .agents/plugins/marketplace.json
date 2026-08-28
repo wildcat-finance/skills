@@ -18,7 +18,7 @@
     },
     {
       "name": "hexaemeron",
-      "version": "1.6.5",
+      "version": "1.6.8",
       "source": {
         "source": "local",
         "path": "./plugins/hexaemeron"
@@ -167,6 +167,18 @@
       "source": {
         "source": "local",
         "path": "./plugins/janus"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "synkrisis",
+      "source": {
+        "source": "local",
+        "path": "./plugins/synkrisis"
       },
       "policy": {
         "installation": "AVAILABLE",

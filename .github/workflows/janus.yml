@@ -2,19 +2,20 @@ name: janus
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/janus/**"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
+      - ".python-version"
+      - "pyproject.toml"
       - ".github/workflows/janus.yml"
   pull_request:
     paths:
       - "plugins/janus/**"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
+      - ".python-version"
+      - "pyproject.toml"
       - ".github/workflows/janus.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,14 +23,10 @@ permissions:
 jobs:
   contracts:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version-file: ".python-version"
       - name: Janus command and manifest suite
         run: python3 -m unittest discover -s plugins/janus/tests -t plugins/janus -v

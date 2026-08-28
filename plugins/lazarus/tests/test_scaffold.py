@@ -300,11 +300,40 @@ class ScaffoldTests(unittest.TestCase):
         ):
             self.assertIn(term, text)
 
-    def test_fixed_shell_ci_toolchain_and_licence_remain_in_place(self):
+    def test_fixed_shell_ci_scope_toolchain_and_licence_remain_in_place(self):
         workflow = (support.REPO_ROOT / ".github/workflows/lazarus.yml").read_text(
             encoding="utf-8"
         )
-        self.assertIn('python-version: ["3.11", "3.13"]', workflow)
+
+        def event_paths(source, event):
+            event_match = re.search(
+                rf"(?ms)^  {re.escape(event)}:\n(?P<body>.*?)(?=^  [a-z_]+:|\Z)",
+                source,
+            )
+            self.assertIsNotNone(event_match)
+            paths_match = re.search(
+                r"(?m)^    paths:\n(?P<paths>(?:      - .+\n)+)",
+                event_match["body"],
+            )
+            self.assertIsNotNone(paths_match)
+            return set(
+                re.findall(r'^      - "([^"]+)"$', paths_match["paths"], re.M)
+            )
+
+        repo_workflow = (
+            support.REPO_ROOT / ".github/workflows/repo.yml"
+        ).read_text(encoding="utf-8")
+        shared_paths = {".agents/**", ".claude-plugin/**", "AGENTS.md"}
+        for event in ("push", "pull_request"):
+            with self.subTest(event=event):
+                lazarus_paths = event_paths(workflow, event)
+                self.assertTrue(lazarus_paths.isdisjoint(shared_paths))
+                self.assertTrue(
+                    shared_paths.issubset(event_paths(repo_workflow, event))
+                )
+
+        self.assertIn('python-version-file: ".python-version"', workflow)
+        self.assertNotIn("matrix.python-version", workflow)
         self.assertIn(
             "python3 -m pip install --requirement plugins/lazarus/requirements.lock",
             workflow,

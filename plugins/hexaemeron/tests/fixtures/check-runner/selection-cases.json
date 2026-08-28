@@ -39,7 +39,7 @@
     },
     {
       "name": "prose",
-      "changed": ["docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md"],
+      "changed": ["docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md"],
       "expect_scopes": ["docs", "root", "repo-lints"],
       "reject_scopes": ["lemma"]
     },

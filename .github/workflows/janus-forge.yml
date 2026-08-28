@@ -2,6 +2,8 @@ name: janus-forge
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/janus/harness/**"
       - ".github/workflows/janus-forge.yml"
@@ -9,6 +11,7 @@ on:
     paths:
       - "plugins/janus/harness/**"
       - ".github/workflows/janus-forge.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

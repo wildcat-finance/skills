@@ -1,0 +1,31 @@
+{
+  "candidate": "untouched-imprimatur-v1.1.0",
+  "candidate_hashes": {
+    "lexicon/gated.json": "e554ab6f9661d88095f285c6651983c980bd672b854287f74daa288b1dabc34c",
+    "lexicon/hard.json": "a6ad7adbc6c8e06512032cf460c92749a49a6c139b4f2aee101de8bdc95df844",
+    "lexicon/structural.json": "30fec44874a3e2624e0d1f20f01c1a8dc2d3d12334f654ff313d344e73ed05d9",
+    "scripts/imprimatur.py": "8132f705ad2ce98ca42855b5ca191f4d7725d1260e2cc2d411187e198f1529f1"
+  },
+  "fixture_hashes": {
+    "adjudication.jsonl": "48c234c5aa10f59274ec2c04b89eb0a006af65da7622017b3f9ad7192fcc2d9e",
+    "annotation-packet.jsonl": "276268cc19f2061e3552aaf3f4836f916a54f7ef8e5b71712d78d84298ffffb6",
+    "blind-id-map.json": "38e96e0d462df1718beeb712c7ca2c3c0d80c7d42ab2d427908eb323d1501792",
+    "labels.jsonl": "63b657eef12c32c3e2837bac71f74926dd6e75fdb3479d6db73cdcd7a00c4ce6",
+    "raw-label-a.jsonl": "295a0787102b696bfeb2b90bf74680466f3ba0c3ea2cd4a3c32c7239adbcf61f",
+    "raw-label-b.jsonl": "12ddea529211d4a0d50c6c62b8638807445af1b7a2a67b364936224e7c05bfd7",
+    "samples.jsonl": "81dcd1ea1aeabed9fba4144c63ba1acc49ad74f6633f2348c994d412aae28924",
+    "split.json": "889150745b67b0f63eb508da91434ad5844a1fe82e6e8ac22ac0f436425c8373"
+  },
+  "holdout_labels_sha256": "e42c40d2d27938ff99de0fbd332b9b5e6f85e2546c89c69f67a4efe3d976989b",
+  "holdout_status": "sealed",
+  "schema_hashes": {
+    "adjudication.schema.json": "e81ec7066b7f10d28be0136b9dc3f5e38617e07f845a181813c66a54933b0c76",
+    "annotation-packet.schema.json": "cd4d6c53f843b4531a81c5f7c1df1712bbfc0a466dfaf4f32f4e09e0ccba1a8b",
+    "labels.schema.json": "29110a4b607188bd8a00249df07e5b13603844191087657cb4eb0f9be2c5fae3",
+    "raw-label.schema.json": "785312f4f674868d9e531be15b19c5621357735f595bd54275f2127e33206cd6",
+    "sample.schema.json": "bae46ce6cf649482fa5a63e88717a1bfd0068fdb874a489363fc284684cfe2f8",
+    "split.schema.json": "417b2213327ffa70fceed832081abf637e1ed360868572811306d9ba9871a9d0"
+  },
+  "schema_version": 1,
+  "source_commit": "bcbaede047e746aec5573a31d70201275ee58533"
+}

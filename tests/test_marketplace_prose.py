@@ -27,6 +27,7 @@ PLUGINS = (
     "pandects",
     "probitas",
     "sapheneia",
+    "synkrisis",
     "tabularium",
 )
 CANONICAL_SKILLS = {
@@ -43,6 +44,7 @@ CANONICAL_SKILLS = {
     "pandects": ROOT / "plugins" / "pandects" / "skills" / "pandects" / "SKILL.md",
     "probitas": ROOT / "plugins" / "probitas" / "skills" / "probitas" / "SKILL.md",
     "sapheneia": ROOT / "plugins" / "sapheneia" / "skills" / "sapheneia" / "SKILL.md",
+    "synkrisis": ROOT / "plugins" / "synkrisis" / "skills" / "synkrisis" / "SKILL.md",
     "tabularium": ROOT / "plugins" / "tabularium" / "skills" / "tabularium" / "SKILL.md",
 }
 NEXT_JOB_PREFIX = "**Next Fiat job.** Use /hexaemeron:fiat to "
@@ -117,6 +119,7 @@ def mutable_marketplace_surface(plugin_root, path):
 # clone. Listing names is what let that happen, so nested checkouts are now
 # detected rather than enumerated, and the names below are only the fast path.
 NESTED_CHECKOUT_NAMES = {".git", ".hexaemeron", ".claude", "tmp"}
+PORTABLE_RUNTIME = (".agents", "skills", "promise-machine", "runtime")
 
 
 def _inside_nested_checkout(relative, root):
@@ -133,7 +136,10 @@ def _inside_nested_checkout(relative, root):
 def repository_markdown(root):
     """Every shipped Markdown file, skipping checkouts of this repository."""
     for path in sorted(root.rglob("*.md")):
-        if not _inside_nested_checkout(path.relative_to(root), root):
+        relative = path.relative_to(root)
+        if relative.parts[: len(PORTABLE_RUNTIME)] == PORTABLE_RUNTIME:
+            continue
+        if not _inside_nested_checkout(relative, root):
             yield path
 
 
@@ -147,7 +153,7 @@ class MarketplaceProseTests(unittest.TestCase):
         )
         self.assertIn("## What Is It?", readme)
         self.assertIn("## The Promise Machine", readme)
-        self.assertIn("24 members: 15 domain agents and\n9 phase agents", readme)
+        self.assertIn("25 members: 16 domain agents and\n9 phase agents", readme)
 
         marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
         self.assertIn("Wildcat Labs Skills", marketplace["description"])
@@ -260,7 +266,7 @@ class MarketplaceProseTests(unittest.TestCase):
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
         )
-        self.assertEqual(len(governed), 23)
+        self.assertEqual(len(governed), 24)
         for skill in governed:
             plugin = skill.parents[2]
             target = skill.parent if plugin.name == "hexaemeron" else plugin
@@ -335,7 +341,7 @@ class MarketplaceProseTests(unittest.TestCase):
     def test_plugin_landing_readmes_publish_unique_rolling_fiat_jobs(self):
         landings = plugin_landing_readmes()
         self.assertEqual(set(landings), set(PLUGINS))
-        self.assertEqual(len(landings), 14)
+        self.assertEqual(len(landings), 15)
 
         topics = {}
         for name, path in landings.items():

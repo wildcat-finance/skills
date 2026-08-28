@@ -276,7 +276,7 @@ home. All mappings are identity mappings except the explicit ADR collision.
 | 2 | `audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.synopsis.md` | same | generated audit synopsis |
 | 3 | `docs/affected-scope-test-runner/study.md` | same | first-attempt receipted study copy |
 | 4 | `docs/affected-scope-test-runner/runbook.md` | same | first-attempt receipted runbook copy |
-| 5 | `docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md` | `docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md` | standing selector and scheduler decision |
+| 5 | `docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md` | `docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md` | standing selector and scheduler decision |
 | 6 | `plugins/hermes/skills/hermes/scripts/test_hermes.py` | same | disposable-repository signing isolation |
 | 7 | `plugins/hexaemeron/tests/github_transport_cases.py` | same | timing-sensitive transport fixture isolation |
 | 8 | `plugins/hexaemeron/tests/run_tests.py` | same | fresh-manifest bounded parallel runner |
@@ -623,7 +623,7 @@ that whole union, not a delta from this conversation.
 
 This capability follows Hypomnema. The expensive-to-reverse selector,
 snapshot, scheduling and accounting choices live in
-`docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md`.
+`docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md`.
 ADR-041 records the current-base collision, why #622 remains one
 selector-plus-executor capability, why ownership is declarative, why workers
 rediscover and select objects by canonical index, why one quota-aware global

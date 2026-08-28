@@ -1,0 +1,26 @@
+type Vault @entity(immutable: true) {
+  id: Bytes! # vault address
+  factory: Bytes! # factory that created this vault
+}
+
+type TrackingActiveAccount @entity(immutable: false) {
+  id: Bytes! # addressPrefix (first 19 bytes)
+  addressPrefix: Bytes! # first 19 bytes shared by main address and all sub-accounts
+  deposits: [Bytes!]!  # account + vault
+  borrows: [Bytes!]!  # account + vault
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type TrackingVaultBalance @entity(immutable: false) {
+  id: Bytes!  # account + vault
+  vault: Bytes!
+  addressPrefix: Bytes! # first 19 bytes - links to TrackingActiveAccount
+  account: Bytes!
+  balance: BigInt!
+  debt: BigInt!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

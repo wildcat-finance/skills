@@ -24,6 +24,8 @@ plugins/*/harness/cache/
 # broad engine rule above while making every Berean corpus visible to Git.
 !plugins/berean/**/corpus/
 !plugins/berean/**/corpus/**
+!.agents/skills/promise-machine/runtime/plugins/berean/**/corpus/
+!.agents/skills/promise-machine/runtime/plugins/berean/**/corpus/**
 
 # search-record.json is not output. It is shipped evidence, it is tracked, and
 # tests/test_search_record.py holds it against the catalogue's law count and
@@ -34,6 +36,10 @@ plugins/*/harness/cache/
 # should not be able to commit a virtualenv. Anchored to the repository root, so
 # a plugin that wants its own tmp/ still decides for itself.
 /tmp/
+
+# Demo output. The Synkrisis example commands write their cohort here; the
+# committed expected copies live under the plugin's examples tree.
+/build/
 
 # Orphaned atomic-write temporaries from scripts/contributors.py. A hard-killed
 # run leaves one; it must never be committed and must never look like a change.

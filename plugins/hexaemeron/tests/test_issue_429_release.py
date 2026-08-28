@@ -8,7 +8,13 @@ import unittest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+ROOT_SUITE_COMMAND = "run: python3 -m unittest discover -s tests -v"
 ROOT_SUITE_JOBS = (
+    # The root invariant suite runs once, in its own workflow (repo.yml),
+    # not as a side-effect of the per-plugin workflows.
+    (".github/workflows/repo.yml", "invariants"),
+)
+PLUGIN_SUITE_JOBS = (
     (".github/workflows/janus.yml", "contracts"),
     (".github/workflows/lazarus.yml", "tests"),
     (".github/workflows/pandects.yml", "catalogue"),
@@ -44,9 +50,14 @@ class Issue429ReleaseTests(unittest.TestCase):
         for relative, job in ROOT_SUITE_JOBS:
             with self.subTest(path=relative, job=job):
                 body = workflow_job(REPO_ROOT / relative, job)
-                self.assertIn(
-                    "run: python3 -m unittest discover -s tests -v", body
-                )
+                self.assertIn(ROOT_SUITE_COMMAND, body)
+                self.assertNotIn("fetch-depth: 0", body)
+
+    def test_plugin_suite_jobs_do_not_run_the_root_suite(self):
+        for relative, job in PLUGIN_SUITE_JOBS:
+            with self.subTest(path=relative, job=job):
+                body = workflow_job(REPO_ROOT / relative, job)
+                self.assertNotIn(ROOT_SUITE_COMMAND, body)
                 self.assertNotIn("fetch-depth: 0", body)
 
     def test_runbook_exposes_the_elenchus_report_argument(self):

@@ -1,7 +1,7 @@
 {
   "schema": "wildcat.check-map.v1",
   "description": "Declared ownership, checks and named consumers for this repository. Path ownership resolves by longest matching prefix; every tracked and relevant untracked path must resolve to exactly one scope.",
-  "decision_record": "docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md",
+  "decision_record": "docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md",
   "checks": {
     "root-suite": {
       "title": "Root repository suite",
@@ -134,6 +134,13 @@
       "kind": "suite",
       "script": "plugins/sapheneia/tests"
     },
+    "synkrisis-suite": {
+      "title": "Synkrisis suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/synkrisis/tests", "-t", "plugins/synkrisis"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/synkrisis/tests"
+    },
     "tabularium-suite": {
       "title": "Tabularium suite",
       "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/tabularium/tests", "-t", "plugins/tabularium"],
@@ -211,6 +218,7 @@
     "pandects": {"title": "Pandects plugin", "checks": ["pandects-suite", "pandects-forge-build", "pandects-forge-test"]},
     "probitas": {"title": "Probitas plugin", "checks": ["probitas-suite"]},
     "sapheneia": {"title": "Sapheneia plugin", "checks": ["sapheneia-suite"]},
+    "synkrisis": {"title": "Synkrisis plugin", "checks": ["synkrisis-suite"]},
     "tabularium": {"title": "Tabularium plugin", "checks": ["tabularium-suite"]}
   },
   "dependencies": {
@@ -233,6 +241,7 @@
     "pandects": ["repo-lints"],
     "probitas": ["repo-lints"],
     "sapheneia": ["repo-lints"],
+    "synkrisis": ["repo-lints"],
     "tabularium": ["repo-lints"]
   },
   "owners": [
@@ -240,14 +249,19 @@
     {"path": ".claude", "scope": "marketplace"},
     {"path": ".claude-plugin", "scope": "marketplace"},
     {"path": ".github", "scope": "ci"},
+    {"path": ".gitattributes", "scope": "root"},
     {"path": ".gitignore", "scope": "root"},
+    {"path": ".python-version", "scope": "root"},
     {"path": ".horos", "scope": "root"},
     {"path": "AGENTS.md", "scope": "root"},
+    {"path": "FUTUREPROOFING.md", "scope": "root"},
     {"path": "CONTRIBUTORS.md", "scope": "root"},
     {"path": "INSTALL.md", "scope": "root"},
     {"path": "LICENSE", "scope": "root"},
     {"path": "PROMISE_MACHINE.md", "scope": "promise-machine"},
     {"path": "README.md", "scope": "root"},
+    {"path": "pyproject.toml", "scope": "root"},
+    {"path": "skills.sh.json", "scope": "root"},
     {"path": "SHOGGOTH.md", "scope": "root"},
     {"path": "assets", "scope": "root"},
     {"path": "audit", "scope": "root"},
@@ -272,6 +286,7 @@
     {"path": "plugins/pandects", "scope": "pandects"},
     {"path": "plugins/probitas", "scope": "probitas"},
     {"path": "plugins/sapheneia", "scope": "sapheneia"},
+    {"path": "plugins/synkrisis", "scope": "synkrisis"},
     {"path": "plugins/tabularium", "scope": "tabularium"}
   ]
 }

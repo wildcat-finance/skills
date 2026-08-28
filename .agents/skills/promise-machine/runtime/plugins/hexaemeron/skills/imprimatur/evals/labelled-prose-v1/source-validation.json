@@ -1,0 +1,153 @@
+{
+  "agreement": {
+    "raw_span": {
+      "a_spans": 99,
+      "b_spans": 90,
+      "by_tier": {
+        "gated": {
+          "a_spans": 48,
+          "b_spans": 44,
+          "f1": 0.369565,
+          "matched": 17
+        },
+        "hard": {
+          "a_spans": 16,
+          "b_spans": 19,
+          "f1": 0.571429,
+          "matched": 10
+        },
+        "structural": {
+          "a_spans": 35,
+          "b_spans": 27,
+          "f1": 0.612903,
+          "matched": 19
+        }
+      },
+      "f1": 0.486772,
+      "matched": 46
+    },
+    "sample_by_tier": {
+      "a_positive": 37,
+      "b_positive": 36,
+      "by_tier": {
+        "gated": {
+          "a_positive": 20,
+          "b_positive": 17,
+          "denominator": 64,
+          "kappa": 0.582938
+        },
+        "hard": {
+          "a_positive": 13,
+          "b_positive": 16,
+          "denominator": 64,
+          "kappa": 0.688889
+        },
+        "structural": {
+          "a_positive": 4,
+          "b_positive": 3,
+          "denominator": 64,
+          "kappa": 0.54717
+        }
+      },
+      "denominator": 192,
+      "kappa": 0.64482
+    }
+  },
+  "candidate_hashes": {
+    "lexicon/gated.json": "e554ab6f9661d88095f285c6651983c980bd672b854287f74daa288b1dabc34c",
+    "lexicon/hard.json": "a6ad7adbc6c8e06512032cf460c92749a49a6c139b4f2aee101de8bdc95df844",
+    "lexicon/structural.json": "30fec44874a3e2624e0d1f20f01c1a8dc2d3d12334f654ff313d344e73ed05d9",
+    "scripts/imprimatur.py": "8132f705ad2ce98ca42855b5ca191f4d7725d1260e2cc2d411187e198f1529f1"
+  },
+  "coverage": {
+    "calibration": {
+      "gated": {
+        "actionable_by_origin": {
+          "human": 6,
+          "model_assisted": 6
+        },
+        "actionable_spans": 12,
+        "negative_samples": 24,
+        "positive_samples": 8
+      },
+      "hard": {
+        "actionable_by_origin": {
+          "human": 3,
+          "model_assisted": 2
+        },
+        "actionable_spans": 5,
+        "negative_samples": 27,
+        "positive_samples": 5
+      },
+      "structural": {
+        "actionable_by_origin": {
+          "human": 0,
+          "model_assisted": 2
+        },
+        "actionable_spans": 2,
+        "negative_samples": 30,
+        "positive_samples": 2
+      }
+    },
+    "holdout": {
+      "gated": {
+        "actionable_by_origin": {
+          "human": 9,
+          "model_assisted": 16
+        },
+        "actionable_spans": 25,
+        "negative_samples": 15,
+        "positive_samples": 17
+      },
+      "hard": {
+        "actionable_by_origin": {
+          "human": 6,
+          "model_assisted": 6
+        },
+        "actionable_spans": 12,
+        "negative_samples": 21,
+        "positive_samples": 11
+      },
+      "structural": {
+        "actionable_by_origin": {
+          "human": 2,
+          "model_assisted": 0
+        },
+        "actionable_spans": 2,
+        "negative_samples": 30,
+        "positive_samples": 2
+      }
+    }
+  },
+  "fixture": "labelled-prose-v1",
+  "fixture_validation": {
+    "duplicate_threshold": 0.8,
+    "groups": 16,
+    "human_cutoff": "2025-08-01T00:00:00Z",
+    "max_saved_nearest_fivegram_jaccard": 0.010526,
+    "origins": {
+      "human": 32,
+      "model_assisted": 32
+    },
+    "samples": 64,
+    "split_samples": {
+      "calibration": 32,
+      "holdout": 32
+    }
+  },
+  "gates": {
+    "agreement_raw_span_f1_at_least_0_80": false,
+    "agreement_sample_by_tier_kappa_at_least_0_80": false,
+    "holdout_eight_actionable_per_tier": false,
+    "holdout_eight_negative_samples_per_tier": true
+  },
+  "metrics": null,
+  "provisional": true,
+  "schema_version": 1,
+  "source_verification": {
+    "verified_commits": 20,
+    "verified_compare_objects": 20,
+    "verified_samples": 64
+  },
+  "split": "all"
+}

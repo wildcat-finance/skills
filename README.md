@@ -9,21 +9,38 @@ general assistant wearing a list of names. Each member owns a particular job,
 states what its evidence can support, and stops where another member's work
 begins.
 
-The current distribution contains 14 plugins, 23 first-party skills, four
+The current distribution contains 15 plugins, 24 first-party skills, four
 Fiat worker agents, one portable router, and five untouched skills from the
 vendored Pashov security suite. Together they preserve source material, rebuild
 credit records, check economic and hook boundaries, capture historical chain
 state, test grounded agents, optimise Solidity gas, shape usable prose, and
 carry repository work through a receipted delivery.
 
-`Shog`, `Shoggy`, `Shoggoth`, `Big S`, and `the Goth` may address the active
-member or the whole collective. The complete convention lives in the
-[Shoggoth identity contract](./SHOGGOTH.md). A familiar name does not activate
-a skill or widen anyone's authority.
+Any reference to Shoggoth, including a shortened, altered, or affectionate form
+of the name, may mean the member currently speaking or the collective as a
+whole. Context decides which. The complete convention lives in the
+[Shoggoth identity contract](./SHOGGOTH.md); wording alone never activates a
+skill or widens anyone's authority.
 
 The [Shoggoth Interceptor](https://github.com/laurenceday/shoggoth-interceptor)
 is the same collective operating through an external problem-solving harness.
 It is an operating form, not another member, and it remains experimental.
+
+New here? Start with [A child or a golden retriever](./docs/a-child-or-a-golden-retriever.md),
+a five-minute primer for the Shoggoth, the Interceptor, Hex, and Fiat. It
+includes two infographics, a [short printable PDF](./docs/pdf/a-child-or-a-golden-retriever.pdf),
+and a [one-page quick-start](./docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf).
+
+To install the whole collective through the Agent Skills convention, select
+the one dependency-closed router:
+
+```bash
+npx skills add wildcat-finance/skills --skill promise-machine
+```
+
+The router verifies its local runtime before it selects a specialist. See the
+[installation guide](./INSTALL.md#local-agents) for the non-interactive Codex
+command and the boundary of that package.
 
 ## So, You Want To Build God?
 
@@ -87,23 +104,25 @@ has to be one GitHub can match to your account, and the list itself is GitHub's
 to compute and publish on its own schedule. A run whose author address matches
 no account records that plainly instead of guessing.
 
-That record is what the contributor list is built from.
-[CONTRIBUTORS.md](./CONTRIBUTORS.md) ranks the humans who have finished a job
-here by merged commits, with merged pull requests as the tie-break, and the
-thanks at the foot of this file name the same people by handle. A weekly job
-regenerates both from the repository's own history, so nobody has to remember to
-add anyone and there is nothing to ask for. Runtime host identities, the
-Shoggoth's own account and the repository owner are excluded by name, each with
-its reason shown in the generator's output.
+That record is one source for the contributor list.
+[CONTRIBUTORS.md](./CONTRIBUTORS.md) ranks the humans with resolved commits here
+and the humans who author merged pull requests in
+`wildcat-finance/shoggoth-wave-atlas`. Skills commits are the first ordering
+key; merged pull requests across both repositories are the tie-break. The thanks
+at the foot of this file name the same people by handle. A daily job regenerates
+both from the two repositories' public history, so nobody has to remember to add
+anyone and there is nothing to ask for. Runtime host identities, the Shoggoth's
+own account and the repository owner are excluded by name, each with its reason
+shown in the generator's output.
 
 ## What Is It?
 
-The identity contract records the adoption-era roster as 24 members: 15 domain agents and
-9 phase agents. That is a historical adoption count, not today's package count.
-The current repository topology is the 23 first-party skills and four Fiat
-worker agents listed below. Hexaemeron is their delivery plugin, while the
-Promise Machine and its portable router govern how the whole suite is selected
-and composed.
+The identity contract records the current roster as 25 members: 16 domain agents and
+9 phase agents. The repository topology is 24 first-party skills and four Fiat
+worker agents. Synkrisis belongs to the roster now, with all four of its
+comparison operations delivered. Hexaemeron is the
+delivery plugin, while the Promise Machine and its portable router govern how
+the suite is selected and composed.
 
 The collective works alongside the vendored
 [Pashov security suite](https://github.com/pashov/skills). That suite remains
@@ -164,6 +183,12 @@ turn a passing structural check into proof that a domain claim is true.
 - [Horos](./plugins/horos) writes and verifies evidence-backed repository
   boundaries and skeleton maps for oriented reading. Its exclusions reduce cost;
   they never apply during security review.
+- [Synkrisis](./plugins/synkrisis) owns the boundary for comparing validated
+  run observations across one declared cohort. It builds the checked cohort,
+  classifying every declared run under an operator-declared policy, infers
+  bounded findings over it from a digest-bound rule catalogue, renders the
+  fixed-template report, and verifies that all three recompute from the
+  original inputs. A finding suggests one named owner and authorises no work.
 - [Sapheneia](./plugins/sapheneia) shapes the collective's own replies and
   bounded audit records, issues, or comments for AuDHD readers without changing
   their protected evidence.
@@ -242,6 +267,13 @@ historical chain boundary, and Ariadne can bind the resulting release to that
 evidence. Pandects supplies economic laws, Janus checks hook effects against a
 host boundary, and Hermes handles measured gas changes.
 
+Synkrisis compares validated observations from several completed runs after a
+person declares them comparable. All four of its operations are operational:
+it writes a checked cohort, bounded findings over it, a fixed-template report,
+and a verification that recomputes all three from the original inputs. It
+cannot steer Fiat. Ephoros, Metron, Elenchus, Protasis, Phylax, Horos, or
+human review remain responsible for any later investigation or decision.
+
 For delivery, Protasis shapes the study and runbook before Mason builds a step.
 Phylax, Ephoros, and Metron govern its off-chain boundary, observable behaviour,
 and non-gas performance. Warden applies the relevant security suite; Elenchus
@@ -263,12 +295,17 @@ Installation, host-specific invocation, and publishing instructions live in
 Requirements apply only to the skills and operations named in the last column.
 Checked-in examples and verification paths may need less.
 
+[`pyproject.toml`](./pyproject.toml) declares the supported CPython minor, and
+[`.python-version`](./.python-version) is the single source for the exact patch.
+Run every Python-backed skill, repository check, and documented command with
+that pin. [ADR-038](./docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md)
+records the one-interpreter boundary, and
+[ADR-042](./docs/decisions/ADR-042-advance-the-python-suite-to-3-14.md) records
+the current minor transition.
+
 | Requirement | Skills | When it is needed |
 | --- | --- | --- |
-| Python 3 | Alexandria, Ariadne, Brevitas, Hermes, Hexaemeron, Horos, Janus, Pandects | Their standard-library tools and checks |
-| Python 3.9 or later | Berean, Probitas, Tabularium | Their release, dossier, and verification tools |
-| Python 3.10 or later | Lemma | All Lemma commands |
-| Python 3.11 or later plus its pinned packages | Lazarus | Capture, verification, replay, and release |
+| [Pinned CPython](./.python-version) | Every Python-backed skill and repository check | All supported Python execution; the minor contract lives in `pyproject.toml` |
 | Git | Hermes, Hexaemeron | Worktree, diff, and receipt checks |
 | GitHub CLI (`gh`) | Hexaemeron | Issue, pull request, and integration phases |
 | Foundry | Hermes, Janus, Pandects; Ariadne and Hexaemeron when working with Foundry projects | Solidity builds, tests, measurements, and captures |
@@ -303,6 +340,7 @@ Use $lazarus to capture this finite historical fixture, verify its proof-backed 
 Use $pandects to check this credit protocol against the executable laws in the corpus.
 Use $probitas to build a sourced dossier on this counterparty from the addresses they declared.
 Use $sapheneia to shape your replies for an AuDHD reader throughout this task.
+Use $synkrisis to build one checked cohort from declared run observations, diagnose it against the committed rule catalogue, and verify the report recomputes; do not treat a finding as a cause or an authority to act.
 Use $tabularium to build or verify a reproducible release of sourced credit events without hiding coverage gaps.
 ```
 
@@ -316,6 +354,9 @@ The Pashov suite keeps its upstream invocation and operating instructions.
 .claude-plugin/marketplace.json   one entry per plugin
 .agents/plugins/marketplace.json  the same set, host-neutral
 .agents/skills/promise-machine/   the sole host-neutral suite router
+├── PORTABLE.md                   isolated-install path and refusal boundary
+├── scripts/verify_runtime.py     installed byte-manifest check
+└── runtime/                      generated dependency-closed fallback
 plugins/<name>/
 ├── .claude-plugin/plugin.json    host manifests; discovery and installation only
 ├── .codex-plugin/plugin.json
@@ -330,9 +371,11 @@ Hexaemeron also carries the Pashov suite as a vendored, upstream-owned set.
 Those skill directories keep their own MIT `LICENSE` and `NOTICE.md`; the
 first-party Apache licence does not replace or govern them.
 
-Codex, Claude Code, and portable agents load the same canonical skill
-directories. Host manifests handle discovery and installation only. The target
-repository's own instructions and the active skill's checks still apply.
+Codex, Claude Code, and portable agents load the same canonical skill bytes.
+Host manifests handle plugin discovery. A copy-mode Agent Skills install uses
+the router's generated, manifested fallback because an installer copies only
+the selected directory. The target repository's own instructions and the
+active skill's checks still apply.
 
 ## Wildcat Commons
 
@@ -343,7 +386,13 @@ records, state executable credit laws, preserve historical test fixtures,
 assemble evidence-bounded dossiers, evaluate source-grounded assistants, test
 Wildcat hook boundaries, and bind releases to their evidence.
 
-Those tools have all been produced: [Alexandria](./plugins/alexandria),
+Synkrisis holds a separate boundary for comparing validated observations
+from several agent runs. Its current release lands the checked cohort, the
+bounded diagnosis over it, the fixed-template report and the verification that
+recomputes all three; the measured work budget is its one held runbook step.
+
+The credit and evidence tools named here have all been produced:
+[Alexandria](./plugins/alexandria),
 [Tabularium](./plugins/tabularium), [Pandects](./plugins/pandects),
 [Lazarus](./plugins/lazarus), [Probitas](./plugins/probitas),
 [Berean](./plugins/berean), [Janus](./plugins/janus), and
@@ -361,6 +410,6 @@ and remains under its upstream MIT licence and notices.
 
 ## Thanks
 
-Thanks to @kethcode and @radup1337.
+Thanks to @kethcode, @radup1337, @MunamWasi and @clawdina.
 
 <!-- contributors:end -->

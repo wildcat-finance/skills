@@ -1,127 +1,140 @@
-# ADR-028: Use cumulative portable checkpoints rooted at an immutable Fiat base
+# ADR-028: Continue Fiat only from resumable checkpoints
 
 ## Status
 
-Proposed, 2026-08-24. Recorded for
-[skills#558](https://github.com/wildcat-finance/skills/issues/558) and
-[skills#559](https://github.com/wildcat-finance/skills/issues/559). Planned
-implementation is split between
-[skills#560](https://github.com/wildcat-finance/skills/issues/560) and
-[skills#561](https://github.com/wildcat-finance/skills/issues/561).
+Accepted, 2026-08-27, at the Creator's direction. This decision replaces the
+portable-checkpoint service proposal previously recorded here and retires
+ADR-029 through ADR-032.
 
-PR #569 published this record as ADR-023. That collision check ran against an
-earlier `main`, and by the time the PR merged, ADR-023 held the accepted Kronos
-working-state decision. This record moved to ADR-028. The decision is
-unchanged.
+Corrected, 2026-08-27: audit continuation starts a new bounded audit loop on
+the same ledger. It never raises one loop's round ceiling or continues that
+loop as round 9.
 
 ## Context
 
-Fiat keeps controller state and its receipt ledger under ignored
-`.hexaemeron/` state in the run's dedicated worktree. Git branches transfer
-committed repository history, but they do not establish the exact portable
-controller state, receipt prefix, bounded run observation, prior checkpoint
-acceptances, or next permitted action.
+Fiat's controller state and receipt ledger live under the run worktree's
+ignored `.hexaemeron/` directory. Git preserves committed product history, but
+it cannot reconstruct the controller's exact run identity, receipt prefix,
+audit history, halt state, or next permitted action.
 
-Long runs also face a moving integration branch. Fiat `5.19.1` keeps the
-exact starting commit in `state.base` while `config.git.base` names the branch
-used for later integration. PRs #549 and #550 preserve product evidence across
-that movement, and PR #562 retains bounded superseded sync receipts when a
-failed composition is replaced by fresh signed and revalidated evidence. A
-checkpoint must carry the same distinctions: the run start is immutable
-evidence; a later `main` commit is context for integration, not a new origin
-for earlier work; and an inactive failed sync remains part of the receipt
-history rather than disappearing behind its replacement.
+Earlier continuation attempts copied product evidence into a newly initialised
+Fiat run and called that process inoculation. That starts a different ledger.
+It may preserve useful evidence, but it does not continue the run that earned
+the receipts. The service, authority, object-lock and lineage proposals that
+grew around that model also made a local recovery rule depend on infrastructure
+that does not exist.
 
-PRs #478 and #479 contain useful earlier work on cumulative archives. Their
-late ADR bytes were not part of the recorded audit round and did not land on
-`main`. That proposal also allowed arbitrary staged, unstaged, and untracked
-state. The contribution promise in Wave Delta needs a smaller first boundary:
-one completed green Fiat transition that another machine can verify and
-continue.
+The practical requirement is narrower: preserve the exact controller state
+when a run reaches a useful stopping boundary, then let another agent continue
+the same run from the next controller directive.
 
 ## Decision
 
-A version-1 portable Fiat checkpoint is a cumulative archive created only at a
-green transition: implementation, audit, prose, commit signature, push, and
-remote verification have passed, and the dedicated worktree is clean apart
-from allowlisted controller-owned portable state. Active and superseded
-integration-sync receipts are part of that portable state when the run has
-reached integration.
+Fiat continuation uses checkpoints only. A continuation restores the same
+run, controller state and ledger; it never calls `init`, starts a fresh ledger,
+replays study or runbook receipts, or inoculates a new run with old evidence.
 
-One run records a `run_anchor` containing repository, issue, run id, execution
-class, controller version, study/runbook/policy digests, and the full starting
-commit. The starting commit is immutable for the run. A later observed or
-integrated `main` SHA is recorded separately and has no effect on checkpoint
-identity or lineage.
+A checkpoint is created at exactly two boundaries:
 
-Each archive contains a complete Git bundle able to materialise both the
-starting commit and declared working commit, path-independent controller state,
-a verified receipt prefix, one schema-valid bounded run observation, prior
-checkpoint acceptance statements, and a digest/size/media-type inventory. It
-does not carry credentials, live delegation handles, locks, sockets, caches,
-build output, raw host/model transcripts, or the current checkpoint's own
-acceptance statement.
+1. **Successful end of step.** The step's `done push` receipt succeeded, the
+   committed step head is signed and remotely verified, and no later directive
+   has been acted on.
+2. **Exhausted audit.** The final allowed audit round is receipted with findings
+   still open and `next` returns `audit-verdict`. This boundary is deliberately
+   finding-bearing and non-green.
 
-The format uses two identities:
+Arbitrary mid-phase snapshots are not continuation checkpoints.
 
-- `snapshot_id` is SHA-256 over the canonical typed semantic snapshot payload.
-  The profile fixes UTF-8/Unicode handling, key and array order, optional-field
-  form, integers, and domain separation; it refuses floats and ambiguous
-  encodings.
-- `archive_sha256` is SHA-256 over the exact deterministic ZIP bytes.
+The checkpoint preserves:
 
-The archive may carry `snapshot_id` outside the payload it hashes. The service
-acceptance statement is a signed sidecar over the already computed snapshot and
-archive identities, so no digest includes a signature that depends on that
-same digest. The next cumulative checkpoint carries the prior statement.
+- the complete `.hexaemeron` directory, excluding only the transient lock;
+- a Git bundle containing the run base, run branch, step branches and every
+  object needed by the recorded working commit;
+- the exact state and ledger bytes, their digests, the run and controller
+  identity, the recorded ref boundary, and the expected next directive;
+- the public key and bounded proof needed to verify signed run commits; and
+- a sorted recursive SHA-256 inventory of the copied controller state.
 
-A root run-anchor record has stage zero. Every checkpoint names accepted
-parents and derives stage as one plus the maximum parent stage. Clocks and
-upload order never establish progress.
+When Drive is available, one checkpoint archive and its outer SHA-256 sidecar
+go in the HexaemeronCheckpoints parent folder. The run's issue receives the
+archive digest, state and ledger digests, ref boundary, expected directive and
+restore rule. The issue note is the trust anchor; the sidecars support local
+verification.
 
-Restore writes only into an empty, newly created dedicated worktree. It verifies
-the archive profile, every member digest, Git objects and signatures, starting
-and working commits, receipt prefix, observation binding, prior acceptance
-chain, and next controller action before offering an explicit resume.
+When Drive is unavailable and continuation will happen on the same machine,
+copy the literal `.hexaemeron` directory outside the live worktree, omit the
+transient lock, write the sorted recursive SHA-256 sidecar beside it, and keep
+both untouched. Preserve the exact Git worktree and its object store. Put that
+copy back into the next agent's room before any controller action. This is the
+authorised local fallback, not an evidence-only substitute and not a new run.
+
+Every restore starts inside the preserved run worktree with:
+
+```text
+hexctl verify
+hexctl status
+hexctl next
+```
+
+The restored state is canonical. Act only on the directive `next` returns.
+
+Audit history is two-dimensional: audit loop, then round within that loop. Each
+loop starts at round 1 and may contain at most eight rounds. The first eight
+rounds already recorded by a legacy state are loop 1.
+
+An exhausted loop remains halted until the user authorises another loop. The
+exhausted-loop checkpoint is created before that transition. A checked
+controller transition then appends a new loop to the same step and ledger,
+binding the new loop to the predecessor checkpoint, the open-finding set and
+the user's authorisation. The prior loop is immutable. `next` must return
+`audit-round` with the new loop identity and round 1.
+
+`audit.max_rounds` is a per-loop ceiling. It is never raised to simulate
+another loop, and round numbering never continues as 9, 10 or beyond. Starting
+a new loop does not accept or close any inherited finding. A controller that
+does not yet implement the checked new-loop transition must leave the run
+halted at its exhausted checkpoint.
+
+Historical archives, issue comments and filenames that use `carryover` or
+`inoculation` remain evidence of what happened. They do not authorise that
+procedure for a current continuation.
 
 ## Alternatives
 
-- **Incremental patch chain.** Smaller uploads and better deduplication.
-  Rejected for version 1 because every restore depends on all earlier untrusted
-  objects, one missing or revoked object strands descendants, and a later
-  checkpoint is not independently useful.
-- **Git branches and pull requests only.** Already deployed and good for
-  authorship. Rejected as the full answer because the ignored controller and
-  receipt state plus the next action remain local.
-- **Capture an arbitrary dirty worktree.** Preserves more unfinished effort.
-  Rejected for version 1 because it widens secret and filesystem exposure,
-  makes the audit/prose/signature boundary unclear, and can restore a state that
-  is not safe for another contributor to trust. A later protocol may add an
-  explicitly non-advancing draft package under a separate decision.
-- **Rebase each checkpoint onto current `main`.** Makes the archive look
-  current. Rejected because it rewrites the run anchor and confuses integration
-  work with evidence already earned at the original product head.
-- **One digest for semantic and transport identity.** Simpler to explain.
-  Rejected because deterministic transport changes and semantic changes have
-  different compatibility and security consequences.
+- **Fresh-ledger inoculation.** Rejected because it creates a successor run and
+  reconstructs progress instead of continuing the receipted ledger.
+- **Evidence-only archive.** Rejected as continuation because product evidence
+  without live controller state cannot determine or receipt the next action.
+- **Checkpoint service, authority signer, object-lock store and lineage DAG.**
+  Retired. They add infrastructure and governance that the same-ledger
+  checkpoint does not need.
+- **Arbitrary mid-phase checkpoints.** Rejected because the next operator
+  cannot distinguish a coherent controller boundary from a partially applied
+  action.
+- **Raise one cumulative audit ceiling.** Rejected because rounds 9 and beyond
+  erase the exhausted-loop boundary, make the eight-round limit untrue, and
+  leave no structural identity for the checkpoint or the independent loop
+  that follows it.
+- **Git branches alone.** Rejected because Git does not contain ignored
+  controller state or its receipt ledger.
 
 ## Consequences
 
-Cumulative archives repeat Git and controller bytes. Storage and upload are
-larger than an incremental chain, and version 1 cannot rescue arbitrary
-unfinished editor state. In return, one accepted archive is a complete,
-bounded handover unit whose meaning does not depend on earlier uploads or the
-contributor's machine.
+Continuation becomes literal and testable: exact state in, exact ledger prefix
+preserved, one next directive out. It no longer requires a second Fiat run or
+an interpretation layer between two ledgers.
 
-Starting-base drift becomes mechanically distinguishable from later integration
-drift. A service or Atlas response cannot turn a newer `main` SHA into a new
-origin for the run.
+End-of-step checkpoints remain the ordinary portable hand-off. Exhausted-loop
+checkpoints preserve useful work at the point the controller must stop, while
+keeping open findings, the eight-round boundary and user authority visible.
+One step may therefore carry several audit loops on one ledger without
+pretending they form one unbounded sequence of rounds.
 
-The current acceptance statement remains outside the archive and must be kept
-with it. The next checkpoint carries the prior statement, so a later restore can
-verify the publication chain without a self-reference.
+The same-machine fallback is intentionally path-bound. A Drive package can
+carry the bytes and Git objects to another machine, but current controller
+state still records local worktree paths; no claim of native relocation is made
+until the controller has a checked export-and-restore transition for it.
 
-This record chooses the portable state and identity boundary. It does not
-choose service ownership, infrastructure, enforcement class, or fork policy;
-ADR-029 through ADR-032 cover those decisions. It remains Proposed until review
-accepts it and the component issues prove the named refusal cases.
+Checkpoint archives can be large, and every exhausted loop creates another
+one. That cost is accepted in exchange for never pretending a reconstructed
+ledger is the original run.

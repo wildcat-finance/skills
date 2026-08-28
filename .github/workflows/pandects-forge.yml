@@ -2,6 +2,8 @@ name: pandects-forge
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/pandects/**/*.sol"
       - "plugins/pandects/foundry.toml"
@@ -13,6 +15,7 @@ on:
       - "plugins/pandects/foundry.toml"
       - "plugins/pandects/catalogue/**"
       - ".github/workflows/pandects-forge.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

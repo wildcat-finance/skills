@@ -1,0 +1,22 @@
+{
+  "name": "synkrisis",
+  "displayName": "Synkrisis",
+  "version": "0.5.0",
+  "description": "Checked cohort construction, bounded diagnosis, fixed-template rendering and whole-path verification over validated run observations, held to a measured work budget.",
+  "author": {
+    "name": "Wildcat Labs",
+    "url": "https://wildcat.finance"
+  },
+  "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/synkrisis",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "run-observations",
+    "telemetry",
+    "diagnosis",
+    "comparison",
+    "promise-machine",
+    "agents"
+  ],
+  "skills": "./skills/"
+}

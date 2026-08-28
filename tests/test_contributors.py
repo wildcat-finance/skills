@@ -126,7 +126,7 @@ class GuardOrder(unittest.TestCase):
     Some host logins are deliberately not valid GitHub logins. If the ranking
     pipeline validated grammar first, a known runtime identity would trip the
     bad-grammar stop and fail the whole run instead of being dropped quietly,
-    which is the difference between a working weekly refresh and a red job.
+    which is the difference between a working scheduled refresh and a red job.
     """
 
     def test_a_host_login_that_fails_grammar_is_still_recognised_as_a_host(self):
@@ -221,7 +221,7 @@ class CommittedSpecLinks(unittest.TestCase):
         "docs/contributors/study.md",
         "docs/contributors/runbook.md",
         "docs/decisions/ADR-019-rank-contributors-by-resolved-identity.md",
-        "docs/promise-machine/contributors-v1.md",
+        "docs/promise-machine/contributors-v2.md",
         "CONTRIBUTORS.md",
     )
 
@@ -268,7 +268,7 @@ class RecordedDecisions(unittest.TestCase):
     """The claims and records this work is obliged to leave behind."""
 
     ADR = REPOSITORY_ROOT / "docs/decisions/ADR-019-rank-contributors-by-resolved-identity.md"
-    PROMISE_DOC = REPOSITORY_ROOT / "docs/promise-machine/contributors-v1.md"
+    PROMISE_DOC = REPOSITORY_ROOT / "docs/promise-machine/contributors-v2.md"
     GUIDE = REPOSITORY_ROOT / "docs/how-to-help-shoggoth.md"
     README = REPOSITORY_ROOT / "README.md"
 
@@ -280,7 +280,7 @@ class RecordedDecisions(unittest.TestCase):
             head,
             "the recognition sentence must name the list, not just imply one exists",
         )
-        self.assertIn("weekly", head)
+        self.assertIn("daily", head)
 
     def test_the_readme_claim_names_the_condition_it_cannot_control(self):
         """Asserts the substance, not one wording.
@@ -342,18 +342,32 @@ def fixture(name):
     return json.loads((REPOSITORY_ROOT / "tests/fixtures/contributors" / name).read_text("utf-8"))
 
 
-def fake_reader(contributors_rows=None, merged=None, authors=None, issues=None, fail=None):
+def fake_reader(
+    contributors_rows=None,
+    merged=None,
+    authors=None,
+    issues=None,
+    pulls=None,
+    fail=None,
+):
     """A reader over recorded data, so every test below runs with no network."""
     rows = fixture("contributors.json") if contributors_rows is None else contributors_rows
     merged = {} if merged is None else merged
     authors = {} if authors is None else authors
     issues = [] if issues is None else issues
+    pulls = {} if pulls is None else pulls
 
     def read(path):
         if fail is not None:
             raise contributors.Stop(fail)
         if "/contributors" in path:
             return rows
+        if "/pulls?" in path:
+            repo = path.split("/repos/", 1)[1].split("/pulls?", 1)[0]
+            page = int(path.split("&page=")[1])
+            recorded = pulls.get(repo, [])
+            start = (page - 1) * contributors.PAGE_SIZE
+            return recorded[start:start + contributors.PAGE_SIZE]
         if "type:pr" in path:
             login = path.split("author:")[1].split("&")[0]
             return {"total_count": merged.get(login, 0)}
@@ -473,6 +487,85 @@ class Ranking(unittest.TestCase):
         self.assertIn("1 merged pull request", line)
         self.assertNotIn("1 merged pull requests", line)
 
+    def test_a_merged_wave_atlas_pr_qualifies_its_human_author(self):
+        payload = self.compute(
+            merged=self.MERGED,
+            pulls={
+                contributors.WAVE_ATLAS_REPOSITORY: fixture("wave-atlas-pulls.json")
+            },
+        )
+        by_login = {entry["login"]: entry for entry in payload["contributors"]}
+        self.assertIn("clawdina", by_login)
+        self.assertEqual(by_login["clawdina"]["commits"], 0)
+        self.assertEqual(by_login["clawdina"]["merged_prs"], 1)
+        self.assertEqual(
+            by_login["clawdina"]["merged_prs_by_repository"],
+            {
+                "wildcat-finance/skills": 0,
+                "wildcat-finance/shoggoth-wave-atlas": 1,
+            },
+        )
+        self.assertIn(
+            "wildcat-finance/shoggoth-wave-atlas:merged-pull-request",
+            by_login["clawdina"]["qualified_by"],
+        )
+
+    def test_wave_atlas_prs_add_to_an_existing_contributor_once(self):
+        pulls = [
+            {
+                "number": number,
+                "merged_at": "2026-08-27T00:00:00Z",
+                "user": {"login": "kethcode", "type": "User"},
+            }
+            for number in (1, 2)
+        ]
+        payload = self.compute(
+            merged=self.MERGED,
+            pulls={contributors.WAVE_ATLAS_REPOSITORY: pulls},
+        )
+        kethcode = next(
+            entry for entry in payload["contributors"] if entry["login"] == "kethcode"
+        )
+        self.assertEqual(kethcode["merged_prs"], 17)
+        self.assertEqual(
+            [entry["login"] for entry in payload["contributors"]].count("kethcode"),
+            1,
+        )
+
+    def test_closed_unmerged_wave_atlas_pr_does_not_qualify_its_author(self):
+        pulls = [
+            {
+                "number": 9,
+                "merged_at": None,
+                "user": {"login": "not-merged", "type": "User"},
+            }
+        ]
+        payload = self.compute(
+            merged=self.MERGED,
+            pulls={contributors.WAVE_ATLAS_REPOSITORY: pulls},
+        )
+        self.assertNotIn(
+            "not-merged", [entry["login"] for entry in payload["contributors"]]
+        )
+
+    def test_wave_atlas_runtime_and_shoggoth_prs_are_excluded_once(self):
+        payload = self.compute(
+            merged=self.MERGED,
+            pulls={
+                contributors.WAVE_ATLAS_REPOSITORY: fixture("wave-atlas-pulls.json")
+            },
+        )
+        excluded = [entry["login"] for entry in payload["excluded"]]
+        self.assertEqual(excluded.count("claude[bot]"), 1)
+        self.assertEqual(excluded.count("shoggoth-wildcat"), 1)
+
+    def test_payload_names_every_repository_behind_the_pr_total(self):
+        payload = self.compute(merged=self.MERGED)
+        self.assertEqual(
+            payload["pull_request_repositories"],
+            ["wildcat-finance/skills", "wildcat-finance/shoggoth-wave-atlas"],
+        )
+
 
 class FailClosed(unittest.TestCase):
     """Each of the five stops in the study's item 11, one test each."""
@@ -545,6 +638,31 @@ class FailClosed(unittest.TestCase):
                 repo="x/y",
             )
         self.assertIn("runtime host identity", str(caught.exception))
+
+    def test_stops_on_an_unknown_wave_atlas_bot(self):
+        pulls = {
+            contributors.WAVE_ATLAS_REPOSITORY: [
+                {
+                    "number": 1,
+                    "merged_at": "2026-08-27T00:00:00Z",
+                    "user": {"login": "future-agent[bot]", "type": "Bot"},
+                }
+            ]
+        }
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(fake_reader(pulls=pulls), repo="x/y")
+        self.assertIn("future-agent[bot]", str(caught.exception))
+        self.assertIn("unknown identity", str(caught.exception))
+
+    def test_stops_when_a_merged_wave_atlas_pr_has_no_author(self):
+        pulls = {
+            contributors.WAVE_ATLAS_REPOSITORY: [
+                {"number": 1, "merged_at": "2026-08-27T00:00:00Z", "user": None}
+            ]
+        }
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(fake_reader(pulls=pulls), repo="x/y")
+        self.assertIn("carries no author", str(caught.exception))
 
     def test_the_real_reader_refuses_a_non_absolute_path(self):
         """Exercises the network reader itself, not an injected substitute."""
@@ -649,6 +767,24 @@ class NetworkBoundary(RequiresSymbol, unittest.TestCase):
                 contributors.compute(fake_reader(), repo=bad)
             self.assertIn("owner/name", str(caught.exception), bad)
 
+    def test_stops_on_a_supplemental_repository_carrying_query_syntax(self):
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(
+                fake_reader(),
+                repo="x/y",
+                supplemental_pr_repositories=("x/z+is:merged",),
+            )
+        self.assertIn("owner/name", str(caught.exception))
+
+    def test_stops_on_a_duplicate_supplemental_repository(self):
+        with self.assertRaises(contributors.Stop) as caught:
+            contributors.compute(
+                fake_reader(),
+                repo="x/y",
+                supplemental_pr_repositories=("x/z", "x/z"),
+            )
+        self.assertIn("duplicate", str(caught.exception))
+
 
 class Coverage(RequiresSymbol, unittest.TestCase):
     """No silent cap. A truncated read must not read as full coverage."""
@@ -692,6 +828,39 @@ class Coverage(RequiresSymbol, unittest.TestCase):
             pager(read, "/x?per_page={per_page}&page={page}", "test endpoint")
         self.assertIn("truncated", str(caught.exception))
 
+    def test_wave_atlas_pull_requests_read_every_page(self):
+        pages = {
+            1: [
+                {
+                    "number": number,
+                    "merged_at": "2026-08-27T00:00:00Z",
+                    "user": {"login": "clawdina", "type": "User"},
+                }
+                for number in range(100)
+            ],
+            2: [
+                {
+                    "number": number,
+                    "merged_at": "2026-08-27T00:00:00Z",
+                    "user": {"login": "clawdina", "type": "User"},
+                }
+                for number in range(100, 105)
+            ],
+        }
+        calls = []
+
+        def read(path):
+            page = int(path.split("&page=")[1])
+            calls.append(page)
+            return pages[page]
+
+        counts, exclusions = contributors.merged_pr_authors(
+            read, contributors.WAVE_ATLAS_REPOSITORY
+        )
+        self.assertEqual(calls, [1, 2])
+        self.assertEqual(counts, {"clawdina": 105})
+        self.assertEqual(exclusions, [])
+
     def test_closed_issue_coverage_reads_every_page(self):
         """The first live run failed here: 391 closed issues, one page read.
 
@@ -707,6 +876,8 @@ class Coverage(RequiresSymbol, unittest.TestCase):
 
         def read(path):
             if "/contributors" in path:
+                return []
+            if "/pulls?" in path:
                 return []
             if "type:issue" in path:
                 page = int(path.split("&page=")[1])
@@ -724,6 +895,8 @@ class Coverage(RequiresSymbol, unittest.TestCase):
 
         def read(path):
             if "/contributors" in path:
+                return []
+            if "/pulls?" in path:
                 return []
             if "type:issue" in path:
                 page = int(path.split("&page=")[1])
@@ -801,8 +974,12 @@ class Rendering(RequiresSymbol, unittest.TestCase):
     """Both artefacts come from one computation, so they cannot disagree."""
 
     PAYLOAD = {
-        "schema": "wildcat-contributors/v1",
+        "schema": "wildcat-contributors/v2",
         "repository": "wildcat-finance/skills",
+        "pull_request_repositories": [
+            "wildcat-finance/skills",
+            "wildcat-finance/shoggoth-wave-atlas",
+        ],
         "contributors": [
             {"rank": 1, "login": "kethcode", "commits": 29, "merged_prs": 15,
              "human_authored_sampled": 20, "commits_sampled": 20},
@@ -1071,7 +1248,7 @@ class WorkflowShape(unittest.TestCase):
             "the workflow must hold no scope beyond what it uses",
         )
 
-    def test_it_runs_weekly_and_on_demand(self):
+    def test_it_runs_daily_and_on_demand(self):
         trigger = self.block("on")
         dispatch = [line for line in trigger if line.startswith("workflow_dispatch")]
         self.assertTrue(dispatch, "workflow_dispatch is missing, so it cannot be run on demand")
@@ -1079,10 +1256,11 @@ class WorkflowShape(unittest.TestCase):
         self.assertEqual(len(crons), 1, f"expected exactly one schedule, got {crons}")
         fields = crons[0].split('"')[1].split()
         self.assertEqual(len(fields), 5, f"malformed cron: {crons[0]}")
-        self.assertNotEqual(
-            fields[4], "*", "a day-of-week of * is daily or hourly, not the weekly cadence asked for"
+        self.assertEqual(
+            fields,
+            ["17", "4", "*", "*", "*"],
+            "the contributor refresh must run once a day at 04:17 UTC",
         )
-        self.assertNotEqual(fields[2], "*/1", "not weekly")
 
     def test_it_is_guarded_to_the_canonical_repository(self):
         self.assertIn(
@@ -1200,6 +1378,9 @@ class WorkflowShape(unittest.TestCase):
 
     def test_it_holds_no_secret_beyond_the_job_token(self):
         self.assertNotIn("secrets.", self.text, "this workflow needs no repository secret")
+
+    def test_it_names_the_public_wave_atlas_source(self):
+        self.assertIn("wildcat-finance/shoggoth-wave-atlas", self.text)
 
 
 class RankingDigest(RequiresSymbol, unittest.TestCase):

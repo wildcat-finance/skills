@@ -1,0 +1,604 @@
+{
+  "schema": "promise-machine-router-selection/v1",
+  "pairs": [
+    {
+      "id": "alexandria-tabularium-probitas",
+      "skills": ["alexandria", "probitas", "tabularium"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Alexandria preserves lending inputs; Tabularium interprets preserved venue records; Probitas assembles a counterparty dossier."
+      }
+    },
+    {
+      "id": "berean-lemma",
+      "skills": ["berean", "lemma"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Berean holds a protocol agent's recorded answers to pinned corpora and preserved chain reads; it neither chunks documents nor preserves chain state itself."
+      }
+    },
+    {
+      "id": "berean-lazarus",
+      "skills": ["berean", "lazarus"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "it neither chunks documents nor preserves chain state itself."
+      }
+    },
+    {
+      "id": "lazarus-ariadne",
+      "skills": ["ariadne", "lazarus"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Lazarus preserves the finite historical Ethereum state and exact RPC traffic a test needs, while Ariadne binds a released artefact digest to its evidence."
+      }
+    },
+    {
+      "id": "pandects-hermes",
+      "skills": ["hermes", "pandects"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Pandects supplies reviewed credit laws, Hermes measures a single gas-optimisation class named by a rule from its pinned corpus,"
+      }
+    },
+    {
+      "id": "pandects-janus",
+      "skills": ["janus", "pandects"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Janus checks what a contract hook may observe and change around a host action, where Pandects supplies the economic laws such a transition must preserve."
+      }
+    },
+    {
+      "id": "sapheneia-and-the-prose-masks",
+      "skills": ["brevitas", "sapheneia", "vulgate"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "It does not change another skill's facts or gates."
+      }
+    },
+    {
+      "id": "brevitas-imprimatur-vulgate",
+      "skills": ["brevitas", "imprimatur", "vulgate"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Brevitas controls the volume and structure of engineering prose after vocabulary and register passes."
+      }
+    },
+    {
+      "id": "elenchus-metron",
+      "skills": ["elenchus", "metron"],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Preserve the selected promise",
+        "text": "When neither sentence excludes the other, stop at inspection and report which two rows matched and which sentence you read."
+      }
+    },
+    {
+      "id": "phylax-and-the-pashov-row",
+      "skills": ["phylax", "solidity-auditor"],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Harden off-chain inputs, commands, fetches, secrets, dependencies, paths, or model output"
+      }
+    },
+    {
+      "id": "fiat-and-its-phase-disciplines",
+      "skills": ["fiat", "hypomnema", "protasis"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Hexaemeron controls a receipted delivery loop and holds each of its phases to a named skill"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "RS-01",
+      "family": "plugin-row",
+      "request": "Take this lender's raw loan tape and give me a reviewed credit view of it.",
+      "expect": {"outcome": "select", "canonical": "alexandria"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Alexandria preserves lending inputs"
+      },
+      "not_established": "Selecting Alexandria does not establish that the preserved inputs are accurate or that the derived view is a credit opinion."
+    },
+    {
+      "id": "RS-02",
+      "family": "plugin-row",
+      "request": "I have a release artefact digest and the evidence record behind it; bind the two together.",
+      "expect": {"outcome": "select", "canonical": "ariadne"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "while Ariadne binds a released artefact digest to its evidence."
+      },
+      "not_established": "Selecting Ariadne does not establish that the released artefact is correct, only that a digest was bound to a record."
+    },
+    {
+      "id": "RS-03",
+      "family": "plugin-row",
+      "request": "Check this protocol agent's answers against our pinned corpus and the chain reads we captured.",
+      "expect": {"outcome": "select", "canonical": "berean"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Berean holds a protocol agent's recorded answers to pinned corpora and preserved chain reads"
+      },
+      "not_established": "Selecting Berean does not establish that the agent's answers are true, only that they were graded against pinned material."
+    },
+    {
+      "id": "RS-04",
+      "family": "plugin-row",
+      "request": "This gas review runs to three pages; cut it down and keep every number in it.",
+      "expect": {"outcome": "select", "canonical": "brevitas"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Brevitas controls the volume and structure of engineering prose after vocabulary and register passes."
+      },
+      "not_established": "Selecting Brevitas does not establish that the retained evidence is correct, only that volume and structure were held to a budget."
+    },
+    {
+      "id": "RS-05",
+      "family": "plugin-row",
+      "request": "Measure the gas this contract saves when the storage read moves out of the loop.",
+      "expect": {"outcome": "select", "canonical": "hermes"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Hermes measures a single gas-optimisation class named by a rule from its pinned corpus"
+      },
+      "not_established": "Selecting Hermes does not establish that the change is safe, only that one gas class was measured."
+    },
+    {
+      "id": "RS-06",
+      "family": "plugin-row",
+      "request": "Work out which parts of this repository an agent should not read, and write that boundary down.",
+      "expect": {"outcome": "select", "canonical": "horos"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Horos decides what an agent does not read."
+      },
+      "not_established": "Selecting Horos does not establish that the classified files carry nothing of interest, only that they were evidenced as reading sinks."
+    },
+    {
+      "id": "RS-07",
+      "family": "plugin-row",
+      "request": "Find out what this hook can observe and change when the host calls into it.",
+      "expect": {"outcome": "select", "canonical": "janus"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Janus checks what a contract hook may observe and change around a host action"
+      },
+      "not_established": "Selecting Janus does not establish that the hook is safe, only that its observed effects stayed inside a declared boundary."
+    },
+    {
+      "id": "RS-08",
+      "family": "plugin-row",
+      "request": "Capture the exact RPC traffic and historical state this fork test needs so it replays offline.",
+      "expect": {"outcome": "select", "canonical": "lazarus"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Lazarus preserves the finite historical Ethereum state and exact RPC traffic a test needs"
+      },
+      "not_established": "Selecting Lazarus does not establish that the preserved state suits another test, only that this traffic was captured exactly."
+    },
+    {
+      "id": "RS-09",
+      "family": "plugin-row",
+      "request": "Split these Solidity files into chunks that link back to the lines they came from.",
+      "expect": {"outcome": "select", "canonical": "lemma"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "while Lemma stops after producing source-linked chunks."
+      },
+      "not_established": "Selecting Lemma does not establish that the chunks answer a question, only that they carry a link to their source."
+    },
+    {
+      "id": "RS-10",
+      "family": "plugin-row",
+      "request": "Apply our reviewed credit laws to this borrower's proposed drawdown.",
+      "expect": {"outcome": "select", "canonical": "pandects"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Pandects supplies reviewed credit laws"
+      },
+      "not_established": "Selecting Pandects does not establish that the law set is complete, only that the reviewed set was applied."
+    },
+    {
+      "id": "RS-11",
+      "family": "plugin-row",
+      "request": "Build a dossier on this counterparty from the addresses they declared to us.",
+      "expect": {"outcome": "select", "canonical": "probitas"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Probitas assembles a counterparty dossier."
+      },
+      "not_established": "Selecting Probitas does not establish that the declared addresses belong to that counterparty, only that the dossier was assembled from them."
+    },
+    {
+      "id": "RS-12",
+      "family": "plugin-row",
+      "request": "Rewrite this issue body so an AuDHD reader can act on it, without dropping the evidence.",
+      "expect": {"outcome": "select", "canonical": "sapheneia"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Sapheneia shapes the agent's replies for AuDHD readers and has one bounded operation for durable audit, issue, and comment prose."
+      },
+      "not_established": "Selecting Sapheneia does not establish anything about the facts or gates in the record, because it does not change them."
+    },
+    {
+      "id": "RS-13",
+      "family": "plugin-row",
+      "request": "Turn these preserved venue records into a credit-event release for that venue.",
+      "expect": {"outcome": "select", "canonical": "tabularium"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Tabularium interprets preserved venue records"
+      },
+      "not_established": "Selecting Tabularium does not establish that the venue records are complete, only that the release was qualified against them."
+    },
+    {
+      "id": "RS-14",
+      "family": "hexaemeron-row",
+      "request": "Start the receipted delivery loop on this issue and run it through to a working prototype.",
+      "expect": {"outcome": "select", "canonical": "fiat"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Hexaemeron controls a receipted delivery loop and holds each of its phases to a named skill"
+      },
+      "not_established": "Selecting Fiat does not establish that the delivery succeeds, only that its phases are receipted and each is held to a named skill."
+    },
+    {
+      "id": "RS-15",
+      "family": "hexaemeron-row",
+      "request": "Rank the held frontier jobs across the non-mature skills and tell me which one to run next.",
+      "expect": {"outcome": "select", "canonical": "kronos"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Rank eligible held frontier jobs, optionally repeating complete Fiat runs"
+      },
+      "not_established": "Selecting Kronos does not establish that the top-ranked job is the most valuable one, only that the eligible jobs were ranked under a stated method."
+    },
+    {
+      "id": "RS-16",
+      "family": "hexaemeron-row",
+      "request": "Check this runbook against its content contract before anyone writes code from it.",
+      "expect": {"outcome": "select", "canonical": "protasis"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Hold a study or runbook to its pre-build content contract"
+      },
+      "not_established": "Selecting Protasis does not establish that the plan will work, only that the document meets its pre-build contract."
+    },
+    {
+      "id": "RS-17",
+      "family": "hexaemeron-row",
+      "request": "This test started failing after the merge; find the cause and leave a guard behind.",
+      "expect": {"outcome": "select", "canonical": "elenchus"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Work a reproduced failure to its cause and guard the fix"
+      },
+      "not_established": "Selecting Elenchus does not establish that no other fault remains, only that this reproduced failure was worked to its cause."
+    },
+    {
+      "id": "RS-18",
+      "family": "hexaemeron-row",
+      "request": "This script builds a command out of a config value; review the off-chain surface around it.",
+      "expect": {"outcome": "select", "canonical": "phylax"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Harden off-chain inputs, commands, fetches, secrets, dependencies, paths, or model output"
+      },
+      "not_established": "Selecting Phylax does not establish that the surface is secure, only that the named boundaries were reviewed and given controls."
+    },
+    {
+      "id": "RS-19",
+      "family": "hexaemeron-row",
+      "request": "This job runs nightly with nobody watching; decide what it should emit while it runs.",
+      "expect": {"outcome": "select", "canonical": "ephoros"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Design events, metrics, correlation, traces, or alerts for unattended work"
+      },
+      "not_established": "Selecting Ephoros does not establish that an incident would be explained, only that the signals were designed against stated on-call questions."
+    },
+    {
+      "id": "RS-20",
+      "family": "hexaemeron-row",
+      "request": "The indexer got slower this week; measure it before and after I change the query.",
+      "expect": {"outcome": "select", "canonical": "metron"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Measure non-gas performance before and after one change"
+      },
+      "not_established": "Selecting Metron does not establish the cause of a regression, only that a value was observed under a recorded method."
+    },
+    {
+      "id": "RS-21",
+      "family": "hexaemeron-row",
+      "request": "We just made a call that would be expensive to undo; where should that be written down?",
+      "expect": {"outcome": "select", "canonical": "hypomnema"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Decide what explanation or decision record belongs where"
+      },
+      "not_established": "Selecting Hypomnema does not establish that the decision is right, only where its record belongs."
+    },
+    {
+      "id": "RS-22",
+      "family": "hexaemeron-row",
+      "request": "Scan this announcement for banned AI tells and for terms of art used without evidence.",
+      "expect": {"outcome": "select", "canonical": "imprimatur"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Lint prose for banned AI tells and unsupported terms of art"
+      },
+      "not_established": "Selecting Imprimatur does not establish that the prose is true, only that it carries no flagged tell or unsupported term."
+    },
+    {
+      "id": "RS-23",
+      "family": "hexaemeron-row",
+      "request": "Rewrite this paragraph into plain human register and keep every number and caveat in it.",
+      "expect": {"outcome": "select", "canonical": "vulgate"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Rewrite prose into a plain human register without changing its content"
+      },
+      "not_established": "Selecting Vulgate does not establish that the content is correct, only that the register changed and the content did not."
+    },
+    {
+      "id": "RS-24",
+      "family": "hexaemeron-row",
+      "request": "Produce an audit-readiness report for this protocol before we book the audit.",
+      "expect": {"outcome": "select", "canonical": "x-ray"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Run audit-readiness, Solidity review, or stateful fuzzing"
+      },
+      "not_established": "Selecting x-ray does not establish that the protocol is secure or ready, only that a readiness report was produced from what the tree shows."
+    },
+    {
+      "id": "RS-25",
+      "family": "contested-pair",
+      "request": "The borrower has sent us a list of addresses they say are theirs along with their loan tape. Work up what we can say about them as a counterparty.",
+      "expect": {"outcome": "select", "canonical": "probitas"},
+      "contested": ["alexandria", "probitas", "tabularium"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Alexandria preserves lending inputs; Tabularium interprets preserved venue records; Probitas assembles a counterparty dossier."
+      },
+      "not_established": "Selecting Probitas does not establish that the declared addresses are the counterparty's, and it does not establish that the loan tape in the same bundle needs no preservation of its own."
+    },
+    {
+      "id": "RS-26",
+      "family": "contested-pair",
+      "request": "We want to grade an agent's answers about this protocol against its documentation. Start by getting the documentation into retrievable pieces that cite the lines they came from.",
+      "expect": {"outcome": "select", "canonical": "lemma"},
+      "contested": ["berean", "lemma"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Berean holds a protocol agent's recorded answers to pinned corpora and preserved chain reads; it neither chunks documents nor preserves chain state itself."
+      },
+      "not_established": "Selecting Lemma does not establish that the chunks are the corpus a later grading should pin, only that chunking is the half of the request the sentence puts outside Berean."
+    },
+    {
+      "id": "RS-27",
+      "family": "contested-pair",
+      "request": "The answers we are about to grade depend on chain state at a fixed block. Get that state and the RPC traffic behind it captured so the grading replays offline.",
+      "expect": {"outcome": "select", "canonical": "lazarus"},
+      "contested": ["berean", "lazarus"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "it neither chunks documents nor preserves chain state itself."
+      },
+      "not_established": "Selecting Lazarus does not establish that the preserved state is the state the grading needs, only that preserving it is not Berean's job."
+    },
+    {
+      "id": "RS-28",
+      "family": "contested-pair",
+      "request": "We shipped a fork-test fixture bundle last week. Show that the digest we published is the one the evidence record describes.",
+      "expect": {"outcome": "select", "canonical": "ariadne"},
+      "contested": ["ariadne", "lazarus"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Lazarus preserves the finite historical Ethereum state and exact RPC traffic a test needs, while Ariadne binds a released artefact digest to its evidence."
+      },
+      "not_established": "Selecting Ariadne does not establish that the fixtures inside the bundle replay, only that the released digest and the evidence record agree."
+    },
+    {
+      "id": "RS-29",
+      "family": "contested-pair",
+      "request": "The on-chain check that applies our credit laws costs more than we budgeted for. Find where the saving is.",
+      "expect": {"outcome": "select", "canonical": "hermes"},
+      "contested": ["hermes", "pandects"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Pandects supplies reviewed credit laws, Hermes measures a single gas-optimisation class named by a rule from its pinned corpus,"
+      },
+      "not_established": "Selecting Hermes does not establish that the credit laws the check applies are the right ones, only that one gas class in the code applying them was measured."
+    },
+    {
+      "id": "RS-30",
+      "family": "contested-pair",
+      "request": "A hook fires in the middle of our drawdown call. Establish what it can observe and change before the drawdown's economic laws are re-checked.",
+      "expect": {"outcome": "select", "canonical": "janus"},
+      "contested": ["janus", "pandects"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Janus checks what a contract hook may observe and change around a host action, where Pandects supplies the economic laws such a transition must preserve."
+      },
+      "not_established": "Selecting Janus does not establish that the drawdown preserves any economic law, which is the second half of the same sentence and a separate job."
+    },
+    {
+      "id": "RS-31",
+      "family": "contested-pair",
+      "request": "Shape this audit record so an AuDHD reader can act on it, and change no fact and no gate inside it.",
+      "expect": {"outcome": "select", "canonical": "sapheneia"},
+      "contested": ["brevitas", "sapheneia", "vulgate"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "It does not change another skill's facts or gates."
+      },
+      "not_established": "Selecting Sapheneia does not establish that the record is short enough or that its register is plain, both of which belong to the prose masks this case contests it against."
+    },
+    {
+      "id": "RS-32",
+      "family": "contested-pair",
+      "request": "The wording pass is done and the register reads fine. This review is still twice the length it should be.",
+      "expect": {"outcome": "select", "canonical": "brevitas"},
+      "contested": ["brevitas", "imprimatur", "vulgate"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Brevitas controls the volume and structure of engineering prose after vocabulary and register passes."
+      },
+      "not_established": "Selecting Brevitas does not establish that the earlier passes were run well, only that volume and structure are what is left to hold."
+    },
+    {
+      "id": "RS-33",
+      "family": "ambiguous-refusal",
+      "request": "The nightly indexer job started timing out this week.",
+      "expect": {"outcome": "refuse", "reason": "ambiguous"},
+      "contested": ["elenchus", "metron"],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Preserve the selected promise",
+        "text": "When neither sentence excludes the other, stop at inspection and report which two rows matched and which sentence you read."
+      },
+      "not_established": "Refusing does not establish that neither row could serve the request, only that no sentence available to the router separates a job that stopped finishing from a job that got slower."
+    },
+    {
+      "id": "RS-34",
+      "family": "contested-pair",
+      "request": "Review the service that holds our settlement signing key and submits the transactions it signs.",
+      "expect": {"outcome": "select", "canonical": "phylax"},
+      "contested": ["phylax", "solidity-auditor"],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Select one runtime contract",
+        "text": "Harden off-chain inputs, commands, fetches, secrets, dependencies, paths, or model output"
+      },
+      "not_established": "Selecting Phylax does not establish anything about the contracts those transactions call, which is the Solidity review this request sits next to."
+    },
+    {
+      "id": "RS-35",
+      "family": "contested-pair",
+      "request": "We are about to start the receipted delivery loop from this study. Is the study fit to build from?",
+      "expect": {"outcome": "select", "canonical": "protasis"},
+      "contested": ["fiat", "hypomnema", "protasis"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Hexaemeron controls a receipted delivery loop and holds each of its phases to a named skill"
+      },
+      "not_established": "Selecting Protasis does not establish that the delivery should start, which is the loop the controller runs rather than the phase this discipline holds."
+    },
+    {
+      "id": "RS-36",
+      "family": "uncovered-refusal",
+      "request": "Deploy this contract to mainnet and verify its source on the block explorer.",
+      "expect": {"outcome": "refuse", "reason": "uncovered"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": ".agents/skills/promise-machine/SKILL.md",
+        "section": "## Preserve the selected promise",
+        "text": "If no row matches, stop at inspection and explain the uncovered boundary."
+      },
+      "not_established": "Refusing does not establish that no skill in the marketplace touches part of the request, only that no row of this router covers what was asked for."
+    },
+    {
+      "id": "RS-37",
+      "family": "plugin-row",
+      "request": "A teammate says we already have something here for looking across runs. Before I plan anything on top of it, I need to know what this repository has actually committed to and what the thing as it stands will refuse to do.",
+      "expect": {"outcome": "select", "canonical": "synkrisis"},
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Synkrisis owns the cross-run comparison boundary: it builds one checked cohort from declared run observations and infers only bounded relations between named events, and any operation whose runbook step has not landed refuses by name rather than guessing."
+      },
+      "not_established": "Selecting Synkrisis does not establish that any operation whose runbook step has not landed will run, since each refuses by name, and it does not establish that a finding carries capture, redaction, receipt binding or causal triage, which stay with their owners."
+    }
+  ],
+  "runs": [
+    {
+      "model": "claude-opus-5",
+      "date": "2026-08-28",
+      "prompt_template_sha256": "171c0c6cf0cfc542cd3f52a3598b3d4de644bae02a88f2237c3ba0e75a16ab12",
+      "corpus_sha256": "503b19da95595e803514bb3ab06fba1f3fefd7862a5080f9d6e8a9edb5f74e8d",
+      "cases": 37,
+      "passed": 36,
+      "failed": 1,
+      "failures": [
+        {
+          "case": "RS-33",
+          "selected": "elenchus"
+        }
+      ]
+    }
+  ]
+}

@@ -2,10 +2,10 @@
 
 ## Status
 
-Proposed, 2026-08-24. Recorded for
-[skills#558](https://github.com/wildcat-finance/skills/issues/558) and
-[skills#563](https://github.com/wildcat-finance/skills/issues/563). Depends on
-[ADR-028](ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md).
+Retired, 2026-08-27. The proposal below was never accepted and no longer
+governs. [ADR-028](ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md)
+replaces it with same-ledger checkpoint continuation that does not depend on an
+authority service. The remaining body is preserved as historical rationale.
 
 PR #569 published this record as ADR-024. That number already held the accepted
 run-observation binding decision on `main` when the PR merged. This record moved

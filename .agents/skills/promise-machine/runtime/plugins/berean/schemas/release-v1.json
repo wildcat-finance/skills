@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://berean.wildcat.finance/release/v1/schema.json",
+  "title": "Berean release manifest v1",
+  "description": "The digested unit for berean-release/v1: corpus, reads, answers, rules, allowlists, evaluation references and retention. The verifier enforces this shape plus the gates a schema cannot express: digest recomputation, set equality against the directory, answer checks and the promotion chain.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "release_version", "corpus", "reads", "answers", "question_families", "refusal_conditions", "rules", "allowlists", "evals", "retention", "release_digest"],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "hash32": { "type": "string", "pattern": "^0x[0-9a-f]{64}$" },
+    "path": { "type": "string", "pattern": "^[^/\\\\][^\\\\]*$" },
+    "stated": { "type": "string", "pattern": "\\S" }
+  },
+  "properties": {
+    "format": { "const": "berean-release/v1" },
+    "release_version": { "$ref": "#/$defs/stated" },
+    "corpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "manifest", "manifest_sha256", "corpus_version", "corpus_digest"],
+      "properties": {
+        "path": { "$ref": "#/$defs/path" },
+        "manifest": { "$ref": "#/$defs/path" },
+        "manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "corpus_version": { "$ref": "#/$defs/stated" },
+        "corpus_digest": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "reads": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "sha256", "chain_id", "block_number", "block_hash", "source"],
+          "properties": {
+            "path": { "$ref": "#/$defs/path" },
+            "sha256": { "$ref": "#/$defs/sha256" },
+            "chain_id": { "type": "integer", "minimum": 0 },
+            "block_number": { "type": "integer", "minimum": 0 },
+            "block_hash": { "$ref": "#/$defs/hash32" },
+            "source": { "$ref": "#/$defs/stated" }
+          }
+        }
+      ]
+    },
+    "answers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": { "$ref": "#/$defs/path" },
+          "sha256": { "$ref": "#/$defs/sha256" }
+        }
+      }
+    },
+    "question_families": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/stated" } },
+    "refusal_conditions": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/stated" } },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_classes", "evidence_classes"],
+      "properties": {
+        "source_classes": {
+          "const": ["document", "chain_read", "calculation", "user_supplied"]
+        },
+        "evidence_classes": {
+          "const": ["proof-backed", "header-bound", "recorded-rpc"]
+        }
+      }
+    },
+    "allowlists": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chains", "contracts"],
+      "properties": {
+        "chains": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "contracts": { "type": "array", "items": { "type": "string", "pattern": "^0x[0-9a-f]{40}$" } }
+      }
+    },
+    "evals": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["cases", "cases_sha256", "report", "report_sha256"],
+          "properties": {
+            "cases": { "$ref": "#/$defs/path" },
+            "cases_sha256": { "$ref": "#/$defs/sha256" },
+            "report": { "$ref": "#/$defs/path" },
+            "report_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        }
+      ]
+    },
+    "retention": { "enum": ["none", "answers-only"] },
+    "release_digest": { "$ref": "#/$defs/sha256" }
+  }
+}

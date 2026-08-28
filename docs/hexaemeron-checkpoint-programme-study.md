@@ -1,5 +1,11 @@
 # Study: portable Fiat checkpoints for distributed contribution
 
+> **Historical proposal.** This study records the service design considered in
+> August 2026. It no longer governs Fiat continuation. Accepted
+> [ADR-028](decisions/ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md)
+> permits checkpoint continuation only at a successful end of step or an
+> exhausted audit, on the same controller ledger.
+
 Assuming, unless corrected:
 
 1. This delivery records the programme, its proposed decisions, and its issue

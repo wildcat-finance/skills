@@ -210,7 +210,7 @@ class PromiseLawTests(unittest.TestCase):
     def test_repository_law_and_copies_are_clean(self):
         completed = run_cli("check", "--only", "law,copies")
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertIn("clean: 14 plugin(s), 14 copy/copies", completed.stdout)
+        self.assertIn("clean: 15 plugin(s), 15 copy/copies", completed.stdout)
 
     def test_sync_check_is_read_only_and_clean(self):
         before = {path: path.read_bytes() for path in ROOT.glob("plugins/*/PROMISE_MACHINE.md")}
@@ -222,7 +222,7 @@ class PromiseLawTests(unittest.TestCase):
     def test_all_plugin_copies_are_exact_and_marked(self):
         law = LAW.read_bytes()
         copies = sorted(ROOT.glob("plugins/*/PROMISE_MACHINE.md"))
-        self.assertEqual(len(copies), 14)
+        self.assertEqual(len(copies), 15)
         for copy in copies:
             with self.subTest(copy=copy):
                 self.assertEqual(copy.read_bytes(), law)
@@ -240,7 +240,7 @@ class PromiseLicenceTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["licensed_plugins"], 14)
+        self.assertEqual(report["counts"]["licensed_plugins"], 15)
 
     def test_missing_root_licence_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -300,7 +300,7 @@ class PromiseLicenceTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(report["contract"], "promise-machine/v1")
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["plugins"], 14)
+        self.assertEqual(report["counts"]["plugins"], 15)
         self.assertEqual(report["findings"], [])
 
     def test_divergent_copy_fixture_is_refused(self):
@@ -396,9 +396,9 @@ class PromiseInventoryTests(unittest.TestCase):
         completed = run_cli("inventory", "--json")
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-        self.assertEqual(report["counts"]["plugins"], 14)
-        self.assertEqual(report["counts"]["canonical_skills"], 28)
-        self.assertEqual(report["counts"]["governed_skills"], 23)
+        self.assertEqual(report["counts"]["plugins"], 15)
+        self.assertEqual(report["counts"]["canonical_skills"], 29)
+        self.assertEqual(report["counts"]["governed_skills"], 24)
         self.assertEqual(report["counts"]["vendored_skills"], 5)
         self.assertEqual(report["counts"]["routers"], 1)
 
@@ -555,6 +555,7 @@ class PromiseStructureTests(unittest.TestCase):
                 "lemma-solidity-chunks",
                 "lemma-markdown-chunks",
                 "lemma-chunk-validation",
+                "lemma-corpus-provenance",
             },
             "plugins/pandects/skills/pandects/SKILL.md": {
                 "pandects-law-contract",
@@ -571,6 +572,11 @@ class PromiseStructureTests(unittest.TestCase):
                 "sapheneia-session-shape",
                 "sapheneia-deactivation",
                 "sapheneia-durable-record-shape",
+            },
+            "plugins/synkrisis/skills/synkrisis/SKILL.md": {
+                "synkrisis-cohort-construction",
+                "synkrisis-bounded-diagnosis",
+                "synkrisis-report-verification",
             },
             "plugins/tabularium/skills/tabularium/SKILL.md": {
                 "tabularium-release-build",
@@ -597,7 +603,7 @@ class PromiseStructureTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["promises"], 67)
+        self.assertEqual(report["counts"]["promises"], 72)
 
     def test_hexaemeron_contract_population_is_complete(self):
         expected = {
@@ -608,6 +614,7 @@ class PromiseStructureTests(unittest.TestCase):
                 "fiat-runbook-amendment",
                 "fiat-run-observation-binding",
                 "fiat-receipted-delivery",
+                "fiat-local-retirement",
                 "fiat-final-integration",
             },
             "hypomnema": {"hypomnema-pointer-gate", "hypomnema-record-placement"},
@@ -665,7 +672,7 @@ class PromiseOverlayTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["promises"], 72)
+        self.assertEqual(report["counts"]["promises"], 77)
         self.assertEqual(report["counts"]["overlays"], 1)
 
     def test_one_byte_vendored_mutation_is_refused(self):
@@ -867,12 +874,12 @@ class PromiseIdentityTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["canonical_skills"], 28)
+        self.assertEqual(report["counts"]["canonical_skills"], 29)
         self.assertEqual(report["counts"]["routers"], 1)
-        self.assertEqual(report["counts"]["claude_plugins"], 14)
-        self.assertEqual(report["counts"]["codex_plugins"], 14)
-        self.assertEqual(report["counts"]["package_versions"], 14)
-        self.assertEqual(report["counts"]["skill_versions"], 23)
+        self.assertEqual(report["counts"]["claude_plugins"], 15)
+        self.assertEqual(report["counts"]["codex_plugins"], 15)
+        self.assertEqual(report["counts"]["package_versions"], 15)
+        self.assertEqual(report["counts"]["skill_versions"], 24)
 
     def test_unresolved_router_fixture_is_refused(self):
         completed = run_cli(
@@ -1041,8 +1048,8 @@ class PromiseCoverageTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["coverage_rows"], 72)
-        self.assertEqual(report["counts"]["coverage_selected"], 55)
+        self.assertEqual(report["counts"]["coverage_rows"], 77)
+        self.assertEqual(report["counts"]["coverage_selected"], 60)
 
     def test_berean_and_janus_boundaries_are_explicit(self):
         coverage = json.loads(
@@ -1176,7 +1183,7 @@ class PromiseCoverageTests(unittest.TestCase):
             "transition",
             "exception",
         }
-        self.assertEqual(len(coverage["runtime"]), 32)
+        self.assertEqual(len(coverage["runtime"]), 33)
         for promise_id, binding in coverage["runtime"].items():
             with self.subTest(promise_id=promise_id):
                 self.assertEqual(set(binding), {"source", "sha256", "bindings"})
@@ -1316,7 +1323,7 @@ class PromiseCoverageTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
         self.assertTrue(report["ok"])
-        self.assertEqual(report["counts"]["coverage_rows"], 72)
+        self.assertEqual(report["counts"]["coverage_rows"], 77)
         self.assertEqual(report["counts"]["coverage_selected"], 17)
 
     def test_prompt_and_vendored_evaluations_never_claim_proof(self):

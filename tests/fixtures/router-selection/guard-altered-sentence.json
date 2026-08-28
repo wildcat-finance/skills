@@ -1,0 +1,43 @@
+{
+  "schema": "promise-machine-router-selection/v1",
+  "pairs": [
+    {
+      "id": "guard-pair-current",
+      "skills": ["horos", "lemma"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Horos decides what an agent does not read."
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "GA-01",
+      "family": "guard-current",
+      "request": "Work out which parts of this repository an agent should not read, and write that boundary down.",
+      "expect": {"outcome": "select", "canonical": "horos"},
+      "contested": ["horos", "lemma"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Horos decides what an agent does not read."
+      },
+      "not_established": "This case quotes the sentence as it stands, so the guard shows that the prose binding passes a current quotation rather than failing everything."
+    },
+    {
+      "id": "GA-02",
+      "family": "guard-reworded",
+      "request": "Split these Solidity files into chunks that link back to the lines they came from.",
+      "expect": {"outcome": "select", "canonical": "lemma"},
+      "contested": ["horos", "lemma"],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "while Lemma stops after producing source-linked fragments."
+      },
+      "not_established": "This case quotes a reworded boundary sentence, one word changed from the sentence AGENTS.md carries, which is the degradation the prose binding exists to refuse."
+    }
+  ],
+  "runs": []
+}

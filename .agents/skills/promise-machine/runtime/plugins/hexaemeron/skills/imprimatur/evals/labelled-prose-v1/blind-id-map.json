@@ -1,0 +1,262 @@
+{
+  "mapping": [
+    {
+      "blind_id": "B-001",
+      "sample_id": "H-TD-02-04"
+    },
+    {
+      "blind_id": "B-002",
+      "sample_id": "M-TD-01-01"
+    },
+    {
+      "blind_id": "B-003",
+      "sample_id": "M-GH-01-04"
+    },
+    {
+      "blind_id": "B-004",
+      "sample_id": "H-DR-01-01"
+    },
+    {
+      "blind_id": "B-005",
+      "sample_id": "M-DR-03-03"
+    },
+    {
+      "blind_id": "B-006",
+      "sample_id": "M-DR-02-04"
+    },
+    {
+      "blind_id": "B-007",
+      "sample_id": "H-TD-02-02"
+    },
+    {
+      "blind_id": "B-008",
+      "sample_id": "M-GH-02-01"
+    },
+    {
+      "blind_id": "B-009",
+      "sample_id": "M-GH-01-03"
+    },
+    {
+      "blind_id": "B-010",
+      "sample_id": "H-GH-01-01"
+    },
+    {
+      "blind_id": "B-011",
+      "sample_id": "M-GH-02-03"
+    },
+    {
+      "blind_id": "B-012",
+      "sample_id": "H-GH-02-01"
+    },
+    {
+      "blind_id": "B-013",
+      "sample_id": "H-DR-03-01"
+    },
+    {
+      "blind_id": "B-014",
+      "sample_id": "M-DR-01-04"
+    },
+    {
+      "blind_id": "B-015",
+      "sample_id": "H-DR-02-02"
+    },
+    {
+      "blind_id": "B-016",
+      "sample_id": "M-TD-02-03"
+    },
+    {
+      "blind_id": "B-017",
+      "sample_id": "H-TD-03-01"
+    },
+    {
+      "blind_id": "B-018",
+      "sample_id": "H-GH-01-04"
+    },
+    {
+      "blind_id": "B-019",
+      "sample_id": "H-DR-01-03"
+    },
+    {
+      "blind_id": "B-020",
+      "sample_id": "M-TD-03-01"
+    },
+    {
+      "blind_id": "B-021",
+      "sample_id": "M-DR-03-02"
+    },
+    {
+      "blind_id": "B-022",
+      "sample_id": "H-DR-01-02"
+    },
+    {
+      "blind_id": "B-023",
+      "sample_id": "H-TD-03-04"
+    },
+    {
+      "blind_id": "B-024",
+      "sample_id": "H-TD-01-03"
+    },
+    {
+      "blind_id": "B-025",
+      "sample_id": "H-DR-01-04"
+    },
+    {
+      "blind_id": "B-026",
+      "sample_id": "H-TD-02-03"
+    },
+    {
+      "blind_id": "B-027",
+      "sample_id": "M-DR-03-04"
+    },
+    {
+      "blind_id": "B-028",
+      "sample_id": "H-GH-02-02"
+    },
+    {
+      "blind_id": "B-029",
+      "sample_id": "H-DR-02-01"
+    },
+    {
+      "blind_id": "B-030",
+      "sample_id": "M-GH-01-01"
+    },
+    {
+      "blind_id": "B-031",
+      "sample_id": "H-TD-02-01"
+    },
+    {
+      "blind_id": "B-032",
+      "sample_id": "M-TD-02-01"
+    },
+    {
+      "blind_id": "B-033",
+      "sample_id": "M-DR-01-02"
+    },
+    {
+      "blind_id": "B-034",
+      "sample_id": "M-DR-02-02"
+    },
+    {
+      "blind_id": "B-035",
+      "sample_id": "M-TD-03-04"
+    },
+    {
+      "blind_id": "B-036",
+      "sample_id": "H-DR-03-02"
+    },
+    {
+      "blind_id": "B-037",
+      "sample_id": "H-TD-03-03"
+    },
+    {
+      "blind_id": "B-038",
+      "sample_id": "M-TD-01-02"
+    },
+    {
+      "blind_id": "B-039",
+      "sample_id": "H-TD-01-02"
+    },
+    {
+      "blind_id": "B-040",
+      "sample_id": "M-DR-02-03"
+    },
+    {
+      "blind_id": "B-041",
+      "sample_id": "H-GH-02-04"
+    },
+    {
+      "blind_id": "B-042",
+      "sample_id": "M-DR-02-01"
+    },
+    {
+      "blind_id": "B-043",
+      "sample_id": "M-GH-02-04"
+    },
+    {
+      "blind_id": "B-044",
+      "sample_id": "M-DR-01-01"
+    },
+    {
+      "blind_id": "B-045",
+      "sample_id": "M-TD-03-02"
+    },
+    {
+      "blind_id": "B-046",
+      "sample_id": "H-GH-01-02"
+    },
+    {
+      "blind_id": "B-047",
+      "sample_id": "H-TD-01-04"
+    },
+    {
+      "blind_id": "B-048",
+      "sample_id": "M-GH-01-02"
+    },
+    {
+      "blind_id": "B-049",
+      "sample_id": "M-DR-03-01"
+    },
+    {
+      "blind_id": "B-050",
+      "sample_id": "M-GH-02-02"
+    },
+    {
+      "blind_id": "B-051",
+      "sample_id": "M-TD-02-04"
+    },
+    {
+      "blind_id": "B-052",
+      "sample_id": "H-GH-01-03"
+    },
+    {
+      "blind_id": "B-053",
+      "sample_id": "H-DR-03-03"
+    },
+    {
+      "blind_id": "B-054",
+      "sample_id": "M-TD-01-04"
+    },
+    {
+      "blind_id": "B-055",
+      "sample_id": "H-DR-03-04"
+    },
+    {
+      "blind_id": "B-056",
+      "sample_id": "M-TD-01-03"
+    },
+    {
+      "blind_id": "B-057",
+      "sample_id": "H-GH-02-03"
+    },
+    {
+      "blind_id": "B-058",
+      "sample_id": "M-TD-03-03"
+    },
+    {
+      "blind_id": "B-059",
+      "sample_id": "H-TD-03-02"
+    },
+    {
+      "blind_id": "B-060",
+      "sample_id": "M-DR-01-03"
+    },
+    {
+      "blind_id": "B-061",
+      "sample_id": "M-TD-02-02"
+    },
+    {
+      "blind_id": "B-062",
+      "sample_id": "H-TD-01-01"
+    },
+    {
+      "blind_id": "B-063",
+      "sample_id": "H-DR-02-03"
+    },
+    {
+      "blind_id": "B-064",
+      "sample_id": "H-DR-02-04"
+    }
+  ],
+  "seed": "imprimatur-labelled-prose-v1",
+  "version": 1
+}
