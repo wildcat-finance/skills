@@ -457,6 +457,7 @@ class ProviderSession:
             self._failed = True
             self._admitted.clear()
             self._inflight = None
+            self._framing.close()
             self._credential_source = None
             self._connector = None
 

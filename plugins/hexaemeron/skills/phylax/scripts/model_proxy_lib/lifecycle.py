@@ -154,6 +154,7 @@ class LifecycleController:
         self._started_monotonic_ns = _clock_value(
             monotonic_clock, "lifecycle.monotonic_clock"
         )
+        self._last_monotonic_ns = self._started_monotonic_ns
         self._started_wall_ns = _clock_value(wall_clock, "lifecycle.wall_clock")
         self._absolute_expiry_ns = _unix_ns(
             replayed.document["job"]["expires_at"]
@@ -163,6 +164,9 @@ class LifecycleController:
         elapsed_ns = self._limits["total_wall_seconds"] * NANOSECONDS_PER_SECOND
         self._elapsed_deadline_ns = self._started_monotonic_ns + elapsed_ns
         self._absolute_window_ns = self._absolute_expiry_ns - self._started_wall_ns
+        self._absolute_deadline_monotonic_ns = (
+            self._started_monotonic_ns + self._absolute_window_ns
+        )
         self._lock = threading.Lock()
         self._owner = object()
         self._active: dict[int, Reservation] = {}
@@ -235,6 +239,18 @@ class LifecycleController:
             }
         )
 
+    def _monotonic_locked(self) -> int:
+        value = _clock_value(
+            self._monotonic_clock, "lifecycle.monotonic_clock"
+        )
+        if value < self._last_monotonic_ns:
+            refuse("MP405", "lifecycle.monotonic_clock")
+        self._last_monotonic_ns = value
+        return value
+
+    def _wall_locked(self) -> int:
+        return _clock_value(self._wall_clock, "lifecycle.wall_clock")
+
     def _terminal_locked(
         self,
         code: str,
@@ -243,11 +259,13 @@ class LifecycleController:
     ) -> TerminalSnapshot:
         if self._terminal is not None:
             return self._terminal
-        now = (
-            _clock_value(self._monotonic_clock, "lifecycle.monotonic_clock")
-            if now_monotonic_ns is None
-            else now_monotonic_ns
-        )
+        if now_monotonic_ns is None:
+            try:
+                now = self._monotonic_locked()
+            except PolicyError:
+                now = self._last_monotonic_ns
+        else:
+            now = now_monotonic_ns
         snapshot = TerminalSnapshot(
             code=code,
             disclosure_state=disclosure_state,
@@ -258,26 +276,37 @@ class LifecycleController:
         self._terminal = snapshot
         return snapshot
 
-    def _expiry_locked(self) -> TerminalSnapshot | None:
-        if self._terminal is not None:
-            return None
-        now_monotonic = _clock_value(
-            self._monotonic_clock, "lifecycle.monotonic_clock"
+    def _expiry_code_locked(self, now_monotonic: int, now_wall: int) -> str | None:
+        absolute_expired = (
+            now_wall >= self._absolute_expiry_ns
+            or now_monotonic >= self._absolute_deadline_monotonic_ns
         )
-        now_wall = _clock_value(self._wall_clock, "lifecycle.wall_clock")
-        absolute_expired = now_wall >= self._absolute_expiry_ns
         elapsed_expired = now_monotonic >= self._elapsed_deadline_ns
         if not absolute_expired and not elapsed_expired:
             return None
         if absolute_expired and elapsed_expired:
-            code = (
+            return (
                 "MP404"
                 if self._absolute_window_ns
                 <= self._limits["total_wall_seconds"] * NANOSECONDS_PER_SECOND
                 else "MP405"
             )
-        else:
-            code = "MP404" if absolute_expired else "MP405"
+        return "MP404" if absolute_expired else "MP405"
+
+    def _expiry_locked(self) -> TerminalSnapshot | None:
+        if self._terminal is not None:
+            return None
+        try:
+            now_monotonic = self._monotonic_locked()
+            now_wall = self._wall_locked()
+        except PolicyError:
+            state = "provider-only" if self._disclosed else "not-read"
+            return self._terminal_locked(
+                "MP405", state, self._last_monotonic_ns
+            )
+        code = self._expiry_code_locked(now_monotonic, now_wall)
+        if code is None:
+            return None
         state = "provider-only" if self._disclosed else "not-read"
         return self._terminal_locked(code, state, now_monotonic)
 
@@ -288,20 +317,27 @@ class LifecycleController:
             return self._expiry_locked()
 
     def _remaining_locked(self) -> tuple[int, int]:
-        now_monotonic = _clock_value(
-            self._monotonic_clock, "lifecycle.monotonic_clock"
-        )
-        now_wall = _clock_value(self._wall_clock, "lifecycle.wall_clock")
+        try:
+            now_monotonic = self._monotonic_locked()
+            now_wall = self._wall_locked()
+        except PolicyError:
+            state = "provider-only" if self._disclosed else "not-read"
+            self._terminal_locked("MP405", state, self._last_monotonic_ns)
+            refuse("MP405", "lifecycle.deadline")
+        code = self._expiry_code_locked(now_monotonic, now_wall)
+        if code is not None:
+            state = "provider-only" if self._disclosed else "not-read"
+            self._terminal_locked(code, state, now_monotonic)
+            refuse(code, "lifecycle.deadline")
         remaining = min(
             self._elapsed_deadline_ns - now_monotonic,
+            self._absolute_deadline_monotonic_ns - now_monotonic,
             self._absolute_expiry_ns - now_wall,
         )
         if remaining <= 0:
-            self._expiry_locked()
-            terminal = self._terminal
-            if terminal is None:
-                refuse("MP405", "lifecycle.deadline")
-            refuse(terminal.code, "lifecycle.deadline")
+            state = "provider-only" if self._disclosed else "not-read"
+            self._terminal_locked("MP405", state, now_monotonic)
+            refuse("MP405", "lifecycle.deadline")
         return now_monotonic, remaining
 
     def _stop_and_refuse_locked(self, code: str, field_name: str) -> None:

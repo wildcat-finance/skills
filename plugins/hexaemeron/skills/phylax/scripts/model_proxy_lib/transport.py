@@ -366,8 +366,9 @@ class HTTPSConnector:
         _validate_profile(profile)
         if not callable(resolver) or not callable(exchange) or not callable(clock):
             refuse("MP300", "provider.transport")
-        if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
+        if timeout is None:
             refuse("MP300", "provider.transport")
+        bounded_timeout = _bounded_timeout(timeout, TRANSPORT_TIMEOUT_SECONDS)
         try:
             context = context_factory()
         except Exception:
@@ -383,7 +384,7 @@ class HTTPSConnector:
         self._exchange = exchange
         self._context = context
         self._clock = clock
-        self._timeout = float(timeout)
+        self._timeout = bounded_timeout
         self._pinned_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None = None
         self._pin_lock = threading.Lock()
 

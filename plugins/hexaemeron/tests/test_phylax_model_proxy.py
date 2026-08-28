@@ -2509,6 +2509,51 @@ class LifecycleTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "MP405"):
             self.reserve(elapsed, 1)
 
+    def test_wall_clock_rollback_cannot_extend_absolute_expiry(self):
+        expiry_ns = 1_787_919_000 * NANOSECONDS_PER_SECOND
+        monotonic = MutableClock(self.START_MONOTONIC_NS)
+        wall = MutableClock(expiry_ns - NANOSECONDS_PER_SECOND)
+        controller = self.controller(monotonic=monotonic, wall=wall)
+
+        wall.set(expiry_ns - 101 * NANOSECONDS_PER_SECOND)
+        monotonic.set(self.START_MONOTONIC_NS + 2 * NANOSECONDS_PER_SECOND)
+        snapshot = controller.poll()
+
+        self.assertIsNotNone(snapshot)
+        if snapshot is not None:
+            self.assertEqual("MP404", snapshot.code)
+        with self.assertRaisesRegex(PolicyError, "MP404"):
+            self.reserve(controller, 1)
+
+    def test_clock_failure_is_terminal_and_writes_terminal_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runtime, _request, exchange, _response = self.runtime_request(
+                Path(directory), input_text="clock failure prompt"
+            )
+            runtime._controller._monotonic_clock = lambda: (_ for _ in ()).throw(
+                RuntimeError("clock unavailable")
+            )
+
+            try:
+                code = runtime.poll()
+            except PolicyError:
+                code = None
+
+            self.assertEqual("MP405", code)
+            self.assertIsNotNone(runtime.terminal)
+            self.assertEqual([], exchange.requests)
+            records = [
+                json.loads(line)
+                for line in (Path(directory) / "receipts.jsonl")
+                .read_text("utf-8")
+                .splitlines()
+            ]
+            self.assertEqual(
+                ["activation", "terminal"],
+                [record["event"] for record in records],
+            )
+            self.assertEqual("MP405", records[-1]["outcome_code"])
+
     def test_cancellation_before_admission_marks_terminal_before_close(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -2548,6 +2593,48 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual(
                 ["activation", "terminal"], [record["event"] for record in records]
             )
+
+    def test_terminal_cleanup_discards_framing_content_references(self):
+        prompt = "framing cleanup prompt"
+        suffixes = (
+            ("partial-prefix", b"\x00\x00"),
+            ("partial-payload", struct.pack(">I", 16) + b'{"schema"'),
+        )
+        for label, suffix in suffixes:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                connector = HTTPSConnector(
+                    self.profile,
+                    resolver=lambda _hostname, _port: ("8.8.8.8",),
+                    exchange=HTTPSExchangeFixture(
+                        BufferedHTTPSResponse(
+                            synthetic_provider_response(prompt, "UNUSED")
+                        )
+                    ),
+                )
+                runtime = ModelProxyRuntime(
+                    self.policy,
+                    connector,
+                    root / "receipts.jsonl",
+                    credential_source=lambda _name: self.credential,
+                    monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                    wall_clock=MutableClock(self.START_WALL_NS),
+                )
+                runtime.feed(request_frame(prompt) + suffix)
+                framing = runtime._provider._framing
+                self.assertEqual(1, len(framing._issued))
+                self.assertGreater(framing.buffered_bytes, 0)
+
+                runtime.cancel()
+
+                self.assertEqual(
+                    ({}, {}, 0),
+                    (
+                        runtime._provider._admitted,
+                        framing._issued,
+                        framing.buffered_bytes,
+                    ),
+                )
 
     def test_cancellation_during_transport_closes_and_discards_late_response(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -3067,6 +3154,50 @@ class LifecycleTests(unittest.TestCase):
                 )
         self.assertEqual([], resolutions)
 
+    def test_non_finite_connector_timeout_refuses_before_context_or_resolution(self):
+        contexts = []
+        resolutions = []
+        for value in (float("nan"), float("inf")):
+            with self.subTest(value=value):
+                try:
+                    HTTPSConnector(
+                        self.profile,
+                        resolver=lambda _hostname, _port: resolutions.append(True)
+                        or ("8.8.8.8",),
+                        context_factory=lambda: contexts.append(True),
+                        timeout=value,
+                    )
+                except PolicyError as error:
+                    code = error.code
+                else:
+                    code = None
+                self.assertEqual("MP300", code)
+        self.assertEqual([], contexts)
+        self.assertEqual([], resolutions)
+
+    def test_connector_timeout_cannot_widen_global_transport_ceiling(self):
+        seen_timeouts = []
+
+        def exchange(_request, _context, timeout):
+            seen_timeouts.append(timeout)
+            return BufferedHTTPSResponse(b"{}")
+
+        connector = HTTPSConnector(
+            self.profile,
+            resolver=lambda _hostname, _port: ("8.8.8.8",),
+            exchange=exchange,
+            clock=iter((10_000, 20_000)).__next__,
+            timeout=60.0,
+        )
+        connector.send(
+            b"{}",
+            self.credential,
+            max_response_bytes=16,
+            timeout_seconds=120.0,
+        )
+
+        self.assertEqual([30.0], seen_timeouts)
+
     def test_provider_usage_under_and_over_reporting_are_terminal(self):
         cases = (
             {"input_tokens": len("usage prompt") - 1, "output_tokens": 5},
@@ -3570,6 +3701,59 @@ class LifecycleTests(unittest.TestCase):
                 [record["event"] for record in records],
             )
             self.assertEqual("not-read", records[-1]["disclosure_state"])
+            self.assertEqual("MP405", records[-1]["outcome_code"])
+
+    def test_clock_failure_after_request_receipt_prevents_disclosure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reads = []
+            exchange = HTTPSExchangeFixture(
+                BufferedHTTPSResponse(
+                    synthetic_provider_response("clock receipt", "TOO LATE")
+                )
+            )
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda name: reads.append(name) or self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            request = runtime.feed(request_frame("clock receipt"))[0]
+            runtime.finish_input()
+            original_write = runtime._sink.write_request
+
+            def fail_clock_after_write(**arguments):
+                original_write(**arguments)
+                runtime._controller._monotonic_clock = lambda: (
+                    _ for _ in ()
+                ).throw(RuntimeError("clock unavailable"))
+
+            with mock.patch.object(
+                runtime._sink,
+                "write_request",
+                side_effect=fail_clock_after_write,
+            ):
+                with self.assertRaisesRegex(PolicyError, "MP405"):
+                    runtime.generate(request)
+
+            self.assertIsNotNone(runtime.terminal)
+            self.assertEqual([], reads)
+            self.assertEqual([], exchange.requests)
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual(
+                ["activation", "request", "terminal"],
+                [record["event"] for record in records],
+            )
             self.assertEqual("MP405", records[-1]["outcome_code"])
 
     def test_terminal_receipt_failure_withholds_provider_response(self):

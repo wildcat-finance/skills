@@ -349,6 +349,13 @@ class FramingCore:
         self._input_finished = True
         self._record("stream", "accepted", "MP000")
 
+    def close(self) -> None:
+        """Drop every content-bearing frame reference after a terminal transition."""
+
+        self._failed = True
+        self._input_finished = True
+        self._discard_input()
+
     def encode_response(self, request: TextRequest, output: str) -> bytes:
         """Encode one closed response for a sequence issued by this core."""
 

@@ -230,9 +230,10 @@ The connector re-resolves the registered profile before use, so a
 self-consistent replacement dataclass cannot change its transport authority.
 It fixes HTTPS, port 443, `POST`, `/v1/responses`, the profile hostname, a
 30-second connector timeout, strict certificate verification, and TLS hostname
-verification. Its explicit client context does not honour `SSLKEYLOGFILE`, so
-ambient process state cannot select an output path for TLS traffic secrets. It
-resolves that hostname on the first request, bounds the
+verification. A caller-supplied connector timeout must be finite and positive
+and can only shorten that ceiling. Its explicit client context does not honour
+`SSLKEYLOGFILE`, so ambient process state cannot select an output path for TLS
+traffic secrets. It resolves that hostname on the first request, bounds the
 resolver iterator, requires one unique global IP address, and reuses that pin
 for every later request handled by the job connector. Empty, multiple,
 malformed, private, loopback, link-local, multicast, unspecified, reserved,
@@ -337,20 +338,25 @@ terminal transition cannot rewrite that already durable snapshot.
 ## Cancellation, expiry, and publication
 
 Activation records two time domains. Absolute expiry comes from the accepted
-UTC `expires_at` value and is compared with `time.time_ns()`. Elapsed lifetime
-starts from Python's `time.monotonic_ns()` and adds the compiled
-`total_wall_seconds`. Each admission uses the smaller remaining interval. The
-runtime checks both clocks again after the request receipt is durable and
-before it marks the reservation disclosed. An expiry during that write creates
-a content-free terminal record and prevents the credential read. Otherwise,
-the runtime passes the shortened interval to the connector, whose existing
-30-second limit remains the upper transport timeout.
+UTC `expires_at` value and is compared with `time.time_ns()`. Its
+activation-time remaining interval is also added to the first
+`time.monotonic_ns()` reading, so a later wall-clock rollback cannot extend the
+accepted expiry. Elapsed lifetime starts from Python's `time.monotonic_ns()` and
+adds the compiled `total_wall_seconds`. Each admission uses the smaller
+remaining interval. If `time.monotonic_ns()` fails, returns an invalid value, or
+decreases, the controller sets `MP405` as the terminal outcome at the last
+verified reading. The runtime checks both clocks again after the request receipt
+is durable and before it marks the reservation disclosed. An expiry during that
+write creates a content-free terminal record and prevents the credential read.
+Otherwise, the runtime passes the shortened interval to the connector, whose
+existing 30-second limit remains the upper transport timeout.
 
 `poll()` applies the first expired boundary. If both boundaries have passed,
 the one whose activation-time interval was shorter supplies the fixed outcome.
 Trusted cancellation uses the same lock. Both transitions mark the controller
 terminal, erase the provider session's credential source, connector reference,
-and pending admissions, and then invoke the trusted I/O closer. Admission
+pending admissions, and content-bearing framing buffers and issued-request
+references, and then invoke the trusted I/O closer. Admission
 cannot cross that linearisation point. A response that returns after
 cancellation or expiry is closed by the provider component and discarded
 instead of entering guest publication. Failure of the trusted closer refuses
