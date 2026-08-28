@@ -2836,7 +2836,7 @@
         "test_runbook_separates_direct_and_elenchus_report_targets",
         "test_unhashable_and_non_string_typed_fields_refuse_without_crashing"
       ],
-      "sha256": "649f68ee35e11ccd17db40e4b14f6f6c0c4d429c5e0f1740fdeca669a8fa0db1"
+      "sha256": "2c560688f4e83f7ab9b3ded9ccb96bb83803972544cde52d5f4f535540c8aec3"
     },
     "transition": "treat only the named bytes as structurally conforming and pass the bounded result without strengthening it"
   },
@@ -2860,7 +2860,7 @@
     },
     "reporter": {
       "path": "plugins/hexaemeron/tests/run_tests.py",
-      "sha256": "2329a9f8e65726419d004e00baa5e0ff8825a68352826446b1973f3bba25456f"
+      "sha256": "3c83bfaa7f067f00f304eeac64867f4710846caa913d6ce14e6eca7024b5d63f"
     },
     "tests": [
       {
@@ -2895,7 +2895,7 @@
           "test_safe_unfinished_prefix_is_accepted_without_weakening_full_check",
           "test_prefix_still_refuses_an_unclosed_capability"
         ],
-        "sha256": "649f68ee35e11ccd17db40e4b14f6f6c0c4d429c5e0f1740fdeca669a8fa0db1"
+        "sha256": "2c560688f4e83f7ab9b3ded9ccb96bb83803972544cde52d5f4f535540c8aec3"
       }
     ],
     "transition": "record only the exact checked prefix against one selected receipt without advancing Fiat or strengthening delivery evidence",
@@ -2956,7 +2956,7 @@
           "test_writer_refuses_bypass_and_never_writes_a_gap",
           "test_schema_and_runtime_document_the_same_closed_vocabulary"
         ],
-        "sha256": "8a3e8608a875667a393fa301c8da4fe014e88af7fab31190b134fe4ddc94079c"
+        "sha256": "431d2114d2b9f49a1a857dd03a2cba1957a39303048f61be9aae23d39650da0d"
       },
       {
         "path": "tests/test_run_observation_capture_inoculation.py",

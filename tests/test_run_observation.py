@@ -20,6 +20,21 @@ CONTRACT = "promise-machine-run-observation/v1"
 ADR_014 = ROOT / "docs" / "decisions" / "ADR-014-reallocate-the-live-wave-atlas-from-a-complete-census.md"
 ADR_015 = ROOT / "docs" / "decisions" / "ADR-015-define-the-promise-machine-run-observation-record.md"
 AUDIT_LOG = ROOT / "audit" / "AUDIT.md"
+
+
+def scratch_directory(prefix="run-observation-"):
+    """A transient in-repository directory that `git status` never sees.
+
+    The validator and writers confine paths under the repository root, so
+    scratch space must stay inside it -- but a temporary directory under the
+    tracked fixture tree (or the repository top level) makes the repository
+    non-quiescent while a case runs, and the disposable-signing guard's
+    outer-stability assertion races against it under parallel shards.  The
+    ignored top-level tmp/ satisfies both: confined, and invisible to status.
+    """
+    scratch = ROOT / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
 RUNBOOK = ROOT / "docs" / "promise-machine" / "run-observation-runbook.md"
 
 SPEC = importlib.util.spec_from_file_location("run_observation", SCRIPT)
@@ -276,7 +291,7 @@ class RunObservationSchemaTests(unittest.TestCase):
                 self.assertIsNotNone(re.fullmatch(pattern, value))
 
     def test_schema_integral_numbers_are_runtime_integers(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "integral-numbers.jsonl"
             integer_fields = {
                 "sequence",
@@ -306,7 +321,7 @@ class RunObservationSchemaTests(unittest.TestCase):
                     self.assertEqual(run_observation.validate_path(target), [])
 
     def test_non_integral_numbers_do_not_round_into_runtime_integers(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "rounded-number.jsonl"
             raw = (FIXTURES / "valid" / "success.jsonl").read_text(encoding="utf-8")
             raw = raw.replace(
@@ -317,7 +332,7 @@ class RunObservationSchemaTests(unittest.TestCase):
             self.assertIn("RO016", codes(target))
 
     def test_exact_decimal_parser_is_total_and_matches_the_numeric_ceiling(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "numbers.jsonl"
             raw = (FIXTURES / "valid" / "success.jsonl").read_text(encoding="utf-8")
             cases = (
@@ -369,7 +384,7 @@ class RunObservationValidFlowTests(unittest.TestCase):
                 keepends=True
             )[:-1]
         )
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             path = Path(directory) / "captured-prefix.jsonl"
             path.write_bytes(prefix)
             display = run_observation.display_path(
@@ -406,7 +421,7 @@ class RunObservationValidFlowTests(unittest.TestCase):
 
     def test_safe_unfinished_prefix_is_accepted_without_weakening_full_check(self):
         events = fixture_events("success.jsonl")[:-1]
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "unfinished.jsonl"
             write_events(target, events)
 
@@ -419,7 +434,7 @@ class RunObservationValidFlowTests(unittest.TestCase):
 
     def test_prefix_still_refuses_an_unclosed_capability(self):
         events = fixture_events("success.jsonl")[:2]
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "unclosed-capability.jsonl"
             write_events(target, events)
 
@@ -454,7 +469,7 @@ class RunObservationRefusalTests(unittest.TestCase):
         self.assertFalse(report["ok"])
 
     def test_optional_host_facts_paths_payloads_and_closed_shapes_refuse(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "invalid.jsonl"
             cases = {
                 "RO015": lambda events: events[0].update(
@@ -509,7 +524,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             ("cognitiveProcess", "RO013"),
             ("prоmpt", "RO007"),
         )
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "metadata-names.jsonl"
             for name, expected in cases:
                 with self.subTest(name=name):
@@ -522,7 +537,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                         self.assertNotIn(name, "\n".join(item.path for item in findings))
 
     def test_hidden_work_descriptors_remain_bounded_metadata(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "safe-hidden-descriptors.jsonl"
             for name, value in (
                 ("analysisCount", 2),
@@ -541,7 +556,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                     self.assertEqual(codes(target), set())
 
     def test_safe_descriptor_suffixes_require_descriptor_values(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "descriptor-values.jsonl"
             for name, value in (
                 ("promptCount", "the complete raw prompt text"),
@@ -555,7 +570,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                     self.assertTrue({"RO013", "RO014"} & codes(target))
 
     def test_raw_content_names_refuse_but_typed_descriptors_remain_bounded(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "round6-names.jsonl"
             for name in (
                 "content",
@@ -596,7 +611,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                     self.assertEqual(codes(target), set())
 
     def test_reporter_rejects_named_target_swap_during_write(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / "tests") as directory:
+        with scratch_directory() as directory:
             parent = Path(directory)
             target = parent / "report.json"
             displaced = parent / "created.json"
@@ -621,7 +636,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             )
 
     def test_reporter_rejects_same_inode_rewrite_after_fsync(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / "tests") as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "report.json"
             parsed = reporter.report_target([str(target)])
             payload = {"schema": "expected", "padding": "x" * 32}
@@ -654,7 +669,7 @@ class RunObservationRefusalTests(unittest.TestCase):
         self.assertIn("tests.test_promise_machine_contract", reporter.MODULES)
 
     def test_boolean_token_count_refuses(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "tokens.jsonl"
             events = fixture_events()
             events[2]["token_usage"]["input_tokens"] = True
@@ -662,7 +677,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO016", codes(target))
 
     def test_nested_duplicate_keys_refuse(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "duplicate.jsonl"
             first = (FIXTURES / "valid" / "success.jsonl").read_text().splitlines()[0]
             first = first[:-1] + ',"metadata":{"nested":1,"nested":2}}\n'
@@ -670,7 +685,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO005", codes(target))
 
     def test_non_finite_numbers_and_wrong_reference_types_refuse_without_crashing(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             base = Path(directory)
             non_finite = base / "non-finite.jsonl"
             events = fixture_events()
@@ -685,7 +700,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO010", codes(wrong_reference))
 
     def test_non_finite_exponent_refuses(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "non-finite-exponent.jsonl"
             first = (FIXTURES / "valid" / "success.jsonl").read_text().splitlines()[0]
             first = first[:-1] + ',"metadata":{"temperature":1e999}}\n'
@@ -693,7 +708,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO007", codes(target))
 
     def test_malformed_retry_attempt_refuses_without_crashing(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "retry.jsonl"
             events = fixture_events("retry.jsonl")
             events[3]["attempt"] = "2"
@@ -701,7 +716,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO007", codes(target))
 
     def test_unhashable_and_non_string_typed_fields_refuse_without_crashing(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "types.jsonl"
 
             cases = []
@@ -737,7 +752,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                     self.assertIn("RO007", codes(target))
 
     def test_empty_evidence_selector_refuses(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "selector.jsonl"
             events = fixture_events()
             events[2]["evidence"][0]["selector"] = ""
@@ -745,7 +760,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO007", codes(target))
 
     def test_outcome_subject_must_match_bound_evidence(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "outcome.jsonl"
             events = fixture_events()
             events[-1]["outcome"]["subject"] = "different-subject"
@@ -753,7 +768,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO012", codes(target))
 
     def test_sensitive_and_hidden_field_aliases_refuse(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "sensitive.jsonl"
             cases = {
                 "RO014": {"api_key": "redacted"},
@@ -767,7 +782,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                     self.assertIn(expected, codes(target))
 
     def test_compact_sensitive_and_hidden_aliases_refuse(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "aliases.jsonl"
             cases = {
                 "RO014": ("APIKey", "apikey", "rawArgs"),
@@ -787,7 +802,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                         )
 
     def test_suffixed_sensitive_and_hidden_aliases_refuse(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "aliases.jsonl"
             cases = {
                 "RO014": (
@@ -857,7 +872,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertEqual(run_observation.validate_path(target), [])
 
     def test_actor_payload_aliases_refuse_but_descriptors_remain_valid(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "actor-payloads.jsonl"
             for name in (
                 "developerMessage",
@@ -884,7 +899,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                     self.assertEqual(codes(target), set())
 
     def test_actor_payload_synonyms_refuse_but_descriptors_remain_valid(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "actor-payload-synonyms.jsonl"
             for name in (
                 "aiOutput",
@@ -938,7 +953,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                     self.assertEqual(codes(target), set())
 
     def test_execution_source_and_trace_payload_aliases_refuse(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "execution-source-trace-aliases.jsonl"
             for name in (
                 "command",
@@ -963,7 +978,7 @@ class RunObservationRefusalTests(unittest.TestCase):
         families = metadata.get("x-runtime-forbidden-name-families", ())
         self.assertIn("instruction", families)
         self.assertIn("directive", families)
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "instruction-hidden-synonyms.jsonl"
             for name, expected in (
                 ("systemInstructions", "RO014"),
@@ -1007,7 +1022,7 @@ class RunObservationRefusalTests(unittest.TestCase):
         self.assertIsNotNone(schema_pattern)
         if schema_pattern is None:
             return
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "estimated-facts.jsonl"
             cases = []
             events = fixture_events()
@@ -1056,7 +1071,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                     self.assertIn(expected, codes(target))
 
     def test_unknowns_do_not_repeat_or_contradict_supplied_facts(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "unknowns.jsonl"
 
             events = fixture_events()
@@ -1106,7 +1121,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO007", codes(target))
 
     def test_run_context_is_closed_and_binds_refusals_and_handoffs(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "context.jsonl"
 
             events = fixture_events()
@@ -1142,7 +1157,7 @@ class RunObservationRefusalTests(unittest.TestCase):
         self.assertEqual(opening["before_commit"], closing["before_commit"])
         self.assertNotEqual(closing["before_commit"], closing["after_commit"])
 
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "repository-transition.jsonl"
             cases = (
                 ("path", "different/path.py"),
@@ -1167,7 +1182,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO017", codes(target))
 
     def test_inferred_evidence_names_a_prior_event_selector(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "inferred.jsonl"
             events = fixture_events()
             definition = events[2]["evidence"][0]
@@ -1189,7 +1204,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO010", codes(target))
 
     def test_handoff_evidence_is_carried_by_the_source_event(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "handoff-source.jsonl"
             events = fixture_events("handoff.jsonl")
             second_start = dict(events[1])
@@ -1220,7 +1235,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO011", codes(target))
 
     def test_final_handoff_and_refusal_statuses_have_matching_events(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "final-status.jsonl"
             events = fixture_events()
             events[-1]["status"] = "handoff"
@@ -1234,7 +1249,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO009", codes(target))
 
     def test_final_handoff_outcome_uses_handed_off_evidence(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "handoff-outcome.jsonl"
             events = fixture_events("handoff.jsonl")
             second = dict(events[2]["evidence"][0])
@@ -1251,7 +1266,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO007", codes(target))
 
     def test_placeholders_cannot_authorise_an_observed_outcome(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "placeholder.jsonl"
             events = fixture_events()
             events[0]["subject"] = "unknown"
@@ -1278,7 +1293,7 @@ class RunObservationRefusalTests(unittest.TestCase):
         pattern = declaration["pattern"]
         self.assertEqual(declaration["x-unicode-normalization"], "NFC")
         self.assertEqual(declaration.get("x-max-utf8-bytes-per-segment"), 255)
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "repository.jsonl"
             for repository_path in (
                 "C:/Windows/system.ini",
@@ -1350,7 +1365,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             len(refused.encode("utf-8")),
             path_limit,
         )
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "repository-total-bytes.jsonl"
             events = fixture_events()
             events[0]["repository"]["path"] = accepted
@@ -1368,7 +1383,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertEqual(codes(target), set())
 
     def test_object_key_strings_share_the_string_limit(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "long-key.jsonl"
             events = fixture_events()
             events[0]["metadata"] = {"k" * (run_observation.MAX_STRING + 1): "value"}
@@ -1380,7 +1395,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             )
 
     def test_unknown_field_names_do_not_split_text_reports(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "unknown-key.jsonl"
             hostile_name = "forged\nRO000 injected"
             events = fixture_events()
@@ -1393,7 +1408,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertTrue(all("\n" not in line and "\r" not in line for line in lines))
 
     def test_combined_hostile_probes_refuse(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             base = Path(directory)
 
             oversized = base / "oversized.jsonl"
@@ -1430,7 +1445,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertIn("RO009", codes(after_finish))
 
     def test_growth_between_identity_check_and_read_still_hits_total_limit(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "growing.jsonl"
             target.write_bytes((FIXTURES / "valid" / "success.jsonl").read_bytes())
             original_open = run_observation.os.open
@@ -1451,7 +1466,7 @@ class RunObservationRefusalTests(unittest.TestCase):
     def test_fifo_swap_before_open_refuses_without_blocking(self):
         if not hasattr(os, "mkfifo") or not hasattr(os, "O_NONBLOCK"):
             self.skipTest("FIFO non-blocking open is not available on this platform")
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "raced.jsonl"
             target.write_bytes((FIXTURES / "valid" / "success.jsonl").read_bytes())
             original_open = run_observation.os.open
@@ -1470,7 +1485,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                 self.assertEqual(codes(target), {"RO001"})
 
     def test_one_growing_overlong_line_still_hits_total_limit(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "growing-line.jsonl"
             target.write_bytes((FIXTURES / "valid" / "success.jsonl").read_bytes())
             original_open = run_observation.os.open
@@ -1488,7 +1503,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                 self.assertIn("RO002", codes(target))
 
     def test_same_size_rewrite_during_read_refuses(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "rewritten.jsonl"
             valid = (FIXTURES / "valid" / "success.jsonl").read_bytes()
             invalid = valid.replace(b'"status":"success"', b'"status":"unknown"', 1)
@@ -1527,7 +1542,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertEqual(target.read_bytes(), invalid)
 
     def test_equal_length_same_inode_rewrite_after_post_read_fstat_refuses(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "last-window.jsonl"
             valid = (FIXTURES / "valid" / "success.jsonl").read_bytes()
             invalid = valid.replace(b'"status":"success"', b'"status":"unknown"', 1)
@@ -1549,7 +1564,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertEqual(target.read_bytes(), invalid)
 
     def test_named_path_replacement_during_read_refuses(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "replaced.jsonl"
             valid = (FIXTURES / "valid" / "success.jsonl").read_bytes()
             invalid = (FIXTURES / "invalid" / "missing-run-id.jsonl").read_bytes()
@@ -1582,7 +1597,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             self.assertEqual(target.read_bytes(), invalid)
 
     def test_parent_path_replacement_outside_root_refuses(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             base = Path(directory)
             confined_root = base / "root"
             inside = confined_root / "inside"
@@ -1632,7 +1647,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                 self.assertEqual({item.code for item in findings}, {"RO001"})
 
     def test_control_characters_do_not_split_text_reports(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             invalid = Path(directory) / "bad\nname.jsonl"
             invalid.write_bytes(
                 (FIXTURES / "invalid" / "missing-run-id.jsonl").read_bytes()

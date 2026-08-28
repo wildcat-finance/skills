@@ -26,6 +26,20 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 HEXCTL = ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
 FIXTURE = HERE / "fixtures/fiat-710-generator-aggregate.json"
+def scratch_directory(prefix, suffix=".json"):
+    """A transient in-repository file that `git status` never sees.
+
+    The revalidation artefact must sit inside the repository root for the
+    bounded-source read, but a temporary at the root itself is untracked,
+    status-visible state that races the disposable-signing guard's
+    outer-stability assertion under parallel shards.  The ignored top-level
+    tmp/ satisfies both: confined, and invisible to status.
+    """
+    scratch = ROOT / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.mkstemp(prefix=prefix, suffix=suffix, dir=scratch)
+
+
 AGGREGATE_FIELDS = (
     "id",
     "prefix",
@@ -109,9 +123,7 @@ class IncidentAggregateTests(unittest.TestCase):
         }
 
     def call(self, artifact):
-        descriptor, path = tempfile.mkstemp(
-            prefix=".fiat-710-revalidation-", suffix=".json", dir=ROOT
-        )
+        descriptor, path = scratch_directory(".fiat-710-revalidation-")
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
                 json.dump(artifact, handle)
@@ -179,9 +191,7 @@ class IncidentAggregateTests(unittest.TestCase):
 
     def test_acceptance_2_v2_sync_receipt_survives_done_integrate(self):
         artifact = self.v2_artifact()
-        descriptor, path = tempfile.mkstemp(
-            prefix=".fiat-710-transition-", suffix=".json", dir=ROOT
-        )
+        descriptor, path = scratch_directory(".fiat-710-transition-")
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
                 json.dump(artifact, handle)
@@ -362,9 +372,7 @@ class IncidentAggregateTests(unittest.TestCase):
                 }
             ],
         }
-        descriptor, path = tempfile.mkstemp(
-            prefix=".fiat-710-v1-", suffix=".json", dir=ROOT
-        )
+        descriptor, path = scratch_directory(".fiat-710-v1-")
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
                 json.dump(artifact, handle)
