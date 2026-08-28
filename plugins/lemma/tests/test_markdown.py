@@ -22,6 +22,7 @@ import contextlib
 import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -954,6 +955,17 @@ def test_provenance_emitted(tmp: pathlib.Path) -> None:
     check("no --source-ref: the output directory is left empty",
           list(bare_dir.iterdir()) == [],
           str(sorted(p.name for p in bare_dir.iterdir())))
+    # Without this the case passes for the wrong reason: with the refusal
+    # gone, provenance_record() rejects a source_ref of None further down,
+    # names the same flag and also leaves the directory empty. A root that
+    # does not exist separates them, because the walk would reach it first.
+    r = subprocess.run([sys.executable, script, "--root", str(tmp / "absent"),
+                        "--summary", "", "--exclude", "matches-nothing",
+                        "--out", str(bare_dir / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("no --source-ref: the tree is never walked",
+          "--source-ref" in r.stderr and "absent" not in r.stderr,
+          r.stderr[-200:])
 
     good = tmp / "good"
     good.mkdir()
@@ -1191,6 +1203,89 @@ def test_recorded_case_range_is_current() -> None:
               f"vs printed {max(printed) if printed else 'nothing'}")
 
 
+def test_delivery_refusals(tmp: pathlib.Path) -> None:
+    print("\nM28 \u2014 every way a delivery can refuse, refuses")
+    # Three failure exits deliver() and skill_version() carry that no case
+    # reached. Each was driven by hand when it was written and then left with
+    # nothing holding it: removing all three left every suite green while the
+    # last two together shipped a record the validator itself rejects.
+    script = str(ROOT / "chunkers" / "markdown.py")
+    root = tmp / "src"
+    root.mkdir()
+    (root / "a.md").write_text(f"# A\n\n{LONG}", encoding="utf-8")
+    common = [sys.executable, script, "--root", str(root),
+              "--summary", "", "--exclude", "matches-nothing"]
+    ref = "example/corpus@" + "e" * 40
+
+    # The recomputed identifier is the step's central claim. /dev/null takes
+    # the write and returns nothing, so the file does not hold what was
+    # written to it and the digest cannot agree.
+    devnull = tmp / "devnull"
+    devnull.mkdir()
+    (devnull / "chunks.jsonl").symlink_to("/dev/null")
+    r = subprocess.run(common + ["--source-ref", ref,
+                                 "--out", str(devnull / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("a corpus that does not digest to its record is refused",
+          r.returncode != 0 and "does not digest to the identifier" in r.stderr,
+          r.stderr[-200:])
+    check("and the corpus is taken away rather than delivered",
+          not (devnull / "chunks.jsonl").exists(),
+          str(sorted(p.name for p in devnull.iterdir())))
+    # The handler around deliver() is what turns a raise into a diagnosis.
+    # Without it the same refusal still exits nonzero, so only the shape of
+    # the output tells the two apart.
+    check("a refused delivery diagnoses rather than traces back",
+          "FATAL:" in r.stderr and "Traceback" not in r.stderr,
+          r.stderr[:200])
+
+    # An incomplete record refuses before anything reaches disk. Nothing on
+    # the command line reaches this today -- an empty tree is refused earlier,
+    # for zero chunks -- so it is driven where it lives.
+    # A class body does not close over the enclosing function's locals, so
+    # the paths are passed in rather than read from the surrounding scope.
+    class _Args:
+        def __init__(self, source, target):
+            self.root, self.out, self.provenance = str(source), str(target), None
+            self.source_ref = "example/corpus@" + "e" * 40
+
+    (tmp / "unreached").mkdir()
+    kept = md._schema.validate_provenance
+    md._schema.validate_provenance = lambda record: ["invented fault"]
+    try:
+        md.deliver(md.chunk_tree(str(root), ["matches-nothing"], None),
+                   _Args(root, tmp / "unreached" / "chunks.jsonl"))
+        check("an incomplete record is refused before anything is written",
+              False, "delivered anyway")
+    except md.ChunkError as e:
+        check("an incomplete record is refused before anything is written",
+              "invented fault" in str(e), str(e)[:120])
+    finally:
+        md._schema.validate_provenance = kept
+    check("nothing was written by the refused delivery",
+          list((tmp / "unreached").iterdir()) == [],
+          str(sorted(p.name for p in (tmp / "unreached").iterdir())))
+
+    # The governed version is read, so a tree with no SKILL.md to read has to
+    # refuse rather than record an empty one.
+    stripped = tmp / "stripped"
+    (stripped / "chunkers").mkdir(parents=True)
+    shutil.copy(ROOT / "chunkers" / "markdown.py", stripped / "chunkers")
+    shutil.copy(ROOT / "schema.py", stripped)
+    out = tmp / "noskill"
+    out.mkdir()
+    r = subprocess.run([sys.executable, str(stripped / "chunkers" / "markdown.py"),
+                        "--root", str(root), "--summary", "",
+                        "--exclude", "matches-nothing", "--source-ref", ref,
+                        "--out", str(out / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("a tree with no governed version to read refuses",
+          r.returncode != 0 and "no governed version" in r.stderr,
+          r.stderr[-200:])
+    check("and leaves no corpus behind", list(out.iterdir()) == [],
+          str(sorted(p.name for p in out.iterdir())))
+
+
 def test_chunkers_share_one_provenance_mechanism() -> None:
     print("\nM26 \u2014 both chunkers carry the same provenance machinery")
     # Every refusal above is driven through markdown.py, and solidity.py holds
@@ -1262,6 +1357,8 @@ def main() -> int:
     test_lazy_list_continuation()
     test_multiline_code_span()
     test_strong_section_boundaries()
+    with tempfile.TemporaryDirectory() as td:
+        test_delivery_refusals(pathlib.Path(td))
     test_chunkers_share_one_provenance_mechanism()
     test_recorded_case_range_is_current()
     with tempfile.TemporaryDirectory() as td:
