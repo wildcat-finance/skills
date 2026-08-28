@@ -525,3 +525,66 @@ invocations, for the same reason.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds.
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Entry: Step 1's exit state: the run branch with
+`plugins/lemma/schema.py` exporting the record shape, its builder and its
+validator; `plugins/lemma/INVARIANTS.md` extended at I6; ADR-042 committed; the
+study and runbook committed as flat files under `docs/`, where the study's one
+relative link resolves; the mirror and the
+boundary regenerated; every command in step 1's exit list green.
+
+**Why.** This step's entry described the state step 1 leaves behind, and the
+first amendment of this date moved that state: the committed study and runbook
+are flat files under `docs/`, because a relative link resolves from the
+directory holding the file and the receipted bytes could not change. The entry
+now names where the copies actually are, so a check against it reads the tree
+rather than a superseded location. Nothing else about the entry moves, and no
+exit, file, test or discipline changes.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds.
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Files: Change `plugins/lemma/chunkers/solidity.py` and
+`plugins/lemma/chunkers/markdown.py`, which gain the printed capture flags.
+Change `plugins/lemma/skills/lemma/SKILL.md`, which gains the handoff, the new
+promise and the frontmatter version. Change
+`plugins/lemma/skills/lemma/EVOLUTION.md`, which gains the generation row and
+its current-version line. Change `plugins/lemma/AGENTS.md`, the runtime contract
+an agent reads before running the skill, which must name the new required flag
+and the handoff. Change `plugins/lemma/README.md`, which shows the two commands
+end to end. Change `tests/promise_machine_coverage.json`, which gains one row
+and its five case entries under `evidence`. Change
+`tests/test_promise_machine_contract.py`, whose frozen Lemma promise set at
+lines 555 to 559 must name the new promise. Change
+`plugins/lemma/tests/test_solidity.py` and
+`plugins/lemma/tests/test_markdown.py`, which gain the printed-flag guards and
+the selectors the coverage entries name. The remaining paths are written by
+sanctioned commands: `python3 scripts/portable_promise_machine.py sync` rewrites
+`.agents/skills/promise-machine/runtime/`, because the chunkers, `SKILL.md`,
+`EVOLUTION.md`, `AGENTS.md` and `README.md` are all mirrored; and
+`python3 plugins/horos/skills/horos/scripts/horos.py scan . --write` rewrites
+both `.horos/boundary.json` and `.horos/candidates.json`.
+`python3 scripts/promise_machine.py sync` is not run and no
+`plugins/*/PROMISE_MACHINE.md` copy changes, because the root law is untouched
+and those copies mirror the law rather than a skill's promises. Change `docs/lemma-corpus-provenance-runbook.md`, the committed copy of this
+runbook, which has been one amendment behind the receipt since step 1 committed
+it: every amendment lands after the step that would have carried it, and this is
+the last step, so it is the only place the copy can be returned to the receipted
+bytes. No other path is in scope for this step without a receipted amendment to
+the study.
+
+**Why.** The committed copy of the runbook is a strict prefix of the receipted
+bytes, 36,354 against 37,429, and has been since step 1 committed it: each
+amendment lands after the step that would have carried it, so no step could
+have kept the copy current at the moment it was made. This is the last step and
+the only one that can close the gap, and a committed copy that does not match
+the artefact it claims to be is the same defect this delivery argues against one
+level up. The study copy is unchanged and already byte-identical.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 3: entry holds; exit holds.
