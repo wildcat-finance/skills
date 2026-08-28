@@ -1,7 +1,7 @@
 # Synkrisis runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Synkrisis.** Synkrisis owns bounded comparison across validated Promise Machine run observations. This release builds the checked cohort, classifying every declared run under an operator-declared policy, infers bounded findings over it from a digest-bound rule catalogue, renders the fixed-template report, and verifies that all three artefacts recompute from their original inputs. Ephoros designs what a step emits, Metron owns controlled measurement verdicts, Elenchus works one failure to its cause, and Horos owns the reading boundary a finding may point at. **Current frontier:** Synkrisis builds one checked cohort, infers bounded findings from a digest-bound rule catalogue, renders the fixed-template report and verifies the whole path, and its measured work budget and demonstration path have not yet landed.
+> **Marketplace context: Synkrisis.** Synkrisis owns bounded comparison across validated Promise Machine run observations. This release builds the checked cohort, classifying every declared run under an operator-declared policy, infers bounded findings over it from a digest-bound rule catalogue, renders the fixed-template report, and verifies that all three artefacts recompute from their original inputs, with the whole path held to a measured work budget on the runner its benchmark records. Ephoros designs what a step emits, Metron owns controlled measurement verdicts, Elenchus works one failure to its cause, and Horos owns the reading boundary a finding may point at. **Current frontier:** Synkrisis ships two deterministic rule kinds proved on constructed example records, and no cohort built from captured production observations has yet exercised the catalogue.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -17,9 +17,9 @@ Synkrisis contains one Agent Skill. Select `synkrisis` to build one checked
 cohort from declared run-observation records, to infer bounded findings over
 one cohort from a digest-bound rule catalogue, to render or verify those
 artefacts, or to read the committed cross-run comparison specification, then
-read `skills/synkrisis/SKILL.md` in full. The measured work budget is Step 5
-and has not landed, so do not present a runtime or memory claim as a
-Synkrisis result.
+read `skills/synkrisis/SKILL.md` in full. The work budget holds on the runner
+the benchmark records; do not present it as a claim about another machine or a
+larger cohort.
 
 `skills/synkrisis/SKILL.md` is the only canonical instruction document. Do not
 add a sibling browsing README.
@@ -69,8 +69,8 @@ its own instructions before writing anything into it.
 These are properties of the tool rather than reminders, and a local agent must
 not route around them:
 
-- No measured work claim. The benchmark and its declared ceilings are Step 5
-  of the runbook and have not landed.
+- No work claim beyond the recorded runner, and none from captured
+  production observations: every rule is proved on constructed records.
 - No inferred comparability. The operator declares the comparison policy;
   Synkrisis checks that declaration and never decides that unlike tasks,
   models, hosts, repositories or tokenizers are comparable. An unknown run

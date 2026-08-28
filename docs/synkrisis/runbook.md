@@ -2,9 +2,9 @@
 
 Derived from [the committed study](study.md) and the runbook attached to
 [issue #449](https://github.com/wildcat-finance/skills/issues/449). Five
-steps, dependency order, each landing only with its exit gates green. Steps 1
-through 4 are delivered; Step 5 is held, and the evolution ledger's Next Fiat
-job names it.
+steps, dependency order, each landing only with its exit gates green. All
+five are delivered. Each step's exit below names the gate that held it, and
+the evolution ledger's Next Fiat job now names work beyond this runbook.
 
 ## Step 1: Scaffold Synkrisis and commit its specification (delivered)
 
@@ -73,12 +73,12 @@ rule digest, an unsupported producer identity and an edited narrative, each
 with a stable code and recovery. The committed example report is
 byte-recomputed in the suite, and all earlier gates stay green.
 
-## Step 5: Measure, publish and demonstrate the refusal boundary (held)
+## Step 5: Measure, publish and demonstrate the refusal boundary (delivered)
 
 **Goal.** The completed plugin held to its work budget, its three specified
 promises bound to evidence, and the demonstration path proved from clean
 inputs.
-**Exit.** The benchmark materialises the 100-run, 100,000-event universe
+**Exit, held at delivery.** The benchmark materialises the 100-run, 100,000-event universe
 from the committed fixture specification and holds cohort, diagnose and
 verify to 5.0 seconds and 256 MiB on the recorded runner, printing
 interpreter, platform, specification digest, repetitions and observed

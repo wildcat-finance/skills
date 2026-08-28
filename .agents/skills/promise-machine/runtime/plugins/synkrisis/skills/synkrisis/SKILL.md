@@ -4,12 +4,12 @@ description: >
   Build one checked cohort from validated Promise Machine run observations
   under an operator-declared comparison policy, infer bounded findings from a
   digest-bound rule catalogue, render the fixed-template report, and verify
-  that all three artefacts recompute from their original inputs. Version 3.1.0
-  delivers all four operations. Do not capture or redact observations, debug
-  one failing run, judge a model, act on a finding, or report a relation as a
-  cause.
+  that all three artefacts recompute from their original inputs. Version 4.1.0
+  delivers all four operations under a measured work budget. Do not capture or
+  redact observations, debug one failing run, judge a model, act on a finding,
+  or report a relation as a cause.
 metadata:
-  version: "3.1.0"
+  version: "4.1.0"
 ---
 
 <p align="center">
@@ -28,12 +28,13 @@ recommend or run another frontier pass after that ledger becomes mature.
 ## Where this sits
 
 Synkrisis owns comparison and bounded inference over validated observations
-from comparable agent runs. Version 3.1.0 implements the checked cohort, the
+from comparable agent runs. Version 4.1.0 implements the checked cohort, the
 bounded rule catalogue over it, the fixed-template report and the whole-path
-verification, while capture, redaction, receipt binding, causal triage, issue
-filing, repository mutation, and Fiat dispatch stay with their own owners.
+verification, all held to a measured work budget, while capture, redaction,
+receipt binding, causal triage, issue filing, repository mutation, and Fiat
+dispatch stay with their own owners.
 
-**Current frontier.** Synkrisis builds one checked cohort, infers bounded findings from a digest-bound rule catalogue, renders the fixed-template report and verifies the whole path, and its measured work budget and demonstration path have not yet landed.
+**Current frontier.** Synkrisis ships two deterministic rule kinds proved on constructed example records, and no cohort built from captured production observations has yet exercised the catalogue.
 <!-- marketplace-context:end -->
 
 Synkrisis is named for comparison. The Promise Machine records what one run
@@ -53,14 +54,16 @@ path files an issue, edits a repository, or dispatches a sibling.
 
 ## What this step is
 
-This is Step 4 of
+This is Step 5 of
 [the committed runbook](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/runbook.md),
 built from
-[the committed study](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/study.md)
-on the Step 2 cohort and the Step 3 catalogue. All four operations are landed
-and tested. Step 5 is held: the measured work budget and the demonstration
-path have not landed, so no claim here rests on a measured runtime or memory
-ceiling.
+[the committed study](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/study.md),
+and it completes that runbook. All four operations are landed and tested, and
+`scripts/bench_synkrisis.py` holds the whole path to 5.0 seconds and 256 MiB
+over the committed 100-run, 100,000-event scale specification, recording the
+interpreter and platform it measured. The next frontier job is outside this
+runbook: the catalogue has been proved on constructed records alone, and no
+cohort built from captured production observations has exercised it.
 
 ## The cohort operation
 
@@ -164,8 +167,12 @@ contract and a recovery.
 
 ## What it refuses
 
-- No measured work claim. The benchmark and its declared ceilings are Step 5;
-  nothing here establishes a runtime or memory bound.
+- No work claim beyond the recorded runner. The benchmark bounds this
+  implementation on the interpreter and platform it prints, over the committed
+  scale specification; it says nothing about another machine or a larger
+  cohort.
+- No claim from captured production observations. Every rule is proved on
+  constructed example records, which is what the open frontier names.
 - No inferred comparability. A person declares the comparison policy;
   Synkrisis checks the declaration and never decides that unlike tasks,
   models, hosts, repositories or tokenizers are comparable.

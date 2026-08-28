@@ -1,4 +1,4 @@
-"""Step 4 scaffold contract: manifests, marketplace, router, ledger, promises, examples."""
+"""Step 5 scaffold contract: manifests, marketplace, router, ledger, promises, examples."""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ LEDGER = PLUGIN / "skills" / "synkrisis" / "EVOLUTION.md"
 
 class HostSurfaceTests(unittest.TestCase):
     def test_manifest_versions_agree_across_hosts_and_marketplace(self):
-        assert_version_agreement(self, "synkrisis", expected="0.4.0")
+        assert_version_agreement(self, "synkrisis", expected="0.5.0")
 
     def test_host_descriptions_agree(self):
         assert_host_descriptions_agree(self, "synkrisis")
@@ -113,14 +113,21 @@ class SpecificationTests(unittest.TestCase):
             with self.subTest(link=link):
                 self.assertTrue((SKILL.parent / link).resolve().is_file())
 
-    def test_the_runbook_records_four_delivered_and_one_held_step(self):
+    def test_the_runbook_records_every_step_delivered_and_none_held(self):
+        """The runbook is complete, and this is the check that says so.
+
+        Counting the held markers rather than only the delivered ones keeps a
+        step that was flipped in one place and not the other from passing: a
+        heading left at `(held)` fails here even though five delivered
+        markers would be present elsewhere.
+        """
         runbook = (support.REPO_ROOT / "docs" / "synkrisis" / "runbook.md").read_text(
             encoding="utf-8"
         )
         for heading in ("Step 1", "Step 2", "Step 3", "Step 4", "Step 5"):
             self.assertIn(f"## {heading}:", runbook)
-        self.assertEqual(runbook.count("(delivered)"), 4)
-        self.assertEqual(runbook.count("(held)"), 1)
+        self.assertEqual(runbook.count("(delivered)"), 5)
+        self.assertEqual(runbook.count("(held)"), 0)
 
 
 class CommandSurfaceTests(unittest.TestCase):
@@ -141,6 +148,16 @@ class CommandSurfaceTests(unittest.TestCase):
             for command in ("cohort", "diagnose", "render", "verify"):
                 self.assertIn(command, completed.stdout)
             self.assertEqual(os.listdir(scratch), [])
+
+    def test_bench_help_runs(self):
+        completed = subprocess.run(  # phylax: allow subprocess: fixed argv local script, no shell
+            [sys.executable, str(support.SCRIPTS / "bench_synkrisis.py"), "--help"],
+            capture_output=True,
+            text=True,
+            cwd=support.REPO_ROOT,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertIn("--max-rss-mib", completed.stdout)
 
     def test_refusal_output_names_code_producer_path_and_recovery(self):
         completed = self.run_cli(
