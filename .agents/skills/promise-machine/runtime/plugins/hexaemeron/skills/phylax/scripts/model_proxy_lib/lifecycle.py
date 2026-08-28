@@ -619,12 +619,21 @@ class ModelProxyRuntime:
                 else {"credential_source": credential_source}
             ),
         )
-        self._sink = ReceiptSink(
-            receipt_path,
-            max_record_bytes=self._controller.limits["max_receipt_bytes"],
-            max_records=self._controller.limits["max_receipts"],
-        )
         self._io_closer = io_closer
+        try:
+            self._sink = ReceiptSink(
+                receipt_path,
+                max_record_bytes=self._controller.limits["max_receipt_bytes"],
+                max_records=self._controller.limits["max_receipts"],
+            )
+        except PolicyError:
+            self._controller.stop("MP407")
+            self._provider.close()
+            try:
+                self._io_closer()
+            except Exception:
+                pass
+            raise
         self._publication_lock = threading.Lock()
         self._provider_lock = threading.Lock()
         self._provider_turn_condition = threading.Condition()
@@ -849,6 +858,17 @@ class ModelProxyRuntime:
             self._await_provider_turn(reservation)
             with self._provider_lock:
                 with self._publication_lock:
+                    if final:
+                        try:
+                            self._provider.prepare_terminal_input(request)
+                        except PolicyError as error:
+                            events = self._provider.events
+                            event = events[-1] if events else None
+                            snapshot = self._controller.fail(
+                                reservation, error.code, event
+                            )
+                            self._finalize_terminal(snapshot)
+                            raise
                     try:
                         disclosure_timeout_ns = self._controller.mark_disclosed(
                             reservation
@@ -886,6 +906,12 @@ class ModelProxyRuntime:
                         raise
                     if final:
                         try:
+                            self._provider.require_completion_ready()
+                        except PolicyError as error:
+                            snapshot = self._controller.stop(error.code)
+                            self._finalize_terminal(snapshot)
+                            raise
+                        try:
                             snapshot = self._controller.finish()
                         except PolicyError:
                             terminal = self._controller.terminal
@@ -907,11 +933,14 @@ class ModelProxyRuntime:
     def complete_job(self) -> None:
         with self._publication_lock:
             try:
+                self._provider.prepare_terminal_input()
+                self._provider.require_completion_ready()
                 snapshot = self._controller.finish()
-            except PolicyError:
+            except PolicyError as error:
                 terminal = self._controller.terminal
-                if terminal is not None:
-                    self._finalize_terminal(terminal)
+                if terminal is None:
+                    terminal = self._controller.stop(error.code)
+                self._finalize_terminal(terminal)
                 raise
             self._finalize_terminal(snapshot)
 

@@ -235,6 +235,12 @@ class FramingCore:
 
         return len(self._prefix) + len(self._payload)
 
+    @property
+    def input_finished(self) -> bool:
+        """Report whether the guest input boundary was closed successfully."""
+
+        return self._input_finished
+
     def _record(self, stage: str, outcome: str, code: str) -> None:
         if len(self._events) < (self._limits.max_requests * 2) + 2:
             self._events.append(FrameEvent(stage=stage, outcome=outcome, code=code))

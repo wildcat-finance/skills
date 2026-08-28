@@ -298,6 +298,38 @@ class ProviderSession:
                 self._poison_locked()
                 raise
 
+    def prepare_terminal_input(self, request: TextRequest | None = None) -> None:
+        """Require an unambiguous guest EOF before a terminal transition."""
+
+        with self._state_lock:
+            if self._failed:
+                refuse("MP320", "provider.session")
+            try:
+                if not self._framing.input_finished:
+                    self._framing.finish()
+            except PolicyError as error:
+                self._poison_locked()
+                self._record_locked(
+                    error.code,
+                    "not-read",
+                    input_tokens=(
+                        len(request.input_text)
+                        if isinstance(request, TextRequest)
+                        else 0
+                    ),
+                )
+                raise
+
+    def require_completion_ready(self) -> None:
+        """Refuse normal completion while a guest request remains unserved."""
+
+        with self._state_lock:
+            if not self._failed and self._inflight is None and not self._admitted:
+                return
+            self._poison_locked()
+            self._record_locked("MP401", "not-read")
+            refuse("MP401", "provider.completion")
+
     def generate(self, request: TextRequest, *, timeout_ns: int | None = None) -> bytes:
         """Map one exact admitted request and return one closed guest frame."""
 

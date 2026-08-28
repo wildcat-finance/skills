@@ -458,6 +458,7 @@ class HTTPSConnector:
         length = 0
         failure: PolicyError | None = None
         failure_duration = 0
+        result: TransportResult | None = None
         try:
             started = self._clock()
             request_handed_to_exchange = True
@@ -505,7 +506,7 @@ class HTTPSConnector:
                 or finished < started
             ):
                 refuse("MP306", "provider.duration")
-            return TransportResult(
+            result = TransportResult(
                 body=b"".join(chunks),
                 request_bytes=len(body),
                 response_bytes=length,
@@ -525,15 +526,19 @@ class HTTPSConnector:
                 try:
                     response.close()
                 except Exception:
-                    pass
-        if failure is None:
+                    if failure is None:
+                        failure = PolicyError("MP306", "provider.response.close")
+                        failure_duration = self._failure_duration(started)
+        if failure is not None:
+            if response is not None or request_handed_to_exchange:
+                raise TransportRefusal(
+                    failure.code,
+                    failure.field,
+                    len(body),
+                    length,
+                    failure_duration,
+                ) from None
+            raise failure from None
+        if result is None:
             refuse("MP306", "provider.transport")
-        if response is not None or request_handed_to_exchange:
-            raise TransportRefusal(
-                failure.code,
-                failure.field,
-                len(body),
-                length,
-                failure_duration,
-            ) from None
-        raise failure from None
+        return result

@@ -3793,6 +3793,183 @@ class LifecycleTests(unittest.TestCase):
             ]
             self.assertEqual(["activation", "request"], [r["event"] for r in records])
 
+    def test_response_close_failure_withholds_guest_output(self):
+        class CloseFailureResponse(BufferedHTTPSResponse):
+            def close(self):
+                self.closed = True
+                raise OSError("simulated response close failure")
+
+        with tempfile.TemporaryDirectory() as directory:
+            prompt = "response close prompt"
+            response = CloseFailureResponse(
+                synthetic_provider_response(prompt, "MUST NOT ESCAPE")
+            )
+            runtime, request, exchange, _response = self.runtime_request(
+                Path(directory), response=response, input_text=prompt
+            )
+
+            try:
+                guest_response = runtime.generate(request, final=True)
+                code = None
+            except PolicyError as error:
+                guest_response = None
+                code = error.code
+
+            self.assertEqual(("MP306", None), (code, guest_response))
+            self.assertEqual("MP306", runtime.terminal.code)
+            self.assertEqual(1, len(exchange.requests))
+            self.assertTrue(response.closed)
+            records = [
+                json.loads(line)
+                for line in (Path(directory) / "receipts.jsonl")
+                .read_text("utf-8")
+                .splitlines()
+            ]
+            self.assertEqual("MP306", records[-1]["outcome_code"])
+
+    def test_receipt_target_refusal_closes_constructor_authority(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "receipts.jsonl"
+            target.write_text("pre-existing", encoding="utf-8")
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response("unused", "UNUSED")
+                    )
+                ),
+            )
+            closed_sessions = []
+            closer = mock.Mock()
+            original_close = ProviderSession.close
+
+            def observed_close(session):
+                closed_sessions.append(session)
+                original_close(session)
+
+            with mock.patch.object(
+                ProviderSession,
+                "close",
+                autospec=True,
+                side_effect=observed_close,
+            ):
+                try:
+                    ModelProxyRuntime(
+                        self.policy,
+                        connector,
+                        target,
+                        credential_source=lambda _name: self.credential,
+                        monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                        wall_clock=MutableClock(self.START_WALL_NS),
+                        io_closer=closer,
+                    )
+                    code = None
+                except PolicyError as error:
+                    code = error.code
+
+            self.assertEqual("MP407", code)
+            self.assertEqual(1, len(closed_sessions))
+            self.assertIsNone(closed_sessions[0]._credential_source)
+            self.assertIsNone(closed_sessions[0]._connector)
+            closer.assert_called_once_with()
+
+    def test_terminal_paths_refuse_truncated_and_unserved_guest_frames(self):
+        def connector_for(input_text):
+            return HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response(input_text, "MUST NOT ESCAPE")
+                    )
+                ),
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            exchange = HTTPSExchangeFixture(
+                BufferedHTTPSResponse(
+                    synthetic_provider_response("truncated", "MUST NOT ESCAPE")
+                )
+            )
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "partial.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            request = runtime.feed(request_frame("truncated") + b"\x00\x00")[0]
+            try:
+                guest_response = runtime.generate(request, final=True)
+                code = None
+            except PolicyError as error:
+                guest_response = None
+                code = error.code
+            self.assertEqual(("MP202", None), (code, guest_response))
+            self.assertEqual("MP202", runtime.terminal.code)
+            self.assertEqual([], exchange.requests)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            exchange = HTTPSExchangeFixture(
+                BufferedHTTPSResponse(
+                    synthetic_provider_response("first", "MUST NOT ESCAPE")
+                )
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                HTTPSConnector(
+                    self.profile,
+                    resolver=lambda _hostname, _port: ("8.8.8.8",),
+                    exchange=exchange,
+                ),
+                root / "pending-final.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            requests = runtime.feed(
+                request_frame("first") + request_frame("unserved second")
+            )
+            runtime.finish_input()
+            try:
+                guest_response = runtime.generate(requests[0], final=True)
+                code = None
+            except PolicyError as error:
+                guest_response = None
+                code = error.code
+            self.assertEqual(("MP401", None), (code, guest_response))
+            self.assertEqual("MP401", runtime.terminal.code)
+            self.assertEqual(1, len(exchange.requests))
+
+        with tempfile.TemporaryDirectory() as directory:
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector_for("pending completion"),
+                Path(directory) / "pending-complete.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            runtime.feed(request_frame("pending completion"))
+            runtime.finish_input()
+            try:
+                runtime.complete_job()
+                code = None
+            except PolicyError as error:
+                code = error.code
+            self.assertEqual("MP401", code)
+            self.assertEqual("MP401", runtime.terminal.code)
+
     def test_restart_cannot_resume_an_existing_receipt_target(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

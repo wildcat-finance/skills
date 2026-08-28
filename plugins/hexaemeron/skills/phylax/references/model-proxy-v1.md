@@ -193,6 +193,8 @@ guest cannot submit a response object or choose its sequence.
 Response object names are sorted by the canonical JSON rule, making equal
 sequence and output values byte-identical. A response carries no provider id,
 request id, model, usage claim, header, URL, raw error, or lifecycle field.
+A normal terminal transition first requires an unambiguous guest EOF and
+refuses while any admitted request remains unserved.
 
 ## Admission-bound provider mapping
 
@@ -244,6 +246,8 @@ passes the profile hostname to TLS. It neither consults proxy environment
 variables nor implements CONNECT. The response peer address must equal the
 selected address, preventing a second resolver decision from changing the
 target. HTTP status 300 through 399 is terminal; no redirect is followed.
+Failure to close an obtained response is a transport refusal, and the
+corresponding guest output is withheld.
 
 Only status 200, `Content-Type: application/json`, absent or identity content
 encoding, and absent or chunked transfer encoding are admitted. Response
@@ -372,10 +376,16 @@ controller retains one terminal snapshot; another terminal call does not
 create another receipt. A final-response completion that finds another active
 reservation still finalises the resulting refusal before returning it; cleanup
 and terminal evidence do not depend on that other caller running afterwards.
+The final-response path validates the guest EOF before provider disclosure and
+withholds its already normalised response if a later admitted request remains
+unserved. Direct completion applies the same EOF and pending-admission checks.
 
 ## Content-free receipt file
 
 `ReceiptSink` creates one new file with exclusive creation and mode `0600`.
+If that initial creation refuses, runtime construction erases the provider
+session's credential and connector references and invokes the trusted I/O
+closer before propagating the refusal.
 It walks every parent directory and opens the final target with no-follow
 flags. A symbolic link, directory, existing path, missing parent, replacement,
 or changed inode refuses. Keeping the descriptor open is not enough. The sink
@@ -685,4 +695,5 @@ restart refusals, both expiry domains, cancellation and late responses,
 ordered concurrent provider turns, quota and active-completion terminalisation,
 provider-usage disagreement, receipt schema and filesystem failures including
 ancestor replacement and parent-directory synchronisation, content absence,
-cleanup and terminal publication failure, and operator-text parity.
+constructor cleanup, response-close and terminal publication failure,
+truncated terminal input, unserved admission refusal, and operator-text parity.
