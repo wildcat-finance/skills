@@ -145,6 +145,31 @@ class VersionRelationTests(HexctlCase):
             )
         self.assertIn("rewrites its required prefix", stderr.getvalue())
 
+    def test_resolution_refuses_a_generation_row_inside_a_fenced_specimen(self):
+        module, anchor_commit, anchor = self._capture_chain_anchor()
+        candidate = self.chain_ledger("fiat", (2, 3))
+        generation = next(
+            line
+            for line in candidate.splitlines(keepends=True)
+            if "`fiat-v1.3.3` | generation" in line
+        )
+        candidate = candidate.replace(
+            generation,
+            "```markdown\n" + generation + "```\n",
+        )
+        self.write(self.ledger_path("fiat"), candidate)
+        self.write(self.skill_path("fiat"), self.skill("fiat", (1, 3, 3)))
+        self.git("add", "-A")
+        self.git("commit", "-m", "quote candidate generation")
+        head_commit = self.git("rev-parse", "HEAD").stdout.strip()
+
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module.resolve_version_relation_target(
+                self.dir, anchor_commit, anchor_commit, head_commit, anchor
+            )
+        self.assertIn("header does not match its final history row", stderr.getvalue())
+
     def test_resolution_history_enforces_evolution_and_epoch_digest_rules(self):
         module = hexctl_module()
         unchanged = "a" * 64

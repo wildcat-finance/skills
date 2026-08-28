@@ -2110,6 +2110,33 @@ def _contains_nonprinting_character(value: str) -> bool:
     return any(not character.isprintable() for character in value)
 
 
+def _unfenced_markdown_lines(text: str) -> list[str]:
+    """Return physical Markdown lines that are not inside fenced code.
+
+    Version evidence has to come from the live ledger, not from a quoted
+    specimen that happens to use the same row or header spelling.  Keep the
+    physical line endings so history-prefix receipts still bind exact bytes.
+    """
+    visible = []
+    open_mark = None
+    open_length = None
+    for physical in text.splitlines(keepends=True):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is not None:
+            sequence = fence.group("mark")
+            mark = sequence[0]
+            info = fence.group("info").strip()
+            if open_mark is None:
+                open_mark, open_length = mark, len(sequence)
+            elif mark == open_mark and len(sequence) >= open_length and not info:
+                open_mark, open_length = None, None
+            continue
+        if open_mark is None:
+            visible.append(physical)
+    return visible
+
+
 def _version_relation_path_fault(value: str, skill: str) -> str | None:
     """Return the lexical fault for one governed ledger path, if any."""
     if not isinstance(value, str):
@@ -2669,7 +2696,11 @@ def read_commit_blob(
 
 def _ledger_field_bytes(text: str, name: str, label: str) -> tuple[str, bytes]:
     prefix = f"- {name}: "
-    values = [line[len(prefix) :] for line in text.splitlines() if line.startswith(prefix)]
+    values = [
+        line[len(prefix) :]
+        for physical in _unfenced_markdown_lines(text)
+        if (line := physical.rstrip("\r\n")).startswith(prefix)
+    ]
     if len(values) != 1 or not values[0]:
         die(f"{label} has a missing or ambiguous {name} field")
     return values[0].strip().strip("`"), values[0].encode("utf-8")
@@ -2918,12 +2949,21 @@ def version_relations_packet(receipt: dict, resolution: dict | None = None) -> d
 
 def _ledger_history_records(text: str, skill: str, label: str) -> list[dict]:
     """Parse and validate every governed history row, retaining exact bytes."""
-    history_index = text.find("## History")
-    if history_index < 0:
+    visible = _unfenced_markdown_lines(text)
+    headings = [
+        index
+        for index, physical in enumerate(visible)
+        if physical.rstrip("\r\n") == "## History"
+    ]
+    if not headings:
         die(f"{label} has no History section")
+    if len(headings) != 1:
+        die(f"{label} has an ambiguous History section")
     rows = []
-    for physical in text[history_index:].splitlines(keepends=True):
+    for physical in visible[headings[0] + 1 :]:
         line = physical.rstrip("\r\n")
+        if re.match(r"^ {0,3}#{1,2}(?:[ \t]+|$)", line):
+            break
         match = LEDGER_ROW.fullmatch(line) or LEDGER_ROW_COMPACT.fullmatch(line)
         if match is None:
             if line.startswith("| `") or line.startswith("- `"):
