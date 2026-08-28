@@ -72,6 +72,11 @@ BEREAN_PROMOTIONS_FILE = "promotions.jsonl"
 BEREAN_PROMOTION_FORMAT = "berean-promotion/v1"
 BEREAN_PROMOTION_ACTIONS = ("promote", "rollback")
 BEREAN_MAX_PROMOTION_RECORDS = 1000
+BEREAN_EVALUATION_RESULT_FIELDS = ("thresholds", "cases", "passed", "failed")
+BEREAN_THRESHOLD_FIELDS = ("failures_allowed",)
+FORBIDDEN_BEREAN_RESULT_KEYS = frozenset(
+    BEREAN_EVALUATION_RESULT_FIELDS + BEREAN_THRESHOLD_FIELDS
+)
 
 COMPONENT_FIELDS = ("name", "path", "sha256", "bytes")
 RELEASE_FIELDS = ("format", "release_version", "release_digest", "document")
@@ -453,6 +458,29 @@ def component_faults(statement):
                 % (index + 1)
             )
 
+    # A claim can carry more than one algorithm. Gate 1 accepts it when one
+    # statement subject agrees on every shared algorithm, which deliberately
+    # permits transition metadata that the matching subject does not yet carry.
+    # It must not, however, bridge two identities already established by this
+    # statement: that would make one claim about two different byte subjects.
+    claims = core_predicate.claims(statement.predicate) or []
+    for index, claim in enumerate(claims[:MAX_CLAIMS]):
+        claim_digest = claim.get("subject") if isinstance(claim, dict) else None
+        if not isinstance(claim_digest, dict):
+            continue
+        owners = set()
+        for position, (algorithm, value) in enumerate(claim_digest.items()):
+            if position >= MAX_DIGEST_ALGORITHMS:
+                break
+            owner = supported_digest_owners.get((algorithm, value))
+            if owner is not None:
+                owners.add(owner)
+        if len(owners) > 1:
+            faults.append(
+                "claim %d maps supported digests to conflicting sha256 identities"
+                % (index + 1)
+            )
+
     names = {}
     paths = {}
     valid_digests = set()
@@ -565,6 +593,48 @@ def _policy_faults(predicate):
     if policy.get("retention") not in BEREAN_RETENTION:
         faults.append("policy retention is outside %s" % ", ".join(BEREAN_RETENTION))
     return faults
+
+
+def _berean_result_keys(value):
+    """The closed Berean result vocabulary projected through an open object."""
+    found = set()
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, dict):
+            for key, child in current.items():
+                if key in FORBIDDEN_BEREAN_RESULT_KEYS:
+                    found.add(key)
+                pending.append(child)
+        elif isinstance(current, list):
+            pending.extend(current)
+    return found
+
+
+def _result_projection_faults(statement):
+    """Refuse Berean thresholds and result counts on open extension surfaces."""
+    surfaces = []
+    predicate = statement.predicate
+    if isinstance(predicate, dict):
+        for field, limit in (("claims", MAX_CLAIMS), ("commands", MAX_COMMANDS)):
+            entries = predicate.get(field)
+            if not isinstance(entries, list):
+                continue
+            for entry in entries[:limit]:
+                if isinstance(entry, dict) and isinstance(entry.get("detail"), dict):
+                    surfaces.append(entry["detail"])
+    for subject in statement.subjects[:MAX_SUBJECTS]:
+        surfaces.append(subject.extra)
+
+    found = set()
+    for surface in surfaces:
+        found.update(_berean_result_keys(surface))
+    if not found:
+        return []
+    return [
+        "statement projects Berean evaluation threshold or result key(s): %s"
+        % ", ".join(sorted(found))
+    ]
 
 
 def _adapter_faults(predicate):
@@ -1005,13 +1075,14 @@ def gate_optional_evidence(statement):
 
 def gate_evidence_boundary(statement):
     faults = _policy_faults(statement.predicate)
+    faults.extend(_result_projection_faults(statement))
     return Gate(
         None,
         "evidence-boundary",
         not faults,
         "; ".join(faults)
         if faults
-        else "Berean source and evidence classes are preserved without upgrade",
+        else "Berean source and evidence classes are preserved without upgrade or result projection",
     )
 
 

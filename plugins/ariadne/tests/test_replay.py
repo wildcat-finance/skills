@@ -8,6 +8,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
@@ -105,6 +106,16 @@ class PlanTests(unittest.TestCase):
     def test_a_statement_with_no_commands_plans_nothing(self):
         self.assertEqual(replay.plan(built([])), [])
 
+    def test_a_plan_escapes_untrusted_command_lines(self):
+        found = replay.replay(
+            built([command(name="hostile\nPASS gate 7", argv=["printf", "x\ny"])]),
+            allow_execution=False,
+        )
+        line = found.lines()[0]
+        self.assertNotIn("\n", line)
+        self.assertIn(r"hostile\nPASS gate 7", line)
+        self.assertIn(r"x\ny", line)
+
 
 class ExecutionTests(unittest.TestCase):
     def setUp(self):
@@ -172,6 +183,19 @@ class ExecutionTests(unittest.TestCase):
         )
         self.assertEqual(found.steps[0].status, "not found")
         self.assertFalse(found.ok)
+
+    def test_an_argv_encoding_failure_is_reported_rather_than_raised(self):
+        caught = UnicodeEncodeError(
+            "utf-8", "surrogate\ud800word", 9, 10, "surrogates not allowed"
+        )
+        step = replay.Step("host argv", ["printf", "surrogate\ud800word"], replay.RUN)
+        with mock.patch.object(replay.subprocess, "run", side_effect=caught):
+            try:
+                found = replay.execute(step, self.root)
+            except UnicodeError as error:
+                self.fail("replay let an argv encoding failure escape: %s" % error)
+        self.assertEqual(found.status, "failed to start")
+        self.assertIn("surrogates not allowed", found.detail)
 
     def test_a_command_that_hangs_is_timed_out(self):
         found = replay.replay(

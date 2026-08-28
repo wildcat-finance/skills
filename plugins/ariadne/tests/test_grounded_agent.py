@@ -17,7 +17,7 @@ from . import run_tests as delivery_runner
 from . import support  # noqa: F401  (sets sys.path)
 
 import ariadne  # noqa: E402
-from ariadne_lib import digests, envelope, registry, statement, verify  # noqa: E402
+from ariadne_lib import digests, envelope, registry, replay, statement, verify  # noqa: E402
 from ariadne_lib.predicates import grounded_agent as agent  # noqa: E402
 
 
@@ -479,6 +479,29 @@ class ComponentTests(unittest.TestCase):
         )
         self.assertTrue(named("components", body, outer).passed)
 
+    def test_a_claim_digest_cannot_bridge_two_subject_identities(self):
+        body = predicate()
+        outer = subjects(body)
+        outer[1]["digest"]["sha384"] = "c" * 96
+        body["claims"] = [
+            {
+                "name": "split identity",
+                "subject": {
+                    "sha256": outer[0]["digest"]["sha256"],
+                    "sha384": outer[1]["digest"]["sha384"],
+                },
+                "disposition": "passed",
+            }
+        ]
+        gate_one = next(
+            found for found in report(body, outer).gates if found.number == 1
+        )
+        self.assertTrue(gate_one.passed)
+        found = named("components", body, outer)
+        self.assertFalse(found.passed)
+        self.assertIn("claim 1", found.detail)
+        self.assertIn("conflicting sha256 identities", found.detail)
+
     def test_unsafe_component_paths_are_refused(self):
         for path in (
             "/absolute.json",
@@ -879,6 +902,65 @@ class EvidenceBoundaryTests(unittest.TestCase):
         gate = next(found for found in report(body).gates if found.number == 7)
         self.assertFalse(gate.passed)
         self.assertIn("verified_by", gate.detail)
+
+    def test_berean_results_cannot_hide_in_open_extension_objects(self):
+        body = predicate()
+        body["claims"] = [
+            {
+                "name": "evaluation result",
+                "subject": {"sha256": body["release"]["document"]["sha256"]},
+                "disposition": "passed",
+                "detail": {
+                    "evals": {
+                        "thresholds": {"failures_allowed": 0},
+                        "cases": 10,
+                        "passed": 10,
+                        "failed": 0,
+                    }
+                },
+            }
+        ]
+        found = named("evidence-boundary", body)
+        self.assertFalse(found.passed)
+        for key in agent.FORBIDDEN_BEREAN_RESULT_KEYS:
+            with self.subTest(surface="claim detail", key=key):
+                self.assertIn(key, found.detail)
+
+        body = predicate()
+        body["commands"] = [
+            {
+                "name": "recorded evaluation",
+                "argv": ["true"],
+                "determinism": "nondeterministic",
+                "detail": {"nested": [{"passed": 1}]},
+            }
+        ]
+        self.assertFalse(named("evidence-boundary", body).passed)
+
+        body = predicate()
+        outer = subjects(body)
+        outer[0]["annotations"] = {"evaluation": {"failed": 0}}
+        self.assertFalse(named("evidence-boundary", body, outer).passed)
+
+
+class GroundedReplayBoundaryTests(unittest.TestCase):
+    def test_an_all_green_command_with_an_os_invalid_word_is_contained(self):
+        body = predicate()
+        body["commands"] = [
+            {
+                "name": "host argv",
+                "argv": ["printf", "nul\x00word"],
+                "determinism": "exact",
+                "output_digest": {"sha256": hex_digest("expected output")},
+            }
+        ]
+        self.assertTrue(report(body).ok)
+        try:
+            found = replay.replay(built(body), allow_execution=True, cwd=".")
+        except (UnicodeError, ValueError) as error:
+            self.fail("replay let an argv input failure escape: %s" % error)
+        self.assertFalse(found.ok)
+        self.assertEqual(found.steps[0].status, "failed to start")
 
 
 class RunnerTests(unittest.TestCase):

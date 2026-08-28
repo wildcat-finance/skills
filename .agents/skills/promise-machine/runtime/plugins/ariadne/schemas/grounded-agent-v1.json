@@ -559,7 +559,14 @@
             "maxLength": 4096
           },
           "detail": {
-            "type": "object"
+            "allOf": [
+              {
+                "type": "object"
+              },
+              {
+                "$ref": "#/$defs/noBereanResults"
+              }
+            ]
           }
         },
         "allOf": [
@@ -623,7 +630,14 @@
             "$ref": "#/$defs/digest"
           },
           "detail": {
-            "type": "object"
+            "allOf": [
+              {
+                "type": "object"
+              },
+              {
+                "$ref": "#/$defs/noBereanResults"
+              }
+            ]
           }
         },
         "allOf": [
@@ -763,6 +777,41 @@
           "required": [
             "sha512"
           ]
+        }
+      ]
+    },
+    "noBereanResults": {
+      "allOf": [
+        {
+          "if": {
+            "type": "object"
+          },
+          "then": {
+            "propertyNames": {
+              "not": {
+                "enum": [
+                  "thresholds",
+                  "cases",
+                  "passed",
+                  "failed",
+                  "failures_allowed"
+                ]
+              }
+            },
+            "additionalProperties": {
+              "$ref": "#/$defs/noBereanResults"
+            }
+          }
+        },
+        {
+          "if": {
+            "type": "array"
+          },
+          "then": {
+            "items": {
+              "$ref": "#/$defs/noBereanResults"
+            }
+          }
         }
       ]
     },

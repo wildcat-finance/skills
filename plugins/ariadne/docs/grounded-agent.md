@@ -48,7 +48,9 @@ paths, backslashes, empty or dot segments, parent traversal, oversized values
 and duplicate paths fail. Every component digest must appear in the in-toto
 subject array, and every subject must name a declared component. Subject aliases
 may add digest algorithms, but cannot give one `sha256` conflicting aliases or
-map one supported digest to different `sha256` identities.
+map one supported digest to different `sha256` identities. A claim likewise
+cannot combine supported aliases that the statement has already assigned to
+different `sha256` identities.
 
 Digest maps carry at most eight algorithms. Three slots cover Ariadne's current
 supported algorithms and five remain for transition metadata; wider claim or
@@ -66,8 +68,10 @@ A non-null promotion block binds the exact `promotions.jsonl` component, the
 a rollback cannot be the first record, and either terminal action requires the
 release's evaluation files. It deliberately has no `score`, `grade`, `verdict`,
 `threshold`, or `result count`. Those are evaluation conclusions, not Ariadne
-identity metadata. Unknown fields fail before any such vocabulary can acquire
-authority here.
+identity metadata. The exact Berean threshold and result-count keys are also
+refused recursively in claim details, command details and subject descriptor
+extensions, so an open core field cannot restore the projection that the closed
+promotion block omits.
 
 ## Gate 2: recoverable environment
 
@@ -92,8 +96,9 @@ authorship or verification identity keys that Ariadne did not authenticate.
 
 After gates 2 and 5, named checks report the closed field shape, component and
 subject coverage, semantic release digest, explicit optional evidence, unchanged
-evidence boundary, and portable subject names. Each failing line names the
-affected gate or check and the field to repair.
+evidence boundary without evaluation-result projection, and portable subject
+names. Each failing line names the affected gate or check and the field to
+repair.
 
 ## Published schema
 

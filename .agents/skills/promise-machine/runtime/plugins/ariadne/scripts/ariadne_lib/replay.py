@@ -19,12 +19,14 @@ runs through a shell, and three shapes are refused outright:
 
 None of that is a sandbox. Replay runs the program named, with the arguments
 given, under the caller's own account. What it offers is that the choice is the
-caller's and the plan is printed first.
+caller's and the plan is printed first. Plan lines escape untrusted control
+characters, and an argv value the host cannot encode or start is a contained
+failure rather than an exception from the reader.
 """
 
 import subprocess
 
-from . import core_predicate, digests
+from . import core_predicate, digests, gates
 
 DEFAULT_TIMEOUT = 900
 
@@ -73,17 +75,19 @@ class Step(object):
 
     def line(self):
         if self.action != RUN:
-            return "%s: %s" % (self.name, self.action)
-        if self.status is None:
-            return "%s: would run %s" % (self.name, " ".join(self.argv))
-        outcome = "exit %s" % self.status
-        if self.compared is True:
-            outcome += ", output matches the recorded digest"
-        elif self.compared is False:
-            outcome += ", output does NOT match the recorded digest"
+            line = "%s: %s" % (self.name, self.action)
+        elif self.status is None:
+            line = "%s: would run %s" % (self.name, " ".join(self.argv))
         else:
-            outcome += ", not compared (%s)" % self.detail
-        return "%s: %s" % (self.name, outcome)
+            outcome = "exit %s" % self.status
+            if self.compared is True:
+                outcome += ", output matches the recorded digest"
+            elif self.compared is False:
+                outcome += ", output does NOT match the recorded digest"
+            else:
+                outcome += ", not compared (%s)" % self.detail
+            line = "%s: %s" % (self.name, outcome)
+        return gates.one_line(line)
 
     def to_dict(self):
         return {
@@ -158,7 +162,10 @@ def execute(step, cwd, timeout=DEFAULT_TIMEOUT):
         step.status = "timed out"
         step.detail = "after %d seconds" % timeout
         return step
-    except OSError as error:
+    except (OSError, ValueError) as error:
+        # A parsed JSON string may contain a NUL or a Unicode value this host
+        # cannot put into an OS argv. Those are hostile input failures, not a
+        # reason for the replay reader to escape with an exception.
         step.status = "failed to start"
         step.detail = str(error)
         return step

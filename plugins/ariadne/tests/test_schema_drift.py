@@ -897,6 +897,28 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
             command_rules,
         )
 
+    def test_open_core_details_recursively_refuse_berean_result_fields(self):
+        result_shape = self.schema["$defs"].get("noBereanResults")
+        self.assertIsNotNone(result_shape)
+        refused = result_shape["allOf"][0]["then"]["propertyNames"]["not"][
+            "enum"
+        ]
+        self.assertEqual(
+            refused,
+            list(
+                getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ())
+                + getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ())
+            ),
+        )
+        recursive = {"$ref": "#/$defs/noBereanResults"}
+        self.assertEqual(
+            result_shape["allOf"][0]["then"]["additionalProperties"], recursive
+        )
+        self.assertEqual(result_shape["allOf"][1]["then"]["items"], recursive)
+        for collection in ("claims", "commands"):
+            detail = self.properties[collection]["items"]["properties"]["detail"]
+            self.assertIn(recursive, detail["allOf"])
+
     def test_the_schema_is_committed_as_readable_json(self):
         with open(GROUNDED_AGENT_SCHEMA, "rb") as handle:
             raw = handle.read()
@@ -963,6 +985,14 @@ class BereanPublicConstantDriftTests(unittest.TestCase):
         self.assertEqual(promotion["ACTIONS"], grounded_agent.BEREAN_PROMOTION_ACTIONS)
         self.assertEqual(
             promotion.get("MAX_RECORDS"), limit
+        )
+        self.assertEqual(
+            promotion["EVALS_FIELDS"][2:],
+            getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ()),
+        )
+        self.assertEqual(
+            promotion["THRESHOLD_FIELDS"],
+            getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ()),
         )
 
 
