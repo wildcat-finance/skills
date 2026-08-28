@@ -154,6 +154,74 @@ class ReportTests(unittest.TestCase):
         self.assertFalse(report.ok)
         self.assertIn("not a gate", "\n".join(report.lines()))
 
+    def test_predicate_gate_fields_are_validated_before_the_report_trusts_them(self):
+        cases = (
+            ("number", "2"),
+            ("number", 2.0),
+            ("number", 1),
+            ("name", 17),
+            ("passed", "false"),
+            ("detail", {"unexpected": "shape"}),
+        )
+        observed = []
+        for field, value in cases:
+            first = gates.Gate(2, "environment", True, "recorded")
+            setattr(first, field, value)
+            returned = [first, gates.Gate(5, "comparison", True, "recorded")]
+
+            class Malformed(object):
+                TYPE = TYPE
+                SUMMARY = "a predicate returning a malformed gate"
+
+                @staticmethod
+                def check(statement):
+                    return returned
+
+            known = registry.Registry()
+            known.register(Malformed)
+            try:
+                report = verify.report(document(), known)
+                rendered = report.to_dict()
+                lines = "\n".join(report.lines())
+                outcome = (
+                    report.ok,
+                    report.predicate_gates_checked,
+                    report.missing_predicate_gates,
+                    "malformed gate" in lines,
+                    all(type(gate.get("passed")) is bool for gate in rendered["gates"]),
+                )
+            except Exception as error:  # noqa: BLE001 -- a crash is the observed result
+                outcome = ("raised", type(error).__name__)
+            observed.append((field, type(value).__name__, outcome))
+
+        expected = [
+            (field, type(value).__name__, (False, False, (2, 5), True, True))
+            for field, value in cases
+        ]
+        self.assertEqual(observed, expected)
+
+    def test_an_exception_with_an_unprintable_message_still_becomes_a_gate(self):
+        class Unprintable(Exception):
+            def __str__(self):
+                raise RuntimeError("message rendering broke")
+
+        class Broken(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate whose exception cannot be rendered"
+
+            @staticmethod
+            def check(statement):
+                raise Unprintable()
+
+        known = registry.Registry()
+        known.register(Broken)
+        try:
+            report = verify.report(document(), known)
+            outcome = (report.ok, "raised while checking" in "\n".join(report.lines()))
+        except Exception as error:  # noqa: BLE001 -- a crash is the observed result
+            outcome = ("raised", type(error).__name__)
+        self.assertEqual(outcome, (False, True))
+
     def test_a_signed_document_reports_that_signatures_went_unchecked(self):
         payload = json.dumps(
             {

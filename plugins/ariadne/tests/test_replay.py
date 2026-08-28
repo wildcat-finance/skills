@@ -432,6 +432,41 @@ class CommandTests(unittest.TestCase):
             self.assertFalse(os.path.exists(marker))
             self.assertIn("requires registered checks", err)
 
+    def test_malformed_predicate_gate_verdicts_cannot_authorise_execution(self):
+        class Malformed(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate whose failed verdicts have the wrong type"
+
+            @staticmethod
+            def check(statement):
+                return [
+                    gates.Gate(2, "environment", "false", "rejected"),
+                    gates.Gate(5, "comparison", "false", "rejected"),
+                ]
+
+        known = registry.Registry()
+        known.register(Malformed)
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "malformed-gates.json")
+            marker = os.path.join(root, "replay-ran")
+            raw = built([command(argv=["touch", "replay-ran"])]).to_json()
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(raw)
+            with mock.patch.object(ariadne.registry, "DEFAULT", known):
+                code, _, err = run(
+                    [
+                        "replay",
+                        path,
+                        "--allow-execution",
+                        "--project",
+                        root,
+                    ]
+                )
+            self.assertEqual(code, 1)
+            self.assertFalse(os.path.exists(marker))
+            self.assertIn("does not verify", err)
+            self.assertIn("requires registered checks", err)
+
     def test_the_json_plan_is_machine_readable(self):
         code, out, _ = run(
             ["replay", os.path.join(EXAMPLES, "escrow-v1.1.0.json"), "--json"]

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 13961197,
+    "bytes_blob": 13981611,
     "bytes_generated": 98
   },
   "entries": [
@@ -35,14 +35,14 @@
       "path": "audit/rounds/fiat-383-prove-receipts-against-the-captured-header-s.synopsis.md"
     },
     {
-      "bytes": 143570,
+      "bytes": 153755,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 71785",
+      "evidence": "no newline in a 2048-byte window at offset 76877 of 153755 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-402-implement-the-grounded-agent-predicate.md"
     },
     {
-      "bytes": 144805,
+      "bytes": 155034,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

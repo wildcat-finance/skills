@@ -11,6 +11,66 @@ from . import gates as gates_module
 from . import registry as registry_module
 
 
+def _predicate_failure(predicate_type, detail):
+    return gates_module.Gate(
+        None,
+        "predicate-check",
+        False,
+        "%s %s" % (predicate_type, detail),
+    )
+
+
+def _exception_text(error):
+    try:
+        return str(error)
+    except Exception:  # noqa: BLE001 -- diagnostics must not replace the first failure
+        return "<unprintable %s>" % type(error).__name__
+
+
+def _validated_predicate_gates(predicate_type, entries):
+    """Snapshot one module's gates only after their shared shape is sound."""
+    found = []
+    for entry in entries:
+        if not isinstance(entry, gates_module.Gate):
+            return [
+                _predicate_failure(
+                    predicate_type,
+                    "returned something that is not a gate",
+                )
+            ]
+        try:
+            number = entry.number
+            name = entry.name
+            passed = entry.passed
+            detail = entry.detail
+        except Exception:  # noqa: BLE001 -- a broken module remains a failed check
+            return [
+                _predicate_failure(predicate_type, "returned a malformed gate")
+            ]
+        if (
+            number is not None
+            and (
+                type(number) is not int
+                or number not in gates_module.PREDICATE_GATES
+            )
+        ):
+            return [
+                _predicate_failure(predicate_type, "returned a malformed gate")
+            ]
+        if (
+            type(name) is not str
+            or type(passed) is not bool
+            or type(detail) is not str
+        ):
+            return [
+                _predicate_failure(predicate_type, "returned a malformed gate")
+            ]
+        # Copy the fields into the verifier's Gate class. A module-provided
+        # subclass cannot then change how the report orders or renders it.
+        found.append(gates_module.Gate(number, name, passed, detail))
+    return found
+
+
 class Report(object):
     def __init__(self, document, gates, predicate_module, predicate_ran=False):
         self.document = document
@@ -137,27 +197,14 @@ def report(document, registry=None):
             # it. An escaping exception exits 1, the code that means a gate was
             # breached, and buries the core gates that did run.
             added = [
-                gates_module.Gate(
-                    None,
-                    "predicate-check",
-                    False,
-                    "%s raised while checking: %s"
-                    % (statement.predicate_type, error),
+                _predicate_failure(
+                    statement.predicate_type,
+                    "raised while checking: %s" % _exception_text(error),
                 )
             ]
             ran = True
         else:
-            stray = [entry for entry in added if not isinstance(entry, gates_module.Gate)]
-            if stray:
-                added = [
-                    gates_module.Gate(
-                        None,
-                        "predicate-check",
-                        False,
-                        "%s returned something that is not a gate"
-                        % statement.predicate_type,
-                    )
-                ]
+            added = _validated_predicate_gates(statement.predicate_type, added)
             ran = bool(added)
         found.extend(added)
 
