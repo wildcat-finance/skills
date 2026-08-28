@@ -1389,6 +1389,194 @@ class VersionRelationTests(HexctlCase):
             before,
         )
 
+    def _sync_receipt_state(self, product_head):
+        return {
+            "phase": "integrate",
+            "halted": None,
+            "base": self.git("rev-list", "--max-parents=0", "HEAD").stdout.strip(),
+            "run_branch": "fiat/native-sync-evidence",
+            "config": {"git": {"base": "main"}},
+            "receipts": {},
+            "steps": [{"n": 1, "receipts": {}, "audit": {}}],
+            "integrate": {
+                "merged": [1],
+                "merges": {"1": {"merge_commit": product_head}},
+            },
+        }
+
+    def _receipt_sync_without_external_effects(
+        self, module, state, sync_head, base_head
+    ):
+        args = SimpleNamespace(
+            dir=self.target,
+            commit=sync_head,
+            base_commit=base_head,
+            revalidation="ignored.json",
+            supersede_sync=None,
+            reason=None,
+        )
+        with (
+            mock.patch.object(module, "verify_run"),
+            mock.patch.object(
+                module, "_integrate_directive", return_value={"do": "integrate"}
+            ),
+            mock.patch.object(
+                module, "remote_branch_tip", side_effect=[sync_head, base_head]
+            ),
+            mock.patch.object(
+                module,
+                "integration_revalidation_record",
+                return_value={"checks": []},
+            ),
+            mock.patch.object(
+                module, "verify_local_commit", return_value=sync_head
+            ),
+            mock.patch.object(
+                module, "verify_github_commits", return_value=[sync_head]
+            ),
+            mock.patch.object(module, "commit"),
+        ):
+            module.done_sync_run(args, state)
+
+    def test_sync_receipt_parent_proof_ignores_git_replacement_objects(self):
+        module = hexctl_module()
+        root = self.git("rev-parse", "HEAD").stdout.strip()
+        tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
+        product = self.git(
+            "commit-tree", tree, "-p", root, "-m", "native product"
+        ).stdout.strip()
+        base = self.git(
+            "commit-tree", tree, "-p", root, "-m", "native base"
+        ).stdout.strip()
+        sync = self.git(
+            "commit-tree", tree, "-p", base, "-p", product,
+            "-m", "native wrong parent order",
+        ).stdout.strip()
+        replacement = self.git(
+            "commit-tree", tree, "-p", product, "-p", base,
+            "-m", "replacement expected parent order",
+        ).stdout.strip()
+        self.git("replace", sync, replacement)
+
+        self.assertEqual(
+            module.commit_parents(self.target, sync, "fixture"), [product, base]
+        )
+        self.assertEqual(
+            module._native_relation_parents(self.target, sync, "fixture"),
+            [base, product],
+        )
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            self._receipt_sync_without_external_effects(
+                module, self._sync_receipt_state(product), sync, base
+            )
+        self.assertIn("parents", stderr.getvalue())
+
+    def test_sync_receipt_refuses_shallow_history_before_native_path_proof(self):
+        module = hexctl_module()
+        root = self.git("rev-parse", "HEAD").stdout.strip()
+        tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
+        product = self.git(
+            "commit-tree", tree, "-p", root, "-m", "shallow product"
+        ).stdout.strip()
+        base = self.git(
+            "commit-tree", tree, "-p", root, "-m", "shallow base"
+        ).stdout.strip()
+        sync = self.git(
+            "commit-tree", tree, "-p", product, "-p", base,
+            "-m", "shallow sync",
+        ).stdout.strip()
+        shallow = self.git(
+            "rev-parse", "--path-format=absolute", "--git-path", "shallow"
+        ).stdout.strip()
+        with open(shallow, "w", encoding="ascii") as handle:
+            handle.write(root + "\n")
+
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+            self._receipt_sync_without_external_effects(
+                module, self._sync_receipt_state(product), sync, base
+            )
+        self.assertIn("history is shallow", stderr.getvalue())
+
+    def test_sync_receipt_remote_proof_ignores_inherited_git_repository(self):
+        module = hexctl_module()
+        root = self.git("rev-parse", "HEAD").stdout.strip()
+        tree = self.git("rev-parse", "HEAD^{tree}").stdout.strip()
+        product = self.git(
+            "commit-tree", tree, "-p", root, "-m", "native product"
+        ).stdout.strip()
+        base = self.git(
+            "commit-tree", tree, "-p", root, "-m", "native base"
+        ).stdout.strip()
+        sync = self.git(
+            "commit-tree", tree, "-p", product, "-p", base,
+            "-m", "native sync",
+        ).stdout.strip()
+        self.git("branch", "sync-proof-product", product)
+        self.git("branch", "sync-proof-base", base)
+        self.git("branch", "sync-proof-merge", sync)
+        self.git("remote", "add", "origin", self.target)
+
+        with tempfile.TemporaryDirectory() as parent:
+            attacker = os.path.join(parent, "attacker")
+            subprocess.run(
+                ["git", "clone", "-q", self.target, attacker],
+                check=True,
+                capture_output=True,
+            )
+            for argv in (
+                ("checkout", "--detach"),
+                ("branch", "-f", "main", base),
+                ("branch", "-f", "fiat/native-sync-evidence", sync),
+                ("remote", "set-url", "origin", attacker),
+            ):
+                subprocess.run(
+                    ["git", *argv], cwd=attacker, check=True, capture_output=True
+                )
+
+            with (
+                mock.patch.dict(
+                    os.environ, {"GIT_DIR": os.path.join(attacker, ".git")}
+                ),
+                mock.patch.object(module, "verify_run"),
+                mock.patch.object(
+                    module, "_integrate_directive", return_value={"do": "integrate"}
+                ),
+                mock.patch.object(
+                    module,
+                    "integration_revalidation_record",
+                    return_value={"checks": []},
+                ),
+                mock.patch.object(
+                    module, "verify_local_commit", return_value=sync
+                ),
+                mock.patch.object(
+                    module, "verify_github_commits", return_value=[sync]
+                ),
+                mock.patch.object(module, "commit"),
+            ):
+                self.assertEqual(
+                    module.remote_branch_tip(
+                        self.target, "fiat/native-sync-evidence"
+                    ),
+                    sync,
+                )
+                stderr = io.StringIO()
+                with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module.done_sync_run(
+                        SimpleNamespace(
+                            dir=self.target,
+                            commit=sync,
+                            base_commit=base,
+                            revalidation="ignored.json",
+                            supersede_sync=None,
+                            reason=None,
+                        ),
+                        self._sync_receipt_state(product),
+                    )
+                self.assertIn("remote run branch tip", stderr.getvalue())
+
     def test_resolution_sync_refuses_missing_path_or_green_check_coverage(self):
         (
             module,

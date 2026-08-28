@@ -5180,12 +5180,19 @@ def done_sync_run(args, state: dict) -> None:
     base_tip = require_full_sha(args.base_commit, "run sync base commit")
     if current_sync and sync_tip == current_sync.get("commit"):
         die("replacement integration sync must use a new signed commit")
+    repository = _native_relation_repository_identity(args.dir)
+    _require_native_relation_history(args.dir)
     integration_base = integration_base_of(state)
-    remote_tip = remote_branch_tip(args.dir, run_branch_of(state))
+    remote_tip = remote_branch_tip(
+        args.dir, run_branch_of(state), native_relation=True
+    )
     if remote_tip != sync_tip:
         die("run sync commit does not match the remote run branch tip")
     remote_base = remote_branch_tip(
-        args.dir, integration_base, "remote base branch tip"
+        args.dir,
+        integration_base,
+        "remote base branch tip",
+        native_relation=True,
     )
     if remote_base != base_tip:
         die("run sync base commit does not match the remote base branch tip")
@@ -5193,7 +5200,7 @@ def done_sync_run(args, state: dict) -> None:
     merge_records = as_dict(integrate.get("merges"))
     final_merge = as_dict(merge_records.get(str(final_step))).get("merge_commit")
     recorded_tip = require_full_sha(final_merge, "final recorded step merge")
-    parents = commit_parents(args.dir, sync_tip, "run sync commit")
+    parents = _native_relation_parents(args.dir, sync_tip, "run sync commit")
     expected_parents = [recorded_tip, base_tip]
     if parents != expected_parents:
         die(
@@ -5211,6 +5218,9 @@ def done_sync_run(args, state: dict) -> None:
     )
     verify_local_commit(args.dir, sync_tip, "run branch integration sync")
     github_verified = verify_github_commits(args.dir, [sync_tip])
+    _require_native_relation_history(args.dir)
+    if _native_relation_repository_identity(args.dir) != repository:
+        die("integration sync repository changed during evidence collection")
     new_sync = {
         "commit": sync_tip,
         "base": integration_base,
