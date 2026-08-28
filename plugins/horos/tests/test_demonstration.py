@@ -51,6 +51,7 @@ class DemonstrationTests(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         shutil.copytree(EXAMPLE, self.root)
         git(self.root, "init", "-q")
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
         git(self.root, "add", "-A")
         git(self.root, "commit", "-qm", "example")
 

@@ -54,6 +54,9 @@ class UniverseTests(unittest.TestCase):
         self.root = self._tmp.name
         self.addCleanup(self._tmp.cleanup)
         git(self.root, "init", "-q")
+        # Fixture history is not signing evidence, so inherited signing must
+        # not decide whether the repository can be built.
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
         write(self.root, ".gitignore", "ignored.wasm\n")
         write(self.root, "src/app.py", "x = 1\n")
         write(self.root, "tracked.wasm", b"\x00asm\x01\x00\x00\x00")
@@ -132,6 +135,7 @@ class BindingDirectoryTests(unittest.TestCase):
         self.root = self._tmp.name
         self.addCleanup(self._tmp.cleanup)
         git(self.root, "init", "-q")
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
         write(self.root, ".gitignore", "node_modules/\nout/\nvendor-only/\n")
         write(self.root, "src/app.py", "value = 1\n")
 
@@ -193,6 +197,7 @@ class CandidateBindingTests(unittest.TestCase):
         self.root = self._tmp.name
         self.addCleanup(self._tmp.cleanup)
         git(self.root, "init", "-q")
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
         write(self.root, ".gitignore", "local/\n")
         write(self.root, "src/app.py", "value = 1\n")
         git(self.root, "add", ".")

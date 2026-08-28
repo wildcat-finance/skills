@@ -716,3 +716,94 @@ amendment itself makes necessary.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Tests: No new test module.
+`tests/test_disposable_fixture_signing.py` gains one enumeration entry per
+suite, each naming a representative test that commits fixture history: for the
+root suite a `GuardMutationTests` method, for Horos a `UniverseTests` method.
+The representative must be one that commits, never one that verifies a
+signature, because the enumeration's contract is exit 0 with an empty sentinel
+and a verifying test reaches the hostile signer through `git verify-commit`
+however correctly its fixtures declare the rule. Both existing suites keep their
+counts; the root suite and the Horos suite must report the same number of tests
+as at step 2's exit, plus whatever the enumeration itself adds.
+
+```text
+test command: /Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report {report}
+report format: unittest-json-v1
+expected report schema: elenchus.unittest.v1
+report file: .elenchus/fiat-621-step-3.json
+```
+
+Expected exact Elenchus result: `passed`. This delivery changes test files only,
+and the classifier copies a commit's changed test files onto its parent before
+running the declared command, so the fix travels with the guard and the parent
+cannot fail. Record that value; it is not a finding. `unguarded` is not the
+mechanical answer here and must not be recorded as one: the classifier reserves
+it for a commit that changed no test files at all, which was measured against
+`plugins/hexaemeron/skills/elenchus/scripts/elenchus.py:281` during step 2's
+audit. The acceptance evidence for this step is the pair of
+hostile-configuration commands in the exit above, not an Elenchus verdict.
+
+**Why.** The replaced field predicted `unguarded` on reasoning that was right
+about the mechanism and wrong about the label. Step 2's audit ran the classifier
+twice against exactly this shape of change and got `passed` both times, and
+found the branch that returns `unguarded` is reached only when a commit changes
+no test files. A step that instructs its auditor to record a value the tool does
+not produce invites either a false record or a wasted investigation. The
+representative-selection sentence is added because step 2's third round measured
+a verifying suite reaching the signer through `git verify-commit`, which the
+enumeration's contract cannot distinguish from a fixture signing itself.
+
+**Steps touched.** Step 3's tests.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Goal: Apply the rule to the six
+construction sites in the root and Horos suites, and extend the guard's
+enumeration to both.
+
+Complete replacement Files: Changed: `tests/test_boundary_currency.py` (the
+`GuardMutationTests` setup at line 166), `plugins/horos/tests/test_scoped_entry.py`
+(line 64), `plugins/horos/tests/test_demonstration.py` (line 53),
+`plugins/horos/tests/test_universe.py` (lines 56, 134 and 195),
+`tests/test_disposable_fixture_signing.py` (enumeration entries for both
+suites), and `docs/disposable-fixture-signing/runbook.md`, refreshed so the
+shipped copy stays byte-identical to the receipted artefact after the
+amendments this run has recorded since step 2.
+
+Each edit is one call, `git config --local commit.gpgsign false`, against the
+fixture repository, placed immediately after the `git init` that created it and
+before any other configuration. The three Horos modules each carry their own
+byte-identical `git(root, *args)` helper; the line goes at each call site, not
+into a shared module, per the study's section 3 non-goal. One comment per suite,
+not per site, says why the line is there: fixture history is not signing
+evidence, so inherited signing must not decide whether the repository can be
+built. Suite means the discovery unit the exit commands name, so the root suite
+takes one comment and the Horos suite takes one, placed at the first of its
+three sites. Do not touch `tests/test_boundary_currency.py:140` or
+`plugins/horos/tests/test_scoped_entry.py:140`; neither commits, and the study's
+section 2b records them as out of scope. Do not declare at
+`plugins/horos/tests/test_universe.py:247` either: it is a `worktree add` from
+the repository line 56 creates, and step 2's audit measured that a linked
+worktree inherits the declaration its source repository carries.
+
+**Why.** The goal said five sites where its own files list names six and the
+study's section 2b table records six; `test_universe.py` carries three. The
+count was the only thing wrong, and no exit criterion moved, but a shipped
+runbook that miscounts its own work is a defect in the document. The files list
+gains the shipped runbook copy because three amendments have been recorded since
+step 2 committed it, so the copy in `docs/` no longer matches the receipted
+artefact and this is the step that brings it current. The two clarifying
+sentences record what step 2's audit measured, so a later reader does not add a
+seventh declaration to a worktree that does not need one.
+
+**Steps touched.** Step 3's goal and files.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
