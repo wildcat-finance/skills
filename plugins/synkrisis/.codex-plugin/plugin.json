@@ -1,7 +1,7 @@
 {
   "name": "synkrisis",
   "version": "0.1.0",
-  "description": "Bounded cross-run diagnosis: deterministic findings from validated run observations in one declared cohort.",
+  "description": "Refusing scaffold for the specified comparison of validated run observations in one declared cohort.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
@@ -19,12 +19,12 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Synkrisis",
-    "shortDescription": "Bounded cross-run diagnosis: deterministic findings from validated run observations in one declared cohort.",
-    "longDescription": "The Promise Machine records what one agent run observably did; nothing interprets a repeated pattern across runs. Synkrisis owns that comparison and nothing past it. Its committed specification declares the surface: an operator names a manifest of validated, redacted, receipt-bound run-observation records and a comparison policy; cohort construction checks the producer contract, digests, bindings, caps and equality dimensions and classifies every declared run as included, excluded or unknown; a digest-bound catalogue of deterministic rules recomputes bounded findings; a fixed-template report and whole-path verification close the loop. A finding is specified as a bounded inferred relation carrying its evidence, counterevidence, unknowns, the nearest claim it refuses to make, and one suggested handoff a person may act on. The shipped command is the Step 1 scaffold: it declares the four operations and refuses each with a stable code naming the runbook step that implements it. It never calls a model, judges model quality, states a cause, files an issue, edits a repository or dispatches another skill.",
+    "shortDescription": "Refusing scaffold for the specified comparison of validated run observations in one declared cohort.",
+    "longDescription": "Synkrisis is the declared home for bounded comparison across validated Promise Machine run observations, but version 0.1.0 does not perform that comparison. The shipped Step 1 command declares cohort, diagnose, render and verify, then refuses each operation with stable code SK000 and writes nothing. The committed specification says that an operator will name a manifest of validated, redacted, receipt-bound observation records and a comparison policy; held steps will classify every declared run, apply a digest-bound rule catalogue, render a fixed-template report and verify the whole path. A future finding remains a bounded inferred relation with evidence, counterevidence, unknowns, the nearest claim it refuses and one suggested handoff. A person decides what happens. Synkrisis never calls a model, judges model quality, states a cause, files an issue, edits a repository or dispatches another skill.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],
-    "defaultPrompt": "Use $synkrisis to compare validated run observations across one declared cohort and recompute its bounded findings."
+    "defaultPrompt": "Use $synkrisis to inspect the declared cross-run comparison specification and current scaffold refusals."
   },
   "license": "Apache-2.0"
 }

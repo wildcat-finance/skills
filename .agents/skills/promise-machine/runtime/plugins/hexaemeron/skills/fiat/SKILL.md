@@ -26,6 +26,11 @@ resuming work intended to advance Fiat itself.
 **Current frontier.** The ledger above is authoritative. Never substitute
 Hexaemeron's plugin-wide Solidity frontier for Fiat's own held target.
 
+Synkrisis is outside this controller loop. Its current scaffold cannot compare
+runs, select work, file an issue, mutate a repository, or dispatch Fiat. A
+future finding will remain evidence for a person to route, never a controller
+directive.
+
 ## Phase skills
 
 Six sibling skills carry the loop's content contracts; Fiat runs the loop and

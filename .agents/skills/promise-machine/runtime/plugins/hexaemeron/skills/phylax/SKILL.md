@@ -35,6 +35,10 @@ gate in non-Solidity audit rounds. The Pashov suite owns Solidity review;
 Elenchus owns an observed failure; Ephoros owns retained telemetry. Phylax may
 constrain those siblings' off-chain tooling but never claim their result.
 
+Synkrisis is specified to compare already validated run observations. Its
+current scaffold writes nothing, and neither it nor a future finding may cross
+an off-chain boundary, expose protected data, or authorise a control change.
+
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 

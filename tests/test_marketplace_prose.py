@@ -153,7 +153,7 @@ class MarketplaceProseTests(unittest.TestCase):
         )
         self.assertIn("## What Is It?", readme)
         self.assertIn("## The Promise Machine", readme)
-        self.assertIn("24 members: 15 domain agents and\n9 phase agents", readme)
+        self.assertIn("25 members: 16 domain agents and\n9 phase agents", readme)
 
         marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
         self.assertIn("Wildcat Labs Skills", marketplace["description"])

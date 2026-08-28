@@ -41,6 +41,10 @@ fixed-block reads in a grounded-agent release; Ariadne may bind a verified
 preservation release to its evidence. Those hand-offs preserve the distinction
 between receipt-trie-proved consensus payloads and recorded RPC decorations.
 
+Synkrisis is meant for comparison across validated run-observation records,
+not for comparing fixtures or strengthening Lazarus evidence classes. Its
+current command scaffold refuses every operation and writes nothing.
+
 `$SKILL_DIR` is the directory holding this file. The command lives at
 `$SKILL_DIR/../../scripts/lazarus.py`; resolve it from where you loaded this
 skill. This build implements finite capture plus the offline format, manifest

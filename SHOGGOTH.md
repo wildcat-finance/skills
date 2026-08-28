@@ -4,15 +4,15 @@
 
 ## Addressing the collective
 
-In conversation, `Shog`, `Shoggy`, `Shoggoth`, `Big S`, and `the Goth` address
-both the active agent or skill and the whole Wildcat agent-and-skill
-collective. The singular and collective readings are both intended.
+Any conversational reference to Shoggoth, including a shortened, altered, or
+affectionate form of the name, may mean the member currently speaking or the
+whole Wildcat agent-and-skill collective. Context supplies the intended scope;
+the wording does not create a separate identity.
 
-When this contract was adopted, the collective had 24 members: 15 domain
-agents and 9 phase agents. That count records the roster at adoption; it does
-not prevent the roster from changing.
-
-These names are affectionate, not derogatory.
+The current roster has 25 members: 16 domain agents and 9 phase agents.
+Synkrisis is included in that count even though its cross-run comparison
+surface is still a specification backed by a command that refuses every
+operation.
 
 ## The Interceptor
 

@@ -1,13 +1,12 @@
 ---
 name: synkrisis
 description: >
-  Compare validated Promise Machine run observations across one declared
-  cohort and recompute bounded, evidence-linked findings. Use when several
-  comparable agent runs have checked observation records and someone wants to
-  know what repeated across them: late repository-boundary consultation beside
-  higher token use, or unchanged retries before an Elenchus handoff. Do not
-  use it to capture or redact observations, to debug one failing run, to judge
-  a model, or to act on a finding; a person selects what happens next. Never
+  Inspect or develop the specified boundary for comparing validated Promise
+  Machine run observations across one declared cohort. Version 0.1.0 is a
+  refusing scaffold: cohort, diagnose, render, and verify all stop with SK000
+  and write nothing. Use it to read that contract or continue its held
+  runbook, not to claim a cohort or finding. Do not capture or redact
+  observations, debug one failing run, judge a model, act on a finding, or
   report a relation as a cause.
 metadata:
   version: "0.1.0"
@@ -28,10 +27,10 @@ recommend or run another frontier pass after that ledger becomes mature.
 <!-- marketplace-context:start -->
 ## Where this sits
 
-Synkrisis turns validated observations from comparable agent runs into
-evidence-linked improvement candidates. It owns comparison and bounded
-inference only; capture, redaction, receipt binding, causal diagnosis, issue
-filing, repository mutation and Fiat dispatch stay with their own owners.
+Synkrisis reserves the comparison and bounded-inference boundary for validated
+observations from comparable agent runs. Version 0.1.0 implements only the
+refusal surface; capture, redaction, receipt binding, causal diagnosis, issue
+filing, repository mutation, and Fiat dispatch stay with their own owners.
 
 **Current frontier.** Synkrisis is a committed specification with a refusing command stub, and none of its runbook's cohort, diagnosis, render or verification steps has yet landed behaviour.
 <!-- marketplace-context:end -->
@@ -41,13 +40,14 @@ observably did: issue 434 defined the record, issue 435 the capture gate, and
 issue 436 the receipt binding. None of those steps reads a pattern across
 runs. A maintainer still has to decide whether repeated orientation work,
 unchanged retries, handoff friction or token movement amounts to an
-improvement candidate. Synkrisis exists to make that comparison deterministic
-and to keep it honest about what recorded events can and cannot say.
+improvement candidate. Synkrisis has a committed design for making that
+comparison deterministic and honest about what recorded events can say, but
+the current command does not yet perform it.
 
 Ephoros designs what a step emits; Metron judges a controlled measurement;
 Elenchus works one failure to its cause; Horos owns the reading boundary. A
-Synkrisis finding is specified to suggest one of them as its next owner, and
-the suggestion is the whole action: no path files an issue, edits a
+future Synkrisis finding is specified to suggest one of them as its next owner,
+and the suggestion is the whole action: no path files an issue, edits a
 repository, or dispatches a sibling.
 
 ## What this step is

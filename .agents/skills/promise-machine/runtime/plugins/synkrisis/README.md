@@ -5,7 +5,7 @@
 <!-- marketplace-context:start -->
 ## In one line
 
-Synkrisis compares validated Promise Machine run observations across one operator-declared cohort and recomputes bounded, evidence-linked findings a person can act on.
+Synkrisis reserves the boundary for comparing validated Promise Machine run observations; this release specifies that work and refuses every operation.
 
 **Current frontier.** Synkrisis is a committed specification with a refusing command stub, and none of its runbook's cohort, diagnosis, render or verification steps has yet landed behaviour.
 
@@ -17,12 +17,13 @@ Synkrisis compares validated Promise Machine run observations across one operato
 The Promise Machine records what one agent run observably did: the
 run-observation contract defines the record, the capture gate keeps forbidden
 material out of it, and the receipt binding ties a prefix of it to a Fiat
-receipt. None of that interprets a repeated pattern across runs. Synkrisis
-owns exactly that comparison. Ephoros designs what a step emits, Metron judges
-a controlled measurement, Elenchus works one failure to its cause, and Horos
-owns the reading boundary; a Synkrisis finding is specified to name one of
-them as its suggested next owner, and a person decides whether anything
-happens.
+receipt. None of that interprets a repeated pattern across runs. Synkrisis is
+the declared home for that comparison, but the implementation has not landed:
+its command currently refuses cohort, diagnosis, render, and verification and
+writes nothing. Ephoros designs what a step emits, Metron judges a controlled
+measurement, Elenchus works one failure to its cause, and Horos sets the
+repository-reading boundary. A future finding is specified to suggest a next
+owner; a person will still decide whether anything happens.
 
 ## What this step ships
 

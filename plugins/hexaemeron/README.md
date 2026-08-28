@@ -28,6 +28,11 @@ contracts by path; Hexaemeron does not rewrite or absorb them. Domain work such
 as gas optimisation, credit laws, evidence preservation, or source chunking
 stays with Hermes, Pandects, Lazarus or Alexandria, and Lemma respectively.
 
+Synkrisis sits outside the delivery controller. It is intended to compare
+validated observations from several completed runs, but its present scaffold
+refuses every operation. It cannot select work, steer a worker, file an issue,
+or dispatch Fiat.
+
 One explicit Fiat request takes a topic through a study and runbook, then
 implements, audits, documents, pushes, and integrates each runbook step. The
 steps stack and the complete stack lands on the base in one merge. Every phase

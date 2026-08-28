@@ -31,6 +31,10 @@ asks for another system to consume it. Berean may use a pinned corpus prepared
 from the output, and Ariadne may later bind a release to evidence; Lemma itself
 does not embed, index, retrieve, answer, evaluate, or attest.
 
+Synkrisis does not treat Lemma chunks as run observations or compare corpora.
+Its current release specifies a separate future comparison boundary and ships
+a command scaffold that refuses every operation.
+
 `$SKILL_DIR` is the directory containing this file. Resolve `$PLUGIN_ROOT` as
 `$SKILL_DIR/../..` and run the bundled commands from there.
 

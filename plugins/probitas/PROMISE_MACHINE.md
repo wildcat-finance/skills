@@ -1,6 +1,10 @@
-# Promise Machine contract
-
 <!-- promise-machine: contract=promise-machine/v1; canonical=PROMISE_MACHINE.md; copies=generated -->
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/wildcat-finance/skills/main/assets/characters/promise-machine-binding.png" width="1200">
+</p>
+
+# Promise Machine contract
 
 This document is the normative contract for every skill distributed as part of
 Wildcat Labs Skills. Plugin-local files with this name are generated,
@@ -131,6 +135,11 @@ In particular:
 - A Fiat run-observation binding preserves the observation validator and
   capture boundaries. It attaches only the checked prefix to one receipt; it
   does not make observation availability or event truth delivery evidence.
+- Synkrisis currently contributes only a specification and a refusing command
+  scaffold. It establishes no cohort, finding, report, or verification, and it
+  cannot turn repeated observations into cause, model quality, or authority to
+  act. Its held implementation must preserve the validated observation and
+  receipt boundaries before any comparison result can enter a hand-off.
 
 Any unexplained strengthening is a conformance failure.
 
