@@ -296,7 +296,9 @@ Checked-in examples and verification paths may need less.
 [`.python-version`](./.python-version) is the single source for the exact patch.
 Run every Python-backed skill, repository check, and documented command with
 that pin. [ADR-038](./docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md)
-records the boundary and the alternatives that lost.
+records the one-interpreter boundary, and
+[ADR-042](./docs/decisions/ADR-042-advance-the-python-suite-to-3-14.md) records
+the current minor transition.
 
 | Requirement | Skills | When it is needed |
 | --- | --- | --- |
