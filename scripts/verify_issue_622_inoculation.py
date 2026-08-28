@@ -84,14 +84,15 @@ GUARD_PATH_BY_OWNER = {
 #   the current map and rows are retained and only the reviewed reporter
 #   digest for the reconstructed runner is refreshed.
 # - The live scheduling decision is physically renamed from the packet's
-#   ADR-037 path to ADR-038 because current main introduced an unrelated
-#   ADR-037 decision after the patch preimage; the logical ADR-035 source and
-#   every immutable audit prefix keep their recorded bytes.
-# - The same collision recurred: current main later introduced an unrelated
-#   ADR-038 (with ADR-039 and ADR-040 behind it), so the live decision moved
-#   again to ADR-041, the next free number across both branches.  The heading
-#   moves with the filename, so the current digest changes with the rename
-#   while the archived ADR-035 source bytes stay fixed.
+#   ADR-037 path to the then-free number 038 because current main introduced
+#   an unrelated ADR-037 decision after the patch preimage; the logical
+#   ADR-035 source and every immutable audit prefix keep their recorded
+#   bytes.
+# - The same collision recurred: current main later took numbers 038 through
+#   040 for unrelated decisions, so the live decision moved again to ADR-041,
+#   the next free number across both branches.  The heading moves with the
+#   filename, so the current digest changes with the rename while the
+#   archived ADR-035 source bytes stay fixed.
 EXPECTED_CHANGED_CURRENT_SHA256 = {
     "docs/affected-scope-test-runner/runbook.md": (
         "295358d66202f3e36e906c28e4e8544d52722edd3db2356460b01ad0ebe02caa"
@@ -130,7 +131,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
     ),
     "tests/promise_machine_coverage.json": (
-        "75d32ba009e23fea97262443d876fa8a65947cf3516b5b2e11af3dba8af6ea5f"
+        "e8b93f45df72711d82af0342e2da9b8ac8c5c86e0183a0f2b3c5801a7d97f9ae"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
@@ -148,9 +149,11 @@ ADDITIONAL_CURRENT_PATHS = frozenset({
     RECORD_PATH,
 })
 # These are the only current-source or bootstrap rebindings permitted to
-# diverge from the round-8 bytes in the published 27-path table.  The verifier
-# itself is the checked trust root, so verify_cumulative_targets binds its
-# execution path instead of asking it to vouch for its own digest.
+# diverge from the round-8 bytes in the published 27-path table.  Checks in
+# this file are what a caller already chose to execute, so
+# verify_cumulative_targets binds the execution path
+# scripts/verify_issue_622_inoculation.py instead of asking this file to
+# vouch for its own digest.
 EXPECTED_CUMULATIVE_REBIND_SHA256 = {
     "plugins/hermes/skills/hermes/scripts/test_hermes.py": (
         "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b"
@@ -186,19 +189,19 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "46085b12fdac754fd73a50d972c273d82e83395af142b0fe69055f907e486a3f"
     ),
     RECORD_PATH: (
-        "a3e97f1f27f53468717ddc0614f48c27f3f34a510b2be04c2f1120db9e0c0e55"
+        "ea6e460a3162c74549fc82c31e81c80d59e92a211eacd5539d4ebdd48734893f"
     ),
     "tests/promise_machine_coverage.json": (
-        "75d32ba009e23fea97262443d876fa8a65947cf3516b5b2e11af3dba8af6ea5f"
+        "e8b93f45df72711d82af0342e2da9b8ac8c5c86e0183a0f2b3c5801a7d97f9ae"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
     ),
     "docs/affected-scope-test-runner/replacement-study.md": (
-        "d062a2c419f53bb434597d6ff8f498fc185d2f5c8415e8380d114b66126a6c92"
+        "78d8c99198aa4d211b43b29cdbd7497ba2dc6ea3ce6e7ee2434c551c5e858178"
     ),
     "docs/affected-scope-test-runner/replacement-runbook.md": (
-        "62474514841dbd702e6ffbc3598c33b34b1334c9d8a4d525d1d7558c91f2285c"
+        "a4b4c4f5aa2b80964d372501444d2f788922c69bed972eb4993c31d16a5ce61a"
     ),
     PACKET_ADR_PATH: (
         "089046388d57dd7c639a160b7fe5e83d804db789b0cef036cb8a1cd34bca4994"
@@ -661,9 +664,10 @@ EXPECTED_CURRENT_CAUSES = {
 }
 # The Carryover-3 packet delegates the row-level 23-finding map to the
 # machine record and the immutable audit sources whose digests its 27-path
-# inventory pins.  The carried map is therefore compiled here, in the
-# checked trust root, exactly as the predecessor packet published it; the
-# packet's declared counts still cross-check it independently.
+# inventory pins.  The carried map is therefore compiled here, inside the
+# verifier a caller already chose to execute, exactly as the predecessor
+# packet published it; the packet's declared counts still cross-check it
+# independently.
 EXPECTED_CARRIED_FINDINGS = {
     "S2-R1-01": {
         "owner": RUNNER_PATH,
@@ -2457,7 +2461,7 @@ def verify_cumulative_targets(root, current_inventory):
 
 
 def verify(packet_path, patch_path, record_path, root):
-    """Run the complete artifact, record, target, AST, and Git bootstrap."""
+    """Run the complete bootstrap over the packet, the record and the tree."""
     root = Path(root).resolve(strict=True)
     packet = bounded_regular_bytes(packet_path, MAX_PACKET_BYTES, "packet")
     patch = bounded_regular_bytes(patch_path, MAX_PATCH_BYTES, "patch")

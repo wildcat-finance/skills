@@ -151,7 +151,22 @@ these instructions.
 
 ## Checks for changes to this repository
 
-Run the checks that cover every changed area.
+The checked runner is the entrypoint. It reads the declared ownership graph
+at `tests/check-map-v1.json`, unions any requested scope with every actual
+changed path, closes that set over the declared dependencies, and executes
+the selected checks from a disposable snapshot under one process budget
+(ADR-041).
+
+```bash
+python3 scripts/run_checks.py            # select from the current diff and run
+python3 scripts/run_checks.py --plan     # show the selection without running
+python3 scripts/run_checks.py --full     # run every declared check
+```
+
+A plan or run refuses when a changed path has no declared owner, a command in
+the map is stale, or the map is malformed; fix `tests/check-map-v1.json` in
+the same change. Hosted CI is unchanged by this entrypoint. The suites below
+are the inventory the map declares, and each remains directly runnable.
 
 ### Suites
 

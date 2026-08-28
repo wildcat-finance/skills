@@ -32,7 +32,7 @@ its signing-isolation prerequisite.
 - Step 3, the checked impact map and repository-wide executor, and Step 4, the
   demonstration, measurement and contributor documentation, remain pending.
 - Current `main` already owns ADR-035 for a different decision. The packet's
-  logical ADR-035 therefore maps to ADR-038 on this base. That rename and its
+  logical ADR-035 therefore maps to ADR-041 on this base. That rename and its
   reference substitutions are the only currently known non-identity path
   transform.
 
@@ -79,7 +79,7 @@ Success is checkable only when all of the following hold:
    has no green state.
 4. The ADR collision is resolved deterministically: the logical packet path
    ending in `ADR-035-select-and-schedule-repository-checks-from-one-graph.md`
-   lands as the next-free ADR-038 path, and packet references to that decision
+   lands as the next-free ADR-041 path, and packet references to that decision
    are rewritten together. Any other current-base conflict stops the
    reconstruction until the runbook records a meaning-preserving resolution.
 5. #621's hostile inherited-signer guard passes while existing signature
@@ -149,7 +149,7 @@ Issue [#434](https://github.com/wildcat-finance/skills/issues/434) and merged PR
 precedent for an exhausted Fiat run: reconstruct the complete cumulative union
 before tests, retain a mechanism-to-guard map, then earn a later clean round.
 The root audit also records that duplicate ADR numbers are corrected by
-renumbering and preserving the decision's meaning. This supports ADR-038 here
+renumbering and preserving the decision's meaning. This supports ADR-041 here
 without pretending the filename collision was a clean patch application.
 
 Current audit sources were read in their governed modes. Root and Hexaemeron
@@ -276,7 +276,7 @@ home. All mappings are identity mappings except the explicit ADR collision.
 | 2 | `audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.synopsis.md` | same | generated audit synopsis |
 | 3 | `docs/affected-scope-test-runner/study.md` | same | first-attempt receipted study copy |
 | 4 | `docs/affected-scope-test-runner/runbook.md` | same | first-attempt receipted runbook copy |
-| 5 | `docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md` | `docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md` | standing selector and scheduler decision |
+| 5 | `docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md` | `docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md` | standing selector and scheduler decision |
 | 6 | `plugins/hermes/skills/hermes/scripts/test_hermes.py` | same | disposable-repository signing isolation |
 | 7 | `plugins/hexaemeron/tests/github_transport_cases.py` | same | timing-sensitive transport fixture isolation |
 | 8 | `plugins/hexaemeron/tests/run_tests.py` | same | fresh-manifest bounded parallel runner |
@@ -293,7 +293,7 @@ home. All mappings are identity mappings except the explicit ADR collision.
 
 The word `same` is serialised in the machine record as an exact source-target
 equality, not inferred by a human reader. References within the reconstructed
-study, runbook and decision are updated from the colliding ADR path to ADR-038
+study, runbook and decision are updated from the colliding ADR path to ADR-041
 in one declared transform. The verifier rejects an undeclared transform,
 omitted path, additional patch path, duplicate target or missing file. Only
 after it exits zero may the run execute #621 and Step 2 product checks.
@@ -623,8 +623,8 @@ that whole union, not a delta from this conversation.
 
 This capability follows Hypomnema. The expensive-to-reverse selector,
 snapshot, scheduling and accounting choices live in
-`docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md`.
-ADR-038 records the current-base collision, why #622 remains one
+`docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md`.
+ADR-041 records the current-base collision, why #622 remains one
 selector-plus-executor capability, why ownership is declarative, why workers
 rediscover and select objects by canonical index, why one quota-aware global
 budget governs nested work, why timing has balance-only authority and why

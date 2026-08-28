@@ -44,7 +44,7 @@ Before any product test, lint, reporter, acceptance command or audit round:
 4. move only logical
    `docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md`
    to physical
-   `docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md`
+   `docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md`
    and rewrite every imported reference to that decision; and
 5. create the artifact-anchored record and verifier below, then run that
    verifier as the first product command. Any other current-base conflict
@@ -102,7 +102,7 @@ python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENT
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py \
   docs/affected-scope-test-runner/replacement-study.md \
   docs/affected-scope-test-runner/replacement-runbook.md \
-  docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md
+  docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md
 python3 plugins/horos/skills/horos/scripts/horos.py check .
 git diff --check
 ```
@@ -115,7 +115,7 @@ to prose or push.
 **Files.** Preserve verified run-local inputs at
 `.hexaemeron/carryover/622-CARRYOVER.md` and
 `.hexaemeron/carryover/622-INOCULATION.patch`. Reconstruct the packet's full
-eighteen-path manifest, with only its ADR source mapped to ADR-038. Add
+eighteen-path manifest, with only its ADR source mapped to ADR-041. Add
 `tests/fixtures/issue-622-inoculation-v1.json`,
 `scripts/verify_issue_622_inoculation.py`, and
 `plugins/hexaemeron/tests/test_issue_622_inoculation.py`. Add committed copies
@@ -146,7 +146,7 @@ capacity without forged or unbounded output. metron: historical timing is
 context only; current serial and automatic runs establish the new baseline.
 elenchus: every new acceptance defect needs current parent-red evidence and a
 cause-level guard, while the 23 carried mechanisms retain their recorded
-provenance. hypomnema: ADR-038, the machine record and distinct replacement
+provenance. hypomnema: ADR-041, the machine record and distinct replacement
 study/runbook copies preserve the decision, reconstruction and operating
 contract.
 
@@ -197,7 +197,7 @@ selects its complete self-audit before exit.
 **Files.** Add `tests/check-map-v1.json`, `scripts/run_checks.py`,
 `plugins/hexaemeron/tests/test_check_runner.py` and bounded fixtures below
 `plugins/hexaemeron/tests/fixtures/check-runner/`. Modify `.gitignore` only if
-the existing ignored runner-owned parent is insufficient. Clarify ADR-038
+the existing ignored runner-owned parent is insufficient. Clarify ADR-041
 only with factual implementation evidence that does not change the accepted
 decision. Update `tests/promise_machine_coverage.json` only when its governed
 release-surface binding requires the exact implementation digest.
@@ -220,7 +220,7 @@ metron: planner/snapshot overhead and composed execution time are measured on
 the same frozen workload; neutral complexity is removed. elenchus: unknown
 ownership, graph, accounting, output and movement failures each retain a
 parent-red regression. hypomnema: the versioned map and report schemas remain
-consistent with ADR-038 and are documented beside their implementation.
+consistent with ADR-041 and are documented beside their implementation.
 
 ## Step 3: Demonstrate, measure and document the complete runner
 
@@ -245,7 +245,7 @@ inoculation or selector work.
 The hostile signer matrix and existing signature cases pass. A plan from the
 replacement starting commit selects every actual changed surface. A full run
 executes and accounts for every selected assertion under one global budget.
-`AGENTS.md`, ADR-038, the replacement records and the benchmark agree with the
+`AGENTS.md`, ADR-041, the replacement records and the benchmark agree with the
 executable interfaces. Hosted workflows remain unchanged. The demonstration
 commands are:
 
@@ -272,7 +272,7 @@ python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py \
   docs/affected-scope-test-runner/replacement-study.md \
   docs/affected-scope-test-runner/replacement-runbook.md \
   docs/affected-scope-test-runner/benchmark.md \
-  docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md
+  docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md
 python3 plugins/horos/skills/horos/scripts/horos.py check .
 git diff --check
 ```
@@ -285,7 +285,7 @@ round over the final tree before prose, push or integration.
 
 **Files.** Modify `AGENTS.md`; add
 `docs/affected-scope-test-runner/benchmark.md`; clarify
-`docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md`
+`docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md`
 and the committed replacement study/runbook copies only where the final
 interfaces or measured evidence require factual updates. Modify an
 implementation or test path only to repair a failure reproduced by the final
@@ -307,7 +307,7 @@ ephoros: verify every promised plan/run field from real output and retain no
 secret or unbounded metric label. metron: the six same-source samples and
 recorded spread decide whether automatic scheduling is kept. elenchus: stop
 and work every final red result to cause before changing code or recording
-green. hypomnema: `AGENTS.md`, ADR-038 and the benchmark are the established
+green. hypomnema: `AGENTS.md`, ADR-041 and the benchmark are the established
 homes for operation, decision and measured consequence.
 
 ### Amendment -- 2026-08-26
@@ -371,7 +371,7 @@ python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENT
 python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py \
   docs/affected-scope-test-runner/replacement-study.md \
   docs/affected-scope-test-runner/replacement-runbook.md \
-  docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md
+  docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md
 python3 plugins/horos/skills/horos/scripts/horos.py check .
 git diff --check
 ```
