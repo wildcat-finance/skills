@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 909,
-  "total_bytes": 20078691,
+  "total_bytes": 20078766,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -49,9 +49,9 @@
       "source": null
     },
     {
-      "bytes": 8,
+      "bytes": 7,
       "path": ".python-version",
-      "sha256": "861b3dd8083d28f336ef70f6755bc399538ddad627b1d095820ca34cb953cf14",
+      "sha256": "3a55324cbeddc91df012407d051dad08c88624c95a82fbdb856728729fbd14ab",
       "source": ".python-version"
     },
     {
@@ -3769,9 +3769,9 @@
       "source": "plugins/lazarus/examples/goldfinch-v1-release/fixture/anchors.jsonl"
     },
     {
-      "bytes": 36956,
+      "bytes": 36994,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py",
-      "sha256": "64f4f9447b511cc792592501249a295cce00ef52043c4613d2cceb7a24b988a2",
+      "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py"
     },
     {
@@ -3783,7 +3783,7 @@
     {
       "bytes": 1262,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/manifest.json",
-      "sha256": "5c1ffc35c816a93dd4b95ceb891c883bf5b455ed7435bea08fe08159653ac211",
+      "sha256": "28f083f48a8b63387f64666651aaf975ebda642e67d3278ed411837139f4b4e6",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/fixture/manifest.json"
     },
     {
@@ -3813,13 +3813,13 @@
     {
       "bytes": 909,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/release.json",
-      "sha256": "dee99fcd27079f6c4636279f293d35607338f117e79c04642e49fda220e086fb",
+      "sha256": "62977ab2efea04b8192d63dd11ef1fcdadc8c5670220dcad78619b67f4741074",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/release.json"
     },
     {
       "bytes": 8818,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/statement.json",
-      "sha256": "67bf286eeebb03a3731f22f46bf35d6dcbc3d28bc8dcb060a3f0443080e515fd",
+      "sha256": "8c1571c67953e0b2df7808e506c1eee0b3f63bfdcc9290877c3d1c7eb67d0bc1",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/statement.json"
     },
     {
@@ -3829,9 +3829,9 @@
       "source": "plugins/lazarus/examples/goldfinch-v1/anchors.jsonl"
     },
     {
-      "bytes": 36956,
+      "bytes": 36994,
       "path": "plugins/lazarus/examples/goldfinch-v1/demo.py",
-      "sha256": "64f4f9447b511cc792592501249a295cce00ef52043c4613d2cceb7a24b988a2",
+      "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2",
       "source": "plugins/lazarus/examples/goldfinch-v1/demo.py"
     },
     {
@@ -3843,7 +3843,7 @@
     {
       "bytes": 1262,
       "path": "plugins/lazarus/examples/goldfinch-v1/manifest.json",
-      "sha256": "5c1ffc35c816a93dd4b95ceb891c883bf5b455ed7435bea08fe08159653ac211",
+      "sha256": "28f083f48a8b63387f64666651aaf975ebda642e67d3278ed411837139f4b4e6",
       "source": "plugins/lazarus/examples/goldfinch-v1/manifest.json"
     },
     {
@@ -5451,7 +5451,7 @@
     {
       "bytes": 77,
       "path": "pyproject.toml",
-      "sha256": "be2ea2c7fe99fe291cf79870fe1432ba3ef392a13828c60db3d575635ee9b728",
+      "sha256": "df6e37928788ae5651f2161700351aeb94c6cecda342f28f70bd37f88a48d518",
       "source": "pyproject.toml"
     },
     {

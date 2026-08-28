@@ -27,8 +27,8 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 README = ROOT / "README.md"
 LAZARUS = ROOT / "plugins" / "lazarus"
 
-REQUIRED_MINOR = "==3.13.*"
-EXACT_VERSION = "3.13.15"
+REQUIRED_MINOR = "==3.14.*"
+EXACT_VERSION = "3.14.6"
 PYTHON_WORKFLOWS = {
     "contributors.yml",
     "janus.yml",
@@ -46,6 +46,7 @@ PIN_REFERENCING_PROSE = {
     "AGENTS.md",
     "README.md",
     "docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md",
+    "docs/decisions/ADR-042-advance-the-python-suite-to-3-14.md",
     "plugins/ariadne/docs/design.md",
     "plugins/berean/README.md",
     "plugins/berean/skills/berean/SKILL.md",
@@ -208,6 +209,7 @@ class PythonRuntimeContractTests(unittest.TestCase):
         self.assertIn("[`pyproject.toml`](./pyproject.toml)", text)
         self.assertIn("[`.python-version`](./.python-version)", text)
         self.assertIn("[ADR-038]", text)
+        self.assertIn("[ADR-042]", text)
 
     def test_current_runtime_prose_points_to_the_pin(self):
         for relative in sorted(PIN_REFERENCING_PROSE):
