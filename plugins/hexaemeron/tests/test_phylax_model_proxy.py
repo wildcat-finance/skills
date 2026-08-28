@@ -3197,6 +3197,110 @@ class LifecycleTests(unittest.TestCase):
             )
             self.assertEqual("MP000", runtime.terminal.code)
 
+    def test_concurrent_turn_order_survives_reverse_first_lock_acquisition(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            provider_inputs = []
+            second_receipted = threading.Event()
+
+            def exchange(request, _context, _timeout):
+                input_text = json.loads(request.body)["input"]
+                provider_inputs.append(input_text)
+                return BufferedHTTPSResponse(
+                    synthetic_provider_response(input_text, input_text.upper())
+                )
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000, 30_000, 40_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            requests = runtime.feed(
+                request_frame("first reverse prompt")
+                + request_frame("second reverse prompt")
+            )
+            runtime.finish_input()
+
+            class ReverseFirstPublicationLock:
+                def __init__(self):
+                    self.lock = threading.Lock()
+                    self.first_waiting = threading.Event()
+                    self.resume_first = threading.Event()
+                    self.schedule_once = True
+
+                def __enter__(self):
+                    if (
+                        threading.current_thread().name == "sequence-1"
+                        and self.schedule_once
+                    ):
+                        self.schedule_once = False
+                        self.first_waiting.set()
+                        self.resume_first.wait(5)
+                    self.lock.acquire()
+                    return self
+
+                def __exit__(self, _type, _value, _traceback):
+                    self.lock.release()
+
+            scheduled = ReverseFirstPublicationLock()
+            runtime._publication_lock = scheduled
+            original_write = runtime._sink.write_request
+
+            def observed_write(**arguments):
+                original_write(**arguments)
+                if arguments["sequence"] == 2:
+                    second_receipted.set()
+
+            results = {}
+
+            def generate(label, request, final):
+                try:
+                    results[label] = runtime.generate(request, final=final)
+                except PolicyError as error:
+                    results[label] = error.code
+
+            with mock.patch.object(
+                runtime._sink, "write_request", side_effect=observed_write
+            ):
+                first = threading.Thread(
+                    target=generate,
+                    args=("first", requests[0], False),
+                    name="sequence-1",
+                )
+                second = threading.Thread(
+                    target=generate,
+                    args=("second", requests[1], True),
+                    name="sequence-2",
+                )
+                first.start()
+                self.assertTrue(scheduled.first_waiting.wait(5))
+                second.start()
+                self.assertTrue(second_receipted.wait(5))
+                self.assertTrue(second.is_alive())
+                scheduled.resume_first.set()
+                first.join(5)
+                second.join(5)
+
+            self.assertFalse(first.is_alive())
+            self.assertFalse(second.is_alive())
+            self.assertEqual(
+                ["first reverse prompt", "second reverse prompt"],
+                provider_inputs,
+            )
+            self.assertTrue(
+                all(isinstance(value, bytes) for value in results.values())
+            )
+            self.assertEqual("MP000", runtime.terminal.code)
+
     def test_late_transport_failure_keeps_the_cancellation_winner(self):
         with tempfile.TemporaryDirectory() as directory:
             entered = threading.Event()

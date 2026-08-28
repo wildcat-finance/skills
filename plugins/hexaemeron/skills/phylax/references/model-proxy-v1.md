@@ -337,12 +337,13 @@ response, or concurrency excess makes the job terminal. Later admission and
 provider publication refuse. Requests may reserve concurrently, but the
 runtime registers each durable request receipt in a pending-turn set and gives
 the provider session one turn at a time in guest sequence order. Selection
-uses the lowest pending sequence rather than the execution lock's unspecified
-waiter order. It commits or refuses that turn against its own provider event
-before the next turn can cross the provider boundary. When no terminal
-transition has won, a successful provider event contributes its confirmed
-response bytes and validated output tokens before the post-provider clock
-check. A refusing event likewise contributes its confirmed response bytes,
+waits for the next guest sequence rather than choosing whichever higher
+sequence reached the pending set first or relying on the execution lock's
+unspecified waiter order. It commits or refuses that turn against its own
+provider event before the next turn can cross the provider boundary. When no
+terminal transition has won, a successful provider event contributes its
+confirmed response bytes and validated output tokens before the post-provider
+clock check. A refusing event likewise contributes its confirmed response bytes,
 including the one over-limit sentinel. Expiry observed by that check wins the
 terminal outcome without dropping those counts. A response arriving after an
 earlier terminal transition cannot rewrite that already durable snapshot.

@@ -688,6 +688,7 @@ class ModelProxyRuntime:
         self._provider_lock = threading.Lock()
         self._provider_turn_condition = threading.Condition()
         self._pending_provider_turns: set[int] = set()
+        self._next_provider_turn = 1
         self._terminal_lock = threading.Lock()
         self._terminal_finalized = False
         self._terminal_receipt_failed = False
@@ -810,7 +811,7 @@ class ModelProxyRuntime:
             while reservation.sequence in self._pending_provider_turns:
                 if self._controller.terminal is not None:
                     return
-                if reservation.sequence == min(self._pending_provider_turns):
+                if reservation.sequence == self._next_provider_turn:
                     return
                 self._provider_turn_condition.wait()
             refuse("MP401", "lifecycle.provider_turn")
@@ -818,6 +819,8 @@ class ModelProxyRuntime:
     def _release_provider_turn(self, reservation: Reservation) -> None:
         with self._provider_turn_condition:
             self._pending_provider_turns.discard(reservation.sequence)
+            if reservation.sequence == self._next_provider_turn:
+                self._next_provider_turn += 1
             self._provider_turn_condition.notify_all()
 
     def _active_locked(self) -> None:
