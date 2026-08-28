@@ -4325,10 +4325,20 @@ def _validate_generator_aggregate(
     manifest_paths = [item["path"] for item in normalized_rows]
     if manifest_paths != sorted(set(manifest_paths)):
         die(f"generator aggregate {aggregate_id} manifest paths are not sorted and unique")
-    if document.get("file_count") != len(normalized_rows):
+    manifest_file_count = document.get("file_count")
+    if (
+        isinstance(manifest_file_count, bool)
+        or not isinstance(manifest_file_count, int)
+        or manifest_file_count != len(normalized_rows)
+    ):
         die(f"generator aggregate {aggregate_id} manifest file count does not match")
     payload_bytes = sum(item["bytes"] for item in normalized_rows)
-    if document.get("total_bytes") != payload_bytes:
+    manifest_total_bytes = document.get("total_bytes")
+    if (
+        isinstance(manifest_total_bytes, bool)
+        or not isinstance(manifest_total_bytes, int)
+        or manifest_total_bytes != payload_bytes
+    ):
         die(f"generator aggregate {aggregate_id} manifest byte count does not match")
     total_bytes = payload_bytes + len(manifest_bytes)
     if total_bytes > registry["max_bytes"]:
@@ -4419,6 +4429,8 @@ def _affected_aggregates(value) -> list[dict]:
         }:
             die(f"{label} entry {index} has the wrong fields")
         aggregate_id = aggregate["id"]
+        if not isinstance(aggregate_id, str):
+            die(f"{label} entry {index} has an invalid id")
         registry = GENERATOR_AGGREGATE_REGISTRY.get(aggregate_id)
         if registry is None:
             die(f"{label} entry {index} names an unknown aggregate")

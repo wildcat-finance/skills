@@ -421,6 +421,19 @@ class AggregateObjectBoundaryTests(unittest.TestCase):
         self.assertEqual(stopped.exception.code, 2)
         return error.getvalue()
 
+    def controlled_stop(self, callable_):
+        """Require a Fiat refusal rather than an uncaught input-type error."""
+        error = StringIO()
+        caught = None
+        try:
+            with redirect_stderr(error):
+                callable_()
+        except BaseException as exc:  # the assertion below classifies the boundary
+            caught = exc
+        self.assertIsInstance(caught, SystemExit)
+        self.assertEqual(caught.code, 2)
+        return error.getvalue()
+
     def tree_outputs(self, count, *, mode="100644", kind="blob", path=None):
         prefix = self.registry["prefix"]
         root = f"040000 tree {'a' * 40}\t{prefix.removesuffix('/')}\0".encode()
@@ -505,6 +518,85 @@ class AggregateObjectBoundaryTests(unittest.TestCase):
             "tree_sha256": tree_digest,
         }
         return registry, declaration, rows, blobs
+
+    def rebind_manifest(self, declaration, rows, blobs, document):
+        manifest = (json.dumps(document, sort_keys=True) + "\n").encode()
+        rebound_blobs = {**blobs, "runtime/MANIFEST.json": manifest}
+        rebound = dict(declaration)
+        rebound["manifest_sha256"] = hashlib.sha256(manifest).hexdigest()
+        file_digests = []
+        for row in rows:
+            data = rebound_blobs[row["path"]]
+            digest = hashlib.sha256(data).hexdigest()
+            file_digests.append(
+                (
+                    row["path"],
+                    hashlib.sha256(
+                        b"fiat-generator-file/v1\0"
+                        + row["path"].encode()
+                        + b"\0"
+                        + row["mode"].encode()
+                        + b"\0"
+                        + str(len(data)).encode()
+                        + b"\0"
+                        + digest.encode()
+                    ).digest(),
+                )
+            )
+        file_digests.sort()
+        rebound["tree_sha256"] = hashlib.sha256(
+            b"fiat-generator-tree/v1\0"
+            + b"".join(digest for _, digest in file_digests)
+        ).hexdigest()
+        return rebound, rebound_blobs
+
+    def test_schema_types_refuse_unhashable_ids_and_non_integer_manifest_counts(self):
+        declaration = {
+            "id": self.aggregate_id,
+            "prefix": self.registry["prefix"],
+            "generator": self.registry["generator"],
+            "manifest": self.registry["manifest"],
+            "manifest_sha256": "0" * 64,
+            "file_count": 1,
+            "tree_sha256": "0" * 64,
+        }
+        for invalid_id in ([], {}):
+            with self.subTest(id=invalid_id):
+                candidate = {**declaration, "id": invalid_id}
+                error = self.controlled_stop(
+                    lambda: self.module._affected_aggregates([candidate])
+                )
+                self.assertIn("invalid id", error)
+
+        registry, declaration, rows, blobs = self.small_aggregate()
+        baseline = json.loads(blobs["runtime/MANIFEST.json"])
+        for field, invalid in (
+            ("file_count", True),
+            ("file_count", 1.0),
+            ("total_bytes", True),
+            ("total_bytes", 5.0),
+        ):
+            with self.subTest(field=field, invalid=invalid):
+                document = {**baseline, field: invalid}
+                rebound, rebound_blobs = self.rebind_manifest(
+                    declaration, rows, blobs, document
+                )
+                with (
+                    mock.patch.object(
+                        self.module,
+                        "_git_aggregate_tree",
+                        return_value=("c" * 40, rows),
+                    ),
+                    mock.patch.object(
+                        self.module, "_git_batch_blobs", return_value=rebound_blobs
+                    ),
+                ):
+                    error = self.controlled_stop(
+                        lambda: self.module._validate_generator_aggregate(
+                            str(ROOT), "d" * 40, rebound, registry
+                        )
+                    )
+                self.assertIn("count does not match", error)
 
     def test_resource_boundary_accepts_1024_files_and_refuses_1025(self):
         outputs = self.tree_outputs(1024)
