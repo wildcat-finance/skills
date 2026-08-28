@@ -4,8 +4,8 @@
 The report is the ``elenchus.unittest.v1`` payload a Fiat audit round names
 when it claims a fix, so the path has to be fresh and inside this checkout.
 The confinement logic is the one the Alexandria runner already carries, kept
-identical on purpose: one copy of this file lives beside each plugin suite,
-because each locates its own tests from its own path.
+identical on purpose. Each plugin suite that owes an Elenchus report keeps
+its own copy, because every copy locates its tests from its own path.
 """
 
 import argparse
