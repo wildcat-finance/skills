@@ -465,6 +465,234 @@ def test_comment_separator() -> None:
           "return x" in out, repr(out))
 
 
+# --------------------------------------------------------------------------
+# I30: the corpus provenance record
+# --------------------------------------------------------------------------
+
+def _every_string(value):
+    """Every string anywhere in a record, so a guess cannot hide in a block."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _every_string(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _every_string(item)
+
+
+def test_provenance_record() -> None:
+    print("\nI30 — the corpus provenance record says what it does not know")
+    schema = sys.modules["lemma_schema"]
+
+    # A Markdown-shaped record: no compiler applies, so the block is an absence
+    # with a reason rather than a value nobody can check.
+    fields = dict(
+        chunker="markdown",
+        chunker_version="0.1.1",
+        corpus_build_id="9" * 64,
+        chunk_count=38,
+        inputs=[{"path": "docs/SUMMARY.md", "sha256": "a" * 64}],
+        include=["**/*.md"],
+        units_present=["docs/SUMMARY.md", "docs/intro.md", "notes/scratch.md"],
+        units_selected=["docs/SUMMARY.md", "docs/intro.md"],
+        compiler=schema.compiler_absent("the Markdown chunker runs no compiler"),
+    )
+
+    # one — a ref that names nothing stops the build, and says which flag
+    refusal = ""
+    try:
+        schema.provenance_record(source_ref="   ", **fields)
+    except ValueError as e:
+        refusal = str(e)
+    check("a blank source ref is refused by the flag's name",
+          "--source-ref" in refusal, f"refusal was {refusal!r}")
+
+    # two — the credential goes; the rest of the URL stays, including an `@`
+    # that is part of the ref rather than userinfo
+    kept = "https://github.com/wildcat-finance/skills@7e449ba"
+    leaky = schema.provenance_record(
+        source_ref="https://user:t0ken@github.com/wildcat-finance/skills@7e449ba",
+        **fields)
+    clean = schema.provenance_record(source_ref=kept, **fields)
+    check("URL userinfo is stripped and the rest of the URL is kept",
+          leaky["source_ref"] == kept and clean["source_ref"] == kept,
+          f"leaky={leaky['source_ref']!r} clean={clean['source_ref']!r}")
+
+    record = schema.provenance_record(
+        source_ref="wildcat-finance/skills@7e449ba", **fields)
+
+    # three — an absent value is an absence with a reason, never the word
+    written = list(_every_string(record))
+    check("no field is written as the string unknown",
+          "unknown" not in written
+          and record["compiler"].get("applicable") is False
+          and bool(record["compiler"].get("reason")),
+          repr(record["compiler"]))
+
+    # four — a compiler nothing gated records the version it reported and no pin
+    ungated = schema.compiler_reported(
+        "solc", "0.8.35+commit.47b9dedd.Darwin.appleclang",
+        unpinned_reason="--expect-solc was not passed, so nothing was gated")
+    check("an ungated compiler records a null pin beside a stated reason",
+          ungated.get("pin") is None and ungated.get("pin_match") is None
+          and ungated.get("reported_version", "").startswith("0.8.35")
+          and bool(ungated.get("reason")),
+          repr(ungated))
+
+    # five — require_solc_version compares with startswith, so the record says
+    # prefix and carries the exact version the compiler reported beside it
+    gated = schema.compiler_reported(
+        "./solc-container", "0.8.25+commit.b61c2a91.Linux.g++", pin="0.8.25")
+    check("a gated compiler records a prefix pin beside the exact version",
+          gated.get("pin") == "0.8.25" and gated.get("pin_match") == "prefix"
+          and gated.get("reported_version") == "0.8.25+commit.b61c2a91.Linux.g++",
+          repr(gated))
+
+    # six — a record is written once and read afterwards, so one run has to
+    # name every problem rather than the first one it meets
+    broken = dict(record, schema="lemma-corpus-provenance/v0", chunker="rust",
+                  corpus_build_id="   ")
+    whole = schema.validate_provenance(record)
+    problems = schema.validate_provenance(broken)
+    check("the validator passes a whole record and reports every problem in a "
+          "broken one",
+          whole == [] and len(problems) >= 3,
+          f"whole={whole} broken={len(problems)}: {problems}")
+
+    # seven — a null is not a stated reason. A presence test spelled
+    # `str(value).strip()` reads `None` as the four-character word `None`, so
+    # every absence a reader would take for a value passed it.
+    nulls = {
+        "absence with reason null": {"applicable": False, "reason": None},
+        "ungated with reason null": {"applicable": True, "invocation": "solc",
+                                     "reported_version": "0.8.35+c",
+                                     "pin": None, "pin_match": None,
+                                     "reason": None},
+        "applies with invocation null": {"applicable": True, "invocation": None,
+                                         "reported_version": "0.8.35+c",
+                                         "pin": None, "pin_match": None,
+                                         "reason": "nothing was gated"},
+    }
+    unrefused = [name for name, block in nulls.items()
+                 if not schema.validate_provenance(dict(record, compiler=block))]
+    check("a null reason or invocation is an absence, not a value",
+          not unrefused, f"passed validation: {unrefused}")
+    check("an input whose path is null is refused",
+          bool(schema.validate_provenance(
+              dict(record, inputs=[{"path": None, "sha256": "a" * 64}]))),
+          "a null path satisfied the presence test")
+
+    # eight — `require_solc_version` reads `if expected and not
+    # found.startswith(expected)`, so an empty pin skips the comparison. A
+    # block carrying one names a prefix gate the run never made.
+    refusal = ""
+    try:
+        schema.compiler_reported("solc", "0.8.35+c", pin="")
+    except ValueError as e:
+        refusal = str(e)
+    empty_pin = dict(record, compiler={
+        "applicable": True, "invocation": "solc",
+        "reported_version": "0.8.35+c", "pin": "", "pin_match": "prefix",
+        "reason": None})
+    left = schema.validate_provenance(empty_pin)
+    check("an empty pin is refused by the builder and by the validator",
+          bool(refusal) and bool(left),
+          f"builder said {refusal!r}, validator said {left}")
+
+    # nine — the validator is the gate for a record read back off disk, so a
+    # malformed one has to come back as problems rather than as a traceback.
+    malformed = {
+        "pin is a number": dict(record, compiler={
+            "applicable": True, "invocation": "solc",
+            "reported_version": "0.8.35+c", "pin": 0, "pin_match": "prefix",
+            "reason": None}),
+        "units_present is a number":
+            dict(record, selection=dict(record["selection"], units_present=5)),
+        "units_selected holds a list":
+            dict(record, selection=dict(record["selection"],
+                                        units_selected=[["docs/intro.md"]])),
+    }
+    escaped = []
+    for name, bad in malformed.items():
+        try:
+            if not schema.validate_provenance(bad):
+                escaped.append(f"{name}: no problem reported")
+        except Exception as e:
+            escaped.append(f"{name}: {type(e).__name__}")
+    check("a malformed record comes back as problems, not a traceback",
+          not escaped, str(escaped))
+
+    # ten — the URL pattern cannot span a newline, so a ref carrying one never
+    # reaches the strip and its userinfo would be written verbatim
+    refusal = ""
+    try:
+        schema.provenance_record(
+            source_ref="https://user:t0ken@github.com/o/r\nnote", **fields)
+    except ValueError as e:
+        refusal = str(e)
+    check("a ref carrying a control character is refused",
+          "control character" in refusal, f"refusal was {refusal!r}")
+
+    # eleven — this pins a known loss, not a decision. `ssh://git@host/o/r.git`
+    # is a clean ref and the strip removes the `git` user it needs to clone,
+    # because the rule is "drop the userinfo" and a bare user is userinfo. The
+    # behaviour is recorded rather than endorsed: it was found in audit, it is
+    # not what a reader wants, and a later run may decide to keep a userinfo
+    # carrying no secret. Until then this holds the loss visible, so a change
+    # to it is deliberate and shows up here rather than in a corpus.
+    ssh = schema.provenance_record(
+        source_ref="ssh://git@github.com/wildcat-finance/skills.git", **fields)
+    check("known loss pinned: the strip takes a bare user with the userinfo",
+          ssh["source_ref"] == "ssh://github.com/wildcat-finance/skills.git",
+          repr(ssh["source_ref"]))
+
+    # fourteen — every other argument refuses by type with a reason naming it;
+    # source_ref reached .strip() first and came back as an AttributeError,
+    # which names neither the flag nor what was wrong with the value.
+    typed = {}
+    for value in (5, None, ["o/r@sha"], {"ref": "o/r@sha"}):
+        try:
+            schema.provenance_record(source_ref=value, **fields)
+            typed[repr(value)] = "accepted"
+        except ValueError as e:
+            typed[repr(value)] = ("--source-ref" in str(e)) or f"unnamed: {e}"
+        except Exception as e:
+            typed[repr(value)] = type(e).__name__
+    check("a source ref that is not a string is refused by the flag's name",
+          all(v is True for v in typed.values()), str(typed))
+
+    # twelve — `list()` and `sorted()` spread a bare string into one entry per
+    # character. `include` was the one that then validated clean, so a record
+    # could name eight one-character patterns as the coverage it was built to.
+    spread = {}
+    for field, value in (("include", "**/*.sol"), ("units_present", "A.sol"),
+                         ("units_selected", "A.sol"),
+                         ("inputs", {"path": "a.json"})):
+        kw = dict(fields, source_ref="o/r@sha")
+        kw[field] = value
+        try:
+            schema.provenance_record(**kw)
+            spread[field] = "accepted"
+        except ValueError:
+            pass
+    loose = dict(record)
+    loose["selection"] = dict(record["selection"], include="**/*.sol")
+    check("no list-shaped argument spreads a bare string into characters",
+          not spread and bool(schema.validate_provenance(loose)),
+          f"builder accepted {sorted(spread)}, validator said "
+          f"{schema.validate_provenance(loose)}")
+
+    # thirteen — str() read a 64-digit number as a digest, because every
+    # decimal digit is also a hexadecimal one
+    digits = int("1234567890" * 6 + "1234")
+    numeric = dict(record, inputs=[{"path": "a.json", "sha256": digits}])
+    check("a sha256 that is not a string is refused, digits included",
+          len(str(digits)) == 64 and bool(schema.validate_provenance(numeric)),
+          f"{len(str(digits))} digits, validator said "
+          f"{schema.validate_provenance(numeric)}")
+
+
 def test_surface_accuracy(solc: str, tmp: pathlib.Path) -> None:
     print("\nI14 — callable surface matches what is callable")
     src = (
@@ -965,6 +1193,7 @@ def main() -> int:
     test_canonical_types()
     test_stripper()
     test_comment_separator()
+    test_provenance_record()
     if args.solc:
         with tempfile.TemporaryDirectory() as td:
             test_merge_semantics(args.solc, pathlib.Path(td))

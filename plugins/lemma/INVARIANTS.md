@@ -44,6 +44,37 @@ calling pipeline applies corpus build ID, resolved source ref, tier, protocol
 version, deployment status, and per-document legal metadata, via
 `schema.stamp()`.
 
+A delivered corpus is two files in one directory: `chunks.jsonl`, and the
+`lemma-corpus-provenance/v1` record on the single line of `provenance.jsonl`
+beside it. `schema.provenance_record()` builds that record and
+`schema.validate_provenance()` holds it to its shape. It carries the four values
+a reader cannot recover from the chunks themselves: the source ref, the compiler
+identity, the chunker version, and a digest of every input. Both the record and
+`stamp()` belong to the pipeline above `chunk()`, which still leaves
+`source_ref` and `corpus_build_id` unset. ADR-042 records why the compiler and
+the chunker version sit in a file beside the chunks rather than on every one of
+them.
+
+The record never writes a guess as a value, and never the word `unknown`. A
+compiler that does not apply is an absence carrying a reason. A compiler that
+applies but was gated on nothing records the version it reported for itself,
+with a null pin and a reason. A gated compiler records its pin as a prefix pin
+with the exact reported version beside it, because `require_solc_version`
+compares with `startswith` and a gate on `0.8.25` accepts any commit hash after
+it.
+
+What a reader may conclude from a record is bounded. The digests bind bytes:
+those inputs and that corpus are the ones digested. The compiler reported that
+version of itself to that invocation, and the caller asserted that ref. Nothing
+fetches or resolves a ref, and a ref spelled as a URL loses only its userinfo
+on the way to disk, whatever shape that userinfo has: `ssh://git@host/o/r.git`
+loses the `git` as surely as a token. A ref carrying a control character is
+refused rather than written, because such a ref does not parse as a URL and its
+userinfo would survive. A record does not establish that the ref names a
+real object, that the compiler was honest about its own version, that it was the
+intended compiler where no pin was gated, or that a citation drawn from the
+corpus is faithful.
+
 ### Solidity invariants
 
 **S1: deployed inputs define the corpus.** The chunker consumes every configured
@@ -217,7 +248,7 @@ commit. A change that moves them unexpectedly is what the corpus is for.
 
 The `S*` and `M*` identifiers above number the *invariants* in this document.
 They are not the same scheme as the case identifiers the test suites print:
-`test_solidity.py` prints `I4` through `I29`; `test_markdown.py` prints `M1`
+`test_solidity.py` prints `I4` through `I30`; `test_markdown.py` prints `M1`
 through `M24`.
 The Markdown prefix collides by accident. An invariant is usually covered by
 several cases rather than one, so do not read `M3` here as `M3` there.
