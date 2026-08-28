@@ -2539,7 +2539,7 @@
       },
       {
         "path": "tests/test_run_observation.py",
-        "sha256": "7717137fe1a1b1d5f3b1d0747ef95bd79ef08d3f97ec8ae3b4b07379a0679db0",
+        "sha256": "2c560688f4e83f7ab9b3ded9ccb96bb83803972544cde52d5f4f535540c8aec3",
         "selectors": [
           "test_captured_byte_and_stable_path_validation_are_equivalent",
           "test_safe_unfinished_prefix_is_accepted_without_weakening_full_check",
@@ -2633,7 +2633,7 @@
         "test_runbook_separates_direct_and_elenchus_report_targets",
         "test_unhashable_and_non_string_typed_fields_refuse_without_crashing"
       ],
-      "sha256": "7717137fe1a1b1d5f3b1d0747ef95bd79ef08d3f97ec8ae3b4b07379a0679db0"
+      "sha256": "2c560688f4e83f7ab9b3ded9ccb96bb83803972544cde52d5f4f535540c8aec3"
     },
     "transition": "treat only the named bytes as structurally conforming and pass the bounded result without strengthening it"
   },

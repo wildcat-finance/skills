@@ -611,7 +611,7 @@ class RunObservationRefusalTests(unittest.TestCase):
                     self.assertEqual(codes(target), set())
 
     def test_reporter_rejects_named_target_swap_during_write(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / "tests") as directory:
+        with scratch_directory() as directory:
             parent = Path(directory)
             target = parent / "report.json"
             displaced = parent / "created.json"
@@ -636,7 +636,7 @@ class RunObservationRefusalTests(unittest.TestCase):
             )
 
     def test_reporter_rejects_same_inode_rewrite_after_fsync(self):
-        with tempfile.TemporaryDirectory(dir=ROOT / "tests") as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "report.json"
             parsed = reporter.report_target([str(target)])
             payload = {"schema": "expected", "padding": "x" * 32}
