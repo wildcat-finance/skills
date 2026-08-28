@@ -1283,6 +1283,26 @@ def record_path(args) -> str:
     return str(chosen)
 
 
+def _pairs(flag: str, items: list[tuple[str, str]]) -> str:
+    """One `key=value,key=value` flag, or a refusal printed in its place.
+
+    `ariadne.py:132` splits these on commas and keeps the last value it sees
+    for a key, so a comma inside a recorded ref, path or pattern does not
+    arrive there as a key that parser rejects. It arrives as a second `name=`
+    or `end=` overriding the one composed here, and the capture then succeeds
+    describing a corpus other than the one on disk. That grammar has no
+    escape, so the flag is refused rather than printed wrong, and the refusal
+    is shaped to break the command if it is pasted anyway.
+    """
+    carried = [value for _, value in items if "," in value]
+    if carried:
+        return (f"{flag} REFUSED {shlex.quote(carried[0])} carries a comma, "
+                f"which ariadne.py:132 reads as another key=value pair; "
+                f"compose this {flag} by hand")
+    return flag + " " + shlex.quote(
+        ",".join(f"{key}={value}" for key, value in items))
+
+
 def capture_flags(record: dict, out: str) -> list[str]:
     """The `capture-dataset` flags for the corpus that was just written.
 
@@ -1294,8 +1314,11 @@ def capture_flags(record: dict, out: str) -> list[str]:
     Everything but the release directory is read from the record, so the
     locator printed is the stripped ref rather than the one that was typed,
     and no path, pattern or version the record does not hold can appear here.
-    The release is the directory `--out` names, which the line above this one
-    has already printed, so naming it discloses nothing further.
+    The release is the directory `--out` names, made absolute against the
+    working directory the chunker ran in. A relative `--out` would otherwise
+    print a release that names whichever directory the capture is run from,
+    and the capture is documented to run from `--root` rather than from here,
+    so the two would be the same string and a different corpus.
 
     Coverage reads the source unit dimension: the bounds are the 1-based index
     range over the sorted units the input declared, and each run of excluded
@@ -1304,10 +1327,9 @@ def capture_flags(record: dict, out: str) -> list[str]:
     `predicates/dataset.py:385` refuses, so an excluded unit is named rather
     than dropped from an interval that would then describe the whole input.
 
-    `--gap` and `--input` are `key=value` pairs that `ariadne.py:132` splits on
-    commas, so the values built here carry no comma of their own. A comma
-    inside a recorded pattern, path or ref is the one thing this form cannot
-    carry, and it arrives at that parser as a key it does not define.
+    Neither `--release` nor the corpus filename is recorded, so nothing
+    downstream compares the release this prints against the record beside the
+    chunks. What that costs is in the promise's boundary rather than here.
     """
     selection = record["selection"]
     present = selection["units_present"]
@@ -1324,7 +1346,7 @@ def capture_flags(record: dict, out: str) -> list[str]:
             gaps.append([index, index])
 
     flags = [
-        f"--release {shlex.quote(str(pathlib.Path(out).parent))}",
+        f"--release {shlex.quote(str(pathlib.Path(out).absolute().parent))}",
         "--producer-tool lemma",
         f"--producer-version {shlex.quote(record['chunker_version'])}",
         "--producer-command python3",
@@ -1335,13 +1357,16 @@ def capture_flags(record: dict, out: str) -> list[str]:
         f"--coverage-end {len(present)}",
     ]
     for start, end in gaps:
-        flags.append("--gap " + shlex.quote(
-            f"start={start},end={end},reason=present in the input and not "
-            f"selected under include {include}"))
+        flags.append(_pairs("--gap", [
+            ("start", str(start)),
+            ("end", str(end)),
+            ("reason", "present in the input and not selected under include "
+                       f"{include}")]))
     for entry in record["inputs"]:
-        flags.append("--input " + shlex.quote(
-            f"name={entry['path']},locator={record['source_ref']},"
-            f"file={entry['path']}"))
+        flags.append(_pairs("--input", [
+            ("name", entry["path"]),
+            ("locator", record["source_ref"]),
+            ("file", entry["path"])]))
     return flags
 
 

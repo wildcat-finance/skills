@@ -1057,6 +1057,51 @@ def test_provenance_emitted(tmp: pathlib.Path) -> None:
     check("the gap names the include pattern the selection was made under",
           md.INCLUDE_PATTERN in gap_line, gap_line or "no --gap printed")
 
+    # `--release` is the one printed value not read from the record, and a
+    # relative `--out` made it relative too. The capture is documented to run
+    # from `--root` rather than from here, so the same string named a
+    # different directory and the statement bound whichever corpus was
+    # sitting in it, with every gate passing. It is printed absolute against
+    # the directory the chunker ran in.
+    rel = tmp / "rel"
+    rel.mkdir()
+    r = subprocess.run([sys.executable, script, "--root", str(root),
+                        "--summary", "", "--exclude", "matches-nothing",
+                        "--source-ref", ref, "--out", "chunks.jsonl"],
+                       capture_output=True, text=True, cwd=str(rel))
+    check("a relative --out still delivers", r.returncode == 0,
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    release = next((line.strip()[len("--release "):]
+                    for line in r.stdout.splitlines()
+                    if line.strip().startswith("--release ")), "")
+    # Compared resolved: `absolute()` reads the working directory the kernel
+    # reports, which on this host is the real path behind /var.
+    check("the printed release is the chunker's directory, not the capture's",
+          bool(release) and pathlib.Path(release) == rel.resolve(),
+          release or "no --release printed")
+
+    # `ariadne.py:132` splits these flags on commas and keeps the last value
+    # for a key it sees twice, so a comma in a recorded path or ref does not
+    # arrive there as a key it rejects: it arrives as a second `name=`, and
+    # the capture verifies clean over a corpus it does not describe.
+    commas = tmp / "commas"
+    commas.mkdir()
+    comma_root = tmp / "comma-src"
+    comma_root.mkdir()
+    (comma_root / "with,comma.md").write_text(f"# C\n\n{LONG}", encoding="utf-8")
+    r = subprocess.run([sys.executable, script, "--root", str(comma_root),
+                        "--summary", "", "--exclude", "matches-nothing",
+                        "--source-ref", ref,
+                        "--out", str(commas / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    printed = [line.strip() for line in r.stdout.splitlines()]
+    check("a comma in a unit name is refused, not printed as a pair",
+          any(line.startswith("--input REFUSED ") and "with,comma.md" in line
+              for line in printed), "\n".join(printed[-3:]))
+    check("and no --input pair is printed carrying that comma",
+          not any(line.startswith("--input ") and "REFUSED" not in line
+                  for line in printed), "\n".join(printed[-3:]))
+
     unstamped = md.chunk_tree(str(root), ["matches-nothing"], None)
     check("chunk_tree leaves provenance unset",
           all(c.corpus_build_id is None and c.source_ref is None
@@ -1333,7 +1378,7 @@ def test_chunkers_share_one_provenance_mechanism() -> None:
     # chunker and not the other, and nothing else would report it.
     import re as _re
     shared = ("skill_version", "corpus_build_id", "_same_file",
-              "_records_beside", "record_path", "capture_flags")
+              "_records_beside", "record_path", "_pairs", "capture_flags")
     source = {name: (ROOT / "chunkers" / f"{name}.py").read_text(encoding="utf-8")
               for name in ("markdown", "solidity")}
     for fn in shared:
