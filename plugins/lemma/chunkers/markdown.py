@@ -38,6 +38,7 @@ import importlib.util
 import json
 import pathlib
 import re
+import shlex
 import sys
 
 _spec = importlib.util.spec_from_file_location(
@@ -1282,6 +1283,93 @@ def record_path(args) -> str:
     return str(chosen)
 
 
+def _pairs(flag: str, items: list[tuple[str, str]]) -> str:
+    """One `key=value,key=value` flag, or a refusal printed in its place.
+
+    `ariadne.py:132` splits these on commas and keeps the last value it sees
+    for a key, so a comma inside a recorded ref, path or pattern does not
+    arrive there as a key that parser rejects. It arrives as a second `name=`
+    or `end=` overriding the one composed here, and the capture then succeeds
+    describing a corpus other than the one on disk. That grammar has no
+    escape, so the flag is refused rather than printed wrong, and the refusal
+    is shaped to break the command if it is pasted anyway.
+    """
+    carried = [value for _, value in items if "," in value]
+    if carried:
+        return (f"{flag} REFUSED {shlex.quote(carried[0])} carries a comma, "
+                f"which ariadne.py:132 reads as another key=value pair; "
+                f"compose this {flag} by hand")
+    return flag + " " + shlex.quote(
+        ",".join(f"{key}={value}" for key, value in items))
+
+
+def capture_flags(record: dict, out: str) -> list[str]:
+    """The `capture-dataset` flags for the corpus that was just written.
+
+    The operator's next command is Ariadne's, and every value it needs about
+    this corpus is already known here. Composing the flags by hand is where
+    the seam leaks: the coverage bounds are a count over a sorted list, the
+    gaps are the runs that list omits, and neither is work worth doing twice.
+
+    Everything but the release directory is read from the record, so the
+    locator printed is the stripped ref rather than the one that was typed,
+    and no path, pattern or version the record does not hold can appear here.
+    The release is the directory `--out` names, made absolute against the
+    working directory the chunker ran in. A relative `--out` would otherwise
+    print a release that names whichever directory the capture is run from,
+    and the capture is documented to run from `--root` rather than from here,
+    so the two would be the same string and a different corpus.
+
+    Coverage reads the source unit dimension: the bounds are the 1-based index
+    range over the sorted units the input declared, and each run of excluded
+    units is a gap naming the include patterns the selection was made under.
+    An interval printed with no gaps reads as complete, which is the reading
+    `predicates/dataset.py:385` refuses, so an excluded unit is named rather
+    than dropped from an interval that would then describe the whole input.
+
+    Neither `--release` nor the corpus filename is recorded, so nothing
+    downstream compares the release this prints against the record beside the
+    chunks. What that costs is in the promise's boundary rather than here.
+    """
+    selection = record["selection"]
+    present = selection["units_present"]
+    excluded = set(selection["units_excluded"])
+    include = " ".join(selection["include"])
+
+    gaps: list[list[int]] = []
+    for index, unit in enumerate(present, 1):
+        if unit not in excluded:
+            continue
+        if gaps and gaps[-1][1] == index - 1:
+            gaps[-1][1] = index
+        else:
+            gaps.append([index, index])
+
+    flags = [
+        f"--release {shlex.quote(str(pathlib.Path(out).absolute().parent))}",
+        "--producer-tool lemma",
+        f"--producer-version {shlex.quote(record['chunker_version'])}",
+        "--producer-command python3",
+        f"--producer-command chunkers/{record['chunker']}.py",
+        "--parameter " + shlex.quote(f"include={include}"),
+        "--coverage-dimension 'source unit'",
+        "--coverage-start 1",
+        f"--coverage-end {len(present)}",
+    ]
+    for start, end in gaps:
+        flags.append(_pairs("--gap", [
+            ("start", str(start)),
+            ("end", str(end)),
+            ("reason", "present in the input and not selected under include "
+                       f"{include}")]))
+    for entry in record["inputs"]:
+        flags.append(_pairs("--input", [
+            ("name", entry["path"]),
+            ("locator", record["source_ref"]),
+            ("file", entry["path"])]))
+    return flags
+
+
 def deliver(chunks: list[Chunk], args) -> None:
     """Write the corpus and the record of what produced it.
 
@@ -1353,6 +1441,9 @@ def deliver(chunks: list[Chunk], args) -> None:
             f"at {args.out} has been removed rather than left behind with "
             "nothing beside it to say what produced it") from e
     print(f"  provenance    : {path}")
+    print("  capture flags : hand these to ariadne capture-dataset")
+    for flag in capture_flags(record, args.out):
+        print(f"      {flag}")
 
 
 def main() -> int:

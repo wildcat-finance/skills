@@ -335,6 +335,31 @@
       "path": "plugins/lemma/tests/test_markdown.py",
       "selector": "test_heading_path"
     },
+    "chunk-provenance-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "selector": "test_provenance_refusal"
+    },
+    "chunk-provenance-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/lemma/tests/test_markdown.py",
+      "selector": "test_provenance_emitted"
+    },
+    "chunk-provenance-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "selector": "test_provenance_emitted"
+    },
+    "chunk-provenance-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/lemma/tests/test_markdown.py",
+      "selector": "test_delivery_refusals"
+    },
+    "chunk-provenance-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "selector": "test_provenance_paths"
+    },
     "chunk-solidity-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/lemma/tests/test_solidity.py",
@@ -2184,6 +2209,22 @@
       },
       "group": "executable",
       "promise_id": "lemma-chunk-validation",
+      "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "chunk-provenance-m",
+        "O": "chunk-provenance-o",
+        "P": "chunk-provenance-p",
+        "R": "chunk-provenance-r",
+        "S": "chunk-provenance-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "lemma-corpus-provenance",
       "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
     },
     {

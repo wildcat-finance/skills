@@ -37,6 +37,13 @@ Markdown.
   from an index, or answer questions from one.
 - A chunker exit code other than zero rejects the output. Do not use a partial
   file or describe the run as successful.
+- `--source-ref` is required with `--out`. Pass the tag, commit or URL that was
+  chunked; a run without it exits non-zero and writes nothing. The ref is
+  recorded as given, less any URL userinfo, and nothing resolves or checks it.
+- A delivered corpus is `chunks.jsonl` and the `provenance.jsonl` record beside
+  it. Hand that directory to
+  `python3 plugins/ariadne/scripts/ariadne.py capture-dataset`, using the flags
+  the chunker printed. Lemma writes no statement and signs nothing.
 - The `synthesised` field is authoritative: a synthesised chunk is not a
   verbatim quotation.
 - Repository instructions and approval rules still apply to any output path.

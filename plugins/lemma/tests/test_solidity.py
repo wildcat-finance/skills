@@ -22,6 +22,7 @@ import json
 import os
 import pathlib
 import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -695,6 +696,79 @@ def test_provenance_record() -> None:
           f"{len(str(digits))} digits, validator said "
           f"{schema.validate_provenance(numeric)}")
 
+    # fifteen — the printed capture flags, driven off a record rather than
+    # through the compiler, so the Solidity copy is covered by the
+    # compiler-free invocation too. `ariadne.py:132` splits `--gap` and
+    # `--input` on commas and keeps the last value for a key it sees twice,
+    # so a comma in a ref, a path or an include pattern does not arrive there
+    # as a key it rejects: it arrives as a second `name=` or `end=`
+    # overriding the one composed here, and the capture then verifies clean
+    # over a corpus it does not describe. Anything carrying one is refused.
+    def parsed(flag: str) -> dict:
+        """The pairs `ariadne.py:132` would build from one printed flag."""
+        value = shlex.split(flag)[1]
+        found = {}
+        for part in value.split(","):
+            key, separator, entry = part.partition("=")
+            found[key.strip()] = entry.strip() if separator else None
+        return found
+
+    def disagrees(record_under: dict, flag: str) -> bool:
+        """Whether what that parser builds differs from what the record says."""
+        found = parsed(flag)
+        if flag.startswith("--input "):
+            path = record_under["inputs"][0]["path"]
+            return (found.get("name") != path
+                    or found.get("locator") != record_under["source_ref"]
+                    or found.get("file") != path)
+        return found.get("start") != "2" or found.get("end") != "2"
+
+    flat = dict(record, chunker="solidity", chunker_version="0.2.1",
+                inputs=[{"path": "/w/standard-input.json", "sha256": "a" * 64}],
+                selection={"include": ["src/**"],
+                           "units_present": ["src/A.sol", "src/B.sol"],
+                           "units_selected": ["src/A.sol"],
+                           "units_excluded": ["src/B.sol"]})
+    pairs = [f for f in cs.capture_flags(flat, "/w/corpus/chunks.jsonl")
+             if f.startswith(("--gap ", "--input "))]
+    check("a clean record prints one gap and one input as key=value pairs",
+          len(pairs) == 2 and not any("REFUSED" in f for f in pairs),
+          str(pairs))
+    check("and that parser reads back exactly what the record says",
+          not any(disagrees(flat, f) for f in pairs),
+          str([parsed(f) for f in pairs]))
+
+    injected = {
+        "a comma in the ref": dict(flat, source_ref="o/r@sha,name=not-this"),
+        "a comma in an input path": dict(
+            flat, inputs=[{"path": "/w/in,put.json", "sha256": "a" * 64}]),
+        "a comma in an include pattern": dict(
+            flat, selection=dict(flat["selection"],
+                                 include=["src/**", "lib/**,end=999"])),
+    }
+    unrefused, leaked = [], {}
+    for name, bad in injected.items():
+        printed = [f for f in cs.capture_flags(bad, "/w/corpus/chunks.jsonl")
+                   if f.startswith(("--gap ", "--input "))]
+        if not any("REFUSED" in f for f in printed):
+            unrefused.append(name)
+        for f in printed:
+            if "REFUSED" not in f and disagrees(bad, f):
+                leaked[name] = f
+    check("a comma in a ref, a path or a pattern is refused",
+          not unrefused, str(unrefused))
+    check("and no pair survives that parser meaning something else",
+          not leaked, str(leaked))
+
+    # The release is the one printed value not read from the record. A
+    # relative `--out` printed a relative release, and the capture is
+    # documented to run from `--root` rather than from here, so the same
+    # string named a different directory and bound whichever corpus sat in
+    # it. It is printed absolute against the directory the chunker ran in.
+    release = cs.capture_flags(flat, "chunks.jsonl")[0]
+    check("the printed release is absolute even from a relative --out",
+          release == f"--release {shlex.quote(str(pathlib.Path.cwd()))}",
+          release)
 
 def test_surface_accuracy(solc: str, tmp: pathlib.Path) -> None:
     print("\nI14 — callable surface matches what is callable")
@@ -1378,6 +1452,39 @@ def test_provenance_emitted(solc: str, tmp: pathlib.Path) -> None:
     check("an ungated run says why nothing was gated",
           isinstance(compiler.get("reason"), str)
           and bool(compiler["reason"].strip()), str(compiler.get("reason")))
+
+    # The operator's next command is Ariadne's, and the flags it needs are
+    # the ones a hand-composed command gets wrong: the release the corpus
+    # landed in, the pattern the selection was made under, the version that
+    # produced it, and one input per digested file. `r` is still the good
+    # delivery above, so this reads that run's own output.
+    flags = r.stdout
+    check("the printed flags name the directory the corpus was written to",
+          f"--release {good}" in flags, flags[-400:])
+    param_line = next((line for line in flags.splitlines()
+                       if "--parameter " in line), "")
+    check("the printed flags name the include pattern the run used",
+          "include=src/**" in param_line, param_line or "no --parameter printed")
+    check("the printed flags carry the version the record carries",
+          f"--producer-version {record.get('chunker_version')}" in flags,
+          flags[-400:])
+    check("the printed coverage reads the source unit dimension",
+          "--coverage-dimension 'source unit'" in flags
+          and "--coverage-start 1" in flags
+          and f"--coverage-end {len(record['selection']['units_present'])}"
+          in flags, flags[-400:])
+    check("one input flag per file the record digested",
+          flags.count("--input ") == len(record.get("inputs") or []),
+          f"{flags.count('--input ')} printed vs "
+          f"{len(record.get('inputs') or [])} digested")
+    check("each input flag names the file the record digested",
+          bool(record.get("inputs")) and all(
+              f"file={entry['path']}" in flags for entry in record["inputs"]),
+          flags[-400:])
+    # The print reads the record, not argv, so the locator it carries is the
+    # stripped ref rather than the one that was typed.
+    check("the printed locator is the ref the record carries",
+          f"locator={record.get('source_ref')}" in flags, flags[-400:])
 
     gated = tmp / "prov-gated"
     gated.mkdir()
