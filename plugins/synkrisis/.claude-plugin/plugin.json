@@ -1,8 +1,8 @@
 {
   "name": "synkrisis",
   "displayName": "Synkrisis",
-  "version": "0.3.0",
-  "description": "Checked cohort construction and bounded diagnosis over validated run observations; rendering and verification are held runbook steps.",
+  "version": "0.4.0",
+  "description": "Checked cohort construction, bounded diagnosis, fixed-template rendering and whole-path verification over validated run observations.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"

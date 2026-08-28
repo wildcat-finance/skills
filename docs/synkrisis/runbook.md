@@ -3,8 +3,8 @@
 Derived from [the committed study](study.md) and the runbook attached to
 [issue #449](https://github.com/wildcat-finance/skills/issues/449). Five
 steps, dependency order, each landing only with its exit gates green. Steps 1
-through 3 are delivered; Steps 4 and 5 are held, and the evolution ledger's
-Next Fiat job names the next one.
+through 4 are delivered; Step 5 is held, and the evolution ledger's Next Fiat
+job names it.
 
 ## Step 1: Scaffold Synkrisis and commit its specification (delivered)
 
@@ -60,11 +60,11 @@ fractions, duplicate rule ids, tampered cohorts and drifted records. The
 checked-rule and issue-437 decision records land, and all Step 2 gates stay
 green.
 
-## Step 4: Render and verify the exact report (held)
+## Step 4: Render and verify the exact report (delivered)
 
 **Goal.** A readable report whose every claim reconstructs from the
 findings, then whole-path verification.
-**Exit.** `synkrisis.py render` uses fixed templates and refuses findings
+**Exit, held at delivery.** `synkrisis.py render` uses fixed templates and refuses findings
 carrying causal language, a strengthened evidence class or unknown fields;
 `synkrisis.py verify` independently recomputes the cohort, findings and
 report bytes from the original manifest, policy, records and catalogue, and

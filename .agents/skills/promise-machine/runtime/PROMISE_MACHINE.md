@@ -135,9 +135,10 @@ In particular:
 - A Fiat run-observation binding preserves the observation validator and
   capture boundaries. It attaches only the checked prefix to one receipt; it
   does not make observation availability or event truth delivery evidence.
-- Synkrisis contributes a checked cohort and bounded findings over it. It
-  establishes no report or verification while those steps stay held, and it
-  cannot turn repeated observations into cause, model quality, or authority to
+- Synkrisis contributes a checked cohort, bounded findings over it, a
+  fixed-template report and a recomputation of all three. Verification
+  establishes recomputability alone: it cannot turn repeated observations into
+  cause, model quality, or authority to
   act. It preserves the validated observation and receipt boundaries, so a
   comparison result carries its counterevidence and unknown runs into any
   hand-off and strengthens nothing.

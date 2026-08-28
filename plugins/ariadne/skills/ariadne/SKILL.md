@@ -44,10 +44,10 @@ can supply other release subjects and evidence. Ariadne binds and gates those
 exact inputs. It neither reruns a sibling's work nor upgrades its result, and
 signature creation and verification remain with cosign.
 
-Synkrisis is the partly built comparison boundary for validated run
-observations. It writes a cohort and findings. Ariadne may bind such a
-comparison artefact to evidence, but that binding will not establish cause or
-authorise action.
+Synkrisis is the comparison boundary for validated run observations. It writes
+a cohort, findings and a verified report. Ariadne may bind such a comparison
+artefact to evidence, but that binding will not establish cause or authorise
+action.
 
 `$SKILL_DIR` is the directory holding this file. The tool lives at
 `$SKILL_DIR/../../scripts/ariadne.py`; resolve it from where you loaded this
