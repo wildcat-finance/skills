@@ -19,8 +19,11 @@ questions for whoever is reading a red suite.
   fails saying the hostile configuration failed to be hostile, which points at
   the harness rather than at the fix, and needs a different repair.
 - *Did a fixture commit get signed with my key?* The positive case reads ``%G?``
-  and requires exactly ``N``. A commit that succeeds but is signed still breaks
-  the rule.
+  and requires exactly ``N``, and reads the commit object and requires no
+  signature header. A commit that succeeds but is signed still breaks the rule.
+  The object read is the half that discriminates: ``%G?`` is a verification
+  verdict, and under the hostile configuration git has no verifier, so it
+  answers ``N`` for a signed commit as readily as for an unsigned one.
 
 Nothing here skips. A guard that skips when it cannot build its hostile
 configuration reports as a pass and reads as evidence, so a missing git or an
@@ -137,6 +140,22 @@ class HostileCase(unittest.TestCase):
                 f"repository ({result.stderr.strip()})"
             )
         return result
+
+    def signature_headers(self, root, environment):
+        """The commit object's signature headers, read without any verifier.
+
+        ``%G?`` is a verification verdict rather than a presence check. The
+        hostile configuration names no ``gpg.ssh.allowedSignersFile``, so git
+        cannot verify an ssh signature under it and reports ``N`` -- the same
+        letter a genuinely unsigned commit gets. Measured on an ssh-signing
+        host: a commit signed with the contributor's real key reads ``G``
+        under their own configuration and ``N`` under either hostile arm. The
+        object itself needs no verifier and no key material, so it answers
+        "was this signed" the same way whatever configuration is in force.
+        """
+        raw = self.git_or_fail(root, environment, "cat-file", "commit", "HEAD")
+        headers = raw.stdout.split("\n\n", 1)[0].splitlines()
+        return [line.split(" ", 1)[0] for line in headers if line.startswith("gpgsig")]
 
     def fixture(self, files, declare, base=None):
         """Build a disposable repository under the hostile arm and commit once.
@@ -358,6 +377,104 @@ class LocalDeclaration(HostileCase):
                     "succeeds but is signed still breaks the rule, because it "
                     "signs fixture history with the contributor's real identity",
                 )
+                # `%G?` above cannot carry this on its own: it reports `N` for
+                # a signed commit it has no verifier for, which under the
+                # hostile configuration is every signed commit. The object is
+                # read too, and it is the half that discriminates.
+                self.assertEqual(
+                    self.signature_headers(
+                        root, harness.child_environment(files.config)
+                    ),
+                    [],
+                    "the fixture commit object carries a signature header. A "
+                    "commit that succeeds but is signed still breaks the rule, "
+                    "because it signs fixture history with the contributor's "
+                    "real identity",
+                )
+
+
+class SignedFixture(HostileCase):
+    """A signed fixture commit is caught, and `%G?` alone is not what catches it.
+
+    Under the hostile configuration git has no ``gpg.ssh.allowedSignersFile``,
+    so it cannot verify an ssh signature and reports ``N`` -- the same letter a
+    genuinely unsigned commit gets. A positive case that read only ``%G?``
+    would pass on fixture history signed with the contributor's real identity,
+    which is the outcome this whole delivery exists to prevent on an
+    ssh-signing host. This builds a genuinely signed commit from a throwaway
+    key that never leaves the test's own temporary directory, and shows both
+    halves: ``%G?`` says ``N``, and the commit object says otherwise.
+    """
+
+    def throwaway_key(self):
+        """An ed25519 key belonging to this test, so no real identity signs."""
+        keygen = shutil.which("ssh-keygen")
+        if keygen is None:
+            self.fail(
+                "this guard fails rather than skips: ssh-keygen is not "
+                "available, so a genuinely signed fixture commit cannot be "
+                "built and the positive case's signature assertion would go "
+                "unproven"
+            )
+        key = self.workspace / "throwaway-key"
+        result = subprocess.run(
+            [keygen, "-q", "-t", "ed25519", "-N", "", "-C", "throwaway",
+             "-f", str(key)],
+            capture_output=True,
+            text=True,
+            timeout=GIT_TIMEOUT_SECONDS,
+        )
+        if result.returncode != 0:
+            self.fail(
+                "this guard fails rather than skips: a throwaway signing key "
+                f"could not be generated ({result.stderr.strip()})"
+            )
+        return key
+
+    def test_a_signed_fixture_commit_reads_as_unsigned_under_the_hostile_config(self):
+        key = self.throwaway_key()
+        files = self.hostile(harness.UNSIGNED, name="signed-fixture")
+        root = files.config.parent / "signed"
+        root.mkdir()
+        signing = self.workspace / "signing.gitconfig"
+        signing.write_text(
+            harness.IDENTITY
+            + f"\tsigningkey = {key}\n"
+            "[commit]\n\tgpgsign = true\n"
+            "[gpg]\n\tformat = ssh\n",
+            encoding="utf-8",
+        )
+        environment = harness.child_environment(signing)
+        self.git_or_fail(root, environment, "init", "-q")
+        (root / "fixture.txt").write_text("signed history\n", encoding="utf-8")
+        self.git_or_fail(root, environment, "add", "fixture.txt")
+        commit = self.git(root, environment, "commit", "-qm", "signed history")
+        self.assertEqual(
+            commit.returncode,
+            0,
+            "a throwaway ssh key could not sign a fixture commit, so this "
+            f"test cannot say what a signed one looks like. git said: "
+            f"{commit.stderr.strip()}",
+        )
+
+        hostile = harness.child_environment(files.config)
+        status = self.git(root, hostile, "log", "-1", "--format=%G?")
+        self.assertEqual(
+            status.stdout.strip(),
+            "N",
+            "`%G?` reported something other than `N` for a signed commit it "
+            "cannot verify. That is a better answer than the one measured "
+            "here, and the positive case's `%G?` assertion is stronger than "
+            "this test assumes -- but the object read below is what the "
+            "positive case relies on, so update this test rather than it",
+        )
+        self.assertNotEqual(
+            self.signature_headers(root, hostile),
+            [],
+            "a commit signed with a throwaway ssh key shows no signature "
+            "header, so the check the positive case relies on cannot tell a "
+            "signed fixture from an unsigned one and the rule is unguarded",
+        )
 
 
 class CoveredSuites(HostileCase):
