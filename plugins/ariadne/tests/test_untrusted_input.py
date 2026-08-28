@@ -60,6 +60,14 @@ class DuplicateKeyTests(unittest.TestCase):
         self.assertEqual(safejson.loads(data)["two"]["name"], "b")
 
 
+class JsonGrammarTests(unittest.TestCase):
+    def test_non_json_numeric_constants_are_refused(self):
+        for value in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(value=value):
+                with self.assertRaises(safejson.InputError):
+                    safejson.loads(('{"value": %s}' % value).encode("ascii"))
+
+
 class ThroughTheReaderTests(unittest.TestCase):
     """The bounds apply to the envelope and to the payload inside it."""
 

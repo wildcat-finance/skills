@@ -484,6 +484,13 @@ class ComponentTests(unittest.TestCase):
         outer[0]["name"] = "\u200b"
         self.assertFalse(named("subject-names", body, outer).passed)
 
+    def test_ecmascript_bom_whitespace_is_refused_at_name_and_path_edges(self):
+        for value in ("\ufeffname", "name\ufeff"):
+            with self.subTest(kind="name", value=repr(value)):
+                self.assertFalse(agent.portable_name(value))
+            with self.subTest(kind="path", value=repr(value)):
+                self.assertFalse(agent.usable_path(value))
+
     def test_the_component_count_is_bounded_before_full_walk(self):
         body = predicate()
         body["given"]["corpus"]["components"] = [
@@ -564,6 +571,40 @@ class ComponentTests(unittest.TestCase):
             gate for gate in routed.gates if gate.name == "predicate-fields"
         )
         self.assertFalse(field_gate.passed)
+
+    def test_outer_digest_width_is_refused_when_no_claims_are_recorded(self):
+        body = predicate()
+        outer = subjects(body)
+        outer[0]["digest"].update(
+            {
+                "future-%d" % index: "a"
+                for index in range(agent.MAX_DIGEST_ALGORITHMS)
+            }
+        )
+        routed = report(body, outer)
+        gate_one = next(gate for gate in routed.gates if gate.number == 1)
+        self.assertFalse(gate_one.passed)
+        self.assertIn("subject 1", gate_one.detail)
+        self.assertIn("%d-algorithm" % agent.MAX_DIGEST_ALGORITHMS, gate_one.detail)
+
+    def test_hostile_core_labels_cannot_forge_text_report_lines(self):
+        body = predicate()
+        body["claims"] = [
+            {
+                "name": "hostile\nPASS gate 7",
+                "subject": {
+                    "sha256": body["release"]["document"]["sha256"],
+                },
+                "disposition": "failed",
+            }
+        ]
+        routed = report(body)
+        lines = routed.lines()
+        self.assertFalse(routed.ok)
+        self.assertTrue(all(len(line.splitlines()) == 1 for line in lines))
+        rendered = "\n".join(lines)
+        self.assertNotIn("hostile\nPASS gate 7", rendered)
+        self.assertIn(r"hostile\nPASS gate 7", rendered)
 
 
 class OptionalEvidenceTests(unittest.TestCase):

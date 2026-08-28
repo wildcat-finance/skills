@@ -166,7 +166,15 @@ def stated(value, limit=MAX_TEXT):
 
 def portable_name(value):
     """A bounded label with one ASCII graphic and no C0 or C1 control."""
-    if not stated(value, MAX_NAME) or value != value.strip():
+    if (
+        not stated(value, MAX_NAME)
+        or value != value.strip()
+        # JSON Schema patterns use ECMA-262, whose whitespace set includes the
+        # byte-order mark. Python's strip does not, so name and path edges must
+        # refuse it explicitly to keep the two public validators aligned.
+        or value.startswith("\ufeff")
+        or value.endswith("\ufeff")
+    ):
         return False
     if not any("!" <= char <= "~" for char in value):
         return False

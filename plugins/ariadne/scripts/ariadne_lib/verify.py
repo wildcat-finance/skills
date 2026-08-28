@@ -72,7 +72,7 @@ class Report(object):
         ]
         out.extend(gate.line() for gate in self.ordered)
         out.extend(self.unchecked)
-        return out
+        return [gates_module.one_line(line) for line in out]
 
     def to_dict(self):
         return {

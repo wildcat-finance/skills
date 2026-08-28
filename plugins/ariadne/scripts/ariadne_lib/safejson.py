@@ -65,6 +65,11 @@ def no_duplicate_keys(pairs):
     return dict(pairs)
 
 
+def no_non_json_constant(value):
+    """Refuse Python's NaN and infinity extensions to the JSON grammar."""
+    raise InputError("non-JSON numeric constant %s" % value)
+
+
 def loads(data, max_bytes=DEFAULT_MAX_BYTES, max_depth=DEFAULT_MAX_DEPTH):
     if max_bytes < 1 or max_depth < 1:
         raise InputError(
@@ -81,7 +86,11 @@ def loads(data, max_bytes=DEFAULT_MAX_BYTES, max_depth=DEFAULT_MAX_DEPTH):
         )
     check_depth(data, max_depth)
     try:
-        return json.loads(data.decode("utf-8"), object_pairs_hook=no_duplicate_keys)
+        return json.loads(
+            data.decode("utf-8"),
+            object_pairs_hook=no_duplicate_keys,
+            parse_constant=no_non_json_constant,
+        )
     except UnicodeDecodeError as error:
         raise InputError("not UTF-8: %s" % error)
     except json.JSONDecodeError as error:

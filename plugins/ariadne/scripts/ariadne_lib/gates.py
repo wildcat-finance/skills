@@ -79,7 +79,12 @@ class Gate(object):
     def line(self):
         mark = "pass" if self.passed else "FAIL"
         label = "gate %d" % self.number if self.number else "check"
-        return "%s %s: %s -- %s" % (label, self.name, mark, self.detail)
+        return "%s %s: %s -- %s" % (
+            label,
+            one_line(self.name),
+            mark,
+            one_line(self.detail),
+        )
 
     def to_dict(self):
         return {
@@ -88,6 +93,17 @@ class Gate(object):
             "passed": self.passed,
             "detail": self.detail,
         }
+
+
+def one_line(value):
+    """Render an untrusted diagnostic value without terminal line injection."""
+    out = []
+    for character in str(value):
+        if character.isprintable():
+            out.append(character)
+        else:
+            out.append(character.encode("unicode_escape").decode("ascii"))
+    return "".join(out)
 
 
 def _limit(limits, name):
@@ -106,25 +122,21 @@ def gate_1_subjects(statement, limits=None):
     A result tied to a repository or a branch is the thing this gate exists to
     refuse. Those move. A digest does not.
     """
-    found = core_predicate.claims(statement.predicate)
-    if found is None:
-        # Whether the block has to be there is gate 3's question. Failing here
-        # as well would report one fault twice and tell a reader that two
-        # separate things went wrong.
-        return Gate(1, "subject-naming", True, "no claims block; gate 3 covers that")
-    if not found:
-        return Gate(1, "subject-naming", True, "no claims recorded")
-
     faults = []
+    found = core_predicate.claims(statement.predicate)
     claim_limit = _limit(limits, "claims")
     subject_limit = _limit(limits, "subjects")
     digest_algorithm_limit = _limit(limits, "digest_algorithms")
-    if claim_limit is not None and len(found) > claim_limit:
+    if found is not None and claim_limit is not None and len(found) > claim_limit:
         faults.append(
             "claims has %d entries; this predicate reads at most %d"
             % (len(found), claim_limit)
         )
-    checked_claims = found[:claim_limit] if claim_limit is not None else found
+    checked_claims = (
+        found[:claim_limit]
+        if found is not None and claim_limit is not None
+        else (found or [])
+    )
     checked_subjects = (
         statement.subjects[:subject_limit]
         if subject_limit is not None
@@ -152,6 +164,19 @@ def gate_1_subjects(statement, limits=None):
                 first_count,
             )
         )
+    if found is None:
+        # Whether the block has to be there is gate 3's question. Failing here
+        # as well would report one fault twice and tell a reader that two
+        # separate things went wrong. Predicate-owned subject bounds still
+        # apply because the subjects exist independently of the claims block.
+        if faults:
+            return Gate(1, "subject-naming", False, "; ".join(faults))
+        return Gate(1, "subject-naming", True, "no claims block; gate 3 covers that")
+    if not found:
+        if faults:
+            return Gate(1, "subject-naming", False, "; ".join(faults))
+        return Gate(1, "subject-naming", True, "no claims recorded")
+
     for index, claim in enumerate(checked_claims):
         name = core_predicate.label(claim, index, "claim")
         if not isinstance(claim, dict):
