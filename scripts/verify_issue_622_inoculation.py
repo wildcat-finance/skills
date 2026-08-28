@@ -149,9 +149,11 @@ ADDITIONAL_CURRENT_PATHS = frozenset({
     RECORD_PATH,
 })
 # These are the only current-source or bootstrap rebindings permitted to
-# diverge from the round-8 bytes in the published 27-path table.  The verifier
-# itself is the checked trust root, so verify_cumulative_targets binds its
-# execution path instead of asking it to vouch for its own digest.
+# diverge from the round-8 bytes in the published 27-path table.  Checks in
+# this file are what a caller already chose to execute, so
+# verify_cumulative_targets binds the execution path
+# scripts/verify_issue_622_inoculation.py instead of asking this file to
+# vouch for its own digest.
 EXPECTED_CUMULATIVE_REBIND_SHA256 = {
     "plugins/hermes/skills/hermes/scripts/test_hermes.py": (
         "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b"
@@ -662,9 +664,10 @@ EXPECTED_CURRENT_CAUSES = {
 }
 # The Carryover-3 packet delegates the row-level 23-finding map to the
 # machine record and the immutable audit sources whose digests its 27-path
-# inventory pins.  The carried map is therefore compiled here, in the
-# checked trust root, exactly as the predecessor packet published it; the
-# packet's declared counts still cross-check it independently.
+# inventory pins.  The carried map is therefore compiled here, inside the
+# verifier a caller already chose to execute, exactly as the predecessor
+# packet published it; the packet's declared counts still cross-check it
+# independently.
 EXPECTED_CARRIED_FINDINGS = {
     "S2-R1-01": {
         "owner": RUNNER_PATH,
@@ -2458,7 +2461,7 @@ def verify_cumulative_targets(root, current_inventory):
 
 
 def verify(packet_path, patch_path, record_path, root):
-    """Run the complete artifact, record, target, AST, and Git bootstrap."""
+    """Run the complete bootstrap over the packet, the record and the tree."""
     root = Path(root).resolve(strict=True)
     packet = bounded_regular_bytes(packet_path, MAX_PACKET_BYTES, "packet")
     patch = bounded_regular_bytes(patch_path, MAX_PATCH_BYTES, "patch")
