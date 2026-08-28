@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 886,
-  "total_bytes": 19932315,
+  "total_bytes": 19932946,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -55,9 +55,9 @@
       "source": ".python-version"
     },
     {
-      "bytes": 12023,
+      "bytes": 12107,
       "path": "AGENTS.md",
-      "sha256": "df1eeff8b434fb8dda2d4fc886069aafa5afe0fcc31933325f78a5dfacf5843d",
+      "sha256": "de3267d76163860f0fafe3a422d834c3eb1fa69d19cf092e65d35832dad8d9a7",
       "source": "AGENTS.md"
     },
     {
@@ -73,9 +73,9 @@
       "source": "PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3475,
+      "bytes": 4022,
       "path": "SHOGGOTH.md",
-      "sha256": "26a70b1524db7a1c0218ebeaa4935bad1b1c208d1e9477fbbb8181205deb1f22",
+      "sha256": "1adbccd201f3838902bc6ad72b230e4e97b95e39e9c13860b9fcd408e95f648b",
       "source": "SHOGGOTH.md"
     },
     {
