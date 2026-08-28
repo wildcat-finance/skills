@@ -1962,3 +1962,162 @@ eventual issue-or-document wording for issue #556 generation rows. No other
 in-scope lead remained after the full risk-register review. This final allowed
 round found one fixed defect, so it is not a zero-finding closure; after the
 round is receipted, Fiat's max-round gate owns the next decision.
+
+## Step 4, round 1 -- 2026-08-28
+
+Zero findings over signed Mason commit
+`d5d61e58517dffad3505b2b073e89b8194beaa59`, whose sole parent is the signed,
+audited Step 3 tip `7339825123cc96d29fdc2a084ca5cc04bf4c087a`.
+The Mason commit has a valid Shoggoth signature and exactly one required
+co-author trailer and one origin trailer.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+### Evidence
+
+The complete Step 4 diff changes eight declared product paths: ADR-006, the
+tracked runbook, the Fiat and Protasis ledgers and skill metadata, and two test
+files. It adds 157 lines and removes nine. Neither controller code nor Promise
+Machine bytes change. Each ledger is byte-identical to pinned starting commit
+`8e6480230a5f43c57aef4f9a6c52f4c602d86790` through the Step 3 parent. The
+Step 4 diff then changes only its current-version header and appends one row.
+Fiat retains its exact 27-row prefix and adds `fiat-v5.23.1`; Protasis retains
+its exact 11-row prefix and adds `protasis-v4.8.0`. Both additions are one
+generation above the integration-base label with evolution and epoch fixed.
+
+The generic evolution contract recomputes every governed frontier digest,
+matches each header to its final row and skill metadata, enforces one-axis
+arithmetic across every adjacent history pair, and requires a generation to
+retain the preceding revision and digest. The Step 4 cases additionally pin
+the two current labels, frontier status, revision, full current-frontier text,
+full held next-job text, issue-556 evidence, relation wording, and ADR addendum.
+The complete Step 1 through Step 3 relation matrix remains green, including
+causal deletion, edit, reorder, duplicate, fenced-decoy, generation-drift,
+metadata, multi-target, ref-race, signed-sync, replay, and interruption guards.
+
+The parent-red report at
+`tmp/elenchus/fiat-556-step-4-parent-red.json` is SHA-256
+`dbaf6a967a8e7b90cecdaec7e9178bcacc3daa96a10dede83f357c791ece9154`.
+It is complete `elenchus.unittest.v1` evidence for 1,165 tests with two
+failures, one error, and zero skips: the old tree lacks both relation-selected
+generation records and the issue-556 ADR addendum. The preserved final-green
+report at `tmp/elenchus/fiat-556-step-4-final-green.json` is SHA-256
+`9183b2c1ae07161b0e598b2aea8610524bf9ebabbc47b664d9a7c47d1516b82d`.
+It records the same 1,165 tests with zero failures, errors, or skips. This
+zero-finding round made no fixes commit and therefore owes no audit-fix report
+or Elenchus verdict; `tmp/elenchus/fiat-556-step-4.json` remains absent.
+
+The effective amended Exit is green. The relation and Protasis pair ran 191
+tests, the exact evolution contract ran 10, the root suite ran 351, and the
+final Hexaemeron suite ran 1,165. The root suite's legacy test fixture printed
+its 1,258-case `INOCULATION` summary with zero crashes and zero unexpected
+clean cases; no inoculation, recovery, checkpoint, archive, or controller
+transition ran. Promise Machine reports 14 clean copies and 72 of 72 covered
+promises. Python compilation, coverage JSON parsing, Horos, and `git diff
+--check` are clean.
+
+The receipted and tracked study are byte-identical at SHA-256
+`4f379dac26ed32af4310bcd55ebaef7ca91774da7ca53f69f2d3a6401e8942c7`;
+the receipted and tracked runbook are byte-identical at SHA-256
+`49318dc8abcc517dbee5429197e2b8ec40badb6581fbae2e8a0e61882ee4b63f`.
+The misplaced plugin-local study is absent. All five unchanged study links and
+all six new local ledger links resolve. Protasis and the focused Hypomnema
+link pass accept both tracked artefacts.
+
+Phylax, Ephoros, and Hypomnema each exit 0. Per-file Imprimatur gives all six
+changed prose files 100.0 out of 100 with zero defects. Per-file Brevitas exits
+0 for ADR-006, Fiat's ledger and skill, and Protasis's skill. It repeats three
+diagnostics from the exact Step 4 parent: B027 on tracked-runbook line 18 and
+B010/B011 on the one-section Protasis ledger. The former is outside this
+append and receipt-bound; both files are completeness-oriented specifications
+excluded by the Brevitas contract. No Step 4 byte introduced a Brevitas
+diagnostic, and the three controller-required non-Solidity lint exits are 0.
+Imprimatur scores the complete audit record 100.0 out of 100 with zero defects.
+Brevitas reports twelve B011 table-shape diagnostics: eleven in the unchanged
+prefix and this round's required empty table. It reports no other diagnostic;
+removing a table or inventing rows would falsify the audit-loop record.
+
+The prior 127,471-byte, 1,964-line record is the exact prefix of this append at
+SHA-256
+`dad91f5887db4c1d1c2e8e1ed2aa26db8c03a8a5650f13f7d90c60d2027789d7`.
+`audit/AUDIT.md` remains byte-identical at SHA-256
+`582aa3cfe6b83344c0c6f52987d55ab5a180b429a2199fccd14f6ff769a267d1`.
+
+### Risk register
+
+`generation-arithmetic`, `frontier-drift`, `ledger-history-rewrite`,
+`metadata-mismatch`, and `self-hosted-collision` are green. Exact pinned-base
+comparison proves the two unchanged prefixes and held tuples; the product adds
+one relation-selected generation row and matching metadata for each target.
+The generic contract and direct Step 4 cases guard the arithmetic, digest,
+frontier text, held job, evidence, and selected labels.
+
+`relation-block-shape` and `literal-compatibility` are green. The final tree
+retains Step 1's accepted optional block grammar, P006 refusals, fenced-decoy
+handling, no-block and partial-target acceptance, and rejection of a concrete
+declared-target token outside the block. The effective runbook contains no
+literal future target label.
+
+`anchor-substitution`, `git-object-shape`, `base-ref-race`, `run-ref-race`,
+`post-check-race`, `remote-evidence-failure`, `sync-carriage`, and
+`revalidation-coverage` are green. Stable replacement-free native Git reads,
+exact bounded blobs, repository identity, ordered merge parents, pinned native
+signature verification, complete affected-path coverage, and terminal
+post-merge base reread remain causally exercised.
+
+`multi-target-partial`, `resolution-staleness`, `state-history-growth`,
+`diagnostic-leak`, `promise-overclaim`, `legacy-state`, `receipt-replay`, and
+`interrupted-resolution` are green. Atomic sorted receipts, eight-entry
+retention and ninth refusal, value-free stale status, legacy absence, exact
+replay, and each pending write boundary remain covered. The ADR and ledger
+wording preserve the bootstrap limit: this pinned pre-change controller did
+not earn or retrospectively construct the new resolution receipt.
+
+### Sapheneia durable-record comparison
+
+The frozen subject is this Step 4 round 1 append. Its source inventory is the
+complete eight-path diff, effective runbook, study and risk register, signed
+Mason boundary, preserved red and green reports, exact command results,
+prior-prefix evidence, scope exclusions, negative evidence, qualifications,
+unknowns, and unpursued leads. The candidate retains the required heading,
+five-column empty finding table, evidence, full 23-risk disposition, scope
+boundary, and leads-not-pursued field. Item by item:
+
+1. Zero findings, no fixes commit, and no Elenchus verdict remain explicit.
+2. Every commit, path, hash, version, row count, byte count, line count, test
+   count, failure, error, skip, exit, diagnostic, and signature/trailer fact is
+   retained.
+3. The inherited Brevitas diagnostics, legacy fixture label, bootstrap limit,
+   absent audit-fix report, and absence of controller or remote mutation remain
+   explicit qualifications or negative evidence.
+4. All 23 risk ids have an explicit green disposition, with the exact local
+   evidence or inherited causal guards named.
+5. The prior 127,471-byte, 1,964-line record remains the exact prefix at the
+   recorded SHA-256.
+
+No protected item or required host field is missing or mismatched. The checked
+declaration for the owning controller gate is exactly
+`--audit-filter sapheneia:sapheneia`; this round did not call that mutating
+gate.
+
+### Scope boundary
+
+This round audited the complete Step 4 product diff and its interaction with
+Steps 1 through 3 from the exact required stacked branch. It changed only this
+append-only audit record. No Solidity is present, so the security suite is
+waived and the three mandatory lint exits are the mechanical audit. No
+controller command that mutates run state, push, pull request, merge, issue
+change, remote write, archive, checkpoint, recovery, inoculation, or unrelated
+repository action ran.
+
+Leads not pursued: changing inherited, receipt-bound runbook text or governed
+ledger structure solely to silence an excluded Brevitas diagnostic would break
+the accepted source or evidence shape and is not an issue-556 product repair.
+A caller controlling process `PATH`, system verifier binaries, signature trust
+stores, controller storage, and native Git objects still controls those local
+trust boundaries; no independent trust root is claimed. GitHub still supplies
+no atomic expected-base lock, so final integration relies on exact parent
+replay and the post-merge base reread. The generic prose-phase file list does
+not enter this Step 4 proof. No other in-scope lead remained after the complete
+risk-register review.
