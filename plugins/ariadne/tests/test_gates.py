@@ -241,6 +241,20 @@ class GateSevenTests(unittest.TestCase):
             gate = only(7, {"claims": [], "commands": [], key: "someone"})
             self.assertFalse(gate.passed, key)
 
+    def test_direct_authorship_identity_and_status_compounds_fail(self):
+        for key in (
+            "signature_status",
+            "verificationStatus",
+            "SIGNER-IDENTITY",
+            "attestation_status",
+            "authorshipIdentity",
+            "notarization_status",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "verified"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
     def test_an_author_in_a_subject_annotation_fails_too(self):
         gate = only(
             7,

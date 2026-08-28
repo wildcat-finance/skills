@@ -296,7 +296,7 @@ def hash32(value):
     accepting it would let a proof-backed count sit beside a state root that was
     never filled in.
     """
-    if not isinstance(value, str) or not HASH32.match(value):
+    if not isinstance(value, str) or not HASH32.fullmatch(value):
         return False
     return value != ZERO_HASH
 

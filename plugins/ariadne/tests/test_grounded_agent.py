@@ -977,6 +977,21 @@ class EvidenceBoundaryTests(unittest.TestCase):
             "authenticated_by",
             "notarised_by",
             "notarized_by",
+            "author_identity",
+            "authorship_status",
+            "creator_identity",
+            "publisher_status",
+            "signer_identity",
+            "signing_status",
+            "signature_status",
+            "verifier_identity",
+            "verification_status",
+            "attester_identity",
+            "attestation_status",
+            "authentication_status",
+            "notary_identity",
+            "notarisation_status",
+            "notarization_status",
         )
         for key in keys:
             body = predicate()

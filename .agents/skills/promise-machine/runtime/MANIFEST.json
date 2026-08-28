@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11101411,
+  "total_bytes": 11103176,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -589,21 +589,21 @@
       "source": "plugins/ariadne/schemas/grounded-agent-v1.json"
     },
     {
-      "bytes": 11076,
+      "bytes": 11522,
       "path": "plugins/ariadne/schemas/solidity-release-v1.json",
-      "sha256": "d9b9eafc74bbf50d886d4933f26c47d7de6165b361cf35c8f43b681086b5a956",
+      "sha256": "6a0d6b9d5b98ec49658f5a8cc876f90bf8260c7ad44e1926295433e238ffbc58",
       "source": "plugins/ariadne/schemas/solidity-release-v1.json"
     },
     {
-      "bytes": 13719,
+      "bytes": 13827,
       "path": "plugins/ariadne/schemas/state-fixture-v1.json",
-      "sha256": "a29435b312d68a2c1911bb82192935cddd24849612e31171537a86f1adccda2f",
+      "sha256": "d82bbced823dbd2f09c5c9b804c4f46b3a7a26ff4099a5d6d7f819a7a5092473",
       "source": "plugins/ariadne/schemas/state-fixture-v1.json"
     },
     {
-      "bytes": 7724,
+      "bytes": 7770,
       "path": "plugins/ariadne/schemas/state-fixture-v2.json",
-      "sha256": "eb933ce3f99cfc0a8eafb4636d90a280018000c37a732f4c34293f4161dc9717",
+      "sha256": "ab605b830876f26b4348ed5ad8435559445403c2d1200133538e94434a8b0737",
       "source": "plugins/ariadne/schemas/state-fixture-v2.json"
     },
     {
@@ -637,9 +637,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/foundry.py"
     },
     {
-      "bytes": 33706,
+      "bytes": 33710,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py",
-      "sha256": "15b564aa4bc3965306b9459ca1264c0500a1cac0d9d2be1e002a431805a87c1e",
+      "sha256": "ba640ba3e9a4f9c9a56d5127649f89ddd2975105c4e588f49036c2a094bb4677",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py"
     },
     {
@@ -673,9 +673,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/envelope.py"
     },
     {
-      "bytes": 16182,
+      "bytes": 17331,
       "path": "plugins/ariadne/scripts/ariadne_lib/gates.py",
-      "sha256": "5060c2157a668f19e1eb74952e6184e57978695bf34f9d249deb6ca302734563",
+      "sha256": "99b5bc48240cd1ff9aff226d353b31f6d4e84391f6f7f9708ad89f86925b9435",
       "source": "plugins/ariadne/scripts/ariadne_lib/gates.py"
     },
     {
@@ -697,15 +697,15 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py"
     },
     {
-      "bytes": 18240,
+      "bytes": 18248,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/solidity_release.py",
-      "sha256": "77af74f51cb06133234020167324f07884e4192617534853ed8a774e83093934",
+      "sha256": "15d3645a1ab3e5f233bc529676c56a22b7e7ce3d4df3d2ed3b591562bab3f387",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/solidity_release.py"
     },
     {
-      "bytes": 38864,
+      "bytes": 38868,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/state_fixture.py",
-      "sha256": "5515a1eac44fd904facb12345e687be9f9e928c46d7ca64bfebe8d00f6d9975f",
+      "sha256": "60681d63c923e2d097d435d5d9e5dbbcae81d0a24a96ddd5b52f7f9a9a76f667",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/state_fixture.py"
     },
     {

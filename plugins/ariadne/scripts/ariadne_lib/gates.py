@@ -66,6 +66,50 @@ AUTHORSHIP_KEYS = frozenset(
 )
 """Gate 7. Authorship comes from a signature somebody checked, or from nowhere."""
 
+AUTHORSHIP_COMPOUND_ROOTS = frozenset(
+    {
+        "author",
+        "authorship",
+        "authenticated",
+        "authentication",
+        "creator",
+        "publisher",
+        "signed",
+        "signer",
+        "signing",
+        "signature",
+        "signatory",
+        "verified",
+        "verifier",
+        "verification",
+        "attested",
+        "attester",
+        "attestation",
+        "notarised",
+        "notarisation",
+        "notarized",
+        "notarization",
+        "notary",
+    }
+)
+AUTHORSHIP_COMPOUND_SUFFIXES = ("identity", "status")
+AUTHORSHIP_COMPOUND_KEYS = frozenset(
+    root + suffix
+    for root in AUTHORSHIP_COMPOUND_ROOTS
+    for suffix in AUTHORSHIP_COMPOUND_SUFFIXES
+)
+"""Direct authorship and verification compounds after key normalisation.
+
+`signature_status` and `signerIdentity` make the same self-authentication claim
+as `signature_verified` and `signer`. The roots and suffixes stay finite so a
+generic business `status` or `identity` field is not reclassified by accident.
+"""
+
+
+def authorship_key(key):
+    normal = core_predicate.normalise_key(key)
+    return normal in AUTHORSHIP_KEYS or normal in AUTHORSHIP_COMPOUND_KEYS
+
 
 def scanned(statement):
     """Every key inside a statement that a producer chooses the content of.
@@ -414,7 +458,7 @@ def gate_7_authorship(statement):
     """
     faults = []
     for key, _ in scanned(statement):
-        if core_predicate.normalise_key(key) in AUTHORSHIP_KEYS:
+        if authorship_key(key):
             faults.append(key)
     if faults:
         return Gate(

@@ -1,6 +1,8 @@
 """Gates 2 and 5, and the two checks that come with them."""
 
 import hashlib
+import json
+import os
 import unittest
 
 from . import support  # noqa: F401  (sets sys.path)
@@ -123,6 +125,13 @@ class GateTwoTests(unittest.TestCase):
         found = gate(2, body)
         self.assertFalse(found.passed)
         self.assertIn("something that moves", found.detail)
+
+    def test_a_source_commit_with_a_terminal_line_feed_fails(self):
+        body = predicate()
+        body["source"]["commit"] += "\n"
+        found = gate(2, body)
+        self.assertFalse(found.passed)
+        self.assertIn("git object id", found.detail)
 
     def test_a_source_without_a_tree_digest_fails(self):
         body = predicate()
@@ -439,6 +448,20 @@ class AuditTests(unittest.TestCase):
         self.assertFalse(found.passed)
         self.assertIn("covered whatever it pointed at", found.detail)
 
+    def test_an_audit_revision_with_a_terminal_line_feed_fails(self):
+        body = predicate(
+            audits=[
+                {
+                    "report_digest": REPORT,
+                    "covered_revision": COMMIT + "\n",
+                    "scope": "src/Escrow.sol",
+                }
+            ]
+        )
+        found = named("audits", body)
+        self.assertFalse(found.passed)
+        self.assertIn("git object id", found.detail)
+
     def test_no_audits_is_reported_rather_than_assumed(self):
         found = named("audits", predicate())
         self.assertTrue(found.passed)
@@ -534,6 +557,23 @@ class DeploymentTests(unittest.TestCase):
 
 
 class ShapeTests(unittest.TestCase):
+    def test_revision_schema_carries_exact_git_oid_lengths(self):
+        path = os.path.join(support.PLUGIN_ROOT, "schemas", "solidity-release-v1.json")
+        with open(path, "rb") as handle:
+            schema = json.loads(handle.read().decode("utf-8"))
+        revisions = (
+            schema["properties"]["source"]["properties"]["commit"],
+            schema["properties"]["audits"]["items"]["properties"][
+                "covered_revision"
+            ],
+        )
+        expected = [
+            {"minLength": 40, "maxLength": 40},
+            {"minLength": 64, "maxLength": 64},
+        ]
+        for revision in revisions:
+            self.assertEqual(revision.get("anyOf"), expected)
+
     def test_a_field_outside_the_shape_fails(self):
         body = predicate(summary_of_findings="all clear")
         found = named("predicate-fields", body)

@@ -92,7 +92,7 @@ def gate_2_environment(statement):
         faults.append("source is missing %s" % ", ".join(absent))
     elif not isinstance(source.get("commit"), str):
         faults.append("source commit must be a string")
-    elif not REVISION.match(source["commit"]):
+    elif not REVISION.fullmatch(source["commit"]):
         faults.append(
             "source commit %r is not a git object id; a branch or a tag names "
             "something that moves" % source["commit"]
@@ -399,7 +399,7 @@ def gate_audits(statement):
         except digests.DigestError as error:
             faults.append("%s report_digest: %s" % (label, error))
         revision = entry["covered_revision"]
-        if not isinstance(revision, str) or not REVISION.match(revision):
+        if not isinstance(revision, str) or not REVISION.fullmatch(revision):
             faults.append(
                 "%s covered_revision %r is not a git object id; an audit that "
                 "covered a branch covered whatever it pointed at that day"
