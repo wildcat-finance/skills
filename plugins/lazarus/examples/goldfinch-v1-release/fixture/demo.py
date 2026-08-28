@@ -157,9 +157,12 @@ def _directory_identity(path: Path) -> tuple[int, int]:
 
 def _output_exists(path: Path) -> bool:
     try:
-        return path.exists() or path.is_symlink()
+        path.lstat()
+    except FileNotFoundError:
+        return False
     except (OSError, ValueError):
         raise PathError("fixture output cannot be inspected") from None
+    return True
 
 
 def _require_same_parent(
