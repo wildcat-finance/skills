@@ -50,7 +50,7 @@ canonical skill only when the selected workflow requires a named handoff.
 | Apply executable credit laws | [Pandects](../../../plugins/pandects/AGENTS.md) | `pandects` |
 | Build a declared-address counterparty dossier | [Probitas](../../../plugins/probitas/AGENTS.md) | `probitas` |
 | Shape the agent's own replies for an AuDHD reader, or shape durable agent-authored audit records and GitHub issue titles, bodies and comments | [Sapheneia](../../../plugins/sapheneia/AGENTS.md) | `sapheneia` |
-| Compare validated run observations across runs, or inspect the comparison boundary and its held operations | [Synkrisis](../../../plugins/synkrisis/AGENTS.md) | `synkrisis` |
+| Compare validated run observations across runs, or inspect the cross-run comparison boundary | [Synkrisis](../../../plugins/synkrisis/AGENTS.md) | `synkrisis` |
 | Build a venue-qualified credit-event release | [Tabularium](../../../plugins/tabularium/AGENTS.md) | `tabularium` |
 
 Hexaemeron is one plugin with several distinct owners. Use the same runtime

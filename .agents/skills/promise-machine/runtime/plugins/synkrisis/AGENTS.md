@@ -1,7 +1,7 @@
 # Synkrisis runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Synkrisis.** Synkrisis owns bounded comparison across validated Promise Machine run observations. This release builds the checked cohort, classifying every declared run under an operator-declared policy, and infers bounded findings over it from a digest-bound rule catalogue, while rendering and verification stay held runbook steps that refuse. Ephoros designs what a step emits, Metron owns controlled measurement verdicts, Elenchus works one failure to its cause, and Horos owns the reading boundary a finding may point at. **Current frontier:** Synkrisis builds one checked cohort from declared run observations and infers bounded findings from a digest-bound rule catalogue, and its renderer and whole-path verifier have not yet landed.
+> **Marketplace context: Synkrisis.** Synkrisis owns bounded comparison across validated Promise Machine run observations. This release builds the checked cohort, classifying every declared run under an operator-declared policy, infers bounded findings over it from a digest-bound rule catalogue, renders the fixed-template report, and verifies that all three artefacts recompute from their original inputs. Ephoros designs what a step emits, Metron owns controlled measurement verdicts, Elenchus works one failure to its cause, and Horos owns the reading boundary a finding may point at. **Current frontier:** Synkrisis builds one checked cohort, infers bounded findings from a digest-bound rule catalogue, renders the fixed-template report and verifies the whole path, and its measured work budget and demonstration path have not yet landed.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -15,12 +15,11 @@ available.
 
 Synkrisis contains one Agent Skill. Select `synkrisis` to build one checked
 cohort from declared run-observation records, to infer bounded findings over
-one cohort from a digest-bound rule catalogue, to read the committed
-cross-run comparison specification, or to continue the runbook's held steps,
-then read `skills/synkrisis/SKILL.md` in full. At this step the render and
-verify operations refuse with a stable code naming the runbook step that
-implements each; do not present a report or a verification as a Synkrisis
-result.
+one cohort from a digest-bound rule catalogue, to render or verify those
+artefacts, or to read the committed cross-run comparison specification, then
+read `skills/synkrisis/SKILL.md` in full. The measured work budget is Step 5
+and has not landed, so do not present a runtime or memory claim as a
+Synkrisis result.
 
 `skills/synkrisis/SKILL.md` is the only canonical instruction document. Do not
 add a sibling browsing README.
@@ -55,13 +54,12 @@ a run as clean when it exited 1.
 
 ## Network and side effects
 
-Nothing here reaches the network. The cohort and diagnose operations read the
-declared manifest, policy, record, cohort and catalogue files from
+Nothing here reaches the network. Every operation reads the declared
+manifest, policy, record, cohort, catalogue, findings and report files from
 repository-relative paths beneath the working root through single bounded
-descriptors, and write only the named output file, atomically, refusing to
+descriptors, and writes only the named output file, atomically, refusing to
 overwrite different bytes and leaving no partial output behind a refusal.
-The held operations parse their
-arguments, print one refusal naming their runbook step, and exit 1. Nothing
+Verification writes nothing at all. Nothing
 executes observed content, follows a symlink, or holds a GitHub, Git or
 controller mutation path. Treat a target repository as the user's, and obey
 its own instructions before writing anything into it.
@@ -71,8 +69,8 @@ its own instructions before writing anything into it.
 These are properties of the tool rather than reminders, and a local agent must
 not route around them:
 
-- No presented result past diagnosis. Render and verify refuse until their
-  runbook steps land; a refusal is not a report or a verification.
+- No measured work claim. The benchmark and its declared ceilings are Step 5
+  of the runbook and have not landed.
 - No inferred comparability. The operator declares the comparison policy;
   Synkrisis checks that declaration and never decides that unlike tasks,
   models, hosts, repositories or tokenizers are comparable. An unknown run

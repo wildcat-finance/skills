@@ -1,7 +1,7 @@
 ![Mason](../assets/characters/mason.png)
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Hexaemeron.** Fiat controls the explicit, receipted delivery; Surveyor, Mason, Warden and Scribe execute source-bound packets; six phase disciplines and two prose masks keep their own contracts; and the Pashov security suite remains upstream-owned. Use Hermes for Solidity gas, Pandects for credit laws, and Lemma for source-linked chunks. Synkrisis is the separate cross-run comparison boundary, delivered as far as bounded diagnosis; it cannot steer Fiat or a worker packet. **Current frontier:** load_state validates the version-1 state container spine in deterministic order before any command traverses it, with path-and-kind diagnostics shared by verify and mutations; delegated task identities can still expose an earlier issue when a collaboration handle is reused.
+> **Marketplace context: Hexaemeron.** Fiat controls the explicit, receipted delivery; Surveyor, Mason, Warden and Scribe execute source-bound packets; six phase disciplines and two prose masks keep their own contracts; and the Pashov security suite remains upstream-owned. Use Hermes for Solidity gas, Pandects for credit laws, and Lemma for source-linked chunks. Synkrisis is the separate cross-run comparison boundary, delivered through verification; it cannot steer Fiat or a worker packet. **Current frontier:** load_state validates the version-1 state container spine in deterministic order before any command traverses it, with path-and-kind diagnostics shared by verify and mutations; delegated task identities can still expose an earlier issue when a collaboration handle is reused.
 <!-- marketplace-context:end -->
 
 - Delegation role: mason.

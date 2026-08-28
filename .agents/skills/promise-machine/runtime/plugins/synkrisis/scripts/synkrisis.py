@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 """Bounded cross-run diagnosis over validated Promise Machine run observations.
 
-This is the runbook's Step 3 surface. `cohort` reads an operator-declared
-manifest of run-observation records and one comparison policy and classifies
-every declared run as included, excluded or unknown with the exact policy
-field responsible. `diagnose` applies a digest-bound deterministic rule
-catalogue to one checked cohort, applying only the rules whose required
-dimensions and minimum samples hold and recording every refused rule with
-its reason. The render and verify operations stay specified and refuse with
-a stable code naming the runbook step that lands each. Nothing here calls a
-model, fetches a URL, executes observed content, files an issue, edits a
+Synkrisis reads an operator-declared manifest of run-observation records and a
+comparison policy, constructs one checked cohort, applies a digest-bound
+deterministic rule catalogue, renders a fixed-template report, and verifies
+that all three artefacts recompute from their original inputs. It never calls
+a model, fetches a URL, executes observed content, files an issue, edits a
 repository, or dispatches another skill. Findings stay inferred relations
 between named events; the nearest forbidden claim is stated so a reader sees
 what the tool refuses to say.
@@ -1492,6 +1488,176 @@ def build_findings_document(cohort, rules_document, events_by_run):
     return document
 
 
+def load_findings(root: Path, raw_path: str, budget: InputBudget):
+    target = confined_relative(raw_path, root, label="findings")
+    shown = shown_path(raw_path)
+    payload = bounded_read(target, shown, MAX_FILE_BYTES)
+    budget.charge(len(payload), shown)
+    document = parse_json_document(payload, shown)
+    require_keys(
+        document,
+        (
+            "schema",
+            "policy_name",
+            "cohort_digest",
+            "rules_digest",
+            "findings",
+            "refused_rules",
+        ),
+        (),
+        shown,
+        code="SK014",
+    )
+    if document["schema"] != FINDINGS_SCHEMA:
+        raise Refusal(
+            "SK014",
+            "identity",
+            shown,
+            "findings schema identity is unsupported",
+            f"provide a {FINDINGS_SCHEMA!r} findings document",
+        )
+    findings = document["findings"]
+    if not isinstance(findings, list):
+        raise Refusal(
+            "SK014",
+            "structural",
+            shown,
+            "findings value is not an array",
+            "regenerate the findings with the diagnose command",
+        )
+    for index, finding in enumerate(findings):
+        finding_shown = f"{shown}#findings[{index}]"
+        require_keys(
+            finding,
+            (
+                "fingerprint",
+                "rule_id",
+                "rule_digest",
+                "subject",
+                "observed_relation",
+                "evidence_class",
+                "matched_runs",
+                "counterevidence",
+                "unknown_runs",
+                "nearest_forbidden_claim",
+                "handoff",
+            ),
+            (),
+            finding_shown,
+            code="SK014",
+        )
+        if finding["evidence_class"] != "inferred":
+            raise Refusal(
+                "SK014",
+                "policy",
+                finding_shown,
+                "finding declares an evidence class stronger than inferred",
+                "regenerate the findings with the diagnose command",
+            )
+        phrase = forbidden_language_in(finding["observed_relation"])
+        if phrase is not None:
+            raise Refusal(
+                "SK014",
+                "policy",
+                finding_shown,
+                "finding narrative carries forbidden causal or quality language",
+                "regenerate the findings with the diagnose command",
+            )
+    return document, payload
+
+
+REPORT_HEADER = (
+    "# Synkrisis report: {policy_name}\n"
+    "\n"
+    "Producer contract `{producer}`. Cohort digest `{cohort_digest}`. Rule\n"
+    "catalogue digest `{rules_digest}`. Every claim below is recomputed from\n"
+    "named observation events; the report adds no number, run or verdict of\n"
+    "its own.\n"
+)
+
+FINDING_TEMPLATE = (
+    "### {rule_id}\n"
+    "\n"
+    "- Fingerprint: `{fingerprint}`\n"
+    "- Subject: `{subject}`\n"
+    "- Evidence class: {evidence_class}\n"
+    "- Observed relation: {observed_relation}\n"
+    "- Runs and events: {references}\n"
+    "- Counterevidence: {counterevidence}\n"
+    "- Unknown runs: {unknown}\n"
+    "- Nearest forbidden claim, not made: {forbidden}\n"
+    "- Suggested handoff: {handoff_to} ({handoff_reason})\n"
+)
+
+
+def render_report(findings_document):
+    lines = [
+        REPORT_HEADER.format(
+            policy_name=findings_document["policy_name"],
+            producer=PRODUCER_CONTRACT,
+            cohort_digest=findings_document["cohort_digest"],
+            rules_digest=findings_document["rules_digest"],
+        )
+    ]
+    lines.append("\n## Findings\n")
+    if not findings_document["findings"]:
+        lines.append("\nNo shipped rule matched the checked cohort.\n")
+    for finding in findings_document["findings"]:
+        references = "; ".join(
+            "{run} ({events})".format(
+                run=row["run_id"], events=", ".join(row["events"])
+            )
+            for row in finding["matched_runs"]
+        )
+        if finding["counterevidence"]:
+            counter_parts = []
+            for row in finding["counterevidence"]:
+                if "run_id" in row:
+                    counter_parts.append(
+                        "{run} ({events})".format(
+                            run=row["run_id"], events=", ".join(row["events"])
+                        )
+                    )
+                else:
+                    counter_parts.append(
+                        "{late} not above {early}".format(
+                            late=row["late_run"], early=row["early_run"]
+                        )
+                    )
+            counterevidence = "; ".join(counter_parts)
+        else:
+            counterevidence = "none recorded"
+        unknown = ", ".join(finding["unknown_runs"]) or "none"
+        lines.append("\n")
+        lines.append(
+            FINDING_TEMPLATE.format(
+                rule_id=finding["rule_id"],
+                fingerprint=finding["fingerprint"],
+                subject=finding["subject"],
+                evidence_class=finding["evidence_class"],
+                observed_relation=finding["observed_relation"],
+                references=references,
+                counterevidence=counterevidence,
+                unknown=unknown,
+                forbidden=finding["nearest_forbidden_claim"],
+                handoff_to=finding["handoff"]["to"],
+                handoff_reason=finding["handoff"]["reason"],
+            )
+        )
+    if findings_document["refused_rules"]:
+        lines.append("\n## Rules that did not run\n\n")
+        for row in findings_document["refused_rules"]:
+            lines.append(f"- {row['rule_id']}: {row['reason_code']}\n")
+    lines.append(
+        "\n## Boundary\n"
+        "\n"
+        "Findings are bounded inferred relations between recorded events. They\n"
+        "carry no cause, no model judgement, no completeness claim and no\n"
+        "action; a person selects what, if anything, happens next.\n"
+    )
+    return "".join(lines).encode("utf-8")
+
+
 def atomic_write(target: Path, payload: bytes, shown: str):
     if target.exists():
         if target.is_symlink() or not target.is_file():
@@ -1582,25 +1748,82 @@ def command_diagnose(root: Path, arguments):
     }
 
 
-PENDING_STEPS = {
-    "render": "Step 4",
-    "verify": "Step 4",
-}
+def command_render(root: Path, arguments):
+    budget = InputBudget()
+    findings, _ = load_findings(root, arguments.findings, budget)
+    payload = render_report(findings)
+    target, shown = output_path(root, arguments.out)
+    atomic_write(target, payload, shown)
+    return {
+        "command": "render",
+        "report_sha256": hashlib.sha256(payload).hexdigest(),
+        "out": arguments.out,
+    }
 
 
-def scaffold_refusal(operation: str) -> Refusal:
-    step = PENDING_STEPS[operation]
-    return Refusal(
-        "SK000",
-        "structural",
-        operation,
-        f"operation {operation!r} is specified and not yet implemented",
-        f"build {step} of docs/synkrisis/runbook.md, then rerun the operation",
+def command_verify(root: Path, arguments):
+    budget = InputBudget()
+    manifest_document, records, _ = load_manifest(root, arguments.manifest, budget)
+    policy, _ = load_policy(root, arguments.policy, budget)
+    event_budget = EventBudget()
+    events_by_run = {}
+    for record in records:
+        payload = read_declared_record(root, record, budget)
+        events_by_run[record.run_id] = parse_record_events(
+            payload, record, shown_path(record.record), event_budget
+        )
+    recomputed_cohort = build_cohort_document(
+        manifest_document, records, policy, events_by_run
     )
-
-
-def command_held(root: Path, arguments):
-    raise scaffold_refusal(arguments.command)
+    cohort_target = confined_relative(arguments.cohort, root, label="cohort")
+    cohort_shown = shown_path(arguments.cohort)
+    cohort_payload = bounded_read(cohort_target, cohort_shown, MAX_FILE_BYTES)
+    budget.charge(len(cohort_payload), cohort_shown)
+    if cohort_payload != canonical_bytes(recomputed_cohort):
+        raise Refusal(
+            "SK012",
+            "drift",
+            cohort_shown,
+            "cohort bytes do not recompute from the manifest and policy",
+            "rebuild the cohort with the cohort command from the original inputs",
+        )
+    rules_document, _ = load_rules(root, arguments.rules, budget)
+    recomputed_findings = build_findings_document(
+        recomputed_cohort, rules_document, events_by_run
+    )
+    findings_target = confined_relative(arguments.findings, root, label="findings")
+    findings_shown = shown_path(arguments.findings)
+    findings_payload = bounded_read(findings_target, findings_shown, MAX_FILE_BYTES)
+    budget.charge(len(findings_payload), findings_shown)
+    if findings_payload != canonical_bytes(recomputed_findings):
+        raise Refusal(
+            "SK012",
+            "drift",
+            findings_shown,
+            "findings bytes do not recompute from the cohort and rule catalogue",
+            "rebuild the findings with the diagnose command from the checked cohort",
+        )
+    report_target = confined_relative(arguments.report, root, label="report")
+    report_shown = shown_path(arguments.report)
+    report_payload = bounded_read(report_target, report_shown, MAX_FILE_BYTES)
+    budget.charge(len(report_payload), report_shown)
+    if report_payload != render_report(recomputed_findings):
+        raise Refusal(
+            "SK012",
+            "drift",
+            report_shown,
+            "report bytes do not recompute from the findings",
+            "rebuild the report with the render command from the verified findings",
+        )
+    return {
+        "command": "verify",
+        "status": "verified",
+        "manifest_digest": recomputed_cohort["manifest_digest"],
+        "policy_digest": recomputed_cohort["policy_digest"],
+        "cohort_digest": recomputed_cohort["cohort_digest"],
+        "rules_digest": recomputed_findings["rules_digest"],
+        "report_sha256": hashlib.sha256(report_payload).hexdigest(),
+    }
 
 
 def working_root() -> Path:
@@ -1664,16 +1887,14 @@ def main(argv=None):
     diagnose_parser.add_argument("--json", action="store_true")
 
     render_parser = subparsers.add_parser(
-        "render",
-        help="specified fixed-template renderer; held until runbook Step 4 lands",
+        "render", help="render the fixed-template report from one findings document"
     )
     render_parser.add_argument("findings")
     render_parser.add_argument("--out", required=True)
     render_parser.add_argument("--json", action="store_true")
 
     verify_parser = subparsers.add_parser(
-        "verify",
-        help="specified whole-path verifier; held until runbook Step 4 lands",
+        "verify", help="recompute cohort, findings and report from the original inputs"
     )
     verify_parser.add_argument("--manifest", required=True)
     verify_parser.add_argument("--policy", required=True)
@@ -1687,8 +1908,8 @@ def main(argv=None):
     handlers = {
         "cohort": command_cohort,
         "diagnose": command_diagnose,
-        "render": command_held,
-        "verify": command_held,
+        "render": command_render,
+        "verify": command_verify,
     }
     try:
         result = handlers[arguments.command](working_root(), arguments)

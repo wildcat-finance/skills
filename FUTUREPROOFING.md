@@ -251,9 +251,9 @@ surely as a niche feature.
   ordinary tools rather than assuming the roster must only grow.
 
 The review should use run records and real outcomes. Synkrisis helps compare
-validated observations, and it now produces a checked cohort and bounded
-findings over one, though nothing renders or verifies a report yet, so people
-must still make these decisions from the evidence available today.
+validated observations, and it now produces a checked cohort, bounded findings
+over one, and a report that verifies against its inputs, though a person still
+makes these decisions from the evidence available.
 
 ### Measures that matter
 
@@ -550,8 +550,7 @@ records do not support.
 
 It still needs:
 
-- working render and verification operations, on the delivered cohort and
-  diagnosis;
+- a measured work budget over the delivered four operations;
 - reliable observation records from several hosts;
 - rules for fair comparison and visible confounders;
 - uncertainty and missing-data treatment;

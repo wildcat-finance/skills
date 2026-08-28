@@ -21,10 +21,10 @@ Imprimatur and Vulgate govern wording, while Brevitas governs engineering-prose
 structure. Sapheneia changes none of their facts or gates and does not activate
 session mode merely because it shaped one record.
 
-A future Synkrisis report may pass through these prose layers, but Sapheneia
-will not change its evidence or conclusion. Synkrisis emits no report yet: it
-builds a checked cohort and infers findings over it, and its render and verify
-operations refuse.
+A Synkrisis report may pass through these prose layers, but Sapheneia will not
+change its evidence or conclusion. Synkrisis renders that report from fixed
+templates and verifies that it recomputes from the original inputs, so any
+reshaping happens after the verification, never inside it.
 
 Sapheneia is the interaction contract for agents working with AuDHD engineers.
 It keeps the next action, task boundary, done condition, current state, evidence

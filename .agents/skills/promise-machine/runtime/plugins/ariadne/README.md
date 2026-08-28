@@ -27,10 +27,9 @@ The Promise Machine governs suite-wide hand-offs. Ariadne is the specialist
 that serialises a release-specific evidence claim into an in-toto statement,
 optionally wrapped in DSSE.
 
-Synkrisis is the partly built comparison boundary for validated run
-observations. It writes a cohort and findings, and an Ariadne statement would
-bind such a comparison artefact without turning association into cause or
-action.
+Synkrisis is the comparison boundary for validated run observations. It writes
+a cohort, findings and a verified report, and an Ariadne statement would bind
+such a comparison artefact without turning association into cause or action.
 
 A release publishes a claim. The evidence behind it sits somewhere else, joined
 by a URL and a promise: the compiler that produced the bytecode, the test run,

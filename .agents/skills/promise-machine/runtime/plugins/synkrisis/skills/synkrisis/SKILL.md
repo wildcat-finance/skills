@@ -2,16 +2,14 @@
 name: synkrisis
 description: >
   Build one checked cohort from validated Promise Machine run observations
-  under an operator-declared comparison policy and infer bounded findings from
-  a digest-bound rule catalogue, or inspect and continue the committed
-  cross-run diagnosis runbook. Version 2.1.0 classifies every declared run as
-  included, excluded or unknown with the responsible policy field and emits
-  evidence-linked candidate findings; render and verify still refuse with the
-  runbook step that lands each. Do not capture or redact observations, debug
+  under an operator-declared comparison policy, infer bounded findings from a
+  digest-bound rule catalogue, render the fixed-template report, and verify
+  that all three artefacts recompute from their original inputs. Version 3.1.0
+  delivers all four operations. Do not capture or redact observations, debug
   one failing run, judge a model, act on a finding, or report a relation as a
   cause.
 metadata:
-  version: "2.1.0"
+  version: "3.1.0"
 ---
 
 <p align="center">
@@ -30,12 +28,12 @@ recommend or run another frontier pass after that ledger becomes mature.
 ## Where this sits
 
 Synkrisis owns comparison and bounded inference over validated observations
-from comparable agent runs. Version 2.1.0 implements the checked cohort and
-the bounded rule catalogue over it; rendering and verification are held
-runbook steps, and capture, redaction, receipt binding, causal triage, issue
+from comparable agent runs. Version 3.1.0 implements the checked cohort, the
+bounded rule catalogue over it, the fixed-template report and the whole-path
+verification, while capture, redaction, receipt binding, causal triage, issue
 filing, repository mutation, and Fiat dispatch stay with their own owners.
 
-**Current frontier.** Synkrisis builds one checked cohort from declared run observations and infers bounded findings from a digest-bound rule catalogue, and its renderer and whole-path verifier have not yet landed.
+**Current frontier.** Synkrisis builds one checked cohort, infers bounded findings from a digest-bound rule catalogue, renders the fixed-template report and verifies the whole path, and its measured work budget and demonstration path have not yet landed.
 <!-- marketplace-context:end -->
 
 Synkrisis is named for comparison. The Promise Machine records what one run
@@ -43,9 +41,9 @@ observably did: issue 434 defined the record, issue 435 the capture gate, and
 issue 436 the receipt binding. None of those steps reads a pattern across
 runs. A maintainer still has to decide whether repeated orientation work,
 unchanged retries, handoff friction or token movement amounts to an
-improvement candidate. Synkrisis makes that comparison deterministic now, one
-checked cohort and one catalogue of checked rules at a time, and holds the
-presenting moves to their own runbook steps.
+improvement candidate. Synkrisis makes that comparison deterministic, one
+checked cohort and one catalogue of checked rules at a time, and stops at the
+verified report rather than acting on it.
 
 Ephoros designs what a step emits; Metron judges a controlled measurement;
 Elenchus works one failure to its cause; Horos owns the reading boundary. A
@@ -55,14 +53,14 @@ path files an issue, edits a repository, or dispatches a sibling.
 
 ## What this step is
 
-This is Step 3 of
+This is Step 4 of
 [the committed runbook](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/runbook.md),
 built from
 [the committed study](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/study.md)
-on the Step 2 cohort. Cohort construction and diagnosis are landed and
-tested; render and verify keep refusing with one stable code naming the
-runbook step that implements each. Until those steps land, Synkrisis produces
-no report and no verification.
+on the Step 2 cohort and the Step 3 catalogue. All four operations are landed
+and tested. Step 5 is held: the measured work budget and the demonstration
+path have not landed, so no claim here rests on a measured runtime or memory
+ceiling.
 
 ## The cohort operation
 
@@ -144,19 +142,30 @@ python3 plugins/synkrisis/scripts/synkrisis.py diagnose \
 On the worked example that yields two findings,
 `late-boundary-consultation/v1` and `unchanged-retry-before-handoff/v1`,
 reproducing the committed `examples/cross-run-v0/expected/findings.json` byte
-for byte on every run. Every non-zero exit names one stable `SK` code, the
-fault class, a safe path, the producer contract and a recovery. The held
-operations refuse with `SK000`:
+for byte on every run. Rendering and verification close the path:
 
 ```text
 python3 plugins/synkrisis/scripts/synkrisis.py render \
   build/synkrisis/findings.json --out build/synkrisis/report.md
+
+python3 plugins/synkrisis/scripts/synkrisis.py verify \
+  --manifest plugins/synkrisis/examples/cross-run-v0/manifest.json \
+  --policy plugins/synkrisis/examples/cross-run-v0/policy.json \
+  --cohort build/synkrisis/cohort.json \
+  --rules plugins/synkrisis/references/rules-v1.json \
+  --findings build/synkrisis/findings.json \
+  --report build/synkrisis/report.md
 ```
+
+`verify` recomputes all three artefacts from the original manifest, policy,
+records and catalogue rather than trusting any of them. Every non-zero exit
+names one stable `SK` code, the fault class, a safe path, the producer
+contract and a recovery.
 
 ## What it refuses
 
-- No presented result past diagnosis. Render and verify refuse until their
-  runbook steps land; a refusal is not a report or a verification.
+- No measured work claim. The benchmark and its declared ceilings are Step 5;
+  nothing here establishes a runtime or memory bound.
 - No inferred comparability. A person declares the comparison policy;
   Synkrisis checks the declaration and never decides that unlike tasks,
   models, hosts, repositories or tokenizers are comparable.
@@ -176,14 +185,38 @@ describe its result.
 
 ## Promise Machine contract
 
-### synkrisis-scaffold-refusal
+### synkrisis-cohort-construction
 
-- Promise: Every Synkrisis operation whose runbook step has not yet landed, at this version render and verify, exits non-zero with one stable code that names the committed runbook step implementing it, and writes nothing.
-- Evidence: The command's declared argument surface, the emitted refusal code, fault class, producer contract and recovery, and the unchanged working tree after each held invocation.
+- Promise: A successful `synkrisis.py cohort` establishes that every run in the declared manifest was classified as included, excluded or unknown under one named comparison policy, with producer identity, declared validation, redaction and binding results, digests, caps, path form and equality dimensions checked before any field entered the cohort.
+- Evidence: The exact manifest and policy bytes, the recomputed record digests and bound prefixes, the per-run classification with its reason, and the emitted cohort with its digest.
 - Evidence classes: checked
-- Boundary: The refusal establishes only that a held operation cannot present a report or a verification; it says nothing about how the later steps will behave, and it does not describe the landed cohort and diagnose operations.
-- Authorises: Selecting the committed runbook's named next step as the work that lands the refused operation.
-- Consequence: 0
-- Refuses: Reporting a report or a verification from a held operation, and writing any output through one.
-- Recovery: Build the runbook step the refusal names, then rerun the operation.
+- Boundary: Cohort construction does not establish that the declared universe is complete, that the policy's task class is comparable in any scientific sense, or that a recorded event describes what actually happened.
+- Authorises: Rule evaluation with `synkrisis.py diagnose` over exactly this cohort and the records it names.
+- Consequence: 1
+- Refuses: Building a cohort from an unsupported producer identity, a missing or failed validation, redaction or binding result, an undeclared or duplicate run, an unsafe path, a cap breach, unlike token accounting under a require-equal policy, or a policy that leaves no eligible run.
+- Recovery: Repair the named manifest row, record, or policy field and rerun cohort construction over the complete declared universe.
+- Exceptions: none
+
+### synkrisis-bounded-diagnosis
+
+- Promise: A successful `synkrisis.py diagnose` establishes that every emitted finding is a deterministic rule match recomputed from named events in the checked cohort, carrying its rule and cohort digests, exact event references, counterevidence, unknown runs, the nearest forbidden claim and one suggested handoff, and that every rule that did not run is recorded with its reason.
+- Evidence: The digest-bound rule catalogue, the checked cohort, the re-streamed record bytes and the emitted findings with stable fingerprints.
+- Evidence classes: checked, inferred
+- Boundary: A finding is a bounded inferred relation between recorded events; it is not a cause, a model-quality judgement, a completeness claim, or a decision to act.
+- Authorises: Rendering and verification of exactly these findings, and their presentation to a person as improvement candidates.
+- Consequence: 1
+- Refuses: Evaluating a malformed, unknown-kind or digest-drifted input, a rule that strengthens the evidence class, causal or quality language, a template outside the kind's plain placeholders, and any autonomous action on a finding.
+- Recovery: Repair the named rule, cohort or record input and rerun diagnosis from the checked cohort.
+- Exceptions: none
+
+### synkrisis-report-verification
+
+- Promise: A successful `synkrisis.py verify` establishes that the named cohort, findings and report recompute byte for byte from the original manifest, policy, records and rule catalogue.
+- Evidence: The recomputed cohort, findings and report digests, the manifest and policy digests, and the final verification status.
+- Evidence classes: recomputed
+- Boundary: Verification establishes recomputability only; it does not establish external truth, cause, completeness, or the merit of any suggested handoff.
+- Authorises: Handing the verified report to a person. It does not authorise the suggested handoff itself.
+- Consequence: 1
+- Refuses: Verifying artefacts whose bytes, digests or event references differ from recomputation, and describing a verification that did not run.
+- Recovery: Regenerate the artefact from its original inputs or restore those inputs, then rerun the complete verification.
 - Exceptions: none

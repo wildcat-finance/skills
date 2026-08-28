@@ -106,6 +106,33 @@ def run_diagnose(root: Path, out="out/findings.json", **overrides):
     return synkrisis().command_diagnose(root, arguments)
 
 
+def run_render(root: Path, out="out/report.md", **overrides):
+    arguments = namespace(
+        findings=overrides.pop("findings", "out/findings.json"), out=out, **overrides
+    )
+    return synkrisis().command_render(root, arguments)
+
+
+def run_verify(root: Path, **overrides):
+    arguments = namespace(
+        manifest=overrides.pop("manifest", "manifest.json"),
+        policy=overrides.pop("policy", "policy.json"),
+        cohort=overrides.pop("cohort", "out/cohort.json"),
+        rules=overrides.pop("rules", "rules.json"),
+        findings=overrides.pop("findings", "out/findings.json"),
+        report=overrides.pop("report", "out/report.md"),
+        **overrides,
+    )
+    return synkrisis().command_verify(root, arguments)
+
+
+def run_full_path(root: Path):
+    run_cohort(root)
+    run_diagnose(root)
+    run_render(root)
+    return run_verify(root)
+
+
 def event(run_id, seq, typ, second, corr, **extra):
     document = {
         "schema_id": "promise-machine-run-observation/v1",
