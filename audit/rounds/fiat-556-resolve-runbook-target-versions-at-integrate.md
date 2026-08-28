@@ -1808,3 +1808,157 @@ than an incomplete receipt. The prose-phase generic file list has a separate
 non-authorising purpose and does not enter this Step 3 proof. Step 4 owns the
 eventual issue-or-document wording for issue #556 generation rows. No further
 in-scope lead remained after the full risk-register review.
+
+## Step 3, round 8 -- 2026-08-28
+
+This non-Solidity round started from signed audit tip
+`0fd8bd71c3ae75e44bdd1464d5c3921a9e826a80`. Its Shoggoth signature verifies,
+and it carries exactly one required co-author trailer and one origin trailer.
+One high finding was fixed in signed commit
+`3527aa22c47de6896cec432c5d5087b3c90fcbb3`; its Shoggoth signature verifies,
+and it also carries exactly one of each required trailer.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R8-01 | high | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | Version resolution treated row-shaped text anywhere after the first textual `## History` occurrence as governed history, including a generation row inside a fenced Markdown specimen. A candidate could therefore update the ledger header and `SKILL.md` metadata while quoting, rather than adding, the one row that earned the resolution promise. Header fields inside fences were also visible to the same evidence reader. | fixed in `3527aa22c47de6896cec432c5d5087b3c90fcbb3`: exclude fenced code from version evidence, require one live History section, and stop its rows at the next peer or parent section while retaining exact physical row bytes |
+
+### Evidence
+
+The minimal pre-fix probe supplied a baseline row followed by a fenced
+generation specimen. `_ledger_history_records` returned two live versions,
+`fiat-v1.2.3` and `fiat-v1.3.3`, instead of one. The integration-level guard
+then committed that shape with a `fiat-v1.3.3` header and matching
+`metadata.version`. Against the unfixed parent, resolution returned normally;
+the guard failed because the expected `SystemExit` was not raised.
+
+The repair shares one fence-aware physical-line reader between header and
+history evidence. Fenced fields and rows no longer enter a snapshot. A ledger
+must carry exactly one live `## History` heading, parsing stops at the next
+level-one or level-two section, and retained history rows keep their original
+line endings for exact prefix comparison. The same counterexample now refuses
+because the live final row remains `fiat-v1.2.3` while the candidate header
+claims `fiat-v1.3.3`.
+
+Elenchus ran against fix commit
+`3527aa22c47de6896cec432c5d5087b3c90fcbb3` with the exact source-bound command
+`python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`,
+report format `unittest-json-v1`, and report file
+`tmp/elenchus/fiat-556-step-3.json`. Its exact verdict is `guarded`: the
+detached parent overlay executed 1,163 tests and recorded one assertion
+failure, zero errors, and zero skips. The failure is the fenced-generation
+guard. The parent runner exited 1; Elenchus exited 0 with `--require-guard`.
+
+The fixed-tree source-bound report is
+`.elenchus/fiat-556-step-3-warden-round8-green.json`, SHA-256
+`f1dde51bb4e77f8018c949d1853f396cc87972691175f451de49a6e902c3f18c`.
+It records `elenchus.unittest.v1`, 1,163 tests with zero failures, errors, or
+skips. The pre-existing report at `tmp/elenchus/fiat-556-step-3.json`, SHA-256
+`02cae51edd345007bd777c23b4b20c07c9eb9881c6319e00741c3b8d3461415d`,
+remains byte-identical; it is an earlier 1,145-test green report. The fixed
+tree's create-only runner used the fresh Round 8 evidence path rather than
+overwriting it.
+
+The exact runbook checks are green. Version relations ran 102 tests; the
+controller and Fiat selection pair ran 400; the Promise Machine check reports
+14 clean plugin copies; coverage reports 72 of 72 promises; the root suite ran
+350; and both the source-bound and final Hexaemeron suites ran 1,163. Phylax,
+Ephoros, and Hypomnema each exit 0. Python compilation, controller-binding JSON
+parsing, and `git diff --check` are clean. The controller SHA-256 bound in the
+coverage inventory is
+`4a884afe1c133cd863666d154db843c4c0d6cf64672f9340250010588e10e983`.
+Imprimatur scores the complete record 100.0 out of 100 with zero defects and
+zero weighted defects. Brevitas reports eleven B011 finding-table shape
+diagnostics: ten in the unchanged prefix and this round's required one-row
+table. It reports no other diagnostic; the table row count remains equal to
+the actual finding count.
+
+The receipted and tracked study copies remain byte-identical at SHA-256
+`4f379dac26ed32af4310bcd55ebaef7ca91774da7ca53f69f2d3a6401e8942c7`;
+the receipted and tracked runbook copies remain byte-identical at SHA-256
+`593ce6e4faa9598c475475e931f66c28e6d2ecaff116232299a7085e47ee89d2`.
+Protasis accepts both. `audit/AUDIT.md` remains byte-identical at SHA-256
+`582aa3cfe6b83344c0c6f52987d55ab5a180b429a2199fccd14f6ff769a267d1`.
+
+The prior 117,940-byte, 1,810-line audit record is the exact prefix of this
+append at SHA-256
+`1ac84c16d876a328d09562e584e80ce5fb9cbb0131f9de48fd8cb06fea2ddbb4`.
+The bounded Sapheneia comparison preserves every earlier finding, severity,
+counterexample, path, hash, count, skip, warning, status, scope exclusion, and
+unpursued lead. This round adds only its heading, one finding, causal and fixed
+evidence, risk review, scope boundary, comparison, and lead boundary.
+
+### Risk register
+
+`ledger-history-rewrite`, `metadata-mismatch`, `receipt-replay`, and
+`promise-overclaim` surfaced S3-R8-01. Header and row evidence now comes only
+from live unfenced Markdown, one unambiguous History section owns the row
+sequence, the next peer section closes it, and exact row bytes still bind the
+anchor, base, candidate, receipt, and replay checks. The integration guard
+proves the quoted candidate was accepted before the repair and refused after
+it.
+
+`relation-block-shape`, `literal-compatibility`, `anchor-substitution`,
+`generation-arithmetic`, `frontier-drift`, `multi-target-partial`,
+`base-ref-race`, `run-ref-race`, `post-check-race`,
+`remote-evidence-failure`, `git-object-shape`, `sync-carriage`,
+`revalidation-coverage`, `resolution-staleness`, `state-history-growth`,
+`diagnostic-leak`, `self-hosted-collision`, `legacy-state`, and
+`interrupted-resolution` are green. Their earlier causal guards remain green
+on the complete fixed tree. Stable native remote observations, exact Git
+objects and signatures, signed sync carriage, complete affected-path coverage,
+pending recovery, eight retained receipts and ninth refusal, stale-status
+withholding, terminal `[base, candidate]` replay, and post-check base-move
+refusal remain directly exercised.
+
+### Sapheneia durable-record comparison
+
+The frozen subject is this Step 3 round 8 append. Its source inventory was the
+complete current diff, direct pre-fix probe, detached-parent and fixed-tree
+runner results, preserved report, command results, risk-register seed,
+starting and fix commits, signature and trailer checks, scope boundary,
+negative evidence, qualifications, unknowns, and unpursued leads. The candidate
+retains the required heading, five-column finding table, evidence, risk
+register, scope boundary, and leads-not-pursued field. Item by item:
+
+1. The one finding id, high severity, controller path, quoted-row mechanism,
+   false resolution claim, fix status, and exact fix commit are present.
+2. Every named path, SHA-256, commit id, date, schema, test total, failure,
+   error, skip, exit, lint result, verdict, and trailer count is present.
+3. The occupied canonical fixed-tree report, temporary detached-parent report,
+   non-Solidity waiver, absent zero-finding verdict, and absence of remote
+   mutation remain explicit negative or qualifying evidence.
+4. All 23 risk ids have an explicit surfaced or green disposition, and every
+   scope exclusion, local trust boundary, and unpursued lead is retained.
+5. The prior 117,940-byte, 1,810-line record remains the exact prefix of this
+   append at SHA-256
+   `1ac84c16d876a328d09562e584e80ce5fb9cbb0131f9de48fd8cb06fea2ddbb4`.
+
+No protected item or required structural field is missing or mismatched. The
+checked declaration for the owning controller gate is exactly
+`--audit-filter sapheneia:sapheneia`; this round did not call that mutating
+gate.
+
+### Scope boundary
+
+This round cold-read the complete fixed Step 3 controller, focused tests,
+Promise bindings, runbook exit, risk register, and prior audit record. The fix
+changes the controller, one focused test file, controller digest bindings, and
+this append-only record, all within the Step 3 file set. `.elenchus` retains
+untracked local evidence only. No Solidity is present, so the security suite
+is waived and the three mandatory lint exits are the mechanical audit. No
+controller command that mutates run state, push, pull request, merge, issue
+change, remote write, archive, checkpoint, or other GitHub mutation ran.
+
+Leads not pursued: a caller controlling process `PATH`, system verifier
+binaries, or signature trust stores controls the operating-system execution
+boundary; the controller does not claim an independent trust root there. A
+writer with coordinated access to controller state, its hash-chained ledger,
+and native Git storage can rewrite all three local evidence classes; no
+external signed state anchor or storage guarantee is claimed. Repository
+configuration that prevents exact path enumeration remains a refusal rather
+than an incomplete receipt. The prose-phase generic file list has a separate
+non-authorising purpose and does not enter this Step 3 proof. Step 4 owns the
+eventual issue-or-document wording for issue #556 generation rows. No other
+in-scope lead remained after the full risk-register review. This final allowed
+round found one fixed defect, so it is not a zero-finding closure; after the
+round is receipted, Fiat's max-round gate owns the next decision.
