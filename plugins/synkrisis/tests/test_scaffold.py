@@ -1,4 +1,4 @@
-"""Step 2 scaffold contract: packaging, routing, ledger, spec, held refusals."""
+"""Step 3 scaffold contract: packaging, routing, ledger, spec, held refusals."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def run_cli(*arguments, cwd):
 
 class HostSurfaceTests(unittest.TestCase):
     def test_manifest_versions_agree_across_hosts_and_marketplace(self):
-        assert_version_agreement(self, "synkrisis", expected="0.2.0")
+        assert_version_agreement(self, "synkrisis", expected="0.3.0")
 
     def test_host_descriptions_agree(self):
         assert_host_descriptions_agree(self, "synkrisis")
@@ -104,6 +104,10 @@ class SpecificationTests(unittest.TestCase):
             / "ADR-001-keep-cross-run-diagnosis-separate.md",
             PLUGIN / "docs" / "decisions"
             / "ADR-002-declare-cohort-comparability.md",
+            PLUGIN / "docs" / "decisions"
+            / "ADR-003-use-checked-diagnostic-rules.md",
+            PLUGIN / "docs" / "decisions"
+            / "ADR-004-separate-run-and-reachability-evidence.md",
             PLUGIN / "docs" / "schema-compatibility.md",
         ):
             with self.subTest(path=path.relative_to(REPO_ROOT)):
@@ -115,19 +119,21 @@ class SpecificationTests(unittest.TestCase):
             with self.subTest(link=link):
                 self.assertTrue((SKILL.parent / link).resolve().is_file())
 
-    def test_the_runbook_records_two_delivered_and_three_held_steps(self):
+    def test_the_runbook_records_three_delivered_and_two_held_steps(self):
         runbook = (REPO_ROOT / "docs" / "synkrisis" / "runbook.md").read_text(
             encoding="utf-8"
         )
         for heading in ("Step 1", "Step 2", "Step 3", "Step 4", "Step 5"):
             self.assertIn(f"## {heading}:", runbook)
-        self.assertEqual(runbook.count("(delivered)"), 2)
-        self.assertEqual(runbook.count("(held)"), 3)
+        self.assertEqual(runbook.count("(delivered)"), 3)
+        self.assertEqual(runbook.count("(held)"), 2)
 
     def test_reference_schemas_parse_and_declare_their_identities(self):
         expected = {
             "policy-v1.schema.json": "synkrisis-policy/v1",
             "cohort-v1.schema.json": "synkrisis-cohort/v1",
+            "rule-v1.schema.json": "synkrisis-rules/v1",
+            "findings-v1.schema.json": "synkrisis-findings/v1",
         }
         for name, identity in expected.items():
             with self.subTest(schema=name):
@@ -162,8 +168,6 @@ class HeldOperationTests(unittest.TestCase):
 
     def held_operations(self):
         return {
-            "diagnose": ("diagnose", "--cohort", "cohort.json", "--rules",
-                         "rules.json", "--out", "out/findings.json"),
             "render": ("render", "findings.json", "--out", "out/report.md"),
             "verify": ("verify", "--manifest", "manifest.json", "--policy",
                        "policy.json", "--cohort", "cohort.json", "--rules",
@@ -212,7 +216,6 @@ class HeldOperationTests(unittest.TestCase):
 
     def test_refusal_names_the_pending_runbook_step(self):
         expected = {
-            "diagnose": "Step 3",
             "render": "Step 4",
             "verify": "Step 4",
         }
@@ -227,7 +230,7 @@ class HeldOperationTests(unittest.TestCase):
     def test_refusal_output_names_code_producer_path_and_recovery(self):
         with tempfile.TemporaryDirectory() as scratch:
             completed = run_cli(
-                *self.held_operations()["diagnose"], "--json", cwd=scratch
+                *self.held_operations()["render"], "--json", cwd=scratch
             )
             self.assertEqual(completed.returncode, 1)
             document = json.loads(completed.stdout)

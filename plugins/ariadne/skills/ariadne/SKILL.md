@@ -44,8 +44,8 @@ can supply other release subjects and evidence. Ariadne binds and gates those
 exact inputs. It neither reruns a sibling's work nor upgrades its result, and
 signature creation and verification remain with cosign.
 
-Synkrisis is the still-unimplemented comparison boundary for validated run
-observations. Its scaffold writes nothing. Ariadne may eventually bind a
+Synkrisis is the partly built comparison boundary for validated run
+observations. It writes a cohort and findings. Ariadne may bind such a
 comparison artefact to evidence, but that binding will not establish cause or
 authorise action.
 

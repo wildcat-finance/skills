@@ -2,18 +2,18 @@
   "counts": {
     "bytes_binary": 54682866,
     "bytes_content_addressed": 7844971,
-    "bytes_generated": 20281955,
+    "bytes_generated": 20329253,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 1819
+    "files_walked": 1826
   },
   "entries": [
     {
-      "bytes": 20214885,
+      "bytes": 20262183,
       "category": "generated",
       "evidence": "linguist-generated for '.agents/skills/promise-machine/runtime/**' in .gitattributes",
-      "files": 893,
+      "files": 899,
       "grade": "hard",
       "path": ".agents/skills/promise-machine/runtime/"
     },

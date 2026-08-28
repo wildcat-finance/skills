@@ -3,7 +3,7 @@
 Derived from [the committed study](study.md) and the runbook attached to
 [issue #449](https://github.com/wildcat-finance/skills/issues/449). Five
 steps, dependency order, each landing only with its exit gates green. Steps 1
-and 2 are delivered; Steps 3 through 5 are held, and the evolution ledger's
+through 3 are delivered; Steps 4 and 5 are held, and the evolution ledger's
 Next Fiat job names the next one.
 
 ## Step 1: Scaffold Synkrisis and commit its specification (delivered)
@@ -41,11 +41,11 @@ The cohort and policy schemas land under `references/` with the
 schema-compatibility record, and the comparability decision record lands
 beside ADR-001.
 
-## Step 3: Add the bounded diagnostic rule catalogue (held)
+## Step 3: Add the bounded diagnostic rule catalogue (delivered)
 
 **Goal.** Evidence-linked candidate findings recomputed from one checked
 cohort, with no cause, quality judgement or action.
-**Exit.** `synkrisis.py diagnose` validates the digest-bound
+**Exit, held at delivery.** `synkrisis.py diagnose` validates the digest-bound
 `references/rules-v1.json`, applies only rules whose required dimensions and
 minimum sample counts hold, records every refused rule with its reason, and
 emits deterministic findings carrying cohort and rule digests, exact event

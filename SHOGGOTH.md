@@ -11,8 +11,8 @@ the wording does not create a separate identity.
 
 The current roster has 25 members: 16 domain agents and 9 phase agents.
 Synkrisis is included in that count even though its cross-run comparison
-surface is still a specification backed by a command that refuses every
-operation.
+surface is only partly built: it constructs a checked cohort and infers
+bounded findings over it, and its remaining operations refuse.
 
 ## The Interceptor
 

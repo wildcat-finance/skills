@@ -14,6 +14,7 @@ PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLUGIN_ROOT.parents[1]
 SCRIPTS = PLUGIN_ROOT / "scripts"
 EXAMPLE = PLUGIN_ROOT / "examples" / "cross-run-v0"
+RULES = PLUGIN_ROOT / "references" / "rules-v1.json"
 
 _MODULES = {}
 
@@ -77,9 +78,12 @@ def stage_example(root: Path) -> tuple[dict, dict]:
     return manifest, policy
 
 
-def stage_inputs(root: Path, manifest: dict, policy: dict):
+def stage_inputs(root: Path, manifest: dict, policy: dict, rules: dict | None = None):
     write(root, "manifest.json", canonical(manifest))
     write(root, "policy.json", canonical(policy))
+    if rules is None:
+        rules = read_json(RULES)
+    write(root, "rules.json", canonical(rules))
 
 
 def run_cohort(root: Path, out="out/cohort.json", **overrides):
@@ -90,6 +94,16 @@ def run_cohort(root: Path, out="out/cohort.json", **overrides):
         **overrides,
     )
     return synkrisis().command_cohort(root, arguments)
+
+
+def run_diagnose(root: Path, out="out/findings.json", **overrides):
+    arguments = namespace(
+        cohort=overrides.pop("cohort", "out/cohort.json"),
+        rules=overrides.pop("rules", "rules.json"),
+        out=out,
+        **overrides,
+    )
+    return synkrisis().command_diagnose(root, arguments)
 
 
 def event(run_id, seq, typ, second, corr, **extra):
@@ -272,9 +286,9 @@ def fixture_policy(**overrides):
     return policy
 
 
-def stage_pair(root: Path, records: dict[str, bytes], *, policy=None,
+def stage_pair(root: Path, records: dict[str, bytes], *, policy=None, rules=None,
                bindings: dict | None = None):
-    """Write records, a matching manifest and a policy into a root."""
+    """Write records, a matching manifest, a policy and rules into a root."""
     rows = []
     for run_id, payload in records.items():
         relative = f"records/{run_id}.jsonl"
@@ -288,7 +302,7 @@ def stage_pair(root: Path, records: dict[str, bytes], *, policy=None,
             )
         )
     manifest = fixture_manifest(rows)
-    stage_inputs(root, manifest, policy or fixture_policy())
+    stage_inputs(root, manifest, policy or fixture_policy(), rules)
     return manifest
 
 
