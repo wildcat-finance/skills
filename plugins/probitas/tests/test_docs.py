@@ -7,6 +7,7 @@ finds out here rather than from a reader.
 """
 
 import argparse
+import json
 import os
 import re
 import unittest
@@ -42,7 +43,7 @@ WORDS = {
 # aggregate collector.  Focused adapter specimens can live beside it before an
 # adapter is registered, so classify by a file consumed by a shipped adapter
 # rather than by every top-level directory.
-SHIPPED_FIXTURE_FILES = frozenset(
+AGGREGATE_FIXTURE_ANCHORS = frozenset(
     {
         "wildcat.json",
         "morpho.json",
@@ -53,6 +54,13 @@ SHIPPED_FIXTURE_FILES = frozenset(
     }
 )
 
+# The stacked Step 3 branch contains the new runtime adapter before Step 4
+# publishes its package and marketplace prose. Keep that release boundary
+# explicit instead of teaching the public documents to claim unpublished code.
+PUBLISHED_ADAPTER_IDS = frozenset(
+    {"wildcat", "morpho-blue", "euler-v1", "euler"}
+)
+
 
 def read(path):
     with open(path, encoding="utf-8") as handle:
@@ -61,11 +69,11 @@ def read(path):
 
 def counts():
     venues = registry.all_venues()
-    gaps = [v for v in venues if not v.implemented]
+    gaps = [v for v in venues if v.id not in PUBLISHED_ADAPTER_IDS]
     # Keyless is not the same as buildable. Maple answers without a key and
     # publishes no schema, so it needs something nobody here can supply.
     adapter_only = [v for v in gaps if v.auth == "none" and v.id != "maple"]
-    return len(venues), len(venues) - len(gaps), len(gaps), len(adapter_only)
+    return len(venues), len(PUBLISHED_ADAPTER_IDS), len(gaps), len(adapter_only)
 
 
 class TestTheDocumentsCountCorrectly(unittest.TestCase):
@@ -108,6 +116,11 @@ class TestTheDocumentsCountCorrectly(unittest.TestCase):
             with self.subTest(venue=venue.id):
                 self.assertIn(venue.name, text)
 
+    def test_only_midnight_awaits_the_step_four_publication_pass(self):
+        runtime = {venue.id for venue in registry.implemented()}
+        self.assertEqual(runtime - PUBLISHED_ADAPTER_IDS, {"morpho-midnight"})
+        self.assertEqual(PUBLISHED_ADAPTER_IDS - runtime, set())
+
 
 class TestTheQuickstartIsTheOneThatWasRun(unittest.TestCase):
     """The README's commands have to produce the committed example dossier."""
@@ -138,8 +151,29 @@ class TestTheQuickstartIsTheOneThatWasRun(unittest.TestCase):
                 "euler-events.json",
                 "euler-liquidations.json",
                 "euler-vaults.json",
+                "morpho-midnight.json",
             },
         )
+
+    def test_every_aggregate_fixture_carries_a_midnight_response(self):
+        directory = os.path.join(support.PLUGIN_ROOT, "tests", "fixtures")
+        aggregate = [
+            name
+            for name in os.listdir(directory)
+            if os.path.isdir(os.path.join(directory, name))
+            and AGGREGATE_FIXTURE_ANCHORS.intersection(
+                os.listdir(os.path.join(directory, name))
+            )
+        ]
+        self.assertEqual(len(aggregate), 11)
+        for name in aggregate:
+            with self.subTest(name=name):
+                fixture = os.path.join(directory, name, "morpho-midnight.json")
+                self.assertTrue(os.path.isfile(fixture))
+                with open(fixture, encoding="utf-8") as handle:
+                    source = json.load(handle)["source"]
+                self.assertEqual(source["date"], "2026-08-28")
+                self.assertEqual(source["origin"], "https://api.morpho.org")
 
 
 class TestTheReadmeDescribesTheToolThatExists(unittest.TestCase):
@@ -182,7 +216,7 @@ class TestTheReadmeDescribesTheToolThatExists(unittest.TestCase):
             name
             for name in os.listdir(directory)
             if os.path.isdir(os.path.join(directory, name))
-            and SHIPPED_FIXTURE_FILES.intersection(
+            and AGGREGATE_FIXTURE_ANCHORS.intersection(
                 os.listdir(os.path.join(directory, name))
             )
         ]

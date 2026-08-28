@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 912,
-  "total_bytes": 20208931,
+  "total_bytes": 20218729,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4861,9 +4861,9 @@
       "source": "plugins/probitas/docs/euler-v2-goldsky-schema.graphql"
     },
     {
-      "bytes": 9496,
+      "bytes": 10611,
       "path": "plugins/probitas/docs/example-dossier.md",
-      "sha256": "d7cfd65f74d9568a22ac81ce54e5e662f97dbcb343c538cf321221787cbeadc3",
+      "sha256": "0016e6cf22269f41593b42c182c1e9a5d0f9f9f4f9ab8f765c89f55f6590aea2",
       "source": "plugins/probitas/docs/example-dossier.md"
     },
     {
@@ -4879,9 +4879,9 @@
       "source": "plugins/probitas/docs/morpho-midnight-fixed-maturity-study.md"
     },
     {
-      "bytes": 9557,
+      "bytes": 9647,
       "path": "plugins/probitas/scripts/probitas.py",
-      "sha256": "82679d551c7150e2dc2dd8bbc007662d6fc7f2dcc9a537cd3d359bd8aa53d41c",
+      "sha256": "10d9c0589c50f286d27fe5f5e293b30efe3ae1da5770c4a797b6895e2b2480f0",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     {
@@ -4957,15 +4957,15 @@
       "source": "plugins/probitas/scripts/probitas_lib/graphql.py"
     },
     {
-      "bytes": 6729,
+      "bytes": 6790,
       "path": "plugins/probitas/scripts/probitas_lib/registry.py",
-      "sha256": "1acfc8759ffb453353565356799df621374d06668dbe71ad8ec3c6d1616f85d7",
+      "sha256": "e3376fc5f356292064976974afa6d7379e7b7a45791021fb0508874ca1b50c08",
       "source": "plugins/probitas/scripts/probitas_lib/registry.py"
     },
     {
-      "bytes": 10365,
+      "bytes": 18897,
       "path": "plugins/probitas/scripts/probitas_lib/render.py",
-      "sha256": "66ebd4846e20808fd5bcfa684c65c4e25555f39300134cedd0fc32ce53d78dbf",
+      "sha256": "edb0fa5116cb91d7937f737ea9da9f04db80f2b94511630e82e1e89afc064eef",
       "source": "plugins/probitas/scripts/probitas_lib/render.py"
     },
     {

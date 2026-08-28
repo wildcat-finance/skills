@@ -11,8 +11,10 @@ no way to write a number the evidence does not contain.
 
 import json
 import os
+import re
 
-from . import formatting, registry
+from . import formatting, registry, sanitise
+from .evidence import classify_source
 
 TEMPLATE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -21,6 +23,7 @@ TEMPLATE = os.path.join(
 )
 
 NARRATIVE_MARKER = "_Nothing to report._"
+TEMPLATE_SLOT = re.compile(r"\{\{([a-z_]+)\}\}")
 
 # Claims that belong under Wildcat's own heading rather than the general
 # borrowing history, because they are about terms the borrower set rather than
@@ -45,6 +48,17 @@ CLAIM_LABELS = {
     "repayment": "Repaid",
     "liquidation": "Liquidated",
     "bad_debt": "Bad debt left unpaid",
+    "maturity_outcome": "Maturity outcome",
+    "position_state": "Position observed",
+    "token_metadata": "Token metadata",
+}
+
+MIDNIGHT_SETTLEMENT = {
+    "primary_repayment": "primary repayment",
+    "secondary_close": "secondary-market close",
+    "liquidation": "liquidation",
+    "mixed": "mixed settlement conduct",
+    "unsettled": "no settlement recorded",
 }
 
 
@@ -79,19 +93,117 @@ def decimals_by_market(records):
         values = record["values"]
         market = values.get("market")
         if market and "token_decimals" in values:
+            symbol = values.get("token_symbol")
             out.setdefault(
-                market, (values["token_decimals"], values.get("token_symbol"))
+                market,
+                (
+                    values["token_decimals"],
+                    sanitise.clean(symbol, max_length=32)
+                    if symbol is not None
+                    else None,
+                ),
             )
     return out
 
 
 def _cite(record):
     source = record["source"]
-    if record["source_kind"] == "transaction":
+    # Gate 3 owns the explicit blank-source diagnostic. Keep that existing
+    # negative specimen renderable without allowing non-empty malformed bytes
+    # into a Markdown citation.
+    if isinstance(source, str) and not source.strip():
+        return "``"
+    try:
+        source_kind = classify_source(source)
+    except ValueError as error:
+        raise RenderError("record source is not a valid citation") from error
+    if source_kind != record.get("source_kind"):
+        raise RenderError("record source kind does not match its citation")
+    if source_kind == "transaction":
         return f"`{formatting.short(source)}`"
-    if record["source_kind"] == "url":
+    if source_kind == "url":
         return f"[source]({source})"
     return f"`{source}`"
+
+
+def _midnight_integer(value, label):
+    if isinstance(value, bool) or isinstance(value, float):
+        raise RenderError(f"Midnight {label} is not an exact non-negative integer")
+    if isinstance(value, int):
+        amount = value
+    elif isinstance(value, str) and re.fullmatch(r"[0-9]+", value):
+        amount = int(value)
+    else:
+        raise RenderError(f"Midnight {label} is not an exact non-negative integer")
+    if amount < 0:
+        raise RenderError(f"Midnight {label} is not an exact non-negative integer")
+    return amount
+
+
+def _raw_units(value, label):
+    return f"{_midnight_integer(value, label):,} {label}"
+
+
+def _midnight_outcome(values):
+    obligation = values.get("obligation_state")
+    observation = values.get("observation_state")
+    settlement_mode = values.get("settlement_mode")
+    settlement = MIDNIGHT_SETTLEMENT.get(settlement_mode)
+    if settlement is None:
+        raise RenderError("Midnight settlement mode is outside the closed vocabulary")
+
+    observation_units = _midnight_integer(
+        values.get("debt_units_at_observation"), "observation debt units"
+    )
+    at_observation = f"{observation_units:,} debt units"
+    if obligation == "cleared_by_maturity" and observation == "cleared":
+        maturity_units = _midnight_integer(
+            values.get("debt_units_at_maturity"), "maturity debt units"
+        )
+        if (
+            maturity_units != 0
+            or observation_units != 0
+            or settlement_mode == "unsettled"
+        ):
+            raise RenderError(
+                "Midnight cleared outcome has inconsistent debt or settlement"
+            )
+        at_maturity = f"{maturity_units:,} debt units"
+        return (
+            f"Cleared by maturity with {at_maturity} outstanding; "
+            f"settlement mode: {settlement}; {at_observation} at observation"
+        )
+    if obligation == "outstanding_at_maturity":
+        maturity_units = _midnight_integer(
+            values.get("debt_units_at_maturity"), "maturity debt units"
+        )
+        if maturity_units == 0:
+            raise RenderError("Midnight outstanding outcome has no debt at maturity")
+        at_maturity = f"{maturity_units:,} debt units"
+        if observation == "settled_late":
+            if observation_units != 0 or settlement_mode == "unsettled":
+                raise RenderError("Midnight late settlement outcome is inconsistent")
+            return (
+                f"Outstanding at maturity: {at_maturity}; Settled late through "
+                f"{settlement}; {at_observation} at observation"
+            )
+        if observation == "outstanding":
+            if observation_units == 0 or observation_units > maturity_units:
+                raise RenderError("Midnight outstanding observation is inconsistent")
+            return (
+                f"Outstanding at maturity: {at_maturity}; still outstanding "
+                f"at observation: {at_observation}; settlement mode: {settlement}"
+            )
+    if obligation == "not_due" and observation == "not_due":
+        if values.get("debt_units_at_maturity") is not None:
+            raise RenderError("Midnight not-due outcome invents a maturity balance")
+        if observation_units == 0 and settlement_mode == "unsettled":
+            raise RenderError("Midnight not-due zero balance has no settlement")
+        return (
+            f"Not due at observation; {at_observation}; "
+            f"settlement mode: {settlement}"
+        )
+    raise RenderError("Midnight obligation and observation states disagree")
 
 
 def _describe(record, decimals):
@@ -100,6 +212,61 @@ def _describe(record, decimals):
     claim = record["claim"]
     market = values.get("market")
     scale, symbol = decimals.get(market, (None, None))
+
+    if record["venue"] == "morpho-midnight" and claim == "borrow":
+        return (
+            "drew "
+            + _raw_units(values["amount"], "loan-token units")
+            + "; debt increased by "
+            + _raw_units(values["debt_units"], "debt units")
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "repayment":
+        return (
+            "primary repayment reduced debt by "
+            + _raw_units(values["debt_units"], "debt units")
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "liquidation":
+        reduced = int(values["repaid_debt_units"]) + int(
+            values["realized_bad_debt_units"]
+        )
+        return (
+            "liquidation reduced debt by "
+            + _raw_units(reduced, "debt units")
+            + " ("
+            + _raw_units(values["repaid_debt_units"], "repaid debt units")
+            + ", "
+            + _raw_units(
+                values["realized_bad_debt_units"], "realized bad-debt units"
+            )
+            + "); this was liquidation, not voluntary repayment"
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "market_terms":
+        return (
+            "fixed maturity at Unix time "
+            + _raw_units(values["maturity"], "seconds")
+            + "; Base chain id "
+            + str(int(values["chain_id"]))
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "token_metadata":
+        return (
+            f"{sanitise.clean(values['token_name'])} "
+            f"({sanitise.clean(values['token_symbol'])}), "
+            f"{int(values['token_decimals'])} decimals"
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "position_state":
+        return (
+            f"current position {sanitise.clean(values['current_position_type'])}; "
+            + _raw_units(values["current_debt_units"], "debt units")
+            + f" at observation; indexed through block {int(values['last_indexed_block'])}"
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "maturity_outcome":
+        return _midnight_outcome(values)
 
     if claim in ("borrow", "repayment", "bad_debt"):
         return formatting.amount(values["amount"], scale, symbol)
@@ -116,7 +283,7 @@ def _describe(record, decimals):
 
     if claim == "market_terms":
         return (
-            f"{values.get('market_name', 'market')}, "
+            f"{sanitise.clean(values.get('market_name', 'market'))}, "
             f"reserve ratio {formatting.bips(values['reserve_ratio_bips'])}, "
             f"rate {formatting.bips(values['annual_interest_bips'])}, "
             f"grace period {formatting.duration(values['grace_period_seconds'])}, "
@@ -173,7 +340,10 @@ def _describe(record, decimals):
     if claim == "market_closed":
         return "closed by the borrower"
 
-    return "; ".join(f"{k} {v}" for k, v in sorted(values.items()))
+    return "; ".join(
+        f"{sanitise.clean(k)} {sanitise.clean(v, max_length=400)}"
+        for k, v in sorted(values.items())
+    )
 
 
 def _rows(records, decimals):
@@ -186,8 +356,8 @@ def _rows(records, decimals):
         lines.append(
             "| {} | {} | {} | {} | {} |".format(
                 formatting.timestamp(record.get("observed_at")) or "--",
-                record["venue"],
-                label,
+                sanitise.clean(record["venue"]),
+                sanitise.clean(label),
                 _describe(record, decimals),
                 _cite(record),
             )
@@ -195,17 +365,22 @@ def _rows(records, decimals):
     return "\n".join(lines)
 
 
-def _subject(payload):
-    lines = [f"**Entity.** {payload['subject']['entity']}", ""]
+def _subject(payload, entity):
+    lines = [f"**Entity.** {entity}", ""]
     for tier, heading in (
         ("declared", "Declared by the counterparty"),
         ("linked", "Provably linked on chain"),
     ):
-        addresses = [
-            a["address"]
-            for a in payload["subject"]["addresses"]
-            if a["provenance"] == tier
-        ]
+        addresses = []
+        for item in payload["subject"]["addresses"]:
+            if item["provenance"] != tier:
+                continue
+            try:
+                addresses.append(sanitise.address(item["address"]))
+            except ValueError as error:
+                raise RenderError(
+                    "subject address is not a 20-byte address"
+                ) from error
         if not addresses:
             continue
         lines.append(f"**{heading}.**")
@@ -222,13 +397,14 @@ def _coverage(payload):
         "| --- | --- | --- | --- | --- |",
     ]
     for row in payload["coverage"]:
+        venue = known.get(row["venue"], row["venue"])
         lines.append(
             "| {} | {} | {} | {} | {} |".format(
-                known.get(row["venue"], row["venue"]),
-                row["status"],
-                row.get("block_range") or "--",
-                row.get("records", 0),
-                row.get("note") or "--",
+                sanitise.clean(venue),
+                sanitise.clean(row["status"]),
+                sanitise.clean(row.get("block_range") or "--"),
+                sanitise.clean(row.get("records", 0)),
+                sanitise.clean(row.get("note") or "--", max_length=400),
             )
         )
     return "\n".join(lines)
@@ -240,9 +416,18 @@ def _gaps(payload):
             "Nothing. Every venue in the registry was checked and every "
             "declared address resolved."
         )
-    lines = ["| Subject | Why |", "| --- | --- |"]
+    coverage = {row["venue"]: row["status"] for row in payload["coverage"]}
+    lines = ["| Subject | Status | Why |", "| --- | --- | --- |"]
     for gap in payload["gaps"]:
-        lines.append(f"| {gap['subject']} | {gap['reason']} |")
+        venue = gap["subject"].removesuffix(" borrowing history")
+        status = coverage.get(venue, "unresolved")
+        lines.append(
+            "| {} | {} | {} |".format(
+                sanitise.clean(gap["subject"], max_length=400),
+                sanitise.clean(status),
+                sanitise.clean(gap["reason"], max_length=400),
+            )
+        )
     return "\n".join(lines)
 
 
@@ -260,22 +445,29 @@ def render(payload):
     history = [
         r
         for r in records
-        if tiers.get(r["address"]) in on_record and r["claim"] not in WILDCAT_CLAIMS
+        if tiers.get(r["address"]) in on_record
+        and not (r["venue"] == "wildcat" and r["claim"] in WILDCAT_CLAIMS)
     ]
     wildcat = [
         r
         for r in records
-        if tiers.get(r["address"]) in on_record and r["claim"] in WILDCAT_CLAIMS
+        if tiers.get(r["address"]) in on_record
+        and r["venue"] == "wildcat"
+        and r["claim"] in WILDCAT_CLAIMS
     ]
     inferred = [r for r in records if tiers.get(r["address"]) == "inferred"]
 
+    entity = sanitise.clean(payload["subject"].get("entity"), max_length=120)
+    if not entity:
+        raise RenderError("subject entity is empty")
     run = payload.get("run") or {}
-    run_line = "Run `{}`.".format(run.get("id") or "unidentified")
+    run_id = sanitise.clean(run.get("id") or "unidentified", max_length=120)
+    run_line = f"Run `{run_id}`."
 
     sections = {
-        "entity": payload["subject"]["entity"],
+        "entity": entity,
         "run_line": run_line,
-        "subject": _subject(payload),
+        "subject": _subject(payload, entity),
         "coverage": _coverage(payload),
         "negative_space": _gaps(payload),
         "history": _rows(history, decimals) if history else NARRATIVE_MARKER,
@@ -294,7 +486,14 @@ def render(payload):
         ),
     }
 
-    out = template
-    for key, value in sections.items():
-        out = out.replace("{{" + key + "}}", value)
-    return out
+    slots = TEMPLATE_SLOT.findall(template)
+    missing = sorted(set(sections) - set(slots))
+    unknown = sorted(set(slots) - set(sections))
+    repeated = sorted(key for key in set(slots) if slots.count(key) != 1)
+    if missing or unknown or repeated:
+        raise RenderError("dossier template slots disagree with renderer sections")
+
+    # Substitute only slots present in the trusted template bytes. A value from
+    # evidence can itself contain ``{{summary}}`` or another slot-shaped string;
+    # rescanning replacement text would turn that data into document structure.
+    return TEMPLATE_SLOT.sub(lambda match: sections[match.group(1)], template)
