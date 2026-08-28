@@ -28,6 +28,39 @@ COMMAND_FIELDS = frozenset(
     {"name", "argv", "determinism", "output_digest", "detail"}
 )
 
+MAX_STRUCTURED_KEY_CHARACTERS = 4096
+"""Largest producer-chosen key the semantic gates compatibility-fold.
+
+NFKC can expand one input scalar into many output scalars.  Keeping the source
+key bounded before normalisation prevents a parser-bounded statement from
+turning one compatibility key into an allocation many times its input size.
+"""
+MAX_STRUCTURED_KEY_CHARACTERS_TOTAL = 262144
+"""Aggregate source-key budget for one semantic scan."""
+
+
+class StructuredKeyBudget(object):
+    """Admit keys only while both compatibility-scan bounds hold."""
+
+    def __init__(self):
+        self.characters = 0
+        self.refused = 0
+        self.exhausted = False
+
+    def accept(self, key):
+        if self.exhausted or not isinstance(key, str):
+            self.refused += 1
+            return False
+        if len(key) > MAX_STRUCTURED_KEY_CHARACTERS:
+            self.refused += 1
+            return False
+        if self.characters + len(key) > MAX_STRUCTURED_KEY_CHARACTERS_TOTAL:
+            self.exhausted = True
+            self.refused += 1
+            return False
+        self.characters += len(key)
+        return True
+
 
 def block(predicate, key):
     """The named list from a predicate, or None when it is absent or wrong.
@@ -76,9 +109,21 @@ def walk(value):
                 yield pair
 
 
+def compatibility_key(key):
+    """Compatibility- and case-fold one bounded producer-chosen key."""
+    if not isinstance(key, str):
+        raise TypeError("structured key must be a string")
+    if len(key) > MAX_STRUCTURED_KEY_CHARACTERS:
+        raise ValueError(
+            "structured key exceeds the %d-character scan limit"
+            % MAX_STRUCTURED_KEY_CHARACTERS
+        )
+    return unicodedata.normalize("NFKC", key).casefold()
+
+
 def normalise_key(key):
     """Compatibility-fold a key, then drop case and separators."""
-    folded = unicodedata.normalize("NFKC", key).casefold()
+    folded = compatibility_key(key)
     return "".join(character for character in folded if character.isalnum())
 
 

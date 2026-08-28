@@ -3,6 +3,7 @@
 import hashlib
 import unicodedata
 import unittest
+from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
@@ -414,6 +415,75 @@ class GateSevenTests(unittest.TestCase):
     def test_an_ordinary_predicate_passes(self):
         gate = only(7, {"claims": [claim()], "commands": [command()]})
         self.assertTrue(gate.passed, gate.detail)
+
+
+class StructuredKeyBoundTests(unittest.TestCase):
+    def test_compatibility_folding_never_expands_an_oversized_key(self):
+        key = "\ufdfa" * 4097
+        found = built(
+            {"claims": [], "commands": []},
+            subject=[
+                {
+                    "name": "a",
+                    "digest": ART,
+                    "annotations": {key: "neutral metadata"},
+                }
+            ],
+        )
+        original = unicodedata.normalize
+
+        def bounded_normalise(form, value):
+            if value is key or len(value) > 4096:
+                raise AssertionError("oversized structured key reached NFKC")
+            return original(form, value)
+
+        with mock.patch.object(gates.unicodedata, "normalize", bounded_normalise):
+            gate_four = gates.gate_4_conclusions(found)
+            gate_seven = gates.gate_7_authorship(found)
+
+        self.assertFalse(gate_four.passed)
+        self.assertFalse(gate_seven.passed)
+        self.assertIn("4096-character scan limit", gate_four.detail)
+        self.assertIn("4096-character scan limit", gate_seven.detail)
+
+    def test_many_bounded_keys_cannot_exceed_the_aggregate_fold_budget(self):
+        annotations = {
+            "%s%d" % ("\ufdfa" * 1024, index): index for index in range(270)
+        }
+        found = built(
+            {"claims": [], "commands": []},
+            subject=[
+                {
+                    "name": "a",
+                    "digest": ART,
+                    "annotations": annotations,
+                }
+            ],
+        )
+        original = unicodedata.normalize
+
+        def run(check):
+            scanned = 0
+
+            def bounded_normalise(form, value):
+                nonlocal scanned
+                scanned += len(value)
+                # Each classifier performs one folded-key pass and one token
+                # pass over an admitted source key. Both stay inside the same
+                # source-key budget up to that fixed factor.
+                if scanned > 2 * 262144:
+                    raise AssertionError("aggregate structured keys exceeded the budget")
+                return original(form, value)
+
+            with mock.patch.object(gates.unicodedata, "normalize", bounded_normalise):
+                return check(found)
+
+        gate_four = run(gates.gate_4_conclusions)
+        gate_seven = run(gates.gate_7_authorship)
+        self.assertFalse(gate_four.passed)
+        self.assertFalse(gate_seven.passed)
+        self.assertIn("262144-character aggregate scan budget", gate_four.detail)
+        self.assertIn("262144-character aggregate scan budget", gate_seven.detail)
 
 
 class RunTests(unittest.TestCase):

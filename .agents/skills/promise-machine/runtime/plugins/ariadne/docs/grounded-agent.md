@@ -56,6 +56,12 @@ Digest maps carry at most eight algorithms. Three slots cover Ariadne's current
 supported algorithms and five remain for transition metadata; wider claim or
 subject maps fail before claim-by-subject matching begins.
 
+Core gates refuse producer-chosen structured keys longer than 4,096 characters
+or past a 262,144-character aggregate key budget before compatibility folding.
+Berean result keys on open extension surfaces are compared after Unicode NFKC
+and case folding, so equivalent spellings cannot reintroduce thresholds or
+result counts under another representation.
+
 The corpus block carries its own `path`, `corpus_version`, semantic
 `corpus_digest`, `manifest`, and non-empty `components`. A non-null reads block
 carries `component`, `chain_id`, `block_number`, non-zero `block_hash`, and

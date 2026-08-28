@@ -1165,6 +1165,52 @@ class EvidenceBoundaryTests(unittest.TestCase):
         outer[0]["annotations"] = {"evaluation": {"failed": 0}}
         self.assertFalse(named("evidence-boundary", body, outer).passed)
 
+    def test_berean_result_keys_refuse_compatibility_equivalent_spellings(self):
+        aliases = (
+            ("THRESHOLDS", "thresholds"),
+            ("\uff43\uff41\uff53\uff45\uff53", "cases"),
+            ("pa\u017f\u017fed", "passed"),
+            ("\uff26\uff21\uff29\uff2c\uff25\uff24", "failed"),
+            ("failures\uff3fallowed", "failures_allowed"),
+        )
+        for key, canonical in aliases:
+            for surface in ("claim detail", "outer subject digest"):
+                body = predicate()
+                outer = None
+                if surface == "claim detail":
+                    body["claims"] = [
+                        {
+                            "name": "evaluation result",
+                            "subject": {
+                                "sha256": body["release"]["document"]["sha256"]
+                            },
+                            "disposition": "passed",
+                            "detail": {"evaluation": {key: 1}},
+                        }
+                    ]
+                else:
+                    outer = subjects(body)
+                    outer[0]["digest"][key] = "10"
+                with self.subTest(surface=surface, key=key):
+                    found = named("evidence-boundary", body, outer)
+                    self.assertFalse(found.passed, found.detail)
+                    self.assertIn(canonical, found.detail)
+
+        for key in ("thre_sholds", "pass_ed", "failure_sallowed"):
+            body = predicate()
+            body["claims"] = [
+                {
+                    "name": "evaluation metadata",
+                    "subject": {
+                        "sha256": body["release"]["document"]["sha256"]
+                    },
+                    "disposition": "passed",
+                    "detail": {key: "not a Berean wire key"},
+                }
+            ]
+            with self.subTest(surface="neutral near miss", key=key):
+                self.assertTrue(named("evidence-boundary", body).passed)
+
     def test_berean_results_cannot_hide_in_digest_algorithm_names(self):
         for key in agent.FORBIDDEN_BEREAN_RESULT_KEYS:
             for surface in ("adapter", "claim", "command", "outer subject"):

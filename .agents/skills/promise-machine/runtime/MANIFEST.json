@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11109857,
+  "total_bytes": 11114461,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -517,9 +517,9 @@
       "source": "plugins/ariadne/docs/design.md"
     },
     {
-      "bytes": 5971,
+      "bytes": 6327,
       "path": "plugins/ariadne/docs/grounded-agent.md",
-      "sha256": "7ff94db2b8b7f4f8da819e29a6e41678ac07369ddb1dec11ca4ef164c76a623f",
+      "sha256": "5d4af49a4159a5e3afcada41c5f0cec848ad402c866396b4d79814bd248eb0e0",
       "source": "plugins/ariadne/docs/grounded-agent.md"
     },
     {
@@ -649,9 +649,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/tree.py"
     },
     {
-      "bytes": 4270,
+      "bytes": 5819,
       "path": "plugins/ariadne/scripts/ariadne_lib/core_predicate.py",
-      "sha256": "830bfdef5105adbd1eeb28453ef4d56e273efbc8590d77d6f43f68a54ffabf92",
+      "sha256": "c99946bbd366365ed89ebada833028a56ccbd80724028b07b8fbe439f9ed51a0",
       "source": "plugins/ariadne/scripts/ariadne_lib/core_predicate.py"
     },
     {
@@ -673,9 +673,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/envelope.py"
     },
     {
-      "bytes": 23923,
+      "bytes": 25514,
       "path": "plugins/ariadne/scripts/ariadne_lib/gates.py",
-      "sha256": "1ae5873232da3255380f30ddb8fa012e66a9397714c0e3d360515b7f6c5113c1",
+      "sha256": "50b3a8d2b1480a76ec67e29d9efa6bf6611926550693194c0566fdd42c302a04",
       "source": "plugins/ariadne/scripts/ariadne_lib/gates.py"
     },
     {
@@ -691,9 +691,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py"
     },
     {
-      "bytes": 45937,
+      "bytes": 47045,
       "path": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py",
-      "sha256": "89564091d9664f24f94ead67a50694e54a1fe600d812dd102447ea3b7e065fa2",
+      "sha256": "1dbeb39aff6b700c01bf9453be85e7aacf18f2b88f4521dd4ff66f5aa4146034",
       "source": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py"
     },
     {

@@ -262,7 +262,10 @@ def authorship_chain(value):
 
 def key_tokens(key):
     """ASCII identifier words without confusing a substring for a claim."""
-    if not isinstance(key, str):
+    if (
+        not isinstance(key, str)
+        or len(key) > core_predicate.MAX_STRUCTURED_KEY_CHARACTERS
+    ):
         return ()
     key = unicodedata.normalize("NFKC", key)
     return tuple(found.group(0).lower() for found in KEY_TOKEN.finditer(key))
@@ -303,7 +306,10 @@ def tokenised_authorship(tokens):
 
 def conclusion_key(key):
     """A direct conclusion key or a structured conclusion compound."""
-    normal = core_predicate.normalise_key(key)
+    try:
+        normal = core_predicate.normalise_key(key)
+    except (TypeError, ValueError):
+        return False
     letters = "".join(character for character in normal if not character.isdigit())
     if any(
         candidate in CONCLUSION_KEYS
@@ -316,7 +322,10 @@ def conclusion_key(key):
 
 
 def authorship_key(key):
-    normal = core_predicate.normalise_key(key)
+    try:
+        normal = core_predicate.normalise_key(key)
+    except (TypeError, ValueError):
+        return False
     letters = "".join(character for character in normal if not character.isdigit())
     if any(
         candidate in AUTHORSHIP_KEYS
@@ -579,15 +588,34 @@ def gate_4_conclusions(statement):
     cannot become a field another tool reads as structured data.
     """
     faults = []
+    budget = core_predicate.StructuredKeyBudget()
     for key, _ in scanned(statement):
-        if conclusion_key(key):
+        if not budget.accept(key):
+            continue
+        elif conclusion_key(key):
             faults.append(key)
-    if faults:
+    if faults or budget.refused:
+        details = []
+        if budget.refused:
+            details.append(
+                "statement carries %d structured key(s) outside the %d-character "
+                "scan limit or %d-character aggregate scan budget"
+                % (
+                    budget.refused,
+                    core_predicate.MAX_STRUCTURED_KEY_CHARACTERS,
+                    core_predicate.MAX_STRUCTURED_KEY_CHARACTERS_TOTAL,
+                )
+            )
+        if faults:
+            details.append(
+                "statement carries verdict key(s): %s"
+                % ", ".join(sorted(set(faults)))
+            )
         return Gate(
             4,
             "no-conclusions",
             False,
-            "statement carries verdict key(s): %s" % ", ".join(sorted(set(faults))),
+            "; ".join(details),
         )
     return Gate(4, "no-conclusions", True, "no verdict keys in the statement")
 
@@ -674,16 +702,34 @@ def gate_7_authorship(statement):
     badge this whole project exists to replace.
     """
     faults = []
+    budget = core_predicate.StructuredKeyBudget()
     for key, _ in scanned(statement):
-        if authorship_key(key):
+        if not budget.accept(key):
+            continue
+        elif authorship_key(key):
             faults.append(key)
-    if faults:
+    if faults or budget.refused:
+        details = []
+        if budget.refused:
+            details.append(
+                "statement carries %d structured key(s) outside the %d-character "
+                "scan limit or %d-character aggregate scan budget"
+                % (
+                    budget.refused,
+                    core_predicate.MAX_STRUCTURED_KEY_CHARACTERS,
+                    core_predicate.MAX_STRUCTURED_KEY_CHARACTERS_TOTAL,
+                )
+            )
+        if faults:
+            details.append(
+                "statement asserts its own authorship or verification: %s"
+                % ", ".join(sorted(set(faults)))
+            )
         return Gate(
             7,
             "authorship",
             False,
-            "statement asserts its own authorship or verification: %s"
-            % ", ".join(sorted(set(faults))),
+            "; ".join(details),
         )
     return Gate(
         7,

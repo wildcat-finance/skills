@@ -77,6 +77,9 @@ BEREAN_THRESHOLD_FIELDS = ("failures_allowed",)
 FORBIDDEN_BEREAN_RESULT_KEYS = frozenset(
     BEREAN_EVALUATION_RESULT_FIELDS + BEREAN_THRESHOLD_FIELDS
 )
+FORBIDDEN_BEREAN_RESULT_KEYS_BY_NORMAL = {
+    core_predicate.compatibility_key(key): key for key in FORBIDDEN_BEREAN_RESULT_KEYS
+}
 
 COMPONENT_FIELDS = ("name", "path", "sha256", "bytes")
 RELEASE_FIELDS = ("format", "release_version", "release_digest", "document")
@@ -610,16 +613,26 @@ def _policy_faults(predicate):
     return faults
 
 
-def _berean_result_keys(value):
-    """The closed Berean result vocabulary projected through an open object."""
+def _berean_result_keys(value, budget):
+    """The closed Berean result vocabulary projected through an open object.
+
+    Compatibility and case folding treat demonstrably equivalent identifier
+    spellings as the same finite wire key. Oversized keys are refused by core
+    gates 4 and 7 before either classifier normalises them.
+    """
     found = set()
     pending = [value]
     while pending:
         current = pending.pop()
         if isinstance(current, dict):
             for key, child in current.items():
-                if key in FORBIDDEN_BEREAN_RESULT_KEYS:
-                    found.add(key)
+                normal = (
+                    core_predicate.compatibility_key(key)
+                    if budget.accept(key)
+                    else None
+                )
+                if normal in FORBIDDEN_BEREAN_RESULT_KEYS_BY_NORMAL:
+                    found.add(FORBIDDEN_BEREAN_RESULT_KEYS_BY_NORMAL[normal])
                 pending.append(child)
         elif isinstance(current, list):
             pending.extend(current)
@@ -652,14 +665,28 @@ def _result_projection_faults(statement):
         surfaces.append(subject.extra)
 
     found = set()
+    budget = core_predicate.StructuredKeyBudget()
     for surface in surfaces:
-        found.update(_berean_result_keys(surface))
-    if not found:
+        found.update(_berean_result_keys(surface, budget))
+    faults = []
+    if budget.refused:
+        faults.append(
+            "statement carries %d evidence key(s) outside the %d-character "
+            "scan limit or %d-character aggregate scan budget"
+            % (
+                budget.refused,
+                core_predicate.MAX_STRUCTURED_KEY_CHARACTERS,
+                core_predicate.MAX_STRUCTURED_KEY_CHARACTERS_TOTAL,
+            )
+        )
+    if found:
+        faults.append(
+            "statement projects Berean evaluation threshold or result key(s): %s"
+            % ", ".join(sorted(found))
+        )
+    if not faults:
         return []
-    return [
-        "statement projects Berean evaluation threshold or result key(s): %s"
-        % ", ".join(sorted(found))
-    ]
+    return faults
 
 
 def _adapter_faults(predicate):
