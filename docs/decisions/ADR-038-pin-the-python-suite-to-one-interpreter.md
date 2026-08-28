@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted, 2026-08-27.
+Superseded, 2026-08-28.
+
+[ADR-042](ADR-042-advance-the-python-suite-to-3-14.md) advances the minor and
+exact patch. The one-interpreter design remains in force.
 
 ## Context
 
