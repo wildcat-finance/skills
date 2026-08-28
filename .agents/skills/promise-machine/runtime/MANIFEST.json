@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 917,
-  "total_bytes": 20140863,
+  "total_bytes": 20142160,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -2545,9 +2545,9 @@
       "source": "plugins/hexaemeron/skills/phylax/agents/openai.yaml"
     },
     {
-      "bytes": 18124,
+      "bytes": 18744,
       "path": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",
-      "sha256": "f38a7b8e5d52ff36ab689b66bc910f2e336ba5596024cbf6ae633a6ef0050015",
+      "sha256": "5cfb86a1502195d9d714eaac3c0709f6953dc9688756b0635f02e85d9891f275",
       "source": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md"
     },
     {
@@ -2575,15 +2575,15 @@
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/errors.py"
     },
     {
-      "bytes": 17051,
+      "bytes": 17632,
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py",
-      "sha256": "47e0e3c6a3e47665b5940d8889e09657b83294ea95c52cdbaa5933102d8e09e4",
+      "sha256": "498f051f8d7b61a286b21f980061c8e106bdba844cc599c64287d32473501149",
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py"
     },
     {
-      "bytes": 11033,
+      "bytes": 11129,
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py",
-      "sha256": "ed013ef876d7e6adcd3e8c55abcfef9a4959116fe80c71d9cd0a1bcb9118aec4",
+      "sha256": "97adc9dd19bef010367a130b43dfd5dc1553d29e706dcec6d7bfdf0f7538491a",
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py"
     },
     {

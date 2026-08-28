@@ -109,7 +109,11 @@ big-endian length followed by exactly that many payload bytes. A zero length
 refuses. A length above the compiled `max_request_bytes` refuses as soon as the
 fourth prefix byte arrives, before the core creates a payload buffer. The
 compiled policy bytes, digest, profile mapping, and every limit ceiling are
-rechecked before the core accepts any stream bytes.
+rechecked before the core accepts any stream bytes. The compiler result keeps
+the exact bounded accepted-job evidence as non-rendered activation material;
+framing replays the compiler from those bytes and requires every projected
+policy field and digest to match. Self-consistent replacement fields in a
+public compiler result therefore do not substitute for the accepted evidence.
 
 A feed call can split any prefix or payload byte. One call can also contain
 several complete frames. Chunk boundaries have no protocol meaning. Complete
@@ -152,11 +156,13 @@ also refuses; it does not become provider input.
 
 ## Closed text response
 
-The trusted core accepts a normalised output string only for a `TextRequest`
-issued by that same core. It checks the compiled output-token, string-byte, and
-response-byte ceilings, then emits one length-prefixed canonical JSON object
-with exactly `schema=model-response/v1`, the core-assigned `sequence`, and
-`output`. The guest cannot submit a response object or choose its sequence.
+The trusted core accepts a normalised output string only for the exact,
+unconsumed `TextRequest` object issued by that same core. A copied, foreign, or
+already-consumed request refuses even when it repeats an admitted sequence. It
+checks the compiled output-token, string-byte, and response-byte ceilings,
+then emits one length-prefixed canonical JSON object with exactly
+`schema=model-response/v1`, the core-assigned `sequence`, and `output`. The
+guest cannot submit a response object or choose its sequence.
 
 Response object names are sorted by the canonical JSON rule, making equal
 sequence and output values byte-identical. A response carries no provider id,
@@ -264,8 +270,9 @@ Successful `check-frames` emits one `model-proxy-diagnostic/v1` line with only
 `outcome=frames_checked`, the fixed manifest schema, case and request counts,
 and the policy digest. The checked manifest is bounded, has a closed shape,
 uses lowercase hexadecimal chunks, resolves only its sibling
-`accepted-job.json`, and carries exact response bytes. It is component-vector
-evidence rather than a live guest transport.
+`accepted-job.json`, and carries exact response bytes. A manifest path with the
+wrong scalar type refuses through the same content-free diagnostic boundary.
+The command is component-vector evidence rather than a live guest transport.
 
 Refusal diagnostics have exactly `schema`, `outcome=refused`, `code`, and
 `field`. `field` is a code-owned schema location, never an input value. CLI
@@ -304,7 +311,7 @@ JobSpec bytes, job id, or exception text.
 | `MP201` | Frame length exceeds the compiled byte ceiling | Frame length |
 | `MP202` | Incomplete trailing length prefix | Stream finish |
 | `MP203` | Incomplete trailing payload | Stream finish |
-| `MP204` | Compiled policy identity, mapping, or ceiling mismatch | Frame activation |
+| `MP204` | Accepted evidence replay, compiled policy identity, mapping, or ceiling mismatch | Frame activation |
 | `MP205` | Request is not an object | Request shape |
 | `MP206` | Required request field is absent | Request shape |
 | `MP207` | Guest supplied an authority, feature, or lifecycle field | Request authority |
@@ -313,12 +320,12 @@ JobSpec bytes, job id, or exception text.
 | `MP210` | Request schema is not exactly version 1 | Request version |
 | `MP211` | Operation is not exactly `text.generate` | Request operation |
 | `MP212` | Input exceeds the compiled token ceiling | Request input |
-| `MP213` | Response sequence was not issued by this core | Response authority |
+| `MP213` | Response request was not the exact unconsumed issue from this core | Response authority |
 | `MP214` | Response output has the wrong type or encoding | Response value |
 | `MP215` | Response output exceeds a compiled ceiling | Response value |
 | `MP216` | Input resumed after finish or refusal | Stream state |
 | `MP217` | Request count exceeds the compiled safety ceiling | Request count |
-| `MP218` | Framing manifest shape or expected bytes disagree | Manifest check |
+| `MP218` | Framing manifest path, shape, or expected bytes disagree | Manifest check |
 
 ## Golden command
 

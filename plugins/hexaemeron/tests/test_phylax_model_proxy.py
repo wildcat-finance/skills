@@ -992,6 +992,19 @@ class FramingTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "MP213"):
             second.encode_response(foreign_request, "pong")
 
+    def test_response_requires_the_exact_unconsumed_issued_request(self):
+        core = FramingCore(self.policy)
+        request = core.feed(request_frame("ping"))[0]
+        forged = replace(request, input_text="forged")
+        with self.assertRaisesRegex(PolicyError, "MP213"):
+            core.encode_response(forged, "pong")
+
+        core = FramingCore(self.policy)
+        request = core.feed(request_frame("ping"))[0]
+        core.encode_response(request, "pong")
+        with self.assertRaisesRegex(PolicyError, "MP213"):
+            core.encode_response(request, "again")
+
     def test_frame_events_are_fixed_content_free_and_bounded(self):
         sentinel = "fiat-700-event-secret-canary"
         core = FramingCore(self.policy)
@@ -1025,6 +1038,21 @@ class FramingTests(unittest.TestCase):
             FramingCore(broken)
 
         forged = replace(self.policy, policy_sha256="0" * 64)
+        with self.assertRaisesRegex(PolicyError, "MP204"):
+            FramingCore(forged)
+
+    def test_framing_replays_compiler_input_before_accepting_policy(self):
+        document = deepcopy(self.policy.document)
+        forged_digest = "f" * 64
+        document["job"]["jobspec_sha256"] = forged_digest
+        policy_bytes = canonical_json(document)
+        forged = replace(
+            self.policy,
+            document=document,
+            policy_bytes=policy_bytes,
+            policy_sha256=sha256_bytes(policy_bytes),
+            jobspec_sha256=forged_digest,
+        )
         with self.assertRaisesRegex(PolicyError, "MP204"):
             FramingCore(forged)
 
@@ -1088,6 +1116,19 @@ class FramingTests(unittest.TestCase):
         self.assertEqual(b"", process.stdout)
         self.assertNotIn(sentinel.encode("ascii"), process.stderr)
         self.assertEqual("MP218", json.loads(process.stderr)["code"])
+
+    def test_manifest_path_type_refuses_with_a_bounded_error(self):
+        try:
+            check_framing_manifest(None)
+        except Exception as error:  # The assertion keeps the parent report causal.
+            self.assertIsInstance(error, PolicyError)
+            self.assertEqual("MP218", error.code)
+            self.assertEqual(
+                {"schema", "outcome", "code", "field"},
+                set(error.diagnostic()),
+            )
+        else:
+            self.fail("an invalid manifest path was accepted")
 
 
 if __name__ == "__main__":

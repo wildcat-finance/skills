@@ -14,10 +14,15 @@ from .canonical import (
     canonical_json,
     parse_json_bytes,
     read_bounded_file,
-    sha256_bytes,
 )
 from .errors import PolicyError, refuse
-from .policy import CompiledPolicy, LIMIT_FIELDS, POLICY_SCHEMA, compile_policy_file
+from .policy import (
+    CompiledPolicy,
+    LIMIT_FIELDS,
+    POLICY_SCHEMA,
+    compile_policy,
+    compile_policy_file,
+)
 from .profiles import FEATURE_NAMES, resolve_profile
 
 
@@ -128,7 +133,7 @@ def _object(value: Any) -> dict[str, Any]:
 def _validated_limits(policy: CompiledPolicy) -> _FrameLimits:
     """Validate the compiled policy identity and every code-owned ceiling."""
 
-    if not isinstance(policy, CompiledPolicy):
+    if type(policy) is not CompiledPolicy:
         refuse("MP204", "frame.policy")
     document = _object(policy.document)
     if (
@@ -138,11 +143,15 @@ def _validated_limits(policy: CompiledPolicy) -> _FrameLimits:
         refuse("MP204", "frame.policy")
     try:
         policy_bytes = canonical_json(document)
+        replayed = compile_policy(policy.accepted_job_bytes)
     except (PolicyError, TypeError):
         refuse("MP204", "frame.policy")
     if (
-        policy_bytes != policy.policy_bytes
-        or sha256_bytes(policy_bytes) != policy.policy_sha256
+        policy_bytes != replayed.policy_bytes
+        or policy.policy_bytes != replayed.policy_bytes
+        or policy.policy_sha256 != replayed.policy_sha256
+        or policy.jobspec_sha256 != replayed.jobspec_sha256
+        or policy.profile != replayed.profile
     ):
         refuse("MP204", "frame.policy")
 
@@ -208,6 +217,7 @@ class FramingCore:
         self._expected_length: int | None = None
         self._next_sequence = 1
         self._owner = object()
+        self._issued: dict[int, TextRequest] = {}
         self._events: list[FrameEvent] = []
         self._failed = False
         self._input_finished = False
@@ -232,6 +242,7 @@ class FramingCore:
         self._prefix.clear()
         self._payload.clear()
         self._expected_length = None
+        self._issued.clear()
 
     def _refuse(self, code: str, field: str, stage: str) -> None:
         self._failed = True
@@ -293,6 +304,7 @@ class FramingCore:
             self._record("request", "refused", error.code)
             raise
         request = TextRequest(self._next_sequence, input_text, self._owner)
+        self._issued[request.sequence] = request
         self._next_sequence += 1
         self._record("request", "accepted", "MP000")
         return request
@@ -348,6 +360,7 @@ class FramingCore:
             or not isinstance(request.sequence, int)
             or request.sequence < 1
             or request.sequence >= self._next_sequence
+            or self._issued.get(request.sequence) is not request
         ):
             self._refuse("MP213", "frame.response.sequence", "response")
         if not isinstance(output, str):
@@ -375,6 +388,7 @@ class FramingCore:
             raise
         if len(payload) > self._limits.max_response_bytes:
             self._refuse("MP215", "frame.response.bytes", "response")
+        del self._issued[request.sequence]
         self._record("response", "accepted", "MP000")
         return struct.pack(">I", len(payload)) + payload
 
@@ -399,7 +413,10 @@ def _hex_bytes(value: Any, field: str) -> bytes:
 def check_framing_manifest(path: str | Path) -> FramingManifestResult:
     """Run exact framing and response vectors from one bounded local manifest."""
 
-    manifest_path = Path(path)
+    try:
+        manifest_path = Path(path)
+    except (OSError, TypeError, ValueError):
+        refuse("MP218", "frame.manifest.path")
     value = parse_json_bytes(
         read_bounded_file(manifest_path, MAX_FRAMING_MANIFEST_BYTES),
         max_bytes=MAX_FRAMING_MANIFEST_BYTES,
