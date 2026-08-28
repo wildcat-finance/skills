@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 13728640,
+    "bytes_blob": 13672822,
     "bytes_generated": 98
   },
   "entries": [
@@ -12,13 +12,6 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/AUDIT_SYNOPSIS.md"
-    },
-    {
-      "bytes": 55818,
-      "category": "blob",
-      "evidence": "mean line length above 400 in the first 4096 bytes",
-      "grade": "candidate",
-      "path": "audit/rounds/fiat-374-forward-test-brevitas-across-a-held-engineer.synopsis.md"
     },
     {
       "bytes": 23182,
