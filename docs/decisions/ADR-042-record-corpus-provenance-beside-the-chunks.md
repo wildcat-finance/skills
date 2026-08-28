@@ -66,8 +66,9 @@ compiler that applies but was gated on nothing records the version it reported
 with a null pin and a reason. A gated compiler records its pin as a prefix pin,
 because the gate compares with `startswith` and a gate on `0.8.25` accepts any
 commit hash after it. A source ref is recorded as asserted by the caller,
-because nothing fetches or resolves it, and it loses its `user:token@` userinfo
-on the way to disk under the rule Ariadne's own audit established.
+because nothing fetches or resolves it. A ref spelled as a URL loses its whole
+userinfo on the way to disk, whatever shape that userinfo has, under the rule
+Ariadne's own audit established.
 
 ## Alternatives
 
@@ -116,6 +117,7 @@ chunks land first, and the build id in the record is recomputed from the chunks
 on disk.
 
 The userinfo strip is a defence against an accident rather than against a
-determined caller. It removes the `user:token@host` shape and nothing else; a
-credential spelled any other way reaches the file, and a digest over that file
-binds bytes rather than the truth of what they say.
+determined caller. What it removes is the userinfo, whatever shape that has:
+`ssh://git@host/o/r.git` loses the `git` as surely as a token. A credential
+spelled any other way reaches the file, and a digest over that file binds bytes
+rather than the truth of what they say.
