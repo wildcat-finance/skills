@@ -100,3 +100,63 @@ collection, dossier integration and an operator-visible demonstration.
 **Steps touched.** Step 1.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: `morpho_midnight.py` walks every Base user-transaction cursor without following redirects, validates the documented event vocabulary and event-specific subject, reads immutable market/token and current-position data, groups exact integer debt-unit deltas by second, includes the maturity second, rejects post-maturity debt increases and negative balances, reconciles the observation balance, and emits separate obligation-state and settlement-mode values. Its coverage note binds Base chain id 8453, cursor exhaustion, observation/index bounds and the unpublished API-history lower bound without claiming archive-chain completeness. Cleared, residual-then-liquidated, not-due and empty specimens produce their named states; unknown or ambiguous secondary close, unknown type, malformed semantic field, float or boolean integer, wrong subject/chain/id/hash, cursor repetition or ceiling, response ceiling, origin redirect, position disagreement and every other study risk return no records through shared error coverage. `/Users/c0rtexzer0/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/bin/python3.13 -m unittest plugins.probitas.tests.test_adapter_morpho_midnight` and the step's Elenchus runner both exit zero, while Phylax and Ephoros report no unresolved defect. The amended runbook exists byte-for-byte at `plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md`; `/Users/c0rtexzer0/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/bin/python3.13 scripts/portable_promise_machine.py sync` records that source copy in the generated portable runtime; `/Users/c0rtexzer0/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/bin/python3.13 plugins/horos/skills/horos/scripts/horos.py scan . --write` records the resulting classified tree; and `/Users/c0rtexzer0/.local/share/uv/python/cpython-3.13.15-macos-aarch64-none/bin/python3.13 scripts/portable_promise_machine.py check` exits zero. Complete replacement Files: `plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py`, `plugins/probitas/scripts/probitas_lib/endpoints.py`, `plugins/probitas/tests/test_adapter_morpho_midnight.py`, source-dated `morpho-midnight.json` specimens beneath `plugins/probitas/tests/fixtures/midnight-cleared/`, `plugins/probitas/tests/fixtures/midnight-late/`, `plugins/probitas/tests/fixtures/midnight-not-due/`, and `plugins/probitas/tests/fixtures/midnight-empty/`, `plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md`, `.agents/skills/promise-machine/runtime/plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md`, `.agents/skills/promise-machine/runtime/MANIFEST.json`, `.agents/skills/promise-machine/runtime/.horos/boundary.json`, and `.horos/boundary.json`. Complete replacement Disciplines: phylax: this step opens the evolving REST ingestion boundary, so origin locking, redirect refusal, bounded reads, semantic validation, exact integers and secret-free errors are required. ephoros: coverage and error notes must answer whether cursors exhausted, which observation/index boundary was used and why no claim was emitted. metron: none, bounded pagination is a safety limit rather than a speed claim. elenchus: every observed schema or accounting failure is first reduced to a source-dated fixture mutation and then guarded. hypomnema: the durable accounting choice is already in ADR-043; reversible field mappings and known-ignore reasons stay beside the adapter constants.
+
+**Why.** The accepted study moved the unchanged decision from ADR-042 to ADR-043 after live `origin/main` claimed the former number. The prior runbook amendment repaired Step 1 only, so Step 2's discipline pointer remained stale. This replacement also assigns the amended committed runbook and its generated portable closure to the current unbuilt step, preserving the repository's byte-equality and generated-tree checks.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Disciplines: phylax: aggregate fixture selection remains confined and the renderer must not turn untrusted values into Markdown structure. ephoros: the dossier and coverage table expose outcome, settlement mode, source, cursor state and any refusal to the operator. metron: none, this step makes no performance claim. elenchus: integration failures are reduced in the focused adapter, renderer or CLI module before the whole suite is rerun. hypomnema: none new, this step implements ADR-043 without introducing another expensive choice.
+
+**Why.** The accepted study moved the unchanged decision from ADR-042 to ADR-043 after live `origin/main` claimed the former number. Step 3's future discipline pointer still named the superseded path; no product criterion or implementation boundary changes.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Disciplines: phylax: rerun the repository-wide off-chain boundary lint after portable synchronization and prove no credential, host or filesystem boundary widened. ephoros: the final demo, report and coverage row provide the operator-visible readback for the whole path. metron: none, no performance claim is published. elenchus: any final-tree failure is reduced in its owning focused test and guarded before the release suites rerun. hypomnema: the signed evolution row records the completed frontier and its evidenced successor or mature closure; ADR-043 remains the decision record for behavior.
+
+**Why.** The accepted study moved the unchanged decision from ADR-042 to ADR-043 after live `origin/main` claimed the former number. Step 4's future discipline pointer still named the superseded path; no product criterion, frontier rule or release boundary changes.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Files: `plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py`, `plugins/probitas/scripts/probitas_lib/endpoints.py`, `plugins/probitas/tests/test_adapter_morpho_midnight.py`, `plugins/probitas/tests/test_docs.py`, source-dated `morpho-midnight.json` specimens beneath `plugins/probitas/tests/fixtures/midnight-cleared/`, `plugins/probitas/tests/fixtures/midnight-late/`, `plugins/probitas/tests/fixtures/midnight-not-due/`, and `plugins/probitas/tests/fixtures/midnight-empty/`, `plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md`, `.agents/skills/promise-machine/runtime/plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md`, `.agents/skills/promise-machine/runtime/MANIFEST.json`, `.agents/skills/promise-machine/runtime/.horos/boundary.json`, and `.horos/boundary.json`.
+
+**Why.** The four new directories are focused, source-dated adapter specimens rather than aggregate shipped dossier fixtures. The existing documentation guard counts every top-level fixture directory as aggregate and therefore reports 15 while the README correctly describes the 11 aggregate fixture sets. `plugins/probitas/tests/test_docs.py` must classify only directories that carry the shipped venue corpus so its assertion preserves the claim it was written to check without misclassifying the new focused specimens.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Files: `plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py`, `plugins/probitas/scripts/probitas_lib/endpoints.py`, `plugins/probitas/tests/test_adapter_morpho_midnight.py`, `plugins/probitas/tests/test_docs.py`, source-dated `morpho-midnight.json` specimens beneath `plugins/probitas/tests/fixtures/midnight-cleared/`, `plugins/probitas/tests/fixtures/midnight-late/`, `plugins/probitas/tests/fixtures/midnight-not-due/`, and `plugins/probitas/tests/fixtures/midnight-empty/`, `plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md`, `.agents/skills/promise-machine/runtime/plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md`, `.agents/skills/promise-machine/runtime/plugins/probitas/scripts/probitas_lib/endpoints.py`, `.agents/skills/promise-machine/runtime/MANIFEST.json`, `.agents/skills/promise-machine/runtime/.horos/boundary.json`, and `.horos/boundary.json`.
+
+**Why.** The authorised source endpoint change separates the exact Morpho API origin from its Midnight path so the strict adapter can use the global token route without widening the host boundary. The repository-mandated portable sync reproduces that source file byte-for-byte under the generated runtime; the prior Files replacement omitted this necessary generated endpoint copy.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Files: `plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py`, `plugins/probitas/scripts/probitas_lib/endpoints.py`, `plugins/probitas/tests/test_adapter_morpho_midnight.py`, `plugins/probitas/tests/test_docs.py`, source-dated `morpho-midnight.json` specimens beneath `plugins/probitas/tests/fixtures/midnight-cleared/`, `plugins/probitas/tests/fixtures/midnight-late/`, `plugins/probitas/tests/fixtures/midnight-not-due/`, and `plugins/probitas/tests/fixtures/midnight-empty/`, `plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md`, `.agents/skills/promise-machine/runtime/plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md`, `.agents/skills/promise-machine/runtime/plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py`, `.agents/skills/promise-machine/runtime/plugins/probitas/scripts/probitas_lib/endpoints.py`, `.agents/skills/promise-machine/runtime/MANIFEST.json`, `.agents/skills/promise-machine/runtime/.horos/boundary.json`, and `.horos/boundary.json`.
+
+**Why.** The repository-mandated portable sync enumerates tracked source files. Before staging, the new adapter source was correctly absent from that enumeration; after staging or commit, portable check requires its byte-equal generated runtime copy. The prior Files replacement named the new source adapter but omitted this necessary generated adapter path.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
