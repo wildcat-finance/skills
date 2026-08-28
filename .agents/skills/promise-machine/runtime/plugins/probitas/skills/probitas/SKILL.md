@@ -9,7 +9,7 @@ description: >
   for questions about a single market's own numbers, and never to work out
   which individual controls an address.
 metadata:
-  version: "0.1.0"
+  version: "1.1.0"
 ---
 
 <p align="center">
@@ -30,7 +30,7 @@ another frontier pass after that ledger becomes mature.
 
 Probitas builds a sourced dossier of borrowing and repayment across lending venues from addresses the counterparty declared, without identifying a person or issuing a Wildcat verdict.
 
-**Current frontier.** Euler v1/v2 now ship; Morpho Midnight fixed-maturity coverage and curation remain unimplemented.
+**Current frontier.** Morpho Midnight fixed-maturity coverage now ships API-scoped on Base; secondary-market borrow exits stay refused as unattributable and Morpho curation remains uncollected.
 <!-- marketplace-context:end -->
 
 Wildcat lends without collateral. Nothing stands between a lender and a total

@@ -20,7 +20,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from probitas_lib import registry, sanitise  # noqa: E402
 from probitas_lib.adapters import run_adapter, unchecked_coverage  # noqa: E402
-from probitas_lib.adapters import euler, euler_v1, morpho, wildcat  # noqa: E402
+from probitas_lib.adapters import (  # noqa: E402
+    euler,
+    euler_v1,
+    morpho,
+    morpho_midnight,
+    wildcat,
+)
 from probitas_lib.evidence import (  # noqa: E402
     Coverage,
     Evidence,
@@ -34,6 +40,7 @@ ADAPTERS = {
     "euler": euler.adapter,
     "euler-v1": euler_v1.adapter,
     "morpho-blue": morpho.adapter,
+    "morpho-midnight": morpho_midnight.adapter,
     "wildcat": wildcat.adapter,
 }
 """Venue id to callable. Everything else in the registry is a stated gap."""
