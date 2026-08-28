@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 929,
-  "total_bytes": 20215339,
+  "total_bytes": 20279752,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4165,15 +4165,15 @@
       "source": "plugins/lazarus/skills/lazarus/agents/openai.yaml"
     },
     {
-      "bytes": 2420,
+      "bytes": 2910,
       "path": "plugins/lemma/AGENTS.md",
-      "sha256": "2baea4461a763fb45da9e3e610e1143d7faadf432c7f7844a9255f83a5613f18",
+      "sha256": "f2bc1f012dea49178f23f66df920ac89cb683b34a8d8a9de4338a979d0884684",
       "source": "plugins/lemma/AGENTS.md"
     },
     {
-      "bytes": 12974,
+      "bytes": 14936,
       "path": "plugins/lemma/INVARIANTS.md",
-      "sha256": "66fb3b50e28135668b1e2f5fd4dbfa8b2cf0e54451b8688b6091a8fe303e5a03",
+      "sha256": "f5af307f17b1e627dfd09acc49be676468ae77c80ddb01f8935e4c178125be68",
       "source": "plugins/lemma/INVARIANTS.md"
     },
     {
@@ -4195,9 +4195,9 @@
       "source": "plugins/lemma/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 4477,
+      "bytes": 9323,
       "path": "plugins/lemma/README.md",
-      "sha256": "b5e1196df23ace2d631ff01d230018c0650fe16bba5b4617a70d8b96811a58f0",
+      "sha256": "603a7ecf51971d11adba9fbed2c51ba04d9cd800b5a1915492959f0d2b555244",
       "source": "plugins/lemma/README.md"
     },
     {
@@ -4273,9 +4273,9 @@
       "source": "plugins/lemma/baseline/docs/user-guide/troubleshooting.md"
     },
     {
-      "bytes": 1671,
+      "bytes": 2498,
       "path": "plugins/lemma/baseline/regenerate",
-      "sha256": "25d0c3168488bb7da62e0a4a35dfa8336ffef8e15046314b3b58162341169e83",
+      "sha256": "15338b04aca5a9b51c95e79637c19bfb6e89b5666c9b30742c6187af4755957f",
       "source": "plugins/lemma/baseline/regenerate"
     },
     {
@@ -4309,33 +4309,33 @@
       "source": "plugins/lemma/baseline/standard_input.py"
     },
     {
-      "bytes": 50772,
+      "bytes": 67023,
       "path": "plugins/lemma/chunkers/markdown.py",
-      "sha256": "23da00bcabea1dcd0882ef0da66589cd23340277ec96823a967134fbda84d7a0",
+      "sha256": "5ec9dbc21a0c3c2ca2826143104d603c3d999ef089daae00a2bc68c1c9898b2b",
       "source": "plugins/lemma/chunkers/markdown.py"
     },
     {
-      "bytes": 47677,
+      "bytes": 65142,
       "path": "plugins/lemma/chunkers/solidity.py",
-      "sha256": "53e3b3c9a01d3d081066198c69e62d3c4a0b95d3901f719583a7fe1b13130978",
+      "sha256": "8d2a7ee2b84b9171bcd62b1b0a1854972b01a306b305d6cc57c3727f5a40a250",
       "source": "plugins/lemma/chunkers/solidity.py"
     },
     {
-      "bytes": 9839,
+      "bytes": 28912,
       "path": "plugins/lemma/schema.py",
-      "sha256": "5ee159d592fdf6baf5cba4de558fdf475915b439d998fb7ce975d01860276984",
+      "sha256": "4a288964a8412af0dee5c700cfbdad945e1ed1cd0ca821aac6b27778d4a1198e",
       "source": "plugins/lemma/schema.py"
     },
     {
-      "bytes": 1354,
+      "bytes": 1723,
       "path": "plugins/lemma/skills/lemma/EVOLUTION.md",
-      "sha256": "362da33dc1de98e27ea009b5cfb93ee9c53f26267d77f66e656519b533fdcdee",
+      "sha256": "3e36153ac9da3a7dc00975e5bd021f6227e7af39ffa4e760889492515100995b",
       "source": "plugins/lemma/skills/lemma/EVOLUTION.md"
     },
     {
-      "bytes": 7411,
+      "bytes": 10541,
       "path": "plugins/lemma/skills/lemma/SKILL.md",
-      "sha256": "9583f92c3fad2add0f5553a3df4b0fe4c00f3cbccfe250198754c2daaf97e7c0",
+      "sha256": "b4587fffb07642dd6f09a1bb9a82b4c07bd1b518ad202d198fa0c43118227d12",
       "source": "plugins/lemma/skills/lemma/SKILL.md"
     },
     {
