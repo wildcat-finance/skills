@@ -465,6 +465,102 @@ def test_comment_separator() -> None:
           "return x" in out, repr(out))
 
 
+# --------------------------------------------------------------------------
+# I30: the corpus provenance record
+# --------------------------------------------------------------------------
+
+def _every_string(value):
+    """Every string anywhere in a record, so a guess cannot hide in a block."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _every_string(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _every_string(item)
+
+
+def test_provenance_record() -> None:
+    print("\nI30 — the corpus provenance record says what it does not know")
+    schema = sys.modules["lemma_schema"]
+
+    # A Markdown-shaped record: no compiler applies, so the block is an absence
+    # with a reason rather than a value nobody can check.
+    fields = dict(
+        chunker="markdown",
+        chunker_version="0.1.1",
+        corpus_build_id="9" * 64,
+        chunk_count=38,
+        inputs=[{"path": "docs/SUMMARY.md", "sha256": "a" * 64}],
+        include=["**/*.md"],
+        units_present=["docs/SUMMARY.md", "docs/intro.md", "notes/scratch.md"],
+        units_selected=["docs/SUMMARY.md", "docs/intro.md"],
+        compiler=schema.compiler_absent("the Markdown chunker runs no compiler"),
+    )
+
+    # one — a ref that names nothing stops the build, and says which flag
+    refusal = ""
+    try:
+        schema.provenance_record(source_ref="   ", **fields)
+    except ValueError as e:
+        refusal = str(e)
+    check("a blank source ref is refused by the flag's name",
+          "--source-ref" in refusal, f"refusal was {refusal!r}")
+
+    # two — the credential goes; the rest of the URL stays, including an `@`
+    # that is part of the ref rather than userinfo
+    kept = "https://github.com/wildcat-finance/skills@7e449ba"
+    leaky = schema.provenance_record(
+        source_ref="https://user:t0ken@github.com/wildcat-finance/skills@7e449ba",
+        **fields)
+    clean = schema.provenance_record(source_ref=kept, **fields)
+    check("URL userinfo is stripped and the rest of the URL is kept",
+          leaky["source_ref"] == kept and clean["source_ref"] == kept,
+          f"leaky={leaky['source_ref']!r} clean={clean['source_ref']!r}")
+
+    record = schema.provenance_record(
+        source_ref="wildcat-finance/skills@7e449ba", **fields)
+
+    # three — an absent value is an absence with a reason, never the word
+    written = list(_every_string(record))
+    check("no field is written as the string unknown",
+          "unknown" not in written
+          and record["compiler"].get("applicable") is False
+          and bool(record["compiler"].get("reason")),
+          repr(record["compiler"]))
+
+    # four — a compiler nothing gated records the version it reported and no pin
+    ungated = schema.compiler_reported(
+        "solc", "0.8.35+commit.47b9dedd.Darwin.appleclang",
+        unpinned_reason="--expect-solc was not passed, so nothing was gated")
+    check("an ungated compiler records a null pin beside a stated reason",
+          ungated.get("pin") is None and ungated.get("pin_match") is None
+          and ungated.get("reported_version", "").startswith("0.8.35")
+          and bool(ungated.get("reason")),
+          repr(ungated))
+
+    # five — require_solc_version compares with startswith, so the record says
+    # prefix and carries the exact version the compiler reported beside it
+    gated = schema.compiler_reported(
+        "./solc-container", "0.8.25+commit.b61c2a91.Linux.g++", pin="0.8.25")
+    check("a gated compiler records a prefix pin beside the exact version",
+          gated.get("pin") == "0.8.25" and gated.get("pin_match") == "prefix"
+          and gated.get("reported_version") == "0.8.25+commit.b61c2a91.Linux.g++",
+          repr(gated))
+
+    # six — a record is written once and read afterwards, so one run has to
+    # name every problem rather than the first one it meets
+    broken = dict(record, schema="lemma-corpus-provenance/v0", chunker="rust",
+                  corpus_build_id="   ")
+    whole = schema.validate_provenance(record)
+    problems = schema.validate_provenance(broken)
+    check("the validator passes a whole record and reports every problem in a "
+          "broken one",
+          whole == [] and len(problems) >= 3,
+          f"whole={whole} broken={len(problems)}: {problems}")
+
+
 def test_surface_accuracy(solc: str, tmp: pathlib.Path) -> None:
     print("\nI14 — callable surface matches what is callable")
     src = (
@@ -965,6 +1061,7 @@ def main() -> int:
     test_canonical_types()
     test_stripper()
     test_comment_separator()
+    test_provenance_record()
     if args.solc:
         with tempfile.TemporaryDirectory() as td:
             test_merge_semantics(args.solc, pathlib.Path(td))

@@ -213,3 +213,273 @@ def stamp(chunks: list[Chunk], **provenance) -> list[Chunk]:
                 raise AttributeError(f"no such provenance field: {k}")
             setattr(c, k, v)
     return chunks
+
+
+# --------------------------------------------------------------------------
+# corpus provenance: what produced a delivered chunks.jsonl
+# --------------------------------------------------------------------------
+
+PROVENANCE_SCHEMA = "lemma-corpus-provenance/v1"
+# The one thing a recorded pin may claim, because it is the one comparison
+# `require_solc_version` performs. There is deliberately no "exact".
+PIN_MATCH = "prefix"
+# Nothing fetches or resolves a source ref. The record says so in its own words
+# so a reader is not left to infer it from the field's absence.
+REF_ORIGIN = "asserted-by-caller"
+_URL = re.compile(r"^([a-zA-Z][a-zA-Z0-9+.-]*)://(.*)$")
+_SHA256 = re.compile(r"[0-9a-f]{64}")
+
+
+def _strip_userinfo(ref: str) -> str:
+    """Drop `user:token@` from a ref that parses as a URL, keeping the rest.
+
+    Ariadne's audit finding S4-R1-02 established the rule at
+    `plugins/ariadne/scripts/ariadne_lib/scrub.py`: a repository is recorded so
+    a reader can find it, so redacting the whole URL would defeat the field, and
+    what has to go is the userinfo some tooling leaves in front of the host.
+    The rule is implemented here rather than imported, because a cross-plugin
+    import would break both the marketplace boundary and the packaging of the
+    portable runtime.
+
+    The split is bounded by the authority, which is the one difference from
+    Ariadne's own mechanism and a deliberate one: Ariadne partitions on the
+    first `@` anywhere after the scheme, and a source ref is the field where an
+    `@` most often belongs to the ref itself. `https://host/owner/repo@7e449ba`
+    carries no credential, and partitioning it would leave `https://7e449ba` —
+    an origin silently replaced by a fragment of itself.
+
+    Only the `user:token@host` shape goes. A ref with no scheme is untouched,
+    which leaves `git@host:owner/repo.git` and `owner/repo@sha` verbatim.
+    """
+    match = _URL.match(ref)
+    if not match:
+        return ref
+    scheme, rest = match.group(1), match.group(2)
+    cut = min([len(rest)] + [at for at in (rest.find(c) for c in "/?#")
+                             if at != -1])
+    authority, remainder = rest[:cut], rest[cut:]
+    if "@" not in authority:
+        return ref
+    return f"{scheme}://{authority.rpartition('@')[2]}{remainder}"
+
+
+def compiler_absent(reason: str) -> dict:
+    """A compiler block for a corpus no compiler produced.
+
+    The Markdown chunker parses text; there is no version to record. Writing
+    `unknown` here would be a guess wearing the shape of a value, and a reader
+    two years later cannot tell one from a compiler actually called `unknown`.
+    An absence says it is an absence and says why.
+    """
+    return {"applicable": False, "reason": reason}
+
+
+def compiler_reported(invocation: str, reported_version: str, *,
+                      pin: str | None = None,
+                      unpinned_reason: str | None = None) -> dict:
+    """A compiler block for a corpus a compiler produced.
+
+    `pin` is the `--expect-solc` string that was gated on, or None with a reason
+    saying why nothing was gated. Exactly one of the two, because the pair is
+    what keeps an ungated run from reading as a pinned one: a block with no pin
+    and no reason would say nothing, and a pin the run did not make would say
+    something false.
+
+    A recorded pin is named `prefix`, never `exact`. `require_solc_version` in
+    `chunkers/solidity.py` compares with `found.startswith(expected)`, so a gate
+    on `0.8.25` accepts `0.8.25+commit.deadbeef` as readily as the build it was
+    meant to name. The version the compiler reported for itself sits beside the
+    pin so a reader can see the whole of what was checked.
+    """
+    if (pin is None) == (unpinned_reason is None):
+        raise ValueError(
+            "a compiler block records either the pin that was gated on or a "
+            "reason none was, and never both or neither")
+    return {"applicable": True,
+            "invocation": invocation,
+            "reported_version": reported_version,
+            "pin": pin,
+            "pin_match": None if pin is None else PIN_MATCH,
+            "reason": unpinned_reason}
+
+
+def provenance_record(*, chunker: str, chunker_version: str, source_ref: str,
+                      corpus_build_id: str, chunk_count: int,
+                      inputs: list[dict], include: list[str],
+                      units_present: list[str], units_selected: list[str],
+                      compiler) -> dict:
+    """Build the one-line record a chunker writes to `provenance.jsonl`.
+
+    A delivered corpus is two files in one directory. `chunks.jsonl` carries
+    what a citation quotes; this record carries what produced it, which is the
+    part no consumer can recover from the chunks themselves. It goes beside
+    them so its bytes land inside the directory an Ariadne dataset capture
+    walks, where its digest becomes a subject of the statement.
+
+    The fields:
+
+      schema             `lemma-corpus-provenance/v1`.
+      chunker            which chunker ran, from SOURCE_TYPES.
+      chunker_version    the lemma skill's governed version.
+      source_ref         the origin, as given, less any URL userinfo.
+      source_ref_origin  that nothing resolved it. See REF_ORIGIN.
+      corpus_build_id    recomputed by the caller from the chunks written.
+      chunk_count        how many chunks are in the file beside this one.
+      inputs             `{path, sha256}` per digested input.
+      selection          the include patterns and the source units present,
+                         selected and excluded. The excluded ones are derived
+                         here rather than passed, because they are what a
+                         coverage block turns into gaps and a hand-written
+                         list is a list that can disagree with itself.
+      compiler           from compiler_absent() or compiler_reported().
+
+    Refusals belong here rather than downstream: a corpus delivered with no
+    origin is the defect the record exists to close, and a ref of `"   "`
+    satisfies a presence check while naming nothing.
+    """
+    if not source_ref.strip():
+        raise ValueError(
+            "--source-ref is empty; a corpus delivered with no origin is the "
+            "defect this record exists to close")
+    return {
+        "schema": PROVENANCE_SCHEMA,
+        "chunker": chunker,
+        "chunker_version": chunker_version,
+        "source_ref": _strip_userinfo(source_ref.strip()),
+        "source_ref_origin": REF_ORIGIN,
+        "corpus_build_id": corpus_build_id,
+        "chunk_count": chunk_count,
+        "inputs": list(inputs),
+        "selection": {
+            "include": list(include),
+            "units_present": sorted(units_present),
+            "units_selected": sorted(units_selected),
+            "units_excluded": sorted(set(units_present) - set(units_selected)),
+        },
+        "compiler": compiler,
+    }
+
+
+def _strings(value):
+    """Every string anywhere in a record, so a guess cannot hide in a block."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _strings(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _strings(item)
+
+
+def validate_provenance(record: dict) -> list[str]:
+    """
+    Return a list of problems. Empty means the record is safe to write beside a
+    corpus.
+
+    Every problem, not the first: the record is written once, digested, and
+    named in a statement, so a caller who has to run again for each mistake
+    learns the shape of the record one failure at a time.
+    """
+    problems: list[str] = []
+    if not isinstance(record, dict):
+        return [f"provenance record is {type(record).__name__}, not an object"]
+
+    if record.get("schema") != PROVENANCE_SCHEMA:
+        problems.append(f"schema is {record.get('schema')!r}, expected "
+                        f"{PROVENANCE_SCHEMA!r}")
+    if record.get("chunker") not in SOURCE_TYPES:
+        problems.append(f"unknown chunker {record.get('chunker')!r}")
+    for name in ("chunker_version", "source_ref", "corpus_build_id"):
+        value = record.get(name)
+        if not isinstance(value, str) or not value.strip():
+            problems.append(f"{name} names nothing: {value!r}")
+    if record.get("source_ref_origin") != REF_ORIGIN:
+        problems.append(
+            f"source_ref_origin is {record.get('source_ref_origin')!r}; "
+            f"nothing resolves a ref, so it is {REF_ORIGIN!r}")
+    count = record.get("chunk_count")
+    if not isinstance(count, int) or isinstance(count, bool) or count < 1:
+        problems.append(f"chunk_count is {count!r}; a corpus has chunks")
+
+    inputs = record.get("inputs")
+    if not isinstance(inputs, list) or not inputs:
+        problems.append("inputs is empty — the record digests nothing")
+    else:
+        for entry in inputs:
+            if not isinstance(entry, dict) or not str(entry.get("path", "")).strip():
+                problems.append(f"input has no path: {entry!r}")
+            elif not _SHA256.fullmatch(str(entry.get("sha256", ""))):
+                problems.append(
+                    f"input {entry['path']}: sha256 {entry.get('sha256')!r} is "
+                    "not 64 hexadecimal characters")
+
+    selection = record.get("selection")
+    if not isinstance(selection, dict):
+        problems.append(f"selection is {selection!r}, not an object")
+    else:
+        if not selection.get("include"):
+            problems.append(
+                "selection.include is empty — nothing says which source units "
+                "the corpus was meant to cover")
+        present = selection.get("units_present") or []
+        selected = selection.get("units_selected") or []
+        excluded = selection.get("units_excluded") or []
+        if not selected:
+            problems.append("selection.units_selected is empty — no corpus")
+        stray = sorted(set(selected) - set(present))
+        if stray:
+            problems.append(
+                f"selection: units selected that the input never declared: {stray}")
+        # The excluded units are what the coverage block turns into gaps. A
+        # record whose exclusions do not account for the difference lets an
+        # interval read as complete while source units are missing from it.
+        if sorted(set(present) - set(selected)) != sorted(excluded):
+            problems.append(
+                "selection: units_excluded is not the units present but not "
+                "selected, so the gaps cannot be written from this record")
+
+    problems.extend(_compiler_problems(record.get("compiler")))
+
+    guesses = [value for value in _strings(record) if value == "unknown"]
+    if guesses:
+        problems.append(
+            f"{len(guesses)} field(s) written as the string 'unknown'; an "
+            "absent value is an absence with a reason")
+    return problems
+
+
+def _compiler_problems(compiler) -> list[str]:
+    if not isinstance(compiler, dict) or "applicable" not in compiler:
+        return [f"compiler block is {compiler!r}; it must say whether a "
+                "compiler applies"]
+    if compiler["applicable"] is False:
+        if not str(compiler.get("reason", "")).strip():
+            return ["compiler does not apply and no reason says why"]
+        return []
+    if compiler["applicable"] is not True:
+        return [f"compiler applicable is {compiler['applicable']!r}, "
+                "not a boolean"]
+
+    problems: list[str] = []
+    reported = compiler.get("reported_version")
+    if not isinstance(reported, str) or not reported.strip():
+        problems.append(f"compiler applies but reported {reported!r}")
+    if not str(compiler.get("invocation", "")).strip():
+        problems.append("compiler applies but the invocation is not recorded")
+    pin, match = compiler.get("pin"), compiler.get("pin_match")
+    if pin is None:
+        if match is not None:
+            problems.append(f"compiler has no pin but claims a {match!r} match")
+        if not str(compiler.get("reason", "")).strip():
+            problems.append("compiler was not gated and no reason says why")
+    else:
+        if match != PIN_MATCH:
+            problems.append(
+                f"compiler pin match is {match!r}; the gate compares with "
+                f"startswith, so it is {PIN_MATCH!r}")
+        if isinstance(reported, str) and not reported.startswith(pin):
+            problems.append(
+                f"compiler pin {pin!r} is not a prefix of the reported "
+                f"{reported!r}, so the pin records a gate that did not pass")
+    return problems
