@@ -1,0 +1,122 @@
+{
+  "source": {
+    "date": "2026-08-28",
+    "origin": "https://api.morpho.org",
+    "observed_at": 1785374000,
+    "transactions_reference": "https://docs.morpho.org/api/midnight/transactions/list-user-transactions/",
+    "market_reference": "https://docs.morpho.org/api/midnight/markets/get-market/",
+    "token_reference": "https://docs.morpho.org/api/global/get-token/",
+    "position_reference": "https://docs.morpho.org/api/midnight/positions/get-position/"
+  },
+  "transactions": {
+    "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1": [
+      {
+        "cursor": null,
+        "data": [
+          {
+            "id": "0048755000-aaaaa-000001:1",
+            "chain_id": 8453,
+            "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+            "event_type": "borrow",
+            "tx_hash": "0x1111111111111111111111111111111111111111111111111111111111111111",
+            "data": {
+              "account": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "caller": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "maker": "0xd4f43105098845ffe89b16e7a3dcdd0a31898118",
+              "taker": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "buyer": "0xd4f43105098845ffe89b16e7a3dcdd0a31898118",
+              "seller": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "buyer_assets": "100",
+              "seller_assets": "100",
+              "assets": "100",
+              "units": "100",
+              "take_units": "100",
+              "buyer_pending_fee_increase": "0",
+              "seller_pending_fee_decrease": "0",
+              "total_units_delta": "100",
+              "payer": "0xd4f43105098845ffe89b16e7a3dcdd0a31898118",
+              "receiver": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "group": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "consumed": "100"
+            },
+            "created_at": 1784300300
+          },
+          {
+            "id": "0048755600-bbbbb-000002:1",
+            "chain_id": 8453,
+            "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+            "event_type": "full_liquidation",
+            "tx_hash": "0x2222222222222222222222222222222222222222222222222222222222222222",
+            "data": {
+              "account": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "caller": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "borrower": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+              "collateral": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+              "payer": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "receiver": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "seized_assets": "1",
+              "repaid_units": "100",
+              "bad_debt": "0",
+              "latest_loss_factor": "0",
+              "latest_continuous_fee_credit": "0",
+              "post_maturity_mode": true,
+              "pure_bad_debt_realization": false
+            },
+            "created_at": 1784300500
+          }
+        ]
+      }
+    ]
+  },
+  "markets": {
+    "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738": {
+      "data": {
+        "chain_id": 8453,
+        "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+        "loan_token": "0x4200000000000000000000000000000000000006",
+        "maturity": 1784300400,
+        "rcf_threshold": "0",
+        "enter_gate": "0x0000000000000000000000000000000000000000",
+        "liquidator_gate": "0x0000000000000000000000000000000000000000",
+        "collaterals": [
+          {
+            "token": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
+            "lltv": "860000000000000000",
+            "liquidation_cursor": "300000000000000000",
+            "oracle": "0xd09048c8b568dbf5f189302bea26c9edabfc4858"
+          }
+        ]
+      }
+    }
+  },
+  "tokens": {
+    "8453:0x4200000000000000000000000000000000000006": {
+      "data": {
+        "chain_id": 8453,
+        "address": "0x4200000000000000000000000000000000000006",
+        "name": "Wrapped Ether",
+        "symbol": "WETH",
+        "decimals": 18
+      }
+    }
+  },
+  "positions": {
+    "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738:0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1": {
+      "data": {
+        "chain_id": 8453,
+        "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+        "user_address": "0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+        "loan_token": "0x4200000000000000000000000000000000000006",
+        "maturity": 1784300400,
+        "type": null,
+        "credit": "0",
+        "pending_fee": "0",
+        "last_loss_factor": "0",
+        "loss_factor": "0",
+        "debt": "0",
+        "collaterals": [],
+        "last_indexed_block": "50551562"
+      }
+    }
+  }
+}

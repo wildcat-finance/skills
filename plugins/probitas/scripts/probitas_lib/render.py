@@ -12,7 +12,7 @@ no way to write a number the evidence does not contain.
 import json
 import os
 
-from . import formatting, registry
+from . import formatting, registry, sanitise
 
 TEMPLATE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -45,6 +45,17 @@ CLAIM_LABELS = {
     "repayment": "Repaid",
     "liquidation": "Liquidated",
     "bad_debt": "Bad debt left unpaid",
+    "maturity_outcome": "Maturity outcome",
+    "position_state": "Position observed",
+    "token_metadata": "Token metadata",
+}
+
+MIDNIGHT_SETTLEMENT = {
+    "primary_repayment": "primary repayment",
+    "secondary_close": "secondary-market close",
+    "liquidation": "liquidation",
+    "mixed": "mixed settlement conduct",
+    "unsettled": "no settlement recorded",
 }
 
 
@@ -94,12 +105,115 @@ def _cite(record):
     return f"`{source}`"
 
 
+def _raw_units(value, label):
+    try:
+        amount = formatting.amount(value)
+    except (TypeError, ValueError) as error:
+        raise RenderError(f"Midnight {label} is not an exact integer") from error
+    return amount.replace("raw units", label)
+
+
+def _midnight_outcome(values):
+    obligation = values.get("obligation_state")
+    observation = values.get("observation_state")
+    settlement = MIDNIGHT_SETTLEMENT.get(values.get("settlement_mode"))
+    if settlement is None:
+        raise RenderError("Midnight settlement mode is outside the closed vocabulary")
+
+    at_observation = _raw_units(
+        values.get("debt_units_at_observation"), "debt units"
+    )
+    if obligation == "cleared_by_maturity" and observation == "cleared":
+        at_maturity = _raw_units(
+            values.get("debt_units_at_maturity"), "debt units"
+        )
+        return (
+            f"Cleared by maturity with {at_maturity} outstanding; "
+            f"settlement mode: {settlement}; {at_observation} at observation"
+        )
+    if obligation == "outstanding_at_maturity":
+        at_maturity = _raw_units(
+            values.get("debt_units_at_maturity"), "debt units"
+        )
+        if observation == "settled_late":
+            return (
+                f"Outstanding at maturity: {at_maturity}; Settled late through "
+                f"{settlement}; {at_observation} at observation"
+            )
+        if observation == "outstanding":
+            return (
+                f"Outstanding at maturity: {at_maturity}; still outstanding "
+                f"at observation: {at_observation}; settlement mode: {settlement}"
+            )
+    if obligation == "not_due" and observation == "not_due":
+        return (
+            f"Not due at observation; {at_observation}; "
+            f"settlement mode: {settlement}"
+        )
+    raise RenderError("Midnight obligation and observation states disagree")
+
+
 def _describe(record, decimals):
     """One record as a phrase, with every number it prints coming from it."""
     values = record["values"]
     claim = record["claim"]
     market = values.get("market")
     scale, symbol = decimals.get(market, (None, None))
+
+    if record["venue"] == "morpho-midnight" and claim == "borrow":
+        return (
+            "drew "
+            + _raw_units(values["amount"], "loan-token units")
+            + "; debt increased by "
+            + _raw_units(values["debt_units"], "debt units")
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "repayment":
+        return (
+            "primary repayment reduced debt by "
+            + _raw_units(values["debt_units"], "debt units")
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "liquidation":
+        reduced = int(values["repaid_debt_units"]) + int(
+            values["realized_bad_debt_units"]
+        )
+        return (
+            "liquidation reduced debt by "
+            + _raw_units(reduced, "debt units")
+            + " ("
+            + _raw_units(values["repaid_debt_units"], "repaid debt units")
+            + ", "
+            + _raw_units(
+                values["realized_bad_debt_units"], "realized bad-debt units"
+            )
+            + "); this was liquidation, not voluntary repayment"
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "market_terms":
+        return (
+            "fixed maturity at Unix time "
+            + _raw_units(values["maturity"], "seconds")
+            + "; Base chain id "
+            + str(int(values["chain_id"]))
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "token_metadata":
+        return (
+            f"{sanitise.clean(values['token_name'])} "
+            f"({sanitise.clean(values['token_symbol'])}), "
+            f"{int(values['token_decimals'])} decimals"
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "position_state":
+        return (
+            f"current position {sanitise.clean(values['current_position_type'])}; "
+            + _raw_units(values["current_debt_units"], "debt units")
+            + f" at observation; indexed through block {int(values['last_indexed_block'])}"
+        )
+
+    if record["venue"] == "morpho-midnight" and claim == "maturity_outcome":
+        return _midnight_outcome(values)
 
     if claim in ("borrow", "repayment", "bad_debt"):
         return formatting.amount(values["amount"], scale, symbol)
@@ -173,7 +287,10 @@ def _describe(record, decimals):
     if claim == "market_closed":
         return "closed by the borrower"
 
-    return "; ".join(f"{k} {v}" for k, v in sorted(values.items()))
+    return "; ".join(
+        f"{sanitise.clean(k)} {sanitise.clean(v, max_length=400)}"
+        for k, v in sorted(values.items())
+    )
 
 
 def _rows(records, decimals):
@@ -186,8 +303,8 @@ def _rows(records, decimals):
         lines.append(
             "| {} | {} | {} | {} | {} |".format(
                 formatting.timestamp(record.get("observed_at")) or "--",
-                record["venue"],
-                label,
+                sanitise.clean(record["venue"]),
+                sanitise.clean(label),
                 _describe(record, decimals),
                 _cite(record),
             )
@@ -225,10 +342,10 @@ def _coverage(payload):
         lines.append(
             "| {} | {} | {} | {} | {} |".format(
                 known.get(row["venue"], row["venue"]),
-                row["status"],
-                row.get("block_range") or "--",
+                sanitise.clean(row["status"]),
+                sanitise.clean(row.get("block_range") or "--"),
                 row.get("records", 0),
-                row.get("note") or "--",
+                sanitise.clean(row.get("note") or "--", max_length=400),
             )
         )
     return "\n".join(lines)
@@ -240,9 +357,18 @@ def _gaps(payload):
             "Nothing. Every venue in the registry was checked and every "
             "declared address resolved."
         )
-    lines = ["| Subject | Why |", "| --- | --- |"]
+    coverage = {row["venue"]: row["status"] for row in payload["coverage"]}
+    lines = ["| Subject | Status | Why |", "| --- | --- | --- |"]
     for gap in payload["gaps"]:
-        lines.append(f"| {gap['subject']} | {gap['reason']} |")
+        venue = gap["subject"].removesuffix(" borrowing history")
+        status = coverage.get(venue, "unresolved")
+        lines.append(
+            "| {} | {} | {} |".format(
+                sanitise.clean(gap["subject"], max_length=400),
+                sanitise.clean(status),
+                sanitise.clean(gap["reason"], max_length=400),
+            )
+        )
     return "\n".join(lines)
 
 
@@ -260,12 +386,15 @@ def render(payload):
     history = [
         r
         for r in records
-        if tiers.get(r["address"]) in on_record and r["claim"] not in WILDCAT_CLAIMS
+        if tiers.get(r["address"]) in on_record
+        and not (r["venue"] == "wildcat" and r["claim"] in WILDCAT_CLAIMS)
     ]
     wildcat = [
         r
         for r in records
-        if tiers.get(r["address"]) in on_record and r["claim"] in WILDCAT_CLAIMS
+        if tiers.get(r["address"]) in on_record
+        and r["venue"] == "wildcat"
+        and r["claim"] in WILDCAT_CLAIMS
     ]
     inferred = [r for r in records if tiers.get(r["address"]) == "inferred"]
 

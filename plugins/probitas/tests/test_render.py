@@ -9,11 +9,13 @@ from . import support
 
 from probitas_lib import formatting, registry, render  # noqa: E402
 from probitas_lib.adapters.wildcat import adapter  # noqa: E402
+from probitas_lib.adapters.morpho_midnight import adapter as midnight_adapter  # noqa: E402
 from probitas_lib.evidence import Coverage, Evidence, Gap  # noqa: E402
 
 FIXTURES = os.path.join(support.PLUGIN_ROOT, "tests", "fixtures")
 DECLARED = "0x" + "a1" * 20
 INFERRED = "0x" + "b2" * 20
+MIDNIGHT_DECLARED = "0x535690cb1330232dd4f2ac5b724040751bdf4c91"
 
 
 def evidence(case="defaulted", inferred=False):
@@ -31,6 +33,21 @@ def evidence(case="defaulted", inferred=False):
         if venue.id != "wildcat":
             subject.add_coverage(Coverage(venue.id, "unimplemented", note=venue.note))
             subject.add_gap(Gap(f"{venue.id} borrowing history", venue.note))
+    return subject.to_dict()
+
+
+def midnight_evidence(case):
+    subject = Evidence(
+        entity="Midnight Borrower",
+        addresses=[(MIDNIGHT_DECLARED, "declared")],
+        run_id="midnight-render",
+    )
+    records, coverage = midnight_adapter(
+        dict(subject.addresses), {"fixtures": os.path.join(FIXTURES, case)}
+    )
+    for record in records:
+        subject.add_record(record)
+    subject.add_coverage(coverage)
     return subject.to_dict()
 
 
@@ -108,11 +125,77 @@ class TestContent(unittest.TestCase):
         self.assertIn("## What could not be established", document)
         self.assertIn(render.NARRATIVE_MARKER, document)
 
+    def test_each_named_gap_repeats_its_coverage_status(self):
+        document = render.render(evidence("empty"))
+        self.assertIn("| Subject | Status | Why |", document)
+        self.assertIn("| morpho-midnight borrowing history | unimplemented |", document)
+
     def test_inferred_findings_appear_only_in_their_own_section(self):
         payload = evidence(inferred=True)
         document = render.render(payload)
         start = document.index("## Addresses not declared")
         self.assertNotIn(INFERRED, document[:start])
+
+
+class TestMidnightContent(unittest.TestCase):
+    def test_every_maturity_state_has_an_explicit_plain_language_path(self):
+        cleared = render.render(midnight_evidence("midnight-cleared"))
+        late = render.render(midnight_evidence("midnight-late"))
+        not_due = render.render(midnight_evidence("midnight-not-due"))
+        self.assertIn("Cleared by maturity", cleared)
+        self.assertIn("Outstanding at maturity", late)
+        self.assertIn("Settled late through liquidation", late)
+        self.assertIn("Not due at observation", not_due)
+
+    def test_midnight_terms_do_not_appear_under_wildcat_markets(self):
+        document = render.render(midnight_evidence("midnight-cleared"))
+        start = document.index("## Wildcat markets")
+        end = document.index("## Counterparty graph")
+        self.assertNotIn("morpho-midnight", document[start:end])
+        self.assertIn("fixed maturity at Unix time", document[:start])
+
+    def test_current_zero_does_not_rewrite_outstanding_at_maturity(self):
+        document = render.render(midnight_evidence("midnight-late"))
+        self.assertIn(
+            "Outstanding at maturity: 136,075,232,067 debt units; "
+            "Settled late through liquidation; 0 debt units at observation",
+            document,
+        )
+
+    def test_liquidation_is_not_rendered_as_voluntary_repayment(self):
+        document = render.render(midnight_evidence("midnight-late"))
+        rows = [
+            line
+            for line in document.splitlines()
+            if "| morpho-midnight | Liquidated |" in line
+        ]
+        self.assertTrue(rows)
+        for row in rows:
+            self.assertIn("liquidation, not voluntary repayment", row)
+            self.assertNotIn("primary repayment reduced debt", row)
+
+    def test_secondary_close_has_its_own_settlement_language(self):
+        payload = midnight_evidence("midnight-late")
+        outcome = next(
+            record
+            for record in payload["records"]
+            if record["claim"] == "maturity_outcome"
+        )
+        outcome["values"]["settlement_mode"] = "secondary_close"
+        document = render.render(payload)
+        self.assertIn("Settled late through secondary-market close", document)
+        self.assertNotIn("Settled late through primary repayment", document)
+
+    def test_unknown_midnight_state_cannot_become_markdown(self):
+        payload = midnight_evidence("midnight-late")
+        outcome = next(
+            record
+            for record in payload["records"]
+            if record["claim"] == "maturity_outcome"
+        )
+        outcome["values"]["settlement_mode"] = "liquidation | forged column"
+        with self.assertRaises(render.RenderError):
+            render.render(payload)
 
 
 class TestDeterminism(unittest.TestCase):
