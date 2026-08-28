@@ -2,7 +2,7 @@
 name: lemma
 description: Turn Solidity solc standard JSON inputs or Markdown document trees into validated JSONL chunks with source locations and separate quotation, model, and embedding text. Use when asked to run Lemma, invoke lemma:lemma, prepare Solidity or Markdown for retrieval, generate citation-aware chunks, or inspect Lemma output. Do not use it to embed, index, retrieve, or answer from the chunks.
 metadata:
-  version: "0.1.1"
+  version: "0.2.1"
 ---
 
 <p align="center">
@@ -60,6 +60,7 @@ python3 chunkers/solidity.py \
   --input /absolute/path/to/standard-input.json \
   --solc ./solc-container \
   --include 'src/**' \
+  --source-ref 'https://github.com/owner/repo@<commit>' \
   --out /absolute/path/to/chunks.jsonl
 ```
 
@@ -82,6 +83,7 @@ python3 chunkers/markdown.py \
   --root /absolute/path/to/docs \
   --summary SUMMARY.md \
   --exclude SUMMARY.md \
+  --source-ref 'https://github.com/owner/repo@<commit>' \
   --out /absolute/path/to/chunks.jsonl
 ```
 
@@ -110,6 +112,37 @@ Read [`INVARIANTS.md`](../../INVARIANTS.md) when changing the chunkers, judging 
 guarantee, or investigating unexpected output. Run the two bundled test files
 after any code change.
 
+## Hand the corpus to Ariadne
+
+`--source-ref` is required whenever `--out` is given. A run without it exits
+non-zero and writes nothing, because a corpus nobody can trace back to a source
+is the one thing a delivered corpus must not be.
+
+A delivered corpus is two files in one directory: `chunks.jsonl` and the
+`provenance.jsonl` record beside it, which carries the source ref, the digest
+of every input, the selection and the compiler identity. The chunker then
+prints the flags that match what it wrote. Copy them into Ariadne's capture,
+which binds that directory into a dataset statement:
+
+```bash
+python3 plugins/ariadne/scripts/ariadne.py capture-dataset \
+  --name <a name for the dataset> \
+  --first-release-reason <why there is nothing to compare against> \
+  <the flags the chunker printed> \
+  --out /absolute/path/to/statement.json
+```
+
+Four flags are the operator's: `--name`, `--out`, and either
+`--first-release-reason` or the `--previous` and `--previous-name` pair that
+names an earlier release. Everything else was printed, `--release` included, so
+compose nothing by hand. The Markdown chunker records its input paths relative
+to `--root`, so run the capture from there.
+
+Lemma writes no statement and signs nothing. It records what produced a corpus
+and stops. Binding those bytes to a release, and attesting to them, belong to
+Ariadne, and the record says the source ref was asserted by its caller rather
+than resolved.
+
 ## Promise Machine contract
 
 ### lemma-solidity-chunks
@@ -134,6 +167,18 @@ after any code change.
 - Consequence: 1
 - Refuses: Including excluded or escaped content, hiding a synthesised chunk as quotation, or using partial output after parsing or validation failure.
 - Recovery: Correct the root, navigation, manifest or exclusions, remove the failed output and rerun the chunker.
+- Exceptions: none
+
+### lemma-corpus-provenance
+
+- Promise: A successful chunk run delivers a corpus of two files whose provenance record binds the asserted source ref, the governed chunker version, the digest of every input, the selection and the compiler identity to a build identifier recomputed from the chunks actually written.
+- Evidence: The provenance record beside the corpus, the source ref as given less any URL userinfo, the digested inputs, the include patterns with the source units present, selected and excluded, the compiler block, and the build identifier recomputed from the delivered file.
+- Evidence classes: checked, recorded, recomputed
+- Boundary: The record does not establish that the ref names a real object, that the ref was clean, that the compiler was honest about its own version, that an ungated compiler was the intended one, or that a citation out of the corpus is faithful.
+- Authorises: Handing the corpus directory to a dataset capture that binds its bytes, and reading the recorded origin, inputs and compiler as what the run was told and observed.
+- Consequence: 1
+- Refuses: Writing a corpus with no recorded origin, recording a value as `unknown`, naming a prefix pin as an exact one, or leaving a record beside chunks it does not describe.
+- Recovery: Supply the missing ref, remove the record the directory already holds or point `--provenance` at it, and rerun the chunker.
 - Exceptions: none
 
 ### lemma-chunk-validation
