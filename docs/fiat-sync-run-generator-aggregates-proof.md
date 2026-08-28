@@ -471,6 +471,6 @@ On the exact tracked tree, these remaining gates return exit 0:
 The tracked runbook is an exact copy of the amended controller runbook, with
 SHA-256
 `c271da247301a97772f13fcba0b7299a728313d52c736de1713e68f7dbb1fa0b`.
-[ADR-043](decisions/ADR-043-bind-sync-run-generator-aggregates.md) remains the
+[ADR-044](decisions/ADR-044-bind-sync-run-generator-aggregates.md) remains the
 decision record; the fixture remains the incident preimage; this proof is the
 durable reproduction record.

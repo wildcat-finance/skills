@@ -527,3 +527,10 @@ remain historical records. This design cites them and does not replace them.
 **Why.** While Step 2 was under final verification, pull request #718 advanced `main` and assigned ADR-042 to `docs/decisions/ADR-042-advance-the-python-suite-to-3-14.md`. The repository's live default-branch uniqueness test now refuses this run's earlier ADR-042 identity. Renumbering to the next free identity preserves both decisions and fixes the collision without weakening the gate or rewriting the historical audit.
 **Steps touched.** Step 2's entry, exit, files, tests, and record-placement discipline.
 **Still holding.** Step 2: entry broken; exit broken. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Final integration with `origin/main` at `44ad3740158b6c46646e8c7a8c93f17110bd7259` moves the standing generator-aggregate decision from `docs/decisions/ADR-043-bind-sync-run-generator-aggregates.md` to `docs/decisions/ADR-044-bind-sync-run-generator-aggregates.md`. The decision's authority, schema, evidence, resource, compatibility, refusal, and rejected-alternative conclusions are unchanged. The signed audit keeps its historical ADR-043 wording.
+**Why.** The advanced base owns `docs/decisions/ADR-043-record-corpus-provenance-beside-the-chunks.md`. The root uniqueness gate correctly refuses two differently named ADR-043 files, so the sync composition takes the next free number instead of weakening the gate.
+**Steps touched.** Final integration composition only.
+**Still holding.** Steps 1 through 3 retain their exact signed product evidence. The sync must independently prove the combined tree and the ADR-044 reference propagation.

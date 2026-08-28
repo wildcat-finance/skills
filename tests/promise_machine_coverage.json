@@ -335,6 +335,31 @@
       "path": "plugins/lemma/tests/test_markdown.py",
       "selector": "test_heading_path"
     },
+    "chunk-provenance-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "selector": "test_provenance_refusal"
+    },
+    "chunk-provenance-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/lemma/tests/test_markdown.py",
+      "selector": "test_provenance_emitted"
+    },
+    "chunk-provenance-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "selector": "test_provenance_emitted"
+    },
+    "chunk-provenance-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/lemma/tests/test_markdown.py",
+      "selector": "test_delivery_refusals"
+    },
+    "chunk-provenance-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "selector": "test_provenance_paths"
+    },
     "chunk-solidity-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/lemma/tests/test_solidity.py",
@@ -1155,25 +1180,80 @@
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
     },
-    "synkrisis-scaffold-p": {
-      "claim": "The declared scaffold behaviour, one stable refusal per specified operation, is exercised positively.",
-      "path": "plugins/synkrisis/tests/test_scaffold.py",
-      "selector": "test_every_operation_refuses_with_the_scaffold_code"
+    "synkrisis-cohort-p": {
+      "claim": "Positive evidence exercises cohort construction inside its declared boundary.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_example_cohort_recomputes_deterministically"
     },
-    "synkrisis-scaffold-m": {
-      "claim": "Plausible-looking inputs do not stand in for an implementation; the refusal still fires.",
-      "path": "plugins/synkrisis/tests/test_scaffold.py",
-      "selector": "test_operations_refuse_even_with_plausible_inputs"
+    "synkrisis-cohort-m": {
+      "claim": "A missing or failed upstream validation result is refused rather than treated as success.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_missing_validation_status_is_refused"
     },
-    "synkrisis-scaffold-o": {
-      "claim": "The nearest overclaim, a written artefact from an unbuilt operation, remains unavailable.",
-      "path": "plugins/synkrisis/tests/test_scaffold.py",
-      "selector": "test_no_operation_writes_an_output"
+    "synkrisis-cohort-s": {
+      "claim": "Replaced record bytes are refused against the declared digest rather than silently reread.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_replaced_record_bytes_are_refused"
     },
-    "synkrisis-scaffold-r": {
-      "claim": "Every refusal names the committed runbook step whose delivery recovers the operation.",
-      "path": "plugins/synkrisis/tests/test_scaffold.py",
-      "selector": "test_refusal_names_the_pending_runbook_step"
+    "synkrisis-cohort-o": {
+      "claim": "The nearest tempting overclaim, an unknown observer counted as data, remains unavailable.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_cohort_keeps_the_unknown_run_out_of_every_sample"
+    },
+    "synkrisis-cohort-r": {
+      "claim": "A refusal names its recovery and the repaired declared universe reruns clean.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_refusal_names_recovery_and_reruns_clean"
+    },
+    "synkrisis-diagnose-p": {
+      "claim": "Positive evidence recomputes both shipped rule kinds from the checked example cohort.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_example_findings_recompute_exactly"
+    },
+    "synkrisis-diagnose-m": {
+      "claim": "A rule whose minimum sample counts are not met is refused visibly rather than matched thinly.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_rule_below_minimum_samples_is_refused"
+    },
+    "synkrisis-diagnose-s": {
+      "claim": "A record changed after cohort construction is refused against the cohort's digests.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_record_changed_after_cohort_is_refused"
+    },
+    "synkrisis-diagnose-o": {
+      "claim": "Findings stay at the inferred evidence class; the stronger classes remain unavailable.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_findings_never_strengthen_evidence_class"
+    },
+    "synkrisis-diagnose-r": {
+      "claim": "A refused catalogue reruns clean after the named rule is repaired.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_diagnose_recovers_after_rule_repair"
+    },
+    "synkrisis-verify-p": {
+      "claim": "Positive evidence recomputes cohort, findings and report byte for byte from the original inputs.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_full_example_verifies"
+    },
+    "synkrisis-verify-m": {
+      "claim": "A missing artefact is refused rather than reported as verified.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_missing_report_is_refused"
+    },
+    "synkrisis-verify-s": {
+      "claim": "A stale rule digest is refused rather than verified against newer rules.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_stale_rule_digest_is_refused"
+    },
+    "synkrisis-verify-o": {
+      "claim": "Verification emits digests and one status; it never blesses the suggested handoff.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_verify_result_carries_digests_and_no_action"
+    },
+    "synkrisis-verify-r": {
+      "claim": "Verification reruns clean after the named artefact is restored.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_verify_recovers_after_artifact_restoration"
     }
   },
   "handoffs": [
@@ -1211,7 +1291,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "04ee42c9ec24743af72d092a21b3cf878ac665eaab2ce91c9524531a74e4b26d"
+        "sha256": "10bc0dd2e2a25df8d56e140aba1d16d29b6c784e96c07361822800b2eec6fe18"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1219,11 +1299,11 @@
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "d4518faedfb84602de11d176ec898a4937673a5ed71490e57933a2fd9d4b8168"
+        "sha256": "b5ab4aeed353f9ca3f461bc579ef87738ea684d4d3426caa7f81d353adf4d078"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
-        "sha256": "8aee7ba8d711ea11fcd94a9db9ccc52001f39261ffcb71777285e4daf4fb5add"
+        "sha256": "171c0c6cf0cfc542cd3f52a3598b3d4de644bae02a88f2237c3ba0e75a16ab12"
       }
     ],
     "promise_id": "promise-machine-router-selection",
@@ -2188,6 +2268,22 @@
     },
     {
       "cases": {
+        "M": "chunk-provenance-m",
+        "O": "chunk-provenance-o",
+        "P": "chunk-provenance-p",
+        "R": "chunk-provenance-r",
+        "S": "chunk-provenance-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "lemma-corpus-provenance",
+      "skill_path": "plugins/lemma/skills/lemma/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "chunk-markdown-m",
         "O": "chunk-markdown-o",
         "P": "chunk-markdown-p",
@@ -2497,21 +2593,50 @@
     },
     {
       "cases": {
-        "M": "synkrisis-scaffold-m",
-        "O": "synkrisis-scaffold-o",
-        "P": "synkrisis-scaffold-p",
-        "R": "synkrisis-scaffold-r",
-        "S": {
-          "not_applicable": true,
-          "reason": "The scaffold holds no earlier artefact that could go stale."
-        },
+        "M": "synkrisis-diagnose-m",
+        "O": "synkrisis-diagnose-o",
+        "P": "synkrisis-diagnose-p",
+        "R": "synkrisis-diagnose-r",
+        "S": "synkrisis-diagnose-s",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
       },
       "group": "executable",
-      "promise_id": "synkrisis-scaffold-refusal",
+      "promise_id": "synkrisis-bounded-diagnosis",
+      "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "synkrisis-cohort-m",
+        "O": "synkrisis-cohort-o",
+        "P": "synkrisis-cohort-p",
+        "R": "synkrisis-cohort-r",
+        "S": "synkrisis-cohort-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "synkrisis-cohort-construction",
+      "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "synkrisis-verify-m",
+        "O": "synkrisis-verify-o",
+        "P": "synkrisis-verify-p",
+        "R": "synkrisis-verify-r",
+        "S": "synkrisis-verify-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "synkrisis-report-verification",
       "skill_path": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {

@@ -250,10 +250,10 @@ surely as a niche feature.
 - Yearly: ask which members should be merged, narrowed, retired, or turned into
   ordinary tools rather than assuming the roster must only grow.
 
-The review should use run records and real outcomes. A future operational
-Synkrisis may help compare validated observations. The current Synkrisis
-scaffold produces no comparison or finding, so people must make these decisions
-from the evidence available today.
+The review should use run records and real outcomes. Synkrisis helps compare
+validated observations, and it now produces a checked cohort, bounded findings
+over one, and a report that verifies against its inputs, though a person still
+makes these decisions from the evidence available.
 
 ### Measures that matter
 
@@ -550,7 +550,7 @@ records do not support.
 
 It still needs:
 
-- working cohort, diagnosis, render, and verification operations;
+- a measured work budget over the delivered four operations;
 - reliable observation records from several hosts;
 - rules for fair comparison and visible confounders;
 - uncertainty and missing-data treatment;

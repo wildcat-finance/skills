@@ -26,9 +26,9 @@ resuming work intended to advance Fiat itself.
 **Current frontier.** The ledger above is authoritative. Never substitute
 Hexaemeron's plugin-wide Solidity frontier for Fiat's own held target.
 
-Synkrisis is outside this controller loop. Its current scaffold cannot compare
-runs, select work, file an issue, mutate a repository, or dispatch Fiat. A
-future finding will remain evidence for a person to route, never a controller
+Synkrisis is outside this controller loop. It compares declared runs and stops
+there: it cannot select work, file an issue, mutate a repository, or dispatch
+Fiat. A finding remains evidence for a person to route, never a controller
 directive.
 
 ## Phase skills

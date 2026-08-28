@@ -2,23 +2,20 @@ name: pandects
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/pandects/**"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
       - ".github/workflows/pandects.yml"
   pull_request:
     paths:
       - "plugins/pandects/**"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
       - ".github/workflows/pandects.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

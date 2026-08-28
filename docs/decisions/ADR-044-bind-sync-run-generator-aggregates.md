@@ -1,4 +1,4 @@
-# ADR-043: Bind sync-run generator aggregates to static authority and exact final trees
+# ADR-044: Bind sync-run generator aggregates to static authority and exact final trees
 
 ## Status
 

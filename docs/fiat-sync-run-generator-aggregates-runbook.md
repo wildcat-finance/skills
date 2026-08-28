@@ -340,3 +340,10 @@ decision and incident preimage.
 **Why.** The Step-3 baseline retained the import-root flag already proved invalid during Step 2, still named the superseded ADR-042, and did not permit the tracked runbook to follow a controller amendment. Correcting those three instructions before implementation keeps the proof command executable, preserves the live ADR identity, and prevents the canonical and tracked runbooks from drifting.
 **Steps touched.** Step 3.
 **Still holding.** Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: The final integration commit is a signed two-parent merge of exact product head `e05ab974dddd558480d76422c5c21f9b843fc0fe` and exact `origin/main` `44ad3740158b6c46646e8c7a8c93f17110bd7259`, in that first-parent order; `docs/decisions/ADR-043-bind-sync-run-generator-aggregates.md` has moved to `docs/decisions/ADR-044-bind-sync-run-generator-aggregates.md`; the decision title, Fiat evolution evidence, evolution test, and proof link name ADR-044; the append-only audit retains its historical ADR-043 wording; the portable runtime and Horos boundary describe the combined tree; and `fiat-integration-revalidation/v2` admits the signed merge only with the registered portable-runtime aggregate, exact outside paths, and green covering checks.
+**Why.** The advanced base owns `docs/decisions/ADR-043-record-corpus-provenance-beside-the-chunks.md`. The root suite refuses that collision, while the local Fiat drafts' CPython 3.13.15 references are ignored controller evidence rather than committed-tree defects. A clean worktree at the signed sync commit must pass the root suite under the base's pinned CPython 3.14.6.
+**Steps touched.** Final integration composition only.
+**Still holding.** Steps 1 through 3 retain their exact signed implementation, audit, prose, and push evidence. The sync adds composition evidence; it does not reopen or rewrite the product run.
