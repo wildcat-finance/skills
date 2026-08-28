@@ -397,6 +397,147 @@ class LocalDeclaration(HostileCase):
                 )
 
 
+class CreationVerb(HostileCase):
+    """The rule belongs to whichever verb created the repository.
+
+    `git init` is not the only construction site, and the two other verbs
+    behave in opposite ways. A clone gets a fresh local config and inherits
+    nothing from its source, so cloning a repository that declares the rule
+    produces one that does not, and it reaches the signer. A linked worktree is
+    the reverse: it reads the config of the repository it was added from, so
+    one declaration at the parent covers it and a second would be redundant.
+    Measured against git 2.54.0. Both are asserted here so that a construction
+    site is judged by what its verb actually does rather than by what a reader
+    assumed `init` implies.
+    """
+
+    def test_a_clone_inherits_nothing_and_declares_the_rule_itself(self):
+        files = self.hostile(harness.OPENPGP, name="clone-verb")
+        source, first = self.fixture(files, declare=True)
+        self.assertEqual(
+            first.returncode,
+            0,
+            "the source repository could not commit, so this test cannot say "
+            f"what a clone of it inherits. git said: {first.stderr.strip()}",
+        )
+        environment = harness.child_environment(files.config)
+        clone = files.config.parent / "cloned"
+        self.git_or_fail(
+            source, environment, "clone", "--quiet", str(source), str(clone)
+        )
+        local = self.git(clone, environment, "config", "--local", "--get",
+                         "commit.gpgsign")
+        self.assertEqual(
+            local.stdout.strip(),
+            "",
+            "the clone carries a local `commit.gpgsign`, so this host copies "
+            "the source's local config into a clone and the rest of this test "
+            "is measuring something other than inheritance",
+        )
+        effective = self.git(clone, environment, "config", "--get",
+                             "commit.gpgsign")
+        self.assertEqual(
+            effective.stdout.strip(),
+            "true",
+            "the clone does not see the hostile global `commit.gpgsign`, so "
+            "it is not under the configuration this test means to apply",
+        )
+
+        (clone / "cloned.txt").write_text("clone history\n", encoding="utf-8")
+        self.git_or_fail(clone, environment, "add", "cloned.txt")
+        undeclared = self.git(clone, environment, "commit", "-qm", "clone history")
+        reached = self.recorded(files)
+        self.assertNotEqual(
+            undeclared.returncode,
+            0,
+            "a clone of a repository that declares the rule committed without "
+            "declaring it again, so a clone does inherit the declaration on "
+            "this host and a construction site created by `git clone` needs no "
+            f"rule of its own. Sentinel {files.sentinel} holds: {reached!r}",
+        )
+        self.assertNotEqual(
+            reached,
+            "",
+            f"the clone's commit failed without reaching the signer at "
+            f"{files.signer}, so it failed for some other reason and this test "
+            f"is measuring the wrong thing. git said: {undeclared.stderr.strip()}",
+        )
+
+        self.git_or_fail(
+            clone, environment, "config", "--local", "commit.gpgsign", "false"
+        )
+        declared = self.git(clone, environment, "commit", "-qm", "clone history")
+        self.assertEqual(
+            declared.returncode,
+            0,
+            "the clone declared the rule and still could not commit. git "
+            f"said: {declared.stderr.strip()}",
+        )
+        self.assertEqual(
+            self.recorded(files),
+            reached,
+            "the clone declared the rule and reached the signer anyway. "
+            f"Sentinel {files.sentinel} grew to: {self.recorded(files)!r}",
+        )
+        self.assertEqual(
+            self.signature_headers(clone, environment),
+            [],
+            "the clone's commit object carries a signature header despite the "
+            "declaration, so fixture history was signed with the "
+            "contributor's real identity",
+        )
+
+    def test_a_linked_worktree_shares_the_declaration_it_was_added_from(self):
+        files = self.hostile(harness.OPENPGP, name="worktree-verb")
+        source, first = self.fixture(files, declare=True)
+        self.assertEqual(
+            first.returncode,
+            0,
+            "the source repository could not commit, so no worktree can be "
+            f"added from it. git said: {first.stderr.strip()}",
+        )
+        environment = harness.child_environment(files.config)
+        linked = files.config.parent / "linked"
+        self.git_or_fail(
+            source, environment, "worktree", "add", "-q", str(linked),
+            "-b", "linked",
+        )
+        effective = self.git(linked, environment, "config", "--get",
+                             "commit.gpgsign")
+        self.assertEqual(
+            effective.stdout.strip(),
+            "false",
+            "the linked worktree does not see the declaration made in the "
+            "repository it was added from, so a worktree is its own "
+            "construction site and needs the rule declared again",
+        )
+
+        (linked / "linked.txt").write_text("linked history\n", encoding="utf-8")
+        self.git_or_fail(linked, environment, "add", "linked.txt")
+        result = self.git(linked, environment, "commit", "-qm", "linked history")
+        recorded = self.recorded(files)
+        self.assertEqual(
+            result.returncode,
+            0,
+            "a linked worktree of a repository that declares the rule could "
+            f"not commit. git said: {result.stderr.strip()}. Sentinel "
+            f"{files.sentinel} holds: {recorded!r}",
+        )
+        self.assertEqual(
+            recorded,
+            "",
+            f"the linked worktree reached the signer at {files.signer} even "
+            "though the repository it was added from declares the rule. "
+            f"Sentinel {files.sentinel} holds: {recorded!r}",
+        )
+        self.assertEqual(
+            self.signature_headers(linked, environment),
+            [],
+            "the linked worktree's commit object carries a signature header, "
+            "so fixture history was signed with the contributor's real identity",
+        )
+
+
 class SignedFixture(HostileCase):
     """A signed fixture commit is caught, and `%G?` alone is not what catches it.
 
