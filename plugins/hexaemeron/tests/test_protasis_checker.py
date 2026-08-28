@@ -40,6 +40,15 @@ COMPLETE_RUNBOOK_AMENDMENT = """
 **Still holding.** Step 1: entry holds; exit holds.
 """
 
+VERSION_RELATION_ROW = (
+    "protasis | plugins/hexaemeron/skills/protasis/EVOLUTION.md | "
+    "next-generation-after-integration-base"
+)
+
+
+def relation_block(*rows):
+    return "```version-relations\n" + "\n".join(rows) + "\n```\n\n"
+
 
 def findings(source):
     with tempfile.TemporaryDirectory() as directory:
@@ -172,6 +181,152 @@ class RunbookAmendments(unittest.TestCase):
         self.assertEqual(codes(COMPLETE_STEP + COMPLETE_RUNBOOK_AMENDMENT + second), [])
 
 
+class VersionRelations(unittest.TestCase):
+    def test_one_valid_block_and_an_absent_legacy_block_are_clean(self):
+        self.assertEqual(codes(relation_block(VERSION_RELATION_ROW) + COMPLETE_STEP), [])
+        self.assertEqual(codes(COMPLETE_STEP), [])
+
+    def test_partial_target_coverage_is_clean(self):
+        two_targets = relation_block(
+            "fiat | plugins/hexaemeron/skills/fiat/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+            VERSION_RELATION_ROW,
+        ) + COMPLETE_STEP
+        self.assertEqual(codes(two_targets.replace(
+            "fiat | plugins/hexaemeron/skills/fiat/EVOLUTION.md | "
+            "next-generation-after-integration-base\n",
+            "",
+        )), [])
+
+    def test_a_second_block_or_a_block_after_step_one_refuses(self):
+        second = relation_block(VERSION_RELATION_ROW) * 2 + COMPLETE_STEP
+        self.assertIn("P006", codes(second))
+        self.assertIn(
+            "P006",
+            codes(COMPLETE_STEP + "\n" + relation_block(VERSION_RELATION_ROW)),
+        )
+
+    def test_each_row_has_exactly_three_non_empty_fields(self):
+        malformed = (
+            "protasis | plugins/hexaemeron/skills/protasis/EVOLUTION.md",
+            VERSION_RELATION_ROW + " | extra",
+            "protasis |  | next-generation-after-integration-base",
+        )
+        for row in malformed:
+            with self.subTest(row=row):
+                self.assertIn("P006", codes(relation_block(row) + COMPLETE_STEP))
+
+    def test_ids_and_paths_are_unique(self):
+        duplicate_id = relation_block(VERSION_RELATION_ROW, VERSION_RELATION_ROW)
+        duplicate_path = relation_block(
+            VERSION_RELATION_ROW,
+            "fiat | plugins/hexaemeron/skills/protasis/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+        )
+        self.assertIn("P006", codes(duplicate_id + COMPLETE_STEP))
+        self.assertIn("P006", codes(duplicate_path + COMPLETE_STEP))
+
+    def test_unsafe_paths_refuse(self):
+        paths = (
+            "/plugins/hexaemeron/skills/protasis/EVOLUTION.md",
+            "plugins/hexaemeron/skills/../protasis/EVOLUTION.md",
+            "plugins/hexaemeron/skills/./protasis/EVOLUTION.md",
+            "plugins\\hexaemeron\\skills\\protasis\\EVOLUTION.md",
+            "plugins/hexaemeron/skills/protasis/EVOLUTION.md\x1f",
+            "plugins/hexa\x80emeron/skills/protasis/EVOLUTION.md",
+            "plugins/hexa\u202eemeron/skills/protasis/EVOLUTION.md",
+        )
+        for path in paths:
+            with self.subTest(path=repr(path)):
+                row = (
+                    f"protasis | {path} | "
+                    "next-generation-after-integration-base"
+                )
+                self.assertIn("P006", codes(relation_block(row) + COMPLETE_STEP))
+
+    def test_unknown_relation_blank_row_and_target_directory_mismatch_refuse(self):
+        unknown = VERSION_RELATION_ROW.replace(
+            "next-generation-after-integration-base", "next-minor"
+        )
+        mismatch = VERSION_RELATION_ROW.replace(
+            "/protasis/EVOLUTION.md", "/fiat/EVOLUTION.md"
+        )
+        self.assertIn("P006", codes(relation_block(unknown) + COMPLETE_STEP))
+        self.assertIn(
+            "P006",
+            codes("```version-relations\n" + VERSION_RELATION_ROW + "\n\n```\n" + COMPLETE_STEP),
+        )
+        self.assertIn("P006", codes(relation_block(mismatch) + COMPLETE_STEP))
+
+    def test_a_fenced_decoy_is_not_a_declaration(self):
+        decoy = (
+            "````markdown\n"
+            "```version-relations\n"
+            "bad | row\n"
+            "```\n"
+            "````\n\n"
+        )
+        self.assertEqual(codes(decoy + COMPLETE_STEP), [])
+
+    def test_the_closed_block_has_a_row_cap_and_exact_info_string(self):
+        rows = tuple(
+            f"skill-{number} | plugins/example/skills/skill-{number}/EVOLUTION.md | "
+            "next-generation-after-integration-base"
+            for number in range(32)
+        )
+        self.assertEqual(codes(relation_block(*rows) + COMPLETE_STEP), [])
+        self.assertIn("P006", codes(relation_block(*rows, VERSION_RELATION_ROW) + COMPLETE_STEP))
+        malformed_info = relation_block(VERSION_RELATION_ROW).replace(
+            "```version-relations", "```version-relations extra", 1
+        )
+        self.assertIn("P006", codes(malformed_info + COMPLETE_STEP))
+
+    def test_a_declared_target_has_no_concrete_version_token_outside_the_block(self):
+        token = "protasis-v4.8.0"
+        valid = relation_block(VERSION_RELATION_ROW) + COMPLETE_STEP
+        candidates = (
+            valid.replace("```version-relations", token + "\n```version-relations", 1),
+            valid.replace("## Step 1", token + "\n\n## Step 1", 1),
+            valid.replace("Do the thing.", f"Do the thing for {token}."),
+            valid.replace("A clean tree.", f"A clean tree at `{token}`."),
+            valid.replace("Proved by `pytest`.", f"Proved by `pytest {token}`."),
+            valid.replace("`a.py`.", f"`a.py` and {token}."),
+            valid.replace("One case.", f"One case for {token}."),
+            valid.replace("none, docs only.", f"none for {token}, docs only."),
+            valid.replace(
+                "**Tests.** One case.",
+                f"**Tests.** One case.\n\n```bash\nprintf '{token}'\n```",
+            ),
+            valid + COMPLETE_RUNBOOK_AMENDMENT.replace("fiat-v2.0.0", token),
+        )
+        for position, source in enumerate(candidates):
+            with self.subTest(position=position):
+                self.assertIn("P006", codes(source))
+
+    def test_relation_findings_do_not_echo_runbook_controlled_values(self):
+        rows = (
+            "PRIVATE-ID | plugins/example/skills/PRIVATE-ID/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+            "unknown | plugins/example/skills/unknown/EVOLUTION.md | private-relation",
+            "private-target | private-segment/private-target/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+            "other-target | private-segment/private-target/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+        )
+        source = relation_block(*rows) + COMPLETE_STEP.replace(
+            "Do the thing.", "Do the thing at private-target-v1.2.3."
+        )
+        messages = " ".join(finding.message for finding in findings(source))
+        for value in (
+            "PRIVATE-ID",
+            "private-relation",
+            "private-segment",
+            "private-target",
+        ):
+            with self.subTest(value=value):
+                self.assertNotIn(value, messages)
+
+
 class ExitCommands(unittest.TestCase):
     def test_an_exit_with_no_command_is_a_finding(self):
         source = COMPLETE_STEP.replace("**Exit.** Proved by `pytest`.",
@@ -219,6 +374,8 @@ class Documents(unittest.TestCase):
     def test_a_document_with_no_step_is_a_finding(self):
         self.assertEqual(codes("# Title\n\n## Steps\n\nDecided later.\n"),
                          ["P003"])
+        malformed_relation = relation_block("bad | row")
+        self.assertEqual(codes(malformed_relation), ["P003", "P006"])
 
     def test_a_step_heading_inside_a_fence_is_not_a_step(self):
         source = "# Title\n\n```markdown\n## Step 1: Example\n```\n"

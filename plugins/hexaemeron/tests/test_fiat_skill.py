@@ -301,6 +301,15 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("ends the last baseline step before a real amendment heading", flat)
         self.assertIn("not that the new criterion is correct", flat)
 
+    def test_protasis_owns_the_closed_version_relation_and_p006_boundary(self):
+        flat = " ".join(self.protasis.split())
+        self.assertIn("```version-relations", self.protasis)
+        self.assertIn("next-generation-after-integration-base", self.protasis)
+        self.assertIn("P006", self.protasis)
+        self.assertIn("Prose, examples, commands and amendments all count", flat)
+        self.assertIn("It does not open the ledger", flat)
+        self.assertIn("allocate a version", flat)
+
     def test_observation_binding_is_optional_and_non_authorising(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("Observation is never a phase gate", self.fiat)
