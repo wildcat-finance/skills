@@ -19,7 +19,10 @@ The configuration has to arrive as ``GIT_CONFIG_GLOBAL``. The
 ``GIT_CONFIG_COUNT``/``GIT_CONFIG_KEY_n``/``GIT_CONFIG_VALUE_n`` triple carries
 ``git -c`` precedence, which outranks repository-local config, so a fixture that
 declares the rule correctly still reaches the signer under it and the whole
-exercise reads as a failure of the fix.
+exercise reads as a failure of the fix. ``GIT_CONFIG_PARAMETERS`` carries the
+same precedence and arrives by a route nobody types: git converts its own
+``-c`` into it and hands it to every process it spawns, so a suite launched
+from inside ``git -c ... bisect run`` inherits it. Both are dropped.
 
 Boundaries, per section 9 of the study. Everything written lands in the
 directory the caller names. The signer body is fixed text with no interpolated
@@ -97,10 +100,15 @@ ARM_TEMPLATES = {
 
 # Git exports these into every process it spawns -- a hook, `git bisect run`, a
 # rebase `exec` line -- and any one of them points a fixture's git at the outer
-# checkout instead of its own temporary directory. GIT_CONFIG_COUNT leads the
-# `git -c` triple, which outranks repository-local config and would defeat the
-# declaration this harness exists to test. All are dropped rather than
-# overridden, so an unset one cannot fall through.
+# checkout instead of its own temporary directory. The last two carry `git -c`
+# precedence, which outranks repository-local config and would defeat the
+# declaration this harness exists to test: GIT_CONFIG_COUNT leads the triple a
+# caller sets by hand, and GIT_CONFIG_PARAMETERS is the form git itself hands a
+# child after `git -c`. Measured against git 2.54.0: either one carrying
+# commit.gpgsign=true reaches the signer from a fixture that declared the rule
+# correctly. All are dropped rather than overridden, so an unset one cannot
+# fall through. GIT_CONFIG_KEY_n and GIT_CONFIG_VALUE_n are inert once the
+# count that introduces them is gone.
 REPOINTING_VARIABLES = (
     "GIT_DIR",
     "GIT_INDEX_FILE",
@@ -112,6 +120,7 @@ REPOINTING_VARIABLES = (
     "GIT_PREFIX",
     "GIT_INTERNAL_SUPER_PREFIX",
     "GIT_CONFIG_COUNT",
+    "GIT_CONFIG_PARAMETERS",
 )
 
 HostileFiles = namedtuple("HostileFiles", ("config", "signer", "sentinel"))

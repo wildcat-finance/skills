@@ -70,6 +70,20 @@ CoveredSuite = namedtuple("CoveredSuite", ("label", "top_level", "test"))
 # root, that ``test`` is resolved from.
 COVERED_SUITES = ()
 
+# The two ways a configuration value arrives carrying `git -c` precedence,
+# which outranks the repository-local declaration. A caller sets the
+# GIT_CONFIG_COUNT triple by hand; git converts its own `-c` into
+# GIT_CONFIG_PARAMETERS and hands that to every process it spawns, so a suite
+# run from inside `git -c ... bisect run` inherits it without anyone typing it.
+COMMAND_LINE_CHANNELS = {
+    "GIT_CONFIG_PARAMETERS": {"GIT_CONFIG_PARAMETERS": "'commit.gpgsign=true'"},
+    "GIT_CONFIG_COUNT": {
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "commit.gpgsign",
+        "GIT_CONFIG_VALUE_0": "true",
+    },
+}
+
 
 class HostileCase(unittest.TestCase):
     """Each case builds its own hostile configuration in its own directory."""
@@ -83,9 +97,13 @@ class HostileCase(unittest.TestCase):
             )
         self.workspace = Path(self.enterContext(tempfile.TemporaryDirectory())).resolve()
 
-    def hostile(self, arm):
-        """Write one arm into a fresh directory belonging to this case."""
-        directory = self.workspace / arm
+    def hostile(self, arm, name=None):
+        """Write one arm into a fresh directory belonging to this case.
+
+        ``name`` names that directory when one case builds the same arm more
+        than once, so two subtests cannot land in each other's sentinel.
+        """
+        directory = self.workspace / (name or arm)
         directory.mkdir()
         try:
             return harness.write_arm(directory, arm)
@@ -120,16 +138,19 @@ class HostileCase(unittest.TestCase):
             )
         return result
 
-    def fixture(self, files, declare):
+    def fixture(self, files, declare, base=None):
         """Build a disposable repository under the hostile arm and commit once.
 
         ``declare`` chooses whether the repository states the rule the way a
-        fixture is meant to. Returns the repository root and the commit's
-        completed process, so a caller can read the code git actually exited on.
+        fixture is meant to. ``base`` is the environment the child inherits
+        before the harness strips it, which is how a caller stands in for a
+        suite launched from inside another git process. Returns the repository
+        root and the commit's completed process, so a caller can read the code
+        git actually exited on.
         """
         root = files.config.parent / ("declared" if declare else "undeclared")
         root.mkdir()
-        environment = harness.child_environment(files.config)
+        environment = harness.child_environment(files.config, base=base)
         self.git_or_fail(root, environment, "init", "-q")
         if declare:
             self.git_or_fail(
@@ -192,7 +213,20 @@ class HostileHarness(HostileCase):
         )
         self.assertEqual(environment["GIT_CONFIG_GLOBAL"], str(files.config))
         self.assertEqual(environment["GIT_CONFIG_SYSTEM"], os.devnull)
-        self.assertNotIn("GIT_CONFIG_COUNT", environment)
+        # Asserted against a base that actually carries them. Reading them off
+        # `os.environ`, which holds neither, would pass without the drop.
+        inherited = dict(os.environ)
+        inherited.update(COMMAND_LINE_CHANNELS["GIT_CONFIG_PARAMETERS"])
+        inherited.update(COMMAND_LINE_CHANNELS["GIT_CONFIG_COUNT"])
+        stripped = harness.child_environment(files.config, base=inherited)
+        for name in ("GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS"):
+            self.assertNotIn(
+                name,
+                stripped,
+                f"{name} carries `git -c` precedence and survived into the "
+                "child environment, so an outer git process can re-enable "
+                "signing over a fixture that declared the rule correctly",
+            )
 
     def test_the_emit_entry_point_writes_the_arm_the_negative_control_proves(self):
         directory = self.workspace / "emitted"
@@ -247,6 +281,42 @@ class NegativeControl(HostileCase):
                     f"signing program at {files.signer} was never reached, so "
                     "the commit failed for some other reason and this guard is "
                     f"measuring the wrong thing. git said: {result.stderr.strip()}",
+                )
+
+
+class InheritedPrecedence(HostileCase):
+    """An inherited `git -c` channel cannot defeat the declaration under test.
+
+    Both channels outrank repository-local config, so either one carrying
+    ``commit.gpgsign=true`` would drive a correctly declared fixture into the
+    signer, and the failure would read as a broken fix rather than as a
+    contaminated environment. The harness strips them from the child; this is
+    the end-to-end proof that stripping them is enough.
+    """
+
+    def test_an_inherited_command_line_channel_cannot_re_enable_signing(self):
+        for label, inherited in COMMAND_LINE_CHANNELS.items():
+            with self.subTest(channel=label):
+                files = self.hostile(harness.OPENPGP, name=f"inherited-{label}")
+                base = dict(os.environ)
+                base.update(inherited)
+                _, result = self.fixture(files, declare=True, base=base)
+                recorded = self.recorded(files)
+                self.assertEqual(
+                    result.returncode,
+                    0,
+                    f"an inherited {label} re-enabled signing over a fixture "
+                    "that declared `git config --local commit.gpgsign false`, "
+                    "so the harness is not stripping it from the child. git "
+                    f"said: {result.stderr.strip()}. Sentinel {files.sentinel} "
+                    f"holds: {recorded!r}",
+                )
+                self.assertEqual(
+                    recorded,
+                    "",
+                    f"an inherited {label} reached the signer at "
+                    f"{files.signer} from a fixture that declared the rule. "
+                    f"Sentinel {files.sentinel} holds: {recorded!r}",
                 )
 
 
