@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import fnmatch
+import hashlib
 import html
 import importlib.util
 import json
@@ -1116,6 +1117,244 @@ def excludes_from_manifest(manifest_path: str, source_id: str) -> list[str]:
     sys.exit(f"no source {source_id!r} in {manifest_path}")
 
 
+# --------------------------------------------------------------------------
+# corpus provenance: what the pipeline records beside the chunks
+# --------------------------------------------------------------------------
+
+PROVENANCE_FILENAME = "provenance.jsonl"
+# Every markdown file under --root is a candidate; --exclude narrows it. This
+# is the pattern that selection actually is, not a label for it.
+INCLUDE_PATTERN = "**/*.md"
+# The two fields stamp() writes onto every chunk. The build identifier digests
+# everything else, because an identifier that is stamped onto the chunks it
+# digests cannot also cover itself.
+_STAMPED = ("source_ref", "corpus_build_id")
+
+
+def skill_version() -> str:
+    """The governed version of the lemma skill, read rather than repeated.
+
+    A version copied into this file is a version that can drift from the one
+    the promise machine governs, and a record carrying a drifted version is a
+    guess wearing the shape of a fact. It is read from the skill's frontmatter,
+    which travels beside this chunker in the plugin and in the portable
+    runtime alike.
+    """
+    manifest = (pathlib.Path(__file__).resolve().parent.parent
+                / "skills" / "lemma" / "SKILL.md")
+    text = manifest.read_text(encoding="utf-8") if manifest.is_file() else ""
+    found = re.search(r'^  version: "([^"]+)"$', text, re.M)
+    if not found:
+        raise ChunkError(
+            f"no governed version in {manifest} — the record states which "
+            "chunker built the corpus and there is nothing here to state")
+    return found.group(1)
+
+
+def corpus_build_id(records: list[dict]) -> str:
+    """Digest the chunks as the chunker produced them, less the stamped pair.
+
+    Keys are sorted so the digest survives a change in field order, and each
+    record ends with a newline so two adjacent chunks cannot be reshuffled into
+    the same bytes.
+    """
+    digest = hashlib.sha256()
+    for record in records:
+        bare = {k: v for k, v in record.items() if k not in _STAMPED}
+        digest.update(json.dumps(bare, sort_keys=True).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def _same_file(left: pathlib.Path, right: pathlib.Path) -> bool:
+    """Whether two paths name one file, by inode wherever that can be known.
+
+    resolve() settles a relative spelling, a `.` or `..` segment and every
+    symlink, in either direction. It cannot settle a hard link, which is a
+    second name for one inode and resolves to itself, so a corpus reachable
+    under two names would be written and then overwritten by its own record.
+    Where both names exist the inode answers; where one does not there is
+    nothing to stat, and the path is the honest bound.
+    """
+    if left.resolve() == right.resolve():
+        return True
+    try:
+        return left.samefile(right)
+    except OSError:
+        return False
+
+
+def _records_beside(directory: pathlib.Path,
+                    keep: tuple[pathlib.Path, ...]) -> list[pathlib.Path]:
+    """Provenance records already in the corpus's directory, less `keep`.
+
+    A record left in the directory of a corpus it does not describe is the
+    failure this refusal exists to prevent, and the name it carries makes no
+    difference to a reader who finds it there. Guarding only the default name
+    would leave that failure one --provenance away.
+
+    Bounded on purpose: regular files, their first line, and its first 4096
+    bytes. The record is one line of line-delimited JSON carrying a known
+    schema string, so that is enough to recognise one and cheap enough to do
+    before every delivery -- two thousand neighbours cost under a tenth of a
+    second. The suffix is not part of the bound, because --provenance writes
+    wherever it is pointed and a record this tool put in rec.json is the same
+    record to a reader who finds it beside a corpus it does not describe.
+
+    A neighbour that cannot be read is a neighbour that cannot be ruled out,
+    so it refuses rather than being passed over. Everything else here records
+    what it could not establish as an absence with a reason; a scan that
+    skipped what it could not open would be the one place that guessed.
+
+    A first line that parses as JSON but is not an object is not a record and
+    is not a crash either: a list, a string, a number and a bare null each
+    took this function down with an AttributeError before the type was
+    checked, which is the shape the validator was taught to avoid in step 1.
+    """
+    try:
+        entries = sorted(directory.iterdir())
+    except OSError:
+        return []
+    spared = []
+    for path in keep:
+        try:
+            spared.append(path.resolve())
+        except OSError:
+            pass
+    found = []
+    for entry in entries:
+        try:
+            if entry.resolve() in spared or not entry.is_file():
+                continue
+            with open(entry, "rb") as handle:
+                head = handle.readline(4096)
+        except OSError as problem:
+            raise ChunkError(
+                f"{entry} sits in the directory this corpus is delivered to "
+                f"and cannot be read ({problem}), so whether it is a record "
+                "of some other corpus cannot be established") from problem
+        try:
+            first = json.loads(head)
+        except ValueError:
+            continue
+        if (isinstance(first, dict)
+                and first.get("schema") == _schema.PROVENANCE_SCHEMA):
+            found.append(entry)
+    return found
+
+
+def record_path(args) -> str:
+    """Where the record goes, settled before anything reaches disk.
+
+    Both refusals here describe the same outcome from two directions: a
+    directory a capture reads as a whole corpus, holding a record that
+    describes different chunks. Neither is caught downstream, because the
+    recomputed identifier only ever compares a record with the corpus of its
+    own run.
+
+    A record written over the corpus destroys it. The digest check has already
+    passed by the time the record is written, so the run reports success and
+    the directory is left holding one file: a record naming a chunk count and
+    an identifier for chunks that now exist nowhere.
+
+    A record sent elsewhere while `provenance.jsonl` already sits beside
+    `--out` leaves that older file describing chunks this run overwrites. It
+    stays valid on its own terms — every field well formed, the identifier a
+    real digest of a real corpus — so `validate_provenance` returns nothing
+    and only recomputing the digest reveals it, which is the work the record
+    exists to save.
+    """
+    out = pathlib.Path(args.out)
+    default = out.parent / PROVENANCE_FILENAME
+    chosen = pathlib.Path(args.provenance) if args.provenance else default
+    if _same_file(chosen, out):
+        raise ChunkError(
+            f"--provenance {chosen} is the file --out names; the record would "
+            "be written over the corpus it describes, leaving a chunk count "
+            "for chunks nobody could read")
+    stale = _records_beside(out.parent, keep=(chosen, out))
+    if stale:
+        raise ChunkError(
+            f"{stale[0]} already describes a corpus in {out.parent} and this "
+            f"run writes its record to {chosen}, so the older record would be "
+            "left beside chunks it does not describe; remove it, or let this "
+            "record go to it")
+    return str(chosen)
+
+
+def deliver(chunks: list[Chunk], args) -> None:
+    """Write the corpus and the record of what produced it.
+
+    The order is the substance. The record is built and validated before
+    anything reaches disk, so a run that cannot produce a complete one leaves
+    no directory a capture would read as a whole corpus. The chunks are then
+    stamped with the values the record carries — the stripped ref, not the raw
+    one — so the two files cannot disagree about the origin. The identifier is
+    recomputed from the file that was actually written, and a disagreement
+    takes the corpus away rather than delivering it beside a record describing
+    chunks nobody wrote.
+    """
+    base = pathlib.Path(args.root)
+    selected = sorted({c.path for c in chunks})
+    record = _schema.provenance_record(
+        chunker="markdown",
+        chunker_version=skill_version(),
+        source_ref=args.source_ref,
+        corpus_build_id=corpus_build_id([c.to_dict() for c in chunks]),
+        chunk_count=len(chunks),
+        inputs=[{"path": unit,
+                 "sha256": hashlib.sha256(
+                     (base / unit).read_bytes()).hexdigest()}
+                for unit in selected],
+        include=[INCLUDE_PATTERN],
+        units_present=sorted(str(path.relative_to(base))
+                             for path in base.rglob("*.md")),
+        units_selected=selected,
+        # No compiler produces a markdown corpus. Recording that as an absence
+        # with a reason is the whole difference between a fact and a guess:
+        # `unknown` here would be indistinguishable from a compiler by that
+        # name.
+        compiler=_schema.compiler_absent(
+            "the markdown chunker parses text; no compiler takes part in "
+            "building this corpus"))
+    faults = _schema.validate_provenance(record)
+    if faults:
+        raise ChunkError("the provenance record is incomplete, so nothing was "
+                         "written:\n  " + "\n  ".join(faults))
+
+    path = record_path(args)
+    _schema.stamp(chunks, source_ref=record["source_ref"],
+                  corpus_build_id=record["corpus_build_id"])
+    with open(args.out, "w") as f:
+        for c in chunks:
+            f.write(json.dumps(c.to_dict()) + "\n")
+    print(f"  written       : {args.out}")
+
+    with open(args.out) as f:
+        on_disk = [json.loads(line) for line in f]
+    if corpus_build_id(on_disk) != record["corpus_build_id"]:
+        pathlib.Path(args.out).unlink()
+        raise ChunkError(
+            f"{args.out} does not digest to the identifier the record carries, "
+            "so the corpus has been removed rather than delivered beside a "
+            "record describing chunks nobody wrote")
+
+    # The corpus is on disk and the record is not. Everything from here takes
+    # the corpus with it if it fails, for the reason the unlink above exists:
+    # a chunks.jsonl with nothing beside it to say what produced it is the
+    # directory the pair of files was introduced to prevent.
+    try:
+        with open(path, "w") as f:
+            f.write(json.dumps(record) + "\n")
+    except OSError as e:
+        pathlib.Path(args.out).unlink()
+        raise ChunkError(
+            f"the record could not be written to {path} ({e}), so the corpus "
+            f"at {args.out} has been removed rather than left behind with "
+            "nothing beside it to say what produced it") from e
+    print(f"  provenance    : {path}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", required=True, help="markdown tree to chunk")
@@ -1128,7 +1367,24 @@ def main() -> int:
                     help="GitBook nav to derive cross-document hierarchy from. "
                          "Missing is fatal; pass '' to build without one")
     ap.add_argument("--out", help="JSONL output")
+    ap.add_argument("--source-ref", metavar="REF",
+                    help="what was chunked: a tag, a commit or a URL. Required "
+                         "with --out. Recorded as given, less any URL "
+                         "userinfo; nothing resolves or checks it")
+    ap.add_argument("--provenance", metavar="PATH",
+                    help=f"where to write the provenance record; defaults to "
+                         f"{PROVENANCE_FILENAME} beside --out")
     args = ap.parse_args()
+
+    # Before the tree is walked and before anything is written: a corpus
+    # delivered with no origin is the defect this record exists to close, and
+    # refusing late would leave a directory behind.
+    if args.out and not args.source_ref:
+        print("\nFATAL: --out was given without --source-ref, so nothing was "
+              "written.\n  A corpus with no recorded origin is one nobody can "
+              "check afterwards.\n  Pass --source-ref with the tag, commit or "
+              "URL that was chunked.", file=sys.stderr)
+        return 1
 
     excludes = list(args.exclude)
     if args.manifest:
@@ -1161,10 +1417,11 @@ def main() -> int:
         print(f"      {p}")
 
     if args.out and not problems:
-        with open(args.out, "w") as f:
-            for c in chunks:
-                f.write(json.dumps(c.to_dict()) + "\n")
-        print(f"  written       : {args.out}")
+        try:
+            deliver(chunks, args)
+        except (ChunkError, ValueError, OSError) as e:
+            print(f"\nFATAL: {e}", file=sys.stderr)
+            return 1
     elif args.out:
         print("  NOT WRITTEN   : refusing to emit a corpus that fails its checks")
     return 1 if problems else 0

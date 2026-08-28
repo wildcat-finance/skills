@@ -14,11 +14,15 @@ No compiler needed, so this always runs. Exit code is the failure count.
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import io
+import json
 import contextlib
 import os
 import pathlib
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -625,14 +629,21 @@ def test_summary_fail_loud(tmp: pathlib.Path) -> None:
     root2.mkdir()
     (root2 / "p.md").write_text(f"# T\n\n{LONG}", encoding="utf-8")
     out = tmp / "nope.jsonl"
+    # --source-ref is required alongside --out, so both invocations carry one:
+    # without it each would exit 1 on the missing flag rather than on the
+    # navigation this case is about.
+    ref = "example/docs@" + "a" * 40
     r = subprocess.run([sys.executable, script, "--root", str(root2),
-                        "--exclude", "zz", "--out", str(out)],
+                        "--exclude", "zz", "--source-ref", ref,
+                        "--out", str(out)],
                        capture_output=True, text=True)
-    check("CLI: missing default SUMMARY exits 1", r.returncode == 1,
+    check("CLI: missing default SUMMARY exits 1",
+          r.returncode == 1 and "SUMMARY" in r.stderr,
           f"rc={r.returncode} stderr={r.stderr[:120]}")
     check("CLI: nothing written on a failed build", not out.exists(), str(out))
     r2 = subprocess.run([sys.executable, script, "--root", str(root2),
                          "--exclude", "zz", "--summary", "",
+                         "--source-ref", ref,
                          "--out", str(out)], capture_output=True, text=True)
     check("CLI: --summary '' builds and writes",
           r2.returncode == 0 and out.exists(),
@@ -904,6 +915,412 @@ def test_strong_section_boundaries() -> None:
 
 # --------------------------------------------------------------------------
 
+def _rebuilt_id(records: list[dict]) -> str:
+    """Recompute the corpus identifier from the chunks on disk.
+
+    Spelled out here rather than called out of the chunker, so the record
+    cannot agree with itself by construction: this is the definition, and the
+    emitter has to meet it. The two stamped fields are excluded because the
+    identifier is stamped onto the chunks it digests, and a digest covering
+    them would have to cover itself.
+    """
+    digest = hashlib.sha256()
+    for record in records:
+        bare = {k: v for k, v in record.items()
+                if k not in ("source_ref", "corpus_build_id")}
+        digest.update(json.dumps(bare, sort_keys=True).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def test_provenance_emitted(tmp: pathlib.Path) -> None:
+    print("\nM25 — a delivered corpus carries the record of what produced it")
+    script = str(ROOT / "chunkers" / "markdown.py")
+    root = tmp / "src"
+    root.mkdir()
+    (root / "a.md").write_text(f"# A\n\n{LONG}", encoding="utf-8")
+    (root / "b.md").write_text(f"# B\n\n{LONG}", encoding="utf-8")
+    common = [sys.executable, script, "--root", str(root),
+              "--summary", "", "--exclude", "matches-nothing"]
+    ref = "example/corpus@" + "d" * 40
+
+    bare_dir = tmp / "bare"
+    bare_dir.mkdir()
+    r = subprocess.run(common + ["--out", str(bare_dir / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("no --source-ref: exit is nonzero", r.returncode != 0,
+          str(r.returncode))
+    check("no --source-ref: the refusal names the missing flag",
+          "--source-ref" in r.stderr, r.stderr[-200:])
+    check("no --source-ref: the output directory is left empty",
+          list(bare_dir.iterdir()) == [],
+          str(sorted(p.name for p in bare_dir.iterdir())))
+    # Without this the case passes for the wrong reason: with the refusal
+    # gone, provenance_record() rejects a source_ref of None further down,
+    # names the same flag and also leaves the directory empty. A root that
+    # does not exist separates them, because the walk would reach it first.
+    r = subprocess.run([sys.executable, script, "--root", str(tmp / "absent"),
+                        "--summary", "", "--exclude", "matches-nothing",
+                        "--out", str(bare_dir / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("no --source-ref: the tree is never walked",
+          "--source-ref" in r.stderr and "absent" not in r.stderr,
+          r.stderr[-200:])
+
+    good = tmp / "good"
+    good.mkdir()
+    out = good / "chunks.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref, "--out", str(out)],
+                       capture_output=True, text=True)
+    check("with --source-ref: exit 0", r.returncode == 0,
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    names = sorted(p.name for p in good.iterdir())
+    check("a delivered corpus is exactly two files",
+          names == ["chunks.jsonl", "provenance.jsonl"], str(names))
+
+    prov = good / "provenance.jsonl"
+    lines = prov.read_text(encoding="utf-8").splitlines() if prov.exists() else []
+    check("the record is one line of JSON", len(lines) == 1, str(len(lines)))
+    record = json.loads(lines[0]) if len(lines) == 1 else {}
+    problems = md._schema.validate_provenance(record)
+    check("the record validates", problems == [], str(problems[:3]))
+
+    written = ([json.loads(line) for line
+                in out.read_text(encoding="utf-8").splitlines()]
+               if out.exists() else [])
+    check("corpus_build_id is recomputed from the chunks written",
+          bool(written) and record.get("corpus_build_id") == _rebuilt_id(written),
+          str(record.get("corpus_build_id")))
+    check("chunk_count matches the file beside the record",
+          bool(written) and record.get("chunk_count") == len(written),
+          f"{record.get('chunk_count')} vs {len(written)}")
+
+    # Read the governed version straight out of the frontmatter, with a looser
+    # pattern than the emitter's, so the record cannot agree with itself by
+    # construction: this is the fact, and the emitter has to meet it. Nothing
+    # here names a version, so a bump moves both sides at once.
+    declared = re.search(r'^\s*version:\s*"?([^"\s]+)"?\s*$',
+                         (ROOT / "skills" / "lemma" / "SKILL.md")
+                         .read_text(encoding="utf-8"), re.M)
+    check("chunker_version is the version the skill declares",
+          declared is not None
+          and record.get("chunker_version") == declared.group(1),
+          f"{record.get('chunker_version')!r} vs "
+          + (repr(declared.group(1)) if declared else "nothing in SKILL.md"))
+
+    check("every emitted chunk carries the stamped ref",
+          bool(written) and all(c.get("source_ref") == record.get("source_ref")
+                                for c in written),
+          str({c.get("source_ref") for c in written}))
+    check("every emitted chunk carries the stamped build identifier",
+          bool(written) and all(
+              c.get("corpus_build_id") == record.get("corpus_build_id")
+              for c in written),
+          str({c.get("corpus_build_id") for c in written}))
+
+    unstamped = md.chunk_tree(str(root), ["matches-nothing"], None)
+    check("chunk_tree leaves provenance unset",
+          all(c.corpus_build_id is None and c.source_ref is None
+              for c in unstamped))
+
+    compiler = record.get("compiler") or {}
+    check("no compiler applies to a Markdown corpus",
+          compiler.get("applicable") is False, str(compiler))
+    check("the absence carries the reason it is an absence",
+          isinstance(compiler.get("reason"), str)
+          and bool(compiler["reason"].strip()), str(compiler.get("reason")))
+    check("the record carries no compiler version at all",
+          "reported_version" not in compiler, str(sorted(compiler)))
+
+    alt = tmp / "alt"
+    alt.mkdir()
+    named = alt / "named.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref,
+                                 "--out", str(alt / "chunks.jsonl"),
+                                 "--provenance", str(named)],
+                       capture_output=True, text=True)
+    check("--provenance writes where it is told",
+          r.returncode == 0 and named.exists(),
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    check("--provenance leaves no record at the default path",
+          not (alt / "provenance.jsonl").exists(),
+          str(sorted(p.name for p in alt.iterdir())))
+
+    # The record's path is settled before the corpus is written, because both
+    # ways it can go wrong end in a directory a capture reads as whole holding
+    # a record of different chunks. Neither is caught by recomputing the
+    # identifier, which only ever compares a record with its own run's corpus.
+    same = tmp / "same"
+    same.mkdir()
+    collide = same / "chunks.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref, "--out", str(collide),
+                                 "--provenance", str(collide)],
+                       capture_output=True, text=True)
+    check("--provenance over --out is refused",
+          r.returncode != 0 and "--provenance" in r.stderr, r.stderr[-200:])
+    check("--provenance over --out leaves nothing behind",
+          list(same.iterdir()) == [],
+          str(sorted(p.name for p in same.iterdir())))
+
+    gone = tmp / "gone"
+    gone.mkdir()
+    r = subprocess.run(common + ["--source-ref", ref,
+                                 "--out", str(gone / "chunks.jsonl"),
+                                 "--provenance", str(gone / "absent" / "p.jsonl")],
+                       capture_output=True, text=True)
+    check("a record that cannot be written takes the corpus with it",
+          r.returncode != 0 and list(gone.iterdir()) == [],
+          f"rc={r.returncode} left={sorted(p.name for p in gone.iterdir())}")
+
+    # The second run selects less than the first, so the older record's
+    # identifier is one the newer corpus would not reproduce.
+    narrowed = [sys.executable, script, "--root", str(root),
+                "--summary", "", "--exclude", "b.md"]
+    stale = tmp / "stale"
+    stale.mkdir()
+    subprocess.run(common + ["--source-ref", ref, "--out",
+                             str(stale / "chunks.jsonl")],
+                   capture_output=True, text=True)
+    before = (stale / "provenance.jsonl").read_text(encoding="utf-8")
+    r = subprocess.run(narrowed + ["--source-ref", ref + "-again", "--out",
+                                   str(stale / "chunks.jsonl"),
+                                   "--provenance", str(tmp / "away.jsonl")],
+                       capture_output=True, text=True)
+    check("a redirected record beside an existing one is refused",
+          r.returncode != 0 and "already describes a corpus" in r.stderr
+          and "provenance.jsonl" in r.stderr, r.stderr[-200:])
+    kept = [json.loads(line) for line
+            in (stale / "chunks.jsonl").read_text(encoding="utf-8").splitlines()]
+    check("the refusal lands before the described corpus is overwritten",
+          _rebuilt_id(kept) == json.loads(before).get("corpus_build_id"),
+          f"{_rebuilt_id(kept)} vs {json.loads(before).get('corpus_build_id')}")
+
+    # A hard link is a second name for one inode, so it resolves to itself and
+    # the path comparison alone lets the record land on the corpus.
+    linked = tmp / "linked"
+    linked.mkdir()
+    subprocess.run(common + ["--source-ref", ref, "--out",
+                             str(linked / "chunks.jsonl"),
+                             "--provenance", str(tmp / "aside.jsonl")],
+                   capture_output=True, text=True)
+    os.link(linked / "chunks.jsonl", linked / "hard.jsonl")
+    r = subprocess.run(common + ["--source-ref", ref, "--out",
+                                 str(linked / "chunks.jsonl"),
+                                 "--provenance", str(linked / "hard.jsonl")],
+                       capture_output=True, text=True)
+    check("a hard link to --out is refused like --out itself",
+          r.returncode != 0 and "--provenance" in r.stderr, r.stderr[-200:])
+    check("the hard-linked corpus is still a corpus",
+          len((linked / "chunks.jsonl").read_text(encoding="utf-8")
+              .splitlines()) > 1,
+          str((linked / "chunks.jsonl").read_text(encoding="utf-8")[:80]))
+
+    # The name a stale record carries makes no difference to a reader who
+    # finds it beside a corpus it does not describe.
+    renamed = tmp / "renamed"
+    renamed.mkdir()
+    subprocess.run(common + ["--source-ref", ref, "--out",
+                             str(renamed / "chunks.jsonl"),
+                             "--provenance", str(renamed / "first.jsonl")],
+                   capture_output=True, text=True)
+    r = subprocess.run(narrowed + ["--source-ref", ref + "-again", "--out",
+                                   str(renamed / "chunks.jsonl"),
+                                   "--provenance", str(renamed / "second.jsonl")],
+                       capture_output=True, text=True)
+    check("a stale record is refused whatever name it carries",
+          r.returncode != 0 and "first.jsonl" in r.stderr, r.stderr[-200:])
+    check("no second record joined the first",
+          not (renamed / "second.jsonl").exists(),
+          str(sorted(p.name for p in renamed.iterdir())))
+
+    # The scan's bounds. A record this tool wrote under another suffix is the
+    # same record; a neighbour it cannot read is one it cannot rule out; and a
+    # first line that is JSON but not an object is neither a record nor a
+    # crash.
+    suffix = tmp / "suffix"
+    suffix.mkdir()
+    subprocess.run(common + ["--source-ref", ref, "--out",
+                             str(suffix / "chunks.jsonl"),
+                             "--provenance", str(suffix / "rec.json")],
+                   capture_output=True, text=True)
+    r = subprocess.run(narrowed + ["--source-ref", ref + "-again", "--out",
+                                   str(suffix / "chunks.jsonl"),
+                                   "--provenance", str(suffix / "rec2.json")],
+                       capture_output=True, text=True)
+    check("a stale record is refused whatever suffix it carries",
+          r.returncode != 0 and "rec.json" in r.stderr, r.stderr[-200:])
+
+    for payload in ("[1, 2, 3]", '"a string"', "42", "null"):
+        odd = tmp / f"odd{abs(hash(payload)) % 9973}"
+        odd.mkdir()
+        (odd / "neighbour.jsonl").write_text(payload + "\n", encoding="utf-8")
+        r = subprocess.run(common + ["--source-ref", ref, "--out",
+                                     str(odd / "chunks.jsonl")],
+                           capture_output=True, text=True)
+        check(f"a neighbour whose first line is {payload} is not a record",
+              r.returncode == 0 and "Traceback" not in r.stderr,
+              f"rc={r.returncode} stderr={r.stderr[-160:]}")
+
+    unreadable = tmp / "unreadable"
+    unreadable.mkdir()
+    blocked = unreadable / "blocked.jsonl"
+    blocked.write_text("{}\n", encoding="utf-8")
+    os.chmod(blocked, 0o000)
+    try:
+        r = subprocess.run(common + ["--source-ref", ref, "--out",
+                                     str(unreadable / "chunks.jsonl")],
+                           capture_output=True, text=True)
+        check("a neighbour that cannot be read is refused, not passed over",
+              r.returncode != 0 and "cannot be read" in r.stderr,
+              r.stderr[-200:])
+        check("nothing was delivered beside what could not be ruled out",
+              not (unreadable / "chunks.jsonl").exists(),
+              str(sorted(p.name for p in unreadable.iterdir())))
+    finally:
+        os.chmod(blocked, 0o644)
+
+
+def test_recorded_case_range_is_current() -> None:
+    print("\nM27 \u2014 the recorded case range is the one the suites print")
+    # Hand-maintained prose about generated numbers goes stale the next time
+    # anyone adds a case, which is how it went stale twice running. Read both
+    # sides instead: the highest header each suite declares, against the
+    # bounds INVARIANTS.md records. Adding a case now moves the note or fails
+    # here, and never ships a range that disagrees with the suite.
+    import re as _re
+    note = (ROOT / "INVARIANTS.md").read_text(encoding="utf-8")
+    for suite, letter in (("test_solidity.py", "I"), ("test_markdown.py", "M")):
+        source = (HERE / suite).read_text(encoding="utf-8")
+        printed = [int(n) for n in
+                   _re.findall(rf'print\("\\n{letter}([0-9]+) ', source)]
+        recorded = _re.search(
+            rf"`{suite}` prints `{letter}[0-9]+`\s*\n?\s*through `{letter}([0-9]+)`",
+            note)
+        check(f"INVARIANTS.md records {suite}'s highest case",
+              bool(printed) and recorded is not None
+              and int(recorded.group(1)) == max(printed),
+              f"recorded {recorded.group(1) if recorded else 'nothing'} "
+              f"vs printed {max(printed) if printed else 'nothing'}")
+
+
+def test_delivery_refusals(tmp: pathlib.Path) -> None:
+    print("\nM28 \u2014 every way a delivery can refuse, refuses")
+    # Three failure exits deliver() and skill_version() carry that no case
+    # reached. Each was driven by hand when it was written and then left with
+    # nothing holding it: removing all three left every suite green while the
+    # last two together shipped a record the validator itself rejects.
+    script = str(ROOT / "chunkers" / "markdown.py")
+    root = tmp / "src"
+    root.mkdir()
+    (root / "a.md").write_text(f"# A\n\n{LONG}", encoding="utf-8")
+    common = [sys.executable, script, "--root", str(root),
+              "--summary", "", "--exclude", "matches-nothing"]
+    ref = "example/corpus@" + "e" * 40
+
+    # The recomputed identifier is the step's central claim. /dev/null takes
+    # the write and returns nothing, so the file does not hold what was
+    # written to it and the digest cannot agree.
+    devnull = tmp / "devnull"
+    devnull.mkdir()
+    (devnull / "chunks.jsonl").symlink_to("/dev/null")
+    r = subprocess.run(common + ["--source-ref", ref,
+                                 "--out", str(devnull / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("a corpus that does not digest to its record is refused",
+          r.returncode != 0 and "does not digest to the identifier" in r.stderr,
+          r.stderr[-200:])
+    check("and the corpus is taken away rather than delivered",
+          not (devnull / "chunks.jsonl").exists(),
+          str(sorted(p.name for p in devnull.iterdir())))
+    # The handler around deliver() is what turns a raise into a diagnosis.
+    # Without it the same refusal still exits nonzero, so only the shape of
+    # the output tells the two apart.
+    check("a refused delivery diagnoses rather than traces back",
+          "FATAL:" in r.stderr and "Traceback" not in r.stderr,
+          r.stderr[:200])
+
+    # An incomplete record refuses before anything reaches disk. Nothing on
+    # the command line reaches this today -- an empty tree is refused earlier,
+    # for zero chunks -- so it is driven where it lives.
+    # A class body does not close over the enclosing function's locals, so
+    # the paths are passed in rather than read from the surrounding scope.
+    class _Args:
+        def __init__(self, source, target):
+            self.root, self.out, self.provenance = str(source), str(target), None
+            self.source_ref = "example/corpus@" + "e" * 40
+
+    (tmp / "unreached").mkdir()
+    kept = md._schema.validate_provenance
+    md._schema.validate_provenance = lambda record: ["invented fault"]
+    try:
+        md.deliver(md.chunk_tree(str(root), ["matches-nothing"], None),
+                   _Args(root, tmp / "unreached" / "chunks.jsonl"))
+        check("an incomplete record is refused before anything is written",
+              False, "delivered anyway")
+    except md.ChunkError as e:
+        check("an incomplete record is refused before anything is written",
+              "invented fault" in str(e), str(e)[:120])
+    finally:
+        md._schema.validate_provenance = kept
+    check("nothing was written by the refused delivery",
+          list((tmp / "unreached").iterdir()) == [],
+          str(sorted(p.name for p in (tmp / "unreached").iterdir())))
+
+    # The governed version is read, so a tree with no SKILL.md to read has to
+    # refuse rather than record an empty one.
+    stripped = tmp / "stripped"
+    (stripped / "chunkers").mkdir(parents=True)
+    shutil.copy(ROOT / "chunkers" / "markdown.py", stripped / "chunkers")
+    shutil.copy(ROOT / "schema.py", stripped)
+    out = tmp / "noskill"
+    out.mkdir()
+    r = subprocess.run([sys.executable, str(stripped / "chunkers" / "markdown.py"),
+                        "--root", str(root), "--summary", "",
+                        "--exclude", "matches-nothing", "--source-ref", ref,
+                        "--out", str(out / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("a tree with no governed version to read refuses",
+          r.returncode != 0 and "no governed version" in r.stderr,
+          r.stderr[-200:])
+    check("and leaves no corpus behind", list(out.iterdir()) == [],
+          str(sorted(p.name for p in out.iterdir())))
+
+
+def test_chunkers_share_one_provenance_mechanism() -> None:
+    print("\nM26 \u2014 both chunkers carry the same provenance machinery")
+    # Every refusal above is driven through markdown.py, and solidity.py holds
+    # its own copy of the same functions. Comparing the text is what says the
+    # drive covers both: a divergence here is a refusal that exists in one
+    # chunker and not the other, and nothing else would report it.
+    import re as _re
+    shared = ("skill_version", "corpus_build_id", "_same_file",
+              "_records_beside", "record_path")
+    source = {name: (ROOT / "chunkers" / f"{name}.py").read_text(encoding="utf-8")
+              for name in ("markdown", "solidity")}
+    for fn in shared:
+        cut = [_re.search(rf"^def {fn}\(.*?(?=^\n\n|^# ---|\Z)",
+                          source[name], _re.S | _re.M) for name in ("markdown", "solidity")]
+        check(f"{fn}() is the same in both chunkers",
+              all(cut) and cut[0].group(0) == cut[1].group(0),
+              "missing" if not all(cut) else "the two copies have diverged")
+
+    # deliver() differs at the head, where each chunker assembles its own
+    # record, and is identical from the stamp onward. That tail holds both
+    # unlinks -- the digest disagreement and the record that could not be
+    # written -- so it is the half worth holding together, and the half no
+    # compiler-free case can drive through the Solidity CLI.
+    tails = []
+    for name in ("markdown", "solidity"):
+        whole = _re.search(r"^def deliver\(.*?(?=^\n\n|^# ---|\Z)",
+                           source[name], _re.S | _re.M)
+        body = whole.group(0) if whole else ""
+        mark = "    _schema.stamp(chunks,"
+        tails.append(body[body.index(mark):] if mark in body else None)
+    check("the delivery tail is the same in both chunkers",
+          all(tails) and tails[0] == tails[1],
+          "missing" if not all(tails) else "the two copies have diverged")
+
+
 def main() -> int:
     test_fences()
     test_byte_exact()
@@ -940,6 +1357,12 @@ def main() -> int:
     test_lazy_list_continuation()
     test_multiline_code_span()
     test_strong_section_boundaries()
+    with tempfile.TemporaryDirectory() as td:
+        test_delivery_refusals(pathlib.Path(td))
+    test_chunkers_share_one_provenance_mechanism()
+    test_recorded_case_range_is_current()
+    with tempfile.TemporaryDirectory() as td:
+        test_provenance_emitted(pathlib.Path(td))
     print(f"\n{len(FAILURES)} failure(s)" + (": " + ", ".join(FAILURES) if FAILURES else ""))
     return len(FAILURES)
 

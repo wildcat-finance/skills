@@ -64,6 +64,7 @@ python3 chunkers/solidity.py \
   --input path/to/standard-input.json \
   --solc ./solc-container \
   --include 'src/**' \
+  --source-ref 'https://github.com/owner/repo@<commit>' \
   --out chunks.jsonl
 ```
 
@@ -79,6 +80,7 @@ python3 chunkers/markdown.py \
   --root docs \
   --summary SUMMARY.md \
   --exclude SUMMARY.md \
+  --source-ref 'https://github.com/owner/repo@<commit>' \
   --out chunks.jsonl
 ```
 
@@ -88,6 +90,38 @@ the corpus.
 
 Both commands validate their output before writing it. A non-zero exit means no
 JSONL file should be used.
+
+## The record beside the chunks
+
+Both chunkers take two more flags:
+
+- `--source-ref REF` names what was chunked: a tag, a commit or a URL. It is
+  required whenever `--out` is given. A run without it exits non-zero and
+  writes nothing, because a corpus nobody can trace back to a source is the one
+  thing a delivered corpus must not be. The ref is recorded as given, less any
+  userinfo in a URL; nothing fetches it and nothing checks that it names a real
+  object.
+- `--provenance PATH` puts the record somewhere other than `provenance.jsonl`
+  beside the file `--out` names.
+
+A delivered corpus is therefore two files in one directory. `chunks.jsonl`
+carries what a citation quotes; `provenance.jsonl` carries one line of JSON
+saying what produced it: the schema identity, which chunker ran and at which
+governed version, the source ref, a build identifier recomputed from the chunks
+actually written, how many chunks are beside it, the digest of every input, the
+selection (the include patterns and the source units present, selected and
+excluded), and the compiler.
+
+The compiler entry is the part worth reading twice. Solidity records the
+`--solc` argument as given, the version the compiler reported for itself, and
+either the `--expect-solc` pin or the reason nothing was pinned. A recorded
+pin is named a prefix pin, because that is how the gate compares. Markdown
+records that no compiler applies, with the reason. No field is ever written as
+`unknown`: an absent value is recorded as an absence that says why.
+
+Every chunk in `chunks.jsonl` also carries the source ref and the build
+identifier, stamped by the pipeline above the chunker rather than by the
+chunker itself.
 
 ## Output
 
@@ -100,7 +134,8 @@ are:
 - `synthesised`: true when `display_text` was assembled and must not be treated
   as a verbatim quotation.
 
-The calling pipeline can add build provenance with `schema.stamp()`.
+Build provenance is applied with `schema.stamp()` from the pipeline above
+the chunker, which is why `chunk()` leaves those fields unset.
 
 ## Checks
 
