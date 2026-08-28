@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 909,
-  "total_bytes": 20142951,
+  "total_bytes": 20143104,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4333,9 +4333,9 @@
       "source": "plugins/lemma/skills/lemma/EVOLUTION.md"
     },
     {
-      "bytes": 10388,
+      "bytes": 10541,
       "path": "plugins/lemma/skills/lemma/SKILL.md",
-      "sha256": "d6f3ff29811f896762c78591775e8f9fd2f7063d0fc34897bcb6c204f7d1df80",
+      "sha256": "b4587fffb07642dd6f09a1bb9a82b4c07bd1b518ad202d198fa0c43118227d12",
       "source": "plugins/lemma/skills/lemma/SKILL.md"
     },
     {

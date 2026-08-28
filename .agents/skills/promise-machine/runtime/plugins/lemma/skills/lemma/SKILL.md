@@ -135,7 +135,9 @@ python3 plugins/ariadne/scripts/ariadne.py capture-dataset \
 Four flags are the operator's: `--name`, `--out`, and either
 `--first-release-reason` or the `--previous` and `--previous-name` pair that
 names an earlier release. Everything else was printed, `--release` included, so
-compose nothing by hand. The Markdown chunker records its input paths relative
+compose nothing by hand. Those flags describe the corpus as it stood when they
+were printed, so a capture over a directory whose contents changed in between
+binds the new bytes. The Markdown chunker records its input paths relative
 to `--root`, so run the capture from there.
 
 Lemma writes no statement and signs nothing. It records what produced a corpus
