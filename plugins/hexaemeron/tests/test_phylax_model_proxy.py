@@ -1377,6 +1377,22 @@ class ProviderBoundaryTests(unittest.TestCase):
             self.credential.encode("ascii"), canonical_json(events)
         )
 
+    def test_provider_session_pins_limits_against_post_activation_mutation(self):
+        maximum = self.policy.document["limits"]["max_response_bytes"]
+        body = synthetic_provider_response("hello", "HELLO")
+        body += b" " * (maximum - len(body) + 1)
+        response = BufferedHTTPSResponse(body)
+        provider, request, _exchange, _response = self.session(response=response)
+
+        self.policy.document["limits"]["max_response_bytes"] = (
+            self.profile.limit_ceilings["max_response_bytes"]
+        )
+
+        with self.assertRaisesRegex(PolicyError, "MP310"):
+            provider.generate(request)
+        self.assertEqual(0, response.reads)
+        self.assertTrue(response.closed)
+
     def test_foreign_or_unadmitted_request_never_reads_credential(self):
         reads = []
         response = self.response()

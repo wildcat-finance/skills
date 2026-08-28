@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
 from .canonical import (
@@ -18,7 +19,7 @@ from .canonical import (
 )
 from .errors import PolicyError, refuse
 from .framing import FramingCore, TextRequest
-from .policy import CompiledPolicy, compile_policy_file
+from .policy import CompiledPolicy, compile_policy, compile_policy_file
 from .profiles import ProviderProfile, resolve_profile
 from .transport import (
     HTTPSConnector,
@@ -134,13 +135,12 @@ def _contains_secret(value: Any, credential: str) -> bool:
 def _parse_provider_response(
     raw: bytes,
     profile: ProviderProfile,
-    policy: CompiledPolicy,
+    limits: Mapping[str, int],
     request: TextRequest,
     credential: str,
 ) -> tuple[str, int, int]:
     if credential.encode("ascii") in raw:
         refuse("MP327", "provider.response.secret")
-    limits = policy.document["limits"]
     try:
         value = parse_json_bytes(
             raw,
@@ -211,12 +211,13 @@ class ProviderSession:
         credential_source: CredentialSource = environment_credential,
     ):
         self._framing = FramingCore(policy)
-        self._profile = resolve_profile(policy.profile)
+        activation = compile_policy(policy.accepted_job_bytes)
+        self._profile = resolve_profile(activation.profile)
         if connector.profile_identifier != self._profile.identifier:
             refuse("MP300", "provider.profile")
         if not callable(credential_source):
             refuse("MP321", "provider.credential")
-        self._policy = policy
+        self._limits = MappingProxyType(dict(activation.document["limits"]))
         self._connector = connector
         self._credential_source = credential_source
         self._admitted: dict[int, TextRequest] = {}
@@ -242,7 +243,7 @@ class ProviderSession:
         output_tokens: int = 0,
         duration_ns: int = 0,
     ) -> None:
-        if len(self._events) < self._policy.document["limits"]["max_requests"] + 1:
+        if len(self._events) < self._limits["max_requests"] + 1:
             self._events.append(
                 ProviderEvent(
                     profile=self._profile.identifier,
@@ -309,19 +310,17 @@ class ProviderSession:
 
             try:
                 body = _provider_body(self._profile, request)
-                if len(body) > self._policy.document["limits"]["max_request_bytes"]:
+                if len(body) > self._limits["max_request_bytes"]:
                     refuse("MP322", "provider.request.bytes")
                 result = self._connector.send(
                     body,
                     credential,
-                    max_response_bytes=self._policy.document["limits"][
-                        "max_response_bytes"
-                    ],
+                    max_response_bytes=self._limits["max_response_bytes"],
                 )
                 output, input_tokens, output_tokens = _parse_provider_response(
                     result.body,
                     self._profile,
-                    self._policy,
+                    self._limits,
                     request,
                     credential,
                 )

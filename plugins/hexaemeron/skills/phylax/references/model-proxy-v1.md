@@ -191,6 +191,10 @@ request refuses before the credential source is called. A provider refusal
 poisons the session rather than permitting a retry against an ambiguous
 provider state. A framing refusal also poisons the session and clears every
 pending provider admission before another credential read or exchange.
+After validating the supplied compiled policy against its captured
+accepted-job evidence, the session replays those immutable evidence bytes into
+a private limit snapshot. Later mutation of the caller's policy document cannot
+widen request, response, parser, token, or event bounds.
 
 After admission, the session reads the credential from the environment name
 fixed by the registered profile. The synthetic request body is canonical JSON
@@ -492,4 +496,5 @@ headers and byte floods, closed response JSON, usage disagreement, secret
 echo, raw-error sanitisation, connection close, and the absence of a live
 socket call. They also show that a framing refusal blocks every pending
 provider call, one job connector keeps its first address pin across requests,
+that post-activation caller mutation cannot widen the captured policy limits,
 and a response refusal retains confirmed content-free disclosure counts.
