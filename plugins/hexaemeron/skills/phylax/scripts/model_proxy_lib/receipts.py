@@ -119,6 +119,17 @@ def _nonnegative_count(value: object, field: str) -> int:
     return value
 
 
+def _close_after_refusal(descriptor: int | None) -> None:
+    """Attempt one descriptor close without replacing the fixed refusal."""
+
+    if descriptor is None:
+        return
+    try:
+        os.close(descriptor)
+    except OSError:
+        pass
+
+
 def _open_parent(path: str | os.PathLike[str]) -> tuple[int, str, str]:
     """Open every parent component without following a symbolic link."""
 
@@ -128,14 +139,17 @@ def _open_parent(path: str | os.PathLike[str]) -> tuple[int, str, str]:
         refuse("MP407", "receipt.path")
     if not isinstance(raw, str) or not raw or "\x00" in raw:
         refuse("MP407", "receipt.path")
-    raw_parts = Path(raw).parts
+    try:
+        raw_parts = Path(raw).parts
+        absolute_path = os.path.abspath(raw)
+        parts = Path(absolute_path).parts
+    except (OSError, ValueError):
+        refuse("MP407", "receipt.path")
     raw_components = raw_parts[1:] if os.path.isabs(raw) else raw_parts
     if not raw_components or any(
         part in {"", ".", ".."} for part in raw_components
     ):
         refuse("MP407", "receipt.path")
-    absolute_path = os.path.abspath(raw)
-    parts = Path(absolute_path).parts
     if not parts:
         refuse("MP407", "receipt.path")
     components = parts[1:]
@@ -150,18 +164,23 @@ def _open_parent(path: str | os.PathLike[str]) -> tuple[int, str, str]:
         | getattr(os, "O_CLOEXEC", 0)
         | getattr(os, "O_NOFOLLOW", 0)
     )
-    descriptor: int | None = None
     try:
         descriptor = os.open("/", directory_flags)
-        for component in components[:-1]:
-            child = os.open(component, directory_flags, dir_fd=descriptor)
-            os.close(descriptor)
-            descriptor = child
-        return descriptor, components[-1], absolute_path
-    except OSError:
-        if descriptor is not None:
-            os.close(descriptor)
+    except (OSError, ValueError):
         refuse("MP407", "receipt.path")
+    for component in components[:-1]:
+        try:
+            child = os.open(component, directory_flags, dir_fd=descriptor)
+        except (OSError, ValueError):
+            _close_after_refusal(descriptor)
+            refuse("MP407", "receipt.path")
+        try:
+            os.close(descriptor)
+        except OSError:
+            _close_after_refusal(child)
+            refuse("MP407", "receipt.path")
+        descriptor = child
+    return descriptor, components[-1], absolute_path
 
 
 class ReceiptSink:
@@ -213,10 +232,9 @@ class ReceiptSink:
                 or stat.S_IMODE(status.st_mode) != 0o600
             ):
                 raise OSError("unsafe receipt target")
-        except OSError:
-            if descriptor is not None:
-                os.close(descriptor)
-            os.close(parent)
+        except (OSError, ValueError):
+            _close_after_refusal(descriptor)
+            _close_after_refusal(parent)
             refuse("MP407", "receipt.path")
         self._descriptor = descriptor
         self._parent_descriptor = parent

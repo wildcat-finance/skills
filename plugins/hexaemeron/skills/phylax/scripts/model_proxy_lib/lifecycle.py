@@ -521,11 +521,6 @@ class LifecycleController:
                 code = self._terminal.code
                 self._release_locked(reservation, rollback=False)
                 refuse(code, "lifecycle.late_response")
-            self._expiry_locked()
-            if self._terminal is not None:
-                code = self._terminal.code
-                self._release_locked(reservation, rollback=False)
-                refuse(code, "lifecycle.late_response")
             if (
                 not isinstance(event, ProviderEvent)
                 or event.request_bytes != reservation.request_bytes
@@ -547,6 +542,11 @@ class LifecycleController:
             self._provider_disclosed = True
             self._output_tokens += event.output_tokens
             self._response_bytes += event.response_bytes
+            self._expiry_locked()
+            if self._terminal is not None:
+                code = self._terminal.code
+                self._release_locked(reservation, rollback=False)
+                refuse(code, "lifecycle.late_response")
             self._release_locked(reservation, rollback=False)
 
     def fail(
@@ -598,7 +598,12 @@ class LifecycleController:
                     and event.disclosure_state == "provider-only"
                 ):
                     self._response_bytes += event.response_bytes
-            snapshot = self._terminal_locked(code, disclosure_state)
+            if self._terminal is None:
+                snapshot = self._expiry_locked()
+                if snapshot is None:
+                    snapshot = self._terminal_locked(code, disclosure_state)
+            else:
+                snapshot = self._terminal
             self._release_locked(reservation, rollback=False)
             return snapshot
 
@@ -611,6 +616,9 @@ class LifecycleController:
 
     def cancel(self) -> TerminalSnapshot:
         with self._lock:
+            expired = self._expiry_locked()
+            if expired is not None:
+                return expired
             state = self._disclosure_state_locked()
             return self._terminal_locked("MP406", state)
 

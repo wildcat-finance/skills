@@ -2613,6 +2613,57 @@ class LifecycleTests(unittest.TestCase):
                 ["activation", "terminal"], [record["event"] for record in records]
             )
 
+    def test_cancellation_observes_elapsed_expiry_before_terminalizing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            monotonic = MutableClock(self.START_MONOTONIC_NS)
+            closer_codes = []
+            runtime_box = {}
+
+            def closer():
+                closer_codes.append(runtime_box["runtime"].terminal.code)
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response("unused", "UNUSED")
+                    )
+                ),
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=monotonic,
+                wall_clock=MutableClock(self.START_WALL_NS),
+                io_closer=closer,
+            )
+            runtime_box["runtime"] = runtime
+            monotonic.set(runtime._controller.elapsed_deadline_ns)
+
+            runtime.cancel()
+
+            self.assertEqual("MP405", runtime.terminal.code)
+            self.assertEqual(["MP405"], closer_codes)
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual("MP405", records[-1]["outcome_code"])
+
+    def test_cancellation_observes_absolute_expiry_before_terminalizing(self):
+        wall = MutableClock(self.START_WALL_NS)
+        controller = self.controller(wall=wall)
+        wall.set(controller.absolute_expiry_ns)
+
+        snapshot = controller.cancel()
+
+        self.assertEqual("MP404", snapshot.code)
+        self.assertEqual("MP404", controller.terminal.code)
+
     def test_terminal_cleanup_discards_framing_content_references(self):
         prompt = "framing cleanup prompt"
         suffixes = (
@@ -3852,6 +3903,172 @@ class LifecycleTests(unittest.TestCase):
                     max_records=3,
                 )
 
+    def test_receipt_parent_walk_close_failure_runs_runtime_cleanup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            receipt_parent = root / "nested"
+            receipt_parent.mkdir()
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response("unused", "UNUSED")
+                    )
+                ),
+            )
+            closer = mock.Mock()
+            closed_sessions = []
+            original_provider_close = ProviderSession.close
+            original_close = os.close
+            close_failed = False
+
+            def observed_provider_close(session):
+                closed_sessions.append(session)
+                original_provider_close(session)
+
+            def failed_close(descriptor):
+                nonlocal close_failed
+                original_close(descriptor)
+                if not close_failed:
+                    close_failed = True
+                    raise OSError("simulated parent-walk close failure")
+
+            with mock.patch.object(
+                ProviderSession,
+                "close",
+                autospec=True,
+                side_effect=observed_provider_close,
+            ), mock.patch(
+                "model_proxy_lib.receipts.os.close", side_effect=failed_close
+            ):
+                try:
+                    ModelProxyRuntime(
+                        self.policy,
+                        connector,
+                        receipt_parent / "receipts.jsonl",
+                        credential_source=lambda _name: self.credential,
+                        monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                        wall_clock=MutableClock(self.START_WALL_NS),
+                        io_closer=closer,
+                    )
+                    code = None
+                except Exception as error:  # Keep parent replay assertion-only.
+                    code = getattr(error, "code", None)
+
+            self.assertEqual("MP407", code)
+            self.assertEqual(1, len(closed_sessions))
+            self.assertIsNone(closed_sessions[0]._credential_source)
+            self.assertIsNone(closed_sessions[0]._connector)
+            closer.assert_called_once_with()
+
+    def test_receipt_target_setup_close_failure_runs_runtime_cleanup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response("unused", "UNUSED")
+                    )
+                ),
+            )
+            closer = mock.Mock()
+            closed_sessions = []
+            original_provider_close = ProviderSession.close
+            original_close = os.close
+            close_failed = False
+
+            def observed_provider_close(session):
+                closed_sessions.append(session)
+                original_provider_close(session)
+
+            def failed_close(descriptor):
+                nonlocal close_failed
+                original_close(descriptor)
+                if not close_failed:
+                    close_failed = True
+                    raise OSError("simulated target-setup close failure")
+
+            with mock.patch.object(
+                ProviderSession,
+                "close",
+                autospec=True,
+                side_effect=observed_provider_close,
+            ), mock.patch(
+                "model_proxy_lib.receipts.os.fchmod",
+                side_effect=OSError("simulated target setup failure"),
+            ), mock.patch(
+                "model_proxy_lib.receipts.os.close", side_effect=failed_close
+            ):
+                try:
+                    ModelProxyRuntime(
+                        self.policy,
+                        connector,
+                        root / "receipts.jsonl",
+                        credential_source=lambda _name: self.credential,
+                        monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                        wall_clock=MutableClock(self.START_WALL_NS),
+                        io_closer=closer,
+                    )
+                    code = None
+                except Exception as error:  # Keep parent replay assertion-only.
+                    code = getattr(error, "code", None)
+
+            self.assertEqual("MP407", code)
+            self.assertEqual(1, len(closed_sessions))
+            self.assertIsNone(closed_sessions[0]._credential_source)
+            self.assertIsNone(closed_sessions[0]._connector)
+            closer.assert_called_once_with()
+
+    def test_receipt_path_encoding_failure_runs_runtime_cleanup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response("unused", "UNUSED")
+                    )
+                ),
+            )
+            closer = mock.Mock()
+            closed_sessions = []
+            original_provider_close = ProviderSession.close
+
+            def observed_provider_close(session):
+                closed_sessions.append(session)
+                original_provider_close(session)
+
+            invalid_path = os.fspath(root) + os.sep + chr(0xD800)
+            with mock.patch.object(
+                ProviderSession,
+                "close",
+                autospec=True,
+                side_effect=observed_provider_close,
+            ):
+                try:
+                    ModelProxyRuntime(
+                        self.policy,
+                        connector,
+                        invalid_path,
+                        credential_source=lambda _name: self.credential,
+                        monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                        wall_clock=MutableClock(self.START_WALL_NS),
+                        io_closer=closer,
+                    )
+                    code = None
+                except Exception as error:  # Keep parent replay assertion-only.
+                    code = getattr(error, "code", None)
+
+            self.assertEqual("MP407", code)
+            self.assertEqual(1, len(closed_sessions))
+            self.assertIsNone(closed_sessions[0]._credential_source)
+            self.assertIsNone(closed_sessions[0]._connector)
+            closer.assert_called_once_with()
+
     def test_receipt_restrictive_umask_short_partial_and_replacement_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "umask.jsonl"
@@ -4112,6 +4329,121 @@ class LifecycleTests(unittest.TestCase):
                 [record["event"] for record in records],
             )
             self.assertEqual("MP405", records[-1]["outcome_code"])
+
+    def test_post_provider_expiry_keeps_confirmed_success_usage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            monotonic = MutableClock(self.START_MONOTONIC_NS)
+            input_text = "late successful response"
+            response = BufferedHTTPSResponse(
+                synthetic_provider_response(input_text, "LATE")
+            )
+            runtime_box = {}
+
+            def exchange(_request, _context, _timeout):
+                monotonic.set(runtime_box["runtime"]._controller.elapsed_deadline_ns)
+                return response
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=monotonic,
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            runtime_box["runtime"] = runtime
+            request = runtime.feed(request_frame(input_text))[0]
+            runtime.finish_input()
+
+            try:
+                guest_response = runtime.generate(request)
+                code = None
+            except PolicyError as error:
+                guest_response = None
+                code = error.code
+
+            event = runtime.provider_events[-1]
+            self.assertEqual(("MP405", None), (code, guest_response))
+            self.assertEqual("MP000", event.code)
+            self.assertGreater(event.response_bytes, 0)
+            self.assertGreater(event.output_tokens, 0)
+            self.assertEqual("MP405", runtime.terminal.code)
+            self.assertEqual(
+                (event.response_bytes, event.output_tokens),
+                (
+                    runtime.terminal.counts["response_bytes"],
+                    runtime.terminal.counts["output_tokens"],
+                ),
+            )
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual("MP405", records[-1]["outcome_code"])
+            self.assertEqual(
+                (event.response_bytes, event.output_tokens),
+                (
+                    records[-1]["counts"]["response_bytes"],
+                    records[-1]["counts"]["output_tokens"],
+                ),
+            )
+
+    def test_post_provider_refusal_reports_the_expiry_winner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            monotonic = MutableClock(self.START_MONOTONIC_NS)
+            input_text = "late refusing response"
+            response = BufferedHTTPSResponse(b"{")
+            runtime_box = {}
+
+            def exchange(_request, _context, _timeout):
+                monotonic.set(runtime_box["runtime"]._controller.elapsed_deadline_ns)
+                return response
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=monotonic,
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            runtime_box["runtime"] = runtime
+            request = runtime.feed(request_frame(input_text))[0]
+            runtime.finish_input()
+
+            try:
+                guest_response = runtime.generate(request)
+                code = None
+            except PolicyError as error:
+                guest_response = None
+                code = error.code
+
+            event = runtime.provider_events[-1]
+            self.assertEqual(("MP405", None), (code, guest_response))
+            self.assertEqual("MP323", event.code)
+            self.assertEqual(1, event.response_bytes)
+            self.assertEqual("MP405", runtime.terminal.code)
+            self.assertEqual(1, runtime.terminal.counts["response_bytes"])
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual("MP405", records[-1]["outcome_code"])
+            self.assertEqual(1, records[-1]["counts"]["response_bytes"])
 
     def test_clock_failure_after_request_receipt_prevents_disclosure(self):
         with tempfile.TemporaryDirectory() as directory:

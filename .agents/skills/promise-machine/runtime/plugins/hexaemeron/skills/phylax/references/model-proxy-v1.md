@@ -339,10 +339,13 @@ runtime registers each durable request receipt in a pending-turn set and gives
 the provider session one turn at a time in guest sequence order. Selection
 uses the lowest pending sequence rather than the execution lock's unspecified
 waiter order. It commits or refuses that turn against its own provider event
-before the next turn can cross the provider boundary. A refusing provider
-event contributes its confirmed response bytes, including the one over-limit
-sentinel, to the first terminal snapshot; a response arriving after an earlier
-terminal transition cannot rewrite that already durable snapshot.
+before the next turn can cross the provider boundary. When no terminal
+transition has won, a successful provider event contributes its confirmed
+response bytes and validated output tokens before the post-provider clock
+check. A refusing event likewise contributes its confirmed response bytes,
+including the one over-limit sentinel. Expiry observed by that check wins the
+terminal outcome without dropping those counts. A response arriving after an
+earlier terminal transition cannot rewrite that already durable snapshot.
 
 ## Cancellation, expiry, and publication
 
@@ -374,18 +377,23 @@ cancellation closes the in-flight request before a provider response returns.
 
 `poll()` applies the first expired boundary. If both boundaries have passed,
 the one whose activation-time interval was shorter supplies the fixed outcome.
-Trusted cancellation uses the same lock. Both transitions mark the controller
-terminal, erase the provider session's credential source, connector reference,
-pending admissions, and content-bearing framing buffers and issued-request
-references, and then invoke the trusted I/O closer. Credential and connector
-references are erased in a `finally` path, and a provider or framing cleanup
-exception cannot skip the trusted I/O cleanup attempt. Admission cannot cross
-that linearisation point. A response that returns after cancellation or expiry
-is closed by the provider component and discarded instead of entering guest
-publication. Any cleanup failure refuses with `MP407`; it produces neither a
-successful terminal receipt nor a guest response. The embedding supervisor
-remains responsible for terminating the per-job process. These component
-checks do not prove that process exit.
+Trusted cancellation checks both expiry domains under the same lock before it
+can set `MP406`, so a deadline already reached remains the terminal winner.
+Both transitions mark the controller terminal, erase the provider session's
+credential source, connector reference, pending admissions, and content-bearing
+framing buffers and issued-request references, and then invoke the trusted I/O
+closer. Credential and connector references are erased in a `finally` path, and
+a provider or framing cleanup exception cannot skip the trusted I/O cleanup
+attempt. Admission cannot cross that linearisation point. A response that
+returns after cancellation or expiry is closed by the provider component and
+discarded instead of entering guest publication. Any cleanup failure refuses
+with `MP407` and produces no guest response. Provider or trusted-I/O cleanup
+failure occurs before the terminal write and therefore produces no successful
+terminal receipt. If the terminal line was already synchronised before the
+receipt descriptor's close reports failure, that line still records the first
+lifecycle outcome; the close refusal cannot rewrite durable evidence. The
+embedding supervisor remains responsible for terminating the per-job process.
+These component checks do not prove that process exit.
 
 Completion, cancellation, and expiry share one publication lock in
 `ModelProxyRuntime`. Completion either commits before the terminal transition,
@@ -408,7 +416,10 @@ If that initial creation or the activation-record write refuses, runtime
 construction erases the provider session's credential and connector references,
 attempts any available sink close, and invokes the trusted I/O closer before
 propagating the original refusal. A provider cleanup exception cannot skip the
-remaining cleanup attempts.
+remaining cleanup attempts. A path-encoding or descriptor-close failure while
+walking the parent chain or refusing target setup cannot replace the fixed
+`MP407` result or skip those runtime cleanup attempts; every other descriptor
+already acquired for that failed construction is still given one close attempt.
 It walks every parent directory and opens the final target with no-follow
 flags. A symbolic link, directory, existing path, missing parent, replacement,
 or changed inode refuses. Keeping the descriptor open is not enough. The sink
@@ -656,7 +667,7 @@ JobSpec bytes, job id, or exception text.
 | `MP404` | Accepted absolute expiry has arrived | Lifecycle expiry |
 | `MP405` | Monotonic deadline or clock value refuses | Lifecycle expiry |
 | `MP406` | Trusted cancellation made the job terminal | Lifecycle cancellation |
-| `MP407` | Receipt path, count, state, identity, or complete write refuses | Receipt sink |
+| `MP407` | Receipt path, count, state, identity, complete write, or close refuses | Receipt sink |
 | `MP408` | Receipt limit, closed shape, or byte ceiling refuses | Receipt schema |
 | `MP409` | Token counter or provider usage disagrees with the reservation | Lifecycle accounting |
 | `MP410` | Lifecycle manifest path, shape, execution, or expected result disagrees | Manifest check |
