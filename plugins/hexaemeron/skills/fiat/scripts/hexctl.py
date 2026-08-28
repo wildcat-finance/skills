@@ -7864,7 +7864,16 @@ def _next_directive(state: dict) -> dict:
     if phase == "integrate":
         return _integrate_directive(state)
     if phase == "done":
-        return {"do": "done", "steps": len(state["steps"])}
+        return {
+            "do": "done",
+            "steps": len(state["steps"]),
+            "finalise": {
+                "status": "hexctl status",
+                "verify": "hexctl verify",
+                "retire": "hexctl reset",
+                "archive": "local .hexaemeron/archive",
+            },
+        }
     step = current_step(state)
     base = {"step": step["n"], "title": step["title"]}
     if step["phase"] == "audit":
@@ -8135,8 +8144,8 @@ def cmd_reset(args) -> None:
         os.replace(os.path.join(root, entry), os.path.join(destination, entry))
 
     print(
-        f"archived completed run ({count} ledger entries) at {destination}; "
-        "active state cleared"
+        f"archived verified completed run ({count} ledger entries) locally at "
+        f"{destination}; active state cleared"
     )
     if retiring:
         if worktree_is_clean(worktree) and remove_run_worktree(origin, worktree):

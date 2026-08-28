@@ -798,6 +798,19 @@ class RunWorktreeContractTests(unittest.TestCase):
         self.assertIn("removes the tree when git can remove it without force", collapsed)
         self.assertIn("A tree holding work is kept and named instead", collapsed)
 
+    def test_terminal_cleanup_follows_status_and_verification(self):
+        final_report = self.fiat.split("## Final report", 1)[1].split(
+            "## Promise Machine contract", 1
+        )[0]
+        status_at = final_report.index("`hexctl status`")
+        verify_at = final_report.index("`hexctl verify`")
+        reset_at = final_report.index("`hexctl reset`")
+        self.assertLess(status_at, verify_at)
+        self.assertLess(verify_at, reset_at)
+        self.assertIn("local archive path", final_report)
+        self.assertIn("no `.hexaemeron/` byte", final_report)
+        self.assertIn("### fiat-local-retirement", self.fiat)
+
     def test_the_contract_states_the_fail_closed_fallback(self):
         self.assertIn("There is no in-place fallback.", self.fiat)
 
