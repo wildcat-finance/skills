@@ -1168,6 +1168,33 @@
       "selector": "test_a_payload_asserting_its_own_verification_fails"
     }
   ],
+  "router_selection": {
+    "contract": "promise-machine-router-selection/v1",
+    "documentation": {
+      "path": "docs/promise-machine/router-selection-v1.md",
+      "sha256": "13dc05800031cab036832defa0e9ecf96778f557eab40a3642a2a59e0bbaabd6"
+    },
+    "fixtures": [
+      {
+        "path": "tests/fixtures/router-selection/cases.json",
+        "sha256": "993de095bf64483d3847120ba320b58d6602162cceac45e83a80de415510dfe1"
+      }
+    ],
+    "promise_id": "promise-machine-router-selection",
+    "tests": {
+      "path": "tests/test_router_selection.py",
+      "selectors": [
+        "test_a_malformed_corpus_fails_by_name_rather_than_reading_as_empty",
+        "test_a_recorded_run_block_matches_the_corpus_digest",
+        "test_every_case_carries_the_required_fields_and_a_unique_id",
+        "test_every_deciding_sentence_occurs_in_the_file_it_names",
+        "test_every_expected_canonical_name_is_a_real_canonical_skill",
+        "test_the_corpus_declares_the_supported_schema"
+      ],
+      "sha256": "ce2e550444a0585ebbbc15fb582d0c6541711511ac4ccbe04f17dca54dd0a07e"
+    },
+    "transition": "report the corpus coverage and the latest recorded run without calling a recorded score a gate or strengthening what it means"
+  },
   "rows": [
     {
       "cases": {
