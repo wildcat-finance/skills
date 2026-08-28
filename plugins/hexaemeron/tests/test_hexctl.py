@@ -50,12 +50,17 @@ def make_origin_checkout(path):
     """
     for argv in (
         ["init", "-q", "-b", "main"],
+        ["config", "--local", "commit.gpgsign", "false"],
         ["config", "user.email", "fixture@example.invalid"],
         ["config", "user.name", "Fixture"],
-        ["config", "commit.gpgsign", "false"],
         ["commit", "-q", "--allow-empty", "-m", "base"],
     ):
-        subprocess.run(["git", *argv], cwd=path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", *argv],
+            cwd=path,
+            check=True,
+            capture_output=True,
+        )
 
 
 def run_target(base_dir):
@@ -354,6 +359,8 @@ if args and args[0] == "rev-parse" and "--show-toplevel" not in args:
     refs = json.loads(os.environ.get("FAKE_GIT_REFS", "{{}}"))
     print(refs.get(ref, ref if re.fullmatch(r"[0-9a-f]{{40}}", ref) else hashlib.sha1(ref.encode()).hexdigest()))
 elif args[:3] == ["remote", "get-url", "origin"]:
+    if mode == "slow-remote":
+        time.sleep(0.6)
     print(os.environ.get("FAKE_GIT_ORIGIN", "https://github.com/wildcat-finance/example.git"))
 elif args and args[0] == "ls-remote":
     if os.environ.get("FAKE_GIT_LS_REMOTE_LOG"):
@@ -844,7 +851,10 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
 
     def git(self, *args, expect=0):
         proc = subprocess.run(
-            ["git", *args], cwd=self.target, capture_output=True, text=True
+            ["git", "-c", "commit.gpgsign=false", *args],
+            cwd=self.target,
+            capture_output=True,
+            text=True,
         )
         if proc.returncode != expect:
             raise AssertionError(
@@ -1355,6 +1365,7 @@ class TestStudyAmendments(HexctlCase):
     def test_temporary_git_repositories_demonstrate_holding_and_broken_runs(self):
         original = self.to_amendable_steps()
         self.git("init", "-b", "main")
+        self.git("config", "--local", "commit.gpgsign", "false")
         self.git("config", "user.email", "tests@example.com")
         self.git("config", "user.name", "Hexctl Tests")
         self.git("add", "study.md", "runbook.md", "steps.json")
@@ -1377,6 +1388,7 @@ class TestStudyAmendments(HexctlCase):
         try:
             original = broken.to_amendable_steps()
             broken.git("init", "-b", "main")
+            broken.git("config", "--local", "commit.gpgsign", "false")
             broken.git("config", "user.email", "tests@example.com")
             broken.git("config", "user.name", "Hexctl Tests")
             broken.git("add", "study.md", "runbook.md", "steps.json")
@@ -5759,8 +5771,12 @@ class FrontierRowAttributionTests(OriginCheckoutMixin, unittest.TestCase):
         relative = self.before["ledger"]
         subprocess.run(["git", "add", relative], cwd=self.dir, check=True,
                        capture_output=True)
-        subprocess.run(["git", "commit", "-q", "-m", "ledger"], cwd=self.dir,
-                       check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", "commit", "-q", "-m", "ledger"],
+            cwd=self.dir,
+            check=True,
+            capture_output=True,
+        )
         head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.dir,
                               check=True, capture_output=True,
                               text=True).stdout.strip()

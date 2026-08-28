@@ -1,0 +1,837 @@
+{
+  "schema": "wildcat.issue-622-inoculation.v1",
+  "current_base": "b245d68e7e8c9d07b0dbbaa67e57b05cd00b18ef",
+  "artifacts": {
+    "packet": {
+      "sha256": "615cbef52cd6436db8ddbf445ffa68d12e20beb3fffa4de18b17fcfe13724d62"
+    },
+    "patch": {
+      "sha256": "c5d8074f06121a56f441329b228c51f21add9e530bf02f13ecd51a7c2b4fc5f8"
+    }
+  },
+  "archive": {
+    "ref": "archive/622-affected-scope-parallel-runner-attempt-1",
+    "commit": "f78f6b4c990c41629f4b77ceafe4977f016aeba1",
+    "tree": "7507f0e13b3c6f846adf9fe7d075a8ce0e7baa82"
+  },
+  "transforms": [
+    {
+      "id": "adr-035-selector-to-adr-038",
+      "source": "docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md",
+      "target": "docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md"
+    }
+  ],
+  "paths": [
+    {
+      "source": "audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.md",
+      "target": "audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.md",
+      "archive_sha256": "423c8d758137b9d862040675eeda077e0af36249b049040d80cfacbd9d529319",
+      "current_sha256": "423c8d758137b9d862040675eeda077e0af36249b049040d80cfacbd9d529319"
+    },
+    {
+      "source": "audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.synopsis.md",
+      "target": "audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.synopsis.md",
+      "archive_sha256": "49d0295470f67779d9456697a2093a922908349772462d6479224d95c6c44c01",
+      "current_sha256": "49d0295470f67779d9456697a2093a922908349772462d6479224d95c6c44c01"
+    },
+    {
+      "source": "docs/affected-scope-test-runner/study.md",
+      "target": "docs/affected-scope-test-runner/study.md",
+      "archive_sha256": "df417331fcc80b79305244cb957b417f740dd0eb47c5805cba72851abfdf909d",
+      "current_sha256": "df417331fcc80b79305244cb957b417f740dd0eb47c5805cba72851abfdf909d"
+    },
+    {
+      "source": "docs/affected-scope-test-runner/runbook.md",
+      "target": "docs/affected-scope-test-runner/runbook.md",
+      "archive_sha256": "81fd784e4a9ede9dc04d15d88c8fdc71f77282e7cff26031f96592453346ed2a",
+      "current_sha256": "295358d66202f3e36e906c28e4e8544d52722edd3db2356460b01ad0ebe02caa"
+    },
+    {
+      "source": "docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md",
+      "target": "docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md",
+      "archive_sha256": "fc543e24618dae928b9a125c5fb96c06436b1ccd53563fda234a2d45b8f9df22",
+      "current_sha256": "e0dcf0a23fee11bab1ebcccc9aab816eebf58f8530c9fb5a94c52529fd308cca"
+    },
+    {
+      "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
+      "target": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
+      "archive_sha256": "505b1173dcfdba04294122b3a9a169c5bb405753d1c91cb106fadba501fa96eb",
+      "current_sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b"
+    },
+    {
+      "source": "plugins/hexaemeron/tests/github_transport_cases.py",
+      "target": "plugins/hexaemeron/tests/github_transport_cases.py",
+      "archive_sha256": "da98be2680e6619845e3a2f88011fec226f829c283be7f5a372842ba62d97ab6",
+      "current_sha256": "da98be2680e6619845e3a2f88011fec226f829c283be7f5a372842ba62d97ab6"
+    },
+    {
+      "source": "plugins/hexaemeron/tests/run_tests.py",
+      "target": "plugins/hexaemeron/tests/run_tests.py",
+      "archive_sha256": "23bd0d426207855260a3912361f4727ddd1b9e54267ff40fb8be59f901ab1f36",
+      "current_sha256": "3c83bfaa7f067f00f304eeac64867f4710846caa913d6ce14e6eca7024b5d63f"
+    },
+    {
+      "source": "plugins/hexaemeron/tests/test_disposable_git_signing.py",
+      "target": "plugins/hexaemeron/tests/test_disposable_git_signing.py",
+      "archive_sha256": "63f73e943c9652fd7220227e46dba451d8f0c403167f614312a22b8cb9e54b83",
+      "current_sha256": "a99e726b0ca3cda5a0a7487fb00243b66075a4352e1e6eea781adaf09d3cf7e0"
+    },
+    {
+      "source": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "target": "plugins/hexaemeron/tests/test_elenchus_checker.py",
+      "archive_sha256": "43576af012f0f7e02c3731f28e3ba949339cc71a01eb7fad7d928ebf3b6b6bb9",
+      "current_sha256": "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
+    },
+    {
+      "source": "plugins/hexaemeron/tests/test_hexctl.py",
+      "target": "plugins/hexaemeron/tests/test_hexctl.py",
+      "archive_sha256": "64c71ec6e481000e740579f80676cc41ee2a2cae3e42e024df4b263f662d1953",
+      "current_sha256": "858dd7f397e4c918117c0afd37cfc1d5ae2502a97d49ef919da3214b78f5c252"
+    },
+    {
+      "source": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
+      "target": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
+      "archive_sha256": "f3f553515e5450736d1aebcbb8e8900197c2f4223431cf6161c139587d081530",
+      "current_sha256": "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
+    },
+    {
+      "source": "plugins/hexaemeron/tests/test_parallel_test_runner.py",
+      "target": "plugins/hexaemeron/tests/test_parallel_test_runner.py",
+      "archive_sha256": "74b09e9eba7c34f6f9e1204ded7762ad3ef79d2accb0b0db5e3fdf617d6d30c8",
+      "current_sha256": "3c53e894ae17ccfb97cc64c22e84092bedc08f82d22017ff081ef493d4662fc4"
+    },
+    {
+      "source": "plugins/horos/tests/test_demonstration.py",
+      "target": "plugins/horos/tests/test_demonstration.py",
+      "archive_sha256": "ffec20c664496ceddad8a1c6e453e7779da69efe706c45de21a61565faf90687",
+      "current_sha256": "242053e3fa14f1a4de435fb3e604647d01cc191e287db5c725cf8da6e4e7ed35"
+    },
+    {
+      "source": "plugins/horos/tests/test_scoped_entry.py",
+      "target": "plugins/horos/tests/test_scoped_entry.py",
+      "archive_sha256": "227da20c8428e64dab612a446dce21c2711d40f1a6f4a23f25362322e2318318",
+      "current_sha256": "2aba2ac960f89dc92a2f9450d7d66636613c80fe71b4deec4bf08ae0760b4477"
+    },
+    {
+      "source": "plugins/horos/tests/test_universe.py",
+      "target": "plugins/horos/tests/test_universe.py",
+      "archive_sha256": "42aeeb2f4411be02e8f72274f769efb6369bc2a7bc96298901e2fd902bb00a47",
+      "current_sha256": "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
+    },
+    {
+      "source": "tests/promise_machine_coverage.json",
+      "target": "tests/promise_machine_coverage.json",
+      "archive_sha256": "89b5b34c8960691fd98ea62cb088cd5e96f2fa5fb1d4654e71877b6d4a3fe089",
+      "current_sha256": "75d32ba009e23fea97262443d876fa8a65947cf3516b5b2e11af3dba8af6ea5f"
+    },
+    {
+      "source": "tests/test_boundary_currency.py",
+      "target": "tests/test_boundary_currency.py",
+      "archive_sha256": "4af04fbe530ce7d0e0029fdbff8960b6b9cb43289162e90ff945b1852b9a2d3d",
+      "current_sha256": "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
+    }
+  ],
+  "families": [
+    "aggregate-accounting",
+    "bounded-output",
+    "cache-path-boundary",
+    "discovery-boundary",
+    "malformed-json",
+    "numeric-boundary",
+    "private-result-validation",
+    "report-framing",
+    "result-cap-composition",
+    "single-worker-parity",
+    "structured-evidence",
+    "structured-summary-bounds",
+    "unittest-outcomes"
+  ],
+  "findings": [
+    {
+      "id": "S2-R1-01",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_result_file_slot_is_bound_before_reconciliation",
+        "test_non_object_result_is_a_scheduler_error_not_an_exception",
+        "test_invalid_record_cannot_replay_forged_output",
+        "test_replayed_text_is_bound_to_its_byte_metadata"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "S2-R1-02",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_scheduler_error_summary_keeps_validated_worker_evidence",
+        "test_structured_summary_preserves_each_shards_execution_evidence"
+      ],
+      "family": "structured-evidence"
+    },
+    {
+      "id": "S2-R2-01",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_execution_sequences_correlate_before_result_use",
+        "test_manifest_and_summary_have_explicit_byte_limits"
+      ],
+      "family": "structured-summary-bounds"
+    },
+    {
+      "id": "S2-R2-02",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_scheduler_error_summary_keeps_validated_worker_evidence"
+      ],
+      "family": "structured-evidence"
+    },
+    {
+      "id": "S2-R3-01",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_truncated_output_requires_the_full_bounded_head_and_tail",
+        "test_bounded_text_capture_has_one_exact_utf8_truncation_shape",
+        "test_invalid_record_cannot_replay_forged_output"
+      ],
+      "family": "bounded-output"
+    },
+    {
+      "id": "S2-R3-02",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_parallel_worker_output_uses_only_coordinator_owned_pipes",
+        "test_near_cap_unicode_worker_record_fits_its_private_file"
+      ],
+      "family": "result-cap-composition"
+    },
+    {
+      "id": "S2-R3-03",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_timing_cache_read_refuses_a_linked_parent_outside_the_run_root",
+        "test_timing_cache_atomic_replace_stays_on_its_bound_directory"
+      ],
+      "family": "cache-path-boundary"
+    },
+    {
+      "id": "S2-R3-04",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_deep_json_is_a_stable_corrupt_cache_not_a_recursion_escape",
+        "test_existing_json_number_refusals_remain_stable"
+      ],
+      "family": "malformed-json"
+    },
+    {
+      "id": "S2-R4-01",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_multiple_failing_subtests_remain_test_failure_evidence"
+      ],
+      "family": "unittest-outcomes"
+    },
+    {
+      "id": "S2-R4-02",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_pipe_read_failure_is_scheduler_evidence"
+      ],
+      "family": "bounded-output"
+    },
+    {
+      "id": "S2-R5-01",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_worker_result_limit_is_derived_from_every_bounded_field"
+      ],
+      "family": "result-cap-composition"
+    },
+    {
+      "id": "S2-R5-02",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_large_parseable_numbers_use_stable_scheduler_refusals"
+      ],
+      "family": "numeric-boundary"
+    },
+    {
+      "id": "S2-R6-01",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_large_parseable_cache_number_is_a_visible_neutral_entry"
+      ],
+      "family": "numeric-boundary"
+    },
+    {
+      "id": "S2-R6-02",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_single_worker_uses_the_private_worker_transport",
+        "test_single_worker_child_fd_output_is_bounded_and_replayed"
+      ],
+      "family": "single-worker-parity"
+    },
+    {
+      "id": "S2-R6-03",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_cross_shard_outcome_counts_refuse_before_aggregate_overflow",
+        "test_uneven_outcome_counts_at_the_sequence_limit_remain_valid"
+      ],
+      "family": "aggregate-accounting"
+    },
+    {
+      "id": "S2-R7-01",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_public_coordinator_contains_cross_shard_aggregate_refusal"
+      ],
+      "family": "aggregate-accounting"
+    },
+    {
+      "id": "S2-R7-02",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_failure_event_summary_never_reports_negative_passes"
+      ],
+      "family": "unittest-outcomes"
+    },
+    {
+      "id": "S2-R7-03",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_oversized_scheduler_errors_have_a_bounded_refusal_event"
+      ],
+      "family": "structured-summary-bounds"
+    },
+    {
+      "id": "S2-R7-04",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_deep_and_cyclic_suites_have_stable_manifest_boundaries",
+        "test_manifest_item_limit_stops_discovery_incrementally"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "S2-R8-01",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_test_output_cannot_forge_the_structured_run_summary"
+      ],
+      "family": "report-framing"
+    },
+    {
+      "id": "S2-R8-02",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_suite_iterator_failures_are_structured_scheduler_refusals"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "S2-R8-03",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_test_id_failure_is_a_structured_scheduler_refusal"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "S2-R8-04",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_sparse_suite_iteration_consumes_the_item_limit"
+      ],
+      "family": "discovery-boundary"
+    }
+  ],
+  "current_cause_guards": [
+    {
+      "id": "archive-git-replace-substitution",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_archive_reads_ignore_local_git_replace_objects"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "archive-object-content-identity",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_archive_object_reads_recompute_git_identity"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "automatic-capacity-safety-cap",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_automatic_capacity_respects_safety_cap_after_headroom"
+      ],
+      "family": "structured-summary-bounds"
+    },
+    {
+      "id": "current-base-adr-number-uniqueness",
+      "owner": "docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md",
+      "guards": [
+        "test_no_number_collides_with_one_already_on_the_default_branch"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "custom-suite-execution-semantics",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_custom_suite_run_behavior_cannot_disappear"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "custom-suite-metaclass-attribute-proof",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_custom_suite_metaclass_cannot_hide_execution_override"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "custom-suite-fixture-transition-hooks",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_custom_suite_fixture_transition_hooks_cannot_disappear"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "detached-descendant-boundary",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_detached_descendant_is_red_bounded_and_not_claimed_terminated"
+      ],
+      "family": "bounded-output"
+    },
+    {
+      "id": "descendant-output-descriptor-lifetime",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_descendant_cannot_hold_worker_output_descriptor_open"
+      ],
+      "family": "bounded-output"
+    },
+    {
+      "id": "unexpected-success-non-green",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_unexpected_success_is_non_green"
+      ],
+      "family": "unittest-outcomes"
+    },
+    {
+      "id": "fixture-blocked-unittest-accounting",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_class_fixture_skip_is_accounted_without_execution",
+        "test_module_fixture_skip_is_accounted_without_execution",
+        "test_fixture_errors_and_unrecognised_holders_remain_scheduler_errors",
+        "test_fixture_blocked_record_refuses_overlap_duplicate_and_unproved_missing"
+      ],
+      "family": "aggregate-accounting"
+    },
+    {
+      "id": "fixture-domain-sharding-semantics",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_class_fixture_domain_is_not_split_across_workers",
+        "test_import_registered_module_cleanup_keeps_one_suite_domain",
+        "test_module_fixture_domain_is_not_split_across_workers",
+        "test_unfixtured_tests_retain_fine_grained_distribution"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-runtime-cleanup-registration",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_runtime_registered_standard_cleanups_cannot_split_domains"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-worker-rediscovery-binding",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_worker_rediscovery_cannot_widen_fixture_domain_across_assignments"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-dynamic-lookup-proof",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_dynamic_module_fixture_lookup_cannot_split_domain"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-class-descriptor-proof",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_stateful_class_fixture_descriptor_cannot_split_domain"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-skip-origin-binding",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_test_object_cannot_forge_fixture_blocked_disposition"
+      ],
+      "family": "aggregate-accounting"
+    },
+    {
+      "id": "guard-discovery-static-proof",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_proof_refuses_runtime_discovery_decoys"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-control-flow-proof",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_refuses_control_flow_discovery_hooks"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-namespace-proof",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_refuses_class_namespace_mutation"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-runtime-mutation-proof",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_refuses_runtime_namespace_hooks"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-module-namespace-mutation",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_refuses_module_namespace_update"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-import-time-helper-mutation",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_refuses_import_time_helper_mutation"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-implicit-runtime-hooks",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_refuses_implicit_discovery_and_descriptor_hooks"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "inoculation-bounded-read-content-binding",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_bounded_read_detects_in_place_content_substitution"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "inoculation-bounded-read-inode-binding",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_bounded_read_cannot_switch_inodes_between_check_and_open"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "inoculation-target-self-authorisation",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_paired_current_target_and_record_substitution_is_refused"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "inoculation-record-json-resource-boundary",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_deep_record_json_is_a_stable_refusal"
+      ],
+      "family": "malformed-json"
+    },
+    {
+      "id": "inoculation-guard-discoverability",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_required_guard_must_be_one_discovered_unittest_case"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "cgroup-v2-membership-quota-resolution",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_nested_cgroup_v2_membership_limits_automatic_capacity"
+      ],
+      "family": "structured-summary-bounds"
+    },
+    {
+      "id": "cgroup-v2-mount-root-quota-resolution",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_cgroup_v2_mount_root_limits_automatic_capacity"
+      ],
+      "family": "structured-summary-bounds"
+    },
+    {
+      "id": "cgroup-v1-membership-quota-resolution",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_nested_cgroup_v1_membership_limits_automatic_capacity"
+      ],
+      "family": "structured-summary-bounds"
+    },
+    {
+      "id": "worker-process-group-identity-lifetime",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_process_group_identity_is_retained_until_cleanup_signals_finish"
+      ],
+      "family": "bounded-output"
+    },
+    {
+      "id": "worker-protocol-checkout-interference",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_worker_protocol_directory_is_outside_invocation_checkout"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "capacity-integer-division-boundary",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_capacity_arithmetic_never_rounds_through_float"
+      ],
+      "family": "numeric-boundary"
+    },
+    {
+      "id": "fixture-domain-imported-cleanup-alias",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_imported_module_cleanup_alias_cannot_split_domain"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-transitive-imported-cleanup",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_transitive_imported_cleanup_helpers_cannot_split_domain"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-callable-cleanup-wrapper",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_callable_wrapped_cleanup_registration_cannot_split_domains"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-referenced-callable-cleanup",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_referenced_callable_cleanup_registration_cannot_split_domain"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-opaque-callable-overgrouping",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_referenced_opaque_callable_does_not_create_fixture_domain"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-runtime-confirmation",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_verification_rejects_import_time_decorator_erasure"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-testcase-execution-entrypoints",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_refuses_custom_testcase_execution_entrypoints"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-testcase-method-dispatch",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_refuses_custom_testcase_method_dispatch"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-fixture-execution-probe",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_runtime_guard_probe_refuses_fixture_skipped_method"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-method-lookup-execution-probe",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_runtime_guard_probe_refuses_replaced_test_method_lookup"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-descendant-result-drain",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_runtime_discovery_result_drain_ignores_inherited_writer"
+      ],
+      "family": "bounded-output"
+    },
+    {
+      "id": "fixture-domain-nested-cleanup-registration",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_nested_cleanup_helpers_and_context_registration_cannot_split_domains"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-callable-bound-cleanup-state",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_callable_bound_cleanup_state_cannot_split_domain"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-method-outcome-probe",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_runtime_guard_probe_refuses_method_level_skip"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "guard-discovery-dunder-method-metadata-mutation",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_guard_ast_refuses_direct_dunder_namespace_mutation"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-cross-class-cleanup-registration",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_cross_class_cleanup_registration_cannot_split_domain"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-inherited-cleanup-registration",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_inherited_cleanup_registrars_cannot_split_domains"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "fixture-domain-unresolved-class-cleanup-target",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_dynamic_cross_class_cleanup_target_cannot_split_domain"
+      ],
+      "family": "discovery-boundary"
+    },
+    {
+      "id": "promise-reporter-release-surface-binding",
+      "owner": "tests/promise_machine_coverage.json",
+      "guards": [
+        "test_promise_reporter_release_surface_binds_current_runner"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "inoculation-preopen-inode-identity-binding",
+      "owner": "scripts/verify_issue_622_inoculation.py",
+      "guards": [
+        "test_bounded_read_refuses_regular_inode_switch_before_open"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "fixture-signing-command-scope-isolation",
+      "owner": "plugins/hexaemeron/tests/test_disposable_git_signing.py",
+      "guards": [
+        "test_command_scope_cannot_reenable_fixture_commit_signing"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "worker-protocol-ambient-temp-root",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_ambient_temp_root_cannot_put_worker_protocol_in_checkout"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "worker-protocol-physical-checkout-containment",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_worker_protocol_containment_uses_directory_identity"
+      ],
+      "family": "private-result-validation"
+    },
+    {
+      "id": "report-target-git-control-namespace",
+      "owner": "plugins/hexaemeron/tests/run_tests.py",
+      "guards": [
+        "test_report_target_refuses_git_control_namespace"
+      ],
+      "family": "cache-path-boundary"
+    },
+    {
+      "id": "inoculation-elenchus-packet-independence",
+      "owner": "plugins/hexaemeron/tests/test_issue_622_inoculation.py",
+      "guards": [
+        "test_current_extension_is_packet_independent_and_elenchus_guarded",
+        "test_guard_identity_dependency_is_explicit_for_parent_overlay"
+      ],
+      "family": "private-result-validation"
+    }
+  ]
+}

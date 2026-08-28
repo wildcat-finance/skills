@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 13672822,
+    "bytes_blob": 13809219,
     "bytes_generated": 98
   },
   "entries": [
@@ -68,6 +68,27 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-617-runtime-host-reinstates-the-byline-the-ident.synopsis.md"
+    },
+    {
+      "bytes": 65312,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-2-implementation-continuation.synopsis.md"
+    },
+    {
+      "bytes": 42672,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-inoculate-affected-scope-runner.synopsis.md"
+    },
+    {
+      "bytes": 28413,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.synopsis.md"
     },
     {
       "bytes": 59394,
