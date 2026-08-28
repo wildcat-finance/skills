@@ -152,7 +152,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
         report = verify_fixture(RECEIPT_FIXTURE)
         self.assertEqual(
             report["fixture_digest"],
-            "1d2b6eab3d62ad57f9481e5c202efa83c8d423ccbd95b6086cef1f9b0c34cf1d",
+            "06043f4c4e7f62701d55cc0acb948f9330ec218ae50d786daa43ffefb6079eb2",
         )
         self.assertEqual(
             report["evidence_counts"],
@@ -346,6 +346,21 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
                 self.assertEqual(str(exception), "fixture output cannot be resolved")
             else:
                 self.fail("builder accepted an output name containing NUL")
+
+    def test_output_probe_does_not_depend_on_pathlib_boolean_predicates(self):
+        demo = load_receipt_demo()
+        output = Path("uninspectable-output")
+        with (
+            mock.patch.object(Path, "exists", return_value=False),
+            mock.patch.object(Path, "is_symlink", return_value=False),
+            mock.patch.object(
+                Path, "lstat", side_effect=OSError("private host detail")
+            ),
+        ):
+            with self.assertRaisesRegex(
+                demo.PathError, "fixture output cannot be inspected"
+            ):
+                demo._output_exists(output)
 
     def test_builder_rejects_a_parent_swapped_to_a_source_symlink(self):
         demo = load_receipt_demo()
