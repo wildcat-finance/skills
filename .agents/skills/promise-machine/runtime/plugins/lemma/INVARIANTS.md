@@ -234,11 +234,11 @@ Solidity
            contract 2, interface 1, library 1, surface 1
 
 Markdown
-  38 chunks from 9 documents
+  39 chunks from 9 documents
   9/9 emitted documents placed
   9 synthesised document indexes
-  34 chunks placed in the SUMMARY hierarchy
-  median 141 characters; p99 568; maximum 568
+  35 chunks placed in the SUMMARY hierarchy
+  median 184 characters; p99 1010; maximum 1010
 ```
 
 A change that moves these figures should move the recorded baseline in the same
