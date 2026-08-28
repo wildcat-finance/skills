@@ -13,7 +13,10 @@ at the bottom fails when one ships without them.
 import ast
 import json
 import os
+import re
+import sys
 import unittest
+import unicodedata
 
 from . import support  # noqa: F401  (sets sys.path)
 
@@ -674,6 +677,38 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
         self.assertEqual(corpus["maxItems"], grounded_agent.MAX_COMPONENTS)
         self.assertEqual(answers["maxItems"], grounded_agent.MAX_COMPONENTS)
 
+    def test_berean_fixed_component_paths_match_the_runtime(self):
+        release_document = self.properties["release"]["properties"]["document"]
+        promotion_component = self.properties["produced"]["properties"]["promotion"][
+            "oneOf"
+        ][1]["properties"]["component"]
+        self.assertEqual(
+            release_document,
+            {
+                "allOf": [
+                    {"$ref": "#/$defs/component"},
+                    {
+                        "properties": {
+                            "path": {"const": grounded_agent.BEREAN_RELEASE_DOCUMENT}
+                        }
+                    },
+                ]
+            },
+        )
+        self.assertEqual(
+            promotion_component,
+            {
+                "allOf": [
+                    {"$ref": "#/$defs/component"},
+                    {
+                        "properties": {
+                            "path": {"const": grounded_agent.BEREAN_PROMOTIONS_FILE}
+                        }
+                    },
+                ]
+            },
+        )
+
     def test_digest_and_hash_tokens_are_bounded_through_their_absolute_end(self):
         definitions = self.schema["$defs"]
         for name, length in (("sha256", 64), ("hash32", 66)):
@@ -924,18 +959,16 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
     def test_open_core_details_recursively_refuse_berean_result_fields(self):
         result_shape = self.schema["$defs"].get("noBereanResults")
         self.assertIsNotNone(result_shape)
-        refused = result_shape["allOf"][0]["then"]["propertyNames"]["not"][
-            "enum"
-        ]
+        refused = list(
+            getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ())
+            + getattr(
+                grounded_agent, "BEREAN_EVALUATION_REPORT_ONLY_FIELDS", ()
+            )
+            + getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ())
+        )
         self.assertEqual(
-            refused,
-            list(
-                getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ())
-                + getattr(
-                    grounded_agent, "BEREAN_EVALUATION_REPORT_ONLY_FIELDS", ()
-                )
-                + getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ())
-            ),
+            result_shape["allOf"][0]["then"]["propertyNames"]["not"],
+            {"$ref": "#/$defs/bereanResultKey"},
         )
         self.assertIn("failures", refused)
         recursive = {"$ref": "#/$defs/noBereanResults"}
@@ -948,11 +981,68 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
             self.assertIn(recursive, detail["allOf"])
 
         self.assertEqual(
-            self.schema["$defs"]["digest"]["propertyNames"].get("not", {}).get(
-                "enum"
-            ),
-            refused,
+            self.schema["$defs"]["digest"]["propertyNames"].get("not"),
+            {"$ref": "#/$defs/bereanResultKey"},
         )
+
+    def test_result_key_schema_matches_nfkc_casefold_runtime_boundary(self):
+        definition = self.schema["$defs"].get("bereanResultKey")
+        self.assertIsNotNone(definition)
+        pattern = definition.get("pattern")
+        self.assertIsInstance(pattern, str)
+
+        refused = tuple(
+            getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ())
+            + getattr(
+                grounded_agent, "BEREAN_EVALUATION_REPORT_ONLY_FIELDS", ()
+            )
+            + getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ())
+        )
+        substitutions = 0
+        for codepoint in range(sys.maxunicode + 1):
+            if 0xD800 <= codepoint <= 0xDFFF:
+                continue
+            source = chr(codepoint)
+            folded = unicodedata.normalize("NFKC", source).casefold()
+            if not folded:
+                continue
+            for canonical in refused:
+                start = canonical.find(folded)
+                while start >= 0:
+                    alias = (
+                        canonical[:start]
+                        + source
+                        + canonical[start + len(folded) :]
+                    )
+                    self.assertIsNotNone(
+                        re.fullmatch(pattern, alias),
+                        "%r normalises to %r" % (alias, canonical),
+                    )
+                    substitutions += 1
+                    start = canonical.find(folded, start + 1)
+        self.assertGreater(substitutions, 1000)
+
+        for canonical in refused:
+            fullwidth = "".join(
+                chr(ord(character) + 0xFEE0)
+                if "!" <= character <= "~"
+                else character
+                for character in canonical
+            )
+            for alias in (canonical, canonical.upper(), fullwidth):
+                with self.subTest(canonical=canonical, alias=repr(alias)):
+                    self.assertIsNotNone(re.fullmatch(pattern, alias))
+        self.assertIsNotNone(re.fullmatch(pattern, "\u3380\u00dfed"))
+
+        for neutral in (
+            "metadata",
+            "thre_sholds",
+            "pass_ed",
+            "failure_sallowed",
+            "prefixfailures",
+        ):
+            with self.subTest(neutral=neutral):
+                self.assertIsNone(re.fullmatch(pattern, neutral))
 
     def test_the_schema_is_committed_as_readable_json(self):
         with open(GROUNDED_AGENT_SCHEMA, "rb") as handle:
