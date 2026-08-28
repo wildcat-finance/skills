@@ -76,6 +76,8 @@ FORBIDDEN_METADATA_KEYS = frozenset(
 )
 FORBIDDEN_BYTES = (
     re.compile(rb"sk-[A-Za-z0-9_-]{20,}"),
+    re.compile(rb"\bgh[pousr]_[A-Za-z0-9]{36,255}\b"),
+    re.compile(rb"\bgithub_pat_[A-Za-z0-9_]{20,255}\b"),
     re.compile(rb"-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----"),
     re.compile(rb"(?i)Bearer[ \t]+[A-Za-z0-9._~+/-]{16,}"),
     re.compile(
@@ -170,12 +172,25 @@ def _expect_fields(
 def _reject_forbidden_metadata(value: Any, *, case_id: str | None = None) -> None:
     if isinstance(value, dict):
         for key, child in value.items():
+            try:
+                key.encode("utf-8", errors="strict")
+            except UnicodeEncodeError:
+                raise CorpusError(
+                    "HC002", "invalid-unicode-scalar", case_id=case_id
+                ) from None
             if key.lower().replace("-", "_") in FORBIDDEN_METADATA_KEYS:
                 raise CorpusError("HC013", "forbidden-capture-metadata", case_id=case_id)
             _reject_forbidden_metadata(child, case_id=case_id)
     elif isinstance(value, list):
         for child in value:
             _reject_forbidden_metadata(child, case_id=case_id)
+    elif isinstance(value, str):
+        try:
+            value.encode("utf-8", errors="strict")
+        except UnicodeEncodeError:
+            raise CorpusError(
+                "HC002", "invalid-unicode-scalar", case_id=case_id
+            ) from None
 
 
 def _checked_relative_path(value: Any, *, case_id: str) -> PurePosixPath:
@@ -475,6 +490,8 @@ def _validate_provenance(
         raise CorpusError("HC014", "source-commit-invalid", case_id=case_id)
     _checked_relative_path(origin_object["path"], case_id=case_id)
     source_range = origin_object["range"]
+    if not isinstance(source_range, str) or not 1 <= len(source_range) <= 120:
+        raise CorpusError("HC014", "source-range-invalid", case_id=case_id)
 
     derivation = _expect_object(
         provenance["derivation"],
@@ -509,11 +526,7 @@ def _validate_provenance(
         ):
             raise CorpusError("HC014", "source-derivation-method-invalid", case_id=case_id)
     else:
-        line_range = (
-            LINE_RANGE_RE.fullmatch(source_range)
-            if isinstance(source_range, str)
-            else None
-        )
+        line_range = LINE_RANGE_RE.fullmatch(source_range)
         if (
             method != "exact-line-range-v1"
             or line_range is None

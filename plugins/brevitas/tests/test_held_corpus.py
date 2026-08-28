@@ -106,6 +106,24 @@ class HeldCorpusTests(unittest.TestCase):
             validate_corpus(root)
         self.assertEqual(raised.exception.code, "HC002")
 
+    def test_escaped_invalid_unicode_scalar_is_refused(self) -> None:
+        temporary, root = self.copy_corpus()
+        self.addCleanup(temporary.cleanup)
+        manifest_path = root / "corpus.json"
+        manifest = self.load_manifest(root)
+        manifest["cases"][0]["classification"]["basis"] = "\ud800"
+        manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
+
+        try:
+            with self.assertRaises(CorpusError) as raised:
+                validate_corpus(root)
+        except UnicodeEncodeError:
+            self.fail("invalid Unicode scalar escaped the bounded refusal")
+        self.assertEqual(raised.exception.code, "HC002")
+
     def test_duplicate_case_id_is_refused(self) -> None:
         def change(_root: Path, manifest: dict[str, Any]) -> None:
             manifest["cases"][1]["id"] = manifest["cases"][0]["id"]
@@ -199,13 +217,24 @@ class HeldCorpusTests(unittest.TestCase):
                 self.expect_failure("HC014", change)
 
     def test_malformed_source_range_is_refused(self) -> None:
-        def change(_root: Path, manifest: dict[str, Any]) -> None:
-            exact_case = next(
-                case for case in manifest["cases"] if case["family"] != "diff-review"
-            )
-            exact_case["provenance"]["origins"][0]["range"] = "lines one to many"
+        for value in ("lines one to many", "L" + "9" * 5000 + "-L1"):
+            with self.subTest(value_length=len(value)):
+                def change(
+                    _root: Path,
+                    manifest: dict[str, Any],
+                    value: str = value,
+                ) -> None:
+                    exact_case = next(
+                        case
+                        for case in manifest["cases"]
+                        if case["family"] != "diff-review"
+                    )
+                    exact_case["provenance"]["origins"][0]["range"] = value
 
-        self.expect_failure("HC014", change)
+                try:
+                    self.expect_failure("HC014", change)
+                except ValueError:
+                    self.fail("malformed source range escaped the bounded refusal")
 
     def test_stale_digest_is_refused_with_short_digest_diagnostics(self) -> None:
         error = self.expect_failure(
@@ -340,6 +369,26 @@ class HeldCorpusTests(unittest.TestCase):
                         "capture"
                     ].__setitem__(field, "forbidden"),
                 )
+
+    def test_github_credential_bytes_are_refused(self) -> None:
+        tokens = (
+            b"gh" + b"p_" + b"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+            b"github" + b"_pat_" + b"A" * 82,
+        )
+
+        for token in tokens:
+            with self.subTest(prefix=token.split(b"_", 1)[0]):
+                def change(
+                    root: Path,
+                    manifest: dict[str, Any],
+                    token: bytes = token,
+                ) -> None:
+                    case = manifest["cases"][0]
+                    self.fixture_path(root, case).write_bytes(
+                        b"captured value " + token + b"\n"
+                    )
+
+                self.expect_failure("HC013", change)
 
     def test_unclassified_case_is_refused(self) -> None:
         def change(_root: Path, manifest: dict[str, Any]) -> None:
