@@ -41,8 +41,9 @@ reason beside present evidence is contradictory and fails `optional-evidence`.
 ## Components and subjects
 
 Every component carries `name`, release-relative `path`, lowercase `sha256`, and
-a whole-number `bytes` count. Names and paths are bounded, visible, free of line
-separators, and unique after Unicode NFC normalisation. Absolute paths, drive
+a whole-number `bytes` count. Names and paths are bounded, visible Unicode
+scalar strings, free of line separators, and unique after Unicode NFC
+normalisation. Absolute paths, drive
 paths, backslashes, empty or dot segments, parent traversal, oversized values
 and duplicate paths fail. Every component digest must appear in the in-toto
 subject array, and every subject must name a declared component. Subject aliases

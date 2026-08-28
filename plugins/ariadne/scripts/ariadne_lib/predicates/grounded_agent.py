@@ -152,6 +152,7 @@ SHA256 = re.compile(r"^[0-9a-f]{64}$")
 HASH32 = re.compile(r"^0x[0-9a-f]{64}$")
 ADDRESS = re.compile(r"^0x[0-9a-f]{40}$")
 CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u2028\u2029]")
+SURROGATE = re.compile(r"[\ud800-\udfff]")
 PREDICATE_WHITESPACE = frozenset(
     "\t\n\v\f\r\x1c\x1d\x1e\x1f \x85\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005"
     "\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000\ufeff"
@@ -186,7 +187,7 @@ def portable_name(value):
         return False
     if not any("!" <= char <= "~" for char in value):
         return False
-    return CONTROL.search(value) is None
+    return CONTROL.search(value) is None and SURROGATE.search(value) is None
 
 
 def usable_path(value):

@@ -532,6 +532,20 @@ class ComponentTests(unittest.TestCase):
             with self.subTest(kind="path", value=repr(value)):
                 self.assertFalse(agent.usable_path(value))
 
+    def test_unicode_surrogates_are_not_portable_names_paths_or_subjects(self):
+        for value in ("a\ud800b", "a\udfffb"):
+            with self.subTest(kind="name", value=repr(value)):
+                self.assertFalse(agent.portable_name(value))
+            with self.subTest(kind="path", value=repr(value)):
+                self.assertFalse(agent.usable_path(value))
+
+        body = predicate()
+        outer = subjects(body)
+        outer[0]["name"] += "\ud800"
+        found = named("subject-names", body, outer)
+        self.assertFalse(found.passed)
+        self.assertIn("portable name", found.detail)
+
     def test_the_component_count_is_bounded_before_full_walk(self):
         body = predicate()
         body["given"]["corpus"]["components"] = [

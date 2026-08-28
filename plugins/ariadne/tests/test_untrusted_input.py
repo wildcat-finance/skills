@@ -1,6 +1,7 @@
 """Bounds on a document that arrived from somebody else."""
 
 import json
+from decimal import DecimalException
 import unittest
 
 from . import support  # noqa: F401  (sets sys.path)
@@ -90,6 +91,21 @@ class JsonGrammarTests(unittest.TestCase):
             self.fail("raw ValueError escaped the input boundary: %s" % error)
         else:
             self.fail("oversized integer was accepted")
+
+    def test_extreme_decimal_exponents_are_controlled_input_refusals(self):
+        for value in (
+            "0e999999999999999999999999",
+            "1e-999999999999999999999999",
+        ):
+            with self.subTest(value=value):
+                try:
+                    safejson.loads(("{\"value\": %s}" % value).encode("ascii"))
+                except safejson.InputError as error:
+                    self.assertIn("decimal range", str(error))
+                except DecimalException as error:
+                    self.fail("raw decimal exception escaped the input boundary: %s" % error)
+                else:
+                    self.fail("an extreme decimal exponent was accepted")
 
 
 class ThroughTheReaderTests(unittest.TestCase):

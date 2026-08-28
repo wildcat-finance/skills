@@ -690,6 +690,7 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
             ("line\nbreak", False),
             ("line\u2028break", False),
             ("paragraph\u2029break", False),
+            ("surrogate\ud800name", False),
         ):
             with self.subTest(kind="name", value=repr(value)):
                 self.assertEqual(bool(name_pattern.search(value)), expected)
@@ -706,6 +707,7 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
             ("corpus/line\nbreak.json", False),
             ("corpus/line\u2028break.json", False),
             ("corpus/paragraph\u2029break.json", False),
+            ("corpus/surrogate\udfff.json", False),
             ("corpus/\u200b", False),
             ("corpus//terms.md", False),
             ("corpus/terms.md\\", False),

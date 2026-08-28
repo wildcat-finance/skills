@@ -21,7 +21,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from ariadne_lib import digests, envelope, registry, replay, safejson, verify  # noqa: E402
+from ariadne_lib import digests, envelope, gates, registry, replay, safejson, verify  # noqa: E402
 from ariadne_lib import predicates  # noqa: E402,F401  (registers them)
 from ariadne_lib.capture import dataset as dataset_capture
 from ariadne_lib.capture import state_fixture as state_fixture_capture  # noqa: E402
@@ -101,12 +101,15 @@ def cmd_inspect(args):
         )
         return 0
 
-    print("predicate type: %s" % found.predicate_type)
+    print("predicate type: %s" % gates.one_line(found.predicate_type))
     print("                %s" % ("registered" if known else "not registered here"))
     print("signatures:     %s" % document.signature_state)
     print("subjects:")
     for entry in found.subjects:
-        print("  %s  %s" % (digests.short(entry.digest), entry.name or "<unnamed>"))
+        print(
+            "  %s  %s"
+            % (digests.short(entry.digest), gates.one_line(entry.name or "<unnamed>"))
+        )
     return 0
 
 

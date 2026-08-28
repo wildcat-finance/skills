@@ -13,7 +13,7 @@ to report anything useful.
 
 import json
 import math
-from decimal import Decimal
+from decimal import Decimal, DecimalException
 
 DEFAULT_MAX_BYTES = 8 * 1024 * 1024
 DEFAULT_MAX_DEPTH = 64
@@ -80,9 +80,12 @@ def finite_json_float(value):
         raise InputError("JSON number is outside the finite float range")
     if not math.isfinite(parsed):
         raise InputError("JSON number is outside the finite float range")
-    exact = Decimal(value)
-    if exact == exact.to_integral_value():
-        return int(exact)
+    try:
+        exact = Decimal(value)
+        if exact == exact.to_integral_value():
+            return int(exact)
+    except (DecimalException, OverflowError, ValueError):
+        raise InputError("JSON number is outside the supported decimal range")
     return parsed
 
 

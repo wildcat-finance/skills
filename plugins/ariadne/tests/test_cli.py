@@ -106,6 +106,16 @@ class InspectTests(unittest.TestCase):
         self.assertFalse(found["predicateTypeKnown"])
         self.assertIn("unsigned", found["signatureState"])
 
+    def test_inspect_escapes_a_subject_name_that_utf8_cannot_encode(self):
+        candidate = dict(STATEMENT)
+        candidate["subject"] = [dict(STATEMENT["subject"][0])]
+        candidate["subject"][0]["name"] = "subject\ud800"
+        path = self.write("surrogate.json", json.dumps(candidate))
+        code, out, _ = run(["inspect", path])
+        self.assertEqual(code, 0)
+        self.assertIn(r"subject\ud800", out)
+        self.assertNotIn("subject\ud800", out)
+
     def test_a_missing_file_exits_two(self):
         code, _, err = run(["inspect", os.path.join(self.root, "absent.json")])
         self.assertEqual(code, 2)
