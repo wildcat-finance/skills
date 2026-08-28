@@ -1121,6 +1121,52 @@ def test_provenance_emitted(tmp: pathlib.Path) -> None:
           not (renamed / "second.jsonl").exists(),
           str(sorted(p.name for p in renamed.iterdir())))
 
+    # The scan's bounds. A record this tool wrote under another suffix is the
+    # same record; a neighbour it cannot read is one it cannot rule out; and a
+    # first line that is JSON but not an object is neither a record nor a
+    # crash.
+    suffix = tmp / "suffix"
+    suffix.mkdir()
+    subprocess.run(common + ["--source-ref", ref, "--out",
+                             str(suffix / "chunks.jsonl"),
+                             "--provenance", str(suffix / "rec.json")],
+                   capture_output=True, text=True)
+    r = subprocess.run(narrowed + ["--source-ref", ref + "-again", "--out",
+                                   str(suffix / "chunks.jsonl"),
+                                   "--provenance", str(suffix / "rec2.json")],
+                       capture_output=True, text=True)
+    check("a stale record is refused whatever suffix it carries",
+          r.returncode != 0 and "rec.json" in r.stderr, r.stderr[-200:])
+
+    for payload in ("[1, 2, 3]", '"a string"', "42", "null"):
+        odd = tmp / f"odd{abs(hash(payload)) % 9973}"
+        odd.mkdir()
+        (odd / "neighbour.jsonl").write_text(payload + "\n", encoding="utf-8")
+        r = subprocess.run(common + ["--source-ref", ref, "--out",
+                                     str(odd / "chunks.jsonl")],
+                           capture_output=True, text=True)
+        check(f"a neighbour whose first line is {payload} is not a record",
+              r.returncode == 0 and "Traceback" not in r.stderr,
+              f"rc={r.returncode} stderr={r.stderr[-160:]}")
+
+    unreadable = tmp / "unreadable"
+    unreadable.mkdir()
+    blocked = unreadable / "blocked.jsonl"
+    blocked.write_text("{}\n", encoding="utf-8")
+    os.chmod(blocked, 0o000)
+    try:
+        r = subprocess.run(common + ["--source-ref", ref, "--out",
+                                     str(unreadable / "chunks.jsonl")],
+                           capture_output=True, text=True)
+        check("a neighbour that cannot be read is refused, not passed over",
+              r.returncode != 0 and "cannot be read" in r.stderr,
+              r.stderr[-200:])
+        check("nothing was delivered beside what could not be ruled out",
+              not (unreadable / "chunks.jsonl").exists(),
+              str(sorted(p.name for p in unreadable.iterdir())))
+    finally:
+        os.chmod(blocked, 0o644)
+
 
 def test_recorded_case_range_is_current() -> None:
     print("\nM27 \u2014 the recorded case range is the one the suites print")
@@ -1162,6 +1208,22 @@ def test_chunkers_share_one_provenance_mechanism() -> None:
         check(f"{fn}() is the same in both chunkers",
               all(cut) and cut[0].group(0) == cut[1].group(0),
               "missing" if not all(cut) else "the two copies have diverged")
+
+    # deliver() differs at the head, where each chunker assembles its own
+    # record, and is identical from the stamp onward. That tail holds both
+    # unlinks -- the digest disagreement and the record that could not be
+    # written -- so it is the half worth holding together, and the half no
+    # compiler-free case can drive through the Solidity CLI.
+    tails = []
+    for name in ("markdown", "solidity"):
+        whole = _re.search(r"^def deliver\(.*?(?=^\n\n|^# ---|\Z)",
+                           source[name], _re.S | _re.M)
+        body = whole.group(0) if whole else ""
+        mark = "    _schema.stamp(chunks,"
+        tails.append(body[body.index(mark):] if mark in body else None)
+    check("the delivery tail is the same in both chunkers",
+          all(tails) and tails[0] == tails[1],
+          "missing" if not all(tails) else "the two copies have diverged")
 
 
 def main() -> int:

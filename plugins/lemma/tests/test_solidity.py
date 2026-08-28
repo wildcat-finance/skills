@@ -1419,6 +1419,18 @@ def test_provenance_emitted(solc: str, tmp: pathlib.Path) -> None:
           not (alt / "provenance.jsonl").exists(),
           str(sorted(p.name for p in alt.iterdir())))
 
+    # The one refusal that lives in deliver() rather than record_path(), so
+    # the compiler-free I33 cannot reach it and it needs a real delivery.
+    gone = tmp / "prov-gone"
+    gone.mkdir()
+    r = subprocess.run(common + ["--source-ref", ref, "--out",
+                                 str(gone / "chunks.jsonl"),
+                                 "--provenance", str(gone / "absent" / "p.jsonl")],
+                       capture_output=True, text=True)
+    check("a record that cannot be written takes the corpus with it",
+          r.returncode != 0 and list(gone.iterdir()) == [],
+          f"rc={r.returncode} left={sorted(p.name for p in gone.iterdir())}")
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()

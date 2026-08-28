@@ -1123,11 +1123,23 @@ def _records_beside(directory: pathlib.Path,
     difference to a reader who finds it there. Guarding only the default name
     would leave that failure one --provenance away.
 
-    Bounded on purpose: regular files with a .jsonl suffix, their first line,
-    and its first 4096 bytes. The record is one line of line-delimited JSON
-    carrying a known schema string, so that is enough to recognise one and
-    cheap enough to do before every delivery. A record redirected to some
-    other suffix is outside this bound and is not looked for.
+    Bounded on purpose: regular files, their first line, and its first 4096
+    bytes. The record is one line of line-delimited JSON carrying a known
+    schema string, so that is enough to recognise one and cheap enough to do
+    before every delivery -- two thousand neighbours cost under a tenth of a
+    second. The suffix is not part of the bound, because --provenance writes
+    wherever it is pointed and a record this tool put in rec.json is the same
+    record to a reader who finds it beside a corpus it does not describe.
+
+    A neighbour that cannot be read is a neighbour that cannot be ruled out,
+    so it refuses rather than being passed over. Everything else here records
+    what it could not establish as an absence with a reason; a scan that
+    skipped what it could not open would be the one place that guessed.
+
+    A first line that parses as JSON but is not an object is not a record and
+    is not a crash either: a list, a string, a number and a bare null each
+    took this function down with an AttributeError before the type was
+    checked, which is the shape the validator was taught to avoid in step 1.
     """
     try:
         entries = sorted(directory.iterdir())
@@ -1141,17 +1153,23 @@ def _records_beside(directory: pathlib.Path,
             pass
     found = []
     for entry in entries:
-        if entry.suffix != ".jsonl" or entry.resolve() in spared:
-            continue
         try:
-            if not entry.is_file():
+            if entry.resolve() in spared or not entry.is_file():
                 continue
             with open(entry, "rb") as handle:
                 head = handle.readline(4096)
-            if json.loads(head).get("schema") == _schema.PROVENANCE_SCHEMA:
-                found.append(entry)
-        except (OSError, ValueError):
+        except OSError as problem:
+            raise ChunkError(
+                f"{entry} sits in the directory this corpus is delivered to "
+                f"and cannot be read ({problem}), so whether it is a record "
+                "of some other corpus cannot be established") from problem
+        try:
+            first = json.loads(head)
+        except ValueError:
             continue
+        if (isinstance(first, dict)
+                and first.get("schema") == _schema.PROVENANCE_SCHEMA):
+            found.append(entry)
     return found
 
 
