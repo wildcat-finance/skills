@@ -223,6 +223,54 @@ class HeldCorpusTests(unittest.TestCase):
 
         self.expect_failure("HC016", change)
 
+    def test_basis_rule_tokens_match_rule_citations(self) -> None:
+        def change(_root: Path, manifest: dict[str, Any]) -> None:
+            classification = manifest["cases"][0]["classification"]
+            classification["basis"] += " B030: additional cited rule."
+
+        self.expect_failure("HC016", change)
+
+    def test_basis_may_repeat_a_declared_rule_token(self) -> None:
+        temporary, root = self.copy_corpus()
+        self.addCleanup(temporary.cleanup)
+        manifest = self.load_manifest(root)
+        classification = manifest["cases"][0]["classification"]
+        repeated = classification["rule_citations"][0]
+        classification["basis"] += f" {repeated}: repeated supporting reference."
+        self.write_manifest(root, manifest)
+
+        result = validate_corpus(root)
+        self.assertEqual(len(result.cases), 10)
+
+    def test_json_escaped_forbidden_value_is_refused(self) -> None:
+        temporary, root = self.copy_corpus()
+        self.addCleanup(temporary.cleanup)
+        manifest_path = root / "corpus.json"
+        manifest = self.load_manifest(root)
+        marker = "credential" + "=" + "A" * 12
+        manifest["cases"][0]["classification"]["basis"] += " " + marker
+        encoded = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode()
+        escaped = b"credential" + b"\\u003d" + b"A" * 12
+        manifest_path.write_bytes(encoded.replace(marker.encode(), escaped, 1))
+
+        with self.assertRaises(CorpusError) as raised:
+            validate_corpus(root)
+        self.assertEqual(raised.exception.code, "HC013")
+
+    def test_json_escaped_nonsecret_value_is_allowed(self) -> None:
+        temporary, root = self.copy_corpus()
+        self.addCleanup(temporary.cleanup)
+        manifest_path = root / "corpus.json"
+        manifest = self.load_manifest(root)
+        marker = "credential" + "=" + "short"
+        manifest["cases"][0]["classification"]["basis"] += " " + marker
+        encoded = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode()
+        escaped = b"credential" + b"\\u003d" + b"short"
+        manifest_path.write_bytes(encoded.replace(marker.encode(), escaped, 1))
+
+        result = validate_corpus(root)
+        self.assertEqual(len(result.cases), 10)
+
     def test_zero_or_malformed_source_commit_is_refused(self) -> None:
         for value in ("0" * 40, "not-a-commit"):
             with self.subTest(value=value):

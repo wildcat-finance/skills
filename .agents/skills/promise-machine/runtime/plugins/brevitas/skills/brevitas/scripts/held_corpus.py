@@ -223,11 +223,16 @@ def _reject_forbidden_metadata(value: Any, *, case_id: str | None = None) -> Non
             pending.extend(reversed(current))
         elif isinstance(current, str):
             try:
-                current.encode("utf-8", errors="strict")
+                encoded = current.encode("utf-8", errors="strict")
             except UnicodeEncodeError:
                 raise CorpusError(
                     "HC002", "invalid-unicode-scalar", case_id=case_id
                 ) from None
+            for pattern in FORBIDDEN_BYTES:
+                if pattern.search(encoded):
+                    raise CorpusError(
+                        "HC013", "forbidden-capture-material", case_id=case_id
+                    )
 
 
 def _checked_relative_path(value: Any, *, case_id: str) -> PurePosixPath:
@@ -686,7 +691,7 @@ def _validate_classification(value: Any, *, case_id: str) -> tuple[str, tuple[st
     basis_codes = frozenset(RULE_CODE_TOKEN_RE.findall(basis))
     if (
         not basis_codes.issubset(BREVITAS_RULE_CODES)
-        or not set(rule_citations).issubset(basis_codes)
+        or frozenset(rule_citations) != basis_codes
     ):
         raise CorpusError("HC016", "classification-basis-uncited", case_id=case_id)
     return outcome, tuple(expected_codes)
