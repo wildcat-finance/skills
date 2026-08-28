@@ -1,0 +1,33 @@
+You are routing one request for the Wildcat Labs skills repository at
+/Users/kethcode/wildcat/skills/tmp/fiat/fiat-499-grade-router-selection-not-just-resolution.
+
+Read these files, in this order, and read nothing else in the repository:
+
+1. AGENTS.md at the repository root.
+2. .agents/skills/promise-machine/SKILL.md, which is the router.
+3. The fourteen plugin runtime contracts at plugins/*/AGENTS.md.
+
+Do not search, grep, glob or list any other path, and do not open any other
+file. Your answer must come from those files alone.
+
+Below is one request. It arrived on its own, from one person, with no other
+context. Follow the router as it is written and report the outcome it gives
+you:
+
+- If the router resolves the request to one canonical skill, give that skill's
+  canonical name exactly as the router writes it.
+- If the router does not resolve the request to one canonical skill, say
+  REFUSE and give your reason in one short phrase.
+
+Answer on the request's own terms, and do not try to spread your answer across
+the available skills.
+
+Return one line, and nothing else, in exactly one of these two forms. The label
+below is a placeholder and is not the label of any request:
+
+REQUEST: <canonical-name>
+REQUEST: REFUSE - <reason>
+
+The request:
+
+REQUEST. {request}

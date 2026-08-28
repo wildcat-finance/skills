@@ -43,6 +43,9 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 # One fixed repository-relative corpus, resolved from a constant. No argument,
 # no glob and no caller-supplied component reaches this path.
 CORPUS_PATH = "tests/fixtures/router-selection/cases.json"
+# The prompt the graded context received, committed beside the corpus and
+# reached the same way: one fixed constant, no argument, no caller component.
+PROMPT_TEMPLATE_PATH = "tests/fixtures/router-selection/prompt-template.txt"
 SCHEMA = "promise-machine-router-selection/v1"
 
 ROUTER_PATH = ".agents/skills/promise-machine/SKILL.md"
@@ -60,7 +63,19 @@ RUN_FIELDS = frozenset(
     {"model", "date", "prompt_template_sha256", "corpus_sha256", "cases",
      "passed", "failed", "failures"}
 )
+# A failure entry is model output written into a committed file, so its shape
+# is closed: one case id this corpus holds and one canonical skill name.
+FAILURE_FIELDS = frozenset({"case", "selected"})
 REFUSALS = frozenset({"ambiguous", "uncovered"})
+# What a failure entry may record as the answer given. A graded context
+# can select a skill or refuse, so both are recordable and both stay closed
+# sets: a canonical name this repository declares, or a refusal in the
+# corpus's own two-reason vocabulary. A field that admitted free text would
+# put model prose into a committed file.
+REFUSAL_ANSWERS = frozenset(f"refuse:{reason}" for reason in REFUSALS)
+
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 # The two guard corpora, named by key rather than by path. `load_corpus` keeps
 # one fixed path and gains no argument; a caller that wants a degraded corpus
@@ -130,6 +145,23 @@ def corpus_digest(cases: list) -> str:
     """
     payload = json.dumps(cases, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def prompt_template_digest() -> str:
+    """Digest the committed prompt template.
+
+    A run block names the prompt it was graded under by digest. The digest is
+    only evidence if the bytes it names are in the repository, so the checker
+    reads them rather than trusting the recorded value.
+    """
+    path = REPOSITORY_ROOT / PROMPT_TEMPLATE_PATH
+    try:
+        raw = path.read_bytes()
+    except OSError as error:
+        raise CorpusError(
+            f"{PROMPT_TEMPLATE_PATH} could not be read: {error}"
+        ) from error
+    return hashlib.sha256(raw).hexdigest()
 
 
 def canonical_skill_names() -> dict:
@@ -220,6 +252,12 @@ def run_faults(runs: list, expected: str) -> list:
     be true measured nothing, so the arithmetic the study gives them is checked
     here: every case the run covered was passed or failed, and a run records
     every failing case id.
+
+    The digest mismatch prints both values whole. The message exists to send a
+    reader to a regrade rather than to an edit of the block, and a truncation
+    that renders two different digests as one string argues for the edit
+    instead: it reads as a check that has broken rather than as a corpus that
+    has moved.
     """
     faults = []
     for index, run in enumerate(runs):
@@ -229,8 +267,8 @@ def run_faults(runs: list, expected: str) -> list:
             continue
         if run["corpus_sha256"] != expected:
             faults.append(
-                f"{where}: recorded against corpus {run['corpus_sha256'][:12]} "
-                f"and the cases on disk digest to {expected[:12]}"
+                f"{where}: recorded against corpus {run['corpus_sha256']} "
+                f"and the cases on disk digest to {expected}"
             )
         counts = {}
         for field in ("cases", "passed", "failed"):
@@ -252,6 +290,78 @@ def run_faults(runs: list, expected: str) -> list:
                 f"{where}: {counts['failed']} failed but {len(failures)} failing "
                 f"case id(s) are recorded; a run records every one of them"
             )
+    return faults
+
+
+def run_completeness_faults(runs: list, case_ids: set, names: set, template: str) -> list:
+    """Hold every recorded run block to its identity fields and its failures.
+
+    `run_faults` holds a block's field set, its digest and the arithmetic
+    between its counts. None of that reads what the identity fields say or
+    what a failure names, so a block could carry an empty model, no date, a
+    run over no cases at all, or the same failing case id twice and satisfy
+    it. A block nobody can read back to the run that produced it is not
+    evidence about one model on one date, which is the only thing a recorded
+    score is.
+
+    The recorded prompt-template digest is held equal to the digest of the
+    template committed beside the corpus. A digest naming bytes the repository
+    does not hold is the defect this corpus exists to argue against, one level
+    up: a claim bound to nothing a later reader can retrieve. Holding them
+    equal makes a regrade under a different prompt commit that prompt.
+    """
+    faults = []
+    for index, run in enumerate(runs):
+        where = f"{CORPUS_PATH}#runs[{index}]"
+        if not isinstance(run, dict):
+            faults.append(f"{where}: is not an object")
+            continue
+        model = run.get("model")
+        if not isinstance(model, str) or not model.strip():
+            faults.append(f"{where}: model is not a non-empty string, it is {model!r}")
+        date = run.get("date")
+        if not isinstance(date, str) or not ISO_DATE.match(date):
+            faults.append(f"{where}: date is not a YYYY-MM-DD date, it is {date!r}")
+        recorded = run.get("prompt_template_sha256")
+        if not isinstance(recorded, str) or not SHA256.match(recorded):
+            faults.append(
+                f"{where}: prompt_template_sha256 is not a sha256 digest, it is "
+                f"{recorded!r}; without it the prompt the run used is unrecoverable"
+            )
+        elif recorded != template:
+            faults.append(
+                f"{where}: prompt_template_sha256 records {recorded}, and "
+                f"{PROMPT_TEMPLATE_PATH} digests to {template}; a score is evidence "
+                f"about the prompt that produced it, so commit the prompt this run "
+                f"used rather than editing the block to agree"
+            )
+        covered = run.get("cases")
+        if isinstance(covered, int) and not isinstance(covered, bool) and covered < 1:
+            faults.append(
+                f"{where}: covered {covered} cases, so its counts are consistent "
+                f"with each other and measure nothing"
+            )
+        failures = run.get("failures")
+        if not isinstance(failures, list):
+            continue
+        seen = set()
+        for position, failure in enumerate(failures):
+            spot = f"{where}.failures[{position}]"
+            if not isinstance(failure, dict) or set(failure) != FAILURE_FIELDS:
+                faults.append(f"{spot}: fields are not exactly {sorted(FAILURE_FIELDS)}")
+                continue
+            case = failure["case"]
+            if case not in case_ids:
+                faults.append(f"{spot}: names case {case!r}, which this corpus does not hold")
+            elif case in seen:
+                faults.append(f"{spot}: names case {case!r} a second time")
+            seen.add(case)
+            if failure["selected"] not in names | REFUSAL_ANSWERS:
+                faults.append(
+                    f"{spot}: records the answer {failure['selected']!r}, which is "
+                    f"neither the frontmatter name of a SKILL.md under plugins/ nor "
+                    f"one of {sorted(REFUSAL_ANSWERS)}"
+                )
     return faults
 
 
@@ -538,6 +648,137 @@ class RouterSelectionCorpus(unittest.TestCase):
             "a recorded run block does not describe the corpus in this file; "
             f"regrade against the current cases rather than editing the digest: {wrong}",
         )
+
+        with self.subTest("a digest mismatch names both digests in full"):
+            on_disk = corpus_digest(self.document["cases"])
+            # Two digests that agree on their first twelve characters, which is
+            # where the message used to stop. Every mismatch a reader meets is
+            # this one as far as the printed string is concerned.
+            stale = on_disk[:12] + ("0" if on_disk[12] != "0" else "1") + on_disk[13:]
+            self.assertNotEqual(stale, on_disk)
+            block = dict(self.document["runs"][0], corpus_sha256=stale)
+            message = "\n".join(run_faults([block], on_disk))
+            for digest, role in ((stale, "recorded"), (on_disk, "on disk")):
+                self.assertIn(
+                    digest, message,
+                    f"the mismatch message does not carry the {role} digest whole, "
+                    "so a divergence past its truncation point prints the recorded "
+                    "value and the value on disk as the same string; the message "
+                    "that exists to send a reader to a regrade then reads as a "
+                    f"check that has broken:\n  {message}",
+                )
+
+    def test_the_recorded_run_block_is_complete_and_names_its_failures(self):
+        """The half of a run block the digest check leaves unread.
+
+        A score is only ever evidence about one model, one prompt template,
+        one corpus digest and one date, so a block that does not say all four
+        cites nothing. The digest check covers the corpus half. This covers the
+        rest: who ran it, when, against which prompt template, over how many
+        cases, and which case each failure names.
+
+        A failure entry carries one case id this corpus holds and one canonical
+        skill name, and no other key. Both sides are closed sets the checker
+        already validates, which is what keeps model output out of a committed
+        file. Recording a selection this suite cannot resolve, or the same
+        failing case twice, would leave a score nobody could recount.
+        """
+        faults = run_completeness_faults(
+            self.document["runs"],
+            {case.get("id") for case in self.document["cases"]},
+            set(canonical_skill_names()),
+            prompt_template_digest(),
+        )
+        self.assertEqual(
+            faults, [],
+            "a recorded run block cannot be read back to the run that produced "
+            "it, so the score it carries is not evidence about any model on any "
+            f"date:\n  " + "\n  ".join(faults),
+        )
+
+        # The shape this method closes is consumed by the one surface the
+        # promise authorises for citing a run. A shape nothing can print is a
+        # record of a failing run that no reader ever sees, so the reporter is
+        # driven here, against the same closed shape, rather than left to the
+        # first run that fails something.
+        from tests.emit_router_selection_report import report
+
+        failing = {
+            "model": "a-model",
+            "date": "2026-01-01",
+            "prompt_template_sha256": prompt_template_digest(),
+            "corpus_sha256": corpus_digest(self.document["cases"]),
+            "cases": 36,
+            "passed": 34,
+            "failed": 2,
+            "failures": [
+                {"case": "RS-30", "selected": "pandects"},
+                {"case": "RS-33", "selected": "metron"},
+            ],
+        }
+        self.assertEqual(
+            run_faults([failing], failing["corpus_sha256"])
+            + run_completeness_faults(
+                [failing],
+                {case.get("id") for case in self.document["cases"]},
+                set(canonical_skill_names()),
+                prompt_template_digest(),
+            ),
+            [],
+            "the block driven against the reporter is not one this checker "
+            "accepts, so the guard would not be reporting a recordable run",
+        )
+
+        with self.subTest("the reporter renders a run that failed something"):
+            printed = report(dict(self.document, runs=[failing]))
+            run_lines = [text for text in printed if " run=" in text]
+            self.assertEqual(len(run_lines), 1)
+            self.assertIn("failures=RS-30:pandects,RS-33:metron", run_lines[0])
+
+        with self.subTest("the run line names the four identifiers a score is bound to"):
+            printed = report(self.document)
+            run_lines = [text for text in printed if " run=" in text]
+            self.assertEqual(len(run_lines), len(self.document["runs"]))
+            for text, run in zip(run_lines, self.document["runs"]):
+                for field in ("model", "date", "prompt_template_sha256", "corpus_sha256"):
+                    self.assertIn(
+                        f"{'run' if field == 'date' else field}={run[field]}", text,
+                        f"the authorised report omits {field}, so a cited score is "
+                        "detached from one of the four things it is evidence about",
+                    )
+
+        with self.subTest("a failure records a refusal as well as a selection"):
+            ids = {case.get("id") for case in self.document["cases"]}
+            names = set(canonical_skill_names())
+            template = prompt_template_digest()
+            base = dict(failing)
+            for answer, recordable in (
+                (sorted(names)[0], True),
+                ("refuse:ambiguous", True),
+                ("refuse:uncovered", True),
+                ("REFUSE", False),
+                ("refuse:unclear", False),
+                ("refuse", False),
+            ):
+                block = dict(base, passed=35, failed=1,
+                             failures=[{"case": "RS-33", "selected": answer}])
+                faults = run_completeness_faults([block], ids, names, template)
+                self.assertEqual(
+                    not faults, recordable,
+                    f"the answer {answer!r} was "
+                    f"{'refused' if faults else 'accepted'}; a graded context can "
+                    "select a skill or refuse, and the field admits exactly those "
+                    "two shapes, so a refusal has somewhere truthful to go and "
+                    "free text does not",
+                )
+
+        with self.subTest("no report line echoes a request or a deciding sentence"):
+            printed = "\n".join(report(dict(self.document, runs=[failing])))
+            for case in self.document["cases"]:
+                self.assertNotIn(case["request"], printed)
+                self.assertNotIn(case["deciding_sentence"]["text"], printed)
+            for pair in self.document["pairs"]:
+                self.assertNotIn(pair["deciding_sentence"]["text"], printed)
 
     def test_a_malformed_corpus_fails_by_name_rather_than_reading_as_empty(self):
         """The guard behind the fixed-path read.

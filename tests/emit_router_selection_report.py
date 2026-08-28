@@ -12,9 +12,12 @@ they name the pair and the case that contests it, so the reader can go to that
 case rather than to the whole corpus.
 
 Every line names its subject and the corpus path, so a line pasted into an issue
-still says what it is about. No line carries a request phrasing or a deciding
-sentence: those are the fields a graded agent must not see, and a report that
-echoes them is a route from this file into the context being graded.
+still says what it is about. The run line carries the four identifiers a
+recorded score is evidence about, the model, the prompt template digest, the
+corpus digest and the date, because a pasted score without them is a number
+about nothing. No line carries a request phrasing or a deciding sentence: those
+are the fields a graded agent must not see, and a report that echoes them is a
+route from this file into the context being graded.
 """
 
 from __future__ import annotations
@@ -88,13 +91,41 @@ def report(document: dict) -> list[str]:
                 line(
                     f"run={run.get('date')}",
                     f"model={run.get('model')}",
+                    f"prompt_template_sha256={run.get('prompt_template_sha256')}",
+                    f"corpus_sha256={run.get('corpus_sha256')}",
                     f"cases={run.get('cases')}",
                     f"passed={run.get('passed')}",
                     f"failed={run.get('failed')}",
-                    "failures=" + (",".join(run.get("failures") or []) or "none"),
+                    "failures=" + failures_field(run.get("failures")),
                 )
             )
     return lines
+
+
+def failures_field(failures) -> str:
+    """Render the failure entries a run recorded.
+
+    A failure is an object of `case` and `selected`, so joining the list
+    directly raises rather than printing. A run that failed nothing hides
+    that: the empty list joins to the empty string and the line reads
+    `failures=none`. The first run to fail anything would take out the only
+    surface the promise authorises for citing a run, which is the surface a
+    reader reaches for precisely when a score stops being perfect.
+
+    Each entry prints as the failing case id and the canonical name that was
+    selected instead. Both are closed sets the checker resolves, and neither
+    is a request phrasing or a deciding sentence, so the line carries no route
+    from the corpus into a graded context.
+    """
+    if not failures:
+        return "none"
+    rendered = []
+    for failure in failures:
+        if isinstance(failure, dict):
+            rendered.append(f"{failure.get('case')}:{failure.get('selected')}")
+        else:
+            rendered.append(str(failure))
+    return ",".join(rendered)
 
 
 def main() -> int:
