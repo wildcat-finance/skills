@@ -51,7 +51,7 @@ edit to the vendored instruction.
 From this distribution repository, check the complete binding with:
 
 ```bash
-python3 scripts/promise_machine.py check --only contracts,overlays
+./scripts/python scripts/promise_machine.py check --only contracts,overlays
 ```
 
 A standalone installation without the repository checker performs the same

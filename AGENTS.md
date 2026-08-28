@@ -143,9 +143,8 @@ these instructions.
   no behavioural version or domain promise. It routes through this root
   contract and one plugin runtime contract to one canonical `SKILL.md`. Its
   generated `runtime/` fallback makes a copy-mode Agent Skills install
-  dependency-closed; regenerate it with
-  `python3 scripts/portable_promise_machine.py sync` after a copied source
-  changes.
+  dependency-closed; after a copied source changes, regenerate it with
+  `./scripts/python scripts/portable_promise_machine.py sync`.
 
 ## Loading rules
 
@@ -164,32 +163,34 @@ these instructions.
 
 Run the checks that cover every changed area.
 
-Every `python3` command below means the exact interpreter recorded in
-[`.python-version`](.python-version). The supported minor is declared in
-[`pyproject.toml`](pyproject.toml); do not substitute a different ambient
-interpreter.
+Run every repository-owned Python command through `./scripts/python`. The
+launcher reads the exact interpreter from [`.python-version`](.python-version),
+accepts only that CPython patch, and may locate an already-installed copy
+through `uv`. It never downloads an interpreter or falls back to a different
+ambient version. The supported minor is declared in
+[`pyproject.toml`](pyproject.toml).
 
 ### Suites
 
 ```bash
-python3 scripts/portable_promise_machine.py check
-python3 -m unittest discover -s tests
-python3 -m unittest discover -s plugins/alexandria/tests -t plugins/alexandria
-python3 -m unittest discover -s plugins/ariadne/tests -t plugins/ariadne
-python3 -m unittest discover -s plugins/berean/tests -t plugins/berean
-python3 -m unittest discover -s plugins/brevitas/tests -t plugins/brevitas
-python3 plugins/hermes/skills/hermes/scripts/test_hermes.py
-python3 plugins/hexaemeron/tests/run_tests.py
-python3 plugins/hexaemeron/skills/imprimatur/tests/run_tests.py
-python3 -m unittest discover -s plugins/horos/tests -t plugins/horos
-python3 plugins/lemma/tests/test_markdown.py
-python3 plugins/lemma/tests/test_solidity.py
-python3 -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus
-python3 -m unittest discover -s plugins/pandects/tests -t plugins/pandects
-python3 -m unittest discover -s plugins/probitas/tests -t plugins/probitas
-python3 -m unittest discover -s plugins/sapheneia/tests -t plugins/sapheneia
-python3 -m unittest discover -s plugins/synkrisis/tests -t plugins/synkrisis
-python3 -m unittest discover -s plugins/tabularium/tests -t plugins/tabularium
+./scripts/python scripts/portable_promise_machine.py check
+./scripts/python -m unittest discover -s tests
+./scripts/python -m unittest discover -s plugins/alexandria/tests -t plugins/alexandria
+./scripts/python -m unittest discover -s plugins/ariadne/tests -t plugins/ariadne
+./scripts/python -m unittest discover -s plugins/berean/tests -t plugins/berean
+./scripts/python -m unittest discover -s plugins/brevitas/tests -t plugins/brevitas
+./scripts/python plugins/hermes/skills/hermes/scripts/test_hermes.py
+./scripts/python plugins/hexaemeron/tests/run_tests.py
+./scripts/python plugins/hexaemeron/skills/imprimatur/tests/run_tests.py
+./scripts/python -m unittest discover -s plugins/horos/tests -t plugins/horos
+./scripts/python plugins/lemma/tests/test_markdown.py
+./scripts/python plugins/lemma/tests/test_solidity.py
+./scripts/python -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus
+./scripts/python -m unittest discover -s plugins/pandects/tests -t plugins/pandects
+./scripts/python -m unittest discover -s plugins/probitas/tests -t plugins/probitas
+./scripts/python -m unittest discover -s plugins/sapheneia/tests -t plugins/sapheneia
+./scripts/python -m unittest discover -s plugins/synkrisis/tests -t plugins/synkrisis
+./scripts/python -m unittest discover -s plugins/tabularium/tests -t plugins/tabularium
 ```
 
 ### Solidity
@@ -208,11 +209,11 @@ The three skill lints read a tree rather than a diff, so they run from the root
 and must exit clean:
 
 ```bash
-python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py <changed prose>
-python3 plugins/brevitas/skills/brevitas/scripts/brevitas.py <changed prose>
-python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
-python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
-python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
+./scripts/python plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py <changed prose>
+./scripts/python plugins/brevitas/skills/brevitas/scripts/brevitas.py <changed prose>
+./scripts/python plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+./scripts/python plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+./scripts/python plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
 ```
 
 Validate every changed skill directory against the Agent Skills frontmatter
@@ -233,5 +234,5 @@ tree, so a change that adds or alters a classified file fails it until the
 boundary is regenerated:
 
 ```bash
-python3 plugins/horos/skills/horos/scripts/horos.py scan . --write
+./scripts/python plugins/horos/skills/horos/scripts/horos.py scan . --write
 ```

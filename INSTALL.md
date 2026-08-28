@@ -134,13 +134,16 @@ For a non-interactive project-local Codex install:
 ```bash
 npx skills add wildcat-finance/skills \
   --skill promise-machine --agent codex --copy -y
-python3 .agents/skills/promise-machine/scripts/verify_runtime.py
+.agents/skills/promise-machine/runtime/scripts/python \
+  .agents/skills/promise-machine/scripts/verify_runtime.py
 ```
 
 The installer copies only the selected directory. This router therefore ships
-a generated runtime containing the suite law, plugin contracts, canonical
-skills, and their operational files. It verifies those bytes before routing
-and carries no separate behavioural version. The skills.sh page places
+a generated runtime containing the suite law, exact `.python-version`, checked
+Python launcher, plugin contracts, canonical skills, and their operational
+files. The launcher refuses an ambient mismatch and does not download a
+runtime. The verifier checks the copied bytes before routing. The router carries
+no separate behavioural version. The skills.sh page places
 canonical specialist source entries below the supported collective installer;
 do not install one of those entries alone when its scripts or parent contract
 are required.

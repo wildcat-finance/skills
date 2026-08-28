@@ -13,13 +13,17 @@ it a Wildcat Skills source checkout.
 Before selecting a skill, run:
 
 ```bash
-python3 "<promise-machine directory>/scripts/verify_runtime.py"
+"<promise-machine directory>/runtime/scripts/python" \
+  "<promise-machine directory>/scripts/verify_runtime.py"
 ```
 
-A failed verification blocks selection from this package. Repair or reinstall
-it; do not fetch missing instructions ad hoc or continue from an unverified
-partial copy. This check establishes internal agreement with the installed
-manifest; it does not authenticate the publisher or source commit.
+The launcher reads `runtime/.python-version`, refuses an ambient mismatch, and
+does not download an interpreter. A failed launch or verification blocks
+selection from this package. Install the named CPython explicitly, or repair or
+reinstall the package; do not fetch missing instructions ad hoc or continue
+from an unverified partial copy. Verification establishes internal agreement
+with the installed manifest; it does not authenticate the publisher or source
+commit.
 
 ## Load one specialist
 

@@ -1,0 +1,99 @@
+#!/bin/sh
+
+set -eu
+
+fail() {
+    printf '%s\n' "wildcat-python: $1" >&2
+    exit 1
+}
+
+case "$0" in
+    */*) script_parent=${0%/*} ;;
+    *) fail "invoke the launcher by path, for example ./scripts/python" ;;
+esac
+[ -n "$script_parent" ] || script_parent=/
+script_dir=$(CDPATH= cd -- "$script_parent" && pwd -P) ||
+    fail "cannot resolve the launcher directory"
+root=$(CDPATH= cd -- "$script_dir/.." && pwd -P) ||
+    fail "cannot resolve the launcher root"
+pin_file="$root/.python-version"
+
+if [ ! -f "$pin_file" ] || [ -L "$pin_file" ]; then
+    fail "the interpreter pin is absent or not a regular file: $pin_file"
+fi
+
+exec 3< "$pin_file"
+pin=
+if ! IFS= read -r pin <&3; then
+    exec 3<&-
+    fail "the interpreter pin must be one newline-terminated version"
+fi
+extra=
+if IFS= read -r extra <&3 || [ -n "$extra" ]; then
+    exec 3<&-
+    fail "the interpreter pin must contain exactly one line"
+fi
+exec 3<&-
+
+major=${pin%%.*}
+remainder=${pin#*.}
+if [ "$remainder" = "$pin" ]; then
+    fail "the interpreter pin is not an exact CPython version"
+fi
+minor=${remainder%%.*}
+patch=${remainder#*.}
+if [ "$patch" = "$remainder" ]; then
+    fail "the interpreter pin is not an exact CPython version"
+fi
+case "$patch" in
+    *.*) fail "the interpreter pin is not an exact CPython version" ;;
+esac
+for component in "$major" "$minor" "$patch"; do
+    case "$component" in
+        ''|*[!0-9]*|0[0-9]*)
+            fail "the interpreter pin is not an exact CPython version"
+            ;;
+    esac
+done
+if [ "$major" = 0 ]; then
+    fail "the interpreter pin is not an exact CPython version"
+fi
+
+is_exact_cpython() {
+    "$1" -c \
+        'import sys; expected = tuple(map(int, sys.argv[1].split("."))); raise SystemExit(0 if sys.implementation.name == "cpython" and sys.version_info[:3] == expected else 1)' \
+        "$pin" >/dev/null 2>&1
+}
+
+for command_name in python3 "python$major.$minor" python; do
+    candidate=$(command -v "$command_name" 2>/dev/null || true)
+    if [ -n "$candidate" ] && [ -x "$candidate" ] && is_exact_cpython "$candidate"; then
+        exec "$candidate" "$@"
+    fi
+done
+
+uv_command=$(command -v uv 2>/dev/null || true)
+if [ -n "$uv_command" ] && [ -x "$uv_command" ]; then
+    candidate=$(
+        "$uv_command" python find \
+            --no-project \
+            --no-python-downloads \
+            --no-config \
+            --offline \
+            --resolve-links \
+            "$pin" 2>/dev/null || true
+    )
+    case "$candidate" in
+        /*)
+            if [ -x "$candidate" ] && is_exact_cpython "$candidate"; then
+                exec "$candidate" "$@"
+            fi
+            ;;
+    esac
+fi
+
+printf '%s\n' \
+    "wildcat-python: exact CPython $pin is unavailable" \
+    "wildcat-python: install it explicitly, then retry:" \
+    "  uv python install $pin" >&2
+exit 1

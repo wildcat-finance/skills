@@ -27,6 +27,12 @@ Declare the supported minor once as `==3.13.*` in
 workflow reads that exact pin. Current README, agent, skill, and operating
 prose point to the pin instead of carrying another runtime version claim.
 
+Full checkouts use `scripts/python` as the repository-owned entrypoint. It
+validates the pin, accepts an exact CPython already on `PATH`, or asks `uv` for
+an already-installed exact interpreter. It never downloads a runtime and never
+falls back to a different version. CI may continue to call `python3` after
+`actions/setup-python` has bound that command to the exact pin.
+
 The exact patch may advance within the declared minor after the full suite
 passes. Moving to another minor changes this decision and requires fresh CI
 evidence. Historical studies, runbooks, proofs, audit records, and evidence
@@ -53,9 +59,10 @@ files keep the interpreter versions they actually observed.
 
 The four duplicated interpreter matrices collapse to one lane each without
 removing a test case, assertion, fixture, platform test, or non-Python job. A
-single patch edit updates local version managers and every Python workflow;
-the repository gate rejects an ambient interpreter, workflow, dependency pin,
-or current runtime document that drifts from the contract.
+single patch edit is consumed by the checkout launcher, local version managers
+and every Python workflow; the repository gate rejects an ambient interpreter,
+workflow, dependency pin, or current runtime document that drifts from the
+contract.
 
 The supported contract is deliberately narrower than the code's proven
 minimum. Consumers that choose another interpreter are outside the supported

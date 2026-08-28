@@ -294,13 +294,16 @@ Checked-in examples and verification paths may need less.
 
 [`pyproject.toml`](./pyproject.toml) declares the supported CPython minor, and
 [`.python-version`](./.python-version) is the single source for the exact patch.
-Run every Python-backed skill, repository check, and documented command with
-that pin. [ADR-038](./docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md)
+From a full checkout, run every Python-backed skill and repository check through
+[`scripts/python`](./scripts/python). The launcher accepts the exact CPython
+already on `PATH` or locates an installed copy through `uv`; it never downloads
+one or falls back to another version. Install a missing pin explicitly with
+`uv python install "$(cat .python-version)"`. [ADR-038](./docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md)
 records the boundary and the alternatives that lost.
 
 | Requirement | Skills | When it is needed |
 | --- | --- | --- |
-| [Pinned CPython](./.python-version) | Every Python-backed skill and repository check | All supported Python execution; the minor contract lives in `pyproject.toml` |
+| [Pinned CPython](./.python-version) | Every Python-backed skill and repository check | All supported Python execution; the minor contract lives in `pyproject.toml` and the checkout launcher enforces the exact patch |
 | Git | Hermes, Hexaemeron | Worktree, diff, and receipt checks |
 | GitHub CLI (`gh`) | Hexaemeron | Issue, pull request, and integration phases |
 | Foundry | Hermes, Janus, Pandects; Ariadne and Hexaemeron when working with Foundry projects | Solidity builds, tests, measurements, and captures |

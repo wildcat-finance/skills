@@ -14,8 +14,13 @@ packages are trustworthy or free of advisories.
 """
 
 from pathlib import Path
+import os
 import re
+import shutil
+import stat
+import subprocess
 import sys
+import tempfile
 import tomllib
 import unittest
 
@@ -25,10 +30,11 @@ PYTHON_VERSION = ROOT / ".python-version"
 PYPROJECT = ROOT / "pyproject.toml"
 WORKFLOWS = ROOT / ".github" / "workflows"
 README = ROOT / "README.md"
+AGENTS = ROOT / "AGENTS.md"
 LAZARUS = ROOT / "plugins" / "lazarus"
+PYTHON_LAUNCHER = ROOT / "scripts" / "python"
 
 REQUIRED_MINOR = "==3.13.*"
-EXACT_VERSION = "3.13.15"
 PYTHON_WORKFLOWS = {
     "contributors.yml",
     "janus.yml",
@@ -43,7 +49,9 @@ DEPENDENCY_FILES = {
     "plugins/lazarus/requirements.txt",
 }
 PIN_REFERENCING_PROSE = {
+    ".agents/skills/promise-machine/PORTABLE.md",
     "AGENTS.md",
+    "INSTALL.md",
     "README.md",
     "docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md",
     "plugins/ariadne/docs/design.md",
@@ -72,6 +80,21 @@ RUNTIME_VERSION_CLAIM = re.compile(
     r"|\bsupported\s+python\s+versions\b"
     r"|\buv\s+run\s+--python\s+3(?:\.\d+){1,2}\b)"
 )
+EXECUTION_PIN = re.compile(
+    rb"(?P<major>[1-9][0-9]*)\."
+    rb"(?P<minor>0|[1-9][0-9]*)\."
+    rb"(?P<patch>0|[1-9][0-9]*)\n"
+)
+
+
+def parse_execution_pin(raw, source):
+    """Return one exact newline-terminated CPython version."""
+    match = EXECUTION_PIN.fullmatch(raw)
+    if match is None:
+        raise ValueError(f"{source}: not one exact CPython version")
+    return tuple(
+        int(match.group(part)) for part in ("major", "minor", "patch")
+    )
 
 
 def exact_pins(text, source):
@@ -147,13 +170,26 @@ class PythonRuntimeContractTests(unittest.TestCase):
 
     def test_exact_execution_pin_is_exact_and_matches_the_minor(self):
         raw = PYTHON_VERSION.read_bytes()
-        self.assertEqual(raw, (EXACT_VERSION + "\n").encode("ascii"))
-        major, minor, patch = (int(part) for part in EXACT_VERSION.split("."))
+        major, minor, patch = parse_execution_pin(raw, PYTHON_VERSION)
         self.assertEqual(REQUIRED_MINOR, f"=={major}.{minor}.*")
         self.assertGreaterEqual(patch, 0)
 
+    def test_malformed_execution_pins_are_refused(self):
+        raw = PYTHON_VERSION.read_bytes()
+        malformed = (
+            raw.rstrip(b"\n"),
+            raw + b"\n",
+            b"1.2\n",
+            b"1.02.3\n",
+            b"python-1.2.3\n",
+        )
+        for candidate in malformed:
+            with self.subTest(candidate=candidate):
+                with self.assertRaisesRegex(ValueError, "exact CPython"):
+                    parse_execution_pin(candidate, "fixture")
+
     def test_the_suite_is_running_on_the_exact_cpython_image(self):
-        expected = tuple(int(part) for part in EXACT_VERSION.split("."))
+        expected = parse_execution_pin(PYTHON_VERSION.read_bytes(), PYTHON_VERSION)
         self.assertEqual(sys.implementation.name, "cpython")
         self.assertEqual(
             sys.version_info[:3],
@@ -208,6 +244,190 @@ class PythonRuntimeContractTests(unittest.TestCase):
         self.assertIn("[`pyproject.toml`](./pyproject.toml)", text)
         self.assertIn("[`.python-version`](./.python-version)", text)
         self.assertIn("[ADR-038]", text)
+        self.assertIn("[`scripts/python`](./scripts/python)", text)
+
+    def test_repository_agent_commands_use_the_checked_launcher(self):
+        text = AGENTS.read_text(encoding="utf-8")
+        checks = text.split("## Checks for changes to this repository", 1)[1]
+        self.assertIn("./scripts/python", checks)
+        self.assertNotRegex(checks, r"(?m)^python3(?:\s|$)")
+
+    def test_runtime_contract_commands_do_not_use_bare_python(self):
+        contracts = (AGENTS, *sorted(ROOT.glob("plugins/*/AGENTS.md")))
+        for contract in contracts:
+            with self.subTest(contract=contract.relative_to(ROOT)):
+                text = contract.read_text(encoding="utf-8")
+                self.assertNotRegex(text, r"(?m)^python3(?:\s|$)")
+
+    def test_launcher_is_executable(self):
+        self.assertTrue(PYTHON_LAUNCHER.is_file())
+        self.assertFalse(PYTHON_LAUNCHER.is_symlink())
+        self.assertTrue(PYTHON_LAUNCHER.stat().st_mode & stat.S_IXUSR)
+
+    def test_launcher_accepts_an_exact_ambient_python_without_uv(self):
+        expected = ".".join(
+            str(part)
+            for part in parse_execution_pin(
+                PYTHON_VERSION.read_bytes(), PYTHON_VERSION
+            )
+        )
+        with tempfile.TemporaryDirectory() as raw:
+            binaries = Path(raw)
+            marker = binaries / "uv-ran"
+            self._write_executable(
+                binaries / "python3",
+                "#!/bin/sh\nexec \"$WILDCAT_TEST_PYTHON\" \"$@\"\n",
+            )
+            self._write_executable(
+                binaries / "uv",
+                "#!/bin/sh\n: > \"$WILDCAT_TEST_MARKER\"\nexit 91\n",
+            )
+            environment = self._launcher_environment(binaries, expected)
+            environment["WILDCAT_TEST_MARKER"] = str(marker)
+            completed = subprocess.run(
+                [
+                    str(PYTHON_LAUNCHER),
+                    "-c",
+                    "import platform; print(platform.python_version())",
+                ],
+                cwd=ROOT,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            uv_ran = marker.exists()
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(completed.stdout, expected + "\n")
+        self.assertFalse(uv_ran)
+
+    def test_launcher_ignores_a_wrong_ambient_python(self):
+        expected = ".".join(
+            str(part)
+            for part in parse_execution_pin(
+                PYTHON_VERSION.read_bytes(), PYTHON_VERSION
+            )
+        )
+        with tempfile.TemporaryDirectory() as raw:
+            binaries = Path(raw)
+            for name in self._python_command_names(expected):
+                self._write_executable(binaries / name, "#!/bin/sh\nexit 91\n")
+            self._write_executable(
+                binaries / "uv",
+                """#!/bin/sh
+[ "$#" -eq 8 ] || exit 41
+[ "$1" = python ] || exit 42
+[ "$2" = find ] || exit 43
+[ "$3" = --no-project ] || exit 44
+[ "$4" = --no-python-downloads ] || exit 45
+[ "$5" = --no-config ] || exit 46
+[ "$6" = --offline ] || exit 47
+[ "$7" = --resolve-links ] || exit 48
+[ "$8" = "$WILDCAT_TEST_PIN" ] || exit 49
+printf '%s\n' "$WILDCAT_TEST_PYTHON"
+""",
+            )
+            environment = self._launcher_environment(binaries, expected)
+            completed = subprocess.run(
+                [
+                    str(PYTHON_LAUNCHER),
+                    "-c",
+                    "import platform; print(platform.python_version())",
+                ],
+                cwd=ROOT,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(completed.stdout, expected + "\n")
+
+    def test_launcher_refuses_when_the_exact_runtime_is_unavailable(self):
+        expected = ".".join(
+            str(part)
+            for part in parse_execution_pin(
+                PYTHON_VERSION.read_bytes(), PYTHON_VERSION
+            )
+        )
+        with tempfile.TemporaryDirectory() as raw:
+            binaries = Path(raw)
+            for name in (*self._python_command_names(expected), "uv"):
+                self._write_executable(binaries / name, "#!/bin/sh\nexit 91\n")
+            environment = self._launcher_environment(binaries, expected)
+            completed = subprocess.run(
+                [str(PYTHON_LAUNCHER), "-c", "raise SystemExit(77)"],
+                cwd=ROOT,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(completed.stdout, "")
+        self.assertIn(f"exact CPython {expected} is unavailable", completed.stderr)
+        self.assertIn(f"uv python install {expected}", completed.stderr)
+
+    def test_launcher_refuses_a_malformed_pin_before_running_tools(self):
+        with tempfile.TemporaryDirectory() as raw:
+            workspace = Path(raw)
+            scripts = workspace / "scripts"
+            binaries = workspace / "bin"
+            scripts.mkdir()
+            binaries.mkdir()
+            launcher = scripts / "python"
+            shutil.copy2(PYTHON_LAUNCHER, launcher)
+            (workspace / ".python-version").write_bytes(
+                PYTHON_VERSION.read_bytes() + b"\n"
+            )
+            marker = workspace / "tool-ran"
+            tool = "#!/bin/sh\n: > \"$WILDCAT_TEST_MARKER\"\nexit 91\n"
+            expected = ".".join(
+                str(part)
+                for part in parse_execution_pin(
+                    PYTHON_VERSION.read_bytes(), PYTHON_VERSION
+                )
+            )
+            for name in (*self._python_command_names(expected), "uv"):
+                self._write_executable(binaries / name, tool)
+            environment = dict(os.environ)
+            environment["PATH"] = os.pathsep.join(
+                (str(binaries), "/usr/bin", "/bin")
+            )
+            environment["WILDCAT_TEST_MARKER"] = str(marker)
+            completed = subprocess.run(
+                [str(launcher), "-c", "raise SystemExit(77)"],
+                cwd=workspace,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            tool_ran = marker.exists()
+        self.assertEqual(completed.returncode, 1)
+        self.assertEqual(completed.stdout, "")
+        self.assertIn("must contain exactly one line", completed.stderr)
+        self.assertFalse(tool_ran)
+
+    @staticmethod
+    def _write_executable(path, text):
+        path.write_text(text, encoding="utf-8")
+        path.chmod(0o755)
+
+    @staticmethod
+    def _launcher_environment(binaries, expected):
+        environment = dict(os.environ)
+        environment["PATH"] = os.pathsep.join(
+            (str(binaries), "/usr/bin", "/bin")
+        )
+        environment["WILDCAT_TEST_PIN"] = expected
+        environment["WILDCAT_TEST_PYTHON"] = sys.executable
+        return environment
+
+    @staticmethod
+    def _python_command_names(expected):
+        major, minor, _ = expected.split(".")
+        return ("python3", f"python{major}.{minor}", "python")
 
     def test_current_runtime_prose_points_to_the_pin(self):
         for relative in sorted(PIN_REFERENCING_PROSE):

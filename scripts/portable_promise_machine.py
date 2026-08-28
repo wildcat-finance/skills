@@ -33,6 +33,7 @@ ROOT_FILES = (
     Path("schemas/promise-machine-run-observation-capture-v1.schema.json"),
     Path("schemas/promise-machine-run-observation-v1.schema.json"),
     Path("scripts/promise_machine.py"),
+    Path("scripts/python"),
     Path("scripts/run_observation.py"),
     Path("scripts/run_observation_capture.py"),
     Path("docs/decisions/ADR-009-four-issue-queues-and-their-titles.md"),
@@ -240,7 +241,7 @@ def check(root: Path) -> None:
         raise PackageError(
             "portable runtime drift: "
             f"missing={missing!r} extra={extra!r} changed={changed!r}; "
-            f"run python3 {GENERATOR} sync"
+            f"run ./scripts/python {GENERATOR} sync"
         )
 
 

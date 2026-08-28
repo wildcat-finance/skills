@@ -104,6 +104,10 @@ class SkillsShPackageTests(unittest.TestCase):
             if path.is_file() or path.is_symlink()
         }
         self.assertEqual(actual, expected)
+        launcher = RUNTIME / "scripts" / "python"
+        self.assertTrue(launcher.is_file())
+        self.assertFalse(launcher.is_symlink())
+        self.assertTrue(launcher.stat().st_mode & 0o100)
         boundary = json.loads(
             (RUNTIME / ".horos/boundary.json").read_text(encoding="utf-8")
         )
@@ -199,7 +203,10 @@ class SkillsShPackageTests(unittest.TestCase):
             self.assertFalse((project / "PROMISE_MACHINE.md").exists())
             self.assertFalse((project / "plugins").exists())
             result = subprocess.run(  # phylax: allow subprocess: fixed installed verifier
-                [sys.executable, str(installed / "scripts" / "verify_runtime.py")],
+                [
+                    str(installed / "runtime" / "scripts" / "python"),
+                    str(installed / "scripts" / "verify_runtime.py"),
+                ],
                 cwd=project,
                 capture_output=True,
                 text=True,

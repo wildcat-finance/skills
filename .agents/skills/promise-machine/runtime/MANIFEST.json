@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 886,
-  "total_bytes": 19932315,
+  "file_count": 887,
+  "total_bytes": 19935517,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "1e1b342ef79261adae98f3ea51c3750ec7147d578edbde9665d1911f304e7951",
+      "sha256": "8e88d042a55568031114eb3e47eb2bb150359cd11f63a34f86377a1108f1f8d9",
       "source": null
     },
     {
@@ -55,9 +55,9 @@
       "source": ".python-version"
     },
     {
-      "bytes": 12023,
+      "bytes": 12410,
       "path": "AGENTS.md",
-      "sha256": "df1eeff8b434fb8dda2d4fc886069aafa5afe0fcc31933325f78a5dfacf5843d",
+      "sha256": "330eeb8b4e632abec9fb60a9214d41ccb2a861329152872ffa0a5c2f4c5347e5",
       "source": "AGENTS.md"
     },
     {
@@ -1249,9 +1249,9 @@
       "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py"
     },
     {
-      "bytes": 8534,
+      "bytes": 8543,
       "path": "plugins/hexaemeron/AGENTS.md",
-      "sha256": "40a3acb284b429141306320c32e887ff6326f35813380246c268dd2c04f34fc4",
+      "sha256": "5829fa3c82dbbcff81c0769d83e05b83b51f24de9a4fea5c2c746cd718512cc1",
       "source": "plugins/hexaemeron/AGENTS.md"
     },
     {
@@ -5339,6 +5339,12 @@
       "path": "scripts/promise_machine.py",
       "sha256": "219126ce9b4ad5e8bba12e593d8968517407d57b651c715f9f11b236289b52d7",
       "source": "scripts/promise_machine.py"
+    },
+    {
+      "bytes": 2806,
+      "path": "scripts/python",
+      "sha256": "583f91786f3e33dd051c75faddb212c50d1be48acc53fd9211d028ae8961bce1",
+      "source": "scripts/python"
     },
     {
       "bytes": 92406,
