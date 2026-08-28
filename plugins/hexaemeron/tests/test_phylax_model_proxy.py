@@ -1005,6 +1005,17 @@ class FramingTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "MP213"):
             core.encode_response(request, "again")
 
+    def test_responses_remain_in_admission_order_without_multiplexing(self):
+        core = FramingCore(self.policy)
+        first, second = core.feed(request_frame("first") + request_frame("second"))
+        with self.assertRaisesRegex(PolicyError, "MP213"):
+            core.encode_response(second, "SECOND")
+
+        core = FramingCore(self.policy)
+        first, second = core.feed(request_frame("first") + request_frame("second"))
+        core.encode_response(first, "FIRST")
+        core.encode_response(second, "SECOND")
+
     def test_frame_events_are_fixed_content_free_and_bounded(self):
         sentinel = "fiat-700-event-secret-canary"
         core = FramingCore(self.policy)

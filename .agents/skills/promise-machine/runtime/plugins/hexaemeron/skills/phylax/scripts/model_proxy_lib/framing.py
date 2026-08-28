@@ -216,6 +216,7 @@ class FramingCore:
         self._payload = bytearray()
         self._expected_length: int | None = None
         self._next_sequence = 1
+        self._next_response_sequence = 1
         self._owner = object()
         self._issued: dict[int, TextRequest] = {}
         self._events: list[FrameEvent] = []
@@ -360,6 +361,7 @@ class FramingCore:
             or not isinstance(request.sequence, int)
             or request.sequence < 1
             or request.sequence >= self._next_sequence
+            or request.sequence != self._next_response_sequence
             or self._issued.get(request.sequence) is not request
         ):
             self._refuse("MP213", "frame.response.sequence", "response")
@@ -389,6 +391,7 @@ class FramingCore:
         if len(payload) > self._limits.max_response_bytes:
             self._refuse("MP215", "frame.response.bytes", "response")
         del self._issued[request.sequence]
+        self._next_response_sequence += 1
         self._record("response", "accepted", "MP000")
         return struct.pack(">I", len(payload)) + payload
 

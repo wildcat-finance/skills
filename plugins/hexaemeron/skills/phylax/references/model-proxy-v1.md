@@ -157,10 +157,12 @@ also refuses; it does not become provider input.
 ## Closed text response
 
 The trusted core accepts a normalised output string only for the exact,
-unconsumed `TextRequest` object issued by that same core. A copied, foreign, or
-already-consumed request refuses even when it repeats an admitted sequence. It
-checks the compiled output-token, string-byte, and response-byte ceilings,
-then emits one length-prefixed canonical JSON object with exactly
+unconsumed `TextRequest` object issued next by that same core. A copied,
+foreign, already-consumed, or later request refuses even when it repeats an
+admitted sequence. Responses therefore remain in admission order rather than
+multiplexing issued requests. The core checks the compiled output-token,
+string-byte, and response-byte ceilings, then emits one length-prefixed
+canonical JSON object with exactly
 `schema=model-response/v1`, the core-assigned `sequence`, and `output`. The
 guest cannot submit a response object or choose its sequence.
 
