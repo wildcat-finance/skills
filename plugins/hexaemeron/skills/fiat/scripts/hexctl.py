@@ -195,6 +195,40 @@ OBSERVATION_REDACTION_STATUSES = ("passed", "failed", "unknown")
 OBSERVATION_REASON_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 _OBSERVATION_VALIDATOR = None
 
+VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
+VERSION_RELATIONS_INFO = "version-relations"
+VERSION_RELATION = "next-generation-after-integration-base"
+VERSION_RELATIONS_MAX = 32
+VERSION_RELATION_PATH_BYTES_MAX = 1024
+VERSION_RELATION_COUNTER_DIGITS_MAX = 128
+VERSION_RELATION_COUNTER_MAX = (10 ** VERSION_RELATION_COUNTER_DIGITS_MAX) - 1
+VERSION_RELATION_SKILL_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+VERSION_RELATION_FENCE_RE = re.compile(
+    r"^ {0,3}(?P<mark>`{3,}|~{3,})(?P<info>.*)$"
+)
+VERSION_RELATION_TARGET_KEYS = frozenset(
+    {
+        "skill",
+        "ledger",
+        "relation",
+        "anchor_version",
+        "evolution",
+        "generation",
+        "epoch",
+        "frontier_status",
+        "frontier_revision",
+        "frontier_sha256",
+        "current_frontier_sha256",
+        "next_job_sha256",
+        "ledger_sha256",
+        "skill_sha256",
+        "skill_metadata_version",
+    }
+)
+VERSION_RELATION_KEYS = frozenset(
+    {"schema", "source_sha256", "anchor_commit", "targets"}
+)
+
 
 def scoped_path(base_dir: str, supplied: str, label: str) -> str:
     """Resolve one path and refuse anything outside the target directory."""
@@ -776,6 +810,108 @@ def require_state_container(value, path: str, expected_type: type):
     return value
 
 
+def _state_relation_fault(path: str, reason: str) -> None:
+    """Refuse one malformed optional relation container without echoing values."""
+    die(f"state version relations key '{path}' {reason}", 1)
+
+
+def validate_version_relations_shape(value, path: str) -> dict:
+    """Validate the closed additive v1 runbook-anchor receipt."""
+    if not isinstance(value, dict):
+        _state_relation_fault(path, "must be an object")
+    if set(value) != VERSION_RELATION_KEYS:
+        _state_relation_fault(path, "has an unsupported field set")
+    if value.get("schema") != VERSION_RELATIONS_SCHEMA:
+        _state_relation_fault(f"{path}.schema", "is not supported")
+    for name in ("source_sha256", "anchor_commit"):
+        candidate = value.get(name)
+        valid = isinstance(candidate, str) and (
+            re.fullmatch(r"[0-9a-f]{64}", candidate) is not None
+            if name == "source_sha256"
+            else COMMIT_RE.fullmatch(candidate) is not None
+        )
+        if not valid:
+            _state_relation_fault(f"{path}.{name}", "is malformed")
+    targets = value.get("targets")
+    if not isinstance(targets, list) or not targets:
+        _state_relation_fault(f"{path}.targets", "must be a non-empty array")
+    if len(targets) > VERSION_RELATIONS_MAX:
+        _state_relation_fault(f"{path}.targets", "exceeds its item cap")
+
+    prior_skill = None
+    seen_paths = set()
+    for index, target in enumerate(targets):
+        target_path = f"{path}.targets[{index}]"
+        if not isinstance(target, dict) or set(target) != VERSION_RELATION_TARGET_KEYS:
+            _state_relation_fault(target_path, "has an unsupported field set")
+        skill = target.get("skill")
+        ledger = target.get("ledger")
+        if not isinstance(skill, str) or not VERSION_RELATION_SKILL_RE.fullmatch(skill):
+            _state_relation_fault(f"{target_path}.skill", "is malformed")
+        if not isinstance(ledger, str) or _version_relation_path_fault(ledger, skill):
+            _state_relation_fault(f"{target_path}.ledger", "is malformed")
+        if prior_skill is not None and skill <= prior_skill:
+            _state_relation_fault(f"{path}.targets", "is not uniquely skill-sorted")
+        if ledger in seen_paths:
+            _state_relation_fault(f"{path}.targets", "repeats a ledger path")
+        prior_skill = skill
+        seen_paths.add(ledger)
+        if target.get("relation") != VERSION_RELATION:
+            _state_relation_fault(f"{target_path}.relation", "is not supported")
+
+        counters = []
+        for name in ("evolution", "generation", "epoch"):
+            counter = target.get(name)
+            if (
+                not isinstance(counter, int)
+                or isinstance(counter, bool)
+                or counter < 0
+                or counter > VERSION_RELATION_COUNTER_MAX
+            ):
+                _state_relation_fault(f"{target_path}.{name}", "is malformed")
+            if name == "generation" and counter == VERSION_RELATION_COUNTER_MAX:
+                _state_relation_fault(
+                    f"{target_path}.generation",
+                    "cannot be projected within its counter bound",
+                )
+            counters.append(counter)
+        expected_label = f"{skill}-v{counters[0]}.{counters[1]}.{counters[2]}"
+        if target.get("anchor_version") != expected_label:
+            _state_relation_fault(f"{target_path}.anchor_version", "is inconsistent")
+        expected_metadata = ".".join(str(counter) for counter in counters)
+        if target.get("skill_metadata_version") != expected_metadata:
+            _state_relation_fault(
+                f"{target_path}.skill_metadata_version", "is inconsistent"
+            )
+        if target.get("frontier_status") not in ("open", "mature"):
+            _state_relation_fault(f"{target_path}.frontier_status", "is malformed")
+        revision = target.get("frontier_revision")
+        try:
+            revision_bytes = (
+                revision.encode("utf-8") if isinstance(revision, str) else b""
+            )
+        except UnicodeEncodeError:
+            revision_bytes = b""
+        if (
+            not isinstance(revision, str)
+            or not revision_bytes
+            or len(revision_bytes) > VERSION_RELATION_PATH_BYTES_MAX
+            or _contains_nonprinting_character(revision)
+        ):
+            _state_relation_fault(f"{target_path}.frontier_revision", "is malformed")
+        for name in (
+            "frontier_sha256",
+            "current_frontier_sha256",
+            "next_job_sha256",
+            "ledger_sha256",
+            "skill_sha256",
+        ):
+            digest = target.get(name)
+            if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                _state_relation_fault(f"{target_path}.{name}", "is malformed")
+    return value
+
+
 def validate_state_shape(state) -> dict:
     """Validate the version-1 container spine in one deterministic order.
 
@@ -788,7 +924,12 @@ def validate_state_shape(state) -> dict:
         require_state_container(
             config.get(section), f"config.{section}", dict
         )
-    require_state_container(root.get("receipts"), "receipts", dict)
+    receipts = require_state_container(root.get("receipts"), "receipts", dict)
+    runbook = receipts.get("runbook")
+    if isinstance(runbook, dict) and "version_relations" in runbook:
+        validate_version_relations_shape(
+            runbook["version_relations"], "receipts.runbook.version_relations"
+        )
     steps = require_state_container(root.get("steps"), "steps", list)
 
     for step_index, step in enumerate(steps):
@@ -1459,6 +1600,11 @@ def cmd_init(args) -> None:
             f"for '{run_branch}' off '{args.base}'"
         ),
     )
+    try:
+        starting_commit = _native_relation_worktree_start(worktree, run_branch)
+    except SystemExit:
+        remove_run_worktree(args.dir, worktree)
+        raise
 
     # From here the run's home is the worktree, so a failure has something to
     # undo. Anything that goes wrong while writing state takes the tree with it,
@@ -1496,7 +1642,12 @@ def cmd_init(args) -> None:
     state["config"]["audit"]["log_path"] = run_audit_log_path(run_branch)
     state["worktree"] = worktree
     state["origin"] = origin_root
-    init_data = {"topic": args.topic, "base": args.base, "run_branch": run_branch}
+    init_data = {
+        "topic": args.topic,
+        "base": args.base,
+        "run_branch": run_branch,
+        "starting_commit": starting_commit,
+    }
     if args.task_issue is not None:
         init_data["task_issue"] = args.task_issue
     try:
@@ -1588,8 +1739,738 @@ def ledger_frontier_digest(text: str) -> str | None:
 
 
 def _label_parts(label: str, skill: str) -> tuple[int, int, int] | None:
-    match = re.fullmatch(rf"{re.escape(skill)}-v(\d+)\.(\d+)\.(\d+)", label)
-    return tuple(int(g) for g in match.groups()) if match else None
+    match = re.fullmatch(
+        rf"{re.escape(skill)}-v([0-9]+)\.([0-9]+)\.([0-9]+)", label
+    )
+    if match is None:
+        return None
+    groups = match.groups()
+    if any(len(group) > VERSION_RELATION_COUNTER_DIGITS_MAX for group in groups):
+        return None
+    try:
+        return tuple(int(group) for group in groups)
+    except ValueError:
+        # Python bounds decimal-to-integer conversion. Treat a label beyond that
+        # bound as malformed input instead of letting its exception escape with
+        # interpreter-specific diagnostic text.
+        return None
+
+
+def _contains_nonprinting_character(value: str) -> bool:
+    """Cover control and format characters at a runbook/state boundary."""
+    return any(not character.isprintable() for character in value)
+
+
+def _version_relation_path_fault(value: str, skill: str) -> str | None:
+    """Return the lexical fault for one governed ledger path, if any."""
+    if not isinstance(value, str):
+        return "relation path is not text"
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError:
+        encoded = b""
+    parts = value.split("/")
+    if (
+        not encoded
+        or len(encoded) > VERSION_RELATION_PATH_BYTES_MAX
+        or value.startswith(("/", "\\"))
+        or re.match(r"^[A-Za-z]:", value)
+        or "\\" in value
+        or any(part in ("", ".", "..") for part in parts)
+        or _contains_nonprinting_character(value)
+    ):
+        return "relation path is not a safe repository-relative path"
+    if len(parts) < 2 or parts[-1] != "EVOLUTION.md":
+        return "relation path must name an EVOLUTION.md file"
+    if parts[-2] != skill:
+        return "relation target id must match the skill directory before EVOLUTION.md"
+    return None
+
+
+def _first_unfenced_step(lines: list[str]) -> int | None:
+    open_mark = None
+    open_length = None
+    for index, physical in enumerate(lines):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is not None:
+            sequence = fence.group("mark")
+            mark = sequence[0]
+            info = fence.group("info").strip()
+            if open_mark is None:
+                open_mark, open_length = mark, len(sequence)
+                continue
+            if mark == open_mark and len(sequence) >= open_length and not info:
+                open_mark, open_length = None, None
+            continue
+        if open_mark is None and STEP_HEADING_RE.fullmatch(line):
+            return index
+    return None
+
+
+def parse_version_relation_source(text: str) -> dict | None:
+    """Extract one closed Protasis relation block without opening its paths."""
+    lines = text.splitlines(keepends=True)
+    blocks = []
+    open_mark = None
+    open_length = None
+    relation_open = None
+    for index, physical in enumerate(lines):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is None:
+            continue
+        sequence = fence.group("mark")
+        mark = sequence[0]
+        info = fence.group("info").strip()
+        if open_mark is None:
+            open_mark, open_length = mark, len(sequence)
+            words = info.split()
+            relation_open = (
+                (index, info == VERSION_RELATIONS_INFO)
+                if words and words[0] == VERSION_RELATIONS_INFO
+                else None
+            )
+            continue
+        if mark == open_mark and len(sequence) >= open_length and not info:
+            if relation_open is not None:
+                opening, exact_info = relation_open
+                blocks.append((opening, index, exact_info, True))
+            open_mark, open_length, relation_open = None, None, None
+    if relation_open is not None:
+        opening, exact_info = relation_open
+        blocks.append((opening, len(lines) - 1, exact_info, False))
+    if not blocks:
+        return None
+    if len(blocks) != 1:
+        die("runbook carries more than one version-relations block")
+
+    opening, closing, exact_info, closed = blocks[0]
+    if not exact_info:
+        die("version-relations fence must carry only that exact info string")
+    if not closed:
+        die("version-relations block is not closed")
+    first_step = _first_unfenced_step(lines)
+    if first_step is not None and opening >= first_step:
+        die("version-relations block must occur before Step 1")
+
+    rows = [line.rstrip("\r\n") for line in lines[opening + 1 : closing]]
+    if not rows:
+        die("version-relations block carries no row")
+    if len(rows) > VERSION_RELATIONS_MAX:
+        die(f"version-relations block exceeds {VERSION_RELATIONS_MAX} rows")
+
+    targets = []
+    seen_skills = set()
+    seen_paths = set()
+    for row in rows:
+        if not row.strip():
+            die("version-relations row must not be blank")
+        if _contains_nonprinting_character(row):
+            die("version-relations row contains a control character")
+        fields = [field.strip() for field in row.split("|")]
+        if len(fields) != 3 or any(not field for field in fields):
+            die(
+                "version-relations row must carry three non-empty fields "
+                "(skill id | EVOLUTION.md path | relation)"
+            )
+        skill, ledger, relation = fields
+        if not VERSION_RELATION_SKILL_RE.fullmatch(skill):
+            die("version relation target id is not kebab-case")
+        if skill in seen_skills:
+            die("version relation target id appears more than once")
+        if ledger in seen_paths:
+            die("version relation path appears more than once")
+        fault = _version_relation_path_fault(ledger, skill)
+        if fault:
+            die(fault)
+        if relation != VERSION_RELATION:
+            die(f"unknown version relation; expected {VERSION_RELATION!r}")
+        seen_skills.add(skill)
+        seen_paths.add(ledger)
+        targets.append({"skill": skill, "ledger": ledger, "relation": relation})
+
+    outside = "".join(lines[:opening] + lines[closing + 1 :])
+    for skill in sorted(seen_skills):
+        token = re.compile(
+            rf"(?<![A-Za-z0-9-]){re.escape(skill)}-v"
+            rf"[0-9]+\.[0-9]+\.[0-9]+(?![A-Za-z0-9-])"
+        )
+        if token.search(outside):
+            die(
+                "declared target has a concrete version token outside the "
+                "version-relations block"
+            )
+    source = "".join(lines[opening : closing + 1]).encode("utf-8")
+    return {
+        "source_sha256": hashlib.sha256(source).hexdigest(),
+        "targets": targets,
+    }
+
+
+def _native_relation_git(
+    base_dir: str, argv: list[str], refusal: str
+) -> bytes:
+    """Read native local objects without inherited Git substitution state."""
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("GIT_")
+    }
+    environment.update(
+        {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_SYSTEM": os.devnull,
+            "GIT_NO_LAZY_FETCH": "1",
+            "GIT_TERMINAL_PROMPT": "0",
+        }
+    )
+    return bounded_tool(
+        base_dir,
+        "git",
+        ["--no-replace-objects", *argv],
+        refusal,
+        environment=environment,
+    )
+
+
+def _native_relation_commit(base_dir: str, ref: str, label: str) -> str:
+    raw = _native_relation_git(
+        base_dir,
+        ["rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}"],
+        f"{label} does not resolve to a native commit",
+    )
+    try:
+        lines = [line for line in raw.decode("ascii").splitlines() if line]
+    except UnicodeDecodeError:
+        lines = []
+    if len(lines) != 1 or not COMMIT_RE.fullmatch(lines[0]):
+        die(f"{label} did not resolve to one full native commit SHA")
+    return lines[0]
+
+
+def _native_relation_repository_identity(base_dir: str) -> tuple[str, str]:
+    """Identify the worktree Git directory and its exact common repository."""
+    raw = _native_relation_git(
+        base_dir,
+        [
+            "rev-parse",
+            "--path-format=absolute",
+            "--absolute-git-dir",
+            "--git-common-dir",
+        ],
+        "version relation repository identity cannot be read",
+    )
+    try:
+        lines = raw.decode("utf-8").splitlines()
+        encoded = [line.encode("utf-8") for line in lines]
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        lines = []
+        encoded = []
+    if (
+        len(lines) != 2
+        or any(not os.path.isabs(line) for line in lines)
+        or any(not value or len(value) > 4096 for value in encoded)
+    ):
+        die("version relation repository identity is malformed")
+    return tuple(lines)
+
+
+def _native_relation_worktree_start(base_dir: str, branch: str) -> str:
+    """Capture the exact commit checked out when ``init`` made the worktree."""
+    first = _native_relation_commit(base_dir, "HEAD", "run starting commit")
+    symbolic = _native_relation_git(
+        base_dir,
+        ["symbolic-ref", "--quiet", "HEAD"],
+        "run starting branch cannot be read",
+    )
+    current = _native_relation_git(
+        base_dir,
+        ["show-ref", "--verify", "--hash", f"refs/heads/{branch}"],
+        "run starting commit cannot be read",
+    )
+    final = _native_relation_commit(base_dir, "HEAD", "run starting commit")
+    try:
+        symbolic_name = symbolic.decode("utf-8").strip()
+        current_sha = current.decode("ascii").strip()
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        symbolic_name = ""
+        current_sha = ""
+    if symbolic_name != f"refs/heads/{branch}":
+        die("run worktree did not retain its named starting branch")
+    if (
+        first != final
+        or not COMMIT_RE.fullmatch(current_sha)
+        or current_sha != first
+    ):
+        die("run starting commit changed while init recorded it")
+    return first
+
+
+def _relation_init_starting_commit(base_dir: str, state: dict) -> str:
+    """Read the exact run start from the intact hash-chained init receipt."""
+    path = ledger_path(base_dir)
+    if not os.path.exists(path):
+        die("version relation init evidence is missing", 1)
+    prev = "genesis"
+    first_entry = None
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            for line_number, line in enumerate(handle, 1):
+                if not line.strip():
+                    continue
+                entry = json.loads(line)
+                expected = hashlib.sha256(
+                    canonical(
+                        {
+                            "ts": entry["ts"],
+                            "event": entry["event"],
+                            "data": entry["data"],
+                            "prev": entry["prev"],
+                            "state": entry["state"],
+                        }
+                    ).encode()
+                ).hexdigest()
+                if entry["prev"] != prev or entry["hash"] != expected:
+                    die(
+                        f"version relation controller ledger is not intact at "
+                        f"line {line_number}",
+                        1,
+                    )
+                if first_entry is None:
+                    first_entry = entry
+                prev = entry["hash"]
+    except (OSError, UnicodeDecodeError, ValueError, KeyError, TypeError):
+        die("version relation controller ledger is malformed", 1)
+    data = as_dict(as_dict(first_entry).get("data"))
+    starting_commit = data.get("starting_commit")
+    if (
+        as_dict(first_entry).get("event") != "init"
+        or data.get("base") != state.get("base")
+        or data.get("run_branch") != run_branch_of(state)
+        or not isinstance(starting_commit, str)
+        or not COMMIT_RE.fullmatch(starting_commit)
+    ):
+        die("version relation init starting commit is missing or malformed", 1)
+    return starting_commit
+
+
+def _require_native_relation_history(base_dir: str) -> None:
+    """Refuse local object and ancestry substitutions before a branch point."""
+    if "GIT_GRAFT_FILE" in os.environ:
+        die("version relation starting history is rewritten by a graft")
+    local_substitutions = (
+        (
+            "info/grafts",
+            "graft",
+            "version relation starting history is rewritten by a graft",
+        ),
+        (
+            "objects/info/alternates",
+            "alternate object store",
+            "version relation repository uses an alternate object store",
+        ),
+    )
+    for git_path, label, populated_refusal in local_substitutions:
+        raw = _native_relation_git(
+            base_dir,
+            ["rev-parse", "--path-format=absolute", "--git-path", git_path],
+            f"version relation {label} state cannot be located",
+        )
+        try:
+            lines = raw.decode("utf-8").splitlines()
+            encoded_path = lines[0].encode("utf-8") if len(lines) == 1 else b""
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            lines = []
+            encoded_path = b""
+        if (
+            len(lines) != 1
+            or not os.path.isabs(lines[0])
+            or not encoded_path
+            or len(encoded_path) > 4096
+        ):
+            die(f"version relation {label} path is malformed")
+        try:
+            candidate = os.lstat(lines[0])
+        except FileNotFoundError:
+            continue
+        except (OSError, ValueError):
+            die(f"version relation {label} state cannot be read")
+        if not stat.S_ISREG(candidate.st_mode) or candidate.st_size:
+            die(populated_refusal)
+
+    shallow = _native_relation_git(
+        base_dir,
+        ["rev-parse", "--is-shallow-repository"],
+        "version relation shallow state cannot be read",
+    )
+    try:
+        shallow_state = shallow.decode("ascii").strip()
+    except UnicodeDecodeError:
+        shallow_state = ""
+    if shallow_state == "true":
+        die("version relation starting history is shallow")
+    if shallow_state != "false":
+        die("version relation shallow state is malformed")
+
+
+def relation_anchor_commit(base_dir: str, state: dict) -> str:
+    """The immutable branch point the run started from, using native local refs."""
+    init_start = _relation_init_starting_commit(base_dir, state)
+    repository = _native_relation_repository_identity(base_dir)
+    _require_native_relation_history(base_dir)
+    starting = state.get("base")
+    if isinstance(starting, str) and COMMIT_RE.fullmatch(starting):
+        anchor = _native_relation_commit(
+            base_dir, starting, "version relation starting commit"
+        )
+        _require_native_relation_history(base_dir)
+        if _native_relation_repository_identity(base_dir) != repository:
+            die("version relation repository changed while reading the starting commit")
+        if anchor != init_start:
+            die("version relation starting commit does not match the init starting commit")
+        return anchor
+    run_branch = run_branch_of(state)
+    if not isinstance(run_branch, str) or not run_branch:
+        die("version relations require the run's integration branch")
+    base_branch = integration_base_of(state)
+    run_head = _native_relation_commit(
+        base_dir, run_branch, "version relation run branch"
+    )
+    base_head = _native_relation_commit(
+        base_dir, base_branch, "version relation base branch"
+    )
+    raw = _native_relation_git(
+        base_dir,
+        ["merge-base", "--all", run_head, base_head],
+        "version relation starting commit cannot be derived",
+    )
+    try:
+        candidates = [line for line in raw.decode("ascii").splitlines() if line]
+    except UnicodeDecodeError:
+        candidates = []
+    if len(candidates) != 1 or not COMMIT_RE.fullmatch(candidates[0]):
+        die("version relation starting commit is ambiguous or malformed")
+    final_run = _native_relation_commit(
+        base_dir, run_branch, "version relation run branch"
+    )
+    final_base = _native_relation_commit(
+        base_dir, base_branch, "version relation base branch"
+    )
+    if (run_head, base_head) != (final_run, final_base):
+        die("version relation refs changed while deriving the starting commit")
+    _require_native_relation_history(base_dir)
+    if _native_relation_repository_identity(base_dir) != repository:
+        die("version relation repository changed while deriving the starting commit")
+    if candidates[0] != init_start:
+        die("version relation branch point does not match the init starting commit")
+    return candidates[0]
+
+
+def read_commit_blob(
+    base_dir: str, commit_sha: str, relative: str, label: str
+) -> tuple[str, bytes]:
+    """Read one bounded regular Git blob at an exact commit without a worktree."""
+    raw = _native_relation_git(
+        base_dir,
+        ["ls-tree", "-z", commit_sha, "--", relative],
+        f"{label} object cannot be inspected",
+    )
+    entries = [entry for entry in raw.split(b"\0") if entry]
+    if not entries:
+        die(f"{label} object is missing at the anchor commit")
+    if len(entries) != 1 or b"\t" not in entries[0]:
+        die(f"{label} object identity is ambiguous or malformed")
+    header, raw_path = entries[0].split(b"\t", 1)
+    fields = header.split()
+    try:
+        returned_path = raw_path.decode("utf-8")
+    except UnicodeDecodeError:
+        returned_path = ""
+    if len(fields) != 3 or returned_path != relative:
+        die(f"{label} object identity is ambiguous or malformed")
+    try:
+        mode, kind, object_sha = [field.decode("ascii") for field in fields]
+    except UnicodeDecodeError:
+        mode, kind, object_sha = "", "", ""
+    if (
+        mode not in ("100644", "100755")
+        or kind != "blob"
+        or not re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", object_sha)
+    ):
+        die(f"{label} object is not a regular blob")
+    size_raw = _native_relation_git(
+        base_dir,
+        ["cat-file", "-s", object_sha],
+        f"{label} object size cannot be read",
+    )
+    try:
+        size_text = size_raw.decode("ascii").strip()
+        size = int(size_text) if re.fullmatch(r"\d+", size_text) else -1
+    except (UnicodeDecodeError, ValueError):
+        size = -1
+    if size < 0:
+        die(f"{label} object size is malformed")
+    if size > SOURCE_BYTES_MAX:
+        die(f"{label} object exceeds {SOURCE_BYTES_MAX}-byte cap")
+    data = _native_relation_git(
+        base_dir,
+        ["cat-file", "blob", object_sha],
+        f"{label} object cannot be read",
+    )
+    if len(data) != size:
+        die(f"{label} object size changed during the bounded read")
+    return object_sha, data
+
+
+def _ledger_field_bytes(text: str, name: str, label: str) -> tuple[str, bytes]:
+    prefix = f"- {name}: "
+    values = [line[len(prefix) :] for line in text.splitlines() if line.startswith(prefix)]
+    if len(values) != 1 or not values[0]:
+        die(f"{label} has a missing or ambiguous {name} field")
+    return values[0].strip().strip("`"), values[0].encode("utf-8")
+
+
+def _frontmatter_plain_key(
+    line: str, indent: int, unsupported: str
+) -> str | None:
+    """Read one key from Fiat's closed block-mapping frontmatter subset."""
+    prefix = " " * indent
+    if not line.startswith(prefix):
+        return None
+    tail = line[indent:]
+    if not tail or tail[0].isspace() or tail.startswith("#"):
+        return None
+    match = re.match(r"^([A-Za-z][A-Za-z0-9_-]*)\s*:", tail)
+    if match is None:
+        die(unsupported)
+    return match.group(1)
+
+
+def _skill_frontmatter_identity(text: str, skill: str) -> str:
+    """Read one unambiguous name and numeric version from frontmatter."""
+    lines = text.splitlines()
+    if not lines or lines[0] != "---":
+        die("version relation target skill frontmatter is missing")
+    try:
+        closing = lines.index("---", 1)
+    except ValueError:
+        die("version relation target skill frontmatter is not closed")
+    frontmatter = lines[1:closing]
+    if any("\t" in line for line in frontmatter):
+        die("version relation target skill frontmatter uses unsupported key syntax")
+
+    top_level = [
+        (index, key)
+        for index, line in enumerate(frontmatter)
+        if (
+            key := _frontmatter_plain_key(
+                line,
+                0,
+                "version relation target skill frontmatter name or metadata "
+                "identity is ambiguous",
+            )
+        ) is not None
+    ]
+    names = [(index, key) for index, key in top_level if key == "name"]
+    if len(names) != 1:
+        die("version relation target skill frontmatter name does not match")
+    name_index = names[0][0]
+    name = re.fullmatch(
+        r"name:\s*([a-z0-9]+(?:-[a-z0-9]+)*)\s*",
+        frontmatter[name_index],
+    )
+    if name is None or name.group(1) != skill:
+        die("version relation target skill frontmatter name does not match")
+    next_top = next(
+        (index for index, _ in top_level if index > name_index),
+        len(frontmatter),
+    )
+    if any(
+        line.strip() and not line.lstrip().startswith("#")
+        for line in frontmatter[name_index + 1 : next_top]
+    ):
+        die("version relation target skill frontmatter name does not match")
+
+    metadata = [
+        index
+        for index, key in top_level
+        if key == "metadata"
+    ]
+    if len(metadata) != 1:
+        die(
+            "version relation target skill frontmatter metadata version "
+            "is missing or ambiguous"
+        )
+    if frontmatter[metadata[0]] != "metadata:":
+        die(
+            "version relation target skill frontmatter metadata version "
+            "is missing or ambiguous"
+        )
+    metadata_end = next(
+        (index for index, _ in top_level if index > metadata[0]),
+        len(frontmatter),
+    )
+    metadata_body = frontmatter[metadata[0] + 1 : metadata_end]
+    metadata_keys = [
+        (index, key)
+        for index, line in enumerate(metadata_body)
+        if (
+            key := _frontmatter_plain_key(
+                line,
+                2,
+                "version relation target skill frontmatter metadata version "
+                "is missing or ambiguous",
+            )
+        ) is not None
+    ]
+    versions = [(index, key) for index, key in metadata_keys if key == "version"]
+    if len(versions) != 1:
+        die(
+            "version relation target skill frontmatter metadata version "
+            "is missing or ambiguous"
+        )
+    version_index = versions[0][0]
+    version = re.fullmatch(
+        r'  version: "([0-9]+\.[0-9]+\.[0-9]+)"',
+        metadata_body[version_index],
+    )
+    if version is None:
+        die(
+            "version relation target skill frontmatter metadata version "
+            "is missing or ambiguous"
+        )
+    return version.group(1)
+
+
+def capture_version_relation_target(
+    base_dir: str, anchor_commit: str, declaration: dict
+) -> dict:
+    """Build one content-bounded anchor from two exact Git blobs."""
+    skill = declaration["skill"]
+    ledger_path = declaration["ledger"]
+    _, ledger_bytes = read_commit_blob(
+        base_dir, anchor_commit, ledger_path, "version relation target ledger"
+    )
+    try:
+        ledger_text = ledger_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        die("version relation target ledger is not UTF-8 text")
+    skill_path = ledger_path.rsplit("/", 1)[0] + "/SKILL.md"
+    _, skill_bytes = read_commit_blob(
+        base_dir, anchor_commit, skill_path, "version relation target skill"
+    )
+    try:
+        skill_text = skill_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        die("version relation target skill is not UTF-8 text")
+
+    current, _ = _ledger_field_bytes(
+        ledger_text, "Current version", "version relation target ledger"
+    )
+    status, _ = _ledger_field_bytes(
+        ledger_text, "Frontier status", "version relation target ledger"
+    )
+    revision, _ = _ledger_field_bytes(
+        ledger_text, "Frontier revision", "version relation target ledger"
+    )
+    frontier, frontier_raw = _ledger_field_bytes(
+        ledger_text, "Current frontier", "version relation target ledger"
+    )
+    next_job, next_job_raw = _ledger_field_bytes(
+        ledger_text, "Next Fiat job", "version relation target ledger"
+    )
+    parts = _label_parts(current, skill)
+    if parts is None or current != f"{skill}-v{parts[0]}.{parts[1]}.{parts[2]}":
+        die("version relation target ledger has a malformed current label")
+    if parts[1] == VERSION_RELATION_COUNTER_MAX:
+        die(
+            "version relation target generation cannot be projected within "
+            "its counter bound"
+        )
+    if status not in ("open", "mature"):
+        die("version relation target ledger has a malformed frontier status")
+    if status == "mature" and next_job != "None -- mature":
+        die("version relation target ledger has an inconsistent mature frontier")
+    if status == "open" and next_job == "None -- mature":
+        die("version relation target ledger has an inconsistent open frontier")
+    frontier_digest = hashlib.sha256(
+        f"{status}|{revision}|{frontier}|{next_job}\n".encode("utf-8")
+    ).hexdigest()
+    rows = ledger_rows(ledger_text)
+    if (
+        not rows
+        or rows[-1]["version"] != current
+        or rows[-1]["revision"] != revision
+        or rows[-1]["digest"] != frontier_digest
+    ):
+        die("version relation target ledger history does not match its header")
+
+    metadata = _skill_frontmatter_identity(skill_text, skill)
+    expected_metadata = ".".join(str(part) for part in parts)
+    if metadata != expected_metadata:
+        die(
+            "version relation target skill frontmatter metadata version "
+            "does not match the ledger"
+        )
+    return {
+        "skill": skill,
+        "ledger": ledger_path,
+        "relation": declaration["relation"],
+        "anchor_version": current,
+        "evolution": parts[0],
+        "generation": parts[1],
+        "epoch": parts[2],
+        "frontier_status": status,
+        "frontier_revision": revision,
+        "frontier_sha256": frontier_digest,
+        "current_frontier_sha256": hashlib.sha256(frontier_raw).hexdigest(),
+        "next_job_sha256": hashlib.sha256(next_job_raw).hexdigest(),
+        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+        "skill_sha256": hashlib.sha256(skill_bytes).hexdigest(),
+        "skill_metadata_version": metadata,
+    }
+
+
+def capture_version_relations(
+    base_dir: str, source: dict, anchor_commit: str
+) -> dict:
+    targets = [
+        capture_version_relation_target(base_dir, anchor_commit, declaration)
+        for declaration in source["targets"]
+    ]
+    receipt = {
+        "schema": VERSION_RELATIONS_SCHEMA,
+        "source_sha256": source["source_sha256"],
+        "anchor_commit": anchor_commit,
+        "targets": sorted(targets, key=lambda target: target["skill"]),
+    }
+    validate_version_relations_shape(receipt, "captured.version_relations")
+    return receipt
+
+
+def version_relations_packet(receipt: dict) -> dict:
+    """Label an anchor and its provisional arithmetic without reserving it."""
+    targets = []
+    for target in receipt["targets"]:
+        targets.append(
+            {
+                **target,
+                "projection": (
+                    f"{target['skill']}-v{target['evolution']}."
+                    f"{target['generation'] + 1}.{target['epoch']}"
+                ),
+            }
+        )
+    return {
+        "schema": receipt["schema"],
+        "status": "anchor",
+        "resolution": None,
+        "source_sha256": receipt["source_sha256"],
+        "anchor_commit": receipt["anchor_commit"],
+        "targets": targets,
+    }
 
 
 def carried_forward_lines(text: str) -> list[str] | None:
@@ -2304,6 +3185,18 @@ def done_runbook(args, state: dict) -> None:
     require_global_phase(state, "runbook")
     artifact = _require_file(args.artifact, "artifact")
     _, artifact_bytes = read_bounded_source(args.dir, artifact, "runbook artefact")
+    artifact_text = decoded_source(artifact_bytes, "runbook artefact")
+    relation_source = parse_version_relation_source(artifact_text)
+    version_relations = None
+    if relation_source is not None:
+        repository = _native_relation_repository_identity(args.dir)
+        anchor_commit = relation_anchor_commit(args.dir, state)
+        version_relations = capture_version_relations(
+            args.dir, relation_source, anchor_commit
+        )
+        _require_native_relation_history(args.dir)
+        if _native_relation_repository_identity(args.dir) != repository:
+            die("version relation repository changed during anchor capture")
     steps_file = _require_file(args.steps_file, "steps-file")
     _, steps_bytes = read_bounded_source(args.dir, steps_file, "steps file")
     try:
@@ -2344,6 +3237,9 @@ def done_runbook(args, state: dict) -> None:
         "sha256": digest,
         "step_count": len(titles),
     }
+    if version_relations is not None:
+        state["receipts"]["runbook"]["version_relations"] = version_relations
+        receipt["version_relations"] = version_relations
     receipt["sha256"] = digest
     commit(args.dir, state, "done:runbook", receipt)
     print(f"runbook receipted; {len(titles)} steps registered; step 1 -> implement")
@@ -3499,6 +4395,62 @@ def receipted_source(base_dir: str, state: dict, name: str):
     }
 
 
+def receipted_version_relations(
+    base_dir: str, runbook: dict, *, state: dict | None = None
+) -> dict | None:
+    """Reconstruct one optional anchor from its exact source and Git objects."""
+    if state is None:
+        state = load_state(base_dir)
+    receipt = as_dict(runbook.get("receipt"))
+    stored = receipt.get("version_relations")
+    source = parse_version_relation_source(runbook["text"])
+    if source is None and stored is None:
+        return None
+    if source is None:
+        die("runbook receipt has version relations but its source block is absent", 1)
+    if stored is None:
+        die("runbook source has version relations but its receipt anchor is absent", 1)
+    stored = validate_version_relations_shape(
+        stored, "receipts.runbook.version_relations"
+    )
+    declarations = sorted(
+        source["targets"], key=lambda declaration: declaration["skill"]
+    )
+    recorded = [
+        {
+            "skill": target["skill"],
+            "ledger": target["ledger"],
+            "relation": target["relation"],
+        }
+        for target in stored["targets"]
+    ]
+    if source["source_sha256"] != stored["source_sha256"] or declarations != recorded:
+        die("runbook version relations source does not match its receipt", 1)
+    if stored["anchor_commit"] != _relation_init_starting_commit(base_dir, state):
+        die(
+            "runbook version relations anchor commit does not match the "
+            "init starting commit"
+        )
+    repository = _native_relation_repository_identity(base_dir)
+    _require_native_relation_history(base_dir)
+    anchor_commit = _native_relation_commit(
+        base_dir,
+        stored["anchor_commit"],
+        "runbook version relations anchor commit",
+    )
+    if anchor_commit != stored["anchor_commit"]:
+        die("runbook version relations anchor commit is not a direct commit object")
+    reconstructed = capture_version_relations(
+        base_dir, source, anchor_commit
+    )
+    _require_native_relation_history(base_dir)
+    if _native_relation_repository_identity(base_dir) != repository:
+        die("version relation repository changed during anchor replay", 1)
+    if reconstructed != stored:
+        die("runbook version relations anchor does not match its exact Git evidence", 1)
+    return stored
+
+
 # This is Protasis's accepted STEP grammar with only the number-group name
 # changed for this packet shape. The selector carries bytes accepted by that
 # authority; it does not impose a narrower second grammar.
@@ -4338,7 +5290,11 @@ def _receipted_runbook_amendments(source: dict) -> list[dict]:
 
 
 def source_runbook_step(
-    source: dict, step: dict, *, current_study_sha256: str | None = None
+    source: dict,
+    step: dict,
+    *,
+    current_study_sha256: str | None = None,
+    version_relations: dict | None = None,
 ) -> dict:
     """Carry one exact baseline step plus its current receipted amendments."""
     text = source["text"]
@@ -4392,7 +5348,7 @@ def source_runbook_step(
             }
         )
     markdown = baseline + "".join(item["markdown"] for item in applicable)
-    return {
+    packet = {
         "markdown": markdown,
         "baseline_markdown": baseline,
         "baseline_sha256": hashlib.sha256(baseline.encode("utf-8")).hexdigest(),
@@ -4403,6 +5359,9 @@ def source_runbook_step(
         "number": step["n"],
         "title": step["title"],
     }
+    if version_relations is not None:
+        packet["version_relations"] = version_relations_packet(version_relations)
+    return packet
 
 
 def source_risk_register(source: dict) -> dict:
@@ -4440,7 +5399,13 @@ def source_risk_register(source: dict) -> dict:
     }
 
 
-def bounded_run(base_dir: str, program: str, argv: list[str]) -> tuple[int, bytes]:
+def bounded_run(
+    base_dir: str,
+    program: str,
+    argv: list[str],
+    *,
+    environment: dict[str, str] | None = None,
+) -> tuple[int, bytes]:
     """Run one fixed-argv tool and return its status and output.
 
     The reader itself: no shell, a hard timeout, a hard output cap, and nothing
@@ -4457,6 +5422,7 @@ def bounded_run(base_dir: str, program: str, argv: list[str]) -> tuple[int, byte
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             shell=False,
+            env=environment,
         )
     except OSError as exc:
         die(f"{operation} could not start")
@@ -4501,9 +5467,13 @@ def bounded_tool(
     program: str,
     argv: list[str],
     refusal: str | None = None,
+    *,
+    environment: dict[str, str] | None = None,
 ) -> bytes:
     """Run one fixed-argv tool without exposing its output in failures."""
-    returncode, output = bounded_run(base_dir, program, argv)
+    returncode, output = bounded_run(
+        base_dir, program, argv, environment=environment
+    )
     if returncode != 0:
         if refusal is not None:
             die(refusal)
@@ -5596,6 +6566,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         # A pre-generation state cannot establish the source claims needed by
         # the four new briefs, so it retains an explicit inline directive.
         return packet
+    version_relations = receipted_version_relations(root, runbook, state=state)
 
     step = current_step(state)
     plan = branch_plan(state, step)
@@ -5603,7 +6574,10 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         packet["agent"] = "mason"
         packet["brief"] = {
             "runbook_step": source_runbook_step(
-                runbook, step, current_study_sha256=study["sha256"]
+                runbook,
+                step,
+                current_study_sha256=study["sha256"],
+                version_relations=version_relations,
             ),
             "branch": plan["branch"],
             "branch_from": plan["branch_from"],
@@ -5634,7 +6608,10 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "audit_filter": directive["audit_filter"],
             "risk_register": source_risk_register(study),
             "runbook_step": source_runbook_step(
-                runbook, step, current_study_sha256=study["sha256"]
+                runbook,
+                step,
+                current_study_sha256=study["sha256"],
+                version_relations=version_relations,
             ),
         }
         return packet
@@ -5651,6 +6628,10 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         ),
         "plugin_root": root_plugin,
     }
+    if version_relations is not None:
+        packet["brief"]["version_relations"] = version_relations_packet(
+            version_relations
+        )
     return packet
 
 
@@ -5749,6 +6730,7 @@ def clean(text: str) -> str:
 
 def cmd_status(args) -> None:
     state = load_state(args.dir)
+    version_relations = None
     for name in ("study", "runbook"):
         receipt = as_dict(as_dict(state.get("receipts")).get(name))
         if receipt.get("sha256") is None:
@@ -5756,6 +6738,9 @@ def cmd_status(args) -> None:
         source = receipted_source(args.dir, state, name)
         if name == "runbook":
             _receipted_runbook_amendments(source)
+            version_relations = receipted_version_relations(
+                args.dir, source, state=state
+            )
     if args.json:
         payload = dict(state)
         payload["observation_run_id"] = controller_run_id(state)
@@ -5765,6 +6750,19 @@ def cmd_status(args) -> None:
     print(f"base:  {state['base']}")
     if state.get("run_branch"):
         print(f"run:   {state['run_branch']} -> {state['base']}")
+    if version_relations is not None:
+        relation_packet = version_relations_packet(version_relations)
+        print(
+            "version relations: "
+            f"{relation_packet['schema']}; source "
+            f"{relation_packet['source_sha256']}; anchor "
+            f"{relation_packet['anchor_commit']}; resolution null"
+        )
+        for target in relation_packet["targets"]:
+            print(
+                f"version relation {target['skill']} ({target['ledger']}): anchor "
+                f"{target['anchor_version']}; projection {target['projection']}"
+            )
     print(f"observe: {controller_run_id(state)}")
     if state.get("halted"):
         print(f"HALTED: {state['halted']['reason']}")
@@ -5844,6 +6842,7 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
     prev = "genesis"
     count = 0
     last_state = None
+    runbook_event = None
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh, 1):
             if not line.strip():
@@ -5866,6 +6865,8 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
                 broken = True
             if broken:
                 die(f"ledger chain broken at line {i}", 1)
+            if entry.get("event") == "done:runbook":
+                runbook_event = entry.get("data")
             prev = entry["hash"]
             last_state = entry["state"]
             count += 1
@@ -5881,6 +6882,14 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
     if runbook_receipt.get("sha256") is not None:
         runbook = receipted_source(base_dir, state, "runbook")
         _receipted_runbook_amendments(runbook)
+        version_relations = receipted_version_relations(
+            base_dir, runbook, state=state
+        )
+        event_relations = as_dict(runbook_event).get("version_relations")
+        if version_relations is None and event_relations is not None:
+            die("done:runbook ledger event has an unreceipted version anchor", 1)
+        if version_relations is not None and event_relations != version_relations:
+            die("done:runbook ledger event does not match the version anchor", 1)
     if state["phase"] == "integrate":
         merged = as_dict(state.get("integrate")).get("merged") or []
         expected = [s["n"] for s in state["steps"][: len(merged)]]

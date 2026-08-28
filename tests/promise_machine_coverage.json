@@ -2448,7 +2448,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "9da873deacc6a1f8045ecf91a5a66c05f5ea10758ce7b0ce4a0fbc83eba0c259"
+      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f"
     },
     "validator": {
       "path": "scripts/run_observation.py",
@@ -2774,21 +2774,21 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work and any unrun external check"
       },
-      "sha256": "9da873deacc6a1f8045ecf91a5a66c05f5ea10758ce7b0ce4a0fbc83eba0c259",
+      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
       "bindings": {
         "evidence_classes": "receipt kind joined to the canonical Evidence classes field",
-        "evidence_references": "ordered state-container check, append-only ledger receipt payload and previous hash",
+        "evidence_references": "ordered state-container check, hash-chained init starting-commit evidence, optional exact version-relation anchor reconstruction, append-only ledger receipt payload and previous hash",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to controller phase and canonical promise heading",
-        "scope": "required state-container spine, current step and phase",
-        "subject": "validated state, topic, run branch, step branch and head commit",
+        "scope": "required state-container spine, optional relation-bearing runbook anchor, current step and phase",
+        "subject": "validated state, topic, run branch, optional anchor commit and target blobs, step branch and head commit",
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "9da873deacc6a1f8045ecf91a5a66c05f5ea10758ce7b0ce4a0fbc83eba0c259",
+      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -2802,7 +2802,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "9da873deacc6a1f8045ecf91a5a66c05f5ea10758ce7b0ce4a0fbc83eba0c259",
+      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -2816,7 +2816,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "9da873deacc6a1f8045ecf91a5a66c05f5ea10758ce7b0ce4a0fbc83eba0c259",
+      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -2830,7 +2830,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "9da873deacc6a1f8045ecf91a5a66c05f5ea10758ce7b0ce4a0fbc83eba0c259",
+      "sha256": "bfcbac780719f26f2a10132721dd30c4bb6662d2d5b673189a852e40a16afe2f",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {

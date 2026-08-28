@@ -310,6 +310,16 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("It does not open the ledger", flat)
         self.assertIn("allocate a version", flat)
 
+    def test_fiat_owns_the_exact_anchor_without_calling_it_a_reservation(self):
+        flat = " ".join(self.fiat.split())
+        self.assertIn("`fiat-version-relations/v1` anchor", flat)
+        self.assertIn("bounded regular Git blob", flat)
+        self.assertIn("The generation-plus-one value", flat)
+        self.assertIn("It is not a reservation", flat)
+        self.assertIn("an explicit null resolution", flat)
+        self.assertIn("worker directive shapes stay unchanged", flat)
+        self.assertIn("no Git version evidence is read", flat)
+
     def test_observation_binding_is_optional_and_non_authorising(self):
         flat = " ".join(self.fiat.split())
         self.assertIn("Observation is never a phase gate", self.fiat)
