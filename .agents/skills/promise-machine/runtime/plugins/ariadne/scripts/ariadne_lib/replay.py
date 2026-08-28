@@ -60,6 +60,7 @@ SHELL_NAMES = frozenset(
         "dash",
         "elvish",
         "fish",
+        "git-shell",
         "ksh",
         "ksh93",
         "lksh",
