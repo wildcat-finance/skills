@@ -2589,6 +2589,93 @@ class LifecycleTests(unittest.TestCase):
             self.assertTrue(responses[0].closed)
             self.assertNotIn(b"LATE RESPONSE", (root / "receipts.jsonl").read_bytes())
 
+    def test_concurrent_runtime_generation_keeps_provider_order_and_receipts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first_started = threading.Event()
+            release_first = threading.Event()
+            second_receipted = threading.Event()
+            provider_inputs = []
+
+            def exchange(request, _context, _timeout):
+                mapped = json.loads(request.body)
+                input_text = mapped["input"]
+                provider_inputs.append(input_text)
+                if input_text == "first concurrent prompt":
+                    first_started.set()
+                    self.assertTrue(release_first.wait(5))
+                return BufferedHTTPSResponse(
+                    synthetic_provider_response(input_text, input_text.upper())
+                )
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000, 30_000, 40_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+                io_closer=lambda: None,
+            )
+            requests = runtime.feed(
+                request_frame("first concurrent prompt")
+                + request_frame("second concurrent prompt")
+            )
+            runtime.finish_input()
+            original_write = runtime._sink.write_request
+
+            def observed_write(**arguments):
+                original_write(**arguments)
+                if arguments["sequence"] == 2:
+                    second_receipted.set()
+
+            with mock.patch.object(
+                runtime._sink, "write_request", side_effect=observed_write
+            ), ThreadPoolExecutor(max_workers=2) as pool:
+                first = pool.submit(runtime.generate, requests[0])
+                self.assertTrue(first_started.wait(5))
+                second = pool.submit(runtime.generate, requests[1], final=True)
+                self.assertTrue(second_receipted.wait(5))
+                release_first.set()
+                try:
+                    first_response = first.result(timeout=5)
+                    second_response = second.result(timeout=5)
+                except Exception as error:
+                    self.fail(
+                        "concurrent provider turn raised "
+                        f"{type(error).__name__} instead of returning a response"
+                    )
+
+            self.assertEqual(
+                ["first concurrent prompt", "second concurrent prompt"],
+                provider_inputs,
+            )
+            self.assertEqual(
+                [
+                    "FIRST CONCURRENT PROMPT",
+                    "SECOND CONCURRENT PROMPT",
+                ],
+                [
+                    json.loads(first_response[4:])["output"],
+                    json.loads(second_response[4:])["output"],
+                ],
+            )
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual(
+                ["activation", "request", "request", "terminal"],
+                [record["event"] for record in records],
+            )
+            self.assertEqual("MP000", runtime.terminal.code)
+
     def test_late_transport_failure_keeps_the_cancellation_winner(self):
         with tempfile.TemporaryDirectory() as directory:
             entered = threading.Event()
@@ -2660,6 +2747,102 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual("MP405", expiry_first.poll().code)
         with self.assertRaisesRegex(PolicyError, "MP405"):
             expiry_first.complete(reservation, self.event(reservation))
+
+    def test_runtime_finalizes_quota_and_active_completion_terminal_paths(self):
+        input_text = "x"
+        mapped = self.mapped_bytes(input_text)
+        quota_policy = self.policy_with_limits(
+            max_requests=2,
+            max_concurrency=1,
+            max_receipts=4,
+            max_request_bytes=mapped,
+            max_total_request_bytes=mapped,
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            closer_codes = []
+            runtime_box = {}
+
+            def quota_closer():
+                closer_codes.append(runtime_box["runtime"].terminal.code)
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response(input_text, "Y")
+                    )
+                ),
+                clock=iter((10_000, 20_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                quota_policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+                io_closer=quota_closer,
+            )
+            runtime_box["runtime"] = runtime
+            requests = runtime.feed(request_frame(input_text) * 2)
+            runtime.finish_input()
+            runtime.generate(requests[0])
+            with self.assertRaisesRegex(PolicyError, "MP402"):
+                runtime.generate(requests[1])
+            was_finalized = runtime._terminal_finalized
+            records_before_cleanup = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            if not was_finalized:
+                runtime.cancel()
+            self.assertTrue(was_finalized)
+            self.assertEqual(["MP402"], closer_codes)
+            self.assertEqual(
+                ["activation", "request", "terminal"],
+                [record["event"] for record in records_before_cleanup],
+            )
+            self.assertEqual("MP402", records_before_cleanup[-1]["outcome_code"])
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entered = threading.Event()
+            released = threading.Event()
+
+            def exchange(_request, _context, _timeout):
+                entered.set()
+                self.assertTrue(released.wait(5))
+                return BufferedHTTPSResponse(
+                    synthetic_provider_response("active completion", "TOO LATE")
+                )
+
+            runtime, request, _actual_exchange, _response = self.runtime_request(
+                root,
+                exchange=exchange,
+                input_text="active completion",
+                closer=released.set,
+            )
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(runtime.generate, request)
+                self.assertTrue(entered.wait(5))
+                with self.assertRaisesRegex(PolicyError, "MP401"):
+                    runtime.complete_job()
+                finalized_before_manual_release = runtime._terminal_finalized
+                closer_ran = released.is_set()
+                if not closer_ran:
+                    released.set()
+                with self.assertRaisesRegex(PolicyError, "MP401"):
+                    future.result(timeout=5)
+            self.assertTrue(finalized_before_manual_release)
+            self.assertTrue(closer_ran)
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual("terminal", records[-1]["event"])
+            self.assertEqual("MP401", records[-1]["outcome_code"])
 
     def test_unknown_token_counter_refuses_before_activation(self):
         unknown = replace(self.profile, token_counter="unknown-counter/v1")
@@ -3013,6 +3196,56 @@ class LifecycleTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            parent = root / "receipts"
+            parent.mkdir()
+            path = parent / "job.jsonl"
+            sink = ReceiptSink(path, max_record_bytes=4_096, max_records=3)
+            self.write_activation(sink)
+            before = path.read_bytes()
+            moved = root / "moved-receipts"
+            parent.rename(moved)
+            parent.mkdir()
+            with self.assertRaisesRegex(PolicyError, "MP407"):
+                sink.write_request(
+                    job_id=self.policy.document["job"]["id"],
+                    jobspec_sha256=self.policy.jobspec_sha256,
+                    policy_sha256=self.policy.policy_sha256,
+                    profile=self.profile.identifier,
+                    versions=self.receipt_versions(),
+                    sequence=1,
+                    counts={
+                        "request_bytes": 1,
+                        "input_tokens": 1,
+                        "reserved_output_tokens": 1,
+                        "reserved_response_bytes": 1,
+                        "concurrency": 1,
+                    },
+                    admitted_monotonic_ns=self.START_MONOTONIC_NS,
+                    remaining_wall_ns=1,
+                )
+            self.assertEqual(before, (moved / "job.jsonl").read_bytes())
+            sink.close()
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "durable.jsonl"
+            sink = ReceiptSink(path, max_record_bytes=4_096, max_records=3)
+            synced = []
+            original_fsync = os.fsync
+
+            def observed_fsync(descriptor):
+                synced.append(descriptor)
+                original_fsync(descriptor)
+
+            with mock.patch(
+                "model_proxy_lib.receipts.os.fsync", side_effect=observed_fsync
+            ):
+                self.write_activation(sink)
+            self.assertIn(sink._descriptor, synced)
+            self.assertIn(sink._parent_descriptor, synced)
+            sink.close()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
             path = root / "replacement.jsonl"
             sink = ReceiptSink(path, max_record_bytes=4_096, max_records=3)
             replacement = root / "other"
@@ -3146,6 +3379,28 @@ class LifecycleTests(unittest.TestCase):
                     runtime.generate(request, final=True)
             self.assertEqual(1, len(exchange.requests))
             self.assertTrue(runtime._terminal_receipt_failed)
+
+    def test_io_cleanup_failure_withholds_terminal_response(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runtime, request, exchange, _response = self.runtime_request(
+                Path(directory),
+                input_text="cleanup failure prompt",
+                closer=mock.Mock(side_effect=RuntimeError("close failed")),
+            )
+            with self.assertRaisesRegex(PolicyError, "MP407"):
+                runtime.generate(request, final=True)
+            self.assertEqual(1, len(exchange.requests))
+            self.assertTrue(runtime._terminal_receipt_failed)
+            self.assertIsNone(runtime._provider._credential_source)
+            self.assertIsNone(runtime._provider._connector)
+            self.assertEqual({}, runtime._provider._admitted)
+            records = [
+                json.loads(line)
+                for line in (Path(directory) / "receipts.jsonl")
+                .read_text("utf-8")
+                .splitlines()
+            ]
+            self.assertEqual(["activation", "request"], [r["event"] for r in records])
 
     def test_restart_cannot_resume_an_existing_receipt_target(self):
         with tempfile.TemporaryDirectory() as directory:

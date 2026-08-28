@@ -119,7 +119,7 @@ def _nonnegative_count(value: object, field: str) -> int:
     return value
 
 
-def _open_parent(path: str | os.PathLike[str]) -> tuple[int, str]:
+def _open_parent(path: str | os.PathLike[str]) -> tuple[int, str, str]:
     """Open every parent component without following a symbolic link."""
 
     try:
@@ -128,11 +128,17 @@ def _open_parent(path: str | os.PathLike[str]) -> tuple[int, str]:
         refuse("MP407", "receipt.path")
     if not isinstance(raw, str) or not raw or "\x00" in raw:
         refuse("MP407", "receipt.path")
-    parts = Path(raw).parts
+    raw_parts = Path(raw).parts
+    raw_components = raw_parts[1:] if os.path.isabs(raw) else raw_parts
+    if not raw_components or any(
+        part in {"", ".", ".."} for part in raw_components
+    ):
+        refuse("MP407", "receipt.path")
+    absolute_path = os.path.abspath(raw)
+    parts = Path(absolute_path).parts
     if not parts:
         refuse("MP407", "receipt.path")
-    absolute = os.path.isabs(raw)
-    components = parts[1:] if absolute else parts
+    components = parts[1:]
     if not components or components[-1] in {"", ".", ".."}:
         refuse("MP407", "receipt.path")
     if any(part in {"", ".", ".."} for part in components):
@@ -146,12 +152,12 @@ def _open_parent(path: str | os.PathLike[str]) -> tuple[int, str]:
     )
     descriptor: int | None = None
     try:
-        descriptor = os.open("/" if absolute else ".", directory_flags)
+        descriptor = os.open("/", directory_flags)
         for component in components[:-1]:
             child = os.open(component, directory_flags, dir_fd=descriptor)
             os.close(descriptor)
             descriptor = child
-        return descriptor, components[-1]
+        return descriptor, components[-1], absolute_path
     except OSError:
         if descriptor is not None:
             os.close(descriptor)
@@ -177,15 +183,17 @@ class ReceiptSink:
         self._lock = threading.Lock()
         self._descriptor: int | None = None
         self._parent_descriptor: int | None = None
+        self._path = ""
         self._name = ""
         self._identity: tuple[int, int] | None = None
+        self._parent_identity: tuple[int, int] | None = None
         self._records = 0
         self._activation_written = False
         self._terminal_written = False
         self._request_sequences: set[int] = set()
         self._poisoned = False
 
-        parent, name = _open_parent(path)
+        parent, name, absolute_path = _open_parent(path)
         flags = (
             os.O_WRONLY
             | os.O_CREAT
@@ -198,6 +206,7 @@ class ReceiptSink:
             descriptor = os.open(name, flags, 0o600, dir_fd=parent)
             os.fchmod(descriptor, 0o600)
             status = os.fstat(descriptor)
+            parent_status = os.fstat(parent)
             if (
                 not stat.S_ISREG(status.st_mode)
                 or status.st_nlink != 1
@@ -211,8 +220,10 @@ class ReceiptSink:
             refuse("MP407", "receipt.path")
         self._descriptor = descriptor
         self._parent_descriptor = parent
+        self._path = absolute_path
         self._name = name
         self._identity = (status.st_dev, status.st_ino)
+        self._parent_identity = (parent_status.st_dev, parent_status.st_ino)
 
     @property
     def records(self) -> int:
@@ -223,22 +234,47 @@ class ReceiptSink:
         descriptor = self._descriptor
         parent = self._parent_descriptor
         identity = self._identity
-        if descriptor is None or parent is None or identity is None:
+        parent_identity = self._parent_identity
+        if (
+            descriptor is None
+            or parent is None
+            or identity is None
+            or parent_identity is None
+            or not self._path
+        ):
             return False
+        named_parent: int | None = None
+        same = False
         try:
             opened = os.fstat(descriptor)
-            named = os.stat(self._name, dir_fd=parent, follow_symlinks=False)
-        except OSError:
-            return False
-        return (
-            stat.S_ISREG(opened.st_mode)
-            and stat.S_ISREG(named.st_mode)
-            and opened.st_nlink == 1
-            and named.st_nlink == 1
-            and (opened.st_dev, opened.st_ino) == identity
-            and (named.st_dev, named.st_ino) == identity
-            and stat.S_IMODE(opened.st_mode) == 0o600
-        )
+            retained_parent = os.fstat(parent)
+            named_parent, named_name, _absolute_path = _open_parent(self._path)
+            reopened_parent = os.fstat(named_parent)
+            named = os.stat(
+                named_name, dir_fd=named_parent, follow_symlinks=False
+            )
+            same = (
+                named_name == self._name
+                and stat.S_ISREG(opened.st_mode)
+                and stat.S_ISREG(named.st_mode)
+                and opened.st_nlink == 1
+                and named.st_nlink == 1
+                and (opened.st_dev, opened.st_ino) == identity
+                and (named.st_dev, named.st_ino) == identity
+                and (retained_parent.st_dev, retained_parent.st_ino)
+                == parent_identity
+                and (reopened_parent.st_dev, reopened_parent.st_ino)
+                == parent_identity
+                and stat.S_IMODE(opened.st_mode) == 0o600
+            )
+        except (OSError, PolicyError):
+            same = False
+        if named_parent is not None:
+            try:
+                os.close(named_parent)
+            except OSError:
+                same = False
+        return same
 
     def _write(self, document: dict[str, object]) -> None:
         with self._lock:
@@ -364,6 +400,12 @@ class ReceiptSink:
                     self._poisoned = True
                     refuse("MP407", "receipt.write")
                 os.fsync(descriptor)
+                if event == "activation":
+                    parent = self._parent_descriptor
+                    if parent is None:
+                        self._poisoned = True
+                        refuse("MP407", "receipt.state")
+                    os.fsync(parent)
             except PolicyError:
                 raise
             except OSError:

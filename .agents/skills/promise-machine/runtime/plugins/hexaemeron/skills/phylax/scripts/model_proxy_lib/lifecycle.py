@@ -570,6 +570,7 @@ class ModelProxyRuntime:
         )
         self._io_closer = io_closer
         self._publication_lock = threading.Lock()
+        self._provider_lock = threading.Lock()
         self._terminal_lock = threading.Lock()
         self._terminal_finalized = False
         self._terminal_receipt_failed = False
@@ -595,6 +596,7 @@ class ModelProxyRuntime:
             )
         except PolicyError:
             self._controller.stop("MP407")
+            self._provider.close()
             try:
                 self._sink.close()
             except (OSError, PolicyError):
@@ -622,7 +624,13 @@ class ModelProxyRuntime:
         return self._sink.records
 
     def activate(self) -> None:
-        self._controller.activate()
+        with self._publication_lock:
+            try:
+                self._controller.activate()
+            except PolicyError as error:
+                snapshot = self._controller.stop(error.code)
+                self._finalize_terminal(snapshot)
+                raise
 
     def operator_text(self) -> str:
         return render_operator_text(self._controller.policy)
@@ -633,26 +641,32 @@ class ModelProxyRuntime:
                 if self._terminal_receipt_failed:
                     refuse("MP407", "receipt.terminal")
                 return
+            cleanup_failed = False
+            try:
+                self._provider.close()
+            except Exception:
+                cleanup_failed = True
             try:
                 self._io_closer()
             except Exception:
-                pass
-            receipt_failed = self._terminal_receipt_failed
-            try:
-                self._sink.write_terminal(
-                    job_id=self._controller.job_id,
-                    jobspec_sha256=self._controller.jobspec_sha256,
-                    policy_sha256=self._controller.policy_sha256,
-                    profile=self._controller.profile.identifier,
-                    versions=self._versions,
-                    counts=snapshot.counts,
-                    terminal_monotonic_ns=snapshot.terminal_monotonic_ns,
-                    duration_ns=snapshot.duration_ns,
-                    disclosure_state=snapshot.disclosure_state,
-                    outcome_code=snapshot.code,
-                )
-            except PolicyError:
-                receipt_failed = True
+                cleanup_failed = True
+            receipt_failed = self._terminal_receipt_failed or cleanup_failed
+            if not cleanup_failed:
+                try:
+                    self._sink.write_terminal(
+                        job_id=self._controller.job_id,
+                        jobspec_sha256=self._controller.jobspec_sha256,
+                        policy_sha256=self._controller.policy_sha256,
+                        profile=self._controller.profile.identifier,
+                        versions=self._versions,
+                        counts=snapshot.counts,
+                        terminal_monotonic_ns=snapshot.terminal_monotonic_ns,
+                        duration_ns=snapshot.duration_ns,
+                        disclosure_state=snapshot.disclosure_state,
+                        outcome_code=snapshot.code,
+                    )
+                except PolicyError:
+                    receipt_failed = True
             try:
                 self._sink.close()
             except (OSError, PolicyError):
@@ -684,38 +698,47 @@ class ModelProxyRuntime:
             return None if terminal is None else terminal.code
 
     def feed(self, data: bytes) -> tuple[TextRequest, ...]:
-        with self._publication_lock:
-            self._active_locked()
-            try:
-                return self._provider.feed(data)
-            except PolicyError as error:
-                snapshot = self._controller.stop(error.code)
-                self._finalize_terminal(snapshot)
-                raise
+        with self._provider_lock:
+            with self._publication_lock:
+                self._active_locked()
+                try:
+                    return self._provider.feed(data)
+                except PolicyError as error:
+                    snapshot = self._controller.stop(error.code)
+                    self._finalize_terminal(snapshot)
+                    raise
 
     def finish_input(self) -> None:
-        with self._publication_lock:
-            self._active_locked()
-            try:
-                self._provider.finish()
-            except PolicyError as error:
-                snapshot = self._controller.stop(error.code)
-                self._finalize_terminal(snapshot)
-                raise
+        with self._provider_lock:
+            with self._publication_lock:
+                self._active_locked()
+                try:
+                    self._provider.finish()
+                except PolicyError as error:
+                    snapshot = self._controller.stop(error.code)
+                    self._finalize_terminal(snapshot)
+                    raise
 
     def generate(self, request: TextRequest, *, final: bool = False) -> bytes:
         """Reserve, receipt, disclose, and publish one admitted response."""
 
         with self._publication_lock:
             self._active_locked()
-            body = provider_request_bytes(self._controller.profile, request)
-            reservation = self._controller.reserve(
-                sequence=request.sequence,
-                request_bytes=len(body),
-                input_text=request.input_text,
-                job_id=self._controller.job_id,
-                jobspec_sha256=self._controller.jobspec_sha256,
-            )
+            try:
+                body = provider_request_bytes(self._controller.profile, request)
+                reservation = self._controller.reserve(
+                    sequence=request.sequence,
+                    request_bytes=len(body),
+                    input_text=request.input_text,
+                    job_id=self._controller.job_id,
+                    jobspec_sha256=self._controller.jobspec_sha256,
+                )
+            except PolicyError as error:
+                snapshot = self._controller.terminal
+                if snapshot is None:
+                    snapshot = self._controller.stop(error.code)
+                self._finalize_terminal(snapshot)
+                raise
             try:
                 self._sink.write_request(
                     job_id=self._controller.job_id,
@@ -739,43 +762,47 @@ class ModelProxyRuntime:
                 snapshot = self._controller.stop("MP407")
                 self._finalize_terminal(snapshot)
                 refuse("MP407", "receipt.request")
-            try:
-                disclosure_timeout_ns = self._controller.mark_disclosed(reservation)
-            except PolicyError:
-                terminal = self._controller.terminal
-                if terminal is not None:
-                    self._finalize_terminal(terminal)
-                raise
-
-        try:
-            guest_response = self._provider.generate(
-                request, timeout_ns=disclosure_timeout_ns
-            )
-        except PolicyError as error:
+        with self._provider_lock:
             with self._publication_lock:
-                events = self._provider.events
-                event = events[-1] if events else None
-                snapshot = self._controller.fail(reservation, error.code, event)
-                self._finalize_terminal(snapshot)
-                if snapshot.code != error.code:
-                    refuse(snapshot.code, "lifecycle.late_response")
-            raise
+                try:
+                    disclosure_timeout_ns = self._controller.mark_disclosed(
+                        reservation
+                    )
+                except PolicyError:
+                    terminal = self._controller.terminal
+                    if terminal is not None:
+                        self._finalize_terminal(terminal)
+                    raise
 
-        event = self._provider.events[-1]
-        with self._publication_lock:
             try:
-                self._controller.complete(reservation, event)
-            except PolicyError:
-                terminal = self._controller.terminal
-                if terminal is not None:
-                    self._finalize_terminal(terminal)
+                guest_response = self._provider.generate(
+                    request, timeout_ns=disclosure_timeout_ns
+                )
+            except PolicyError as error:
+                with self._publication_lock:
+                    events = self._provider.events
+                    event = events[-1] if events else None
+                    snapshot = self._controller.fail(reservation, error.code, event)
+                    self._finalize_terminal(snapshot)
+                    if snapshot.code != error.code:
+                        refuse(snapshot.code, "lifecycle.late_response")
                 raise
-            if final:
-                snapshot = self._controller.finish()
-                self._finalize_terminal(snapshot)
-            else:
-                self._active_locked()
-            return guest_response
+
+            event = self._provider.events[-1]
+            with self._publication_lock:
+                try:
+                    self._controller.complete(reservation, event)
+                except PolicyError:
+                    terminal = self._controller.terminal
+                    if terminal is not None:
+                        self._finalize_terminal(terminal)
+                    raise
+                if final:
+                    snapshot = self._controller.finish()
+                    self._finalize_terminal(snapshot)
+                else:
+                    self._active_locked()
+                return guest_response
 
     def cancel(self) -> None:
         with self._publication_lock:
@@ -784,7 +811,13 @@ class ModelProxyRuntime:
 
     def complete_job(self) -> None:
         with self._publication_lock:
-            snapshot = self._controller.finish()
+            try:
+                snapshot = self._controller.finish()
+            except PolicyError:
+                terminal = self._controller.terminal
+                if terminal is not None:
+                    self._finalize_terminal(terminal)
+                raise
             self._finalize_terminal(snapshot)
 
 

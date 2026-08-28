@@ -324,7 +324,10 @@ back.
 The aggregate checks include active reservations, so concurrent calls cannot
 each observe the same remaining capacity. A count, byte, token, output,
 response, or concurrency excess makes the job terminal. Later admission and
-provider publication refuse.
+provider publication refuse. Requests may reserve concurrently, but the
+runtime gives the provider session one turn at a time in guest sequence order.
+It commits or refuses that turn against its own provider event before the next
+turn can cross the provider boundary.
 
 ## Cancellation, expiry, and publication
 
@@ -341,10 +344,14 @@ the runtime passes the shortened interval to the connector, whose existing
 `poll()` applies the first expired boundary. If both boundaries have passed,
 the one whose activation-time interval was shorter supplies the fixed outcome.
 Trusted cancellation uses the same lock. Both transitions mark the controller
-terminal before invoking the trusted I/O closer. Admission cannot cross that
-linearisation point. A response that returns after cancellation or expiry is
-closed by the provider component and discarded instead of entering guest
-publication.
+terminal, erase the provider session's credential source, connector reference,
+and pending admissions, and then invoke the trusted I/O closer. Admission
+cannot cross that linearisation point. A response that returns after
+cancellation or expiry is closed by the provider component and discarded
+instead of entering guest publication. Failure of the trusted closer refuses
+with `MP407`; it produces neither a successful terminal receipt nor a guest
+response. The embedding supervisor remains responsible for terminating the
+per-job process. These component checks do not prove that process exit.
 
 Completion, cancellation, and expiry share one publication lock in
 `ModelProxyRuntime`. Completion either commits before the terminal transition,
@@ -358,16 +365,20 @@ create another receipt.
 `ReceiptSink` creates one new file with exclusive creation and mode `0600`.
 It walks every parent directory and opens the final target with no-follow
 flags. A symbolic link, directory, existing path, missing parent, replacement,
-or changed inode refuses. Keeping the descriptor open is not enough: identity,
-link count, regular-file kind, and mode are checked before and after every
-write.
+or changed inode refuses. Keeping the descriptor open is not enough. The sink
+retains the absolute named path and original parent identity, reopens the whole
+no-follow parent chain, and compares both file and parent identities before and
+after every write. Renaming or replacing an ancestor therefore poisons the
+sink instead of diverting later records to an unnamed file.
 
 Each canonical UTF-8 JSON record is at most the smaller of compiled
 `max_receipt_bytes` and 4,096 bytes, excluding its line feed. One `os.write`
 must write the whole line. A zero, short, partial, failed, or replaced-target
 write poisons the sink; it is never retried as an append. Nanosecond timings
 are decimal strings so an absolute Unix value remains exact without exceeding
-the canonical JSON safe-integer range.
+the canonical JSON safe-integer range. The activation write synchronises both
+the file and its parent directory before guest input can be accepted, making
+the new directory entry part of the pre-disclosure durability boundary.
 
 The file has exactly these record kinds in order:
 
@@ -658,5 +669,7 @@ The two cases exercise ASCII and Unicode input under injected clocks and an
 in-process exchange. The unittest surface covers exact and excessive quota
 reservations, concurrent admission, rollback, request floods, identity and
 restart refusals, both expiry domains, cancellation and late responses,
-provider-usage disagreement, receipt schema and filesystem failures, content
-absence, terminal publication failure, and operator-text parity.
+ordered concurrent provider turns, quota and active-completion terminalisation,
+provider-usage disagreement, receipt schema and filesystem failures including
+ancestor replacement and parent-directory synchronisation, content absence,
+cleanup and terminal publication failure, and operator-text parity.

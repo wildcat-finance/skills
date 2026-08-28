@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+import threading
 from types import MappingProxyType
 from typing import Any, Callable, Mapping
 
@@ -222,22 +223,26 @@ class ProviderSession:
         if not callable(credential_source):
             refuse("MP321", "provider.credential")
         self._limits = MappingProxyType(dict(activation.document["limits"]))
-        self._connector = connector
-        self._credential_source = credential_source
+        self._state_lock = threading.Lock()
+        self._connector: HTTPSConnector | None = connector
+        self._credential_source: CredentialSource | None = credential_source
         self._admitted: dict[int, TextRequest] = {}
         self._next_provider_sequence = 1
         self._events: list[ProviderEvent] = []
+        self._inflight: TextRequest | None = None
         self._failed = False
 
     @property
     def events(self) -> tuple[ProviderEvent, ...]:
-        return tuple(self._events)
+        with self._state_lock:
+            return tuple(self._events)
 
     @property
     def framing_events(self):
-        return self._framing.events
+        with self._state_lock:
+            return self._framing.events
 
-    def _record(
+    def _record_locked(
         self,
         code: str,
         disclosure_state: str,
@@ -263,70 +268,102 @@ class ProviderSession:
                 )
             )
 
-    def _poison(self) -> None:
+    def _poison_locked(self) -> None:
         self._failed = True
         self._admitted.clear()
+        self._inflight = None
 
     def feed(self, data: bytes) -> tuple[TextRequest, ...]:
         """Admit guest frames before any credential source can be consulted."""
 
-        if self._failed:
-            refuse("MP320", "provider.session")
-        try:
-            requests = self._framing.feed(data)
-        except PolicyError:
-            self._poison()
-            raise
-        for request in requests:
-            self._admitted[request.sequence] = request
-        return requests
+        with self._state_lock:
+            if self._failed:
+                refuse("MP320", "provider.session")
+            try:
+                requests = self._framing.feed(data)
+            except PolicyError:
+                self._poison_locked()
+                raise
+            for request in requests:
+                self._admitted[request.sequence] = request
+            return requests
 
     def finish(self) -> None:
-        if self._failed:
-            refuse("MP320", "provider.session")
-        try:
-            self._framing.finish()
-        except PolicyError:
-            self._poison()
-            raise
+        with self._state_lock:
+            if self._failed:
+                refuse("MP320", "provider.session")
+            try:
+                self._framing.finish()
+            except PolicyError:
+                self._poison_locked()
+                raise
 
     def generate(self, request: TextRequest, *, timeout_ns: int | None = None) -> bytes:
         """Map one exact admitted request and return one closed guest frame."""
 
-        if (
-            self._failed
-            or not isinstance(request, TextRequest)
-            or self._admitted.get(request.sequence) is not request
-            or request.sequence != self._next_provider_sequence
-        ):
-            self._poison()
-            self._record("MP320", "not-read")
-            refuse("MP320", "provider.admission")
-        if timeout_ns is not None and (
-            isinstance(timeout_ns, bool)
-            or not isinstance(timeout_ns, int)
-            or timeout_ns < 1
-        ):
-            self._poison()
-            self._record("MP320", "not-read")
-            refuse("MP320", "provider.deadline")
+        with self._state_lock:
+            if (
+                self._failed
+                or self._inflight is not None
+                or not isinstance(request, TextRequest)
+                or self._admitted.get(request.sequence) is not request
+                or request.sequence != self._next_provider_sequence
+            ):
+                self._poison_locked()
+                self._record_locked("MP320", "not-read")
+                refuse("MP320", "provider.admission")
+            if timeout_ns is not None and (
+                isinstance(timeout_ns, bool)
+                or not isinstance(timeout_ns, int)
+                or timeout_ns < 1
+            ):
+                self._poison_locked()
+                self._record_locked("MP320", "not-read")
+                refuse("MP320", "provider.deadline")
+            credential_source = self._credential_source
+            if credential_source is None:
+                self._poison_locked()
+                self._record_locked("MP320", "not-read")
+                refuse("MP320", "provider.session")
+            self._inflight = request
+
         try:
             try:
-                credential = self._credential_source(
+                credential = credential_source(
                     self._profile.credential_environment
                 )
             except Exception:
-                self._poison()
-                self._record(
-                    "MP321", "not-read", input_tokens=len(request.input_text)
-                )
-                refuse("MP321", "provider.credential")
+                with self._state_lock:
+                    code = (
+                        "MP320"
+                        if self._inflight is not request
+                        or self._credential_source is None
+                        else "MP321"
+                    )
+                    self._poison_locked()
+                    self._record_locked(
+                        code, "not-read", input_tokens=len(request.input_text)
+                    )
+                refuse(code, "provider.credential")
+
+            with self._state_lock:
+                connector = self._connector
+                if (
+                    self._failed
+                    or self._inflight is not request
+                    or connector is None
+                ):
+                    self._poison_locked()
+                    self._record_locked(
+                        "MP320", "not-read", input_tokens=len(request.input_text)
+                    )
+                    refuse("MP320", "provider.session")
 
             try:
                 body = provider_request_bytes(self._profile, request)
                 if len(body) > self._limits["max_request_bytes"]:
                     refuse("MP322", "provider.request.bytes")
-                result = self._connector.send(
+                result = connector.send(
                     body,
                     credential,
                     max_response_bytes=self._limits["max_response_bytes"],
@@ -341,9 +378,7 @@ class ProviderSession:
                     request,
                     credential,
                 )
-                guest_response = self._framing.encode_response(request, output)
             except PolicyError as error:
-                self._poison()
                 transport = locals().get("result")
                 if isinstance(error, TransportRefusal):
                     request_bytes = error.request_bytes
@@ -357,30 +392,73 @@ class ProviderSession:
                     request_bytes = 0
                     response_bytes = 0
                     duration_ns = 0
-                self._record(
-                    error.code,
-                    "provider-only",
-                    request_bytes=request_bytes,
-                    response_bytes=response_bytes,
-                    input_tokens=len(request.input_text),
-                    duration_ns=duration_ns,
-                )
+                with self._state_lock:
+                    self._poison_locked()
+                    self._record_locked(
+                        error.code,
+                        "provider-only",
+                        request_bytes=request_bytes,
+                        response_bytes=response_bytes,
+                        input_tokens=len(request.input_text),
+                        duration_ns=duration_ns,
+                    )
                 raise
-            del self._admitted[request.sequence]
-            self._next_provider_sequence += 1
-            self._record(
-                "MP000",
-                "provider-only",
-                request_bytes=result.request_bytes,
-                response_bytes=result.response_bytes,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
-                duration_ns=result.duration_ns,
-            )
-            return guest_response
+
+            with self._state_lock:
+                if (
+                    self._failed
+                    or self._inflight is not request
+                    or self._admitted.get(request.sequence) is not request
+                ):
+                    self._poison_locked()
+                    self._record_locked(
+                        "MP320",
+                        "provider-only",
+                        request_bytes=result.request_bytes,
+                        response_bytes=result.response_bytes,
+                        input_tokens=input_tokens,
+                        duration_ns=result.duration_ns,
+                    )
+                    refuse("MP320", "provider.session")
+                try:
+                    guest_response = self._framing.encode_response(request, output)
+                except PolicyError as error:
+                    self._poison_locked()
+                    self._record_locked(
+                        error.code,
+                        "provider-only",
+                        request_bytes=result.request_bytes,
+                        response_bytes=result.response_bytes,
+                        input_tokens=input_tokens,
+                        duration_ns=result.duration_ns,
+                    )
+                    raise
+                del self._admitted[request.sequence]
+                self._inflight = None
+                self._next_provider_sequence += 1
+                self._record_locked(
+                    "MP000",
+                    "provider-only",
+                    request_bytes=result.request_bytes,
+                    response_bytes=result.response_bytes,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    duration_ns=result.duration_ns,
+                )
+                return guest_response
         finally:
             if "credential" in locals():
                 credential = ""
+
+    def close(self) -> None:
+        """Erase provider authority and make every later operation refuse."""
+
+        with self._state_lock:
+            self._failed = True
+            self._admitted.clear()
+            self._inflight = None
+            self._credential_source = None
+            self._connector = None
 
 
 class _BufferedResponse:
