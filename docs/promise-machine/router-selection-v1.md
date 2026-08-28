@@ -86,7 +86,9 @@ block carries the eight fields above with a `corpus_sha256` that recomputes from
 the cases on disk, names the model, date and prompt-template digest a reader
 needs to recount it, carries a prompt-template digest equal to the digest of the
 template committed beside the corpus, and names each of its failures by a case
-id this corpus holds and a canonical skill that resolves.
+id this corpus holds and by what the graded context answered, either a
+canonical skill that resolves or a refusal in the corpus's two-reason
+vocabulary.
 
 ## Evidence classes
 
