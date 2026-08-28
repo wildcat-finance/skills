@@ -45,7 +45,9 @@ live provider request.
 ## Accepted-job evidence
 
 The compiler reads at most 98,304 bytes from one stable regular file without
-following its final symlink. The root object has exactly four fields:
+following its final symlink. It opens the candidate nonblocking and checks its
+kind before reading, so a FIFO or other special file cannot hold activation
+open. The root object has exactly four fields:
 
 | Field | JSON type | Version-1 rule |
 | --- | --- | --- |
@@ -93,10 +95,12 @@ points.
 The canonical policy subset contains only objects, arrays, NFC strings,
 booleans, null where a future schema explicitly admits it, and integers in
 the interoperable range from negative 9,007,199,254,740,991 through positive
-9,007,199,254,740,991. Policy version 1 emits no null or negative value.
-Object names are sorted by their Unicode scalar sequence. JSON is encoded as
-UTF-8 with no insignificant whitespace, no ASCII escaping for ordinary
-Unicode, and no trailing newline. Arrays preserve their declared order.
+9,007,199,254,740,991. Every object name is an NFC string under the same
+Unicode limits; another key type refuses rather than reaching the serializer.
+Policy version 1 emits no null or negative value. Object names are sorted by
+their Unicode scalar sequence. JSON is encoded as UTF-8 with no insignificant
+whitespace, no ASCII escaping for ordinary Unicode, and no trailing newline.
+Arrays preserve their declared order.
 
 ## Policy vocabulary
 
@@ -187,9 +191,10 @@ one `model-proxy-diagnostic/v1` line on standard error. The diagnostic has only
 `policy_sha256`.
 
 Refusal diagnostics have exactly `schema`, `outcome=refused`, `code`, and
-`field`. `field` is a code-owned schema location, never an input value. The
-compiler never prints an input path, unknown field name, JobSpec bytes, job id,
-or exception text.
+`field`. `field` is a code-owned schema location, never an input value. CLI
+argument errors use the same value-free shape and accept no abbreviated option
+names. The compiler never prints an input path, unknown argument or field name,
+JobSpec bytes, job id, or exception text.
 
 | Code | Fixed outcome | Stage |
 | --- | --- | --- |
@@ -215,6 +220,7 @@ or exception text.
 | `MP119` | Hard ceiling or aggregate relation exceeded | Limit gate |
 | `MP120` | Golden policy bytes or digest disagree | Golden check |
 | `MP121` | Old or future version of a recognised family | Version gate |
+| `MP122` | Missing, unknown, or abbreviated CLI argument | CLI boundary |
 | `MP199` | Unexpected internal exception, with no exception text retained | CLI boundary |
 
 ## Golden command

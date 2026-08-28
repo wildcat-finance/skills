@@ -16,11 +16,20 @@ from model_proxy_lib import (
 )
 
 
+class _DiagnosticArgumentParser(argparse.ArgumentParser):
+    """Refuse malformed argv without retaining argparse's value-bearing text."""
+
+    def error(self, _message: str) -> None:
+        raise PolicyError("MP122", "cli.arguments")
+
+
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = _DiagnosticArgumentParser(description=__doc__, allow_abbrev=False)
     commands = parser.add_subparsers(dest="command", required=True)
     compile_command = commands.add_parser(
-        "compile-policy", help="compile one accepted-job evidence file"
+        "compile-policy",
+        help="compile one accepted-job evidence file",
+        allow_abbrev=False,
     )
     compile_command.add_argument("--accepted-job", required=True, metavar="PATH")
     compile_command.add_argument("--expect", metavar="PATH")
@@ -50,8 +59,8 @@ def _compile(arguments: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    arguments = _parser().parse_args(argv)
     try:
+        arguments = _parser().parse_args(argv)
         if arguments.command == "compile-policy":
             return _compile(arguments)
     except PolicyError as error:

@@ -31,7 +31,12 @@ def read_bounded_file(path: str | os.PathLike[str], max_bytes: int) -> bytes:
 
     if isinstance(max_bytes, bool) or not isinstance(max_bytes, int) or max_bytes < 1:
         refuse("MP101", "read.limit")
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+    )
     descriptor: int | None = None
     try:
         descriptor = os.open(os.fspath(path), flags)
@@ -115,6 +120,8 @@ def _constant(_raw: str) -> None:
 
 
 def _check_string(value: str, field: str, maximum: int) -> None:
+    if not isinstance(value, str):
+        refuse("MP109", field)
     try:
         encoded = value.encode("utf-8")
     except UnicodeEncodeError:

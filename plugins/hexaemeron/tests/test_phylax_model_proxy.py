@@ -8,6 +8,7 @@ from dataclasses import FrozenInstanceError
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -180,6 +181,42 @@ class PolicyCompilerTests(unittest.TestCase):
         )
         self.assertNotIn("fiat-700-policy-golden", result.stderr.decode("utf-8"))
 
+    def test_cli_argument_refusal_is_value_free_and_does_not_abbreviate(self):
+        sentinel = "fiat-700-cli-secret-canary"
+        cases = (
+            ("--credential", sentinel),
+            ("--accepted", str(FIXTURES / "accepted-job.json")),
+        )
+        for option, value in cases:
+            with self.subTest(option=option):
+                result = subprocess.run(  # phylax: allow subprocess: fixed local Python argv
+                    [
+                        sys.executable,
+                        str(CLI),
+                        "compile-policy",
+                        option,
+                        value,
+                    ],
+                    check=False,
+                    capture_output=True,
+                )
+                self.assertEqual(2, result.returncode)
+                self.assertEqual(b"", result.stdout)
+                self.assertNotIn(value.encode("utf-8"), result.stderr)
+                try:
+                    diagnostic = json.loads(result.stderr)
+                except (UnicodeDecodeError, json.JSONDecodeError):
+                    diagnostic = None
+                self.assertEqual(
+                    {
+                        "schema": "model-proxy-diagnostic/v1",
+                        "outcome": "refused",
+                        "code": "MP122",
+                        "field": "cli.arguments",
+                    },
+                    diagnostic,
+                )
+
     def test_root_key_order_does_not_change_compiled_policy_bytes(self):
         evidence = accepted_document()
         reversed_evidence = dict(reversed(list(evidence.items())))
@@ -195,6 +232,17 @@ class PolicyCompilerTests(unittest.TestCase):
         policy = compile_policy(self.accepted_bytes).document
         reordered = dict(reversed(list(policy.items())))
         self.assertEqual(canonical_json(policy), canonical_json(reordered))
+
+    def test_canonical_json_refuses_non_string_object_names(self):
+        try:
+            canonical_json({1: "value"})
+        except Exception as error:  # parent evidence may be the wrong exception class
+            caught = error
+        else:
+            caught = None
+        self.assertIsInstance(caught, PolicyError)
+        self.assertEqual("MP109", caught.code)
+        self.assertEqual("json.key", caught.field)
 
     def test_every_declared_policy_leaf_changes_its_digest(self):
         policy = compile_policy(self.accepted_bytes).document
@@ -489,6 +537,7 @@ class PolicyCompilerTests(unittest.TestCase):
                 "hard-ceiling",
                 "old-version",
                 "future-version",
+                "cli-arguments",
             },
             set(identifiers),
         )
@@ -528,6 +577,38 @@ class PolicyCompilerTests(unittest.TestCase):
             target.write_bytes(b" " * (MAX_ACCEPTED_JOB_BYTES + 1))
             with self.assertRaisesRegex(PolicyError, "MP101"):
                 compile_policy_file(str(target))
+
+    def test_bounded_file_reader_refuses_fifo_without_blocking(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fifo = Path(directory) / "accepted-job.fifo"
+            os.mkfifo(fifo)
+            try:
+                result = subprocess.run(  # phylax: allow subprocess: fixed local Python argv
+                    [
+                        sys.executable,
+                        str(CLI),
+                        "compile-policy",
+                        "--accepted-job",
+                        str(fifo),
+                    ],
+                    check=False,
+                    capture_output=True,
+                    timeout=2,
+                )
+            except subprocess.TimeoutExpired:
+                result = None
+            self.assertIsNotNone(
+                result,
+                "accepted-job FIFO blocked before the regular-file refusal",
+            )
+            self.assertEqual(2, result.returncode)
+            self.assertEqual(b"", result.stdout)
+            try:
+                diagnostic = json.loads(result.stderr)
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                diagnostic = None
+            self.assertIsInstance(diagnostic, dict)
+            self.assertEqual("MP100", diagnostic.get("code"))
 
     def test_refusal_diagnostic_never_echoes_credential_shaped_input(self):
         sentinel = "fiat-700-super-secret-canary"

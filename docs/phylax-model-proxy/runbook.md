@@ -294,3 +294,106 @@ every confirmed defect retains a parent-red, fixed-green hostile row and no
 missing or skipped row can pass. hypomnema: ADR-042, the normative reference,
 the skill contract, evolution ledger, and operator disclosure are reconciled;
 the final proof explicitly preserves the #698/#699 dependency boundary.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Tests: Add golden accepted-job, canonical-policy, and policy-digest cases;
+missing, extra, duplicate, null, boolean-as-integer, floating, negative, zero,
+oversized, excessive-depth, invalid-Unicode, stale-digest, unknown-schema,
+unknown-profile, model/profile disagreement, feature-enabled, content-log,
+diagnostic-consent, data-class, lifetime, and hard-ceiling refusals. Verify
+that key order does not change canonical bytes, every declared policy field
+changes the digest, no credential field is representable, and old or future
+versions refuse explicitly. The step audit runner contract is test command
+`mise exec python@3.13.15 -- python3 plugins/hexaemeron/tests/run_tests.py {report}`,
+report format `unittest-json-v1`, report file
+`.elenchus/fiat-700-model-proxy-step-1.json`.
+
+**Why.** The runner emits schema `elenchus.unittest.v1`, while the Elenchus CLI selects that parser with adapter id `unittest-json-v1`; the baseline field named the schema where the executable adapter id was required.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit broken. Step 3: entry holds; exit broken. Step 4: entry holds; exit broken. Step 5: entry holds; exit broken.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Tests: Cover one-byte fragmentation, every length-prefix split, two frames
+in one read, incomplete and trailing bytes, zero and over-cap lengths, declared
+versus actual length disagreement, invalid UTF-8, lone surrogates, duplicate
+names, excessive depth/collections/strings/scalars, unknown or missing fields,
+integer coercion, alternate operation/version, guest identities and sequence,
+all forbidden provider features, deterministic response bytes, and bounded
+sanitised errors. The step audit runner contract is test command
+`mise exec python@3.13.15 -- python3 plugins/hexaemeron/tests/run_tests.py {report}`,
+report format `unittest-json-v1`, report file
+`.elenchus/fiat-700-model-proxy-step-2.json`.
+
+**Why.** The runner emits schema `elenchus.unittest.v1`, while the Elenchus CLI selects that parser with adapter id `unittest-json-v1`; the baseline field named the schema where the executable adapter id was required.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit broken. Step 4: entry holds; exit broken. Step 5: entry holds; exit broken.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Tests: Cover exact request mapping, credential injection after admission,
+credential-source failure, no credential in guest-visible or retained
+surfaces, arbitrary scheme/host/port/path/method/model/header attempts,
+guest-supplied authorization, CONNECT, every redirect class, DNS answer
+changes, empty/multiple/special addresses, unpinned connection targets, TLS
+hostname and certificate failure, chunked and content-length response floods,
+unexpected encoding/status/type, duplicate/unknown/malformed response fields,
+usage disagreement, raw error sanitisation, secret echo, and connection close.
+The step audit runner contract is test command
+`mise exec python@3.13.15 -- python3 plugins/hexaemeron/tests/run_tests.py {report}`,
+report format `unittest-json-v1`, report file
+`.elenchus/fiat-700-model-proxy-step-3.json`.
+
+**Why.** The runner emits schema `elenchus.unittest.v1`, while the Elenchus CLI selects that parser with adapter id `unittest-json-v1`; the baseline field named the schema where the executable adapter id was required.
+
+**Steps touched.** Step 3.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit broken. Step 5: entry holds; exit broken.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Tests: Cover exact and over-limit sequential and concurrent count, byte,
+token, output, response, and concurrency reservations; rollback and terminal
+paths; request floods; cross-job identity; second activation; absolute expiry
+and expiry measured by `time.monotonic_ns()`; cancellation before admission and during transport; late
+response suppression; completion/cancel/expiry races; unknown tokenizer;
+provider-usage under/over-reporting; receipt count/size/schema/mode; duplicate
+terminal events; symlink, directory, pre-existing target, restrictive umask,
+short write, partial write, replacement, and unavailable sink failures; secret,
+prompt, response, content-digest, raw URL/header/error/provider-id absence; and
+operator-text/policy parity. The step audit runner contract is test command
+`mise exec python@3.13.15 -- python3 plugins/hexaemeron/tests/run_tests.py {report}`,
+report format `unittest-json-v1`, report file
+`.elenchus/fiat-700-model-proxy-step-4.json`.
+
+**Why.** The runner emits schema `elenchus.unittest.v1`, while the Elenchus CLI selects that parser with adapter id `unittest-json-v1`; the baseline field named the schema where the executable adapter id was required.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit broken.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Tests: Add manifest schema, digest, completeness, uniqueness, order,
+expected-outcome, and no-skips guards; one independent case for every hostile
+acceptance item; positive-path policy/launch placeholders; exact safe summary;
+canary and content-shape scans over guest frames, receipts, events, diagnostics,
+argv, environment fixture, and produced tree; operator disclosure parity;
+dependency-gated end-to-end status; old Phylax behaviour preservation; exact
+skill/package version separation; evolution-axis preservation; marketplace and
+portable-copy parity; and deterministic Horos currency. The step audit runner
+contract is test command
+`mise exec python@3.13.15 -- python3 plugins/hexaemeron/tests/run_tests.py {report}`,
+report format `unittest-json-v1`, report file
+`.elenchus/fiat-700-model-proxy-step-5.json`.
+
+**Why.** The runner emits schema `elenchus.unittest.v1`, while the Elenchus CLI selects that parser with adapter id `unittest-json-v1`; the baseline field named the schema where the executable adapter id was required.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.

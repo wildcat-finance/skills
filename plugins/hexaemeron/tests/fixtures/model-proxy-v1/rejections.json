@@ -23,6 +23,7 @@
     {"id": "lifetime", "code": "MP118"},
     {"id": "hard-ceiling", "code": "MP119"},
     {"id": "old-version", "code": "MP121"},
-    {"id": "future-version", "code": "MP121"}
+    {"id": "future-version", "code": "MP121"},
+    {"id": "cli-arguments", "code": "MP122"}
   ]
 }
