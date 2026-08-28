@@ -138,6 +138,18 @@ class HeldCorpusTests(unittest.TestCase):
             ),
         )
 
+    def test_noncanonical_path_alias_is_refused(self) -> None:
+        def change(_root: Path, manifest: dict[str, Any]) -> None:
+            first, second = manifest["cases"][:2]
+            second["files"]["output"] = first["files"]["output"].replace(
+                "cases/", "cases//", 1
+            )
+            second["files"]["output_sha256"] = first["files"]["output_sha256"]
+            second["classification"] = first["classification"]
+            second["protected_spans"] = first["protected_spans"]
+
+        self.expect_failure("HC020", change)
+
     def test_symlink_escape_is_refused(self) -> None:
         def change(root: Path, manifest: dict[str, Any]) -> None:
             case = manifest["cases"][0]

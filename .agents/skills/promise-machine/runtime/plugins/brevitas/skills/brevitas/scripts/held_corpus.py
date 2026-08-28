@@ -176,7 +176,11 @@ def _checked_relative_path(value: Any, *, case_id: str) -> PurePosixPath:
     if not isinstance(value, str) or not value or "\x00" in value or "\\" in value:
         raise CorpusError("HC020", "unsafe-relative-path", case_id=case_id)
     path = PurePosixPath(value)
-    if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
+    if (
+        path.is_absolute()
+        or path.as_posix() != value
+        or any(part in {"", ".", ".."} for part in path.parts)
+    ):
         raise CorpusError("HC020", "unsafe-relative-path", case_id=case_id)
     return path
 
