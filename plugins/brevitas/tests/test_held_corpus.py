@@ -124,6 +124,26 @@ class HeldCorpusTests(unittest.TestCase):
             self.fail("invalid Unicode scalar escaped the bounded refusal")
         self.assertEqual(raised.exception.code, "HC002")
 
+    def test_deep_manifest_nesting_is_bounded(self) -> None:
+        temporary, root = self.copy_corpus()
+        self.addCleanup(temporary.cleanup)
+        nested = '{"hidden_reasoning":"forbidden"}'
+        for _ in range(1000):
+            nested = "[" + nested + "]"
+        (root / "corpus.json").write_text(
+            '{"schema":"brevitas-held-corpus-v2",'
+            '"request_format":"prompt-source-v1",'
+            '"cases":' + nested + "}",
+            encoding="utf-8",
+        )
+
+        try:
+            with self.assertRaises(CorpusError) as raised:
+                validate_corpus(root)
+        except RecursionError:
+            self.fail("deep manifest nesting escaped the bounded refusal")
+        self.assertEqual(raised.exception.code, "HC013")
+
     def test_duplicate_case_id_is_refused(self) -> None:
         def change(_root: Path, manifest: dict[str, Any]) -> None:
             manifest["cases"][1]["id"] = manifest["cases"][0]["id"]
@@ -215,6 +235,23 @@ class HeldCorpusTests(unittest.TestCase):
         for change in (zero_output, relabel_diff_as_exact):
             with self.subTest(change=change.__name__):
                 self.expect_failure("HC014", change)
+
+    def test_malformed_nested_types_are_bounded(self) -> None:
+        def method_list(_root: Path, manifest: dict[str, Any]) -> None:
+            manifest["cases"][0]["provenance"]["derivation"]["method"] = []
+
+        def citation_object(_root: Path, manifest: dict[str, Any]) -> None:
+            manifest["cases"][0]["classification"]["rule_citations"] = [{}]
+
+        for expected, change in (
+            ("HC014", method_list),
+            ("HC016", citation_object),
+        ):
+            with self.subTest(change=change.__name__):
+                try:
+                    self.expect_failure(expected, change)
+                except TypeError:
+                    self.fail("malformed nested type escaped the bounded refusal")
 
     def test_malformed_source_range_is_refused(self) -> None:
         for value in ("lines one to many", "L" + "9" * 5000 + "-L1"):
@@ -350,6 +387,24 @@ class HeldCorpusTests(unittest.TestCase):
             data = output.read_bytes() + b"\n" + span + b"\n"
             output.write_bytes(data)
             self.refresh_digest(case, "output", data)
+
+        self.expect_failure("HC032", change)
+
+    def test_overlapping_protected_span_is_refused(self) -> None:
+        def change(root: Path, manifest: dict[str, Any]) -> None:
+            case = manifest["cases"][0]
+            output = b"aaaa\n"
+            self.fixture_path(root, case).write_bytes(output)
+            self.refresh_digest(case, "output", output)
+            text = "aaa"
+            case["protected_spans"] = [
+                {
+                    "order": 1,
+                    "kind": "causal-mechanism",
+                    "text": text,
+                    "sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                }
+            ]
 
         self.expect_failure("HC032", change)
 

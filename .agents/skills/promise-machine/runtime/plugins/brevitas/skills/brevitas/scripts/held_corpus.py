@@ -170,27 +170,33 @@ def _expect_fields(
 
 
 def _reject_forbidden_metadata(value: Any, *, case_id: str | None = None) -> None:
-    if isinstance(value, dict):
-        for key, child in value.items():
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, dict):
+            children = []
+            for key, child in current.items():
+                children.append(child)
+                try:
+                    key.encode("utf-8", errors="strict")
+                except UnicodeEncodeError:
+                    raise CorpusError(
+                        "HC002", "invalid-unicode-scalar", case_id=case_id
+                    ) from None
+                if key.lower().replace("-", "_") in FORBIDDEN_METADATA_KEYS:
+                    raise CorpusError(
+                        "HC013", "forbidden-capture-metadata", case_id=case_id
+                    )
+            pending.extend(reversed(children))
+        elif isinstance(current, list):
+            pending.extend(reversed(current))
+        elif isinstance(current, str):
             try:
-                key.encode("utf-8", errors="strict")
+                current.encode("utf-8", errors="strict")
             except UnicodeEncodeError:
                 raise CorpusError(
                     "HC002", "invalid-unicode-scalar", case_id=case_id
                 ) from None
-            if key.lower().replace("-", "_") in FORBIDDEN_METADATA_KEYS:
-                raise CorpusError("HC013", "forbidden-capture-metadata", case_id=case_id)
-            _reject_forbidden_metadata(child, case_id=case_id)
-    elif isinstance(value, list):
-        for child in value:
-            _reject_forbidden_metadata(child, case_id=case_id)
-    elif isinstance(value, str):
-        try:
-            value.encode("utf-8", errors="strict")
-        except UnicodeEncodeError:
-            raise CorpusError(
-                "HC002", "invalid-unicode-scalar", case_id=case_id
-            ) from None
 
 
 def _checked_relative_path(value: Any, *, case_id: str) -> PurePosixPath:
@@ -517,7 +523,11 @@ def _validate_provenance(
             "rewrite-hunk-ranges-for-captured-excerpt",
         ],
     }
-    if method not in allowed_steps or steps != allowed_steps[method]:
+    if (
+        not isinstance(method, str)
+        or method not in allowed_steps
+        or steps != allowed_steps[method]
+    ):
         raise CorpusError("HC014", "source-derivation-method-invalid", case_id=case_id)
     if family == "diff-review":
         if (
@@ -621,12 +631,15 @@ def _validate_classification(value: Any, *, case_id: str) -> tuple[str, tuple[st
     if (
         not isinstance(rule_citations, list)
         or not rule_citations
-        or len(set(rule_citations)) != len(rule_citations)
-        or rule_citations != sorted(rule_citations)
         or any(
             not isinstance(code, str) or not CODE_RE.fullmatch(code)
             for code in rule_citations
         )
+    ):
+        raise CorpusError("HC016", "classification-rule-citations-invalid", case_id=case_id)
+    if (
+        len(set(rule_citations)) != len(rule_citations)
+        or rule_citations != sorted(rule_citations)
         or not set(expected_codes).issubset(rule_citations)
     ):
         raise CorpusError("HC016", "classification-rule-citations-invalid", case_id=case_id)
@@ -668,10 +681,10 @@ def _validate_spans(value: Any, output: str, *, case_id: str) -> int:
         expected_digest = _checked_digest(span["sha256"], case_id=case_id)
         if _digest(text.encode("utf-8")) != expected_digest:
             raise CorpusError("HC030", "protected-span-digest-mismatch", case_id=case_id)
-        count = output.count(text)
-        if count == 0:
+        first_position = output.find(text)
+        if first_position < 0:
             raise CorpusError("HC031", "protected-span-missing", case_id=case_id)
-        if count != 1:
+        if output.find(text, first_position + 1) >= 0:
             raise CorpusError("HC032", "protected-span-duplicated", case_id=case_id)
         spans.append((order, text))
 
