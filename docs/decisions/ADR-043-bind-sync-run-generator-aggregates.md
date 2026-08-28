@@ -1,11 +1,17 @@
-# ADR-042: Bind sync-run generator aggregates to static authority and exact final trees
+# ADR-043: Bind sync-run generator aggregates to static authority and exact final trees
 
 ## Status
 
-Accepted, 2026-08-28. This record fixes the design selected for issue
+Accepted, 2026-08-28. This decision was first recorded as ADR-042, then
+renumbered after pull request
+[#718](https://github.com/wildcat-finance/skills/pull/718) assigned that number
+to the interpreter-advance decision on `origin/main`. Only the identity
+changed; the accepted generator-aggregate design remains unchanged.
+
+This record fixes the design selected for issue
 [#710](https://github.com/wildcat-finance/skills/issues/710). The controller
-implementation belongs to the next Fiat step and does not exist because of
-this record.
+implementation belongs to Fiat Step 2; this record alone does not establish
+that implementation.
 
 ## Context
 

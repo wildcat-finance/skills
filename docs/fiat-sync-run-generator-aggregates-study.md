@@ -520,3 +520,10 @@ decisions earn durable records and where they live.
 
 ADR-028's #622 checkpoint decision, #680's revert, and the v1 receipt history
 remain historical records. This design cites them and does not replace them.
+
+### Amendment -- 2026-08-28
+
+**What changed.** The standing generator-aggregate decision record changes identity from `docs/decisions/ADR-042-bind-sync-run-generator-aggregates.md` to `docs/decisions/ADR-043-bind-sync-run-generator-aggregates.md`. Its authority, schema, evidence, resource, compatibility, refusal, and rejected-alternative decisions remain unchanged. Step 2 must rename the record, update every current product and generated reference, and leave the append-only Step-1 audit history unchanged. The replacement identity was free on `origin/main` at `4296f9f0b3eb03926d9b5b03258246dcab8c13ec`.
+**Why.** While Step 2 was under final verification, pull request #718 advanced `main` and assigned ADR-042 to `docs/decisions/ADR-042-advance-the-python-suite-to-3-14.md`. The repository's live default-branch uniqueness test now refuses this run's earlier ADR-042 identity. Renumbering to the next free identity preserves both decisions and fixes the collision without weakening the gate or rewriting the historical audit.
+**Steps touched.** Step 2's entry, exit, files, tests, and record-placement discipline.
+**Still holding.** Step 2: entry broken; exit broken. Step 3: entry holds; exit holds.
