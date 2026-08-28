@@ -1,15 +1,15 @@
 ---
 name: synkrisis
 description: >
-  Inspect or develop the specified boundary for comparing validated Promise
-  Machine run observations across one declared cohort. Version 0.1.0 is a
-  refusing scaffold: cohort, diagnose, render, and verify all stop with SK000
-  and write nothing. Use it to read that contract or continue its held
-  runbook, not to claim a cohort or finding. Do not capture or redact
-  observations, debug one failing run, judge a model, act on a finding, or
-  report a relation as a cause.
+  Build one checked cohort from validated Promise Machine run observations
+  under an operator-declared comparison policy, or inspect and continue the
+  committed cross-run diagnosis runbook. Version 1.1.0 classifies every
+  declared run as included, excluded or unknown with the responsible policy
+  field; diagnose, render and verify still refuse with the runbook step that
+  lands each. Do not capture or redact observations, debug one failing run,
+  judge a model, act on a finding, or report a relation as a cause.
 metadata:
-  version: "0.1.0"
+  version: "1.1.0"
 ---
 
 <p align="center">
@@ -27,12 +27,13 @@ recommend or run another frontier pass after that ledger becomes mature.
 <!-- marketplace-context:start -->
 ## Where this sits
 
-Synkrisis reserves the comparison and bounded-inference boundary for validated
-observations from comparable agent runs. Version 0.1.0 implements only the
-refusal surface; capture, redaction, receipt binding, causal diagnosis, issue
-filing, repository mutation, and Fiat dispatch stay with their own owners.
+Synkrisis owns comparison and bounded inference over validated observations
+from comparable agent runs. Version 1.1.0 implements the checked cohort;
+diagnosis, rendering and verification are held runbook steps, and capture,
+redaction, receipt binding, causal triage, issue filing, repository mutation,
+and Fiat dispatch stay with their own owners.
 
-**Current frontier.** Synkrisis is a committed specification with a refusing command stub, and none of its runbook's cohort, diagnosis, render or verification steps has yet landed behaviour.
+**Current frontier.** Synkrisis builds one checked cohort from declared run observations, and its diagnostic rule catalogue, renderer and verifier have not yet landed.
 <!-- marketplace-context:end -->
 
 Synkrisis is named for comparison. The Promise Machine records what one run
@@ -40,9 +41,9 @@ observably did: issue 434 defined the record, issue 435 the capture gate, and
 issue 436 the receipt binding. None of those steps reads a pattern across
 runs. A maintainer still has to decide whether repeated orientation work,
 unchanged retries, handoff friction or token movement amounts to an
-improvement candidate. Synkrisis has a committed design for making that
-comparison deterministic and honest about what recorded events can say, but
-the current command does not yet perform it.
+improvement candidate. Synkrisis makes the first move of that comparison
+deterministic now, one checked cohort at a time, and holds the interpreting
+moves to their own runbook steps.
 
 Ephoros designs what a step emits; Metron judges a controlled measurement;
 Elenchus works one failure to its cause; Horos owns the reading boundary. A
@@ -52,41 +53,43 @@ repository, or dispatches a sibling.
 
 ## What this step is
 
-This is Step 1 of
+This is Step 2 of
 [the committed runbook](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/runbook.md),
 built from
-[the committed study](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/study.md): the
-plugin shell, its packaging and marketplace surfaces, this canonical
-instruction document, the evolution ledger, the first decision record, and a
-command stub. The stub declares the complete specified surface and refuses
-every operation with one stable code naming the runbook step that implements
-it. Until those steps land, Synkrisis produces no cohort, finding, report or
-verification.
+[the committed study](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/study.md)
+on the Step 1 scaffold. Cohort construction is landed and tested; diagnose,
+render and verify keep refusing with one stable code naming the runbook step
+that implements each. Until those steps land, Synkrisis produces no finding,
+report or verification.
 
-## The specified surface
+## The cohort operation
 
-One standard-library command, `scripts/synkrisis.py`, with four operations:
+`cohort` reads two operator-declared inputs, both repository-relative under
+the working root:
 
-- `cohort` reads an operator-declared manifest of run-observation records and
-  one comparison policy, checks producer identity, declared validation,
-  redaction and binding results, digests, caps, path form and equality
-  dimensions, and writes a cohort classifying every declared run as included,
-  excluded or unknown with the exact policy field responsible. Lands with
-  Step 2.
-- `diagnose` applies a digest-bound catalogue of deterministic rules to one
-  checked cohort and emits findings carrying exact event references,
-  counterevidence, unknown runs, the nearest forbidden claim and one
-  suggested handoff. A rule is data over closed shipped kinds; no rule
-  supplies an expression, an import, a shell command or a regular
-  expression. Lands with Step 3.
-- `render` writes a fixed-template report that cannot add a number, run id,
-  causal verb or evidence class absent from the findings. Lands with Step 4.
-- `verify` recomputes the cohort, the findings and the report byte for byte
-  from the original inputs. Lands with Step 4.
+- a manifest (`synkrisis-manifest/v1`) naming every run in the comparison
+  universe, each with its record path, SHA-256 digest, byte count, declared
+  validation and redaction results under the producer and capture contracts,
+  and its receipt binding: a bound prefix with receipt, byte and event counts
+  and prefix digest, or an unavailable state with a bounded reason; and
+- a policy (`synkrisis-policy/v1`, schema under `references/`) classifying
+  every run-context dimension as `match` with the expected value or `differ`,
+  plus a token accounting mode.
 
-The study fixes the caps the implementation must hold: one cohort at a time,
-at most 100 runs and 100,000 events, 8 MiB per file and 64 MiB of declared
-input in aggregate, with a 5.0-second, 256 MiB work budget measured in Step 5.
+Admission is fail-closed: the producer identity must be
+`promise-machine-run-observation/v1` on the manifest and on every event; the
+record bytes must match their declared digest and count; a bound prefix must
+recompute its digest and close exactly its declared event count; records
+stream with contiguous sequences, unique event ids, one `run.started` opening
+context and one `run.finished` close; and the caps hold, at most 100 runs,
+100,000 events, 8 MiB per file and 64 MiB of declared input in aggregate.
+The output (`synkrisis-cohort/v1`) classifies every declared run as included,
+excluded with the exact policy field responsible, or unknown when its binding
+is unavailable, and carries manifest, policy and cohort digests. Outputs are
+written atomically, never overwrite different bytes, and no partial output
+survives a refusal. A require-equal accounting policy refuses a cohort whose
+included runs carry unlike token accounting identities, and a policy that
+leaves no eligible run refuses rather than emitting an empty comparison.
 
 ## Run it
 
@@ -94,32 +97,44 @@ From a checkout, with the exact interpreter in the suite's
 [`.python-version`](../../../../.python-version):
 
 ```text
-python3 plugins/synkrisis/scripts/synkrisis.py --help
 python3 plugins/synkrisis/scripts/synkrisis.py cohort \
-  --manifest manifest.json --policy policy.json --out cohort.json
+  --manifest plugins/synkrisis/examples/cross-run-v0/manifest.json \
+  --policy plugins/synkrisis/examples/cross-run-v0/policy.json \
+  --out build/synkrisis/cohort.json
 ```
 
-The first command prints the specified surface. The second, like every
-operation at this step, exits 1 with code `SK000`, the fault class, the
-producer contract `promise-machine-run-observation/v1`, and a recovery naming
-the runbook step to build; it creates no file.
+The worked example's five records pass `scripts/run_observation.py check`,
+and the command classifies them as three included, one excluded on
+`context.selected_skill` and one unknown, reproducing the committed
+`examples/cross-run-v0/expected/cohort.json` byte for byte on every run.
+Every non-zero exit names one stable `SK` code, the fault class, a safe
+path, the producer contract and a recovery. The held operations refuse with
+`SK000`:
+
+```text
+python3 plugins/synkrisis/scripts/synkrisis.py diagnose \
+  --cohort build/synkrisis/cohort.json \
+  --rules rules.json --out build/synkrisis/findings.json
+```
 
 ## What it refuses
 
-The scaffold refuses everything except describing itself: no operation
-produces a result, and nothing is written. The specification the later steps
-must hold is already fixed:
-
+- No analytical result past cohort construction. Diagnose, render and verify
+  refuse until their runbook steps land; a refusal is not a finding, report
+  or verification.
 - No inferred comparability. A person declares the comparison policy;
   Synkrisis checks the declaration and never decides that unlike tasks,
   models, hosts, repositories or tokenizers are comparable.
-- No evidence strengthening. Findings stay at the inferred class, carry their
-  counterevidence and unknowns, and state the nearest forbidden claim rather
-  than making it.
+- No silent promotion of an unknown. A run whose binding is unavailable stays
+  visible as unknown and cannot satisfy any sample.
+- No token cohort across unlike accounting identities under a require-equal
+  policy.
+- No evidence strengthening. Future findings stay at the inferred class,
+  carry their counterevidence and unknowns, and state the nearest forbidden
+  claim rather than making it.
 - No cause and no model judgement, in a rule, a finding or a report.
-- No token comparison across unlike accounting identities.
-- No autonomous transition. A handoff is a named suggestion; the command has
-  no network, GitHub, Git or controller mutation path.
+- No autonomous transition. A suggested handoff is the whole action; the
+  command has no network, GitHub, Git or controller mutation path.
 
 If an operation, a check or a suite did not run, say so plainly and do not
 describe its result.
@@ -128,12 +143,12 @@ describe its result.
 
 ### synkrisis-scaffold-refusal
 
-- Promise: Every specified Synkrisis operation invoked on this scaffold exits non-zero with one stable code that names the committed runbook step implementing it, and writes nothing.
-- Evidence: The command's declared argument surface, the emitted refusal code, fault class, producer contract and recovery, and the unchanged working tree after each invocation.
+- Promise: Every Synkrisis operation whose runbook step has not yet landed, at this version diagnose, render and verify, exits non-zero with one stable code that names the committed runbook step implementing it, and writes nothing.
+- Evidence: The command's declared argument surface, the emitted refusal code, fault class, producer contract and recovery, and the unchanged working tree after each held invocation.
 - Evidence classes: checked
-- Boundary: The refusal establishes only that the scaffold cannot present a cohort, finding, report or verification; it says nothing about how the later steps will behave.
+- Boundary: The refusal establishes only that a held operation cannot present a finding, report or verification; it says nothing about how the later steps will behave, and it does not describe the landed cohort operation.
 - Authorises: Selecting the committed runbook's named next step as the work that lands the refused operation.
 - Consequence: 0
-- Refuses: Reporting any analytical result from the scaffold, and writing any output file.
+- Refuses: Reporting a finding, report or verification from a held operation, and writing any output through one.
 - Recovery: Build the runbook step the refusal names, then rerun the operation.
 - Exceptions: none

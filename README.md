@@ -119,8 +119,8 @@ shown in the generator's output.
 
 The identity contract records the current roster as 25 members: 16 domain agents and
 9 phase agents. The repository topology is 24 first-party skills and four Fiat
-worker agents. Synkrisis belongs to the roster now, but its comparison surface
-is still a specification and a refusing command scaffold. Hexaemeron is the
+worker agents. Synkrisis belongs to the roster now, building one checked
+cohort while its interpreting steps stay held. Hexaemeron is the
 delivery plugin, while the Promise Machine and its portable router govern how
 the suite is selected and composed.
 
@@ -183,10 +183,11 @@ turn a passing structural check into proof that a domain claim is true.
 - [Horos](./plugins/horos) writes and verifies evidence-backed repository
   boundaries and skeleton maps for oriented reading. Its exclusions reduce cost;
   they never apply during security review.
-- [Synkrisis](./plugins/synkrisis) reserves the boundary for comparing
-  validated run observations across one declared cohort. Today it ships the
-  specification and a command that refuses cohort, diagnosis, render, and
-  verification operations; it produces no finding and cannot authorise work.
+- [Synkrisis](./plugins/synkrisis) owns the boundary for comparing validated
+  run observations across one declared cohort. Today it builds the checked
+  cohort, classifying every declared run under an operator-declared policy;
+  diagnosis, render, and verification stay held runbook steps that refuse,
+  so it produces no finding and cannot authorise work.
 - [Sapheneia](./plugins/sapheneia) shapes the collective's own replies and
   bounded audit records, issues, or comments for AuDHD readers without changing
   their protected evidence.

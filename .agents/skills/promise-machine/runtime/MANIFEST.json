@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 909,
-  "total_bytes": 20078766,
+  "file_count": 921,
+  "total_bytes": 20144353,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -36,16 +36,16 @@
   ],
   "files": [
     {
-      "bytes": 6608,
+      "bytes": 6690,
       "path": ".agents/skills/promise-machine/SKILL.md",
-      "sha256": "1316d34fbbfe19dfcd373d48e6ea233d43ee01e20c41e88d487a0d41fc4771f3",
+      "sha256": "55e0257993b3ca62a324e53418a1d5e66b22272725dc8b8d734e76270933c47e",
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "dc799b7aa10c56ef9855a7b09718335cb2ad7ba73474e243e0b2fd93c5ecf63a",
+      "sha256": "8278cbbaea2dd7bac3839ae35dd553063b3a43be9473f81711ae0b69272c67f0",
       "source": null
     },
     {
@@ -55,9 +55,9 @@
       "source": ".python-version"
     },
     {
-      "bytes": 12023,
+      "bytes": 12085,
       "path": "AGENTS.md",
-      "sha256": "df1eeff8b434fb8dda2d4fc886069aafa5afe0fcc31933325f78a5dfacf5843d",
+      "sha256": "6e5b010d0f4263df93294c8b9da77d57342093e2028152b53b604b9562a1952f",
       "source": "AGENTS.md"
     },
     {
@@ -5035,9 +5035,9 @@
       "source": "plugins/sapheneia/skills/sapheneia/agents/openai.yaml"
     },
     {
-      "bytes": 4434,
+      "bytes": 4886,
       "path": "plugins/synkrisis/AGENTS.md",
-      "sha256": "97961f67d423025899f20161d5db1d549da8fd3c3b3f9c4cd54fe604637129f1",
+      "sha256": "ca7d51487f9c2bc6823409f4ba8ccd20bbc605153616f49b625a83f91219f938",
       "source": "plugins/synkrisis/AGENTS.md"
     },
     {
@@ -5053,9 +5053,9 @@
       "source": "plugins/synkrisis/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3878,
+      "bytes": 5002,
       "path": "plugins/synkrisis/README.md",
-      "sha256": "63f55d83e8637c02e5978ef6ec5767e8e8e3852619162db3d0b016f562a36c1b",
+      "sha256": "dbb41a63212595707562a173562290aeb3ef9ccaf1b5c57d91be405c3a95ef61",
       "source": "plugins/synkrisis/README.md"
     },
     {
@@ -5071,21 +5071,93 @@
       "source": "plugins/synkrisis/docs/decisions/ADR-001-keep-cross-run-diagnosis-separate.md"
     },
     {
-      "bytes": 4112,
+      "bytes": 1760,
+      "path": "plugins/synkrisis/docs/decisions/ADR-002-declare-cohort-comparability.md",
+      "sha256": "6778d85f6db5acc77b3f94ae3010d04a3edaced5f74d2305a99ba100f98de8bf",
+      "source": "plugins/synkrisis/docs/decisions/ADR-002-declare-cohort-comparability.md"
+    },
+    {
+      "bytes": 1929,
+      "path": "plugins/synkrisis/docs/schema-compatibility.md",
+      "sha256": "29257a53635638d5143480880a828c880a8a451281642d4d38e58de6131b83fb",
+      "source": "plugins/synkrisis/docs/schema-compatibility.md"
+    },
+    {
+      "bytes": 2127,
+      "path": "plugins/synkrisis/examples/cross-run-v0/expected/cohort.json",
+      "sha256": "9f05c47fd586e76265b492048b434bc270ce0a84662cbf483bb45887ba771a92",
+      "source": "plugins/synkrisis/examples/cross-run-v0/expected/cohort.json"
+    },
+    {
+      "bytes": 3503,
+      "path": "plugins/synkrisis/examples/cross-run-v0/manifest.json",
+      "sha256": "51d84e839c8a8cade05cc65cf625392287a8d5f6d43971b61e49529f1d9949a7",
+      "source": "plugins/synkrisis/examples/cross-run-v0/manifest.json"
+    },
+    {
+      "bytes": 458,
+      "path": "plugins/synkrisis/examples/cross-run-v0/policy.json",
+      "sha256": "8d939fc0376f61e6410e757f8bdfb34e53dc2d8d298448fac58111bc35b94186",
+      "source": "plugins/synkrisis/examples/cross-run-v0/policy.json"
+    },
+    {
+      "bytes": 2760,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-alpha.jsonl",
+      "sha256": "e2bae4a17e94808743809a3099a88807d08b5139d86d0da8890ed1c6757af928",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-alpha.jsonl"
+    },
+    {
+      "bytes": 3510,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-beta.jsonl",
+      "sha256": "747c4d9fee02c37e9b800f33614b36986a9eee466fed3edeed18665050718dda",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-beta.jsonl"
+    },
+    {
+      "bytes": 1907,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-delta.jsonl",
+      "sha256": "648c0422f595bccdab4df04a9dab27581d20c48f4df712ef67d4f6349cf0dbe3",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-delta.jsonl"
+    },
+    {
+      "bytes": 1932,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-epsilon.jsonl",
+      "sha256": "801e27e1daa5c5f39c684e5c72fea8ff1b910638b971476852c3d1a25cef78b8",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-epsilon.jsonl"
+    },
+    {
+      "bytes": 4896,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-gamma.jsonl",
+      "sha256": "36646fa544fb3e575e68261ce1b4ada6387b7209a0a69e87c22a346328cdd796",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-gamma.jsonl"
+    },
+    {
+      "bytes": 3204,
+      "path": "plugins/synkrisis/references/cohort-v1.schema.json",
+      "sha256": "5e71420816444af4582e0380b9d6e7ff845e4b3686126233c24a9d1ab5335b0d",
+      "source": "plugins/synkrisis/references/cohort-v1.schema.json"
+    },
+    {
+      "bytes": 1982,
+      "path": "plugins/synkrisis/references/policy-v1.schema.json",
+      "sha256": "04d440bdbd96fcff165d4b0badc029a79634bf17b1a7ac380baee85630c873bb",
+      "source": "plugins/synkrisis/references/policy-v1.schema.json"
+    },
+    {
+      "bytes": 36008,
       "path": "plugins/synkrisis/scripts/synkrisis.py",
-      "sha256": "ee35657843a6ec513931aa8383645dc6c914d7027bdb0eb34a8969f2f88d44ad",
+      "sha256": "27b8b56a02bec420498700be3f08ff2fd20a0c4d845268a24592c2e637dff64a",
       "source": "plugins/synkrisis/scripts/synkrisis.py"
     },
     {
-      "bytes": 1595,
+      "bytes": 2654,
       "path": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md",
-      "sha256": "bd362ae9c90cea4b4b64b5b7d771b06f7324fe22de467486192042a2d7f98081",
+      "sha256": "a1631a7809a0e3db764dd8560d708f271e57d0f9bc617bfc1f93c013bab8cedc",
       "source": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md"
     },
     {
-      "bytes": 6854,
+      "bytes": 7798,
       "path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-      "sha256": "0cd7402b9581e66b049bfb17362e7a3444c6dd020c72589333a340a0dac11c10",
+      "sha256": "c76d1873157684168ca4919e21a34d3560d089ed88da65466d6199feb5d56a37",
       "source": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {

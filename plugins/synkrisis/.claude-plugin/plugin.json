@@ -1,8 +1,8 @@
 {
   "name": "synkrisis",
   "displayName": "Synkrisis",
-  "version": "0.1.0",
-  "description": "Refusing scaffold for the specified comparison of validated run observations in one declared cohort.",
+  "version": "0.2.0",
+  "description": "Checked cohort construction over validated run observations; diagnosis, rendering and verification are held runbook steps.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"

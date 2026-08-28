@@ -5,11 +5,11 @@
 <!-- marketplace-context:start -->
 ## In one line
 
-Synkrisis reserves the boundary for comparing validated Promise Machine run observations; this release specifies that work and refuses every operation.
+Synkrisis builds one checked cohort from validated Promise Machine run observations under an operator-declared policy; its diagnostic catalogue, renderer and verifier are held runbook steps that still refuse.
 
-**Current frontier.** Synkrisis is a committed specification with a refusing command stub, and none of its runbook's cohort, diagnosis, render or verification steps has yet landed behaviour.
+**Current frontier.** Synkrisis builds one checked cohort from declared run observations, and its diagnostic rule catalogue, renderer and verifier have not yet landed.
 
-**Next Fiat job.** Use /hexaemeron:fiat to complete Step 2 of the committed runbook: implement observation admission and cohort construction behind synkrisis.py cohort, with the study's positive and hostile fixtures; accept it when the example manifest produces one cohort digest twice, every declared run carries its classification reason, and each named refusal class has a red-to-green guard. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to complete Step 3 of the committed runbook: ship the digest-bound deterministic rule catalogue behind synkrisis.py diagnose, emitting findings with exact event references, counterevidence, unknown runs, the nearest forbidden claim and one named handoff; accept it when the example cohort yields the late-boundary-consultation/v1 and unchanged-retry-before-handoff/v1 findings, fingerprints survive harmless manifest reordering, and every named negative fixture refuses. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 ## Place in the collective
@@ -17,45 +17,61 @@ Synkrisis reserves the boundary for comparing validated Promise Machine run obse
 The Promise Machine records what one agent run observably did: the
 run-observation contract defines the record, the capture gate keeps forbidden
 material out of it, and the receipt binding ties a prefix of it to a Fiat
-receipt. None of that interprets a repeated pattern across runs. Synkrisis is
-the declared home for that comparison, but the implementation has not landed:
-its command currently refuses cohort, diagnosis, render, and verification and
-writes nothing. Ephoros designs what a step emits, Metron judges a controlled
-measurement, Elenchus works one failure to its cause, and Horos sets the
-repository-reading boundary. A future finding is specified to suggest a next
-owner; a person will still decide whether anything happens.
+receipt. None of that interprets a repeated pattern across runs. Synkrisis
+owns that comparison, and this release lands its first move: a checked cohort
+that classifies every declared run before anything reads a pattern. The
+interpreting moves, the rule catalogue, the report and the whole-path
+verification, are held runbook steps whose operations still refuse. Ephoros
+designs what a step emits, Metron judges a controlled measurement, Elenchus
+works one failure to its cause, and Horos sets the repository-reading
+boundary. A future finding is specified to suggest a next owner; a person
+will still decide whether anything happens.
 
 ## What this step ships
 
-This is Step 1 of the committed
+This is Step 2 of the committed
 [runbook](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/runbook.md),
 built from the committed
 [study](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/study.md)
-for [issue 449](https://github.com/wildcat-finance/skills/issues/449):
+for [issue 449](https://github.com/wildcat-finance/skills/issues/449), on the
+Step 1 scaffold:
 
-- the plugin shell, both host manifests, the marketplace entries and the
-  Promise Machine router route;
-- the canonical `skills/synkrisis/SKILL.md` carrying the complete specified
-  surface, its caps and its refusals, beside the evolution ledger;
-- the first decision record, keeping cross-run diagnosis a standalone
-  boundary; and
-- `scripts/synkrisis.py`, a stub that declares the four specified operations,
-  cohort, diagnose, render and verify, and refuses each with one stable code
-  naming the runbook step that implements it, writing nothing.
+- `synkrisis.py cohort`: fail-closed admission of declared run-observation
+  records, recomputed digests and bound prefixes, caps of 100 runs, 100,000
+  events, 8 MiB per file and 64 MiB aggregate, and one deterministic
+  classification of every declared run as included, excluded with the exact
+  policy field responsible, or unknown, written atomically with no partial
+  output behind a refusal;
+- the policy and cohort schemas under `references/`, with the
+  schema-compatibility record under `docs/`;
+- the comparability decision record, ADR-002, beside ADR-001;
+- a worked example under `examples/cross-run-v0/` whose five records pass
+  the suite's run-observation validator, with the expected cohort committed
+  beside the inputs and recomputed byte for byte in the suite; and
+- the cohort suite's positive and hostile fixtures: a refused transition
+  retained, an unavailable observer kept unknown, recorded token accounting,
+  replaced and truncated records, prefix digest and count mismatches,
+  duplicate keys and run ids, unsafe paths, cap breaches, unlike token
+  accounting, empty eligibility and partial-output discipline.
 
-## How it will work
+Diagnose, render and verify still refuse with one stable code naming the
+runbook step that lands each.
+
+## How it works
 
 An operator declares two things: a manifest naming every run in the
 comparison universe, with each record's digest, byte count, validation,
 redaction and receipt-binding results; and a comparison policy classifying
-every run-context dimension, plus a token accounting mode. Cohort
-construction classifies every declared run as included, excluded or unknown,
-naming the policy field responsible for each exclusion. A digest-bound
-catalogue of deterministic rules recomputes bounded findings; a
-fixed-template report and whole-path byte verification close the loop.
-Association never hardens into cause; a rule or finding carrying causal or
-model-quality language is refused. The runbook's Steps 2 through 5 land that
-behaviour one gated step at a time.
+every run-context dimension as match-with-this-value or may-differ, plus a
+token accounting mode. `cohort` checks the producer contract, digests, bound
+prefixes, caps and path form, then classifies every declared run, naming the
+policy field responsible for each exclusion and keeping an unavailable
+observer visible as unknown. A require-equal accounting policy refuses a
+cohort whose included runs carry unlike token accounting identities, and a
+policy that leaves no eligible run refuses rather than emitting an empty
+comparison. The held steps will apply a digest-bound catalogue of
+deterministic rules, render a fixed-template report and recompute the whole
+path byte for byte.
 
 ## Use
 
@@ -64,8 +80,8 @@ Synkrisis needs only the exact interpreter in the suite
 Ask:
 
 ```text
-Use $synkrisis to read the cross-run comparison specification and the state of its runbook.
+Use $synkrisis to build one checked cohort from declared run observations under my comparison policy.
 ```
 
-The specified operations, the caps and the refusals live in
+The cohort operation, the caps and the refusals live in
 [Synkrisis's `SKILL.md`](./skills/synkrisis/SKILL.md).
