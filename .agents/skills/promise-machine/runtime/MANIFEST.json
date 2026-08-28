@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 870,
-  "total_bytes": 11142543,
+  "total_bytes": 11161576,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1075,9 +1075,9 @@
       "source": "plugins/brevitas/skills/brevitas/agents/openai.yaml"
     },
     {
-      "bytes": 3543,
+      "bytes": 5247,
       "path": "plugins/brevitas/skills/brevitas/evals/README.md",
-      "sha256": "52e13573f8782adc0aeec1d8b994aa7a659cbf78292f5a5103549d977d417685",
+      "sha256": "d96841846327bd7230302d9c230bc062e6ffa639b7aaf49c35e4d0ce34fcafd2",
       "source": "plugins/brevitas/skills/brevitas/evals/README.md"
     },
     {
@@ -1255,9 +1255,9 @@
       "source": "plugins/brevitas/skills/brevitas/evals/cases/xray-replay-authority/target.md"
     },
     {
-      "bytes": 46838,
+      "bytes": 56411,
       "path": "plugins/brevitas/skills/brevitas/evals/corpus.json",
-      "sha256": "0143510fc0df5074e7ba5d7730aa438f4d300ac1dabd74d6b9e5b3f61aa009e7",
+      "sha256": "ca152210fa7c4ffa12d15e31eb89da5b749cbb60c2a9f0a10e5b9eb64fac05e1",
       "source": "plugins/brevitas/skills/brevitas/evals/corpus.json"
     },
     {
@@ -1267,9 +1267,9 @@
       "source": "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
     },
     {
-      "bytes": 25232,
+      "bytes": 32988,
       "path": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py",
-      "sha256": "d0e06a59a7106cd85a84be38bb7f82a86b9f3cc770e64cebca454922af385f5b",
+      "sha256": "1e6a02cd485e0de6cad90714a73a30fd783123f23697561c963c9844c92e1023",
       "source": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py"
     },
     {

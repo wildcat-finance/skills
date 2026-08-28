@@ -14,6 +14,7 @@ from skills.brevitas.scripts.held_corpus import (
     FAMILIES,
     MODEL_IDENTITIES,
     failure_line,
+    result_lines,
     validate_corpus,
 )
 
@@ -60,7 +61,7 @@ class HeldCorpusTests(unittest.TestCase):
     def refresh_digest(case: dict[str, Any], field: str, data: bytes) -> None:
         case["files"][f"{field}_sha256"] = hashlib.sha256(data).hexdigest()
 
-    def test_clean_corpus_covers_every_family_and_both_models(self) -> None:
+    def test_clean_corpus_covers_every_family_and_both_requested_models(self) -> None:
         result = validate_corpus(CORPUS)
 
         self.assertEqual(len(result.cases), 10)
@@ -69,6 +70,17 @@ class HeldCorpusTests(unittest.TestCase):
         self.assertEqual(result.stale, 0)
         for models in result.family_models.values():
             self.assertEqual(set(models), MODEL_IDENTITIES)
+        self.assertTrue(
+            all(
+                getattr(case, "provider_returned_backend_id", "missing") is None
+                for case in result.cases
+            )
+        )
+        rendered = "\n".join(result_lines(result))
+        self.assertIn("requested_models=2", rendered)
+        self.assertIn("backends_established=0", rendered)
+        self.assertIn("backend_identity=unestablished", rendered)
+        self.assertEqual(rendered.count(" request="), 10)
 
     def test_unknown_field_is_refused(self) -> None:
         self.expect_failure(
@@ -83,8 +95,8 @@ class HeldCorpusTests(unittest.TestCase):
         text = manifest_path.read_text(encoding="utf-8")
         manifest_path.write_text(
             text.replace(
-                '"schema": "brevitas-held-corpus-v1",',
-                '"schema": "brevitas-held-corpus-v1",\n  "schema": "brevitas-held-corpus-v1",',
+                '"schema": "brevitas-held-corpus-v2",',
+                '"schema": "brevitas-held-corpus-v2",\n  "schema": "brevitas-held-corpus-v2",',
                 1,
             ),
             encoding="utf-8",
@@ -100,15 +112,100 @@ class HeldCorpusTests(unittest.TestCase):
 
         self.expect_failure("HC011", change)
 
-    def test_missing_provider_or_full_model_id_is_refused(self) -> None:
-        for field in ("provider", "returned_model_id"):
+    def test_missing_provider_or_requested_model_id_is_refused(self) -> None:
+        for field in ("provider", "requested_model_id"):
             with self.subTest(field=field):
                 self.expect_failure(
                     "HC010",
                     lambda _root, manifest, field=field: manifest["cases"][0][
                         "capture"
-                    ].pop(field),
+                    ].pop(field, None),
                 )
+
+    def test_non_null_provider_returned_backend_id_is_refused(self) -> None:
+        self.expect_failure(
+            "HC012",
+            lambda _root, manifest: manifest["cases"][0]["capture"].__setitem__(
+                "provider_returned_backend_id", "openai/internal-backend"
+            ),
+        )
+
+    def test_missing_or_mismatched_client_identity_evidence_is_refused(self) -> None:
+        def missing(_root: Path, manifest: dict[str, Any]) -> None:
+            manifest["cases"][0]["capture"].pop("client_identity_evidence", None)
+
+        def mismatched_banner(_root: Path, manifest: dict[str, Any]) -> None:
+            manifest["cases"][0]["capture"].setdefault(
+                "client_identity_evidence", {}
+            )[
+                "acknowledged_model_banner"
+            ] = "model: gpt-5.6-terra"
+
+        def mismatched_binding(_root: Path, manifest: dict[str, Any]) -> None:
+            manifest["cases"][0]["capture"].setdefault(
+                "client_identity_evidence", {}
+            )[
+                "binding_sha256"
+            ] = "0" * 64
+
+        for expected, change in (
+            ("HC010", missing),
+            ("HC012", mismatched_banner),
+            ("HC012", mismatched_binding),
+        ):
+            with self.subTest(expected=expected, change=change.__name__):
+                self.expect_failure(expected, change)
+
+    def test_false_human_review_provenance_is_refused(self) -> None:
+        def change(_root: Path, manifest: dict[str, Any]) -> None:
+            classification = manifest["cases"][0]["classification"]
+            classification["reviewer"] = "human-review"
+            classification["reviewer_kind"] = "human"
+
+        self.expect_failure("HC015", change)
+
+    def test_zero_or_malformed_source_commit_is_refused(self) -> None:
+        for value in ("0" * 40, "not-a-commit"):
+            with self.subTest(value=value):
+                self.expect_failure(
+                    "HC014",
+                    lambda _root, manifest, value=value: manifest["cases"][0][
+                        "provenance"
+                    ]["origins"][0].__setitem__("commit", value),
+                )
+
+    def test_unbound_source_derivation_is_refused(self) -> None:
+        def zero_output(_root: Path, manifest: dict[str, Any]) -> None:
+            manifest["cases"][0]["provenance"].setdefault("derivation", {})[
+                "output_sha256"
+            ] = "0" * 64
+
+        def relabel_diff_as_exact(_root: Path, manifest: dict[str, Any]) -> None:
+            derivation = manifest["cases"][0]["provenance"].setdefault(
+                "derivation", {}
+            )
+            output_digest = manifest["cases"][0]["files"]["source_sha256"]
+            derivation.update(
+                {
+                    "method": "exact-line-range-v1",
+                    "input_sha256": output_digest,
+                    "output_sha256": output_digest,
+                    "steps": ["select-declared-line-range"],
+                }
+            )
+
+        for change in (zero_output, relabel_diff_as_exact):
+            with self.subTest(change=change.__name__):
+                self.expect_failure("HC014", change)
+
+    def test_malformed_source_range_is_refused(self) -> None:
+        def change(_root: Path, manifest: dict[str, Any]) -> None:
+            exact_case = next(
+                case for case in manifest["cases"] if case["family"] != "diff-review"
+            )
+            exact_case["provenance"]["origins"][0]["range"] = "lines one to many"
+
+        self.expect_failure("HC014", change)
 
     def test_stale_digest_is_refused_with_short_digest_diagnostics(self) -> None:
         error = self.expect_failure(
@@ -207,7 +304,10 @@ class HeldCorpusTests(unittest.TestCase):
                 for case in manifest["cases"]
                 if not (
                     case["family"] == "x-ray"
-                    and case["capture"]["returned_model_id"] == "openai/gpt-5.6-terra"
+                    and case["capture"].get(
+                        "requested_model_id", case["capture"].get("returned_model_id")
+                    )
+                    == "openai/gpt-5.6-terra"
                 )
             ]
 
