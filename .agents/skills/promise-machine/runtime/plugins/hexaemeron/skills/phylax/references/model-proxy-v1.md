@@ -325,9 +325,14 @@ The aggregate checks include active reservations, so concurrent calls cannot
 each observe the same remaining capacity. A count, byte, token, output,
 response, or concurrency excess makes the job terminal. Later admission and
 provider publication refuse. Requests may reserve concurrently, but the
-runtime gives the provider session one turn at a time in guest sequence order.
-It commits or refuses that turn against its own provider event before the next
-turn can cross the provider boundary.
+runtime registers each durable request receipt in a pending-turn set and gives
+the provider session one turn at a time in guest sequence order. Selection
+uses the lowest pending sequence rather than the execution lock's unspecified
+waiter order. It commits or refuses that turn against its own provider event
+before the next turn can cross the provider boundary. A refusing provider
+event contributes its confirmed response bytes, including the one over-limit
+sentinel, to the first terminal snapshot; a response arriving after an earlier
+terminal transition cannot rewrite that already durable snapshot.
 
 ## Cancellation, expiry, and publication
 
@@ -358,7 +363,9 @@ Completion, cancellation, and expiry share one publication lock in
 or sees that transition and withholds the response. A transport refusal that
 arrives after cancellation or expiry reports the earlier terminal winner. The
 controller retains one terminal snapshot; another terminal call does not
-create another receipt.
+create another receipt. A final-response completion that finds another active
+reservation still finalises the resulting refusal before returning it; cleanup
+and terminal evidence do not depend on that other caller running afterwards.
 
 ## Content-free receipt file
 

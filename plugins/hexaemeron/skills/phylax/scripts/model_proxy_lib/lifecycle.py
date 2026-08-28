@@ -496,13 +496,33 @@ class LifecycleController:
             if event is not None:
                 if (
                     not isinstance(event, ProviderEvent)
+                    or event.profile != self._profile.identifier
                     or event.code != code
                     or event.disclosure_state not in {"not-read", "provider-only"}
+                    or isinstance(event.request_bytes, bool)
+                    or not isinstance(event.request_bytes, int)
+                    or event.request_bytes not in {0, reservation.request_bytes}
+                    or isinstance(event.response_bytes, bool)
+                    or not isinstance(event.response_bytes, int)
+                    or event.response_bytes < 0
+                    or event.response_bytes > reservation.reserved_response_bytes + 1
+                    or isinstance(event.input_tokens, bool)
+                    or not isinstance(event.input_tokens, int)
+                    or event.input_tokens not in {0, reservation.input_tokens}
+                    or isinstance(event.output_tokens, bool)
+                    or not isinstance(event.output_tokens, int)
+                    or event.output_tokens < 0
+                    or event.output_tokens > reservation.reserved_output_tokens
+                    or isinstance(event.duration_ns, bool)
+                    or not isinstance(event.duration_ns, int)
+                    or event.duration_ns < 0
                 ):
                     snapshot = self._terminal_locked("MP409", "provider-only")
                     self._release_locked(reservation, rollback=False)
                     return snapshot
                 disclosure_state = event.disclosure_state
+                if self._terminal is None and disclosure_state == "provider-only":
+                    self._response_bytes += event.response_bytes
             snapshot = self._terminal_locked(code, disclosure_state)
             self._release_locked(reservation, rollback=False)
             return snapshot
@@ -571,6 +591,8 @@ class ModelProxyRuntime:
         self._io_closer = io_closer
         self._publication_lock = threading.Lock()
         self._provider_lock = threading.Lock()
+        self._provider_turn_condition = threading.Condition()
+        self._pending_provider_turns: set[int] = set()
         self._terminal_lock = threading.Lock()
         self._terminal_finalized = False
         self._terminal_receipt_failed = False
@@ -636,6 +658,8 @@ class ModelProxyRuntime:
         return render_operator_text(self._controller.policy)
 
     def _finalize_terminal(self, snapshot: TerminalSnapshot) -> None:
+        with self._provider_turn_condition:
+            self._provider_turn_condition.notify_all()
         with self._terminal_lock:
             if self._terminal_finalized:
                 if self._terminal_receipt_failed:
@@ -675,6 +699,28 @@ class ModelProxyRuntime:
             self._terminal_finalized = True
             if receipt_failed:
                 refuse("MP407", "receipt.terminal")
+
+    def _register_provider_turn(self, reservation: Reservation) -> None:
+        with self._provider_turn_condition:
+            if reservation.sequence in self._pending_provider_turns:
+                refuse("MP401", "lifecycle.provider_turn")
+            self._pending_provider_turns.add(reservation.sequence)
+            self._provider_turn_condition.notify_all()
+
+    def _await_provider_turn(self, reservation: Reservation) -> None:
+        with self._provider_turn_condition:
+            while reservation.sequence in self._pending_provider_turns:
+                if self._controller.terminal is not None:
+                    return
+                if reservation.sequence == min(self._pending_provider_turns):
+                    return
+                self._provider_turn_condition.wait()
+            refuse("MP401", "lifecycle.provider_turn")
+
+    def _release_provider_turn(self, reservation: Reservation) -> None:
+        with self._provider_turn_condition:
+            self._pending_provider_turns.discard(reservation.sequence)
+            self._provider_turn_condition.notify_all()
 
     def _active_locked(self) -> None:
         snapshot = self._controller.poll()
@@ -762,47 +808,60 @@ class ModelProxyRuntime:
                 snapshot = self._controller.stop("MP407")
                 self._finalize_terminal(snapshot)
                 refuse("MP407", "receipt.request")
-        with self._provider_lock:
-            with self._publication_lock:
-                try:
-                    disclosure_timeout_ns = self._controller.mark_disclosed(
-                        reservation
-                    )
-                except PolicyError:
-                    terminal = self._controller.terminal
-                    if terminal is not None:
-                        self._finalize_terminal(terminal)
-                    raise
-
-            try:
-                guest_response = self._provider.generate(
-                    request, timeout_ns=disclosure_timeout_ns
-                )
-            except PolicyError as error:
+            self._register_provider_turn(reservation)
+        try:
+            self._await_provider_turn(reservation)
+            with self._provider_lock:
                 with self._publication_lock:
-                    events = self._provider.events
-                    event = events[-1] if events else None
-                    snapshot = self._controller.fail(reservation, error.code, event)
-                    self._finalize_terminal(snapshot)
-                    if snapshot.code != error.code:
-                        refuse(snapshot.code, "lifecycle.late_response")
-                raise
+                    try:
+                        disclosure_timeout_ns = self._controller.mark_disclosed(
+                            reservation
+                        )
+                    except PolicyError:
+                        terminal = self._controller.terminal
+                        if terminal is not None:
+                            self._finalize_terminal(terminal)
+                        raise
 
-            event = self._provider.events[-1]
-            with self._publication_lock:
                 try:
-                    self._controller.complete(reservation, event)
-                except PolicyError:
-                    terminal = self._controller.terminal
-                    if terminal is not None:
-                        self._finalize_terminal(terminal)
+                    guest_response = self._provider.generate(
+                        request, timeout_ns=disclosure_timeout_ns
+                    )
+                except PolicyError as error:
+                    with self._publication_lock:
+                        events = self._provider.events
+                        event = events[-1] if events else None
+                        snapshot = self._controller.fail(
+                            reservation, error.code, event
+                        )
+                        self._finalize_terminal(snapshot)
+                        if snapshot.code != error.code:
+                            refuse(snapshot.code, "lifecycle.late_response")
                     raise
-                if final:
-                    snapshot = self._controller.finish()
-                    self._finalize_terminal(snapshot)
-                else:
-                    self._active_locked()
-                return guest_response
+
+                event = self._provider.events[-1]
+                with self._publication_lock:
+                    try:
+                        self._controller.complete(reservation, event)
+                    except PolicyError:
+                        terminal = self._controller.terminal
+                        if terminal is not None:
+                            self._finalize_terminal(terminal)
+                        raise
+                    if final:
+                        try:
+                            snapshot = self._controller.finish()
+                        except PolicyError:
+                            terminal = self._controller.terminal
+                            if terminal is not None:
+                                self._finalize_terminal(terminal)
+                            raise
+                        self._finalize_terminal(snapshot)
+                    else:
+                        self._active_locked()
+                    return guest_response
+        finally:
+            self._release_provider_turn(reservation)
 
     def cancel(self) -> None:
         with self._publication_lock:

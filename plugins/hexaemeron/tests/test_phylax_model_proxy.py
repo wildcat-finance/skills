@@ -2676,6 +2676,109 @@ class LifecycleTests(unittest.TestCase):
             )
             self.assertEqual("MP000", runtime.terminal.code)
 
+    def test_concurrent_turn_order_does_not_depend_on_lock_waiter_fairness(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            provider_inputs = []
+            second_receipted = threading.Event()
+
+            def exchange(request, _context, _timeout):
+                input_text = json.loads(request.body)["input"]
+                provider_inputs.append(input_text)
+                return BufferedHTTPSResponse(
+                    synthetic_provider_response(input_text, input_text.upper())
+                )
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000, 30_000, 40_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            requests = runtime.feed(
+                request_frame("first scheduled prompt")
+                + request_frame("second scheduled prompt")
+            )
+            runtime.finish_input()
+
+            class ScheduledPublicationLock:
+                def __init__(self):
+                    self.lock = threading.Lock()
+                    self.first_released = threading.Event()
+                    self.resume_first = threading.Event()
+                    self.schedule_once = True
+
+                def __enter__(self):
+                    self.lock.acquire()
+                    return self
+
+                def __exit__(self, _type, _value, _traceback):
+                    self.lock.release()
+                    if (
+                        threading.current_thread().name == "sequence-1"
+                        and self.schedule_once
+                    ):
+                        self.schedule_once = False
+                        self.first_released.set()
+                        self.resume_first.wait(5)
+
+            scheduled = ScheduledPublicationLock()
+            runtime._publication_lock = scheduled
+            original_write = runtime._sink.write_request
+
+            def observed_write(**arguments):
+                original_write(**arguments)
+                if arguments["sequence"] == 2:
+                    second_receipted.set()
+
+            results = {}
+
+            def generate(label, request, final):
+                try:
+                    results[label] = runtime.generate(request, final=final)
+                except PolicyError as error:
+                    results[label] = error.code
+
+            with mock.patch.object(
+                runtime._sink, "write_request", side_effect=observed_write
+            ):
+                first = threading.Thread(
+                    target=generate,
+                    args=("first", requests[0], False),
+                    name="sequence-1",
+                )
+                second = threading.Thread(
+                    target=generate,
+                    args=("second", requests[1], True),
+                    name="sequence-2",
+                )
+                first.start()
+                self.assertTrue(scheduled.first_released.wait(5))
+                second.start()
+                self.assertTrue(second_receipted.wait(5))
+                scheduled.resume_first.set()
+                first.join(5)
+                second.join(5)
+
+            self.assertFalse(first.is_alive())
+            self.assertFalse(second.is_alive())
+            self.assertEqual(
+                ["first scheduled prompt", "second scheduled prompt"],
+                provider_inputs,
+            )
+            self.assertTrue(
+                all(isinstance(value, bytes) for value in results.values())
+            )
+            self.assertEqual("MP000", runtime.terminal.code)
+
     def test_late_transport_failure_keeps_the_cancellation_winner(self):
         with tempfile.TemporaryDirectory() as directory:
             entered = threading.Event()
@@ -2844,6 +2947,89 @@ class LifecycleTests(unittest.TestCase):
             self.assertEqual("terminal", records[-1]["event"])
             self.assertEqual("MP401", records[-1]["outcome_code"])
 
+    def test_final_response_refusal_finalizes_before_another_caller_runs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first_started = threading.Event()
+            release_first = threading.Event()
+            second_receipted = threading.Event()
+            second_mark_started = threading.Event()
+            release_second_mark = threading.Event()
+
+            def exchange(request, _context, _timeout):
+                input_text = json.loads(request.body)["input"]
+                if input_text == "first final prompt":
+                    first_started.set()
+                    self.assertTrue(release_first.wait(5))
+                return BufferedHTTPSResponse(
+                    synthetic_provider_response(input_text, input_text.upper())
+                )
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000, 30_000, 40_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            requests = runtime.feed(
+                request_frame("first final prompt")
+                + request_frame("second active prompt")
+            )
+            runtime.finish_input()
+            original_write = runtime._sink.write_request
+            original_mark = runtime._controller.mark_disclosed
+
+            def observed_write(**arguments):
+                original_write(**arguments)
+                if arguments["sequence"] == 2:
+                    second_receipted.set()
+
+            def delayed_second_mark(reservation):
+                if reservation.sequence == 2:
+                    second_mark_started.set()
+                    self.assertTrue(release_second_mark.wait(5))
+                return original_mark(reservation)
+
+            with mock.patch.object(
+                runtime._sink, "write_request", side_effect=observed_write
+            ), mock.patch.object(
+                runtime._controller,
+                "mark_disclosed",
+                side_effect=delayed_second_mark,
+            ), ThreadPoolExecutor(max_workers=2) as pool:
+                first = pool.submit(runtime.generate, requests[0], final=True)
+                self.assertTrue(first_started.wait(5))
+                second = pool.submit(runtime.generate, requests[1])
+                self.assertTrue(second_receipted.wait(5))
+                release_first.set()
+                with self.assertRaisesRegex(PolicyError, "MP401"):
+                    first.result(timeout=5)
+                self.assertTrue(second_mark_started.wait(5))
+                finalized_before_second = runtime._terminal_finalized
+                records_before_second = [
+                    json.loads(line)
+                    for line in (root / "receipts.jsonl")
+                    .read_text("utf-8")
+                    .splitlines()
+                ]
+                release_second_mark.set()
+                with self.assertRaisesRegex(PolicyError, "MP401"):
+                    second.result(timeout=5)
+
+            self.assertTrue(finalized_before_second)
+            self.assertEqual(
+                ["activation", "request", "request", "terminal"],
+                [record["event"] for record in records_before_second],
+            )
+
     def test_unknown_token_counter_refuses_before_activation(self):
         unknown = replace(self.profile, token_counter="unknown-counter/v1")
         with mock.patch(
@@ -2899,6 +3085,27 @@ class LifecycleTests(unittest.TestCase):
                 with self.assertRaisesRegex(PolicyError, "MP326"):
                     runtime.generate(request, final=True)
                 self.assertEqual("MP326", runtime.terminal.code)
+
+    def test_terminal_receipt_keeps_confirmed_refusal_response_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime, request, _exchange, _response = self.runtime_request(
+                root,
+                response=BufferedHTTPSResponse(b"{"),
+                input_text="refusing response progress",
+            )
+            with self.assertRaisesRegex(PolicyError, "MP323"):
+                runtime.generate(request)
+            provider_event = runtime.provider_events[-1]
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual(1, provider_event.response_bytes)
+            self.assertEqual(
+                provider_event.response_bytes,
+                records[-1]["counts"]["response_bytes"],
+            )
 
     def test_receipt_schema_count_size_mode_and_duplicate_terminal(self):
         with tempfile.TemporaryDirectory() as directory:
