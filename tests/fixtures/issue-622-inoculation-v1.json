@@ -16,9 +16,9 @@
   },
   "transforms": [
     {
-      "id": "adr-035-selector-to-adr-038",
+      "id": "adr-035-selector-to-adr-041",
       "source": "docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md",
-      "target": "docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md"
+      "target": "docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md"
     }
   ],
   "paths": [
@@ -48,9 +48,9 @@
     },
     {
       "source": "docs/decisions/ADR-035-select-and-schedule-repository-checks-from-one-graph.md",
-      "target": "docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md",
+      "target": "docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md",
       "archive_sha256": "fc543e24618dae928b9a125c5fb96c06436b1ccd53563fda234a2d45b8f9df22",
-      "current_sha256": "e0dcf0a23fee11bab1ebcccc9aab816eebf58f8530c9fb5a94c52529fd308cca"
+      "current_sha256": "089046388d57dd7c639a160b7fe5e83d804db789b0cef036cb8a1cd34bca4994"
     },
     {
       "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
@@ -372,7 +372,7 @@
     },
     {
       "id": "current-base-adr-number-uniqueness",
-      "owner": "docs/decisions/ADR-038-select-and-schedule-repository-checks-from-one-graph.md",
+      "owner": "docs/decisions/ADR-041-select-and-schedule-repository-checks-from-one-graph.md",
       "guards": [
         "test_no_number_collides_with_one_already_on_the_default_branch"
       ],
