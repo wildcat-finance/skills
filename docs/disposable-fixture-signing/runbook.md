@@ -807,3 +807,58 @@ seventh declaration to a worktree that does not need one.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
 holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Files: Changed:
+`tests/test_boundary_currency.py` (the `GuardMutationTests` setup at line 166),
+`plugins/horos/tests/test_scoped_entry.py` (line 64),
+`plugins/horos/tests/test_demonstration.py` (line 53),
+`plugins/horos/tests/test_universe.py` (lines 56, 134 and 195),
+`tests/test_disposable_fixture_signing.py` (enumeration entries for both
+suites), and `docs/disposable-fixture-signing/runbook.md` and
+`docs/disposable-fixture-signing/study.md`, refreshed so the shipped copies stay
+byte-identical to the receipted artefacts after the amendments this run has
+recorded since step 2.
+
+Each edit is one call, `git config --local commit.gpgsign false`, against the
+fixture repository, placed immediately after the `git init` that created it and
+before any other configuration. The three Horos modules each carry their own
+byte-identical `git(root, *args)` helper; the line goes at each call site, not
+into a shared module, per the study's section 3 non-goal.
+
+One comment per suite, not per site, says why the line is there: fixture history
+is not signing evidence, so inherited signing must not decide whether the
+repository can be built. Suite means the discovery unit the exit commands name,
+so the root suite takes one comment and the Horos suite takes one. The Horos
+comment sits in `plugins/horos/tests/test_universe.py`, the module carrying
+three of that suite's five sites; `test_scoped_entry.py` and
+`test_demonstration.py` carry a bare declaration, and a reader who meets one
+reaches the reason through `git blame` on the line or through the opening
+docstring of `tests/test_disposable_fixture_signing.py`, which states the rule
+and its reason in full.
+
+Do not touch `tests/test_boundary_currency.py:140` or
+`plugins/horos/tests/test_scoped_entry.py:140`; neither commits, and the study's
+section 2b records them as out of scope. Do not declare at
+`plugins/horos/tests/test_universe.py:247` either: it is a `worktree add` inside
+`CandidateBindingTests`, which spans lines 180 to 259, so the repository it
+shares a config file with is the one site 10 creates at `:195`, and step 2's
+audit measured that a linked worktree inherits the declaration its source
+repository carries.
+
+**Why.** The fourth amendment said the worktree at `:247` shares the repository
+created at line 56. It does not: `UniverseTests` ends at line 120 and `:247`
+sits in `CandidateBindingTests`, whose own construction is site 10 at `:195`.
+That amendment inherited the error from the study's section 2 coverage note,
+which has now been corrected by its own amendment; the built tree was always
+right. The same amendment placed the Horos comment at "the first of its three
+sites", which is unsatisfiable as written: the Horos suite has five sites across
+three modules, and the comment sits in the module holding three of them, which
+is the last of the three in discovery order. The files list gains the shipped
+study copy for the same reason it already carried the runbook copy.
+
+**Steps touched.** Step 3's files.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.

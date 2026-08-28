@@ -705,3 +705,29 @@ CI-covered root suite?** If yes, every step declares
 the existing `python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`,
 and the rule is not enforced in CI. Both are buildable; the first is better and costs
 one file.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Section 2's coverage note attributed the linked worktree at
+`plugins/horos/tests/test_universe.py:247` to site 8's entry. It belongs to site
+10. `UniverseTests` spans lines 51 to 120, `BindingDirectoryTests` 121 to 179,
+and `CandidateBindingTests` 180 to 259, so line 247 sits inside
+`CandidateBindingTests`, whose own construction is site 10 at `:195`. The
+conclusion is unchanged: the worktree shares the config file of the repository
+its class created, that repository carries the declaration, and the worktree
+therefore needs none of its own.
+
+**Why.** The attribution named a site three classes away from the worktree it
+was meant to cover, and site 10 is load-bearing rather than decorative: its
+`setUp` commits, so it is a construction site in its own right. A reader who
+trusted the note as written could conclude that site 10 was redundant with site
+8 and remove it, which would reintroduce inherited signing at a site this study
+records as covered. Step 3's audit measured the class spans on the parent tree
+and the six shipped declarations, and the built tree already declares at `:195`
+correctly; only the prose was wrong.
+
+**Steps touched.** Step 3's context. No field of that step changes, because the
+tree it built already matches what this correction says.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds. Step 5: entry holds; exit holds.
