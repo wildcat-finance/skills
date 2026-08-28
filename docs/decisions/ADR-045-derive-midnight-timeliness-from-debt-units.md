@@ -1,4 +1,4 @@
-# ADR-043: Derive Midnight timeliness from debt units
+# ADR-045: Derive Midnight timeliness from debt units
 
 ## Status
 
