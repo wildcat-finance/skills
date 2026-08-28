@@ -33,6 +33,9 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parents[1]
 FIAT = ROOT / "skills" / "fiat" / "SKILL.md"
 PROTASIS = ROOT / "skills" / "protasis" / "SKILL.md"
+FIAT_LEDGER = ROOT / "skills" / "fiat" / "EVOLUTION.md"
+PROTASIS_LEDGER = ROOT / "skills" / "protasis" / "EVOLUTION.md"
+ADR_006 = ROOT.parents[1] / "docs" / "decisions" / "ADR-006-skill-ledgers-are-not-semver.md"
 MARKETPLACE = ROOT / "skills" / "fiat" / "references" / "wildcat-marketplace.md"
 CONTRIBUTOR_CHECK = ROOT / "skills" / "fiat" / "scripts" / "check_wildcat_contributor.py"
 PUSH_DISCIPLINE = ROOT / "skills" / "fiat" / "references" / "push-discipline.md"
@@ -342,6 +345,36 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("[checked base, checked candidate]", push)
         self.assertIn("All targets pass or none are recorded", push)
         self.assertIn("performs none of these version reads", push)
+
+    def test_issue_556_generation_records_use_the_declared_relation(self):
+        ledgers = {
+            "fiat-v5.23.1": FIAT_LEDGER.read_text(encoding="utf-8"),
+            "protasis-v4.8.0": PROTASIS_LEDGER.read_text(encoding="utf-8"),
+        }
+        for version, ledger in ledgers.items():
+            with self.subTest(version=version):
+                self.assertIn(f"- Current version: `{version}`", ledger)
+                latest = next(
+                    line
+                    for line in reversed(ledger.splitlines())
+                    if line.startswith("| `")
+                )
+                self.assertIn(f"| `{version}` | generation |", latest)
+                self.assertIn("skills#556", latest)
+                self.assertIn("ADR-006", latest)
+                self.assertIn("next-generation-after-integration-base", latest)
+
+    def test_issue_556_addendum_separates_relation_from_resolution(self):
+        record = ADR_006.read_text(encoding="utf-8")
+        addendum = record.split("## Issue 556 addendum", 1)[1]
+        self.assertIn("Accepted, 2026-08-28", addendum)
+        self.assertIn("skills#556", addendum)
+        self.assertIn("next-generation-after-integration-base", addendum)
+        self.assertIn("does not reserve a label", addendum)
+        self.assertIn("exact integration base", addendum)
+        self.assertIn("signed two-parent", addendum)
+        self.assertIn("fiat-integration-revalidation/v1", addendum)
+        self.assertIn("self-hosted", addendum)
 
     def test_observation_binding_is_optional_and_non_authorising(self):
         flat = " ".join(self.fiat.split())

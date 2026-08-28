@@ -12,7 +12,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "4.7.0"
+  version: "4.8.0"
 ---
 
 # Protasis

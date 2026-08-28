@@ -369,3 +369,53 @@ one-value-per-field amendment grammar.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit broken.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: ADR-006 carries one dated
+issue-556 addendum defining a generation relation separately from its resolved
+label. Fiat and Protasis each have one new generation row and matching
+`SKILL.md` metadata selected by the declared relation from the exact
+integration base; evolution, epoch, frontier status, revision, digest,
+current-frontier text, and held next-job text remain exact. No literal future
+label is introduced into this runbook. The tracked study at
+`docs/fiat-version-relations-study.md` and the tracked runbook at
+`plugins/hexaemeron/docs/fiat-version-relations/runbook.md` are byte-identical
+to their currently receipted sources. The misplaced
+`plugins/hexaemeron/docs/fiat-version-relations/study.md` copy is absent. From
+the study's direct-root-docs location, all five `../plugins/...` links resolve
+to their canonical skill files. Promise Machine copies and coverage agree,
+the complete #555/concurrent-generation demonstration passes, the run's own
+audit record remains append-only, and every repository gate below is green:
+
+```bash
+cmp .hexaemeron/study.md docs/fiat-version-relations-study.md
+cmp .hexaemeron/runbook.md plugins/hexaemeron/docs/fiat-version-relations/runbook.md
+test ! -e plugins/hexaemeron/docs/fiat-version-relations/study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study .hexaemeron/study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py .hexaemeron/runbook.md
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py docs/fiat-version-relations-study.md plugins/hexaemeron/docs/fiat-version-relations/runbook.md
+python3 -m unittest plugins.hexaemeron.tests.test_version_relations plugins.hexaemeron.tests.test_protasis_checker
+python3 -m unittest discover -s tests -p 'test_evolution_contract.py'
+python3 -m unittest discover -s tests
+python3 plugins/hexaemeron/tests/run_tests.py
+python3 scripts/promise_machine.py sync --check
+python3 scripts/promise_machine.py check
+python3 scripts/promise_machine.py coverage --check
+python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents plugins docs
+python3 plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+**Why.** Step 1's receipted amendment moved the byte-identical study to the
+direct root `docs/` path so its five unchanged relative links resolve. Step
+4's baseline Exit retained the old plugin-local study path and was therefore
+recorded as broken. This replacement keeps the complete Step 4 decision,
+generation, demonstration, and repository-gate contract while correcting its
+publication-path checks. No other Step 4 field changes.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 4: entry holds; exit holds.
