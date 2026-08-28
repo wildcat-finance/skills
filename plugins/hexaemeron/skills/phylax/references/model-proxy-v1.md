@@ -278,9 +278,10 @@ The session retains at most `max_requests + 1` fixed
 profile id, disclosure state, outcome family, fixed code, request and response
 byte counts, input and output token counts, and monotonic duration in
 nanoseconds. A pre-admission or credential-source refusal says `not-read`;
-another attempted provider exchange says `provider-only`. No event contains a
-prompt, output, credential, URL, header, address, provider request id, or raw
-error. Once the connector hands a mapped request to the exchange, a value-free
+validation or resolution that refuses before the exchange handoff also says
+`not-read`; another attempted provider exchange says `provider-only`. No event
+contains a prompt, output, credential, URL, header, address, provider request
+id, or raw error. Once the connector hands a mapped request to the exchange, a value-free
 transport refusal preserves that request's byte count and bounded duration even
 when no response object returns. If a response did return before its status,
 headers, or body refused, the same refusal also preserves the body bytes read
@@ -359,6 +360,13 @@ write creates a content-free terminal record and prevents the credential read.
 Otherwise, the runtime passes the shortened interval to the connector, whose
 existing 30-second limit remains the upper transport timeout.
 
+The connector calls a controller-owned handoff immediately before entering the
+exchange adapter. That handoff shares the lifecycle lock with cancellation and
+expiry. A terminal transition that wins first prevents the exchange and keeps
+the terminal disclosure state `not-read`; a handoff that wins first makes the
+job-level state `provider-only`, even when cancellation closes the in-flight
+request before a provider response returns.
+
 `poll()` applies the first expired boundary. If both boundaries have passed,
 the one whose activation-time interval was shorter supplies the fixed outcome.
 Trusted cancellation uses the same lock. Both transitions mark the controller
@@ -380,6 +388,8 @@ controller retains one terminal snapshot; another terminal call does not
 create another receipt. A final-response completion that finds another active
 reservation still finalises the resulting refusal before returning it; cleanup
 and terminal evidence do not depend on that other caller running afterwards.
+Every final waiter and direct completion reports an already durable terminal
+outcome instead of replacing it with the closed provider session's refusal.
 The final-response path validates the guest EOF before provider disclosure and
 withholds its already normalised response if a later admitted request remains
 unserved. Direct completion applies the same EOF and pending-admission checks.

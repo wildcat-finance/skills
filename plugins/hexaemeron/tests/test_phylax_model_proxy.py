@@ -2674,7 +2674,180 @@ class LifecycleTests(unittest.TestCase):
                     future.result(timeout=5)
             self.assertIs(exchange, actual_exchange)
             self.assertTrue(responses[0].closed)
-            self.assertNotIn(b"LATE RESPONSE", (root / "receipts.jsonl").read_bytes())
+            receipt_bytes = (root / "receipts.jsonl").read_bytes()
+            self.assertNotIn(b"LATE RESPONSE", receipt_bytes)
+            self.assertEqual(
+                "provider-only",
+                json.loads(receipt_bytes.splitlines()[-1])["disclosure_state"],
+            )
+
+    def test_pre_exchange_refusal_is_not_provider_disclosure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            exchange = HTTPSExchangeFixture(
+                BufferedHTTPSResponse(
+                    synthetic_provider_response("resolution prompt", "UNUSED")
+                )
+            )
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: (),
+                exchange=exchange,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            request = runtime.feed(request_frame("resolution prompt"))[0]
+            runtime.finish_input()
+
+            with self.assertRaisesRegex(PolicyError, "MP301"):
+                runtime.generate(request)
+
+            self.assertEqual([], exchange.requests)
+            self.assertEqual("not-read", runtime.provider_events[-1].disclosure_state)
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual("not-read", records[-1]["disclosure_state"])
+
+    def test_cancellation_before_provider_handoff_is_not_disclosure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            credential_started = threading.Event()
+            release_credential = threading.Event()
+            exchange = HTTPSExchangeFixture(
+                BufferedHTTPSResponse(
+                    synthetic_provider_response("cancel prompt", "UNUSED")
+                )
+            )
+
+            def credential_source(_name):
+                credential_started.set()
+                self.assertTrue(release_credential.wait(5))
+                return self.credential
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=credential_source,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+                io_closer=release_credential.set,
+            )
+            request = runtime.feed(request_frame("cancel prompt"))[0]
+            runtime.finish_input()
+
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(runtime.generate, request)
+                self.assertTrue(credential_started.wait(5))
+                runtime.cancel()
+                with self.assertRaisesRegex(PolicyError, "MP406"):
+                    future.result(timeout=5)
+
+            self.assertEqual([], exchange.requests)
+            self.assertEqual("not-read", runtime.provider_events[-1].disclosure_state)
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual("not-read", records[-1]["disclosure_state"])
+
+    def test_cancelled_final_waiter_reports_the_terminal_winner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first_started = threading.Event()
+            release_first = threading.Event()
+            second_receipted = threading.Event()
+
+            def exchange(request, _context, _timeout):
+                mapped = json.loads(request.body)
+                if mapped["input"] == "first cancelled prompt":
+                    first_started.set()
+                    self.assertTrue(release_first.wait(5))
+                return BufferedHTTPSResponse(
+                    synthetic_provider_response(
+                        mapped["input"], mapped["input"].upper()
+                    )
+                )
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000, 30_000, 40_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+                io_closer=release_first.set,
+            )
+            requests = runtime.feed(
+                request_frame("first cancelled prompt")
+                + request_frame("second cancelled prompt")
+            )
+            runtime.finish_input()
+            original_write = runtime._sink.write_request
+
+            def observed_write(**arguments):
+                original_write(**arguments)
+                if arguments["sequence"] == 2:
+                    second_receipted.set()
+
+            with mock.patch.object(
+                runtime._sink, "write_request", side_effect=observed_write
+            ), ThreadPoolExecutor(max_workers=2) as pool:
+                first = pool.submit(runtime.generate, requests[0])
+                self.assertTrue(first_started.wait(5))
+                second = pool.submit(runtime.generate, requests[1], final=True)
+                self.assertTrue(second_receipted.wait(5))
+                runtime.cancel()
+                try:
+                    first.result(timeout=5)
+                except PolicyError as error:
+                    first_code = error.code
+                else:
+                    first_code = None
+                try:
+                    second.result(timeout=5)
+                except PolicyError as error:
+                    second_code = error.code
+                else:
+                    second_code = None
+
+            self.assertEqual(("MP406", "MP406"), (first_code, second_code))
+
+    def test_completion_after_cancellation_reports_the_terminal_winner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime, _request, _exchange, _response = self.runtime_request(
+                root, input_text="cancelled completion"
+            )
+            runtime.cancel()
+
+            try:
+                runtime.complete_job()
+            except PolicyError as error:
+                code = error.code
+            else:
+                code = None
+
+            self.assertEqual("MP406", code)
 
     def test_concurrent_runtime_generation_keeps_provider_order_and_receipts(self):
         with tempfile.TemporaryDirectory() as directory:

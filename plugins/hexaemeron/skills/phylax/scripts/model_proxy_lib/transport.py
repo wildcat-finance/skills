@@ -427,6 +427,7 @@ class HTTPSConnector:
         *,
         max_response_bytes: int,
         timeout_seconds: float | None = None,
+        on_request_handoff: Callable[[], None] | None = None,
     ) -> TransportResult:
         """Send one internally mapped request and retain no authority-bearing value."""
 
@@ -437,6 +438,10 @@ class HTTPSConnector:
             or not isinstance(max_response_bytes, int)
             or max_response_bytes < 1
             or max_response_bytes > self._profile.limit_ceilings["max_response_bytes"]
+            or (
+                on_request_handoff is not None
+                and not callable(on_request_handoff)
+            )
         ):
             refuse("MP300", "provider.request")
         request_timeout = _bounded_timeout(timeout_seconds, self._timeout)
@@ -461,6 +466,8 @@ class HTTPSConnector:
         result: TransportResult | None = None
         try:
             started = self._clock()
+            if on_request_handoff is not None:
+                on_request_handoff()
             request_handed_to_exchange = True
             response = self._exchange(request, self._context, request_timeout)
             if (

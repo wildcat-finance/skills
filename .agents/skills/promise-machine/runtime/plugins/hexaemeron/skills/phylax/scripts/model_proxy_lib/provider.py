@@ -330,7 +330,13 @@ class ProviderSession:
             self._record_locked("MP401", "not-read")
             refuse("MP401", "provider.completion")
 
-    def generate(self, request: TextRequest, *, timeout_ns: int | None = None) -> bytes:
+    def generate(
+        self,
+        request: TextRequest,
+        *,
+        timeout_ns: int | None = None,
+        on_provider_handoff: Callable[[], None] | None = None,
+    ) -> bytes:
         """Map one exact admitted request and return one closed guest frame."""
 
         with self._state_lock:
@@ -352,6 +358,12 @@ class ProviderSession:
                 self._poison_locked()
                 self._record_locked("MP320", "not-read")
                 refuse("MP320", "provider.deadline")
+            if on_provider_handoff is not None and not callable(
+                on_provider_handoff
+            ):
+                self._poison_locked()
+                self._record_locked("MP320", "not-read")
+                refuse("MP320", "provider.handoff")
             credential_source = self._credential_source
             if credential_source is None:
                 self._poison_locked()
@@ -402,6 +414,7 @@ class ProviderSession:
                     timeout_seconds=(
                         None if timeout_ns is None else timeout_ns / 1_000_000_000
                     ),
+                    on_request_handoff=on_provider_handoff,
                 )
                 output, input_tokens, output_tokens = _parse_provider_response(
                     result.body,
@@ -425,11 +438,10 @@ class ProviderSession:
                     response_bytes = 0
                     duration_ns = 0
                 disclosure_state = (
-                    "not-read"
-                    if error.code == "MP321"
-                    and not isinstance(error, TransportRefusal)
-                    and not isinstance(transport, TransportResult)
-                    else "provider-only"
+                    "provider-only"
+                    if isinstance(error, TransportRefusal)
+                    or isinstance(transport, TransportResult)
+                    else "not-read"
                 )
                 with self._state_lock:
                     self._poison_locked()

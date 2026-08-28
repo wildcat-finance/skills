@@ -240,6 +240,9 @@ class LifecycleController:
             }
         )
 
+    def _disclosure_state_locked(self) -> str:
+        return "provider-only" if self._provider_disclosed else "not-read"
+
     def _monotonic_locked(self) -> int:
         value = _clock_value(
             self._monotonic_clock, "lifecycle.monotonic_clock"
@@ -301,14 +304,14 @@ class LifecycleController:
             now_monotonic = self._monotonic_locked()
             now_wall = self._wall_locked()
         except PolicyError:
-            state = "provider-only" if self._disclosed else "not-read"
+            state = self._disclosure_state_locked()
             return self._terminal_locked(
                 "MP405", state, self._last_monotonic_ns
             )
         code = self._expiry_code_locked(now_monotonic, now_wall)
         if code is None:
             return None
-        state = "provider-only" if self._disclosed else "not-read"
+        state = self._disclosure_state_locked()
         return self._terminal_locked(code, state, now_monotonic)
 
     def poll(self) -> TerminalSnapshot | None:
@@ -322,12 +325,12 @@ class LifecycleController:
             now_monotonic = self._monotonic_locked()
             now_wall = self._wall_locked()
         except PolicyError:
-            state = "provider-only" if self._disclosed else "not-read"
+            state = self._disclosure_state_locked()
             self._terminal_locked("MP405", state, self._last_monotonic_ns)
             refuse("MP405", "lifecycle.deadline")
         code = self._expiry_code_locked(now_monotonic, now_wall)
         if code is not None:
-            state = "provider-only" if self._disclosed else "not-read"
+            state = self._disclosure_state_locked()
             self._terminal_locked(code, state, now_monotonic)
             refuse(code, "lifecycle.deadline")
         remaining = min(
@@ -336,13 +339,13 @@ class LifecycleController:
             self._absolute_expiry_ns - now_wall,
         )
         if remaining <= 0:
-            state = "provider-only" if self._disclosed else "not-read"
+            state = self._disclosure_state_locked()
             self._terminal_locked("MP405", state, now_monotonic)
             refuse("MP405", "lifecycle.deadline")
         return now_monotonic, remaining
 
     def _stop_and_refuse_locked(self, code: str, field_name: str) -> None:
-        state = "provider-only" if self._disclosed else "not-read"
+        state = self._disclosure_state_locked()
         self._terminal_locked(code, state)
         refuse(code, field_name)
 
@@ -462,6 +465,22 @@ class LifecycleController:
             self._disclosed.add(reservation.sequence)
             return min(reservation.remaining_wall_ns, remaining)
 
+    def provider_handoff(self, reservation: Reservation) -> None:
+        """Linearise the first actual exchange handoff against termination."""
+
+        with self._lock:
+            if (
+                not self._owned_locked(reservation)
+                or reservation.sequence not in self._disclosed
+            ):
+                refuse("MP401", "lifecycle.reservation")
+            if self._terminal is not None:
+                refuse(
+                    _terminal_refusal_code(self._terminal),
+                    "lifecycle.provider_handoff",
+                )
+            self._provider_disclosed = True
+
     def _release_locked(self, reservation: Reservation, *, rollback: bool) -> None:
         del self._active[reservation.sequence]
         self._reserved_output_tokens -= reservation.reserved_output_tokens
@@ -578,12 +597,12 @@ class LifecycleController:
         with self._lock:
             if not isinstance(code, str) or _OUTCOME_CODE.fullmatch(code) is None:
                 refuse("MP401", "lifecycle.outcome")
-            state = "provider-only" if self._disclosed else "not-read"
+            state = self._disclosure_state_locked()
             return self._terminal_locked(code, state)
 
     def cancel(self) -> TerminalSnapshot:
         with self._lock:
-            state = "provider-only" if self._disclosed else "not-read"
+            state = self._disclosure_state_locked()
             return self._terminal_locked("MP406", state)
 
     def finish(self) -> TerminalSnapshot:
@@ -595,7 +614,7 @@ class LifecycleController:
                 return self._terminal
             if self._active:
                 self._stop_and_refuse_locked("MP401", "lifecycle.concurrency")
-            state = "provider-only" if self._disclosed else "not-read"
+            state = self._disclosure_state_locked()
             return self._terminal_locked("MP000", state)
 
 
@@ -879,6 +898,8 @@ class ModelProxyRuntime:
                                 reservation, error.code, event
                             )
                             self._finalize_terminal(snapshot)
+                            if snapshot.code != error.code:
+                                refuse(snapshot.code, "lifecycle.state")
                             raise
                     try:
                         disclosure_timeout_ns = self._controller.mark_disclosed(
@@ -892,7 +913,11 @@ class ModelProxyRuntime:
 
                 try:
                     guest_response = self._provider.generate(
-                        request, timeout_ns=disclosure_timeout_ns
+                        request,
+                        timeout_ns=disclosure_timeout_ns,
+                        on_provider_handoff=lambda: self._controller.provider_handoff(
+                            reservation
+                        ),
                     )
                 except PolicyError as error:
                     with self._publication_lock:
@@ -943,6 +968,7 @@ class ModelProxyRuntime:
 
     def complete_job(self) -> None:
         with self._publication_lock:
+            self._active_locked()
             try:
                 self._provider.prepare_terminal_input()
                 self._provider.require_completion_ready()
