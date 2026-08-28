@@ -20,9 +20,10 @@ source classes visible, and writes the counterparty-level dossier. It never
 infers undeclared identity, blesses a borrower, sets credit terms, or replaces a
 lender's judgement.
 
-Synkrisis does not compare counterparties or dossiers. Its planned subject is
-validated agent-run observations, its current scaffold refuses every
-operation, and neither version can make an underwriting decision.
+Synkrisis does not compare counterparties or dossiers. Its subject is
+validated agent-run observations, its delivered operations build a checked
+cohort and infer bounded findings over one, and neither skill can make an
+underwriting decision.
 
 A sourced dossier on a counterparty's record across on-chain lending venues,
 built from the addresses they declared.

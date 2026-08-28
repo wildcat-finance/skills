@@ -32,9 +32,9 @@ bounded durable record. Brevitas changes volume, structure, and connective
 prose only; it does not alter word choice, voice, AuDHD presentation, or the
 facts another skill established.
 
-If Synkrisis eventually renders a comparison report, this skill may constrain
-its engineering-prose structure without validating the finding. The current
-Synkrisis scaffold emits no report to compress.
+If Synkrisis renders a comparison report, this skill may constrain its
+engineering-prose structure without validating the finding. Synkrisis emits no
+report yet: its renderer is a held runbook step that refuses.
 
 ## Precedence
 

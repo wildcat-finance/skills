@@ -312,8 +312,8 @@
       "name": "synkrisis",
       "displayName": "Synkrisis",
       "source": "./plugins/synkrisis",
-      "description": "Checked cohort construction over validated run observations; diagnosis, rendering and verification are held runbook steps.",
-      "version": "0.2.0",
+      "description": "Checked cohort construction and bounded diagnosis over validated run observations; rendering and verification are held runbook steps.",
+      "version": "0.3.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

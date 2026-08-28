@@ -1,10 +1,11 @@
 # Synkrisis schema compatibility
 
-The public schemas under `references/` are versioned artefacts. Step 2 ships
-`synkrisis-policy/v1` and `synkrisis-cohort/v1` as JSON Schema documents, and
-the command checks the manifest identity `synkrisis-manifest/v1` directly.
-The held runbook steps add `synkrisis-rules/v1` and `synkrisis-findings/v1`
-when their operations land; nothing accepts those identities before then.
+The public schemas under `references/` are versioned artefacts. Steps 2 and 3
+ship `synkrisis-policy/v1`, `synkrisis-cohort/v1`, `synkrisis-rules/v1` and
+`synkrisis-findings/v1` as JSON Schema documents, and the command checks the
+manifest identity `synkrisis-manifest/v1` directly. The catalogue shipped at
+`references/rules-v1.json` declares the rules identity and is checked against
+it before any rule is applied.
 
 ## What a version promises
 

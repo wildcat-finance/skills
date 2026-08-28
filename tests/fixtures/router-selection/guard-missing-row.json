@@ -310,9 +310,9 @@
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
-        "text": "Synkrisis owns the cross-run comparison boundary: it builds one checked cohort from declared run observations, while its diagnosis, render, and verification operations stay held runbook steps that refuse."
+        "text": "Synkrisis owns the cross-run comparison boundary: it builds one checked cohort from declared run observations and infers only bounded relations between named events, and any operation whose runbook step has not landed refuses by name rather than guessing."
       },
-      "not_established": "Selecting Synkrisis does not establish that any interpretation can be run today, since diagnosis, render and verification stay held runbook steps that refuse, and it does not establish that a future finding would carry capture, redaction, receipt binding or causal triage, which stay with their owners."
+      "not_established": "Selecting Synkrisis does not establish that any operation whose runbook step has not landed will run, since each refuses by name, and it does not establish that a finding carries capture, redaction, receipt binding or causal triage, which stay with their owners."
     }
   ],
   "runs": []

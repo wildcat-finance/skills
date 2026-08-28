@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Checked cohort construction over validated Promise Machine run observations.
+"""Bounded cross-run diagnosis over validated Promise Machine run observations.
 
-This is the runbook's Step 2 surface. `cohort` reads an operator-declared
-manifest of run-observation records and one comparison policy, checks
-producer identity, declared validation, redaction and binding results,
-digests, caps, path form and equality dimensions, and classifies every
-declared run as included, excluded or unknown with the exact policy field
-responsible. The diagnose, render and verify operations stay specified and
-refuse with a stable code naming the runbook step that lands each. Nothing
-here calls a model, fetches a URL, executes observed content, files an
-issue, edits a repository, or dispatches another skill.
+This is the runbook's Step 3 surface. `cohort` reads an operator-declared
+manifest of run-observation records and one comparison policy and classifies
+every declared run as included, excluded or unknown with the exact policy
+field responsible. `diagnose` applies a digest-bound deterministic rule
+catalogue to one checked cohort, applying only the rules whose required
+dimensions and minimum samples hold and recording every refused rule with
+its reason. The render and verify operations stay specified and refuse with
+a stable code naming the runbook step that lands each. Nothing here calls a
+model, fetches a URL, executes observed content, files an issue, edits a
+repository, or dispatches another skill. Findings stay inferred relations
+between named events; the nearest forbidden claim is stated so a reader sees
+what the tool refuses to say.
 """
 
 from __future__ import annotations
@@ -20,6 +23,7 @@ import json
 import os
 import re
 import stat
+import string
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -29,6 +33,8 @@ CAPTURE_PROFILE = "promise-machine-run-observation-capture/v1"
 MANIFEST_SCHEMA = "synkrisis-manifest/v1"
 POLICY_SCHEMA = "synkrisis-policy/v1"
 COHORT_SCHEMA = "synkrisis-cohort/v1"
+RULES_SCHEMA = "synkrisis-rules/v1"
+FINDINGS_SCHEMA = "synkrisis-findings/v1"
 
 MAX_RUNS = 100
 MAX_EVENTS = 100_000
@@ -36,6 +42,8 @@ MAX_FILE_BYTES = 8 * 1024 * 1024
 MAX_INPUT_BYTES = 64 * 1024 * 1024
 MAX_LINE_BYTES = 65_536
 MAX_STRING_CHARS = 4_096
+MAX_RULES = 32
+MAX_FINDING_EVENTS = 64
 MAX_PATH_CHARS = 512
 
 EVENT_TYPES = frozenset(
@@ -58,9 +66,32 @@ CONTEXT_FIELDS = (
 )
 POLICY_DIMENSIONS = tuple(f"context.{name}" for name in CONTEXT_FIELDS)
 TOKEN_ACCOUNTING_MODES = frozenset({"require-equal", "ignore"})
+RULE_KINDS = frozenset({"late-boundary-consultation", "unchanged-retry-before-handoff"})
+HANDOFF_TARGETS = frozenset(
+    {"ephoros", "metron", "elenchus", "protasis", "phylax", "horos", "human-review"}
+)
 BINDING_STATUSES = frozenset({"bound", "unavailable"})
 DIGEST_RE = re.compile(r"[0-9a-f]{64}")
 IDENTIFIER_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._/-]{0,127}")
+RULE_ID_RE = re.compile(r"[a-z][a-z0-9-]{0,63}/v[0-9]{1,4}")
+
+# Association may never harden into cause or model judgement. Rule prose and
+# rendered narratives are held against these lowercase word sequences.
+FORBIDDEN_LANGUAGE = (
+    "because",
+    "causal",
+    "caused",
+    "causes",
+    "guarantee",
+    "guarantees",
+    "proved",
+    "proves",
+    "model quality",
+    "better model",
+    "worse model",
+    "smarter",
+    "dumber",
+)
 
 
 class Refusal(Exception):
@@ -277,6 +308,36 @@ def require_keys(document, required, optional, shown, *, code="SK004"):
             f"object fields diverge from the schema: missing={missing!r} unknown={unknown!r}",
             "use exactly the documented fields for this schema version",
         )
+
+
+def forbidden_language_in(text):
+    lowered = " ".join(str(text).lower().split())
+    padded = f" {lowered} "
+    for phrase in FORBIDDEN_LANGUAGE:
+        if f" {phrase} " in padded or padded.startswith(f" {phrase}"):
+            return phrase
+    return None
+
+
+def require_bounded_prose(value, key, shown, *, code="SK011"):
+    if not isinstance(value, str) or not value.strip() or len(value) > MAX_STRING_CHARS:
+        raise Refusal(
+            code,
+            "structural",
+            shown,
+            f"field {key!r} is absent, empty or over the ceiling",
+            f"provide one bounded sentence for {key!r}",
+        )
+    phrase = forbidden_language_in(value)
+    if phrase is not None:
+        raise Refusal(
+            code,
+            "policy",
+            shown,
+            f"field {key!r} carries forbidden causal or quality language",
+            "restate the text as a bounded observed relation without cause or model judgement",
+        )
+    return value
 
 
 class InputBudget:
@@ -500,13 +561,25 @@ def load_policy(root: Path, raw_path: str, budget: InputBudget):
     return document, payload
 
 
+def capability_signature(event) -> str:
+    """A stable identity for what one capability start actually tried."""
+    return hashlib.sha256(
+        canonical_bytes(
+            {
+                "capability": event.get("capability"),
+                "metadata": event.get("metadata", {}),
+            }
+        )
+    ).hexdigest()
+
+
 def parse_record_events(payload: bytes, record: RunRecord, shown: str, event_budget):
     """Stream one record's events with bounded per-line parsing.
 
     This is Synkrisis's own admission check, not a rerun of the producer's
     validator: it holds identity, lifecycle, order and the closed event union,
-    and keeps only the compact per-run features cohort construction reads, so
-    one run's raw events are in memory at a time.
+    and keeps only the compact per-run features the shipped rule kinds read,
+    so one run's raw events are in memory at a time.
     """
     if not payload.endswith(b"\n"):
         raise Refusal(
@@ -519,6 +592,11 @@ def parse_record_events(payload: bytes, record: RunRecord, shown: str, event_bud
     features = {
         "context": None,
         "events": 0,
+        "starts": [],
+        "signatures": {},
+        "finished_to_started": {},
+        "retries": [],
+        "handoffs": [],
         "token_totals": {},
     }
     sequence = 0
@@ -641,6 +719,23 @@ def parse_record_events(payload: bytes, record: RunRecord, shown: str, event_bud
                         "restore the exact validated record bytes",
                     )
             features["context"] = {field: context[field] for field in CONTEXT_FIELDS}
+        elif event_type == "capability.started":
+            features["starts"].append(
+                (sequence, event_id, event.get("capability"))
+            )
+            features["signatures"][event_id] = capability_signature(event)
+        elif event_type == "capability.finished":
+            started = event.get("started_event_id")
+            if isinstance(started, str):
+                features["finished_to_started"][event_id] = started
+        elif event_type == "retry.scheduled":
+            retried = event.get("retry_of")
+            if isinstance(retried, dict) and isinstance(retried.get("event_id"), str):
+                features["retries"].append(
+                    (sequence, event_id, retried["event_id"])
+                )
+        elif event_type == "handoff.recorded":
+            features["handoffs"].append((sequence, event_id, event.get("consumer")))
         elif event_type == "run.finished":
             closed = True
         usage = event.get("token_usage")
@@ -796,6 +891,360 @@ def build_cohort_document(manifest_document, manifest_records, policy, runs_by_i
     return document
 
 
+def load_cohort(root: Path, raw_path: str, budget: InputBudget):
+    target = confined_relative(raw_path, root, label="cohort")
+    shown = shown_path(raw_path)
+    payload = bounded_read(target, shown, MAX_FILE_BYTES)
+    budget.charge(len(payload), shown)
+    document = parse_json_document(payload, shown)
+    require_keys(
+        document,
+        (
+            "schema",
+            "producer_contract",
+            "manifest_digest",
+            "policy_digest",
+            "policy_name",
+            "dimensions",
+            "token_accounting",
+            "runs",
+            "included",
+            "excluded",
+            "unknown",
+            "cohort_digest",
+        ),
+        (),
+        shown,
+        code="SK012",
+    )
+    if document["schema"] != COHORT_SCHEMA or document["producer_contract"] != PRODUCER_CONTRACT:
+        raise Refusal(
+            "SK012",
+            "identity",
+            shown,
+            "cohort schema or producer identity is unsupported",
+            f"provide a {COHORT_SCHEMA!r} cohort over {PRODUCER_CONTRACT!r} records",
+        )
+    body = {key: value for key, value in document.items() if key != "cohort_digest"}
+    if digest_of(body) != document["cohort_digest"]:
+        raise Refusal(
+            "SK012",
+            "drift",
+            shown,
+            "cohort digest does not recompute from the cohort body",
+            "rebuild the cohort from its manifest and policy with the cohort command",
+        )
+    return document
+
+
+def rule_digest(rule):
+    return digest_of(rule)
+
+
+def load_rules(root: Path, raw_path: str, budget: InputBudget):
+    target = confined_relative(raw_path, root, label="rules")
+    shown = shown_path(raw_path)
+    payload = bounded_read(target, shown, MAX_FILE_BYTES)
+    budget.charge(len(payload), shown)
+    document = parse_json_document(payload, shown)
+    require_keys(document, ("schema", "catalogue", "rules"), (), shown, code="SK011")
+    if document["schema"] != RULES_SCHEMA:
+        raise Refusal(
+            "SK011",
+            "identity",
+            shown,
+            "rule catalogue schema identity is unsupported",
+            f"declare schema {RULES_SCHEMA!r}",
+        )
+    require_string(document, "catalogue", shown, pattern=IDENTIFIER_RE, code="SK011")
+    rules = document["rules"]
+    if not isinstance(rules, list) or not rules or len(rules) > MAX_RULES:
+        raise Refusal(
+            "SK011",
+            "structural",
+            shown,
+            "rule catalogue is empty or over the rule ceiling",
+            f"ship between one and {MAX_RULES} rules",
+        )
+    seen = set()
+    for index, rule in enumerate(rules):
+        rule_shown = f"{shown}#rules[{index}]"
+        require_keys(
+            rule,
+            (
+                "rule_id",
+                "kind",
+                "title",
+                "parameters",
+                "required_dimensions",
+                "required_fields",
+                "minimum_samples",
+                "evidence_class",
+                "observed_relation_template",
+                "nearest_forbidden_claim",
+                "handoff",
+            ),
+            (),
+            rule_shown,
+            code="SK011",
+        )
+        rule_id = require_string(rule, "rule_id", rule_shown, pattern=RULE_ID_RE, code="SK011")
+        if rule_id in seen:
+            raise Refusal(
+                "SK011",
+                "identity",
+                rule_shown,
+                "rule id is repeated in the catalogue",
+                "give every rule one stable unique id",
+            )
+        seen.add(rule_id)
+        if rule["kind"] not in RULE_KINDS:
+            raise Refusal(
+                "SK011",
+                "structural",
+                rule_shown,
+                "rule kind is outside the shipped deterministic set",
+                f"use one shipped kind: {sorted(RULE_KINDS)!r}; new kinds need a study amendment",
+            )
+        if rule["evidence_class"] != "inferred":
+            raise Refusal(
+                "SK011",
+                "policy",
+                rule_shown,
+                "rule declares an evidence class stronger than inferred",
+                "declare evidence_class inferred; strengthening is refused by design",
+            )
+        require_bounded_prose(rule["title"], "title", rule_shown)
+        require_bounded_prose(
+            rule["observed_relation_template"], "observed_relation_template", rule_shown
+        )
+        nearest = rule["nearest_forbidden_claim"]
+        if not isinstance(nearest, str) or not nearest.strip() or len(nearest) > MAX_STRING_CHARS:
+            raise Refusal(
+                "SK011",
+                "structural",
+                rule_shown,
+                "field 'nearest_forbidden_claim' is absent, empty or over the ceiling",
+                "state the nearest claim the rule refuses to make",
+            )
+        handoff = rule["handoff"]
+        require_keys(handoff, ("to", "reason"), (), f"{rule_shown}.handoff", code="SK011")
+        if handoff["to"] not in HANDOFF_TARGETS:
+            raise Refusal(
+                "SK011",
+                "policy",
+                f"{rule_shown}.handoff",
+                "handoff target is outside the named owner set",
+                f"name one of {sorted(HANDOFF_TARGETS)!r}",
+            )
+        require_bounded_prose(handoff["reason"], "reason", f"{rule_shown}.handoff")
+        dims = rule["required_dimensions"]
+        if not isinstance(dims, list) or any(d not in POLICY_DIMENSIONS for d in dims):
+            raise Refusal(
+                "SK011",
+                "structural",
+                rule_shown,
+                "required dimensions name an unsupported dimension",
+                f"require only dimensions from {sorted(POLICY_DIMENSIONS)!r}",
+            )
+        fields = rule["required_fields"]
+        if not isinstance(fields, list) or any(
+            not isinstance(item, str) or not item for item in fields
+        ):
+            raise Refusal(
+                "SK011",
+                "structural",
+                rule_shown,
+                "required fields are not bounded names",
+                "name each required record field as a bounded string",
+            )
+        samples = rule["minimum_samples"]
+        if not isinstance(samples, dict) or not samples:
+            raise Refusal(
+                "SK011",
+                "structural",
+                rule_shown,
+                "minimum samples are absent",
+                "declare each minimum sample count the rule needs",
+            )
+        for key, value in samples.items():
+            if (
+                not isinstance(key, str)
+                or not isinstance(value, int)
+                or isinstance(value, bool)
+                or value < 1
+            ):
+                raise Refusal(
+                    "SK011",
+                    "structural",
+                    rule_shown,
+                    "a minimum sample count is not a positive integer",
+                    "declare positive integer sample counts",
+                )
+        parameters = rule["parameters"]
+        if not isinstance(parameters, dict):
+            raise Refusal(
+                "SK011",
+                "structural",
+                rule_shown,
+                "rule parameters are not an object",
+                "declare the kind's documented parameters",
+            )
+        validate_kind_parameters(rule["kind"], parameters, rule_shown)
+        validate_template(rule["observed_relation_template"], rule["kind"], rule_shown)
+    return document, payload
+
+
+TEMPLATE_FIELDS = {
+    "late-boundary-consultation": frozenset(
+        {"ordered", "pairs", "late", "early", "capability"}
+    ),
+    "unchanged-retry-before-handoff": frozenset({"runs", "attempts", "consumer"}),
+}
+
+
+def validate_template(template, kind, shown):
+    """A relation template may name only the kind's plain placeholders.
+
+    Attribute access, indexing, conversions and format specifications are all
+    refused, so a catalogue read as data cannot become an expression.
+    """
+    allowed = TEMPLATE_FIELDS[kind]
+    try:
+        parsed = list(string.Formatter().parse(template))
+    except ValueError:
+        parsed = None
+    if parsed is None or any(
+        field is not None
+        and (field not in allowed or conversion is not None or spec != "")
+        for _, field, spec, conversion in parsed
+    ):
+        raise Refusal(
+            "SK011",
+            "policy",
+            shown,
+            "relation template uses a placeholder outside the kind's plain set",
+            f"use only bare placeholders from {sorted(allowed)!r}",
+        )
+
+
+def require_fraction(parameters, key, shown):
+    value = parameters.get(key)
+    if (
+        not isinstance(value, dict)
+        or set(value) != {"numerator", "denominator"}
+        or not all(
+            isinstance(value[part], int)
+            and not isinstance(value[part], bool)
+            and value[part] > 0
+            for part in ("numerator", "denominator")
+        )
+        or value["numerator"] > value["denominator"]
+    ):
+        raise Refusal(
+            "SK011",
+            "structural",
+            shown,
+            f"parameter {key!r} is not a proper positive integer fraction",
+            "declare numerator and denominator as positive integers with numerator <= denominator",
+        )
+    return value
+
+
+def validate_kind_parameters(kind, parameters, shown):
+    if kind == "late-boundary-consultation":
+        allowed = {"capability", "late_fraction", "pair_fraction"}
+        if set(parameters) != allowed:
+            raise Refusal(
+                "SK011",
+                "structural",
+                shown,
+                f"parameters for {kind!r} must be exactly {sorted(allowed)!r}",
+                "declare the kind's documented parameters",
+            )
+        capability = parameters.get("capability")
+        if not isinstance(capability, str) or IDENTIFIER_RE.fullmatch(capability) is None:
+            raise Refusal(
+                "SK011",
+                "structural",
+                shown,
+                "parameter 'capability' is not a bounded capability name",
+                "name the observed capability the rule matches",
+            )
+        require_fraction(parameters, "late_fraction", shown)
+        require_fraction(parameters, "pair_fraction", shown)
+    else:
+        allowed = {"consumer", "min_attempts"}
+        if set(parameters) != allowed:
+            raise Refusal(
+                "SK011",
+                "structural",
+                shown,
+                f"parameters for {kind!r} must be exactly {sorted(allowed)!r}",
+                "declare the kind's documented parameters",
+            )
+        consumer = parameters.get("consumer")
+        if not isinstance(consumer, str) or IDENTIFIER_RE.fullmatch(consumer) is None:
+            raise Refusal(
+                "SK011",
+                "structural",
+                shown,
+                "parameter 'consumer' is not a bounded skill name",
+                "name the handoff consumer the rule matches",
+            )
+        attempts = parameters.get("min_attempts")
+        if not isinstance(attempts, int) or isinstance(attempts, bool) or attempts < 2:
+            raise Refusal(
+                "SK011",
+                "structural",
+                shown,
+                "parameter 'min_attempts' is not an integer of at least two",
+                "declare the unchanged-attempt count the rule needs",
+            )
+
+
+def reload_cohort_records(root: Path, cohort, budget: InputBudget):
+    """Re-stream every cohort record, holding digests to the checked cohort."""
+    features_by_run = {}
+    event_budget = EventBudget()
+    for row in cohort["runs"]:
+        record = RunRecord(
+            run_id=row["run_id"],
+            record=row["record"],
+            sha256=row["sha256"],
+            bytes=row["bytes"],
+            validation={"tool": "-", "status": "accepted"},
+            redaction={"profile": CAPTURE_PROFILE, "status": "accepted"},
+            binding={"status": "unavailable", "reason": "already classified"}
+            if row["binding_status"] == "unavailable"
+            else {"status": "bound", "receipt": "-", "bound_bytes": row["bytes"],
+                  "bound_events": row["events"], "sha256": row["sha256"]},
+        )
+        shown = shown_path(record.record)
+        target = confined_relative(record.record, root, label=f"runs.{record.run_id}.record")
+        payload = bounded_read(target, shown, MAX_FILE_BYTES)
+        budget.charge(len(payload), shown)
+        if len(payload) != record.bytes or hashlib.sha256(payload).hexdigest() != record.sha256:
+            raise Refusal(
+                "SK012",
+                "drift",
+                shown,
+                "record bytes differ from the checked cohort's declaration",
+                "restore the cohort's record bytes or rebuild the cohort",
+            )
+        features = parse_record_events(payload, record, shown, event_budget)
+        if features["events"] != row["events"]:
+            raise Refusal(
+                "SK012",
+                "drift",
+                shown,
+                "record event count differs from the checked cohort",
+                "restore the cohort's record bytes or rebuild the cohort",
+            )
+        features_by_run[record.run_id] = features
+    return features_by_run
+
+
 class EventBudget:
     def __init__(self):
         self.spent = 0
@@ -810,6 +1259,237 @@ class EventBudget:
                 f"declared records exceed the {MAX_EVENTS}-event ceiling",
                 "reduce the declared universe; raising a cap needs a study amendment",
             )
+
+
+def evaluate_late_boundary(rule, cohort, events_by_run):
+    parameters = rule["parameters"]
+    capability = parameters["capability"]
+    late = parameters["late_fraction"]
+    pair = parameters["pair_fraction"]
+    accounting_mode = cohort["token_accounting"]["mode"]
+    if accounting_mode != "require-equal":
+        return None, {
+            "rule_id": rule["rule_id"],
+            "reason_code": "token-accounting-not-comparable",
+        }
+    classified = []
+    missing = []
+    for run_id in cohort["included"]:
+        features = events_by_run[run_id]
+        total = features["events"]
+        first = None
+        for sequence, event_id, name in features["starts"]:
+            if name == capability:
+                first = (sequence, event_id)
+                break
+        totals = features["token_totals"]
+        tokens = sum(bucket["output_tokens"] for bucket in totals.values())
+        if first is None or not totals:
+            missing.append(run_id)
+            continue
+        is_late = first[0] * late["denominator"] > total * late["numerator"]
+        classified.append(
+            {
+                "run_id": run_id,
+                "event_id": first[1],
+                "sequence": first[0],
+                "events": total,
+                "output_tokens": tokens,
+                "late": is_late,
+            }
+        )
+    late_runs = [row for row in classified if row["late"]]
+    early_runs = [row for row in classified if not row["late"]]
+    samples = rule["minimum_samples"]
+    if len(late_runs) < samples.get("late", 1) or len(early_runs) < samples.get("early", 1):
+        return None, {"rule_id": rule["rule_id"], "reason_code": "below-minimum-samples"}
+    ordered = []
+    conflicting = []
+    for late_row in late_runs:
+        for early_row in early_runs:
+            pair_row = {
+                "late_run": late_row["run_id"],
+                "early_run": early_row["run_id"],
+                "late_output_tokens": late_row["output_tokens"],
+                "early_output_tokens": early_row["output_tokens"],
+            }
+            if late_row["output_tokens"] > early_row["output_tokens"]:
+                ordered.append(pair_row)
+            else:
+                conflicting.append(pair_row)
+    total_pairs = len(ordered) + len(conflicting)
+    if len(ordered) * pair["denominator"] < total_pairs * pair["numerator"]:
+        return None, {"rule_id": rule["rule_id"], "reason_code": "relation-not-met"}
+    relation = rule["observed_relation_template"].format(
+        ordered=len(ordered),
+        pairs=total_pairs,
+        late=len(late_runs),
+        early=len(early_runs),
+        capability=capability,
+    )
+    matched = [
+        {"run_id": row["run_id"], "events": [row["event_id"]]}
+        for row in sorted(classified, key=lambda item: item["run_id"])
+    ]
+    counterevidence = [
+        {
+            "note": "pair where the later consultation did not record more output tokens",
+            "late_run": row["late_run"],
+            "early_run": row["early_run"],
+        }
+        for row in sorted(
+            conflicting, key=lambda item: (item["late_run"], item["early_run"])
+        )
+    ]
+    return (
+        {
+            "relation": relation,
+            "matched_runs": matched,
+            "counterevidence": counterevidence,
+            "unknown_runs": sorted(set(cohort["unknown"]) | set(missing)),
+        },
+        None,
+    )
+
+
+def evaluate_unchanged_retry(rule, cohort, events_by_run):
+    parameters = rule["parameters"]
+    consumer = parameters["consumer"]
+    min_attempts = parameters["min_attempts"]
+    matched = []
+    counterevidence = []
+    for run_id in cohort["included"]:
+        features = events_by_run[run_id]
+        handoff = None
+        for sequence, event_id, target in features["handoffs"]:
+            if target == consumer:
+                handoff = (sequence, event_id)
+                break
+        if handoff is None:
+            continue
+        chain = []
+        for sequence, event_id, retried_event_id in features["retries"]:
+            if sequence >= handoff[0]:
+                break
+            started_id = features["finished_to_started"].get(retried_event_id)
+            signature = features["signatures"].get(started_id)
+            if signature is None:
+                continue
+            chain.append({"event_id": event_id, "signature": signature})
+        best = []
+        current = []
+        for item in chain:
+            if current and item["signature"] != current[-1]["signature"]:
+                current = []
+            current = current + [item]
+            if len(current) > len(best):
+                best = current
+        attempts = len(best)
+        if attempts >= min_attempts:
+            matched.append(
+                {
+                    "run_id": run_id,
+                    "events": [item["event_id"] for item in best] + [handoff[1]],
+                    "attempts": attempts,
+                }
+            )
+        else:
+            counterevidence.append(
+                {
+                    "note": "run reaching the same handoff without an unchanged retry chain",
+                    "run_id": run_id,
+                    "events": [handoff[1]],
+                }
+            )
+    if len(matched) < rule["minimum_samples"].get("matched", 1):
+        return None, {"rule_id": rule["rule_id"], "reason_code": "below-minimum-samples"}
+    relation = rule["observed_relation_template"].format(
+        runs=len(matched),
+        attempts=min(row["attempts"] for row in matched),
+        consumer=consumer,
+    )
+    return (
+        {
+            "relation": relation,
+            "matched_runs": [
+                {"run_id": row["run_id"], "events": row["events"]}
+                for row in sorted(matched, key=lambda item: item["run_id"])
+            ],
+            "counterevidence": sorted(counterevidence, key=lambda item: item["run_id"]),
+            "unknown_runs": sorted(cohort["unknown"]),
+        },
+        None,
+    )
+
+
+KIND_EVALUATORS = {
+    "late-boundary-consultation": evaluate_late_boundary,
+    "unchanged-retry-before-handoff": evaluate_unchanged_retry,
+}
+
+
+def build_findings_document(cohort, rules_document, events_by_run):
+    findings = []
+    refused_rules = []
+    catalogue_digest = digest_of(rules_document)
+    for rule in rules_document["rules"]:
+        missing_dimensions = [
+            name for name in rule["required_dimensions"] if name not in cohort["dimensions"]
+        ]
+        if missing_dimensions:
+            refused_rules.append(
+                {"rule_id": rule["rule_id"], "reason_code": "missing-required-dimension"}
+            )
+            continue
+        outcome, refusal = KIND_EVALUATORS[rule["kind"]](rule, cohort, events_by_run)
+        if refusal is not None:
+            refused_rules.append(refusal)
+            continue
+        subject_parts = [cohort["policy_name"]] + [
+            cohort["dimensions"][name] for name in sorted(cohort["dimensions"])
+        ]
+        subject = "/".join(subject_parts)
+        references = sorted(
+            f"{row['run_id']}:{event_id}"
+            for row in outcome["matched_runs"]
+            for event_id in row["events"]
+        )
+        if len(references) > MAX_FINDING_EVENTS:
+            refused_rules.append(
+                {"rule_id": rule["rule_id"], "reason_code": "over-event-reference-ceiling"}
+            )
+            continue
+        fingerprint = hashlib.sha256(
+            canonical_bytes(
+                {"rule_id": rule["rule_id"], "subject": subject, "references": references}
+            )
+        ).hexdigest()
+        findings.append(
+            {
+                "fingerprint": fingerprint,
+                "rule_id": rule["rule_id"],
+                "rule_digest": rule_digest(rule),
+                "subject": subject,
+                "observed_relation": outcome["relation"],
+                "evidence_class": "inferred",
+                "matched_runs": outcome["matched_runs"],
+                "counterevidence": outcome["counterevidence"],
+                "unknown_runs": outcome["unknown_runs"],
+                "nearest_forbidden_claim": rule["nearest_forbidden_claim"],
+                "handoff": dict(rule["handoff"]),
+            }
+        )
+    findings.sort(key=lambda item: (item["rule_id"], item["fingerprint"]))
+    refused_rules.sort(key=lambda item: item["rule_id"])
+    document = {
+        "schema": FINDINGS_SCHEMA,
+        "policy_name": cohort["policy_name"],
+        "cohort_digest": cohort["cohort_digest"],
+        "rules_digest": catalogue_digest,
+        "findings": findings,
+        "refused_rules": refused_rules,
+    }
+    return document
 
 
 def atomic_write(target: Path, payload: bytes, shown: str):
@@ -886,9 +1566,23 @@ def command_cohort(root: Path, arguments):
     }
 
 
-# The specified operations still held, and the runbook step that lands each.
+def command_diagnose(root: Path, arguments):
+    budget = InputBudget()
+    cohort = load_cohort(root, arguments.cohort, budget)
+    rules_document, _ = load_rules(root, arguments.rules, budget)
+    events_by_run = reload_cohort_records(root, cohort, budget)
+    findings = build_findings_document(cohort, rules_document, events_by_run)
+    target, shown = output_path(root, arguments.out)
+    atomic_write(target, canonical_bytes(findings), shown)
+    return {
+        "command": "diagnose",
+        "findings": len(findings["findings"]),
+        "refused_rules": len(findings["refused_rules"]),
+        "out": arguments.out,
+    }
+
+
 PENDING_STEPS = {
-    "diagnose": "Step 3",
     "render": "Step 4",
     "verify": "Step 4",
 }
@@ -962,8 +1656,7 @@ def main(argv=None):
     cohort_parser.add_argument("--json", action="store_true")
 
     diagnose_parser = subparsers.add_parser(
-        "diagnose",
-        help="specified rule-catalogue pass; held until runbook Step 3 lands",
+        "diagnose", help="apply the digest-bound rule catalogue to one checked cohort"
     )
     diagnose_parser.add_argument("--cohort", required=True)
     diagnose_parser.add_argument("--rules", required=True)
@@ -993,7 +1686,7 @@ def main(argv=None):
     arguments = parser.parse_args(argv)
     handlers = {
         "cohort": command_cohort,
-        "diagnose": command_held,
+        "diagnose": command_diagnose,
         "render": command_held,
         "verify": command_held,
     }

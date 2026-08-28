@@ -1211,7 +1211,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "486f11499adedfd883eb9aec35555911c6555b919ff165cd9a22244b53f5564b"
+        "sha256": "10bc0dd2e2a25df8d56e140aba1d16d29b6c784e96c07361822800b2eec6fe18"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1219,7 +1219,7 @@
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "0deaeed95a63440158282800270ff41e5fb2ed1703bc88f02de2429b9284cf31"
+        "sha256": "b5ab4aeed353f9ca3f461bc579ef87738ea684d4d3426caa7f81d353adf4d078"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",

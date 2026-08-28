@@ -120,7 +120,7 @@ shown in the generator's output.
 The identity contract records the current roster as 25 members: 16 domain agents and
 9 phase agents. The repository topology is 24 first-party skills and four Fiat
 worker agents. Synkrisis belongs to the roster now, building one checked
-cohort while its interpreting steps stay held. Hexaemeron is the
+cohort and diagnosing it while its presenting steps stay held. Hexaemeron is the
 delivery plugin, while the Promise Machine and its portable router govern how
 the suite is selected and composed.
 
@@ -185,9 +185,10 @@ turn a passing structural check into proof that a domain claim is true.
   they never apply during security review.
 - [Synkrisis](./plugins/synkrisis) owns the boundary for comparing validated
   run observations across one declared cohort. Today it builds the checked
-  cohort, classifying every declared run under an operator-declared policy;
-  diagnosis, render, and verification stay held runbook steps that refuse,
-  so it produces no finding and cannot authorise work.
+  cohort, classifying every declared run under an operator-declared policy,
+  and infers bounded findings over it from a digest-bound rule catalogue;
+  render and verification stay held runbook steps that refuse. A finding
+  suggests one named owner and authorises no work.
 - [Sapheneia](./plugins/sapheneia) shapes the collective's own replies and
   bounded audit records, issues, or comments for AuDHD readers without changing
   their protected evidence.
@@ -266,11 +267,12 @@ historical chain boundary, and Ariadne can bind the resulting release to that
 evidence. Pandects supplies economic laws, Janus checks hook effects against a
 host boundary, and Hermes handles measured gas changes.
 
-Synkrisis is intended to compare validated observations from several completed
-runs after a person declares them comparable. That path is not operational
-yet: the scaffold writes no cohort, finding, or report, and it cannot steer
-Fiat. Ephoros, Metron, Elenchus, Protasis, Phylax, Horos, or human review will
-remain responsible for any later investigation or decision.
+Synkrisis compares validated observations from several completed runs after a
+person declares them comparable. Two of its four operations are operational:
+it writes a checked cohort and bounded findings over it, while the report and
+the whole-path verification stay held, and it cannot steer Fiat. Ephoros,
+Metron, Elenchus, Protasis, Phylax, Horos, or human review remain responsible
+for any later investigation or decision.
 
 For delivery, Protasis shapes the study and runbook before Mason builds a step.
 Phylax, Ephoros, and Metron govern its off-chain boundary, observable behaviour,
@@ -338,7 +340,7 @@ Use $lazarus to capture this finite historical fixture, verify its proof-backed 
 Use $pandects to check this credit protocol against the executable laws in the corpus.
 Use $probitas to build a sourced dossier on this counterparty from the addresses they declared.
 Use $sapheneia to shape your replies for an AuDHD reader throughout this task.
-Use $synkrisis to inspect the declared cross-run comparison boundary and its current refusals; do not report a cohort or finding until the held implementation lands.
+Use $synkrisis to build one checked cohort from declared run observations and diagnose it against the committed rule catalogue; do not report a rendered or verified result until the held steps land.
 Use $tabularium to build or verify a reproducible release of sourced credit events without hiding coverage gaps.
 ```
 
@@ -384,9 +386,10 @@ records, state executable credit laws, preserve historical test fixtures,
 assemble evidence-bounded dossiers, evaluate source-grounded assistants, test
 Wildcat hook boundaries, and bind releases to their evidence.
 
-Synkrisis reserves a separate boundary for comparing validated observations
-from several agent runs. It is not yet one of the produced Commons tools: the
-current release is a specification and a refusing command scaffold.
+Synkrisis holds a separate boundary for comparing validated observations
+from several agent runs. It is a partly produced Commons tool: the current
+release lands the checked cohort and the bounded diagnosis over it, and holds
+the report and the whole-path verification to their own runbook steps.
 
 The credit and evidence tools named here have all been produced:
 [Alexandria](./plugins/alexandria),

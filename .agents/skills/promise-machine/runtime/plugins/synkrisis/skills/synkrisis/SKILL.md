@@ -2,14 +2,16 @@
 name: synkrisis
 description: >
   Build one checked cohort from validated Promise Machine run observations
-  under an operator-declared comparison policy, or inspect and continue the
-  committed cross-run diagnosis runbook. Version 1.1.0 classifies every
-  declared run as included, excluded or unknown with the responsible policy
-  field; diagnose, render and verify still refuse with the runbook step that
-  lands each. Do not capture or redact observations, debug one failing run,
-  judge a model, act on a finding, or report a relation as a cause.
+  under an operator-declared comparison policy and infer bounded findings from
+  a digest-bound rule catalogue, or inspect and continue the committed
+  cross-run diagnosis runbook. Version 2.1.0 classifies every declared run as
+  included, excluded or unknown with the responsible policy field and emits
+  evidence-linked candidate findings; render and verify still refuse with the
+  runbook step that lands each. Do not capture or redact observations, debug
+  one failing run, judge a model, act on a finding, or report a relation as a
+  cause.
 metadata:
-  version: "1.1.0"
+  version: "2.1.0"
 ---
 
 <p align="center">
@@ -28,12 +30,12 @@ recommend or run another frontier pass after that ledger becomes mature.
 ## Where this sits
 
 Synkrisis owns comparison and bounded inference over validated observations
-from comparable agent runs. Version 1.1.0 implements the checked cohort;
-diagnosis, rendering and verification are held runbook steps, and capture,
-redaction, receipt binding, causal triage, issue filing, repository mutation,
-and Fiat dispatch stay with their own owners.
+from comparable agent runs. Version 2.1.0 implements the checked cohort and
+the bounded rule catalogue over it; rendering and verification are held
+runbook steps, and capture, redaction, receipt binding, causal triage, issue
+filing, repository mutation, and Fiat dispatch stay with their own owners.
 
-**Current frontier.** Synkrisis builds one checked cohort from declared run observations, and its diagnostic rule catalogue, renderer and verifier have not yet landed.
+**Current frontier.** Synkrisis builds one checked cohort from declared run observations and infers bounded findings from a digest-bound rule catalogue, and its renderer and whole-path verifier have not yet landed.
 <!-- marketplace-context:end -->
 
 Synkrisis is named for comparison. The Promise Machine records what one run
@@ -41,26 +43,26 @@ observably did: issue 434 defined the record, issue 435 the capture gate, and
 issue 436 the receipt binding. None of those steps reads a pattern across
 runs. A maintainer still has to decide whether repeated orientation work,
 unchanged retries, handoff friction or token movement amounts to an
-improvement candidate. Synkrisis makes the first move of that comparison
-deterministic now, one checked cohort at a time, and holds the interpreting
-moves to their own runbook steps.
+improvement candidate. Synkrisis makes that comparison deterministic now, one
+checked cohort and one catalogue of checked rules at a time, and holds the
+presenting moves to their own runbook steps.
 
 Ephoros designs what a step emits; Metron judges a controlled measurement;
 Elenchus works one failure to its cause; Horos owns the reading boundary. A
-future Synkrisis finding is specified to suggest one of them as its next owner,
-and the suggestion is the whole action: no path files an issue, edits a
-repository, or dispatches a sibling.
+Synkrisis finding suggests one of them, or `protasis`, `phylax` or
+`human-review`, as its next owner, and the suggestion is the whole action: no
+path files an issue, edits a repository, or dispatches a sibling.
 
 ## What this step is
 
-This is Step 2 of
+This is Step 3 of
 [the committed runbook](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/runbook.md),
 built from
 [the committed study](https://github.com/wildcat-finance/skills/blob/main/docs/synkrisis/study.md)
-on the Step 1 scaffold. Cohort construction is landed and tested; diagnose,
-render and verify keep refusing with one stable code naming the runbook step
-that implements each. Until those steps land, Synkrisis produces no finding,
-report or verification.
+on the Step 2 cohort. Cohort construction and diagnosis are landed and
+tested; render and verify keep refusing with one stable code naming the
+runbook step that implements each. Until those steps land, Synkrisis produces
+no report and no verification.
 
 ## The cohort operation
 
@@ -91,6 +93,29 @@ survives a refusal. A require-equal accounting policy refuses a cohort whose
 included runs carry unlike token accounting identities, and a policy that
 leaves no eligible run refuses rather than emitting an empty comparison.
 
+## The diagnose operation
+
+`diagnose` reads one checked cohort and one rule catalogue
+(`synkrisis-rules/v1`, schema under `references/`) and re-streams every record
+the cohort names, refusing if any record's bytes or event count have drifted
+from the cohort's declaration. Each rule declares its kind, parameters,
+required context dimensions, required event fields, minimum samples, evidence
+class, a narrative template, the nearest forbidden claim and one handoff
+target. A rule applies only when the cohort carries every dimension and field
+it requires and the included runs meet its minimum samples; a rule that does
+not apply is recorded in `refused_rules` with the reason, so a reader can tell
+a rule that found nothing from a rule that never ran.
+
+The output (`synkrisis-findings/v1`) carries the cohort and rules digests and,
+for each finding, the rule id and digest, the exact matched and unknown runs,
+its counterevidence, the `inferred` evidence class, the nearest forbidden
+claim, one handoff naming `ephoros`, `metron`, `elenchus`, `protasis`,
+`phylax`, `horos` or `human-review`, and a fingerprint that survives harmless
+reordering of the manifest. The catalogue itself is checked before it is
+applied: an unknown kind or field, a strengthened evidence class, causal or
+model-quality language in any prose, a template escape, a handoff outside the
+named owner set, an improper fraction and a duplicate rule id each refuse.
+
 ## Run it
 
 From a checkout, with the exact interpreter in the suite's
@@ -107,21 +132,31 @@ The worked example's five records pass `scripts/run_observation.py check`,
 and the command classifies them as three included, one excluded on
 `context.selected_skill` and one unknown, reproducing the committed
 `examples/cross-run-v0/expected/cohort.json` byte for byte on every run.
-Every non-zero exit names one stable `SK` code, the fault class, a safe
-path, the producer contract and a recovery. The held operations refuse with
-`SK000`:
+Diagnosis runs on that cohort against the committed catalogue:
 
 ```text
 python3 plugins/synkrisis/scripts/synkrisis.py diagnose \
   --cohort build/synkrisis/cohort.json \
-  --rules rules.json --out build/synkrisis/findings.json
+  --rules plugins/synkrisis/references/rules-v1.json \
+  --out build/synkrisis/findings.json
+```
+
+On the worked example that yields two findings,
+`late-boundary-consultation/v1` and `unchanged-retry-before-handoff/v1`,
+reproducing the committed `examples/cross-run-v0/expected/findings.json` byte
+for byte on every run. Every non-zero exit names one stable `SK` code, the
+fault class, a safe path, the producer contract and a recovery. The held
+operations refuse with `SK000`:
+
+```text
+python3 plugins/synkrisis/scripts/synkrisis.py render \
+  build/synkrisis/findings.json --out build/synkrisis/report.md
 ```
 
 ## What it refuses
 
-- No analytical result past cohort construction. Diagnose, render and verify
-  refuse until their runbook steps land; a refusal is not a finding, report
-  or verification.
+- No presented result past diagnosis. Render and verify refuse until their
+  runbook steps land; a refusal is not a report or a verification.
 - No inferred comparability. A person declares the comparison policy;
   Synkrisis checks the declaration and never decides that unlike tasks,
   models, hosts, repositories or tokenizers are comparable.
@@ -129,9 +164,9 @@ python3 plugins/synkrisis/scripts/synkrisis.py diagnose \
   visible as unknown and cannot satisfy any sample.
 - No token cohort across unlike accounting identities under a require-equal
   policy.
-- No evidence strengthening. Future findings stay at the inferred class,
-  carry their counterevidence and unknowns, and state the nearest forbidden
-  claim rather than making it.
+- No evidence strengthening. A finding stays at the inferred class, carries
+  its counterevidence and unknowns, and states the nearest forbidden claim
+  rather than making it.
 - No cause and no model judgement, in a rule, a finding or a report.
 - No autonomous transition. A suggested handoff is the whole action; the
   command has no network, GitHub, Git or controller mutation path.
@@ -143,12 +178,12 @@ describe its result.
 
 ### synkrisis-scaffold-refusal
 
-- Promise: Every Synkrisis operation whose runbook step has not yet landed, at this version diagnose, render and verify, exits non-zero with one stable code that names the committed runbook step implementing it, and writes nothing.
+- Promise: Every Synkrisis operation whose runbook step has not yet landed, at this version render and verify, exits non-zero with one stable code that names the committed runbook step implementing it, and writes nothing.
 - Evidence: The command's declared argument surface, the emitted refusal code, fault class, producer contract and recovery, and the unchanged working tree after each held invocation.
 - Evidence classes: checked
-- Boundary: The refusal establishes only that a held operation cannot present a finding, report or verification; it says nothing about how the later steps will behave, and it does not describe the landed cohort operation.
+- Boundary: The refusal establishes only that a held operation cannot present a report or a verification; it says nothing about how the later steps will behave, and it does not describe the landed cohort and diagnose operations.
 - Authorises: Selecting the committed runbook's named next step as the work that lands the refused operation.
 - Consequence: 0
-- Refuses: Reporting a finding, report or verification from a held operation, and writing any output through one.
+- Refuses: Reporting a report or a verification from a held operation, and writing any output through one.
 - Recovery: Build the runbook step the refusal names, then rerun the operation.
 - Exceptions: none
