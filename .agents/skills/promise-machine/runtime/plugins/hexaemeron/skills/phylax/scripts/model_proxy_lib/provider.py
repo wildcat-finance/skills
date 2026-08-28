@@ -335,7 +335,7 @@ class ProviderSession:
         request: TextRequest,
         *,
         timeout_ns: int | None = None,
-        on_provider_handoff: Callable[[], None] | None = None,
+        on_provider_handoff: Callable[[], float | None] | None = None,
     ) -> bytes:
         """Map one exact admitted request and return one closed guest frame."""
 
@@ -508,9 +508,11 @@ class ProviderSession:
             self._failed = True
             self._admitted.clear()
             self._inflight = None
-            self._framing.close()
-            self._credential_source = None
-            self._connector = None
+            try:
+                self._framing.close()
+            finally:
+                self._credential_source = None
+                self._connector = None
 
 
 class _BufferedResponse:

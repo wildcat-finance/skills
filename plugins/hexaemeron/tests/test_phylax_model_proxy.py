@@ -2525,6 +2525,25 @@ class LifecycleTests(unittest.TestCase):
         with self.assertRaisesRegex(PolicyError, "MP404"):
             self.reserve(controller, 1)
 
+    def test_activation_wall_rollback_cannot_stretch_signed_absolute_lifetime(self):
+        policy = self.policy_with_limits(total_wall_seconds=900)
+        signed_lifetime_ns = (
+            policy.document["job"]["absolute_lifetime_seconds"]
+            * NANOSECONDS_PER_SECOND
+        )
+        monotonic = MutableClock(self.START_MONOTONIC_NS)
+        wall = MutableClock(self.START_WALL_NS - signed_lifetime_ns)
+        controller = self.controller(policy, monotonic=monotonic, wall=wall)
+
+        monotonic.set(self.START_MONOTONIC_NS + signed_lifetime_ns)
+        snapshot = controller.poll()
+
+        self.assertIsNotNone(snapshot)
+        if snapshot is not None:
+            self.assertEqual("MP404", snapshot.code)
+        with self.assertRaisesRegex(PolicyError, "MP404"):
+            self.reserve(controller, 1)
+
     def test_clock_failure_is_terminal_and_writes_terminal_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
             runtime, _request, exchange, _response = self.runtime_request(
@@ -2715,6 +2734,94 @@ class LifecycleTests(unittest.TestCase):
                 for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
             ]
             self.assertEqual("not-read", records[-1]["disclosure_state"])
+
+    def test_expiry_during_resolution_prevents_provider_handoff(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            monotonic = MutableClock(self.START_MONOTONIC_NS)
+            exchange = HTTPSExchangeFixture(
+                BufferedHTTPSResponse(
+                    synthetic_provider_response("resolution expiry", "UNUSED")
+                )
+            )
+
+            def delayed_resolver(_hostname, _port):
+                monotonic.set(
+                    self.START_MONOTONIC_NS
+                    + self.policy.document["limits"]["total_wall_seconds"]
+                    * NANOSECONDS_PER_SECOND
+                )
+                return ("8.8.8.8",)
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=delayed_resolver,
+                exchange=exchange,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=monotonic,
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            request = runtime.feed(request_frame("resolution expiry"))[0]
+            runtime.finish_input()
+
+            with self.assertRaisesRegex(PolicyError, "MP405"):
+                runtime.generate(request)
+
+            self.assertEqual([], exchange.requests)
+            self.assertEqual("not-read", runtime.provider_events[-1].disclosure_state)
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual("MP405", records[-1]["outcome_code"])
+            self.assertEqual("not-read", records[-1]["disclosure_state"])
+
+    def test_resolution_delay_shrinks_the_exchange_timeout(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            monotonic = MutableClock(self.START_MONOTONIC_NS)
+            timeouts = []
+
+            def delayed_resolver(_hostname, _port):
+                monotonic.set(
+                    self.START_MONOTONIC_NS + 295 * NANOSECONDS_PER_SECOND
+                )
+                return ("8.8.8.8",)
+
+            def exchange(_request, _context, timeout):
+                timeouts.append(timeout)
+                return BufferedHTTPSResponse(
+                    synthetic_provider_response(
+                        "resolution timeout", "LIFECYCLE RESPONSE"
+                    )
+                )
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=delayed_resolver,
+                exchange=exchange,
+                clock=iter((10_000, 20_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=monotonic,
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            request = runtime.feed(request_frame("resolution timeout"))[0]
+            runtime.finish_input()
+
+            runtime.generate(request)
+
+            self.assertEqual([5.0], timeouts)
+            runtime.cancel()
 
     def test_cancellation_before_provider_handoff_is_not_disclosure(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -4045,6 +4152,28 @@ class LifecycleTests(unittest.TestCase):
             ]
             self.assertEqual(["activation", "request"], [r["event"] for r in records])
 
+    def test_provider_cleanup_failure_erases_authority_and_runs_io_cleanup(self):
+        with tempfile.TemporaryDirectory() as directory:
+            closer = mock.Mock()
+            runtime, _request, _exchange, _response = self.runtime_request(
+                Path(directory),
+                input_text="provider cleanup failure prompt",
+                closer=closer,
+            )
+            provider = runtime._provider
+
+            with mock.patch.object(
+                provider._framing,
+                "close",
+                side_effect=OSError("simulated framing cleanup failure"),
+            ):
+                with self.assertRaisesRegex(PolicyError, "MP407"):
+                    runtime.cancel()
+
+            self.assertIsNone(provider._credential_source)
+            self.assertIsNone(provider._connector)
+            closer.assert_called_once_with()
+
     def test_response_close_failure_withholds_guest_output(self):
         class CloseFailureResponse(BufferedHTTPSResponse):
             def close(self):
@@ -4099,7 +4228,12 @@ class LifecycleTests(unittest.TestCase):
 
             def observed_close(session):
                 closed_sessions.append(session)
-                original_close(session)
+                with mock.patch.object(
+                    session._framing,
+                    "close",
+                    side_effect=OSError("simulated framing cleanup failure"),
+                ):
+                    original_close(session)
 
             with mock.patch.object(
                 ProviderSession,
@@ -4118,13 +4252,81 @@ class LifecycleTests(unittest.TestCase):
                         io_closer=closer,
                     )
                     code = None
-                except PolicyError as error:
-                    code = error.code
+                except Exception as error:  # Keep the parent replay assertion-only.
+                    code = getattr(error, "code", None)
 
             self.assertEqual("MP407", code)
             self.assertEqual(1, len(closed_sessions))
             self.assertIsNone(closed_sessions[0]._credential_source)
             self.assertIsNone(closed_sessions[0]._connector)
+            closer.assert_called_once_with()
+
+    def test_activation_refusal_runs_all_cleanup_after_provider_close_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response("unused", "UNUSED")
+                    )
+                ),
+            )
+            closed_sessions = []
+            closed_sinks = []
+            closer = mock.Mock()
+            original_provider_close = ProviderSession.close
+            original_sink_close = ReceiptSink.close
+
+            def observed_provider_close(session):
+                closed_sessions.append(session)
+                with mock.patch.object(
+                    session._framing,
+                    "close",
+                    side_effect=OSError("simulated framing cleanup failure"),
+                ):
+                    original_provider_close(session)
+
+            def observed_sink_close(sink):
+                closed_sinks.append(sink)
+                original_sink_close(sink)
+
+            with mock.patch.object(
+                ReceiptSink,
+                "write_activation",
+                autospec=True,
+                side_effect=PolicyError("MP407", "receipt.activation"),
+            ), mock.patch.object(
+                ProviderSession,
+                "close",
+                autospec=True,
+                side_effect=observed_provider_close,
+            ), mock.patch.object(
+                ReceiptSink,
+                "close",
+                autospec=True,
+                side_effect=observed_sink_close,
+            ):
+                try:
+                    ModelProxyRuntime(
+                        self.policy,
+                        connector,
+                        root / "receipts.jsonl",
+                        credential_source=lambda _name: self.credential,
+                        monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                        wall_clock=MutableClock(self.START_WALL_NS),
+                        io_closer=closer,
+                    )
+                    code = None
+                except Exception as error:  # Keep the parent replay assertion-only.
+                    code = getattr(error, "code", None)
+
+            self.assertEqual("MP407", code)
+            self.assertEqual(1, len(closed_sessions))
+            self.assertIsNone(closed_sessions[0]._credential_source)
+            self.assertIsNone(closed_sessions[0]._connector)
+            self.assertEqual(1, len(closed_sinks))
             closer.assert_called_once_with()
 
     def test_terminal_paths_refuse_truncated_and_unserved_guest_frames(self):

@@ -427,7 +427,7 @@ class HTTPSConnector:
         *,
         max_response_bytes: int,
         timeout_seconds: float | None = None,
-        on_request_handoff: Callable[[], None] | None = None,
+        on_request_handoff: Callable[[], float | None] | None = None,
     ) -> TransportResult:
         """Send one internally mapped request and retain no authority-bearing value."""
 
@@ -467,7 +467,11 @@ class HTTPSConnector:
         try:
             started = self._clock()
             if on_request_handoff is not None:
-                on_request_handoff()
+                handoff_timeout = on_request_handoff()
+                if handoff_timeout is not None:
+                    request_timeout = _bounded_timeout(
+                        handoff_timeout, request_timeout
+                    )
             request_handed_to_exchange = True
             response = self._exchange(request, self._context, request_timeout)
             if (

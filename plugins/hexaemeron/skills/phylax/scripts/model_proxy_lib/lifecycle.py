@@ -163,7 +163,14 @@ class LifecycleController:
             refuse("MP404", "lifecycle.absolute_expiry")
         elapsed_ns = self._limits["total_wall_seconds"] * NANOSECONDS_PER_SECOND
         self._elapsed_deadline_ns = self._started_monotonic_ns + elapsed_ns
-        self._absolute_window_ns = self._absolute_expiry_ns - self._started_wall_ns
+        signed_absolute_lifetime_ns = (
+            replayed.document["job"]["absolute_lifetime_seconds"]
+            * NANOSECONDS_PER_SECOND
+        )
+        self._absolute_window_ns = min(
+            self._absolute_expiry_ns - self._started_wall_ns,
+            signed_absolute_lifetime_ns,
+        )
         self._absolute_deadline_monotonic_ns = (
             self._started_monotonic_ns + self._absolute_window_ns
         )
@@ -465,8 +472,8 @@ class LifecycleController:
             self._disclosed.add(reservation.sequence)
             return min(reservation.remaining_wall_ns, remaining)
 
-    def provider_handoff(self, reservation: Reservation) -> None:
-        """Linearise the first actual exchange handoff against termination."""
+    def provider_handoff(self, reservation: Reservation) -> int:
+        """Recheck expiry at the actual exchange handoff and return its timeout."""
 
         with self._lock:
             if (
@@ -479,7 +486,9 @@ class LifecycleController:
                     _terminal_refusal_code(self._terminal),
                     "lifecycle.provider_handoff",
                 )
+            _now, remaining = self._remaining_locked()
             self._provider_disclosed = True
+            return min(reservation.remaining_wall_ns, remaining)
 
     def _release_locked(self, reservation: Reservation, *, rollback: bool) -> None:
         del self._active[reservation.sequence]
@@ -658,7 +667,10 @@ class ModelProxyRuntime:
             )
         except PolicyError:
             self._controller.stop("MP407")
-            self._provider.close()
+            try:
+                self._provider.close()
+            except Exception:
+                pass
             try:
                 self._io_closer()
             except Exception:
@@ -693,7 +705,10 @@ class ModelProxyRuntime:
             )
         except PolicyError:
             self._controller.stop("MP407")
-            self._provider.close()
+            try:
+                self._provider.close()
+            except Exception:
+                pass
             try:
                 self._sink.close()
             except (OSError, PolicyError):
@@ -915,8 +930,9 @@ class ModelProxyRuntime:
                     guest_response = self._provider.generate(
                         request,
                         timeout_ns=disclosure_timeout_ns,
-                        on_provider_handoff=lambda: self._controller.provider_handoff(
-                            reservation
+                        on_provider_handoff=lambda: (
+                            self._controller.provider_handoff(reservation)
+                            / NANOSECONDS_PER_SECOND
                         ),
                     )
                 except PolicyError as error:

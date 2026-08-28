@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 922,
-  "total_bytes": 20280836,
+  "total_bytes": 20282252,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -2545,9 +2545,9 @@
       "source": "plugins/hexaemeron/skills/phylax/agents/openai.yaml"
     },
     {
-      "bytes": 41801,
+      "bytes": 42405,
       "path": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",
-      "sha256": "0ba7e985c7b0f50a88b52ae2c3c9fae5553e90c136f9a87a2f27a6f33584b83c",
+      "sha256": "8be0801ec7bf984f3521e38232053bee959061d6e44cb23a34e163ef9800e614",
       "source": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md"
     },
     {
@@ -2581,9 +2581,9 @@
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py"
     },
     {
-      "bytes": 46552,
+      "bytes": 47097,
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py",
-      "sha256": "700b4804f2effe70d90d71475ce99f0a5320bdafa41b0c0b16169b752c1aaba0",
+      "sha256": "8a9c02bacaac08ef27c8e4a6ad7e0f70cf6685a13c21b55a56f85ce034817d7b",
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py"
     },
     {
@@ -2605,9 +2605,9 @@
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/profiles.py"
     },
     {
-      "bytes": 24701,
+      "bytes": 24759,
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py",
-      "sha256": "6a65752a588037d178df8ba97ee4f70e62593c56bdf889140196ab082ccdd0a8",
+      "sha256": "accdd002fc2bedc44b7806373a331a2a26281aa67c7e325fe45c01e70c7a2545",
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py"
     },
     {
@@ -2617,9 +2617,9 @@
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/receipts.py"
     },
     {
-      "bytes": 18981,
+      "bytes": 19190,
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py",
-      "sha256": "20b28be0c1b371db0451cbebf14a927cc2c528cf8467d38bbe8c2cee25f39e92",
+      "sha256": "f6269ea5e83005b753b12a7f8086a5072a88255dcccf03f1af0756dbdd980f59",
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py"
     },
     {

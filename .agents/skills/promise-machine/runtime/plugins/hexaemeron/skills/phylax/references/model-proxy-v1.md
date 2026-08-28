@@ -348,37 +348,44 @@ terminal transition cannot rewrite that already durable snapshot.
 
 Activation records two time domains. Absolute expiry comes from the accepted
 UTC `expires_at` value and is compared with `time.time_ns()`. Its
-activation-time remaining interval is also added to the first
+activation-time remaining interval, capped by the accepted
+`absolute_lifetime_seconds`, is also added to the first
 `time.monotonic_ns()` reading, so a later wall-clock rollback cannot extend the
-accepted expiry. Elapsed lifetime starts from Python's `time.monotonic_ns()` and
-adds the compiled `total_wall_seconds`. Each admission uses the smaller
-remaining interval. If `time.monotonic_ns()` fails, returns an invalid value, or
-decreases, the controller sets `MP405` as the terminal outcome at the last
-verified reading. The runtime checks both clocks again after the request receipt
-is durable and before it marks the reservation disclosed. An expiry during that
-write creates a content-free terminal record and prevents the credential read.
-Otherwise, the runtime passes the shortened interval to the connector, whose
-existing 30-second limit remains the upper transport timeout.
+signed absolute lifetime. Elapsed lifetime starts from Python's
+`time.monotonic_ns()` and adds the compiled `total_wall_seconds`. Each admission
+uses the smaller remaining interval. If `time.monotonic_ns()` fails, returns an
+invalid value, or decreases, the controller sets `MP405` as the terminal outcome
+at the last verified reading. The runtime checks both clocks again after the
+request receipt is durable and before it marks the reservation disclosed. An
+expiry during that write creates a content-free terminal record and prevents
+the credential read. Otherwise, the runtime passes the shortened interval to
+the connector, whose existing 30-second limit remains the upper transport
+timeout.
 
-The connector calls a controller-owned handoff immediately before entering the
-exchange adapter. That handoff shares the lifecycle lock with cancellation and
-expiry. A terminal transition that wins first prevents the exchange and keeps
-the terminal disclosure state `not-read`; a handoff that wins first makes the
-job-level state `provider-only`, even when cancellation closes the in-flight
-request before a provider response returns.
+After the credential read and pinned resolution, the connector calls a
+controller-owned handoff immediately before entering the exchange adapter.
+That handoff shares the lifecycle lock with cancellation and expiry, rechecks
+both clocks, and shrinks the exchange timeout to the current smaller remaining
+interval. The credential source and system resolver are not independently
+interrupted by that callback, but an expiry observed when either returns
+prevents the exchange and keeps the terminal disclosure state `not-read`. A
+handoff that wins first makes the job-level state `provider-only`, even when
+cancellation closes the in-flight request before a provider response returns.
 
 `poll()` applies the first expired boundary. If both boundaries have passed,
 the one whose activation-time interval was shorter supplies the fixed outcome.
 Trusted cancellation uses the same lock. Both transitions mark the controller
 terminal, erase the provider session's credential source, connector reference,
 pending admissions, and content-bearing framing buffers and issued-request
-references, and then invoke the trusted I/O closer. Admission
-cannot cross that linearisation point. A response that returns after
-cancellation or expiry is closed by the provider component and discarded
-instead of entering guest publication. Failure of the trusted closer refuses
-with `MP407`; it produces neither a successful terminal receipt nor a guest
-response. The embedding supervisor remains responsible for terminating the
-per-job process. These component checks do not prove that process exit.
+references, and then invoke the trusted I/O closer. Credential and connector
+references are erased in a `finally` path, and a provider or framing cleanup
+exception cannot skip the trusted I/O cleanup attempt. Admission cannot cross
+that linearisation point. A response that returns after cancellation or expiry
+is closed by the provider component and discarded instead of entering guest
+publication. Any cleanup failure refuses with `MP407`; it produces neither a
+successful terminal receipt nor a guest response. The embedding supervisor
+remains responsible for terminating the per-job process. These component
+checks do not prove that process exit.
 
 Completion, cancellation, and expiry share one publication lock in
 `ModelProxyRuntime`. Completion either commits before the terminal transition,
@@ -397,9 +404,11 @@ unserved. Direct completion applies the same EOF and pending-admission checks.
 ## Content-free receipt file
 
 `ReceiptSink` creates one new file with exclusive creation and mode `0600`.
-If that initial creation refuses, runtime construction erases the provider
-session's credential and connector references and invokes the trusted I/O
-closer before propagating the refusal.
+If that initial creation or the activation-record write refuses, runtime
+construction erases the provider session's credential and connector references,
+attempts any available sink close, and invokes the trusted I/O closer before
+propagating the original refusal. A provider cleanup exception cannot skip the
+remaining cleanup attempts.
 It walks every parent directory and opens the final target with no-follow
 flags. A symbolic link, directory, existing path, missing parent, replacement,
 or changed inode refuses. Keeping the descriptor open is not enough. The sink
