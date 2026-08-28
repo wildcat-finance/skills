@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 909,
-  "total_bytes": 20078691,
+  "file_count": 911,
+  "total_bytes": 20143228,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "dc799b7aa10c56ef9855a7b09718335cb2ad7ba73474e243e0b2fd93c5ecf63a",
+      "sha256": "f87a92913f3e7a5e114c305130a5206e8fd3c0d7b330c8ed6f585799252e78c2",
       "source": null
     },
     {
@@ -4865,6 +4865,18 @@
       "path": "plugins/probitas/docs/example-dossier.md",
       "sha256": "d7cfd65f74d9568a22ac81ce54e5e662f97dbcb343c538cf321221787cbeadc3",
       "source": "plugins/probitas/docs/example-dossier.md"
+    },
+    {
+      "bytes": 22747,
+      "path": "plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md",
+      "sha256": "31f3ef6749da8bd0a6529c9f1b2be14d4475a27fa07a73f543c7e4cebd1de7b8",
+      "source": "plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md"
+    },
+    {
+      "bytes": 41790,
+      "path": "plugins/probitas/docs/morpho-midnight-fixed-maturity-study.md",
+      "sha256": "83cce2c5b5d0584080ab25627b72c755fb444fd794874ea72cd7627ca50d5ae9",
+      "source": "plugins/probitas/docs/morpho-midnight-fixed-maturity-study.md"
     },
     {
       "bytes": 9557,
