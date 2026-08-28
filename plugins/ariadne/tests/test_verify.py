@@ -91,9 +91,36 @@ class ReportTests(unittest.TestCase):
         known = registry.Registry()
         known.register(Checking)
         report = verify.report(document(), known)
-        self.assertEqual(report.unchecked, [])
+        self.assertIn("gate 5 was not checked", "\n".join(report.unchecked))
+        self.assertFalse(report.predicate_gates_checked)
+        self.assertIs(
+            report.to_dict().get("predicateGatesChecked"),
+            False,
+        )
         self.assertFalse(report.ok)
         self.assertIn("gate 2 environment: FAIL", "\n".join(report.lines()))
+
+    def test_a_predicate_that_reports_both_owned_gates_is_complete(self):
+        class Checking(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate with both owned gates"
+
+            @staticmethod
+            def check(statement):
+                return [
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(5, "comparison", True, "recorded"),
+                ]
+
+        known = registry.Registry()
+        known.register(Checking)
+        report = verify.report(document(), known)
+        self.assertTrue(report.predicate_gates_checked)
+        self.assertEqual(report.unchecked, [])
+        self.assertIs(
+            report.to_dict().get("predicateGatesChecked"),
+            True,
+        )
 
     def test_a_predicate_that_raises_fails_its_own_gate_rather_than_the_run(self):
         class Broken(object):
@@ -157,6 +184,7 @@ class ReportTests(unittest.TestCase):
         self.assertTrue(found["ok"])
         self.assertEqual(len(found["gates"]), 5)
         self.assertFalse(found["predicateTypeKnown"])
+        self.assertIs(found.get("predicateGatesChecked"), False)
 
 
 class CommandTests(unittest.TestCase):

@@ -677,6 +677,20 @@ class GroundedAgentSchemaDriftTests(unittest.TestCase):
         self.assertEqual(corpus["maxItems"], grounded_agent.MAX_COMPONENTS)
         self.assertEqual(answers["maxItems"], grounded_agent.MAX_COMPONENTS)
 
+    def test_structured_key_bounds_match_the_core_runtime(self):
+        maximum = core_predicate.MAX_STRUCTURED_KEY_CHARACTERS
+        definitions = self.schema["$defs"]
+        self.assertEqual(
+            definitions["digest"]["propertyNames"].get("maxLength"),
+            maximum,
+        )
+        self.assertEqual(
+            definitions["noBereanResults"]["allOf"][0]["then"][
+                "propertyNames"
+            ].get("maxLength"),
+            maximum,
+        )
+
     def test_berean_fixed_component_paths_match_the_runtime(self):
         release_document = self.properties["release"]["properties"]["document"]
         promotion_component = self.properties["produced"]["properties"]["promotion"][

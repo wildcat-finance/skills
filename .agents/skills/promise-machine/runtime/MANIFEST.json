@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11134705,
+  "total_bytes": 11135668,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -583,9 +583,9 @@
       "source": "plugins/ariadne/schemas/dataset-v1.json"
     },
     {
-      "bytes": 39388,
+      "bytes": 39448,
       "path": "plugins/ariadne/schemas/grounded-agent-v1.json",
-      "sha256": "58bacd999a14a44143e8da38a172d1fe68430dd17db9796b0a4eec894a8bce8f",
+      "sha256": "946c691ab9d457061e933a2858f4b5ef38cd5c42829cf226c84d1e022249a0d4",
       "source": "plugins/ariadne/schemas/grounded-agent-v1.json"
     },
     {
@@ -739,9 +739,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/statement.py"
     },
     {
-      "bytes": 5472,
+      "bytes": 6375,
       "path": "plugins/ariadne/scripts/ariadne_lib/verify.py",
-      "sha256": "b6c3f2e8c46a0e9c20db714b479b54a042c4dd0d978f79a5e26159138e5cad53",
+      "sha256": "7f3eddc6b2d552ae9c551e9eda42061207c84422a3d20ea4493c53f5d06a3079",
       "source": "plugins/ariadne/scripts/ariadne_lib/verify.py"
     },
     {

@@ -1,10 +1,10 @@
 """Verification: the core gates, the signature state, and what went unchecked.
 
-A report says three things. Whether each core gate held. What is known about
-the signatures, which is never that they were checked, because this tool does
-not check them. And which gates belong to a predicate this build does not know,
-so a reader is told what was not looked at rather than left to assume it was
-clean.
+A report says three things. Whether each gate that ran held. What is known
+about the signatures, which is never that they were checked, because this tool
+does not check them. And which predicate-owned gates did not run, whether the
+type is unknown or a registered module is incomplete, so a reader is told what
+was not looked at rather than left to assume it was clean.
 """
 
 from . import gates as gates_module
@@ -27,12 +27,19 @@ class Report(object):
         return all(gate.passed for gate in self.gates)
 
     @property
+    def missing_predicate_gates(self):
+        """Predicate-owned gate numbers absent from this report."""
+        found = {gate.number for gate in self.gates}
+        return tuple(
+            number
+            for number in gates_module.PREDICATE_GATES
+            if number not in found
+        )
+
+    @property
     def predicate_gates_checked(self):
         """Whether a registered predicate reported both gates it owns."""
-        found = {gate.number for gate in self.gates}
-        return self.predicate_module is not None and all(
-            number in found for number in gates_module.PREDICATE_GATES
-        )
+        return self.predicate_module is not None and not self.missing_predicate_gates
 
     @property
     def ordered(self):
@@ -62,6 +69,19 @@ class Report(object):
                 "gates %s were not checked: %s is registered but exposes no "
                 "checks" % (numbers, self.statement.predicate_type)
             )
+        elif self.missing_predicate_gates:
+            missing = " and ".join(str(n) for n in self.missing_predicate_gates)
+            singular = len(self.missing_predicate_gates) == 1
+            out.append(
+                "%s %s %s not checked: %s is registered but did not report %s"
+                % (
+                    "gate" if singular else "gates",
+                    missing,
+                    "was" if singular else "were",
+                    self.statement.predicate_type,
+                    "it" if singular else "them",
+                )
+            )
         if self.document.signed:
             out.append(
                 "signatures were not checked; run cosign verify-attestation "
@@ -86,6 +106,7 @@ class Report(object):
         return {
             "predicateType": self.statement.predicate_type,
             "predicateTypeKnown": self.predicate_module is not None,
+            "predicateGatesChecked": self.predicate_gates_checked,
             "signatureState": self.document.signature_state,
             "gates": [gate.to_dict() for gate in self.ordered],
             "unchecked": self.unchecked,

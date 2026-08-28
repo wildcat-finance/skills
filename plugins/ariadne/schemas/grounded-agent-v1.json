@@ -771,6 +771,7 @@
       "propertyNames": {
         "type": "string",
         "minLength": 1,
+        "maxLength": 4096,
         "not": {
           "$ref": "#/$defs/bereanResultKey"
         }
@@ -831,6 +832,7 @@
           },
           "then": {
             "propertyNames": {
+              "maxLength": 4096,
               "not": {
                 "$ref": "#/$defs/bereanResultKey"
               }
