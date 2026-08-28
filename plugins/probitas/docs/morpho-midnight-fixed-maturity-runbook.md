@@ -178,3 +178,25 @@ Complete replacement Disciplines: phylax: strict JSON hooks, bounded ASCII integ
 **Steps touched.** Step 2.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: Every mutable first-party marketplace-context block is cold-read; only claims affected by the completed Probitas job change, and unrelated skill frontiers remain byte-identical. Probitas records exactly one evolution row at `probitas-v1.1.0`, with a recomputed digest and an evidence-backed successor or `None -- mature`; its frontmatter agrees. The Probitas delivery package takes its smallest unused patch version `0.1.2` across both plugin manifests, the root marketplace and the exact-version test, so an installed cache can observe the changed skill. The README, canonical skill and venue reference state Base-only API-scoped coverage, the unpublished lower bound, strict failure behavior and the distinction between due-time state and liquidation. `portable_promise_machine.py sync` leaves canonical and portable copies equal. From a fresh temporary directory, the documented CLI collects the demo fixture, renders the dossier and verifies five passing gates; the dossier contains checked Midnight coverage and no Midnight gap. The complete Probitas and root suites, portable check, Promise Machine check, version/evolution/marketplace tests, Protasis, Imprimatur, Brevitas, Phylax, Ephoros, Hypomnema, Agent Skills frontmatter validation, Horos currency scan and `git diff --check` all exit zero on the exact final tree. No decision record on this branch reuses a number already taken on live `origin/main`: the Midnight decision record and every citation of it move together to the smallest free identifier, and `tests/test_decision_records.py` reports no collision against the default branch with that branch fetched.
+
+Complete replacement Files: `plugins/probitas/README.md`, `plugins/probitas/skills/probitas/SKILL.md`, `plugins/probitas/skills/probitas/EVOLUTION.md`, `plugins/probitas/skills/probitas/references/venues.md`, `plugins/probitas/docs/adding-a-venue.md` if its counts or procedure changed, `plugins/probitas/.claude-plugin/plugin.json`, `plugins/probitas/.codex-plugin/plugin.json`, `.claude-plugin/marketplace.json`, `plugins/probitas/tests/test_manifests.py`, `tests/test_version_propagation.py`, `tests/test_marketplace_prose.py` where the new final claim needs a guard, the Midnight decision record under `docs/decisions/` together with `plugins/probitas/docs/morpho-midnight-fixed-maturity-study.md` and `plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md` where they cite it or carry this amendment, and generated Probitas files under `.agents/skills/promise-machine/runtime/` produced by the repository sync command.
+
+**Why.** Live `origin/main` advanced twice during this run and now holds `docs/decisions/ADR-043-record-corpus-provenance-beside-the-chunks.md`, which collides with this branch's Midnight decision record of the same number. Step 3 audit round 3 recorded the collision as S3-R3-01 and round 4 carried it to this step unfixed, because the smallest free identifier is only reliably knowable once no further step will run. The repository CI checks out at the default shallow depth, so `tests/test_decision_records.py` finds no local default-branch ref and skips; the collision would therefore pass review and land two records sharing one number, which is the exact case that test exists to catch. Only this step's zero-exit root-suite criterion, run with the default branch fetched, blocks it. The original Step 4 Files field authorised neither moving the decision record nor updating the study and runbook citations that name it. No product criterion, frontier rule or release boundary changes.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Disciplines: phylax: rerun the repository-wide off-chain boundary lint after portable synchronization and prove no credential, host or filesystem boundary widened. ephoros: the final demo, report and coverage row provide the operator-visible readback for the whole path. metron: none, no performance claim is published. elenchus: any final-tree failure is reduced in its owning focused test and guarded before the release suites rerun. hypomnema: the signed evolution row records the completed frontier and its evidenced successor or mature closure; ADR-045 remains the decision record for behavior.
+
+**Why.** The accepted study moved the unchanged decision from ADR-043 to ADR-045 after live `origin/main` claimed ADR-043 as `docs/decisions/ADR-043-record-corpus-provenance-beside-the-chunks.md` and ADR-044 as `docs/decisions/ADR-044-bind-sync-run-generator-aggregates.md`. Step 4's discipline pointer still named the superseded path. No product criterion, frontier rule or release boundary changes.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 4: entry holds; exit holds.

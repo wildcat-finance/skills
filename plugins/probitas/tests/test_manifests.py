@@ -65,7 +65,7 @@ class TestManifests(unittest.TestCase):
         # Deliberate inverse-invariant: the package version must NOT track the
         # skill version. Keep local; do not fold into the shared contract helper.
         claude = load(CLAUDE_MANIFEST)
-        self.assertEqual(skill_frontmatter()["metadata"]["version"], "0.1.0")
+        self.assertEqual(skill_frontmatter()["metadata"]["version"], "1.1.0")
         self.assertNotEqual(
             skill_frontmatter()["metadata"]["version"], claude["version"]
         )

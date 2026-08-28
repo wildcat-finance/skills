@@ -54,11 +54,11 @@ AGGREGATE_FIXTURE_ANCHORS = frozenset(
     }
 )
 
-# The stacked Step 3 branch contains the new runtime adapter before Step 4
-# publishes its package and marketplace prose. Keep that release boundary
-# explicit instead of teaching the public documents to claim unpublished code.
+# Step 4 publishes the Midnight adapter in the package version and the
+# marketplace prose, so it crosses this release boundary and joins the counts
+# the public documents are allowed to claim.
 PUBLISHED_ADAPTER_IDS = frozenset(
-    {"wildcat", "morpho-blue", "euler-v1", "euler"}
+    {"wildcat", "morpho-blue", "euler-v1", "euler", "morpho-midnight"}
 )
 
 
@@ -110,15 +110,51 @@ class TestTheDocumentsCountCorrectly(unittest.TestCase):
         self.assertIn(f"{WORDS[self.built]} of the {WORDS[self.total]}", text)
         self.assertIn(f"other {WORDS[self.gaps]}", text)
 
+    def test_the_three_reader_surfaces_state_the_midnight_limits(self):
+        """The limits are the point of shipping a fail-closed venue.
+
+        A reader who learns Midnight ships and not what its coverage excludes
+        has been told the useful half. Each claim below is a boundary the
+        adapter actually enforces, so prose that drops one is overclaiming.
+        """
+        surfaces = {
+            "README.md": read(README),
+            "SKILL.md": read(os.path.join(os.path.dirname(REFERENCES), "SKILL.md")),
+            "venues.md": read(os.path.join(REFERENCES, "venues.md")),
+        }
+        claims = {
+            "Base-scoped": ("Base chain id 8453",),
+            "API-scoped, not archive-complete": ("API-scoped",),
+            "unpublished lower bound": ("lower bound is unpublished", "unpublished\nhistory lower bound", "unpublished history lower bound"),
+            "no partial answer": ("no records and a\nnamed gap", "no records and a named gap", "no records and a named gap instead"),
+            "secondary close refused": ("secondary-market borrow exit is refused",),
+            "late settlement is not repayment": ("never as voluntary repayment",),
+        }
+        for name, text in surfaces.items():
+            flat = " ".join(text.split())
+            for claim, variants in claims.items():
+                with self.subTest(surface=name, claim=claim):
+                    self.assertTrue(
+                        any(" ".join(v.split()) in flat for v in variants),
+                        f"{name} does not state the {claim} limit",
+                    )
+
     def test_every_venue_in_the_registry_is_named_somewhere_a_reader_looks(self):
         text = read(README) + read(os.path.join(REFERENCES, "venues.md"))
         for venue in registry.all_venues():
             with self.subTest(venue=venue.id):
                 self.assertIn(venue.name, text)
 
-    def test_only_midnight_awaits_the_step_four_publication_pass(self):
+    def test_the_publication_pass_left_no_adapter_unpublished(self):
+        """Both directions, so neither set can drift from the other.
+
+        Midnight was the one adapter this boundary held back while Step 3
+        shipped its runtime. Step 4 published it, so the sets now agree: a
+        registered adapter the documents do not count, or a counted adapter
+        with no runtime, is a defect either way.
+        """
         runtime = {venue.id for venue in registry.implemented()}
-        self.assertEqual(runtime - PUBLISHED_ADAPTER_IDS, {"morpho-midnight"})
+        self.assertEqual(runtime - PUBLISHED_ADAPTER_IDS, set())
         self.assertEqual(PUBLISHED_ADAPTER_IDS - runtime, set())
 
 
