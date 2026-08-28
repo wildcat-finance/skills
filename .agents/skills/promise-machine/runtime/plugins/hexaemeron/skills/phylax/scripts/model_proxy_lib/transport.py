@@ -106,9 +106,15 @@ def system_resolver(hostname: str, port: int) -> tuple[str, ...]:
 
 
 def _strict_context() -> ssl.SSLContext:
-    context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-    context.check_hostname = True
+    # create_default_context honours SSLKEYLOGFILE, which would let ambient
+    # process state select an output path for provider traffic secrets.
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     context.verify_mode = ssl.CERT_REQUIRED
+    context.check_hostname = True
+    context.verify_flags |= (
+        ssl.VERIFY_X509_PARTIAL_CHAIN | ssl.VERIFY_X509_STRICT
+    )
+    context.load_default_certs(ssl.Purpose.SERVER_AUTH)
     return context
 
 

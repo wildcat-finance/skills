@@ -186,8 +186,9 @@ request id, model, usage claim, header, URL, raw error, or lifecycle field.
 
 `ProviderSession` owns one framing core. It records the exact `TextRequest`
 objects that core issues and will cross the provider boundary only for the
-same unconsumed object. A copied, foreign, unadmitted, or already failed
-request refuses before the credential source is called. A provider refusal
+same unconsumed object in admission order. A copied, foreign, unadmitted,
+out-of-order, or already failed request refuses before the credential source
+is called. A provider refusal
 poisons the session rather than permitting a retry against an ambiguous
 provider state. A framing refusal also poisons the session and clears every
 pending provider admission before another credential read or exchange.
@@ -217,7 +218,9 @@ The connector re-resolves the registered profile before use, so a
 self-consistent replacement dataclass cannot change its transport authority.
 It fixes HTTPS, port 443, `POST`, `/v1/responses`, the profile hostname, a
 30-second connector timeout, strict certificate verification, and TLS hostname
-verification. It resolves that hostname on the first request, bounds the
+verification. Its explicit client context does not honour `SSLKEYLOGFILE`, so
+ambient process state cannot select an output path for TLS traffic secrets. It
+resolves that hostname on the first request, bounds the
 resolver iterator, requires one unique global IP address, and reuses that pin
 for every later request handled by the job connector. Empty, multiple,
 malformed, private, loopback, link-local, multicast, unspecified, reserved,
@@ -498,4 +501,6 @@ echo, raw-error sanitisation, connection close, and the absence of a live
 socket call. They also show that a framing refusal blocks every pending
 provider call, one job connector keeps its first address pin across requests,
 that post-activation caller mutation cannot widen the captured policy limits,
-and a response refusal retains confirmed content-free disclosure counts.
+that an out-of-order request stops before credential or provider disclosure,
+that ambient `SSLKEYLOGFILE` cannot enable TLS traffic-secret output, and a
+response refusal retains confirmed content-free disclosure counts.

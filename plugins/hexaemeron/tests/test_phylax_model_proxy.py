@@ -1440,6 +1440,32 @@ class ProviderBoundaryTests(unittest.TestCase):
         self.assertEqual([], exchange.requests)
         self.assertFalse(response.closed)
 
+    def test_out_of_order_request_refuses_before_provider_disclosure(self):
+        reads = []
+        response = self.response(input_text="two", output="TWO")
+        exchange = HTTPSExchangeFixture(response)
+        connector = HTTPSConnector(
+            self.profile,
+            resolver=lambda _hostname, _port: ("8.8.8.8",),
+            exchange=exchange,
+        )
+        provider = ProviderSession(
+            self.policy,
+            connector,
+            credential_source=lambda name: reads.append(name) or self.credential,
+        )
+        requests = provider.feed(request_frame("one") + request_frame("two"))
+        provider.finish()
+
+        with self.assertRaises(PolicyError) as caught:
+            provider.generate(requests[1])
+
+        self.assertEqual("MP320", caught.exception.code)
+        self.assertEqual([], reads)
+        self.assertEqual([], exchange.requests)
+        self.assertEqual("not-read", provider.events[-1].disclosure_state)
+        self.assertFalse(response.closed)
+
     def test_credential_source_failure_is_fixed_and_value_free(self):
         def source(_name):
             raise RuntimeError(self.credential)
@@ -1636,6 +1662,16 @@ class ProviderBoundaryTests(unittest.TestCase):
                     "model-proxy.loopback.invalid",
                     actual_exchange.requests[0].hostname,
                 )
+
+    def test_default_tls_context_does_not_honor_ambient_keylog_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            keylog = Path(directory) / "tls-secrets.log"
+            with mock.patch.dict(
+                os.environ, {"SSLKEYLOGFILE": str(keylog)}, clear=False
+            ):
+                HTTPSConnector(self.profile)
+
+            self.assertFalse(keylog.exists())
 
     def test_every_redirect_status_is_terminal_and_response_is_closed(self):
         for status in range(300, 400):

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 13893984,
+    "bytes_blob": 13902284,
     "bytes_generated": 98
   },
   "entries": [
@@ -91,7 +91,7 @@
       "path": "audit/rounds/fiat-617-runtime-host-reinstates-the-byline-the-ident.synopsis.md"
     },
     {
-      "bytes": 23132,
+      "bytes": 31432,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

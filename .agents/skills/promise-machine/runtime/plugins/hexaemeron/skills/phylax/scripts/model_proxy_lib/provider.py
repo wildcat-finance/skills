@@ -221,6 +221,7 @@ class ProviderSession:
         self._connector = connector
         self._credential_source = credential_source
         self._admitted: dict[int, TextRequest] = {}
+        self._next_provider_sequence = 1
         self._events: list[ProviderEvent] = []
         self._failed = False
 
@@ -292,6 +293,7 @@ class ProviderSession:
             self._failed
             or not isinstance(request, TextRequest)
             or self._admitted.get(request.sequence) is not request
+            or request.sequence != self._next_provider_sequence
         ):
             self._poison()
             self._record("MP320", "not-read")
@@ -350,6 +352,7 @@ class ProviderSession:
                 )
                 raise
             del self._admitted[request.sequence]
+            self._next_provider_sequence += 1
             self._record(
                 "MP000",
                 "provider-only",
