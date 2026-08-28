@@ -21,6 +21,7 @@ import json
 import contextlib
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -982,6 +983,19 @@ def test_provenance_emitted(tmp: pathlib.Path) -> None:
           bool(written) and record.get("chunk_count") == len(written),
           f"{record.get('chunk_count')} vs {len(written)}")
 
+    # Read the governed version straight out of the frontmatter, with a looser
+    # pattern than the emitter's, so the record cannot agree with itself by
+    # construction: this is the fact, and the emitter has to meet it. Nothing
+    # here names a version, so a bump moves both sides at once.
+    declared = re.search(r'^\s*version:\s*"?([^"\s]+)"?\s*$',
+                         (ROOT / "skills" / "lemma" / "SKILL.md")
+                         .read_text(encoding="utf-8"), re.M)
+    check("chunker_version is the version the skill declares",
+          declared is not None
+          and record.get("chunker_version") == declared.group(1),
+          f"{record.get('chunker_version')!r} vs "
+          + (repr(declared.group(1)) if declared else "nothing in SKILL.md"))
+
     check("every emitted chunk carries the stamped ref",
           bool(written) and all(c.get("source_ref") == record.get("source_ref")
                                 for c in written),
@@ -1019,6 +1033,54 @@ def test_provenance_emitted(tmp: pathlib.Path) -> None:
     check("--provenance leaves no record at the default path",
           not (alt / "provenance.jsonl").exists(),
           str(sorted(p.name for p in alt.iterdir())))
+
+    # The record's path is settled before the corpus is written, because both
+    # ways it can go wrong end in a directory a capture reads as whole holding
+    # a record of different chunks. Neither is caught by recomputing the
+    # identifier, which only ever compares a record with its own run's corpus.
+    same = tmp / "same"
+    same.mkdir()
+    collide = same / "chunks.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref, "--out", str(collide),
+                                 "--provenance", str(collide)],
+                       capture_output=True, text=True)
+    check("--provenance over --out is refused",
+          r.returncode != 0 and "--provenance" in r.stderr, r.stderr[-200:])
+    check("--provenance over --out leaves nothing behind",
+          list(same.iterdir()) == [],
+          str(sorted(p.name for p in same.iterdir())))
+
+    gone = tmp / "gone"
+    gone.mkdir()
+    r = subprocess.run(common + ["--source-ref", ref,
+                                 "--out", str(gone / "chunks.jsonl"),
+                                 "--provenance", str(gone / "absent" / "p.jsonl")],
+                       capture_output=True, text=True)
+    check("a record that cannot be written takes the corpus with it",
+          r.returncode != 0 and list(gone.iterdir()) == [],
+          f"rc={r.returncode} left={sorted(p.name for p in gone.iterdir())}")
+
+    # The second run selects less than the first, so the older record's
+    # identifier is one the newer corpus would not reproduce.
+    narrowed = [sys.executable, script, "--root", str(root),
+                "--summary", "", "--exclude", "b.md"]
+    stale = tmp / "stale"
+    stale.mkdir()
+    subprocess.run(common + ["--source-ref", ref, "--out",
+                             str(stale / "chunks.jsonl")],
+                   capture_output=True, text=True)
+    before = (stale / "provenance.jsonl").read_text(encoding="utf-8")
+    r = subprocess.run(narrowed + ["--source-ref", ref + "-again", "--out",
+                                   str(stale / "chunks.jsonl"),
+                                   "--provenance", str(tmp / "away.jsonl")],
+                       capture_output=True, text=True)
+    check("a redirected record beside an existing one is refused",
+          r.returncode != 0 and "already exists" in r.stderr, r.stderr[-200:])
+    kept = [json.loads(line) for line
+            in (stale / "chunks.jsonl").read_text(encoding="utf-8").splitlines()]
+    check("the refusal lands before the described corpus is overwritten",
+          _rebuilt_id(kept) == json.loads(before).get("corpus_build_id"),
+          f"{_rebuilt_id(kept)} vs {json.loads(before).get('corpus_build_id')}")
 
 
 def main() -> int:

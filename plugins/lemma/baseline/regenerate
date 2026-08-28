@@ -40,6 +40,13 @@ REF="lemma-synthetic-baseline-corpus"
 OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
 
+# A delivered corpus is a directory holding chunks and the record of what
+# produced them, and the record's name does not vary with the corpus's. Two
+# chunkers writing into one directory would therefore share one record, and
+# the second would overwrite the first, leaving the Solidity corpus beside a
+# record of the Markdown one. Each gets its own directory instead.
+mkdir -p "$OUT/solidity" "$OUT/markdown"
+
 gate=()
 [ -n "$EXPECT" ] && gate=(--expect-solc "$EXPECT")
 
@@ -49,9 +56,10 @@ python3 baseline/standard_input.py \
 python3 chunkers/solidity.py \
     --input "$OUT/standard-input.json" \
     --solc "$SOLC" "${gate[@]}" --include 'src/**' \
-    --source-ref "$REF" --out "$OUT/solidity.jsonl"
+    --source-ref "$REF" --out "$OUT/solidity/chunks.jsonl"
 echo
 echo "=== Markdown ==="
 python3 chunkers/markdown.py \
     --root baseline/docs --summary SUMMARY.md \
-    --exclude SUMMARY.md --source-ref "$REF" --out "$OUT/markdown.jsonl"
+    --exclude SUMMARY.md --source-ref "$REF" \
+    --out "$OUT/markdown/chunks.jsonl"

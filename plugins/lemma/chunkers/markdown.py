@@ -1166,6 +1166,42 @@ def corpus_build_id(records: list[dict]) -> str:
     return digest.hexdigest()
 
 
+def record_path(args) -> str:
+    """Where the record goes, settled before anything reaches disk.
+
+    Both refusals here describe the same outcome from two directions: a
+    directory a capture reads as a whole corpus, holding a record that
+    describes different chunks. Neither is caught downstream, because the
+    recomputed identifier only ever compares a record with the corpus of its
+    own run.
+
+    A record written over the corpus destroys it. The digest check has already
+    passed by the time the record is written, so the run reports success and
+    the directory is left holding one file: a record naming a chunk count and
+    an identifier for chunks that now exist nowhere.
+
+    A record sent elsewhere while `provenance.jsonl` already sits beside
+    `--out` leaves that older file describing chunks this run overwrites. It
+    stays valid on its own terms — every field well formed, the identifier a
+    real digest of a real corpus — so `validate_provenance` returns nothing
+    and only recomputing the digest reveals it, which is the work the record
+    exists to save.
+    """
+    default = pathlib.Path(args.out).parent / PROVENANCE_FILENAME
+    chosen = pathlib.Path(args.provenance) if args.provenance else default
+    if chosen.resolve() == pathlib.Path(args.out).resolve():
+        raise ChunkError(
+            f"--provenance {chosen} is the file --out names; the record would "
+            "be written over the corpus it describes, leaving a chunk count "
+            "for chunks nobody could read")
+    if chosen.resolve() != default.resolve() and default.exists():
+        raise ChunkError(
+            f"{default} already exists and this run writes its record to "
+            f"{chosen}, so that older record would be left beside a corpus it "
+            "does not describe; remove it, or let this record go to it")
+    return str(chosen)
+
+
 def deliver(chunks: list[Chunk], args) -> None:
     """Write the corpus and the record of what produced it.
 
@@ -1206,6 +1242,7 @@ def deliver(chunks: list[Chunk], args) -> None:
         raise ChunkError("the provenance record is incomplete, so nothing was "
                          "written:\n  " + "\n  ".join(faults))
 
+    path = record_path(args)
     _schema.stamp(chunks, source_ref=record["source_ref"],
                   corpus_build_id=record["corpus_build_id"])
     with open(args.out, "w") as f:
@@ -1222,10 +1259,19 @@ def deliver(chunks: list[Chunk], args) -> None:
             "so the corpus has been removed rather than delivered beside a "
             "record describing chunks nobody wrote")
 
-    path = args.provenance or str(
-        pathlib.Path(args.out).parent / PROVENANCE_FILENAME)
-    with open(path, "w") as f:
-        f.write(json.dumps(record) + "\n")
+    # The corpus is on disk and the record is not. Everything from here takes
+    # the corpus with it if it fails, for the reason the unlink above exists:
+    # a chunks.jsonl with nothing beside it to say what produced it is the
+    # directory the pair of files was introduced to prevent.
+    try:
+        with open(path, "w") as f:
+            f.write(json.dumps(record) + "\n")
+    except OSError as e:
+        pathlib.Path(args.out).unlink()
+        raise ChunkError(
+            f"the record could not be written to {path} ({e}), so the corpus "
+            f"at {args.out} has been removed rather than left behind with "
+            "nothing beside it to say what produced it") from e
     print(f"  provenance    : {path}")
 
 

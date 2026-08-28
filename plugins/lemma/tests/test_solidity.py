@@ -20,6 +20,7 @@ import hashlib
 import importlib.util
 import json
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -964,7 +965,13 @@ def test_cli_integration(solc: str, tmp: pathlib.Path) -> None:
                         "--solc", solc, "--include", "src/**",
                         "--source-ref", ref,
                         "--out", str(out)], capture_output=True, text=True)
-    check("conflict: exit code is nonzero", r.returncode == 1, str(r.returncode))
+    # Naming the reason, not only the exit: --out refuses a missing
+    # --source-ref with the same code, the same absent file and the same
+    # FATAL, so a case asserting only those passes whether or not the build
+    # this case is named for ever ran.
+    check("conflict: exit code is nonzero",
+          r.returncode == 1 and "conflicting source for" in r.stderr,
+          f"rc={r.returncode} stderr={r.stderr[:160]}")
     check("conflict: no output file written", not out.exists(), str(out))
     check("conflict: failure says FATAL", "FATAL" in r.stderr, r.stderr[:120])
 
@@ -973,8 +980,9 @@ def test_cli_integration(solc: str, tmp: pathlib.Path) -> None:
                         "--solc", solc, "--include", "typo/**",
                         "--source-ref", ref,
                         "--out", str(out2)], capture_output=True, text=True)
-    check("empty selection: exit code is nonzero", r.returncode == 1,
-          str(r.returncode))
+    check("empty selection: exit code is nonzero",
+          r.returncode == 1 and "include patterns selected nothing" in r.stderr,
+          f"rc={r.returncode} stderr={r.stderr[:160]}")
     check("empty selection: no output file written", not out2.exists(), str(out2))
 
     out3 = tmp / "ok.jsonl"
@@ -1280,6 +1288,19 @@ def test_provenance_emitted(solc: str, tmp: pathlib.Path) -> None:
     check("chunk_count matches the file beside the record",
           bool(written) and record.get("chunk_count") == len(written),
           f"{record.get('chunk_count')} vs {len(written)}")
+
+    # Read the governed version straight out of the frontmatter, with a looser
+    # pattern than the emitter's, so the record cannot agree with itself by
+    # construction: this is the fact, and the emitter has to meet it. Nothing
+    # here names a version, so a bump moves both sides at once.
+    declared = re.search(r'^\s*version:\s*"?([^"\s]+)"?\s*$',
+                         (ROOT / "skills" / "lemma" / "SKILL.md")
+                         .read_text(encoding="utf-8"), re.M)
+    check("chunker_version is the version the skill declares",
+          declared is not None
+          and record.get("chunker_version") == declared.group(1),
+          f"{record.get('chunker_version')!r} vs "
+          + (repr(declared.group(1)) if declared else "nothing in SKILL.md"))
     check("every emitted chunk carries the stamped ref",
           bool(written) and all(c.get("source_ref") == record.get("source_ref")
                                 for c in written),
