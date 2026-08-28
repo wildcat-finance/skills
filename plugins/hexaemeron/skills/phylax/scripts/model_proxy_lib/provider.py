@@ -108,7 +108,11 @@ def _object(value: Any, fields: frozenset[str], code: str, field_name: str) -> d
     return value
 
 
-def _provider_body(profile: ProviderProfile, request: TextRequest) -> bytes:
+def provider_request_bytes(profile: ProviderProfile, request: TextRequest) -> bytes:
+    """Return the exact mapped input bytes counted by lifecycle admission."""
+
+    if not isinstance(profile, ProviderProfile) or not isinstance(request, TextRequest):
+        refuse("MP322", "provider.request")
     return canonical_json(
         {
             "schema": profile.provider_request_schema,
@@ -286,7 +290,7 @@ class ProviderSession:
             self._poison()
             raise
 
-    def generate(self, request: TextRequest) -> bytes:
+    def generate(self, request: TextRequest, *, timeout_ns: int | None = None) -> bytes:
         """Map one exact admitted request and return one closed guest frame."""
 
         if (
@@ -298,6 +302,14 @@ class ProviderSession:
             self._poison()
             self._record("MP320", "not-read")
             refuse("MP320", "provider.admission")
+        if timeout_ns is not None and (
+            isinstance(timeout_ns, bool)
+            or not isinstance(timeout_ns, int)
+            or timeout_ns < 1
+        ):
+            self._poison()
+            self._record("MP320", "not-read")
+            refuse("MP320", "provider.deadline")
         try:
             try:
                 credential = self._credential_source(
@@ -311,13 +323,16 @@ class ProviderSession:
                 refuse("MP321", "provider.credential")
 
             try:
-                body = _provider_body(self._profile, request)
+                body = provider_request_bytes(self._profile, request)
                 if len(body) > self._limits["max_request_bytes"]:
                     refuse("MP322", "provider.request.bytes")
                 result = self._connector.send(
                     body,
                     credential,
                     max_response_bytes=self._limits["max_response_bytes"],
+                    timeout_seconds=(
+                        None if timeout_ns is None else timeout_ns / 1_000_000_000
+                    ),
                 )
                 output, input_tokens, output_tokens = _parse_provider_response(
                     result.body,

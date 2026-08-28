@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the credential-free model proxy policy, framing, and provider boundaries."""
+"""Check model proxy policy, framing, provider, and lifecycle boundaries."""
 
 from __future__ import annotations
 
@@ -15,6 +15,10 @@ from model_proxy_lib import (
     verify_golden,
 )
 from model_proxy_lib.framing import check_framing_manifest
+from model_proxy_lib.lifecycle import (
+    LIFECYCLE_MANIFEST_SCHEMA,
+    check_lifecycle_manifest,
+)
 from model_proxy_lib.provider import PROVIDER_MANIFEST_SCHEMA, check_provider_manifest
 
 
@@ -47,6 +51,12 @@ def _parser() -> argparse.ArgumentParser:
         allow_abbrev=False,
     )
     provider_command.add_argument("--manifest", required=True, metavar="PATH")
+    lifecycle_command = commands.add_parser(
+        "lifecycle-demo",
+        help="check atomic lifecycle, quota, and receipt vectors",
+        allow_abbrev=False,
+    )
+    lifecycle_command.add_argument("--manifest", required=True, metavar="PATH")
     return parser
 
 
@@ -108,6 +118,25 @@ def _provider_demo(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def _lifecycle_demo(arguments: argparse.Namespace) -> int:
+    result = check_lifecycle_manifest(arguments.manifest)
+    sys.stdout.buffer.write(
+        canonical_json(
+            {
+                "schema": DIAGNOSTIC_SCHEMA,
+                "outcome": "lifecycle_checked",
+                "manifest_schema": LIFECYCLE_MANIFEST_SCHEMA,
+                "cases": result.cases,
+                "requests": result.requests,
+                "receipts": result.receipts,
+                "policy_sha256": result.policy_sha256,
+            }
+        )
+        + b"\n"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     try:
         arguments = _parser().parse_args(argv)
@@ -117,6 +146,8 @@ def main(argv: list[str] | None = None) -> int:
             return _check_frames(arguments)
         if arguments.command == "provider-demo":
             return _provider_demo(arguments)
+        if arguments.command == "lifecycle-demo":
+            return _lifecycle_demo(arguments)
     except PolicyError as error:
         _write_diagnostic(error.diagnostic())
         return 2

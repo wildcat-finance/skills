@@ -16,7 +16,9 @@ import subprocess
 import struct
 import sys
 import tempfile
+import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from unittest import mock
 
 
@@ -49,14 +51,25 @@ from model_proxy_lib.framing import (  # noqa: E402
     RESPONSE_SCHEMA,
     TEXT_OPERATION,
     FramingCore,
+    TextRequest,
     check_framing_manifest,
 )
+from model_proxy_lib.lifecycle import (  # noqa: E402
+    LIFECYCLE_MANIFEST_SCHEMA,
+    NANOSECONDS_PER_SECOND,
+    LifecycleController,
+    ModelProxyRuntime,
+    check_lifecycle_manifest,
+)
+from model_proxy_lib.operator import render_operator_text  # noqa: E402
 from model_proxy_lib.provider import (  # noqa: E402
     PROVIDER_EVENT_SCHEMA,
     PROVIDER_MANIFEST_SCHEMA,
+    ProviderEvent,
     ProviderSession,
     check_provider_manifest,
 )
+from model_proxy_lib.receipts import RECEIPT_SCHEMA, ReceiptSink  # noqa: E402
 from model_proxy_lib.transport import HTTPSConnector, HTTPSRequest  # noqa: E402
 
 
@@ -2061,6 +2074,1164 @@ class ProviderBoundaryTests(unittest.TestCase):
         self.assertEqual(b"", process.stdout)
         self.assertNotIn(self.credential.encode("ascii"), process.stderr)
         self.assertEqual("MP328", json.loads(process.stderr)["code"])
+
+
+class MutableClock:
+    def __init__(self, value: int):
+        self.value = value
+        self.lock = threading.Lock()
+
+    def __call__(self) -> int:
+        with self.lock:
+            return self.value
+
+    def set(self, value: int) -> None:
+        with self.lock:
+            self.value = value
+
+
+class LifecycleTests(unittest.TestCase):
+    maxDiff = None
+
+    START_MONOTONIC_NS = 1_000_000_000
+    START_WALL_NS = 1_787_918_401 * NANOSECONDS_PER_SECOND
+
+    def setUp(self):
+        self.policy = compile_policy((FIXTURES / "accepted-job.json").read_bytes())
+        self.profile = resolve_profile(self.policy.profile)
+        self.credential = secrets.token_urlsafe(32)
+
+    def policy_with_limits(self, **values: int):
+        return compile_policy(
+            with_jobspec(
+                lambda document: document["model_proxy"]["limits"].update(values)
+            )
+        )
+
+    def controller(self, policy=None, *, monotonic=None, wall=None):
+        return LifecycleController(
+            self.policy if policy is None else policy,
+            monotonic_clock=(
+                MutableClock(self.START_MONOTONIC_NS)
+                if monotonic is None
+                else monotonic
+            ),
+            wall_clock=(
+                MutableClock(self.START_WALL_NS) if wall is None else wall
+            ),
+        )
+
+    def mapped_bytes(self, input_text: str) -> int:
+        return len(
+            canonical_json(
+                {
+                    "schema": self.profile.provider_request_schema,
+                    "model": self.profile.model,
+                    "input": input_text,
+                }
+            )
+        )
+
+    def event(
+        self,
+        reservation,
+        *,
+        output_tokens: int = 0,
+        response_bytes: int = 0,
+    ) -> ProviderEvent:
+        return ProviderEvent(
+            profile=self.profile.identifier,
+            disclosure_state="provider-only",
+            outcome_family="accepted",
+            code="MP000",
+            request_bytes=reservation.request_bytes,
+            response_bytes=response_bytes,
+            input_tokens=reservation.input_tokens,
+            output_tokens=output_tokens,
+            duration_ns=1_000,
+        )
+
+    def reserve(self, controller, sequence: int, input_text: str = "x"):
+        return controller.reserve(
+            sequence=sequence,
+            request_bytes=self.mapped_bytes(input_text),
+            input_text=input_text,
+            job_id=controller.job_id,
+            jobspec_sha256=controller.jobspec_sha256,
+        )
+
+    def runtime_request(
+        self,
+        root: Path,
+        *,
+        response: BufferedHTTPSResponse | None = None,
+        exchange=None,
+        input_text: str = "lifecycle prompt",
+        closer=lambda: None,
+    ):
+        if response is None:
+            response = BufferedHTTPSResponse(
+                synthetic_provider_response(input_text, "LIFECYCLE RESPONSE")
+            )
+        if exchange is None:
+            exchange = HTTPSExchangeFixture(response)
+        connector = HTTPSConnector(
+            self.profile,
+            resolver=lambda _hostname, _port: ("8.8.8.8",),
+            exchange=exchange,
+            clock=iter((10_000, 20_000, 30_000, 40_000)).__next__,
+        )
+        runtime = ModelProxyRuntime(
+            self.policy,
+            connector,
+            root / "receipts.jsonl",
+            credential_source=lambda _name: self.credential,
+            monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+            wall_clock=MutableClock(self.START_WALL_NS),
+            io_closer=closer,
+        )
+        request = runtime.feed(request_frame(input_text))[0]
+        runtime.finish_input()
+        return runtime, request, exchange, response
+
+    def receipt_versions(self):
+        return {
+            "policy_schema": self.policy.document["schema"],
+            "compiler": self.policy.document["compiler"],
+            "token_counter": self.profile.token_counter,
+            "receipt_schema": RECEIPT_SCHEMA,
+        }
+
+    def write_activation(self, sink: ReceiptSink) -> None:
+        sink.write_activation(
+            job_id=self.policy.document["job"]["id"],
+            jobspec_sha256=self.policy.jobspec_sha256,
+            policy_sha256=self.policy.policy_sha256,
+            profile=self.profile.identifier,
+            versions=self.receipt_versions(),
+            activated_monotonic_ns=self.START_MONOTONIC_NS,
+            absolute_expiry_unix_ns=1_787_918_999 * NANOSECONDS_PER_SECOND,
+            elapsed_deadline_ns=self.START_MONOTONIC_NS
+            + 300 * NANOSECONDS_PER_SECOND,
+        )
+
+    def test_lifecycle_manifest_and_cli_are_exact(self):
+        manifest = FIXTURES / "lifecycle-cases.json"
+        result = check_lifecycle_manifest(manifest)
+        self.assertEqual(
+            "model-proxy-lifecycle-cases/v1", LIFECYCLE_MANIFEST_SCHEMA
+        )
+        self.assertEqual((2, 2, 6), (result.cases, result.requests, result.receipts))
+        self.assertEqual(self.policy.policy_sha256, result.policy_sha256)
+        process = subprocess.run(  # phylax: allow subprocess: fixed local Python argv
+            [
+                sys.executable,
+                str(CLI),
+                "lifecycle-demo",
+                "--manifest",
+                str(manifest),
+            ],
+            check=False,
+            capture_output=True,
+        )
+        self.assertEqual(0, process.returncode, process.stderr)
+        self.assertEqual(b"", process.stderr)
+        self.assertEqual(
+            {
+                "schema": "model-proxy-diagnostic/v1",
+                "outcome": "lifecycle_checked",
+                "manifest_schema": LIFECYCLE_MANIFEST_SCHEMA,
+                "cases": 2,
+                "requests": 2,
+                "receipts": 6,
+                "policy_sha256": self.policy.policy_sha256,
+            },
+            json.loads(process.stdout),
+        )
+
+    def test_sequential_reservations_hit_every_exact_and_over_limit(self):
+        controller = self.controller()
+        for sequence in range(1, 9):
+            reservation = self.reserve(controller, sequence)
+            controller.mark_disclosed(reservation)
+            controller.complete(reservation, self.event(reservation))
+        with self.assertRaisesRegex(PolicyError, "MP402"):
+            self.reserve(controller, 9)
+        self.assertEqual(8, controller.terminal.counts["requests"])
+
+        text = "x"
+        mapped = self.mapped_bytes(text)
+        byte_policy = self.policy_with_limits(
+            max_request_bytes=mapped, max_total_request_bytes=mapped
+        )
+        byte_controller = self.controller(byte_policy)
+        byte_reservation = byte_controller.reserve(
+            sequence=1, request_bytes=mapped, input_text=text
+        )
+        byte_controller.mark_disclosed(byte_reservation)
+        byte_controller.complete(
+            byte_reservation, self.event(byte_reservation)
+        )
+        with self.assertRaisesRegex(PolicyError, "MP402"):
+            byte_controller.reserve(
+                sequence=2, request_bytes=mapped, input_text=text
+            )
+        with self.assertRaisesRegex(PolicyError, "MP402"):
+            self.controller(byte_policy).reserve(
+                sequence=1, request_bytes=mapped + 1, input_text=text
+            )
+
+        token_policy = self.policy_with_limits(
+            max_input_tokens=3, max_total_input_tokens=3
+        )
+        token_controller = self.controller(token_policy)
+        token_reservation = token_controller.reserve(
+            sequence=1,
+            request_bytes=self.mapped_bytes("abc"),
+            input_text="abc",
+        )
+        token_controller.mark_disclosed(token_reservation)
+        token_controller.complete(
+            token_reservation, self.event(token_reservation)
+        )
+        with self.assertRaisesRegex(PolicyError, "MP402"):
+            token_controller.reserve(
+                sequence=2,
+                request_bytes=self.mapped_bytes("a"),
+                input_text="a",
+            )
+        with self.assertRaisesRegex(PolicyError, "MP402"):
+            self.controller(token_policy).reserve(
+                sequence=1,
+                request_bytes=self.mapped_bytes("abcd"),
+                input_text="abcd",
+            )
+
+        output_controller = self.controller()
+        for sequence in range(1, 5):
+            reservation = self.reserve(output_controller, sequence)
+            output_controller.mark_disclosed(reservation)
+            output_controller.complete(
+                reservation,
+                self.event(
+                    reservation,
+                    output_tokens=reservation.reserved_output_tokens,
+                ),
+            )
+        with self.assertRaisesRegex(PolicyError, "MP403"):
+            self.reserve(output_controller, 5)
+
+        response_controller = self.controller()
+        for sequence in range(1, 5):
+            reservation = self.reserve(response_controller, sequence)
+            response_controller.mark_disclosed(reservation)
+            response_controller.complete(
+                reservation,
+                self.event(
+                    reservation,
+                    response_bytes=reservation.reserved_response_bytes,
+                ),
+            )
+        with self.assertRaisesRegex(PolicyError, "MP403"):
+            self.reserve(response_controller, 5)
+
+        concurrency = self.controller()
+        first = self.reserve(concurrency, 1)
+        second = self.reserve(concurrency, 2)
+        self.assertEqual((1, 2), (first.concurrency, second.concurrency))
+        with self.assertRaisesRegex(PolicyError, "MP403"):
+            self.reserve(concurrency, 3)
+
+    def test_concurrent_reservations_are_atomic_and_never_overshoot(self):
+        policy = self.policy_with_limits(
+            max_requests=4, max_concurrency=4, max_receipts=6
+        )
+        controller = self.controller(policy)
+        barrier = threading.Barrier(8)
+
+        def attempt(sequence):
+            barrier.wait()
+            try:
+                return self.reserve(controller, sequence)
+            except PolicyError as error:
+                return error.code
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results = list(pool.map(attempt, range(1, 9)))
+        reservations = [result for result in results if not isinstance(result, str)]
+        refusals = [result for result in results if isinstance(result, str)]
+        self.assertEqual(4, len(reservations))
+        self.assertEqual(["MP402"] * 4, sorted(refusals))
+        self.assertEqual(4, controller.terminal.counts["requests"])
+        self.assertLessEqual(
+            controller.terminal.counts["request_bytes"],
+            policy.document["limits"]["max_total_request_bytes"],
+        )
+        self.assertLessEqual(
+            controller.terminal.counts["input_tokens"],
+            policy.document["limits"]["max_total_input_tokens"],
+        )
+
+    def test_each_concurrent_reservation_dimension_is_atomic(self):
+        mapped = self.mapped_bytes("x")
+        limits = self.policy.document["limits"]
+        shared = {
+            "max_requests": 4,
+            "max_concurrency": 4,
+            "max_receipts": 6,
+        }
+        cases = (
+            (
+                "request-count",
+                self.policy_with_limits(
+                    max_requests=2, max_concurrency=2, max_receipts=4
+                ),
+                "MP402",
+            ),
+            (
+                "request-bytes",
+                self.policy_with_limits(
+                    **shared,
+                    max_request_bytes=mapped,
+                    max_total_request_bytes=mapped * 2,
+                ),
+                "MP402",
+            ),
+            (
+                "input-tokens",
+                self.policy_with_limits(
+                    **shared,
+                    max_input_tokens=1,
+                    max_total_input_tokens=2,
+                ),
+                "MP402",
+            ),
+            (
+                "output-tokens",
+                self.policy_with_limits(
+                    **shared,
+                    max_total_output_tokens=limits["max_output_tokens"] * 2,
+                ),
+                "MP403",
+            ),
+            (
+                "response-bytes",
+                self.policy_with_limits(
+                    **shared,
+                    max_total_response_bytes=limits["max_response_bytes"] * 2,
+                ),
+                "MP403",
+            ),
+            (
+                "concurrency",
+                self.policy_with_limits(
+                    **{**shared, "max_concurrency": 2},
+                ),
+                "MP403",
+            ),
+        )
+        for label, policy, expected_code in cases:
+            with self.subTest(label=label):
+                controller = self.controller(policy)
+                barrier = threading.Barrier(4)
+
+                def attempt(sequence):
+                    barrier.wait()
+                    try:
+                        return self.reserve(controller, sequence)
+                    except PolicyError as error:
+                        return error.code
+
+                with ThreadPoolExecutor(max_workers=4) as pool:
+                    results = list(pool.map(attempt, range(1, 5)))
+                reservations = [
+                    result for result in results if not isinstance(result, str)
+                ]
+                refusals = [
+                    result for result in results if isinstance(result, str)
+                ]
+                self.assertEqual(2, len(reservations))
+                self.assertEqual([expected_code] * 2, sorted(refusals))
+                self.assertEqual(expected_code, controller.terminal.code)
+                self.assertEqual(2, controller.terminal.counts["requests"])
+
+    def test_rollback_request_flood_cross_job_and_terminal_paths(self):
+        controller = self.controller()
+        reservation = self.reserve(controller, 1, "rollback")
+        controller.rollback(reservation)
+        self.assertEqual(1, self.reserve(controller, 1, "rollback").sequence)
+        controller.cancel()
+        with self.assertRaisesRegex(PolicyError, "MP406"):
+            self.reserve(controller, 2)
+
+        foreign = self.controller()
+        with self.assertRaisesRegex(PolicyError, "MP401"):
+            foreign.reserve(
+                sequence=1,
+                request_bytes=self.mapped_bytes("x"),
+                input_text="x",
+                job_id="another-job",
+                jobspec_sha256=foreign.jobspec_sha256,
+            )
+        wrong_digest = self.controller()
+        with self.assertRaisesRegex(PolicyError, "MP401"):
+            wrong_digest.reserve(
+                sequence=1,
+                request_bytes=self.mapped_bytes("x"),
+                input_text="x",
+                job_id=wrong_digest.job_id,
+                jobspec_sha256="f" * 64,
+            )
+        with self.assertRaisesRegex(PolicyError, "MP401"):
+            self.controller().activate()
+
+        flood = self.controller()
+        for sequence in range(1, 9):
+            current = self.reserve(flood, sequence)
+            flood.mark_disclosed(current)
+            flood.complete(current, self.event(current))
+        with self.assertRaisesRegex(PolicyError, "MP402"):
+            self.reserve(flood, 9)
+
+    def test_absolute_and_monotonic_expiry_are_distinct_terminal_paths(self):
+        monotonic = MutableClock(self.START_MONOTONIC_NS)
+        wall = MutableClock(1_787_918_999 * NANOSECONDS_PER_SECOND)
+        absolute = self.controller(monotonic=monotonic, wall=wall)
+        wall.set(1_787_919_000 * NANOSECONDS_PER_SECOND)
+        self.assertEqual("MP404", absolute.poll().code)
+        with self.assertRaisesRegex(PolicyError, "MP404"):
+            self.reserve(absolute, 1)
+
+        monotonic = MutableClock(self.START_MONOTONIC_NS)
+        elapsed = self.controller(monotonic=monotonic)
+        monotonic.set(elapsed.elapsed_deadline_ns)
+        self.assertEqual("MP405", elapsed.poll().code)
+        with self.assertRaisesRegex(PolicyError, "MP405"):
+            self.reserve(elapsed, 1)
+
+    def test_cancellation_before_admission_marks_terminal_before_close(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            order = []
+            runtime_box = {}
+
+            def closer():
+                order.append(runtime_box["runtime"].terminal.code)
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response("unused", "UNUSED")
+                    )
+                ),
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+                io_closer=closer,
+            )
+            runtime_box["runtime"] = runtime
+            runtime.cancel()
+            self.assertEqual(["MP406"], order)
+            with self.assertRaisesRegex(PolicyError, "MP406"):
+                runtime.feed(request_frame("late"))
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual(
+                ["activation", "terminal"], [record["event"] for record in records]
+            )
+
+    def test_cancellation_during_transport_closes_and_discards_late_response(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            entered = threading.Event()
+            released = threading.Event()
+            responses = []
+            runtime_box = {}
+
+            def exchange(_request, _context, _timeout):
+                entered.set()
+                self.assertTrue(released.wait(5))
+                response = BufferedHTTPSResponse(
+                    synthetic_provider_response("late prompt", "LATE RESPONSE")
+                )
+                responses.append(response)
+                return response
+
+            def closer():
+                self.assertEqual(
+                    "MP406", runtime_box["runtime"].terminal.code
+                )
+                released.set()
+
+            runtime, request, actual_exchange, _response = self.runtime_request(
+                root,
+                exchange=exchange,
+                input_text="late prompt",
+                closer=closer,
+            )
+            runtime_box["runtime"] = runtime
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(runtime.generate, request)
+                self.assertTrue(entered.wait(5))
+                runtime.cancel()
+                with self.assertRaisesRegex(PolicyError, "MP406"):
+                    future.result(timeout=5)
+            self.assertIs(exchange, actual_exchange)
+            self.assertTrue(responses[0].closed)
+            self.assertNotIn(b"LATE RESPONSE", (root / "receipts.jsonl").read_bytes())
+
+    def test_late_transport_failure_keeps_the_cancellation_winner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            entered = threading.Event()
+            released = threading.Event()
+
+            def exchange(_request, _context, _timeout):
+                entered.set()
+                self.assertTrue(released.wait(5))
+                raise RuntimeError("transport closed after cancellation")
+
+            runtime, request, _exchange, _response = self.runtime_request(
+                Path(directory),
+                exchange=exchange,
+                input_text="cancelled transport",
+                closer=released.set,
+            )
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(runtime.generate, request)
+                self.assertTrue(entered.wait(5))
+                runtime.cancel()
+                with self.assertRaisesRegex(PolicyError, "MP406"):
+                    future.result(timeout=5)
+            self.assertEqual("MP406", runtime.terminal.code)
+
+    def test_successful_terminal_state_refuses_later_admission(self):
+        with tempfile.TemporaryDirectory() as directory:
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response("unused", "UNUSED")
+                    )
+                ),
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                Path(directory) / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            runtime.complete_job()
+            self.assertEqual("MP000", runtime.terminal.code)
+            with self.assertRaisesRegex(PolicyError, "MP401"):
+                runtime.feed(request_frame("too late"))
+
+    def test_completion_cancel_and_expiry_races_have_one_winner(self):
+        completion_first = self.controller()
+        reservation = self.reserve(completion_first, 1)
+        completion_first.mark_disclosed(reservation)
+        completion_first.complete(reservation, self.event(reservation))
+        self.assertEqual("MP000", completion_first.finish().code)
+        self.assertEqual("MP000", completion_first.cancel().code)
+
+        cancellation_first = self.controller()
+        reservation = self.reserve(cancellation_first, 1)
+        cancellation_first.mark_disclosed(reservation)
+        cancellation_first.cancel()
+        with self.assertRaisesRegex(PolicyError, "MP406"):
+            cancellation_first.complete(reservation, self.event(reservation))
+
+        monotonic = MutableClock(self.START_MONOTONIC_NS)
+        expiry_first = self.controller(monotonic=monotonic)
+        reservation = self.reserve(expiry_first, 1)
+        expiry_first.mark_disclosed(reservation)
+        monotonic.set(expiry_first.elapsed_deadline_ns)
+        self.assertEqual("MP405", expiry_first.poll().code)
+        with self.assertRaisesRegex(PolicyError, "MP405"):
+            expiry_first.complete(reservation, self.event(reservation))
+
+    def test_unknown_token_counter_refuses_before_activation(self):
+        unknown = replace(self.profile, token_counter="unknown-counter/v1")
+        with mock.patch(
+            "model_proxy_lib.lifecycle.resolve_profile", return_value=unknown
+        ):
+            with self.assertRaisesRegex(PolicyError, "MP409"):
+                self.controller()
+
+    def test_non_finite_transport_deadlines_refuse_before_resolution(self):
+        resolutions = []
+        connector = HTTPSConnector(
+            self.profile,
+            resolver=lambda _hostname, _port: resolutions.append(True)
+            or ("8.8.8.8",),
+            exchange=HTTPSExchangeFixture(
+                BufferedHTTPSResponse(
+                    synthetic_provider_response("unused", "UNUSED")
+                )
+            ),
+        )
+        for value in (
+            float("nan"),
+            float("inf"),
+            float("-inf"),
+            10**10_000,
+        ):
+            with self.subTest(value=value), self.assertRaisesRegex(
+                PolicyError, "MP300"
+            ):
+                connector.send(
+                    b"{}",
+                    self.credential,
+                    max_response_bytes=1,
+                    timeout_seconds=value,
+                )
+        self.assertEqual([], resolutions)
+
+    def test_provider_usage_under_and_over_reporting_are_terminal(self):
+        cases = (
+            {"input_tokens": len("usage prompt") - 1, "output_tokens": 5},
+            {"input_tokens": len("usage prompt") + 1, "output_tokens": 5},
+            {"input_tokens": len("usage prompt"), "output_tokens": 4},
+            {"input_tokens": len("usage prompt"), "output_tokens": 6},
+        )
+        for usage in cases:
+            with self.subTest(usage=usage), tempfile.TemporaryDirectory() as directory:
+                response = BufferedHTTPSResponse(
+                    synthetic_provider_response("usage prompt", "USAGE", usage=usage)
+                )
+                runtime, request, _exchange, _response = self.runtime_request(
+                    Path(directory), response=response, input_text="usage prompt"
+                )
+                with self.assertRaisesRegex(PolicyError, "MP326"):
+                    runtime.generate(request, final=True)
+                self.assertEqual("MP326", runtime.terminal.code)
+
+    def test_receipt_schema_count_size_mode_and_duplicate_terminal(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "receipts.jsonl"
+            sink = ReceiptSink(path, max_record_bytes=4_096, max_records=3)
+            self.assertEqual(0o600, path.stat().st_mode & 0o777)
+            self.write_activation(sink)
+            sink.write_request(
+                job_id=self.policy.document["job"]["id"],
+                jobspec_sha256=self.policy.jobspec_sha256,
+                policy_sha256=self.policy.policy_sha256,
+                profile=self.profile.identifier,
+                versions=self.receipt_versions(),
+                sequence=1,
+                counts={
+                    "request_bytes": 1,
+                    "input_tokens": 1,
+                    "reserved_output_tokens": 1,
+                    "reserved_response_bytes": 1,
+                    "concurrency": 1,
+                },
+                admitted_monotonic_ns=self.START_MONOTONIC_NS,
+                remaining_wall_ns=1,
+            )
+            terminal_counts = {
+                "requests": 1,
+                "request_bytes": 1,
+                "response_bytes": 1,
+                "input_tokens": 1,
+                "output_tokens": 1,
+                "concurrency": 0,
+            }
+            sink.write_terminal(
+                job_id=self.policy.document["job"]["id"],
+                jobspec_sha256=self.policy.jobspec_sha256,
+                policy_sha256=self.policy.policy_sha256,
+                profile=self.profile.identifier,
+                versions=self.receipt_versions(),
+                counts=terminal_counts,
+                terminal_monotonic_ns=self.START_MONOTONIC_NS + 1,
+                duration_ns=1,
+                disclosure_state="provider-only",
+                outcome_code="MP000",
+            )
+            before = path.read_bytes()
+            with self.assertRaisesRegex(PolicyError, "MP407"):
+                sink.write_terminal(
+                    job_id=self.policy.document["job"]["id"],
+                    jobspec_sha256=self.policy.jobspec_sha256,
+                    policy_sha256=self.policy.policy_sha256,
+                    profile=self.profile.identifier,
+                    versions=self.receipt_versions(),
+                    counts=terminal_counts,
+                    terminal_monotonic_ns=self.START_MONOTONIC_NS + 2,
+                    duration_ns=2,
+                    disclosure_state="provider-only",
+                    outcome_code="MP000",
+                )
+            self.assertEqual(before, path.read_bytes())
+            sink.close()
+            lines = before.splitlines()
+            self.assertEqual(3, len(lines))
+            self.assertTrue(all(len(line) <= 4_096 for line in lines))
+            records = [json.loads(line) for line in lines]
+            self.assertTrue(
+                all(record["schema"] == RECEIPT_SCHEMA for record in records)
+            )
+            self.assertEqual(
+                ["activation", "request", "terminal"],
+                [record["event"] for record in records],
+            )
+
+        with tempfile.TemporaryDirectory() as directory:
+            sink = ReceiptSink(
+                Path(directory) / "small.jsonl",
+                max_record_bytes=128,
+                max_records=3,
+            )
+            with self.assertRaisesRegex(PolicyError, "MP408"):
+                self.write_activation(sink)
+            sink.close()
+
+        with tempfile.TemporaryDirectory() as directory:
+            sink = ReceiptSink(
+                Path(directory) / "count.jsonl",
+                max_record_bytes=4_096,
+                max_records=1,
+            )
+            self.write_activation(sink)
+            with self.assertRaisesRegex(PolicyError, "MP407"):
+                sink.write_request(
+                    job_id=self.policy.document["job"]["id"],
+                    jobspec_sha256=self.policy.jobspec_sha256,
+                    policy_sha256=self.policy.policy_sha256,
+                    profile=self.profile.identifier,
+                    versions=self.receipt_versions(),
+                    sequence=1,
+                    counts={
+                        "request_bytes": 1,
+                        "input_tokens": 1,
+                        "reserved_output_tokens": 1,
+                        "reserved_response_bytes": 1,
+                        "concurrency": 1,
+                    },
+                    admitted_monotonic_ns=1,
+                    remaining_wall_ns=1,
+                )
+            sink.close()
+
+    def test_receipt_activation_and_sequence_guards_are_atomic(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "concurrent.jsonl"
+            sink = ReceiptSink(path, max_record_bytes=4_096, max_records=3)
+            activation_barrier = threading.Barrier(8)
+
+            def activate(_index):
+                activation_barrier.wait()
+                try:
+                    self.write_activation(sink)
+                    return "written"
+                except PolicyError as error:
+                    return error.code
+
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                activation_results = list(pool.map(activate, range(8)))
+            self.assertEqual(1, activation_results.count("written"))
+            self.assertEqual(7, activation_results.count("MP407"))
+
+            request_barrier = threading.Barrier(8)
+
+            def write_request(_index):
+                request_barrier.wait()
+                try:
+                    sink.write_request(
+                        job_id=self.policy.document["job"]["id"],
+                        jobspec_sha256=self.policy.jobspec_sha256,
+                        policy_sha256=self.policy.policy_sha256,
+                        profile=self.profile.identifier,
+                        versions=self.receipt_versions(),
+                        sequence=1,
+                        counts={
+                            "request_bytes": 1,
+                            "input_tokens": 1,
+                            "reserved_output_tokens": 1,
+                            "reserved_response_bytes": 1,
+                            "concurrency": 1,
+                        },
+                        admitted_monotonic_ns=self.START_MONOTONIC_NS,
+                        remaining_wall_ns=1,
+                    )
+                    return "written"
+                except PolicyError as error:
+                    return error.code
+
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                request_results = list(pool.map(write_request, range(8)))
+            self.assertEqual(1, request_results.count("written"))
+            self.assertEqual(7, request_results.count("MP407"))
+            self.assertEqual(
+                ["activation", "request"],
+                [
+                    json.loads(line)["event"]
+                    for line in path.read_text("utf-8").splitlines()
+                ],
+            )
+            sink.close()
+
+    def test_receipt_identifiers_versions_counts_and_timings_are_closed(self):
+        base = {
+            "job_id": self.policy.document["job"]["id"],
+            "jobspec_sha256": self.policy.jobspec_sha256,
+            "policy_sha256": self.policy.policy_sha256,
+            "profile": self.profile.identifier,
+            "versions": self.receipt_versions(),
+            "activated_monotonic_ns": self.START_MONOTONIC_NS,
+            "absolute_expiry_unix_ns": 1_787_918_999
+            * NANOSECONDS_PER_SECOND,
+            "elapsed_deadline_ns": self.START_MONOTONIC_NS
+            + 300 * NANOSECONDS_PER_SECOND,
+        }
+        cases = (
+            {"job_id": "prompt contains spaces"},
+            {"jobspec_sha256": "f" * 63 + "g"},
+            {"profile": "raw-provider-name"},
+            {
+                "versions": {
+                    **self.receipt_versions(),
+                    "token_counter": "unknown/v1",
+                }
+            },
+            {"activated_monotonic_ns": 10**30},
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for index, change in enumerate(cases):
+                with self.subTest(change=change):
+                    path = root / f"invalid-{index}.jsonl"
+                    sink = ReceiptSink(
+                        path, max_record_bytes=4_096, max_records=3
+                    )
+                    arguments = {**base, **change}
+                    with self.assertRaisesRegex(PolicyError, "MP408"):
+                        sink.write_activation(**arguments)
+                    self.assertEqual(b"", path.read_bytes())
+                    sink.close()
+
+            path = root / "invalid-count.jsonl"
+            sink = ReceiptSink(path, max_record_bytes=4_096, max_records=3)
+            self.write_activation(sink)
+            before = path.read_bytes()
+            with self.assertRaisesRegex(PolicyError, "MP408"):
+                sink.write_request(
+                    job_id=self.policy.document["job"]["id"],
+                    jobspec_sha256=self.policy.jobspec_sha256,
+                    policy_sha256=self.policy.policy_sha256,
+                    profile=self.profile.identifier,
+                    versions=self.receipt_versions(),
+                    sequence=1,
+                    counts={
+                        "request_bytes": 1,
+                        "input_tokens": True,
+                        "reserved_output_tokens": 1,
+                        "reserved_response_bytes": 1,
+                        "concurrency": 1,
+                    },
+                    admitted_monotonic_ns=self.START_MONOTONIC_NS,
+                    remaining_wall_ns=1,
+                )
+            self.assertEqual(before, path.read_bytes())
+            sink.close()
+
+    def test_receipt_target_refuses_symlink_directory_preexisting_and_unavailable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            target = root / "target"
+            target.write_text("existing", encoding="utf-8")
+            symlink = root / "link"
+            symlink.symlink_to(target)
+            folder = root / "folder"
+            folder.mkdir()
+            paths = (target, symlink, folder, root / "missing" / "receipt")
+            for path in paths:
+                with self.subTest(path=path), self.assertRaisesRegex(
+                    PolicyError, "MP407"
+                ):
+                    ReceiptSink(path, max_record_bytes=4_096, max_records=3)
+
+            parent_link = root / "parent-link"
+            parent_link.symlink_to(folder, target_is_directory=True)
+            with self.assertRaisesRegex(PolicyError, "MP407"):
+                ReceiptSink(
+                    parent_link / "receipt",
+                    max_record_bytes=4_096,
+                    max_records=3,
+                )
+
+    def test_receipt_restrictive_umask_short_partial_and_replacement_fail_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "umask.jsonl"
+            previous = os.umask(0o777)
+            try:
+                sink = ReceiptSink(path, max_record_bytes=4_096, max_records=3)
+            finally:
+                os.umask(previous)
+            self.assertEqual(0o600, path.stat().st_mode & 0o777)
+            sink.close()
+
+        with tempfile.TemporaryDirectory() as directory:
+            sink = ReceiptSink(
+                Path(directory) / "short.jsonl",
+                max_record_bytes=4_096,
+                max_records=3,
+            )
+            with mock.patch("model_proxy_lib.receipts.os.write", return_value=0):
+                with self.assertRaisesRegex(PolicyError, "MP407"):
+                    self.write_activation(sink)
+            sink.close()
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "partial.jsonl"
+            sink = ReceiptSink(path, max_record_bytes=4_096, max_records=3)
+            original_write = os.write
+
+            def partial_write(descriptor, data):
+                partial = data[: max(1, len(data) // 2)]
+                return original_write(descriptor, partial)
+
+            with mock.patch(
+                "model_proxy_lib.receipts.os.write", side_effect=partial_write
+            ):
+                with self.assertRaisesRegex(PolicyError, "MP407"):
+                    self.write_activation(sink)
+            self.assertGreater(path.stat().st_size, 0)
+            sink.close()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = root / "replacement.jsonl"
+            sink = ReceiptSink(path, max_record_bytes=4_096, max_records=3)
+            replacement = root / "other"
+            replacement.write_text("replacement", encoding="utf-8")
+            os.replace(replacement, path)
+            with self.assertRaisesRegex(PolicyError, "MP407"):
+                self.write_activation(sink)
+            sink.close()
+
+        with tempfile.TemporaryDirectory() as directory:
+            sink = ReceiptSink(
+                Path(directory) / "close.jsonl",
+                max_record_bytes=4_096,
+                max_records=3,
+            )
+            receipt_descriptor = sink._descriptor
+            original_close = os.close
+            failed = False
+
+            def failed_close(descriptor):
+                nonlocal failed
+                if descriptor == receipt_descriptor and not failed:
+                    failed = True
+                    original_close(descriptor)
+                    raise OSError("simulated close failure")
+                original_close(descriptor)
+
+            with mock.patch(
+                "model_proxy_lib.receipts.os.close", side_effect=failed_close
+            ):
+                with self.assertRaisesRegex(PolicyError, "MP407"):
+                    sink.close()
+
+    def test_pre_disclosure_receipt_failure_prevents_call(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            reads = []
+            response = BufferedHTTPSResponse(
+                synthetic_provider_response("blocked prompt", "BLOCKED")
+            )
+            exchange = HTTPSExchangeFixture(response)
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda name: reads.append(name) or self.credential,
+                monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            request = runtime.feed(request_frame("blocked prompt"))[0]
+            runtime.finish_input()
+            with mock.patch.object(
+                runtime._sink,
+                "write_request",
+                side_effect=PolicyError("MP407", "receipt.write"),
+            ):
+                with self.assertRaisesRegex(PolicyError, "MP407"):
+                    runtime.generate(request)
+            self.assertEqual([], reads)
+            self.assertEqual([], exchange.requests)
+
+    def test_expiry_during_request_receipt_prevents_disclosure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            monotonic = MutableClock(self.START_MONOTONIC_NS)
+            reads = []
+            exchange = HTTPSExchangeFixture(
+                BufferedHTTPSResponse(
+                    synthetic_provider_response("receipt delay", "TOO LATE")
+                )
+            )
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda name: reads.append(name) or self.credential,
+                monotonic_clock=monotonic,
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            request = runtime.feed(request_frame("receipt delay"))[0]
+            runtime.finish_input()
+            original_write = runtime._sink.write_request
+
+            def delayed_write(**arguments):
+                original_write(**arguments)
+                monotonic.set(
+                    self.START_MONOTONIC_NS
+                    + self.policy.document["limits"]["total_wall_seconds"]
+                    * NANOSECONDS_PER_SECOND
+                )
+
+            with mock.patch.object(
+                runtime._sink, "write_request", side_effect=delayed_write
+            ):
+                with self.assertRaisesRegex(PolicyError, "MP405"):
+                    runtime.generate(request)
+            self.assertEqual([], reads)
+            self.assertEqual([], exchange.requests)
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual(
+                ["activation", "request", "terminal"],
+                [record["event"] for record in records],
+            )
+            self.assertEqual("not-read", records[-1]["disclosure_state"])
+            self.assertEqual("MP405", records[-1]["outcome_code"])
+
+    def test_terminal_receipt_failure_withholds_provider_response(self):
+        with tempfile.TemporaryDirectory() as directory:
+            runtime, request, exchange, _response = self.runtime_request(
+                Path(directory), input_text="terminal receipt prompt"
+            )
+            with mock.patch.object(
+                runtime._sink,
+                "write_terminal",
+                side_effect=PolicyError("MP407", "receipt.write"),
+            ):
+                with self.assertRaisesRegex(PolicyError, "MP407"):
+                    runtime.generate(request, final=True)
+            self.assertEqual(1, len(exchange.requests))
+            self.assertTrue(runtime._terminal_receipt_failed)
+
+    def test_restart_cannot_resume_an_existing_receipt_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            runtime, request, _exchange, _response = self.runtime_request(root)
+            runtime.generate(request, final=True)
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=HTTPSExchangeFixture(
+                    BufferedHTTPSResponse(
+                        synthetic_provider_response("unused", "UNUSED")
+                    )
+                ),
+            )
+            with self.assertRaisesRegex(PolicyError, "MP407"):
+                ModelProxyRuntime(
+                    self.policy,
+                    connector,
+                    root / "receipts.jsonl",
+                    credential_source=lambda _name: self.credential,
+                    monotonic_clock=MutableClock(self.START_MONOTONIC_NS),
+                    wall_clock=MutableClock(self.START_WALL_NS),
+                )
+
+    def test_receipts_exclude_content_authority_secrets_and_raw_errors(self):
+        prompt = "fiat-700-sensitive-prompt"
+        output = "fiat-700-sensitive-response"
+        raw_error = "fiat-700-raw-provider-error"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            response = BufferedHTTPSResponse(
+                synthetic_provider_response(prompt, output)
+            )
+            runtime, request, _exchange, _response = self.runtime_request(
+                root, response=response, input_text=prompt
+            )
+            runtime.generate(request, final=True)
+            receipt = (root / "receipts.jsonl").read_bytes()
+            forbidden = (
+                self.credential.encode("ascii"),
+                prompt.encode("ascii"),
+                output.encode("ascii"),
+                hashlib.sha256(prompt.encode("ascii")).hexdigest().encode("ascii"),
+                b"https://",
+                b"Authorization",
+                raw_error.encode("ascii"),
+                b"synthetic-loopback",
+                b"provider_id",
+                b"request_id",
+            )
+            for value in forbidden:
+                self.assertNotIn(value, receipt)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            exchange = HTTPSExchangeFixture(error=RuntimeError(raw_error))
+            runtime, request, _exchange, _response = self.runtime_request(
+                root, exchange=exchange, input_text=prompt
+            )
+            with self.assertRaisesRegex(PolicyError, "MP306"):
+                runtime.generate(request)
+            receipt = (root / "receipts.jsonl").read_bytes()
+            self.assertNotIn(raw_error.encode("ascii"), receipt)
+            self.assertNotIn(prompt.encode("ascii"), receipt)
+
+    def test_operator_text_is_an_exact_policy_projection_with_qualification(self):
+        text = render_operator_text(self.policy)
+        provider = self.policy.document["provider"]
+        receipt = self.policy.document["receipt"]
+        self.assertIn(provider["provider"], text)
+        self.assertIn(provider["origin_family"] + provider["path_family"], text)
+        self.assertIn(provider["id"], text)
+        self.assertIn(provider["model"], text)
+        self.assertIn(provider["retention"], text)
+        self.assertIn(f"storage={str(provider['storage']).lower()}", text)
+        self.assertIn(
+            f"{receipt['content']} model content for {receipt['retention_seconds']} seconds",
+            text,
+        )
+        for feature in self.policy.document["disclosure"]["disabled_features"]:
+            self.assertIn(feature, text)
+        for name, value in self.policy.document["limits"].items():
+            self.assertIn(f"{name}={value}", text)
+        self.assertIn("do not prove", text)
+        self.assertIn("retain or exfiltrate", text)
 
 
 if __name__ == "__main__":

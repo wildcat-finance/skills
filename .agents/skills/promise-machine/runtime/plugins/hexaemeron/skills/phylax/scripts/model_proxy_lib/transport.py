@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 import http.client
 import ipaddress
 import itertools
+import math
 import re
 import socket
 import ssl
@@ -31,6 +32,20 @@ _CONTENT_LENGTH = re.compile(r"0|[1-9][0-9]*\Z")
 _EXPECTED_RESPONSE_HEADERS = frozenset(
     {"content-encoding", "content-length", "content-type", "transfer-encoding"}
 )
+
+
+def _bounded_timeout(value: int | float | None, ceiling: float) -> float:
+    if value is None:
+        return ceiling
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        refuse("MP300", "provider.request")
+    try:
+        converted = float(value)
+    except (OverflowError, ValueError):
+        refuse("MP300", "provider.request")
+    if converted <= 0 or not math.isfinite(converted):
+        refuse("MP300", "provider.request")
+    return min(ceiling, converted)
 
 
 @dataclass(frozen=True, slots=True)
@@ -410,6 +425,7 @@ class HTTPSConnector:
         credential: str,
         *,
         max_response_bytes: int,
+        timeout_seconds: float | None = None,
     ) -> TransportResult:
         """Send one internally mapped request and retain no authority-bearing value."""
 
@@ -422,6 +438,7 @@ class HTTPSConnector:
             or max_response_bytes > self._profile.limit_ceilings["max_response_bytes"]
         ):
             refuse("MP300", "provider.request")
+        request_timeout = _bounded_timeout(timeout_seconds, self._timeout)
         headers = _request_headers(self._profile, credential)
         address = self._job_address()
         request = HTTPSRequest(
@@ -443,7 +460,7 @@ class HTTPSConnector:
         try:
             started = self._clock()
             request_handed_to_exchange = True
-            response = self._exchange(request, self._context, self._timeout)
+            response = self._exchange(request, self._context, request_timeout)
             if (
                 isinstance(response.status, bool)
                 or not isinstance(response.status, int)
