@@ -197,6 +197,72 @@ class TestMidnightContent(unittest.TestCase):
         with self.assertRaises(render.RenderError):
             render.render(payload)
 
+    def test_inconsistent_maturity_outcome_cannot_become_markdown(self):
+        mutations = (
+            ("midnight-late", "no debt due", {"debt_units_at_maturity": "0"}),
+            ("midnight-late", "debt remains", {"debt_units_at_observation": "1"}),
+            ("midnight-late", "no settlement", {"settlement_mode": "unsettled"}),
+            (
+                "midnight-late",
+                "negative observation debt",
+                {"debt_units_at_observation": "-1"},
+            ),
+            (
+                "midnight-late",
+                "boolean observation debt",
+                {"debt_units_at_observation": False},
+            ),
+            (
+                "midnight-late",
+                "zero debt called outstanding",
+                {"observation_state": "outstanding"},
+            ),
+            (
+                "midnight-late",
+                "outstanding debt increased after maturity",
+                {
+                    "observation_state": "outstanding",
+                    "debt_units_at_observation": "136075232068",
+                },
+            ),
+            (
+                "midnight-cleared",
+                "debt due despite cleared state",
+                {"debt_units_at_maturity": "1"},
+            ),
+            (
+                "midnight-cleared",
+                "debt remains despite cleared state",
+                {"debt_units_at_observation": "1"},
+            ),
+            (
+                "midnight-cleared",
+                "cleared without settlement",
+                {"settlement_mode": "unsettled"},
+            ),
+            (
+                "midnight-not-due",
+                "invented future balance",
+                {"debt_units_at_maturity": "100"},
+            ),
+            (
+                "midnight-not-due",
+                "zero balance without settlement",
+                {"debt_units_at_observation": "0"},
+            ),
+        )
+        for case, label, changed in mutations:
+            with self.subTest(label=label):
+                payload = midnight_evidence(case)
+                outcome = next(
+                    record
+                    for record in payload["records"]
+                    if record["claim"] == "maturity_outcome"
+                )
+                outcome["values"].update(changed)
+                with self.assertRaises(render.RenderError):
+                    render.render(payload)
+
 
 class TestDeterminism(unittest.TestCase):
     def test_two_renders_are_byte_identical(self):
@@ -252,6 +318,24 @@ class TestUntrustedText(unittest.TestCase):
             if line.startswith("|") and "Terms set" in line
         )
         self.assertEqual(len(re.findall(r"(?<!\\)\|", terms)), 6, terms)
+
+    def test_loaded_template_markers_are_not_interpreted(self):
+        payload = copy.deepcopy(evidence())
+        payload["subject"]["entity"] = "Acme {{coverage}}"
+        payload["run"]["id"] = "run {{subject}}"
+        for record in payload["records"]:
+            if record["claim"] == "market_terms":
+                record["values"]["market_name"] = "{{summary}}"
+        payload["records"][0]["source_kind"] = "url"
+        payload["records"][0]["source"] = "https://example.com/{{summary}}"
+
+        document = render.render(payload)
+
+        self.assertEqual(
+            document.count("| Venue | Status | Range | Records | Note |"), 1
+        )
+        self.assertEqual(document.count("**Entity.**"), 1)
+        self.assertEqual(document.count("Written by whoever runs this"), 1)
 
     def test_untrusted_source_bytes_cannot_escape_the_citation(self):
         payload = copy.deepcopy(evidence())

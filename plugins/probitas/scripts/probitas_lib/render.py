@@ -11,6 +11,7 @@ no way to write a number the evidence does not contain.
 
 import json
 import os
+import re
 
 from . import formatting, registry, sanitise
 from .evidence import classify_source
@@ -22,6 +23,7 @@ TEMPLATE = os.path.join(
 )
 
 NARRATIVE_MARKER = "_Nothing to report._"
+TEMPLATE_SLOT = re.compile(r"\{\{([a-z_]+)\}\}")
 
 # Claims that belong under Wildcat's own heading rather than the general
 # borrowing history, because they are about terms the borrower set rather than
@@ -124,47 +126,79 @@ def _cite(record):
     return f"`{source}`"
 
 
+def _midnight_integer(value, label):
+    if isinstance(value, bool) or isinstance(value, float):
+        raise RenderError(f"Midnight {label} is not an exact non-negative integer")
+    if isinstance(value, int):
+        amount = value
+    elif isinstance(value, str) and re.fullmatch(r"[0-9]+", value):
+        amount = int(value)
+    else:
+        raise RenderError(f"Midnight {label} is not an exact non-negative integer")
+    if amount < 0:
+        raise RenderError(f"Midnight {label} is not an exact non-negative integer")
+    return amount
+
+
 def _raw_units(value, label):
-    try:
-        amount = formatting.amount(value)
-    except (TypeError, ValueError) as error:
-        raise RenderError(f"Midnight {label} is not an exact integer") from error
-    return amount.replace("raw units", label)
+    return f"{_midnight_integer(value, label):,} {label}"
 
 
 def _midnight_outcome(values):
     obligation = values.get("obligation_state")
     observation = values.get("observation_state")
-    settlement = MIDNIGHT_SETTLEMENT.get(values.get("settlement_mode"))
+    settlement_mode = values.get("settlement_mode")
+    settlement = MIDNIGHT_SETTLEMENT.get(settlement_mode)
     if settlement is None:
         raise RenderError("Midnight settlement mode is outside the closed vocabulary")
 
-    at_observation = _raw_units(
-        values.get("debt_units_at_observation"), "debt units"
+    observation_units = _midnight_integer(
+        values.get("debt_units_at_observation"), "observation debt units"
     )
+    at_observation = f"{observation_units:,} debt units"
     if obligation == "cleared_by_maturity" and observation == "cleared":
-        at_maturity = _raw_units(
-            values.get("debt_units_at_maturity"), "debt units"
+        maturity_units = _midnight_integer(
+            values.get("debt_units_at_maturity"), "maturity debt units"
         )
+        if (
+            maturity_units != 0
+            or observation_units != 0
+            or settlement_mode == "unsettled"
+        ):
+            raise RenderError(
+                "Midnight cleared outcome has inconsistent debt or settlement"
+            )
+        at_maturity = f"{maturity_units:,} debt units"
         return (
             f"Cleared by maturity with {at_maturity} outstanding; "
             f"settlement mode: {settlement}; {at_observation} at observation"
         )
     if obligation == "outstanding_at_maturity":
-        at_maturity = _raw_units(
-            values.get("debt_units_at_maturity"), "debt units"
+        maturity_units = _midnight_integer(
+            values.get("debt_units_at_maturity"), "maturity debt units"
         )
+        if maturity_units == 0:
+            raise RenderError("Midnight outstanding outcome has no debt at maturity")
+        at_maturity = f"{maturity_units:,} debt units"
         if observation == "settled_late":
+            if observation_units != 0 or settlement_mode == "unsettled":
+                raise RenderError("Midnight late settlement outcome is inconsistent")
             return (
                 f"Outstanding at maturity: {at_maturity}; Settled late through "
                 f"{settlement}; {at_observation} at observation"
             )
         if observation == "outstanding":
+            if observation_units == 0 or observation_units > maturity_units:
+                raise RenderError("Midnight outstanding observation is inconsistent")
             return (
                 f"Outstanding at maturity: {at_maturity}; still outstanding "
                 f"at observation: {at_observation}; settlement mode: {settlement}"
             )
     if obligation == "not_due" and observation == "not_due":
+        if values.get("debt_units_at_maturity") is not None:
+            raise RenderError("Midnight not-due outcome invents a maturity balance")
+        if observation_units == 0 and settlement_mode == "unsettled":
+            raise RenderError("Midnight not-due zero balance has no settlement")
         return (
             f"Not due at observation; {at_observation}; "
             f"settlement mode: {settlement}"
@@ -452,7 +486,14 @@ def render(payload):
         ),
     }
 
-    out = template
-    for key, value in sections.items():
-        out = out.replace("{{" + key + "}}", value)
-    return out
+    slots = TEMPLATE_SLOT.findall(template)
+    missing = sorted(set(sections) - set(slots))
+    unknown = sorted(set(slots) - set(sections))
+    repeated = sorted(key for key in set(slots) if slots.count(key) != 1)
+    if missing or unknown or repeated:
+        raise RenderError("dossier template slots disagree with renderer sections")
+
+    # Substitute only slots present in the trusted template bytes. A value from
+    # evidence can itself contain ``{{summary}}`` or another slot-shaped string;
+    # rescanning replacement text would turn that data into document structure.
+    return TEMPLATE_SLOT.sub(lambda match: sections[match.group(1)], template)
