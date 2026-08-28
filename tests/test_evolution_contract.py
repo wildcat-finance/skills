@@ -108,13 +108,13 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.31.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.32.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "fiat-v5.31.1")
+        self.assertEqual(latest["version"], "fiat-v5.32.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
@@ -122,21 +122,25 @@ class EvolutionContractTests(unittest.TestCase):
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
         self.assertIn("skills/issues/710", latest["evidence"])
-        self.assertIn("ADR-044", latest["evidence"])
+        self.assertIn("issuecomment-5451995033", latest["evidence"])
         predecessor = history_rows(ledger)[-2]
-        self.assertEqual(predecessor["version"], "fiat-v5.30.1")
-        self.assertIn("skills/issues/622", predecessor["evidence"])
-        self.assertIn("Creator direction, 2026-08-27", predecessor["evidence"])
+        self.assertEqual(predecessor["version"], "fiat-v5.31.1")
+        self.assertIn("skills/issues/710", predecessor["evidence"])
+        self.assertIn("ADR-044", predecessor["evidence"])
         earlier = history_rows(ledger)[-3]
-        self.assertEqual(earlier["version"], "fiat-v5.29.1")
-        self.assertIn("issuecomment-5435028801", earlier["evidence"])
-        self.assertIn("issuecomment-5435304048", earlier["evidence"])
+        self.assertEqual(earlier["version"], "fiat-v5.30.1")
+        self.assertIn("skills/issues/622", earlier["evidence"])
+        self.assertIn("Creator direction, 2026-08-27", earlier["evidence"])
         integrated = history_rows(ledger)[-4]
-        self.assertEqual(integrated["version"], "fiat-v5.28.1")
-        self.assertIn("skills/issues/608", integrated["evidence"])
-        self.assertIn("fiat-integrate-base-head-study.md", integrated["evidence"])
-        self.assertIn("fiat-integrate-base-head-runbook.md", integrated["evidence"])
-        published = history_rows(ledger)[-5]
+        self.assertEqual(integrated["version"], "fiat-v5.29.1")
+        self.assertIn("issuecomment-5435028801", integrated["evidence"])
+        self.assertIn("issuecomment-5435304048", integrated["evidence"])
+        base_fix = history_rows(ledger)[-5]
+        self.assertEqual(base_fix["version"], "fiat-v5.28.1")
+        self.assertIn("skills/issues/608", base_fix["evidence"])
+        self.assertIn("fiat-integrate-base-head-study.md", base_fix["evidence"])
+        self.assertIn("fiat-integrate-base-head-runbook.md", base_fix["evidence"])
+        published = history_rows(ledger)[-6]
         self.assertEqual(published["version"], "fiat-v5.27.1")
         self.assertIn("skills#617", published["evidence"])
         self.assertIn("fiat-host-byline-readback", published["evidence"])

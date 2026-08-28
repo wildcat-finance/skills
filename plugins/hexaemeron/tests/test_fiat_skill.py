@@ -247,6 +247,8 @@ class FiatSkillContractTests(unittest.TestCase):
         flat = " ".join(self.push_discipline.split())
         self.assertIn("permitted merge method", flat)
         self.assertIn("close that exact issue", flat)
+        self.assertIn("Closes owner/repository#number", flat)
+        self.assertIn("recognised closing reference to the exact issue", flat)
         self.assertIn(
             "hexctl done integrate --pr-url <url> --merge-commit <sha>",
             self.push_discipline,

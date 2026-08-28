@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.31.1"
+  version: "5.32.1"
 ---
 
 <p align="center">
@@ -334,7 +334,7 @@ Act on the single directive it prints, then receipt it. The directory:
 | `push` | Stage and commit final changes, push the step branch, open its stacked PR against `pr_base`, and leave it open | [push-discipline.md](references/push-discipline.md) | `done push --pr-url <url> --head-commit <sha> --pr-base <ref>` |
 | `merge-step` | Merge the named step's PR into the run branch, bottom of the stack first | [push-discipline.md](references/push-discipline.md) | `done merge-step --step <n> --merge-commit <sha>` |
 | `sync-run` | When the base advanced and the integration PR conflicts, preserve the completed product evidence and receipt a signed two-parent merge plus bounded integration revalidation; supersede a failed composition receipt only with the exact active SHA, a reason and fresh evidence | [push-discipline.md](references/push-discipline.md) | `done sync-run --commit <sha> --base-commit <sha> --revalidation .hexaemeron/integration-revalidation.json [--supersede-sync <sha> --reason <text>]` |
-| `integrate` | Open and merge one PR from the run branch into the base, name what the run leaves unfinished in `.hexaemeron/run-pr.md`, then clean up and close any recorded task issue | [push-discipline.md](references/push-discipline.md) | `done integrate --pr-url <url> --merge-commit <sha> [--closed-issue-url <url>]` |
+| `integrate` | Open and merge one PR from the run branch into the base, name what the run leaves unfinished in `.hexaemeron/run-pr.md`, require a recognised closing reference in that PR when the run records a GitHub task issue, then clean up and close any recorded task issue | [push-discipline.md](references/push-discipline.md) | `done integrate --pr-url <url> --merge-commit <sha> [--closed-issue-url <url>]` |
 | `audit-verdict` | Max rounds hit with findings open | ask the user | `done audit --no-further-leads --reason ...` or `halt --reason ...` |
 | `blocked` | A receipted study or runbook amendment broke the current step; inspect it, halt, or use the runbook repair below | below | -- |
 | `halted` | Report the reason; wait for the user | -- | `resume --note ...` when cleared |
@@ -473,10 +473,13 @@ goes, before the masks run. Every prose artefact in scope plus the PR title and
 body, through
 the `imprimatur` lint first and the `vulgate` mask second, content held
 constant. Both are bundled: run the lint script by path, read the mask's
-SKILL.md by path and apply it. When the run has a task issue, draft its closing
-comment here under the repository's Sapheneia, Imprimatur, Vulgate, Imprimatur
-publication order; fill the exact integration URL and status, then rerun that
-whole order immediately before posting. The receipt refuses a skills list
+SKILL.md by path and apply it. When the run has a task issue, put GitHub's
+recognised closing syntax for that exact issue in the run-level pull-request
+body and draft its closing comment here under the repository's Sapheneia,
+Imprimatur, Vulgate, Imprimatur publication order. A link, an issue number, or
+prose saying that no work remains does not replace `Closes
+owner/repository#number`. Fill the exact integration URL and status, then rerun
+that whole order immediately before posting. The receipt refuses a skills list
 missing either configured id.
 
 **Push.** Stage and commit every intended final change with a valid local
@@ -510,7 +513,12 @@ step's, and delete no branch here; receipt each merge before starting the next.
 Deleting a merged step's branch closes the pull request stacked on it, and a
 closed pull request whose base ref is gone can be neither reopened nor
 retargeted, so the order is not a preference. With the stack landed, open one
-pull request from the run branch into the recorded base. When a run was pinned
+pull request from the run branch into the recorded base. If `task_issue` names
+a GitHub issue, use the integrate directive's exact `Closes
+owner/repository#number` line in that pull request body and read the remote body
+back before merge. `done integrate` reads the merged pull request and refuses
+without a recognised `close`, `fix`, or `resolve` form for that exact issue;
+mentions, links, quoted text and code examples do not satisfy the gate. When a run was pinned
 to an exact starting commit, that commit remains the starting-base evidence and
 `config.git.base` names the branch the run integrates into; the directive,
 sync receipt and final receipt keep both identities. If concurrent work
@@ -538,7 +546,10 @@ Then name everything the run
 left unfinished in its body under `## Carried forward`, wait for its gates,
 merge it without bypassing them, require GitHub to report `verified: true` and
 `reason: valid` for every pushed commit and merge SHA, delete the run branch and the step branches
-where policy allows, and close any recorded task issue. That merge is the only
+where policy allows, and verify or close any recorded task issue. GitHub only
+acts on the closing keyword when the pull request targets the repository's
+default branch; a run aimed elsewhere still owes the explicit closure receipt.
+That merge is the only
 one into the base for the whole run. A routine publish or closure action is not
 a handoff to a human. Before closing a task issue, post its exact checked
 closing-comment bytes, read the comment and issue state back from GitHub, and
