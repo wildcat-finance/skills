@@ -3301,6 +3301,82 @@ class LifecycleTests(unittest.TestCase):
             )
             self.assertEqual("MP000", runtime.terminal.code)
 
+    def test_pending_higher_turn_observes_expiry_without_lower_worker(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            monotonic = MutableClock(self.START_MONOTONIC_NS)
+            provider_called = threading.Event()
+            second_receipted = threading.Event()
+
+            def exchange(request, _context, _timeout):
+                provider_called.set()
+                input_text = json.loads(request.body)["input"]
+                return BufferedHTTPSResponse(
+                    synthetic_provider_response(input_text, input_text.upper())
+                )
+
+            connector = HTTPSConnector(
+                self.profile,
+                resolver=lambda _hostname, _port: ("8.8.8.8",),
+                exchange=exchange,
+                clock=iter((10_000, 20_000)).__next__,
+            )
+            runtime = ModelProxyRuntime(
+                self.policy,
+                connector,
+                root / "receipts.jsonl",
+                credential_source=lambda _name: self.credential,
+                monotonic_clock=monotonic,
+                wall_clock=MutableClock(self.START_WALL_NS),
+            )
+            requests = runtime.feed(
+                request_frame("unstarted first prompt")
+                + request_frame("waiting second prompt")
+            )
+            runtime.finish_input()
+            original_write = runtime._sink.write_request
+
+            def observed_write(**arguments):
+                original_write(**arguments)
+                if arguments["sequence"] == 2:
+                    second_receipted.set()
+
+            result = {}
+
+            def generate_second():
+                try:
+                    result["value"] = runtime.generate(requests[1])
+                except PolicyError as error:
+                    result["value"] = error.code
+
+            with mock.patch.object(
+                runtime._sink, "write_request", side_effect=observed_write
+            ):
+                worker = threading.Thread(target=generate_second)
+                worker.start()
+                self.assertTrue(second_receipted.wait(5))
+                monotonic.set(runtime._controller.elapsed_deadline_ns)
+                worker.join(1)
+                finished_at_deadline = not worker.is_alive()
+                if worker.is_alive():
+                    runtime.cancel()
+                    worker.join(5)
+
+            self.assertTrue(finished_at_deadline)
+            self.assertFalse(worker.is_alive())
+            self.assertEqual("MP405", result["value"])
+            self.assertEqual("MP405", runtime.terminal.code)
+            self.assertFalse(provider_called.is_set())
+            records = [
+                json.loads(line)
+                for line in (root / "receipts.jsonl").read_text("utf-8").splitlines()
+            ]
+            self.assertEqual(
+                ["activation", "request", "terminal"],
+                [record["event"] for record in records],
+            )
+            self.assertEqual("MP405", records[-1]["outcome_code"])
+
     def test_late_transport_failure_keeps_the_cancellation_winner(self):
         with tempfile.TemporaryDirectory() as directory:
             entered = threading.Event()

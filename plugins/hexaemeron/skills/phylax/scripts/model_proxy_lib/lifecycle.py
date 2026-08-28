@@ -34,6 +34,7 @@ from .transport import HTTPSConnector, HTTPSRequest, HTTPSResponse
 LIFECYCLE_MANIFEST_SCHEMA = "model-proxy-lifecycle-cases/v1"
 MAX_LIFECYCLE_MANIFEST_BYTES = 128 * 1024
 NANOSECONDS_PER_SECOND = 1_000_000_000
+PROVIDER_TURN_POLL_SECONDS = 0.05
 
 _CASE_ID = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?\Z")
 _OUTCOME_CODE = re.compile(r"MP[0-9]{3}\Z")
@@ -809,11 +810,13 @@ class ModelProxyRuntime:
     def _await_provider_turn(self, reservation: Reservation) -> None:
         with self._provider_turn_condition:
             while reservation.sequence in self._pending_provider_turns:
-                if self._controller.terminal is not None:
+                if self._controller.poll() is not None:
                     return
                 if reservation.sequence == self._next_provider_turn:
                     return
-                self._provider_turn_condition.wait()
+                self._provider_turn_condition.wait(
+                    timeout=PROVIDER_TURN_POLL_SECONDS
+                )
             refuse("MP401", "lifecycle.provider_turn")
 
     def _release_provider_turn(self, reservation: Reservation) -> None:
