@@ -13,6 +13,8 @@ inventing a state the verifier cannot reason about, and `passed` is the only one
 that needs no reason attached.
 """
 
+import unicodedata
+
 CLAIMS = "claims"
 COMMANDS = "commands"
 
@@ -75,8 +77,9 @@ def walk(value):
 
 
 def normalise_key(key):
-    """Fold a key for comparison: case, underscores and hyphens dropped."""
-    return "".join(c for c in key.lower() if c.isalnum())
+    """Compatibility-fold a key, then drop case and separators."""
+    folded = unicodedata.normalize("NFKC", key).casefold()
+    return "".join(character for character in folded if character.isalnum())
 
 
 def missing(record, required):

@@ -1092,6 +1092,40 @@ class EvidenceBoundaryTests(unittest.TestCase):
                 self.assertFalse(gate.passed, gate.detail)
                 self.assertIn(key, gate.detail)
 
+    def test_core_gates_refuse_compatibility_and_validation_spellings(self):
+        for number, key in (
+            (4, "\uff53\uff43\uff4f\uff52\uff45"),
+            (4, "\u017fcore"),
+            (7, "\uff56\uff45\uff52\uff49\uff46\uff49\uff45\uff44"),
+            (7, "\u017figneridentity"),
+            (7, "signaturevalidationstatus"),
+            (7, "isverified"),
+        ):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {"nested": {key: "structured claim"}}
+            with self.subTest(gate=number, key=key):
+                routed = report(body, outer)
+                gate = next(found for found in routed.gates if found.number == number)
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertFalse(routed.ok)
+
+    def test_core_gates_preserve_neutral_process_and_identity_metadata(self):
+        for number, key in (
+            (4, "score_method_status"),
+            (4, "approval_workflow_status"),
+            (7, "identity_verification_method"),
+            (7, "identity_attestation_format"),
+        ):
+            body = predicate()
+            outer = subjects(body)
+            outer[0]["annotations"] = {"nested": {key: "configured"}}
+            with self.subTest(gate=number, key=key):
+                routed = report(body, outer)
+                gate = next(found for found in routed.gates if found.number == number)
+                self.assertTrue(gate.passed, gate.detail)
+                self.assertTrue(routed.ok, "\n".join(routed.lines()))
+
     def test_berean_results_cannot_hide_in_open_extension_objects(self):
         body = predicate()
         body["claims"] = [

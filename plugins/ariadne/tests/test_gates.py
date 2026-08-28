@@ -1,6 +1,7 @@
 """The five core gates, one by one."""
 
 import hashlib
+import unicodedata
 import unittest
 
 from . import support  # noqa: F401  (sets sys.path)
@@ -189,6 +190,24 @@ class GateFourTests(unittest.TestCase):
                 self.assertFalse(gate.passed, gate.detail)
                 self.assertIn(key, gate.detail)
 
+    def test_compatibility_equivalent_conclusion_keys_fail(self):
+        cases = (
+            ("\uff53\uff43\uff4f\uff52\uff45", "score"),
+            ("\u017fcore", "score"),
+            (
+                "\uff53\uff45\uff43\uff55\uff52\uff49\uff54\uff59"
+                "\uff56\uff45\uff52\uff44\uff49\uff43\uff54"
+                "\uff53\uff54\uff41\uff54\uff55\uff53",
+                "securityverdictstatus",
+            ),
+        )
+        for key, folded in cases:
+            with self.subTest(key=key):
+                self.assertEqual(unicodedata.normalize("NFKC", key), folded)
+                gate = only(4, {"claims": [], "commands": [], key: "positive"})
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
     def test_neutral_status_and_conclusion_process_metadata_pass(self):
         for key in (
             "status",
@@ -199,6 +218,18 @@ class GateFourTests(unittest.TestCase):
             "underscorestatus",
         ):
             gate = only(4, {"claims": [], "commands": [], key: "recorded"})
+            with self.subTest(key=key):
+                self.assertTrue(gate.passed, gate.detail)
+
+    def test_neutral_conclusion_process_state_metadata_passes(self):
+        for key in (
+            "score_method_status",
+            "score_method_result_status",
+            "approval_workflow_status",
+            "recommendation_pipeline_status",
+            "assurance_process_state",
+        ):
+            gate = only(4, {"claims": [], "commands": [], key: "configured"})
             with self.subTest(key=key):
                 self.assertTrue(gate.passed, gate.detail)
 
@@ -331,6 +362,20 @@ class GateSevenTests(unittest.TestCase):
                 self.assertFalse(gate.passed, gate.detail)
                 self.assertIn(key, gate.detail)
 
+    def test_compatibility_and_unseparated_authorship_claims_fail(self):
+        cases = (
+            ("\uff56\uff45\uff52\uff49\uff46\uff49\uff45\uff44", "verified"),
+            ("\u017figneridentity", "signeridentity"),
+            ("signaturevalidationstatus", "signaturevalidationstatus"),
+            ("isverified", "isverified"),
+        )
+        for key, folded in cases:
+            with self.subTest(key=key):
+                self.assertEqual(unicodedata.normalize("NFKC", key), folded)
+                gate = only(7, {"claims": [], "commands": [], key: "someone"})
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
     def test_neutral_identity_and_signature_metadata_pass(self):
         for key in (
             "identity",
@@ -342,6 +387,19 @@ class GateSevenTests(unittest.TestCase):
             "authorizationstatusidentity",
         ):
             gate = only(7, {"claims": [], "commands": [], key: "recorded"})
+            with self.subTest(key=key):
+                self.assertTrue(gate.passed, gate.detail)
+
+    def test_neutral_identity_method_metadata_passes(self):
+        for key in (
+            "identity_verification_method",
+            "identity_attestation_format",
+            "signature_algorithm_identity",
+            "status_signature_algorithm",
+            "validation_status",
+            "is_status",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "did:web"})
             with self.subTest(key=key):
                 self.assertTrue(gate.passed, gate.detail)
 

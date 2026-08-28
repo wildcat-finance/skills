@@ -15,6 +15,7 @@ lines, not to stop at the first thing it disliked.
 """
 
 import re
+import unicodedata
 
 from . import core_predicate, digests
 
@@ -151,6 +152,7 @@ AUTHORSHIP_RELATION_TOKENS = frozenset(
 AUTHORSHIP_ASSERTION_TOKENS = frozenset(
     {"actor", "by", "identity", "name", "status", "valid", "validity", "verified"}
 )
+AUTHORSHIP_LINK_TOKENS = frozenset({"is", "validation"})
 KEY_TOKEN = re.compile(
     r"[A-Z]+(?=[A-Z][a-z]|[0-9]|[^A-Za-z0-9]|$)|[A-Z]?[a-z]+|[0-9]+"
 )
@@ -161,6 +163,7 @@ TOKEN_SUFFIX = 4
 TOKEN_AUTHORSHIP_DIRECT = 1
 TOKEN_AUTHORSHIP_RELATION = 2
 TOKEN_AUTHORSHIP_ASSERTION = 4
+TOKEN_AUTHORSHIP_LINK = 8
 
 
 def compile_vocabulary(*groups):
@@ -191,6 +194,7 @@ AUTHORSHIP_VOCABULARY = compile_vocabulary(
     (TOKEN_AUTHORSHIP_DIRECT, AUTHORSHIP_DIRECT_TOKENS),
     (TOKEN_AUTHORSHIP_RELATION, AUTHORSHIP_RELATION_TOKENS),
     (TOKEN_AUTHORSHIP_ASSERTION, AUTHORSHIP_ASSERTION_TOKENS),
+    (TOKEN_AUTHORSHIP_LINK, AUTHORSHIP_LINK_TOKENS),
 )
 
 
@@ -260,7 +264,41 @@ def key_tokens(key):
     """ASCII identifier words without confusing a substring for a claim."""
     if not isinstance(key, str):
         return ()
+    key = unicodedata.normalize("NFKC", key)
     return tuple(found.group(0).lower() for found in KEY_TOKEN.finditer(key))
+
+
+def tokenised_conclusion(tokens):
+    """A conclusion at the semantic end of a separated identifier."""
+    if not tokens:
+        return False
+    index = len(tokens) - 1
+    if tokens[index] in CONCLUSION_KEYS:
+        return True
+    if tokens[index] not in CONCLUSION_COMPOUND_SUFFIXES:
+        return False
+    while index >= 0 and tokens[index] in CONCLUSION_COMPOUND_SUFFIXES:
+        index -= 1
+    return index >= 0 and tokens[index] in CONCLUSION_KEYS
+
+
+def tokenised_authorship(tokens):
+    """An ordered separated authorship or verification assertion."""
+    relation = False
+    for token in tokens:
+        if token in AUTHORSHIP_DIRECT_TOKENS:
+            return True
+        if token in AUTHORSHIP_RELATION_TOKENS:
+            relation = True
+            continue
+        if token in AUTHORSHIP_LINK_TOKENS:
+            continue
+        if token in AUTHORSHIP_ASSERTION_TOKENS:
+            if relation:
+                return True
+            continue
+        relation = False
+    return False
 
 
 def conclusion_key(key):
@@ -274,14 +312,7 @@ def conclusion_key(key):
         for candidate in (normal, letters)
     ):
         return True
-    tokens = key_tokens(key)
-    if tokens and tokens[-1] in CONCLUSION_KEYS:
-        return True
-    return bool(
-        tokens
-        and tokens[-1] in CONCLUSION_COMPOUND_SUFFIXES
-        and any(token in CONCLUSION_KEYS for token in tokens[:-1])
-    )
+    return tokenised_conclusion(key_tokens(key))
 
 
 def authorship_key(key):
@@ -294,13 +325,7 @@ def authorship_key(key):
         for candidate in (normal, letters)
     ):
         return True
-    tokens = frozenset(key_tokens(key))
-    if tokens & AUTHORSHIP_DIRECT_TOKENS:
-        return True
-    return bool(
-        tokens & AUTHORSHIP_RELATION_TOKENS
-        and tokens & AUTHORSHIP_ASSERTION_TOKENS
-    )
+    return tokenised_authorship(key_tokens(key))
 
 
 def scanned(statement):

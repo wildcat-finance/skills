@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11108934,
+  "total_bytes": 11109857,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -649,9 +649,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/tree.py"
     },
     {
-      "bytes": 4181,
+      "bytes": 4270,
       "path": "plugins/ariadne/scripts/ariadne_lib/core_predicate.py",
-      "sha256": "f53891fdd6f9dc629916ecd738812db5f83d2733afe8b0896179fe7577a97ff9",
+      "sha256": "830bfdef5105adbd1eeb28453ef4d56e273efbc8590d77d6f43f68a54ffabf92",
       "source": "plugins/ariadne/scripts/ariadne_lib/core_predicate.py"
     },
     {
@@ -673,9 +673,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/envelope.py"
     },
     {
-      "bytes": 23089,
+      "bytes": 23923,
       "path": "plugins/ariadne/scripts/ariadne_lib/gates.py",
-      "sha256": "2b414458a3c7342d46517e5e57f6f861ed1c67864bab27bf1a59a177979f1768",
+      "sha256": "1ae5873232da3255380f30ddb8fa012e66a9397714c0e3d360515b7f6c5113c1",
       "source": "plugins/ariadne/scripts/ariadne_lib/gates.py"
     },
     {
