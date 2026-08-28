@@ -1096,6 +1096,65 @@ def compiler_block(args, version: str) -> dict:
                         "recorded but nothing was checked against it")
 
 
+def _same_file(left: pathlib.Path, right: pathlib.Path) -> bool:
+    """Whether two paths name one file, by inode wherever that can be known.
+
+    resolve() settles a relative spelling, a `.` or `..` segment and every
+    symlink, in either direction. It cannot settle a hard link, which is a
+    second name for one inode and resolves to itself, so a corpus reachable
+    under two names would be written and then overwritten by its own record.
+    Where both names exist the inode answers; where one does not there is
+    nothing to stat, and the path is the honest bound.
+    """
+    if left.resolve() == right.resolve():
+        return True
+    try:
+        return left.samefile(right)
+    except OSError:
+        return False
+
+
+def _records_beside(directory: pathlib.Path,
+                    keep: tuple[pathlib.Path, ...]) -> list[pathlib.Path]:
+    """Provenance records already in the corpus's directory, less `keep`.
+
+    A record left in the directory of a corpus it does not describe is the
+    failure this refusal exists to prevent, and the name it carries makes no
+    difference to a reader who finds it there. Guarding only the default name
+    would leave that failure one --provenance away.
+
+    Bounded on purpose: regular files with a .jsonl suffix, their first line,
+    and its first 4096 bytes. The record is one line of line-delimited JSON
+    carrying a known schema string, so that is enough to recognise one and
+    cheap enough to do before every delivery. A record redirected to some
+    other suffix is outside this bound and is not looked for.
+    """
+    try:
+        entries = sorted(directory.iterdir())
+    except OSError:
+        return []
+    spared = []
+    for path in keep:
+        try:
+            spared.append(path.resolve())
+        except OSError:
+            pass
+    found = []
+    for entry in entries:
+        if entry.suffix != ".jsonl" or entry.resolve() in spared:
+            continue
+        try:
+            if not entry.is_file():
+                continue
+            with open(entry, "rb") as handle:
+                head = handle.readline(4096)
+            if json.loads(head).get("schema") == _schema.PROVENANCE_SCHEMA:
+                found.append(entry)
+        except (OSError, ValueError):
+            continue
+    return found
+
+
 def record_path(args) -> str:
     """Where the record goes, settled before anything reaches disk.
 
@@ -1117,18 +1176,21 @@ def record_path(args) -> str:
     and only recomputing the digest reveals it, which is the work the record
     exists to save.
     """
-    default = pathlib.Path(args.out).parent / PROVENANCE_FILENAME
+    out = pathlib.Path(args.out)
+    default = out.parent / PROVENANCE_FILENAME
     chosen = pathlib.Path(args.provenance) if args.provenance else default
-    if chosen.resolve() == pathlib.Path(args.out).resolve():
+    if _same_file(chosen, out):
         raise ChunkError(
             f"--provenance {chosen} is the file --out names; the record would "
             "be written over the corpus it describes, leaving a chunk count "
             "for chunks nobody could read")
-    if chosen.resolve() != default.resolve() and default.exists():
+    stale = _records_beside(out.parent, keep=(chosen, out))
+    if stale:
         raise ChunkError(
-            f"{default} already exists and this run writes its record to "
-            f"{chosen}, so that older record would be left beside a corpus it "
-            "does not describe; remove it, or let this record go to it")
+            f"{stale[0]} already describes a corpus in {out.parent} and this "
+            f"run writes its record to {chosen}, so the older record would be "
+            "left beside chunks it does not describe; remove it, or let this "
+            "record go to it")
     return str(chosen)
 
 

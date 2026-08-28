@@ -248,8 +248,8 @@ commit. A change that moves them unexpectedly is what the corpus is for.
 
 The `S*` and `M*` identifiers above number the *invariants* in this document.
 They are not the same scheme as the case identifiers the test suites print:
-`test_solidity.py` prints `I4` through `I32`; `test_markdown.py` prints `M1`
-through `M25`.
+`test_solidity.py` prints `I4` through `I33`; `test_markdown.py` prints `M1`
+through `M27`.
 The Markdown prefix collides by accident. An invariant is usually covered by
 several cases rather than one, so do not read `M3` here as `M3` there.
 

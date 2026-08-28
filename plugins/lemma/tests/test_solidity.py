@@ -19,6 +19,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import pathlib
 import re
 import subprocess
@@ -1248,6 +1249,58 @@ def test_provenance_refusal(tmp: pathlib.Path) -> None:
           str(sorted(p.name for p in bare_dir.iterdir())))
 
 
+def test_provenance_paths(tmp: pathlib.Path) -> None:
+    print("\nI33 \u2014 the record's path is settled before the corpus is written")
+    # record_path() is where both refusals live and it needs no compiler, so
+    # this drives solidity.py's own copy rather than trusting markdown.py's.
+    class _Args:
+        def __init__(self, out, provenance=None):
+            self.out, self.provenance = str(out), (
+                str(provenance) if provenance else None)
+
+    clean = tmp / "clean"
+    clean.mkdir()
+    corpus = clean / "chunks.jsonl"
+    check("a clean directory settles on the default path",
+          cs.record_path(_Args(corpus)) == str(clean / "provenance.jsonl"),
+          cs.record_path(_Args(corpus)))
+
+    for label, spelling in (("same spelling", corpus),
+                            ("a dot segment", clean / "." / "chunks.jsonl")):
+        try:
+            cs.record_path(_Args(corpus, spelling))
+            check(f"--provenance over --out is refused ({label})", False, "accepted")
+        except cs.ChunkError as e:
+            check(f"--provenance over --out is refused ({label})",
+                  "--provenance" in str(e), str(e)[:120])
+
+    corpus.write_text("{}\n", encoding="utf-8")
+    hard = clean / "hard.jsonl"
+    os.link(corpus, hard)
+    try:
+        cs.record_path(_Args(corpus, hard))
+        check("a hard link to --out is refused like --out itself", False, "accepted")
+    except cs.ChunkError as e:
+        check("a hard link to --out is refused like --out itself",
+              "--provenance" in str(e), str(e)[:120])
+
+    aside = tmp / "aside"
+    aside.mkdir()
+    (aside / "chunks.jsonl").write_text("{}\n", encoding="utf-8")
+    (aside / "first.jsonl").write_text(
+        json.dumps({"schema": sys.modules["lemma_schema"].PROVENANCE_SCHEMA})
+        + "\n", encoding="utf-8")
+    try:
+        cs.record_path(_Args(aside / "chunks.jsonl", aside / "second.jsonl"))
+        check("a stale record is refused whatever name it carries", False, "accepted")
+    except cs.ChunkError as e:
+        check("a stale record is refused whatever name it carries",
+              "first.jsonl" in str(e), str(e)[:160])
+    check("letting the record go to the stale one is allowed",
+          cs.record_path(_Args(aside / "chunks.jsonl", aside / "first.jsonl"))
+          == str(aside / "first.jsonl"), "refused")
+
+
 def test_provenance_emitted(solc: str, tmp: pathlib.Path) -> None:
     print("\nI32 — a delivered corpus carries the record of what produced it")
     schema = sys.modules["lemma_schema"]
@@ -1378,6 +1431,7 @@ def main() -> int:
     test_provenance_record()
     with tempfile.TemporaryDirectory() as td:
         test_provenance_refusal(pathlib.Path(td))
+        test_provenance_paths(pathlib.Path(td))
     if args.solc:
         with tempfile.TemporaryDirectory() as td:
             test_merge_semantics(args.solc, pathlib.Path(td))

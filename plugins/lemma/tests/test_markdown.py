@@ -1075,12 +1075,93 @@ def test_provenance_emitted(tmp: pathlib.Path) -> None:
                                    "--provenance", str(tmp / "away.jsonl")],
                        capture_output=True, text=True)
     check("a redirected record beside an existing one is refused",
-          r.returncode != 0 and "already exists" in r.stderr, r.stderr[-200:])
+          r.returncode != 0 and "already describes a corpus" in r.stderr
+          and "provenance.jsonl" in r.stderr, r.stderr[-200:])
     kept = [json.loads(line) for line
             in (stale / "chunks.jsonl").read_text(encoding="utf-8").splitlines()]
     check("the refusal lands before the described corpus is overwritten",
           _rebuilt_id(kept) == json.loads(before).get("corpus_build_id"),
           f"{_rebuilt_id(kept)} vs {json.loads(before).get('corpus_build_id')}")
+
+    # A hard link is a second name for one inode, so it resolves to itself and
+    # the path comparison alone lets the record land on the corpus.
+    linked = tmp / "linked"
+    linked.mkdir()
+    subprocess.run(common + ["--source-ref", ref, "--out",
+                             str(linked / "chunks.jsonl"),
+                             "--provenance", str(tmp / "aside.jsonl")],
+                   capture_output=True, text=True)
+    os.link(linked / "chunks.jsonl", linked / "hard.jsonl")
+    r = subprocess.run(common + ["--source-ref", ref, "--out",
+                                 str(linked / "chunks.jsonl"),
+                                 "--provenance", str(linked / "hard.jsonl")],
+                       capture_output=True, text=True)
+    check("a hard link to --out is refused like --out itself",
+          r.returncode != 0 and "--provenance" in r.stderr, r.stderr[-200:])
+    check("the hard-linked corpus is still a corpus",
+          len((linked / "chunks.jsonl").read_text(encoding="utf-8")
+              .splitlines()) > 1,
+          str((linked / "chunks.jsonl").read_text(encoding="utf-8")[:80]))
+
+    # The name a stale record carries makes no difference to a reader who
+    # finds it beside a corpus it does not describe.
+    renamed = tmp / "renamed"
+    renamed.mkdir()
+    subprocess.run(common + ["--source-ref", ref, "--out",
+                             str(renamed / "chunks.jsonl"),
+                             "--provenance", str(renamed / "first.jsonl")],
+                   capture_output=True, text=True)
+    r = subprocess.run(narrowed + ["--source-ref", ref + "-again", "--out",
+                                   str(renamed / "chunks.jsonl"),
+                                   "--provenance", str(renamed / "second.jsonl")],
+                       capture_output=True, text=True)
+    check("a stale record is refused whatever name it carries",
+          r.returncode != 0 and "first.jsonl" in r.stderr, r.stderr[-200:])
+    check("no second record joined the first",
+          not (renamed / "second.jsonl").exists(),
+          str(sorted(p.name for p in renamed.iterdir())))
+
+
+def test_recorded_case_range_is_current() -> None:
+    print("\nM27 \u2014 the recorded case range is the one the suites print")
+    # Hand-maintained prose about generated numbers goes stale the next time
+    # anyone adds a case, which is how it went stale twice running. Read both
+    # sides instead: the highest header each suite declares, against the
+    # bounds INVARIANTS.md records. Adding a case now moves the note or fails
+    # here, and never ships a range that disagrees with the suite.
+    import re as _re
+    note = (ROOT / "INVARIANTS.md").read_text(encoding="utf-8")
+    for suite, letter in (("test_solidity.py", "I"), ("test_markdown.py", "M")):
+        source = (HERE / suite).read_text(encoding="utf-8")
+        printed = [int(n) for n in
+                   _re.findall(rf'print\("\\n{letter}([0-9]+) ', source)]
+        recorded = _re.search(
+            rf"`{suite}` prints `{letter}[0-9]+`\s*\n?\s*through `{letter}([0-9]+)`",
+            note)
+        check(f"INVARIANTS.md records {suite}'s highest case",
+              bool(printed) and recorded is not None
+              and int(recorded.group(1)) == max(printed),
+              f"recorded {recorded.group(1) if recorded else 'nothing'} "
+              f"vs printed {max(printed) if printed else 'nothing'}")
+
+
+def test_chunkers_share_one_provenance_mechanism() -> None:
+    print("\nM26 \u2014 both chunkers carry the same provenance machinery")
+    # Every refusal above is driven through markdown.py, and solidity.py holds
+    # its own copy of the same functions. Comparing the text is what says the
+    # drive covers both: a divergence here is a refusal that exists in one
+    # chunker and not the other, and nothing else would report it.
+    import re as _re
+    shared = ("skill_version", "corpus_build_id", "_same_file",
+              "_records_beside", "record_path")
+    source = {name: (ROOT / "chunkers" / f"{name}.py").read_text(encoding="utf-8")
+              for name in ("markdown", "solidity")}
+    for fn in shared:
+        cut = [_re.search(rf"^def {fn}\(.*?(?=^\n\n|^# ---|\Z)",
+                          source[name], _re.S | _re.M) for name in ("markdown", "solidity")]
+        check(f"{fn}() is the same in both chunkers",
+              all(cut) and cut[0].group(0) == cut[1].group(0),
+              "missing" if not all(cut) else "the two copies have diverged")
 
 
 def main() -> int:
@@ -1119,6 +1200,8 @@ def main() -> int:
     test_lazy_list_continuation()
     test_multiline_code_span()
     test_strong_section_boundaries()
+    test_chunkers_share_one_provenance_mechanism()
+    test_recorded_case_range_is_current()
     with tempfile.TemporaryDirectory() as td:
         test_provenance_emitted(pathlib.Path(td))
     print(f"\n{len(FAILURES)} failure(s)" + (": " + ", ".join(FAILURES) if FAILURES else ""))
