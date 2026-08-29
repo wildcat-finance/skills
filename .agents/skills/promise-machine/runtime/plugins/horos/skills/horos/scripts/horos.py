@@ -896,6 +896,33 @@ def load_boundary(root):
         return json.load(handle)
 
 
+def json_equal(left, right):
+    """Compare JSON values recursively without Python's numeric type aliases."""
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict):
+        if len(left) != len(right):
+            return False
+        unmatched = list(right.items())
+        for left_key, left_value in left.items():
+            for index, (right_key, right_value) in enumerate(unmatched):
+                if not json_equal(left_key, right_key):
+                    continue
+                if not json_equal(left_value, right_value):
+                    return False
+                unmatched.pop(index)
+                break
+            else:
+                return False
+        return not unmatched
+    if isinstance(left, list):
+        return len(left) == len(right) and all(
+            json_equal(left_item, right_item)
+            for left_item, right_item in zip(left, right)
+        )
+    return left == right
+
+
 def diff_documents(committed, fresh):
     """Name every drifted path; a symmetric compare, so a committed entry the
     tree no longer evidences drifts exactly like a new sink the boundary lacks.
@@ -908,7 +935,7 @@ def diff_documents(committed, fresh):
             drifted.append((path, "in the boundary but no longer evidenced by the tree"))
         elif path not in old:
             drifted.append((path, "evidenced by the tree but missing from the boundary"))
-        elif old[path] != new[path]:
+        elif not json_equal(old[path], new[path]):
             drifted.append((path, "entry changed: %s -> %s" % (old[path], new[path])))
     return drifted
 
@@ -925,7 +952,7 @@ def diff_boundary_documents(committed, fresh):
     for field in ("schema", "tool", "universe", "counts"):
         old = committed.get(field)
         new = fresh.get(field)
-        if old != new:
+        if not json_equal(old, new):
             drifted.append(
                 (
                     "%s#%s" % (BOUNDARY_RELPATH, field),
@@ -933,7 +960,7 @@ def diff_boundary_documents(committed, fresh):
                 )
             )
     entry_drift = diff_documents(committed, fresh)
-    if committed.get("entries") != fresh.get("entries"):
+    if not json_equal(committed.get("entries"), fresh.get("entries")):
         if entry_drift:
             drifted.extend(entry_drift)
         else:

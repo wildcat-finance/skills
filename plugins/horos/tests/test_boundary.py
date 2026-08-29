@@ -123,6 +123,35 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("drift: .horos/boundary.json#counts", output)
 
+    def test_root_metadata_float_drift_fails_the_check(self):
+        document = self.document()
+        self.assertIs(type(document["schema"]), int)
+        document["schema"] = 2.0
+        horos.write_boundary(self.root, document)
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: .horos/boundary.json#schema", output)
+
+    def test_nested_count_boolean_drift_fails_the_check(self):
+        document = self.document()
+        self.assertIs(type(document["counts"]["files_skipped_unreadable"]), int)
+        document["counts"]["files_skipped_unreadable"] = False
+        horos.write_boundary(self.root, document)
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: .horos/boundary.json#counts", output)
+
+    def test_entry_numeric_type_drift_fails_by_path(self):
+        document = self.document()
+        entry = next(item for item in document["entries"] if item["path"] == "yarn.lock")
+        self.assertEqual(entry["bytes"], 5)
+        self.assertIs(type(entry["bytes"]), int)
+        entry["bytes"] = 5.0
+        horos.write_boundary(self.root, document)
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: yarn.lock: entry changed", output)
+
     def test_a_missing_boundary_is_a_distinct_failure(self):
         code, output = self.check()
         self.assertEqual(code, 2)
