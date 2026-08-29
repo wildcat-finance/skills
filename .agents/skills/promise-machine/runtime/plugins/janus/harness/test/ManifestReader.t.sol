@@ -41,6 +41,20 @@ contract OmniResolver is AccountResolver {
   }
 }
 
+/// @dev A stub adapter that knows `USDC` at a live address and answers for
+///      `USDC.e` with `(true, address(0))` -- the one answer shape the round 3
+///      ambiguity guard read as an absence. It is not a contrived shape: it is
+///      what `ZeroResolver` here and `ghost` in the fuzz suite both model, and
+///      the reader raises `SymbolResolvesToZero` for it everywhere else.
+contract KnowsTheWholeNameAsZero is AccountResolver {
+  function resolveAccount(string calldata n) external pure returns (bool, address) {
+    if (keccak256(bytes(n)) == keccak256("USDC.e")) return (true, address(0));
+    if (keccak256(bytes(n)) == keccak256("USDC")) return (true, address(0xC0));
+    if (keccak256(bytes(n)) == keccak256("hook")) return (true, address(0xA1));
+    return (false, address(0));
+  }
+}
+
 /// @dev The manifest reader's contract: thresholds are selected by action
 ///      name, the symbol grammar is the text before the first `.`, staticcall
 ///      entries admit nothing state-changing, and everything unresolvable
@@ -577,6 +591,81 @@ contract ManifestReaderTest is JanusBase {
     assertEq(t.allowedCallTargets.length, 1, "a name with a space in it is still a name");
     assertEq(t.allowedCallTargets[0], omni.ANY(), "and the adapter decides it");
   }
+
+  // -- Guards added by the step 2 round 4 audit ----------------------------
+
+  /// @dev S2-R4-01. The round 3 guard asked `whole && wholeAddr != address(0)`,
+  ///      so an adapter answering `(true, address(0))` for the whole written
+  ///      name was read as knowing no such name and the reader split the
+  ///      string anyway. That is the whole of S2-R3-01 surviving in the one
+  ///      corner the guard did not cover: the permit bound to `USDC`, an
+  ///      account this manifest does not name.
+  function test_a_dotted_call_target_known_whole_at_zero_is_still_ambiguous() external {
+    KnowsTheWholeNameAsZero r = new KnowsTheWholeNameAsZero();
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.AmbiguousAccountSymbol.selector, "USDC.e")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"USDC.e","kind":"call"}]}]}',
+      "deposit",
+      r
+    );
+  }
+
+  /// @dev S2-R4-01, the external-slot path, which splits for the same reason.
+  function test_a_dotted_external_slot_known_whole_at_zero_is_still_ambiguous() external {
+    KnowsTheWholeNameAsZero r = new KnowsTheWholeNameAsZero();
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.AmbiguousAccountSymbol.selector, "USDC.e")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedCalls":[],"permittedValueMovements":[],'
+      '"permittedStorageWrites":[{"scope":"external","slot":"USDC.e"}]}]}',
+      "deposit",
+      r
+    );
+  }
+
+  /// @dev S2-R4-01, stated as the property rather than as three cases: one
+  ///      string through one resolver must not resolve to two different
+  ///      accounts depending on which path carries it. Before the fix the
+  ///      value path refused this manifest and the other two returned 0xC0.
+  ///      Both refusals are named, and neither is the silent substitution.
+  function test_one_string_one_resolver_never_yields_two_accounts() external {
+    KnowsTheWholeNameAsZero r = new KnowsTheWholeNameAsZero();
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.SymbolResolvesToZero.selector, "USDC.e")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedCalls":[],'
+      '"permittedValueMovements":[{"asset":"USDC.e","recipient":"hook"}]}]}',
+      "deposit",
+      r
+    );
+  }
+
+  /// @dev The prefix is resolved before the ambiguity question is asked, so a
+  ///      prefix the adapter refuses reports its own refusal rather than being
+  ///      masked by a second reading. `ZeroResolver` answers for every name,
+  ///      including the whole dotted one, so under the reversed order this
+  ///      would report AmbiguousAccountSymbol instead.
+  function test_a_broken_prefix_reports_its_own_refusal_not_ambiguity() external {
+    ZeroResolver zero = new ZeroResolver();
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.SymbolResolvesToZero.selector, "roleProvider")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"roleProvider.getCredential","kind":"call"}]}]}',
+      "deposit",
+      zero
+    );
+  }
 }
 
 /// @dev The invariant fuzz suite in `adapters/ManifestFuzz.sol` is written for
@@ -585,7 +674,7 @@ contract ManifestReaderTest is JanusBase {
 ///      reverts with empty return data before the reader resolves anything, so
 ///      GL01 to GL09 hold without being tested and only GL00 fails. Foundry's
 ///      invariant engine does carry those cheatcodes, so this contract drives
-///      the same generator and asserts all ten properties where they can fail.
+///      the same generator and asserts all eleven properties where they can fail.
 ///
 ///      Importing the suite here has a second effect worth stating: the suite
 ///      lives outside `src` and `test`, so `forge test` did not compile it and
@@ -593,7 +682,7 @@ contract ManifestReaderTest is JanusBase {
 ///      that.
 /// @dev A derived generator that can set each ghost flag directly.
 ///
-///      The ten property functions are the suite's engine-facing surface, and
+///      The eleven property functions are the suite's engine-facing surface, and
 ///      nothing could catch a mistake inside one of them: under Foundry they
 ///      were not called at all, and under Echidna and Medusa they are called
 ///      but hold vacuously. Asserting through them fixes half of that -- an
@@ -611,6 +700,7 @@ contract ManifestFuzzGhostProbe is ManifestFuzz {
   function forceBlankSymbolAccepted() external { sawBlankSymbolAccepted = true; }
   function forceDuplicateActionAccepted() external { sawDuplicateActionAccepted = true; }
   function forceWrongAddress() external { sawWrongAddress = true; }
+  function forceAmbiguousAccepted() external { sawAmbiguousAccepted = true; }
 }
 
 /// @dev Each of GL01 to GL09 is shown to report its own ghost and no other:
@@ -634,6 +724,7 @@ contract ManifestFuzzPropertyTest is JanusBase {
     if (!fuzz.echidna_GL07_blank_symbol_fails_closed()) bits |= 1 << 7;
     if (!fuzz.echidna_GL08_duplicate_action_fails_closed()) bits |= 1 << 8;
     if (!fuzz.echidna_GL09_every_entry_resolved_to_its_own_name()) bits |= 1 << 9;
+    if (!fuzz.echidna_GL10_ambiguous_name_fails_closed()) bits |= 1 << 10;
   }
 
   function test_every_property_holds_before_any_ghost_is_set() external view {
@@ -685,6 +776,11 @@ contract ManifestFuzzPropertyTest is JanusBase {
     fuzz.forceWrongAddress();
     assertEq(_live(), 1 << 9, "only GL09");
   }
+
+  function test_gl10_reports_an_accepted_ambiguous_name_and_nothing_else() external {
+    fuzz.forceAmbiguousAccepted();
+    assertEq(_live(), 1 << 10, "only GL10");
+  }
 }
 
 contract ManifestFuzzInvariantTest is JanusBase {
@@ -722,6 +818,7 @@ contract ManifestFuzzInvariantTest is JanusBase {
     assertTrue(fuzz.echidna_GL07_blank_symbol_fails_closed(), "GL07: a manifest carrying a blank account symbol never resolves");
     assertTrue(fuzz.echidna_GL08_duplicate_action_fails_closed(), "GL08: a manifest naming one action twice never resolves");
     assertTrue(fuzz.echidna_GL09_every_entry_resolved_to_its_own_name(), "GL09: every entry resolved to the address its own name holds");
+    assertTrue(fuzz.echidna_GL10_ambiguous_name_fails_closed(), "GL10: a manifest carrying a name with two readings never resolves");
   }
 
   /// @dev And the getters behind them, so a property function that ignored its
@@ -736,6 +833,7 @@ contract ManifestFuzzInvariantTest is JanusBase {
     assertEq(fuzz.echidna_GL07_blank_symbol_fails_closed(), !fuzz.sawBlankSymbolAccepted(), "GL07 reads its own ghost");
     assertEq(fuzz.echidna_GL08_duplicate_action_fails_closed(), !fuzz.sawDuplicateActionAccepted(), "GL08 reads its own ghost");
     assertEq(fuzz.echidna_GL09_every_entry_resolved_to_its_own_name(), !fuzz.sawWrongAddress(), "GL09 reads its own ghost");
+    assertEq(fuzz.echidna_GL10_ambiguous_name_fails_closed(), !fuzz.sawAmbiguousAccepted(), "GL10 reads its own ghost");
   }
 
   /// @dev The anti-vacuity guard, deterministic rather than sampled: the nine

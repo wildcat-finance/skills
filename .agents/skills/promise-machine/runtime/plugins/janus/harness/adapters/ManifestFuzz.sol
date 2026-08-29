@@ -45,6 +45,12 @@ contract FuzzResolver is AccountResolver {
     // difference -- GL06 would test the zero-address guard twice and the
     // unresolvable-name guard never.
     if (keccak256(bytes(n)) == keccak256("phantom")) return (false, address(0xA9));
+    // A dotted name the adapter answers for at the zero address, whose prefix
+    // `host` is live. Without it the campaign can only see the ambiguity guard
+    // deleted, never the guard drawn too narrowly: round 3 asked
+    // `ok && addr != 0`, which refuses `asset.e` below and admits this one, so
+    // `asset.e` alone left S2-R4-01 invisible here.
+    if (keccak256(bytes(n)) == keccak256("host.shadow")) return (true, address(0));
     address a = t[keccak256(bytes(n))];
     return (a != address(0), a);
   }
@@ -66,6 +72,7 @@ contract ManifestFuzz {
   bool public sawDuplicateActionAccepted;
   bool public sawBlankSymbolAccepted;
   bool public sawWrongAddress;
+  bool public sawAmbiguousAccepted;
 
   uint256 internal _expectedCalls;
   uint256 internal _expectedDelegates;
@@ -73,6 +80,7 @@ contract ManifestFuzz {
   bool internal _anyBogus;
   bool internal _duplicateAction;
   bool internal _anyBlankSymbol;
+  bool internal _anyAmbiguous;
 
   // The address each entry must resolve to, in the order the reader emits it.
   // Cardinality alone cannot tell a correct set from a set of the right size
@@ -124,6 +132,24 @@ contract ManifestFuzz {
   function _symBlank(uint8 i) internal pure returns (bool) { uint8 k = i % 10; return k == 6 || k == 7; }
   function _symZero(uint8 i) internal pure returns (bool) { return (i % 10) == 8; }
 
+  /// @dev For the two symbol choices that have one, the dotted name the
+  ///      resolver holds whole as well as by prefix -- the manifest with two
+  ///      readings the reader must refuse. Empty for every other choice.
+  ///
+  ///      Two of them, because the guard has two ways to be wrong and one
+  ///      name cannot show both. `asset.e` answers `(true, 0xA8)` and dies
+  ///      when the guard is deleted; `host.shadow` answers `(true, address(0))`
+  ///      and dies when the guard asks for a non-zero address as well, which
+  ///      is S2-R4-01. Both split to a live prefix -- 0xA3 and 0xA2 -- and
+  ///      that prefix is what the generator's own expectation holds, so a
+  ///      reader that splits them agrees with GL09 and only GL10 sees it.
+  function _ambiguousName(uint8 i) internal pure returns (string memory) {
+    uint8 k = i % 10;
+    if (k == 1) return "host.shadow";
+    if (k == 2) return "asset.e";
+    return "";
+  }
+
   function _kind(uint8 i) internal pure returns (string memory) {
     uint8 k = i % 4;
     if (k == 0) return "call";
@@ -161,7 +187,21 @@ contract ManifestFuzz {
       if (valid) { s = s % 5; k = k % 3; }
       // A dotted suffix on a blank symbol yields a leading dot, the
       // malformed-grammar case the reader must refuse itself.
-      string memory target = dots ? string.concat(_sym(s), ".someFunction") : _sym(s);
+      //
+      // And, on invalid draws only, a dotted name the resolver holds whole:
+      // `asset.e` is `asset` plus a dot plus a suffix by the grammar, and a
+      // name in its own right to the resolver, so the manifest has two
+      // readings and the reader must refuse it. Every other symbol choice
+      // yields `<name>.someFunction`, which no adapter holds, so before this
+      // the ambiguity refusal was structurally unreachable from the campaign
+      // and deleting it left all ten properties green. Invalid draws only,
+      // because a valid draw is one the reader is obliged to resolve and
+      // GL00 counts on that staying true.
+      string memory target;
+      string memory ambiguous = _ambiguousName(s);
+      if (!dots) target = _sym(s);
+      else if (!valid && bytes(ambiguous).length != 0) { target = ambiguous; _anyAmbiguous = true; }
+      else target = string.concat(_sym(s), ".someFunction");
       out = string.concat(out, i == 0 ? "" : ",", '{"target":"', target, '","kind":"', _kind(k), '"}');
       if (_symBlank(s)) _anyBlankSymbol = true;
       else if (_symZero(s) || !_symKnown(s)) _anyUnresolvable = true;
@@ -180,7 +220,15 @@ contract ManifestFuzz {
       uint8 s = uint8(uint256(keccak256(abi.encode(symSeed, i, "w"))));
       uint8 sc = uint8(uint256(keccak256(abi.encode(scopeSeed, i, "w"))));
       if (valid) { s = s % 5; sc = sc % 3; }
-      string memory slot = dots ? string.concat(_sym(s), ".field[key]") : _sym(s);
+      // The external-slot path splits at the dot exactly as a call target
+      // does, so it carries the same ambiguous name for the same reason.
+      string memory slot;
+      string memory ambiguous = _ambiguousName(s);
+      if (!dots) slot = _sym(s);
+      else if (!valid && bytes(ambiguous).length != 0 && (sc % 4) == 2) {
+        slot = ambiguous;
+        _anyAmbiguous = true;
+      } else slot = string.concat(_sym(s), ".field[key]");
       out = string.concat(out, i == 0 ? "" : ",", '{"scope":"', _scope(sc), '","slot":"', slot, '"}');
       if ((sc % 4) == 3) {
         _anyBogus = true;
@@ -249,6 +297,7 @@ contract ManifestFuzz {
 
     _expectedCalls = 0; _expectedDelegates = 0;
     _anyUnresolvable = false; _anyBogus = false; _anyBlankSymbol = false;
+    _anyAmbiguous = false;
     _duplicateAction = duplicate;
     delete _expCall; delete _expDelegate; delete _expWrite;
     delete _expAsset; delete _expRecipient;
@@ -293,6 +342,7 @@ contract ManifestFuzz {
   {
     if (_anyUnresolvable || _anyBogus) sawUnresolvableAccepted = true;
     if (_anyBlankSymbol) sawBlankSymbolAccepted = true;
+    if (_anyAmbiguous) sawAmbiguousAccepted = true;
     if (_duplicateAction) sawDuplicateActionAccepted = true;
 
     // Length checks first. The value loops below read both value arrays at one
@@ -378,4 +428,11 @@ contract ManifestFuzz {
   function echidna_GL07_blank_symbol_fails_closed() public view returns (bool) { return !sawBlankSymbolAccepted; }
   function echidna_GL08_duplicate_action_fails_closed() public view returns (bool) { return !sawDuplicateActionAccepted; }
   function echidna_GL09_every_entry_resolved_to_its_own_name() public view returns (bool) { return !sawWrongAddress; }
+
+  /// @dev GL09 cannot stand in for this one. A reader with the ambiguity
+  ///      refusal deleted splits `asset.e` at the dot and resolves `asset`,
+  ///      which is the address the generator's own expectation holds for that
+  ///      symbol choice, so the two agree and GL09 stays green on exactly the
+  ///      mutant this property exists to kill.
+  function echidna_GL10_ambiguous_name_fails_closed() public view returns (bool) { return !sawAmbiguousAccepted; }
 }
