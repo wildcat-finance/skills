@@ -23,6 +23,7 @@ SCHEMA = "dead-code-process-coverage/v1"
 MAX_EVENTS = 50_000
 MAX_RECORD_BYTES = 16 * 1024 * 1024
 MAX_ARG_BYTES = 16 * 1024
+TOOL_NAME = "wildcat-dead-code-coverage"
 
 
 def _repository_root(start: Path) -> Path | None:
@@ -148,7 +149,7 @@ class MonitoringProbe:
         if monitoring.get_tool(self.tool_id) is not None:
             self.errors.append("coverage-tool-id-in-use")
             return False
-        monitoring.use_tool_id(self.tool_id, "wildcat-dead-code-coverage")
+        monitoring.use_tool_id(self.tool_id, TOOL_NAME)
         self.owns_tool = True
         try:
             monitoring.register_callback(self.tool_id, monitoring.events.LINE, self._remember_line)
@@ -168,9 +169,15 @@ class MonitoringProbe:
 
     def _restore(self) -> None:
         monitoring = sys.monitoring
+        if not self.owns_tool:
+            return
+        owner = monitoring.get_tool(self.tool_id)
+        if owner != TOOL_NAME:
+            reason = "ownership-lost" if owner is None else "ownership-changed"
+            self.errors.append(f"restore:{reason}")
+            self.owns_tool = False
+            return
         try:
-            if not self.owns_tool or monitoring.get_tool(self.tool_id) is None:
-                return
             monitoring.set_events(self.tool_id, 0)
             for event in (
                 monitoring.events.LINE,
@@ -179,9 +186,10 @@ class MonitoringProbe:
             ):
                 monitoring.register_callback(self.tool_id, event, None)
             monitoring.free_tool_id(self.tool_id)
-            self.owns_tool = False
         except (RuntimeError, ValueError) as error:
             self.errors.append(f"restore:{type(error).__name__}")
+        finally:
+            self.owns_tool = False
 
     def _document(self) -> dict[str, object]:
         containment = os.environ.get(CONTAINMENT_ENV, "")

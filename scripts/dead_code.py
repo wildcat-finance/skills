@@ -1763,6 +1763,28 @@ def _coverage_file(
     document = _json_document(raw, coverage_path)
     if document.get("schema") != COVERAGE_SCHEMA_ID:
         raise Refusal(f"{coverage_path} does not declare {COVERAGE_SCHEMA_ID}")
+    tool = document.get("tool")
+    if (
+        not isinstance(tool, dict)
+        or tool.get("id") != "sys.monitoring"
+        or not isinstance(tool.get("python"), str)
+        or re.fullmatch(r"3\.14\.\d+", tool["python"]) is None
+    ):
+        raise Refusal(f"{coverage_path} does not declare Python 3.14 sys.monitoring")
+    plan = document.get("plan")
+    if not isinstance(plan, dict) or plan.get("schema") != "wildcat.check-plan.v1":
+        raise Refusal(f"{coverage_path} does not declare wildcat.check-plan.v1")
+    map_digest = plan.get("map_digest")
+    requested_scopes = plan.get("requested_scopes")
+    if (
+        not isinstance(map_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", map_digest) is None
+        or not isinstance(requested_scopes, list)
+        or not requested_scopes
+        or not all(isinstance(scope, str) and scope for scope in requested_scopes)
+        or len(requested_scopes) != len(set(requested_scopes))
+    ):
+        raise Refusal(f"{coverage_path} carries malformed checked-runner plan identity")
     tree = document.get("tree")
     if not isinstance(tree, dict):
         raise Refusal(f"{coverage_path} omits tree identity")
@@ -1787,7 +1809,15 @@ def _function_targets(item: ParsedPython) -> Iterable[tuple[str, int]]:
             continue
         if node.name in item.retained_names:
             continue
-        yield node.name, node.body[0].lineno
+        body = node.body
+        if (
+            isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            body = body[1:]
+        if body:
+            yield node.name, body[0].lineno
 
 
 def _branch_targets(item: ParsedPython) -> Iterable[tuple[int, int, str]]:

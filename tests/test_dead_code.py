@@ -1384,6 +1384,19 @@ class MonitoringProbeTests(TemporaryRepositoryTestCase):
     def _free_tool_id(self):
         return next(identifier for identifier in range(6) if sys.monitoring.get_tool(identifier) is None)
 
+    @staticmethod
+    def _release_tool_id(identifier):
+        if sys.monitoring.get_tool(identifier) is None:
+            return
+        sys.monitoring.set_events(identifier, 0)
+        for event in (
+            sys.monitoring.events.LINE,
+            sys.monitoring.events.BRANCH_LEFT,
+            sys.monitoring.events.BRANCH_RIGHT,
+        ):
+            sys.monitoring.register_callback(identifier, event, None)
+        sys.monitoring.free_tool_id(identifier)
+
     def test_probe_restores_its_tool_id_and_event_mask(self):
         output = self.root / "records"
         output.mkdir()
@@ -1406,6 +1419,23 @@ class MonitoringProbeTests(TemporaryRepositoryTestCase):
         self.assertFalse(probe.start())
         probe.close()
         self.assertEqual(sys.monitoring.get_tool(identifier), "fixture-owner")
+
+    def test_probe_does_not_clobber_a_reassigned_tool_id(self):
+        identifier = self._free_tool_id()
+        output = self.root / "records"
+        output.mkdir()
+        probe = dead_code_monitor.MonitoringProbe(output, ROOT, "a" * 32)
+        probe.tool_id = identifier
+        self.assertTrue(probe.start())
+        self._release_tool_id(identifier)
+        sys.monitoring.use_tool_id(identifier, "replacement-owner")
+        self.addCleanup(self._release_tool_id, identifier)
+
+        probe.close()
+
+        self.assertEqual(sys.monitoring.get_tool(identifier), "replacement-owner")
+        document = json.loads(next(output.iterdir()).read_text(encoding="utf-8"))
+        self.assertIn("restore:ownership-changed", document["status"]["errors"])
 
     def test_probe_writes_named_lines_and_branches(self):
         output = self.root / "records"
@@ -1520,8 +1550,11 @@ class CoverageAnalyserTests(TemporaryRepositoryTestCase):
         + "        return 2" + NL
     )
 
-    def _fixture(self, *, state="ran", branches=None, lines=None):
-        build_repository(self.root, files={"app.py": self.SOURCE})
+    def _fixture(self, *, state="ran", branches=None, lines=None, source=None):
+        build_repository(
+            self.root,
+            files={"app.py": self.SOURCE if source is None else source},
+        )
         universe = dead_code.discover(self.root)
         target = self.root / ".dead-code" / "coverage.json"
         target.parent.mkdir()
@@ -1588,6 +1621,44 @@ class CoverageAnalyserTests(TemporaryRepositoryTestCase):
         symbols = {item.symbol for item in findings}
         self.assertNotIn("branch:2->3:body", symbols)
         self.assertIn("branch:2->5:else", symbols)
+
+    def test_observed_function_skips_its_optimised_away_docstring(self):
+        source = (
+            "def documented():" + NL
+            + "    \"\"\"metadata, not an executable body line\"\"\"" + NL
+            + "    return 1" + NL
+        )
+        universe, _target, _document = self._fixture(
+            source=source,
+            lines=[{"path": "app.py", "function": "documented", "line": 3}],
+        )
+
+        status, findings = dead_code.analyse_coverage(
+            self.root, universe, ".dead-code/coverage.json"
+        )
+
+        self.assertEqual(status.state, "ran")
+        self.assertFalse(any(item.symbol.startswith("documented@") for item in findings))
+
+    def test_coverage_tool_identity_is_required(self):
+        universe, target, document = self._fixture()
+        document["tool"]["id"] = "not-sys-monitoring"
+        target.write_text(json.dumps(document), encoding="utf-8")
+
+        with self.assertRaisesRegex(dead_code.Refusal, "sys.monitoring"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
+    def test_coverage_plan_schema_is_required(self):
+        universe, target, document = self._fixture()
+        document["plan"]["schema"] = "unknown-plan"
+        target.write_text(json.dumps(document), encoding="utf-8")
+
+        with self.assertRaisesRegex(dead_code.Refusal, "check-plan"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
 
     def test_stale_coverage_identity_degrades_without_findings(self):
         universe, target, document = self._fixture()
