@@ -444,7 +444,7 @@ class TestControllerCurrency(HexctlCase):
         self.assertEqual(observation["observed_head"], self.HEAD)
 
     def test_remote_head_parsing_refuses_hostile_output(self):
-        """Anything but exactly one well-formed ref line reads as a warning."""
+        """Anything but one full-SHA main ref line reads as a warning."""
         module = hexctl_module()
         fake_bin = os.path.join(self.dir, "parse-bin")
         os.makedirs(fake_bin)
