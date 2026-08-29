@@ -788,16 +788,20 @@
   "runs": [
     {
       "model": "claude-opus-5",
-      "date": "2026-08-28",
+      "date": "2026-08-30",
       "prompt_template_sha256": "171c0c6cf0cfc542cd3f52a3598b3d4de644bae02a88f2237c3ba0e75a16ab12",
-      "corpus_sha256": "503b19da95595e803514bb3ab06fba1f3fefd7862a5080f9d6e8a9edb5f74e8d",
-      "cases": 37,
+      "corpus_sha256": "e0c9dddc9d74ca3ba8097b25f480ceca50fc646b6ee6f0ba965172af667f13a5",
+      "cases": 38,
       "passed": 36,
-      "failed": 1,
+      "failed": 2,
       "failures": [
         {
           "case": "RS-33",
           "selected": "elenchus"
+        },
+        {
+          "case": "RS-34",
+          "selected": "refuse:uncovered"
         }
       ]
     }
