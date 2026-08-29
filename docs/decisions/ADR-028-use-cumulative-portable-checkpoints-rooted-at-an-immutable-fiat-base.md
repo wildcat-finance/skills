@@ -10,6 +10,10 @@ Corrected, 2026-08-27: audit continuation starts a new bounded audit loop on
 the same ledger. It never raises one loop's round ceiling or continues that
 loop as round 9.
 
+Amended, 2026-08-29: Fiat owns a checked controller-state capsule and
+same-ledger relocation. The standing outer transport and semantic identity
+remain separate concerns.
+
 ## Context
 
 Fiat's controller state and receipt ledger live under the run worktree's
@@ -99,7 +103,49 @@ Historical archives, issue comments and filenames that use `carryover` or
 `inoculation` remain evidence of what happened. They do not authorise that
 procedure for a current continuation.
 
+## Amendment: Native controller-state relocation (2026-08-29)
+
+Fiat exports the complete controller tree at either accepted boundary as a
+bounded directory using schema `fiat-controller-checkpoint/v1`. Its manifest
+binds the sorted file inventory, state and ledger digests, ledger tail,
+controller identity, exact local Git ref boundary and expected next directive.
+The capsule carries no source path, timestamp, credential, acceptance claim or
+service receipt.
+
+Restore begins in a fresh checkout where the declared Git refs have already
+been restored and verified. It verifies the capsule and ref boundary before it
+creates active state. The imported ledger remains an exact prefix. Fiat changes
+only the imported origin and worktree locations, appends one
+`checkpoint:restore` receipt to the same ledger, recreates the breadcrumb, and
+checks `verify`, `status` and `next`. It does not execute the returned
+directive.
+
+The capsule's manifest digest identifies exact controller bytes. It is not the
+semantic checkpoint identity, acceptance receipt or deterministic outer
+archive proposed by the remaining Wave Delta work. Those meanings stay
+separate from controller relocation.
+
+The manual outer transport remains in force. A contributor still prepares and
+verifies the Git bundle, commit-signature proof, checkpoint archive and outer
+sidecar, publishes the archive and sidecar to Drive, and records the digests,
+ref boundary and restore rule in the issue note. Fiat's native commands neither
+build nor publish those objects. This retained manual procedure is the accepted
+trade for closing the path-relocation gap without combining controller state,
+credentials, archive parsing and network writes in one operation.
+
 ## Alternatives
+
+- **Complete standing-checkpoint automation.** Rejected because one controller
+  command would join credentials, archive parsing, GitHub and Drive writes,
+  key handling and work reserved for the unresolved outer-archive and identity
+  designs.
+- **Git-only controller state.** Rejected because a branch does not carry the
+  ignored controller tree, bind its receipt prefix or remove the absolute-path
+  fields that prevent relocation.
+- **Reuse the halted predecessor's Step 1.** Rejected because its audit did not
+  cover this amendment. The successor records the decision, publishes fresh
+  run artefacts and receives new implementation and audit evidence before
+  controller work depends on them.
 
 - **Fresh-ledger inoculation.** Rejected because it creates a successor run and
   reconstructs progress instead of continuing the receipted ledger.
