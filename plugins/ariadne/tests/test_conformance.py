@@ -23,9 +23,6 @@ FIXTURES = os.path.join(
 )
 BREACH = re.compile(r"^fail-gate(\d+)-")
 CHECK_BREACH = "fail-check-"
-COMPOUND_CHECKS = frozenset(
-    {"predicate-fields", "components", "optional-evidence"}
-)
 GROUNDED_AGENT_PASSING = (
     "pass-grounded-agent-complete.json",
     "pass-grounded-agent-null-evidence.json",
@@ -82,6 +79,24 @@ GROUNDED_AGENT_BREACHES = {
         ("/subject/9/annotations/passed",),
     ),
 }
+COMPOUND_FAILURE_VECTORS = {
+    "fail-check-predicate-fields-grounded-agent-unknown-field.json": (
+        (2, "environment"),
+        (None, "predicate-fields"),
+    ),
+    "fail-check-components-grounded-agent-component-not-a-subject.json": (
+        (2, "environment"),
+        (None, "components"),
+    ),
+    "fail-check-components-grounded-agent-unsafe-path.json": (
+        (2, "environment"),
+        (None, "components"),
+    ),
+    "fail-check-optional-evidence-grounded-agent-null-reads-without-reason.json": (
+        (2, "environment"),
+        (None, "optional-evidence"),
+    ),
+}
 """The exact parent, ordered failures and changed leaves for each new vector.
 
 Gate 2 deliberately reuses field-shape, component and optional-evidence
@@ -102,9 +117,28 @@ separator.
 """
 
 
-def statement_of(name):
+def document_of(name):
     with open(os.path.join(FIXTURES, name), "rb") as handle:
-        return envelope.read(handle.read()).statement
+        return envelope.read(handle.read())
+
+
+def statement_of(name):
+    return document_of(name).statement
+
+
+def outer_transport_state(document):
+    """The parsed transport surrounding a statement, excluding its payload.
+
+    The payload's complete semantic structure is compared separately.  What
+    remains is every parsed DSSE transport field and explicit bare/enveloped
+    state, so wrapping a child or changing its signatures cannot hitchhike on
+    an otherwise minimal statement mutation.
+    """
+    if document.envelope is None:
+        return None
+    state = document.envelope.to_dict()
+    del state["payload"]
+    return state
 
 
 def passing_by_type():
@@ -170,10 +204,7 @@ def failure_vector_obeys_name(name, failures):
         return False
     if failures == ((None, check),):
         return True
-    return check in COMPOUND_CHECKS and failures == (
-        (2, "environment"),
-        (None, check),
-    )
+    return COMPOUND_FAILURE_VECTORS.get(name) == failures
 
 
 def _json_pointer_child(pointer, segment):
@@ -414,6 +445,79 @@ class NamingContractGuardTests(unittest.TestCase):
         self.assertEqual(len(result.failures), 1)
         self.assertEqual(result.errors, [])
 
+    def test_a_dataset_check_cannot_borrow_a_grounded_compound_vector(self):
+        """A check name shared with grounded-agent grants no exception itself."""
+        fake = (
+            "fail-check-predicate-fields-dataset-uppercase-parameters-digest.json"
+        )
+        source = statement_of(
+            "fail-check-predicate-fields-dataset-unknown-field.json"
+        ).to_dict()
+        digest = source["predicate"]["producer"]["parameters_digest"]["sha256"]
+        source["predicate"]["producer"]["parameters_digest"]["sha256"] = (
+            digest.upper()
+        )
+        statement = type(statement_of("pass-dataset-release.json")).from_dict(source)
+        report = verify.report(
+            envelope.Document(statement, b"", None), registry.DEFAULT
+        )
+        vector = failed_vector(report)
+        self.assertEqual(
+            vector,
+            ((2, "environment"), (None, "predicate-fields")),
+        )
+        self.assertFalse(failure_vector_obeys_name(fake, vector))
+
+        with (
+            mock.patch(__name__ + ".fixtures", return_value=[fake]),
+            mock.patch(__name__ + ".report_for", return_value=report),
+            mock.patch(
+                __name__ + ".check_name_of", return_value="predicate-fields"
+            ),
+        ):
+            result = unittest.TestResult()
+            FixtureTests(
+                "test_every_check_breaching_fixture_fails_the_check_it_is_named_for"
+            ).run(result)
+        self.assertFalse(
+            result.wasSuccessful(),
+            "a dataset fixture borrowed a grounded-agent compound vector",
+        )
+        self.assertEqual(len(result.failures), 1)
+        self.assertEqual(result.errors, [])
+
+    def test_a_grounded_child_cannot_add_a_dsse_wrapper(self):
+        """Named-parent minimality includes explicit outer transport state."""
+        parent = "pass-grounded-agent-complete.json"
+        child = "fail-gate2-grounded-agent-adapter-digest.json"
+        parent_document = document_of(parent)
+        with open(os.path.join(FIXTURES, child), "rb") as handle:
+            wrapped_child = envelope.read(
+                envelope.wrap(handle.read()).to_json().encode("utf-8")
+            )
+        metadata = GROUNDED_AGENT_BREACHES[child]
+
+        def mutant_document(name):
+            return wrapped_child if name == child else parent_document
+
+        with (
+            mock.patch.dict(
+                GROUNDED_AGENT_BREACHES, {child: metadata}, clear=True
+            ),
+            mock.patch(__name__ + ".document_of", side_effect=mutant_document),
+        ):
+            result = unittest.TestResult()
+            GroundedAgentFixtureTests(
+                "test_each_breach_differs_from_its_clean_parent_only_at_named_leaves"
+            ).run(result)
+        self.assertFalse(
+            result.wasSuccessful(),
+            "a DSSE wrapper hitchhiked on a minimal grounded-agent breach",
+        )
+        self.assertEqual(len(result.failures), 1)
+        self.assertIn("changes outer transport state", result.failures[0][1])
+        self.assertEqual(result.errors, [])
+
 
 class MinimalityTests(unittest.TestCase):
     """A breaching fixture of the state-fixture type is one change from a passing one.
@@ -560,16 +664,32 @@ class GroundedAgentFixtureTests(unittest.TestCase):
                     % (name, declared),
                 )
 
+    def test_the_compound_vector_allowlist_is_exact(self):
+        declared = {
+            name: vector
+            for name, (_, vector, _) in GROUNDED_AGENT_BREACHES.items()
+            if len(vector) > 1
+        }
+        self.assertEqual(COMPOUND_FAILURE_VECTORS, declared)
+
     def test_each_breach_differs_from_its_clean_parent_only_at_named_leaves(self):
         for name, (parent, _, changed) in GROUNDED_AGENT_BREACHES.items():
-            parent_statement = statement_of(parent)
+            parent_document = document_of(parent)
+            child_document = document_of(name)
             with self.subTest(fixture=name, parent=parent):
                 self.assertTrue(report_for(parent).ok)
                 self.assertEqual(
                     self.distance(
-                        parent_statement.to_dict(), statement_of(name).to_dict()
+                        parent_document.statement.to_dict(),
+                        child_document.statement.to_dict(),
                     ),
                     list(changed),
+                )
+                self.assertEqual(
+                    outer_transport_state(parent_document),
+                    outer_transport_state(child_document),
+                    "%s changes outer transport state relative to %s"
+                    % (name, parent),
                 )
 
     def test_passing_bodies_carry_no_gate_four_conclusion_keys(self):

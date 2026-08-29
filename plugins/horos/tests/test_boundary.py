@@ -141,6 +141,26 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("drift: .horos/boundary.json#counts", output)
 
+    def test_an_extra_top_level_assertion_fails_the_check(self):
+        document = self.document()
+        document["assertion"] = "not part of the canonical boundary"
+        horos.write_boundary(self.root, document)
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: .horos/boundary.json#fields", output)
+
+    def test_duplicate_schema_keys_are_refused_even_when_the_last_is_current(self):
+        raw = horos.render(self.document()).replace(
+            '"schema": 2',
+            '"schema": 999,\n  "schema": 2',
+            1,
+        )
+        write(self.root, horos.BOUNDARY_RELPATH, raw)
+        code, output = self.check()
+        self.assertEqual(code, 2)
+        self.assertIn("unreadable boundary", output)
+        self.assertIn("duplicate JSON key 'schema'", output)
+
     def test_entry_numeric_type_drift_fails_by_path(self):
         document = self.document()
         entry = next(item for item in document["entries"] if item["path"] == "yarn.lock")

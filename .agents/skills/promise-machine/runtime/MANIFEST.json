@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11149564,
+  "total_bytes": 11150939,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3061,9 +3061,9 @@
       "source": "plugins/horos/skills/horos/SKILL.md"
     },
     {
-      "bytes": 47616,
+      "bytes": 48991,
       "path": "plugins/horos/skills/horos/scripts/horos.py",
-      "sha256": "4cf3fe1b17ec77aeb17ec884d3b2f1c1525da9f1aa0fc07735856c3c58f77f48",
+      "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
       "source": "plugins/horos/skills/horos/scripts/horos.py"
     },
     {

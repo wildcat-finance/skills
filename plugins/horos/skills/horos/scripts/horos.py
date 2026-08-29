@@ -790,6 +790,7 @@ def scan_tree(root, census=False, include_untracked=False, scope=None):
 
 BOUNDARY_RELPATH = ".horos/boundary.json"
 BOUNDARY_SCHEMA = 2
+BOUNDARY_FIELDS = frozenset({"schema", "tool", "universe", "entries", "counts"})
 CANDIDATES_RELPATH = ".horos/candidates.json"
 
 # Printed after a boundary write, for the adopting repository's AGENTS.md or
@@ -891,9 +892,25 @@ def write_census(root, document):
     _write_atomic(root, CENSUS_RELPATH, render(document))
 
 
+class BoundaryFormatError(ValueError):
+    """A boundary whose JSON cannot identify one unambiguous document."""
+
+
+def _object_without_duplicate_keys(pairs):
+    found = {}
+    for key, value in pairs:
+        if key in found:
+            raise BoundaryFormatError("duplicate JSON key %r" % key)
+        found[key] = value
+    return found
+
+
 def load_boundary(root):
     with open(os.path.join(root, BOUNDARY_RELPATH), encoding="utf-8") as handle:
-        return json.load(handle)
+        document = json.load(handle, object_pairs_hook=_object_without_duplicate_keys)
+    if not isinstance(document, dict):
+        raise BoundaryFormatError("boundary must be a JSON object")
+    return document
 
 
 def json_equal(left, right):
@@ -949,6 +966,20 @@ def diff_boundary_documents(committed, fresh):
     universe cover only the admitted subtree and make no whole-tree claim.
     """
     drifted = []
+    committed_fields = set(committed)
+    fresh_fields = set(fresh)
+    if committed_fields != BOUNDARY_FIELDS or fresh_fields != BOUNDARY_FIELDS:
+        drifted.append(
+            (
+                "%s#fields" % BOUNDARY_RELPATH,
+                "closed top-level field set changed: %s -> %s; expected %s"
+                % (
+                    sorted(committed_fields),
+                    sorted(fresh_fields),
+                    sorted(BOUNDARY_FIELDS),
+                ),
+            )
+        )
     for field in ("schema", "tool", "universe", "counts"):
         old = committed.get(field)
         new = fresh.get(field)
@@ -970,6 +1001,13 @@ def diff_boundary_documents(committed, fresh):
                     "canonical entry order or multiplicity changed",
                 )
             )
+    if not drifted and not json_equal(committed, fresh):
+        drifted.append(
+            (
+                "%s#document" % BOUNDARY_RELPATH,
+                "canonical boundary document changed",
+            )
+        )
     return drifted
 
 
@@ -1058,7 +1096,7 @@ def check_scope(boundary_root, scope, out=None):
     except FileNotFoundError:
         print(f"horos: no boundary at {BOUNDARY_RELPATH}; run scan --write", file=out)
         return 2
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, json.JSONDecodeError, BoundaryFormatError) as error:
         print(f"horos: unreadable boundary: {error}", file=out)
         return 2
     include_untracked = committed.get("universe") == "tracked+untracked"
@@ -1113,7 +1151,7 @@ def check_tree(root, out=None):
     except FileNotFoundError:
         print(f"horos: no boundary at {BOUNDARY_RELPATH}; run scan --write", file=out)
         return 2
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, json.JSONDecodeError, BoundaryFormatError) as error:
         print(f"horos: unreadable boundary: {error}", file=out)
         return 2
     include_untracked = committed.get("universe") == "tracked+untracked"
