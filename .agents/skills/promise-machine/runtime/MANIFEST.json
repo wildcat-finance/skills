@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 939,
-  "total_bytes": 20365393,
+  "total_bytes": 20373709,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3541,9 +3541,9 @@
       "source": "plugins/janus/harness/src/wildcat/WildcatHostModel.sol"
     },
     {
-      "bytes": 9780,
+      "bytes": 11959,
       "path": "plugins/janus/harness/test/HostileHooks.t.sol",
-      "sha256": "df9935f5243171d8e44f5b6ab308b51718c120466a0078ba99eb04afaaf83cc3",
+      "sha256": "a10811e40aa13ad0a15cc2eef7966614052e1af00fc0c5bbff381ee79e2f2993",
       "source": "plugins/janus/harness/test/HostileHooks.t.sol"
     },
     {
@@ -3565,15 +3565,15 @@
       "source": "plugins/janus/harness/test/StateDeltaRecorder.t.sol"
     },
     {
-      "bytes": 11861,
+      "bytes": 13046,
       "path": "plugins/janus/harness/test/WildcatAdapter.t.sol",
-      "sha256": "80b3b6f5eb9f0b67fc0db9069ce2ab2528071c44f6d3b0c0cd33138162c32be1",
+      "sha256": "cea683ddd1a2689420b2d5edb41cfa44e1cbfd98016f38562783d04c29d02a0a",
       "source": "plugins/janus/harness/test/WildcatAdapter.t.sol"
     },
     {
-      "bytes": 14901,
+      "bytes": 19853,
       "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
-      "sha256": "fbf81991a7568d1b16423aba56e0c2a9e19f78275bde47b71b18f6f301f94d04",
+      "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b",
       "source": "plugins/janus/harness/test/WildcatConformance.t.sol"
     },
     {

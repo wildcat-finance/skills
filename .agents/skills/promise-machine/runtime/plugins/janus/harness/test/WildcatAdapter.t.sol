@@ -181,6 +181,23 @@ contract WildcatAdapterTest is JanusBase {
     );
   }
 
+  /// @dev The hook's provider is set once and only forward. Without a test the
+  ///      guard was a line no mutant could kill: deleting it changed nothing
+  ///      anywhere, which is the same dead-guard shape as S2-R4-03 and
+  ///      S2-R6-01. It is worth keeping rather than deleting, because a
+  ///      swapped provider would silently move the account a resolved permit
+  ///      names, so it is exercised here instead.
+  function test_the_hooks_role_provider_is_set_once() external {
+    HonestAccessHook hook = new HonestAccessHook();
+    hook.setRoleProvider(provider);
+    assertEq(address(hook.roleProvider()), address(provider), "the first set takes");
+
+    MockRoleProvider other = new MockRoleProvider();
+    vm.expectRevert(bytes("provider set"));
+    hook.setRoleProvider(other);
+    assertEq(address(hook.roleProvider()), address(provider), "and the second is refused");
+  }
+
   // ------------------- The reader against the real adapter ---------------- //
 
   /// @dev The step's goal in one test: the shipped manifest, resolved through
@@ -219,6 +236,11 @@ contract WildcatAdapterTest is JanusBase {
       "the write path returns the same expiry"
     );
     assertEq(uint256(provider.validations()), 1, "and it recorded that it ran");
+
+    // Twice, so the counter is shown to count rather than to latch. A latch
+    // satisfies every assertion above and cannot report a second call.
+    provider.validateCredential(lender, "");
+    assertEq(uint256(provider.validations()), 2, "a second call is counted, not latched");
 
     // An account with no credential reads zero rather than reverting, so the
     // absence of a credential is a value the caller decides on and not an

@@ -74,6 +74,27 @@ contract HostileHooksTest is JanusBase, JanusHarness {
     );
   }
 
+  /// @dev The budget gate 5 enforces is the driven action's own, and this is
+  ///      what shows the selection is by name here rather than by position.
+  ///      Every other resolution in this file asks for `deposit`, so a helper
+  ///      that ignored its argument and always resolved `deposit` would change
+  ///      no result -- which was true until this test existed. The manifest
+  ///      gives two different budgets to compare: 2000000 on deposit and
+  ///      1000000 on the rate-setting action.
+  ///      It installs a hook first because resolution is all or nothing: the
+  ///      deposit threshold's `permittedStorageWrites` are scope `hook`, so
+  ///      reading its budget still resolves the `hook` symbol and a host with
+  ///      no hook installed refuses with `SymbolResolvesToZero`. That is the
+  ///      fail-closed posture working, not an obstacle to route around.
+  function test_the_resolved_budget_is_the_actions_own_not_the_first() external {
+    model.setHook(address(new ReentryHook()));
+    uint256 deposit = _threshold("deposit").gasBudget;
+    uint256 rates = _threshold("setAnnualInterestAndReserveRatioBips").gasBudget;
+    assertEq(deposit, uint256(2000000), "deposit carries its own budget");
+    assertEq(rates, uint256(1000000), "and the rate action carries a different one");
+    assertTrue(deposit != rates, "so the two are not the same read");
+  }
+
   function test_value_redirect_hook_caught_by_gate2() external {
     asset.mint(address(model), 500);
     ValueRedirectHook hook = new ValueRedirectHook(IAsset(address(asset)), address(model), 500);
@@ -116,9 +137,23 @@ contract HostileHooksTest is JanusBase, JanusHarness {
     ResolvedThreshold memory w = _threshold("deposit");
     assertEq(w.allowedWriteAccounts.length, 2, "both hook-scope writes resolved");
     assertEq(w.allowedWriteAccounts[0], address(hook), "and both name the hook itself");
+    // Both assertions below read one local, so a set swapped in here is
+    // swapped in both. Rejection alone does not say the resolved set was the
+    // one used -- any set missing the registry rejects, including a wrong one
+    // -- and the pair is what pins it: this exact set rejects, and this exact
+    // set plus the registry accepts. A different set fails the second half.
+    address[] memory scopes = w.allowedWriteAccounts;
     assertTrue(
-      !_gate1_hookStorageWithinScopes(r.delta, address(hook), w.allowedWriteAccounts),
+      !_gate1_hookStorageWithinScopes(r.delta, address(hook), scopes),
       "gate1: the hook-caused write to external storage is caught"
+    );
+
+    address[] memory widened = new address[](scopes.length + 1);
+    for (uint256 i; i < scopes.length; ++i) widened[i] = scopes[i];
+    widened[scopes.length] = address(registry);
+    assertTrue(
+      _gate1_hookStorageWithinScopes(r.delta, address(hook), widened),
+      "gate1: the registry is the only account the resolved scopes are missing"
     );
   }
 

@@ -199,9 +199,98 @@ contract WildcatConformanceTest is JanusBase, JanusHarness {
       "gate1: the hook made no call outside the manifest's resolved set"
     );
 
+    assertEq(t.allowedWriteAccounts.length, 2, "both hook-scope entries resolved");
+    assertEq(t.allowedWriteAccounts[0], address(honest), "and both name the hook itself");
+
     assertEq(_hookValueMoved(r.delta, address(honest)), uint256(0), "gate2: the hook moved no value");
     assertEq(asset.balanceOf(address(honest)), hookAssetBefore, "gate2: the hook's asset balance is unchanged");
     assertEq(r.valueAfter - r.valueBefore, uint256(100), "gate2: market value rose by exactly the deposit");
+  }
+
+  /// @dev Gate 1's other half on the honest path, and the manifest gap it
+  ///      exposes. This is the finding the step was built to reach, so it is
+  ///      pinned as behaviour rather than described in a comment somewhere.
+  ///
+  ///      The deposit threshold declares `roleProvider.validateCredential` a
+  ///      `call`, which is the kind reserved for state-changing calls: naming
+  ///      it `staticcall` would be the way to say the provider only reads. Its
+  ///      `permittedStorageWrites` then lists two entries, both scope `hook`,
+  ///      and nothing scoped to the provider.
+  ///
+  ///      Those two clauses disagree. Gate 1 attributes a write to the hook
+  ///      when the written account is one the hook's subtree made a
+  ///      state-changing call into, which is what catches a call laundered
+  ///      through a permitted forwarder. A role provider that records anything
+  ///      when validated -- and recording is the only reason to declare the
+  ///      call state-changing -- therefore produces a write the manifest did
+  ///      not enumerate, and the storage half rejects the honest hook.
+  ///
+  ///      The manifest is the artefact under test, so it is not edited here to
+  ///      make the verdict green. The schema already has the clause that would
+  ///      close the gap: a `permittedStorageWrites` entry of scope `external`
+  ///      whose slot names `roleProvider`. Adding it is a change to the Wildcat
+  ///      spec and belongs to whoever owns that file.
+  ///
+  ///      Both directions are asserted, so this cannot rot into a green tick:
+  ///      the call half passes with the resolved set, and the storage half
+  ///      rejects for exactly this reason, with the provider named as the
+  ///      account that made it reject.
+  function test_the_manifest_permits_the_provider_call_but_not_the_write_it_causes() external {
+    DriveResult memory r = _drive(adapter, "deposit", lender, _depositParams(100));
+    assertTrue(!r.reverted, "the provider-backed deposit succeeds");
+    assertEq(uint256(provider.validations()), 1, "the provider recorded the permitted call");
+
+    ResolvedThreshold memory t = _threshold("deposit");
+
+    assertTrue(
+      _gate1_hookCallsWithinAllowed(r.delta, address(honest), t.allowedCallTargets),
+      "gate1 calls: the permitted call is admitted"
+    );
+
+    assertTrue(
+      !_gate1_hookStorageWithinScopes(r.delta, address(honest), t.allowedWriteAccounts),
+      "gate1 storage: the write that call caused is not enumerated, so it is caught"
+    );
+
+    // And the account that makes the difference is the provider itself: with
+    // it added to the write set the same delta passes, which is what shows the
+    // rejection is the manifest's missing clause and not a gate defect.
+    address[] memory widened = new address[](t.allowedWriteAccounts.length + 1);
+    for (uint256 i; i < t.allowedWriteAccounts.length; ++i) widened[i] = t.allowedWriteAccounts[i];
+    widened[t.allowedWriteAccounts.length] = address(provider);
+    assertTrue(
+      _gate1_hookStorageWithinScopes(r.delta, address(honest), widened),
+      "gate1 storage: the provider is the only account the manifest is missing"
+    );
+  }
+
+  /// @dev The provider path is optional, and this is what makes that claim
+  ///      testable rather than merely written down. The hook's guard on an
+  ///      unset provider was a line no mutant could kill: every
+  ///      `HonestAccessHook` in the suite either had a provider set or was
+  ///      never driven, so calling the provider unconditionally -- which on an
+  ///      unset provider means calling `address(0)` and reverting -- changed no
+  ///      result anywhere.
+  ///
+  ///      A provider-less hook still completes a deposit, still keeps its
+  ///      monotone known-lender bit, and makes no call at all, so gate 1 holds
+  ///      against the resolved set for the opposite reason the provider-backed
+  ///      path does: nothing to permit rather than a permitted call.
+  function test_a_hook_without_a_provider_still_deposits_and_calls_nothing() external {
+    HonestAccessHook bare = new HonestAccessHook();
+    model.setHook(address(bare));
+    bare.grant(lender, block.timestamp + 1000);
+
+    DriveResult memory r = _drive(adapter, "deposit", lender, _depositParams(100));
+    assertTrue(!r.reverted, "the provider-less deposit succeeds");
+    assertTrue(bare.knownLender(lender), "and the monotone known-lender bit is set");
+    assertEq(uint256(provider.validations()), 0, "no provider call was made");
+
+    ResolvedThreshold memory t = _threshold("deposit");
+    assertTrue(
+      _gate1_hookCallsWithinAllowed(r.delta, address(bare), t.allowedCallTargets),
+      "gate1: a hook that calls nothing is within any resolved set"
+    );
   }
 
   /// @dev The honest permit shown to be doing work, without a literal anywhere.
