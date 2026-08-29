@@ -64,7 +64,12 @@ Restated as checkable conditions:
   null byte happening to appear.
 - `boundary.json` (schema 2) holds hard entries only; `candidates.json`
   holds the rest with the same determinism rules; `check` verifies the
-  hard set and reports candidate drift without failing on it.
+  hard set and, in this refinement, reports candidate drift without failing
+  on it. That records the behaviour shipped here. Candidate classification or
+  content drift itself remains advisory today, but a root check also binds raw
+  canonical metadata: adding or removing a tracked candidate changes
+  `files_walked` and can fail on that independent drift. Scoped checks remain
+  entry-only.
 - Scanning a git repository covers exactly `git ls-files` by default;
   `--include-untracked` widens it; a non-git tree walks the filesystem as
   before, and the boundary artefact records which mode produced it.
@@ -116,8 +121,11 @@ graded pipeline is the only step that changes artefact shape.
   cwd pinned to the scan root, output decoded with `errors="replace"`, and
   a clean fallback when git is absent or the root untracked. Phylax gets
   an allow comment naming exactly that.
-- `check` under schema 2: hard drift fails, candidate drift reports; both
-  name paths.
+- `check` under schema 2, as refined here: hard drift fails and candidate
+  drift reports; both name paths. Under the current contract, candidate
+  classification or content drift itself remains advisory, while root raw
+  canonical metadata stays hard. Adding or removing a tracked candidate can
+  therefore fail through `files_walked`; scoped checks remain entry-only.
 - The adoption stanza stays true under schema 2 (the boundary lists only
   what binds); the SKILL.md discipline gains one line about candidates
   being advisory.

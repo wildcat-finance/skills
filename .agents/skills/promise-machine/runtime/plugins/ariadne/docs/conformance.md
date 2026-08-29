@@ -15,32 +15,41 @@ nowhere on purpose. A verifier meeting it should check the core gates, report
 that gates 2 and 5 belong to a predicate it does not know, and not describe the
 run as clean.
 
-The `solidity`, `dataset` and versioned `state-fixture` fixtures use the four types
-this build registers, so they exercise each predicate's own gates as well as the
-core ones. Gates 2 and 5 mean different things for a state fixture than for a
-dataset release or a contract release, so each type carries its own breaching
-fixtures for them.
+The `solidity`, `dataset`, versioned `state-fixture` and `grounded-agent`
+fixtures use the five types this build registers, so they exercise each
+predicate's own gates as well as the core ones. Gates 2 and 5 mean different
+things for each release shape, so each type carries its own breaching fixtures
+for them.
 
 ## The naming convention
 
 The suite reads the names, so they have to be right:
 
 - `pass-<what>.json` verifies clean. Every gate holds.
-- `fail-gate<n>-<what>.json` breaches gate `n` and no other gate.
-- `fail-check-<check>-<what>.json` breaches a check that carries no gate number,
-  and no other check.
+- `fail-gate<n>-<what>.json` names gate `n` as the boundary under test.
+- `fail-check-<check>-<what>.json` names a check that carries no gate number.
+
+Most counterexamples fail only that one result. Grounded-agent gate 2 reuses
+the field, component and optional-evidence validators, so one malformed leaf
+can honestly fail gate 2 and its narrower named check. The grounded-agent
+inventory below records those ordered pairs. The suite asserts each complete
+vector; no unrelated failure is allowed to hitchhike.
 
 Gates 2 and 5 are numbered. The other checks a predicate adds carry no number,
 so they need the third form: coverage and inputs on a dataset release, audits and
 deployments on a contract release, and the field-shape check on either. Without
 it those checks shipped with no fixture at all.
 
-Four completeness tests hold the set together. Each core gate has a breaching
+Four generic completeness tests hold the set together. Each core gate has a breaching
 fixture. Each registered predicate has a passing fixture, and a breaching fixture
 of its own type for every numbered gate it owns. Every unnumbered check any
-registered predicate exposes has one too. A fifth test asserts that each
-breaching fixture fails exactly the gate or check its name claims, which catches
-a fixture that breaks two things at once and would pass for the wrong reason.
+registered predicate exposes has one too. A fifth test asserts each breaching
+fixture's complete declared failure vector. For singleton fixtures that vector
+is exactly the gate or check its name claims; grounded-agent fixtures retain
+their ordered pairs. This catches an undeclared hitchhiking failure that would
+otherwise pass for the wrong reason. The grounded-agent corpus also adds an
+exact named-parent inventory and typed leaf comparisons without relaxing those
+generic guards.
 
 ## What is here
 
@@ -104,11 +113,32 @@ a fixture that breaks two things at once and would pass for the wrong reason.
 | `fail-check-evidence-state-fixture-v2-receipts-without-root.json` | State fixture v2 | A positive `receipt_trie_proved` count with no `receipts_root`; the state-proof rule remains independent |
 | `fail-check-subject-names-state-fixture-v2-duplicate-name.json` | State fixture v2 | Two in-toto subjects with one reader-visible name, leaving a name-based consumer unable to distinguish their digests |
 
+### Grounded agent v1
+
+Failure results below are in verifier order. Every breaching fixture differs
+from its named passing parent at the one stated typed leaf.
+
+| Fixture | Passing parent | Ordered failure result | Changed leaf and boundary |
+| --- | --- | --- | --- |
+| `pass-grounded-agent-complete.json` | -- | none | Complete first capture with corpus, block-bound reads, answers, evaluation case and report bytes, promotion-chain bytes, policy and adapter provenance |
+| `pass-grounded-agent-null-evidence.json` | -- | none | Honest null reads, evaluations and promotion evidence, each paired with a stated absence reason |
+| `fail-gate2-grounded-agent-adapter-digest.json` | `pass-grounded-agent-complete.json` | `2 environment` | `predicate.adapter.parameters_digest.sha256` is uppercase rather than lowercase hex |
+| `fail-gate5-grounded-agent-first-capture-without-reason.json` | `pass-grounded-agent-complete.json` | `5 comparison` | `predicate.comparison.first_capture_reason` is null beside a null baseline |
+| `fail-gate4-grounded-agent-promotion-verdict.json` | `pass-grounded-agent-complete.json` | `4 no-conclusions` | The promotion subject descriptor adds `annotations.verdict`; both valid bodies omit gate 4 conclusion keys |
+| `fail-check-predicate-fields-grounded-agent-unknown-field.json` | `pass-grounded-agent-complete.json` | `2 environment`; `predicate-fields` | `predicate.undeclared` adds a field outside the closed v1 body |
+| `fail-check-components-grounded-agent-component-not-a-subject.json` | `pass-grounded-agent-complete.json` | `2 environment`; `components` | One corpus component changes `sha256` without a matching in-toto subject |
+| `fail-check-components-grounded-agent-unsafe-path.json` | `pass-grounded-agent-complete.json` | `2 environment`; `components` | One corpus component path changes to `../terms.md` |
+| `fail-check-release-digest-grounded-agent-stale-semantic-digest.json` | `pass-grounded-agent-complete.json` | `release-digest` | One refusal condition changes without recomputing the semantic release digest |
+| `fail-check-optional-evidence-grounded-agent-null-reads-without-reason.json` | `pass-grounded-agent-null-evidence.json` | `2 environment`; `optional-evidence` | `reads_absence_reason` changes from a stated reason to null while reads remain null |
+| `fail-check-subject-names-grounded-agent-nonportable-name.json` | `pass-grounded-agent-complete.json` | `subject-names` | One outer subject name gains a line break |
+| `fail-check-evidence-boundary-grounded-agent-promotion-result.json` | `pass-grounded-agent-complete.json` | `evidence-boundary` | The promotion subject descriptor adds the Berean result count `annotations.passed`; promotion identity metadata must not project evaluation results |
+
 ## Running them
 
 ```bash
 python3 scripts/ariadne.py verify tests/fixtures/conformance/pass-absence-recorded.json
 python3 scripts/ariadne.py verify tests/fixtures/conformance/fail-gate3-skipped-without-reason.json
+python3 scripts/ariadne.py verify tests/fixtures/conformance/pass-grounded-agent-complete.json
 ```
 
 Exit 0 for the first, 1 for the second, with the failing line naming the gate.
@@ -124,7 +154,8 @@ One example per rule family, not one per rule. A verifier that passes every fixt
 here has been shown each *kind* of refusal: a required field absent, a value of the
 wrong type, a value that satisfies the shape and identifies nothing, a digest the
 statement does not cover, a path that resolves outside the tree, a field the type does
-not define, and each numbered gate and named check breached on its own.
+not define, and each numbered gate and named check bound to its complete declared
+failure vector. Most are singletons; the grounded-agent pairs are listed above.
 
 It has not been shown every field. The state-fixture predicate refuses far more
 distinct things than the fourteen its breaching fixtures cover. The fourteen cover
@@ -159,6 +190,12 @@ the smallest statement that holds rather than a near sibling, so they differ by 
 to eight leaves. That is a different and equally deliberate choice: a core gate is
 demonstrated on the least statement that can carry the breach, not on a full release
 with one thing changed.
+
+Every grounded-agent breach differs from the passing parent named above in
+exactly one typed leaf. Component, path, closed-field and optional-absence
+faults also fail `environment` because gate 2 deliberately invokes those same
+validators. The exact-vector test keeps that composition visible instead of
+pretending the narrower check ran alone.
 
 One warning for anyone diffing these files with a tool. Two of the fixtures change
 only a value's type -- `header_bound` from `1` to `true`, and `reaches_network` from

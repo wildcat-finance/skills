@@ -186,6 +186,22 @@ class FixtureTests(unittest.TestCase):
                     name, text, "docs/conformance.md does not list %s" % name
                 )
 
+    def test_the_grounded_agent_inventory_has_one_row_per_fixture(self):
+        text = read(CONFORMANCE)
+        directory = os.path.join(PLUGIN, "tests", "fixtures", "conformance")
+        expected = sorted(
+            name
+            for name in os.listdir(directory)
+            if "grounded-agent" in name and name.endswith(".json")
+        )
+        rows = sorted(
+            re.findall(
+                r"(?m)^\| `((?:pass|fail)-[^`]*grounded-agent[^`]*\.json)` \|",
+                text,
+            )
+        )
+        self.assertEqual(rows, expected)
+
     def test_the_examples_document_names_every_example(self):
         text = read(os.path.join(EXAMPLES, "README.md"))
         for directory in (EXAMPLES, os.path.join(EXAMPLES, "tampered")):

@@ -39,7 +39,11 @@ boundary schema 2 with hard entries only, and the candidates artefact.
 **Entry.** Step 2's exit state.
 **Exit.** Plugin suite green; the fixture boundary regenerated at schema 2
 and reproduced byte for byte, its candidates artefact likewise; `check`
-fails on hard drift and reports candidate drift without failing.
+fails on hard drift and, at this historical step, reports candidate drift
+without failing. Under the current contract, candidate classification or
+content drift itself remains advisory, while root raw canonical metadata stays
+hard: adding or removing a tracked candidate changes `files_walked` and can
+fail on that independent drift. Scoped checks remain entry-only.
 **Files.** `horos.py`; `plugins/horos/examples/fixture/.horos/boundary.json`
 regenerated; `plugins/horos/examples/fixture/.horos/candidates.json`;
 `plugins/horos/tests/test_boundary.py`, `test_classify.py`,
