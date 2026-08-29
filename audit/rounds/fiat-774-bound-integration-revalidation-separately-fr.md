@@ -1,0 +1,15 @@
+## Step 1, round 1 -- 2026-08-29T17:52:27Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: shared-constant-widening=reviewed; integration-site-scope=reviewed; byte-ceiling-bypass=reviewed; upper-bound-absent=reviewed; v2-aggregate-regression=reviewed; v1-compatibility=reviewed; refusal-order=reviewed; generated-copy-drift=reviewed; boundary-currency=reviewed; version-propagation=not-applicable; base-advance-sync=not-applicable
+
+Not checked: the Pashov pair and any fuzz campaign, under the recorded suite waiver, because the step ships no Solidity and no Foundry or Hardhat project. The two integration ceilings, end to end: they were exercised through direct calls with a mocked Git reader rather than a 4,096-path repository, so the count boundary is proved at the function and not through `done sync-run`. The v2 outside-path surface above 600 paths: it was proved end to end at 600, not at 4,096. `version-propagation`, which is step 2's work, and `base-advance-sync`, which is measured at integrate.
+
+Elenchus verdict: unguarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | low | plugins/hexaemeron/tests/test_disposable_git_signing.py | The new `test_hexctl_integration_path_bounds` module builds a disposable Git repository but was absent from `FIXTURE_COMMIT_MATRIX`, issue 622's inherited-signing guard, which names every other module that does, so nothing would catch a later edit letting a contributor's signer handle a fixture commit. Run by hand under an injected `commit.gpgsign=true` with a hostile signer, the module passed and the signer was never invoked, because every fixture commit and the merge carry `--no-gpg-sign`. The exposure was that nothing kept that true. | fixed in 8a14853b7e7e6b71505dca0ee6ab1a315cac7566 |
+
+Leads not pursued: `_checkpoint_ref_names` refuses a duplicated ref set and an oversized one with the same diagnostic, so its pin case cannot tell which branch fired. The bound is unchanged by this step and the diagnostic predates it, so splitting it is not this run's work. Issue 710's fixture names sync commit `f0a84ca3`, which is not an ancestor of `main`, so `test_hexctl_generator_aggregates` errors in `setUpClass` on any fresh clone that has not fetched it; the new module builds its own repository to avoid inheriting that, and repairing the older fixture is out of scope here. The two pre-existing Hexaemeron failures stay open and out of scope: `test_resource_limits_refuse_before_publish` constructs a 1,206-character path against a macOS limit of 1,024, and `test_duplicate_state_and_ledger_keys_refuse` expects `SystemExit` from 50,000-deep JSON that CPython 3.14 parses without recursion failure. The Elenchus verdict is `unguarded` rather than `guarded` because the repair adds coverage to a guard matrix: removing the entry again reduces what runs, and no case turns red to say so.
