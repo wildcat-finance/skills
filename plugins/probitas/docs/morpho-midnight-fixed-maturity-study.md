@@ -326,3 +326,13 @@ The source inventory also includes the [Python 3.13 JSON standard-compliance not
 **Steps touched.** Step 2.
 
 **Still holding.** Step 2: entry holds; exit broken. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Item 12's intended decision home changes from `docs/decisions/ADR-043-derive-midnight-timeliness-from-debt-units.md` to `docs/decisions/ADR-048-derive-midnight-timeliness-from-debt-units.md`. The decision content and every product criterion remain unchanged.
+
+**Why.** Live `origin/main` at `3b86d60b1aa55648f12d109e0422db8037f0df7a` now owns ADR-043 as `docs/decisions/ADR-043-record-corpus-provenance-beside-the-chunks.md` and ADR-044 as `docs/decisions/ADR-044-bind-sync-run-generator-aggregates.md`, so this run's number moved again. ADR-048 is the smallest unused decision number in that tree. The unused numbers ADR-026 and ADR-027 were considered and refused, because `docs/decisions/ADR-031-fence-external-fiat-transitions-on-signed-checkpoint-acceptance.md` and `docs/decisions/ADR-032-model-checkpoint-lineage-as-an-explicitly-resolved-dag.md` still record those two as their own former identifiers, and reusing either would point an existing provenance line at a different record.
+
+**Steps touched.** Step 4.
+
+**Still holding.** Step 4: entry holds; exit holds.
