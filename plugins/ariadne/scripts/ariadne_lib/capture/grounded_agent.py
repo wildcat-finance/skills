@@ -384,9 +384,25 @@ class _Reader(object):
     def read(self, relative, name, what, maximum=None):
         if maximum is None:
             maximum = MAX_COMPONENT_BYTES
-        digest, size, raw = state_fixture.read_component(
-            self.root, relative, what, maximum, keep_bytes=True
-        )
+        remaining = MAX_TOTAL_BYTES - self.total
+        if remaining <= 0:
+            raise CaptureError(
+                "release components total more than the %d byte ceiling"
+                % MAX_TOTAL_BYTES
+            )
+        total_limited = remaining < maximum
+        maximum = min(maximum, remaining)
+        try:
+            digest, size, raw = state_fixture.read_component(
+                self.root, relative, what, maximum, keep_bytes=True
+            )
+        except state_fixture.ComponentLimitError:
+            if not total_limited:
+                raise
+            raise CaptureError(
+                "release components total more than the %d byte ceiling"
+                % MAX_TOTAL_BYTES
+            ) from None
         self.total += size
         if self.total > MAX_TOTAL_BYTES:
             raise CaptureError(

@@ -565,6 +565,31 @@ class CaptureTests(unittest.TestCase):
         self.assertTrue(scan.closed)
         self.assertFalse(os.path.exists(self.output))
 
+    def test_aggregate_budget_constrains_each_component_before_read(self):
+        delegated = []
+
+        def observe(root, relative, what, maximum, keep_bytes=False):
+            delegated.append(maximum)
+            return {"sha256": "ab" * 32}, maximum + 1, b"x"
+
+        reader = capture._Reader(self.release)
+        reader.total = capture.MAX_TOTAL_BYTES - 7
+        with mock.patch.object(
+            capture.state_fixture,
+            "read_component",
+            side_effect=observe,
+        ):
+            with self.assertRaisesRegex(capture.CaptureError, "total more"):
+                reader.read("release.json", "release", "release document")
+            self.assertEqual(delegated, [7])
+
+            delegated.clear()
+            reader.total = capture.MAX_TOTAL_BYTES
+            with self.assertRaisesRegex(capture.CaptureError, "total more"):
+                reader.read("release.json", "release", "release document")
+            self.assertEqual(delegated, [])
+        self.assertFalse(os.path.exists(self.output))
+
     def test_an_unstable_descriptor_read_is_a_controlled_refusal(self):
         original = capture.state_fixture.read_component
 

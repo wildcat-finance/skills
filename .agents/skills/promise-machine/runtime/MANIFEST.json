@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 852,
-  "total_bytes": 11194326,
+  "total_bytes": 11195208,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -643,15 +643,15 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/foundry.py"
     },
     {
-      "bytes": 35657,
+      "bytes": 36266,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
-      "sha256": "b19c48b7e03fb82d6dcd6d9c8d81d2ddc5dad3076088e3ef73883258ab2714ac",
+      "sha256": "c197a46663efa824c32c8a540fc9dced1177ec7312b756cc8d800a9a9e7797f9",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py"
     },
     {
-      "bytes": 33791,
+      "bytes": 34064,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py",
-      "sha256": "000b9733c78ce7e88828de654d660e105ef3f51cf972ee1f8927c171fc31ff52",
+      "sha256": "28a8b5b2ac3524717f703ce88f355e0bccde9f2cc21acfa3119eb92e32a1b240",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py"
     },
     {
