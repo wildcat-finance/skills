@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 956,
-  "total_bytes": 20583534,
+  "total_bytes": 20603806,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -255,9 +255,9 @@
       "source": "plugins/alexandria/examples/credit-history-v0/demo.py"
     },
     {
-      "bytes": 711,
+      "bytes": 726,
       "path": "plugins/alexandria/examples/credit-history-v0/expected-probitas.json",
-      "sha256": "a5d36f0eb9a4e160e1652df98271f7b1424efa833f8851dff57258165026aa5c",
+      "sha256": "a7af471bf8ca23b5dba0d758c1718f13bf5c79d6ddc85a53902552b2b4e175bf",
       "source": "plugins/alexandria/examples/credit-history-v0/expected-probitas.json"
     },
     {
@@ -435,9 +435,9 @@
       "source": "plugins/alexandria/scripts/alexandria_lib/paths.py"
     },
     {
-      "bytes": 6072,
+      "bytes": 6337,
       "path": "plugins/alexandria/scripts/alexandria_lib/probitas.py",
-      "sha256": "f86051a9b774b5fec6cf8b18c1f970735720d00b1d516f8dc7e5488c62be1141",
+      "sha256": "a6e30248736eaad939910cf4bfd3aaab99a5e7e7584d0759066ad22b3ee8673c",
       "source": "plugins/alexandria/scripts/alexandria_lib/probitas.py"
     },
     {
@@ -471,15 +471,15 @@
       "source": "plugins/alexandria/scripts/compound_v3_phase0.py"
     },
     {
-      "bytes": 1581,
+      "bytes": 2368,
       "path": "plugins/alexandria/skills/alexandria/EVOLUTION.md",
-      "sha256": "bd432c55e3f9e81746f5c2d587a8318c84d64ac729a771fa10d3d4608665e45c",
+      "sha256": "14b2f468db0fe680d6a8e2531c123736cbcbf58a3c87f94464042a6e3917b038",
       "source": "plugins/alexandria/skills/alexandria/EVOLUTION.md"
     },
     {
       "bytes": 16183,
       "path": "plugins/alexandria/skills/alexandria/SKILL.md",
-      "sha256": "948f67af993351e5abf80bbbe9a095bbcf1fea1da5c352f4fab9fc656cbfa542",
+      "sha256": "d1665f1b48fbe08656621e394285b509a45ae3e1aea664b06e775af1a992d78a",
       "source": "plugins/alexandria/skills/alexandria/SKILL.md"
     },
     {
@@ -4965,9 +4965,9 @@
       "source": "plugins/pandects/test/counterexamples/Conservation.t.sol"
     },
     {
-      "bytes": 4473,
+      "bytes": 4901,
       "path": "plugins/probitas/AGENTS.md",
-      "sha256": "95ff8bb163d6ca97cc9a1cdfeb028ea27d416bc03f508011b436d5fe2a59ebe3",
+      "sha256": "523c7d4514ffc0d9396f7ef5a978404c1e000eb54163ecf9e6b093feccbf7548",
       "source": "plugins/probitas/AGENTS.md"
     },
     {
@@ -4983,9 +4983,9 @@
       "source": "plugins/probitas/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 14794,
+      "bytes": 16712,
       "path": "plugins/probitas/README.md",
-      "sha256": "1f6d60bf00126bb767e936540180e7d20dc766c0bc5a9ed7cf3242cfd9632267",
+      "sha256": "19fd4a6716de7a6d336db8c57cdcf96c0caf277bb39d2d9db958509fdee43c89",
       "source": "plugins/probitas/README.md"
     },
     {
@@ -5037,15 +5037,15 @@
       "source": "plugins/probitas/docs/euler-v2-goldsky-schema.graphql"
     },
     {
-      "bytes": 9496,
+      "bytes": 9632,
       "path": "plugins/probitas/docs/example-dossier.md",
-      "sha256": "d7cfd65f74d9568a22ac81ce54e5e662f97dbcb343c538cf321221787cbeadc3",
+      "sha256": "c85fd26f5cd2d302e6f1b2808bcb90a0ae8cec8f72cc3e564c1115f0238deb11",
       "source": "plugins/probitas/docs/example-dossier.md"
     },
     {
-      "bytes": 9557,
+      "bytes": 12398,
       "path": "plugins/probitas/scripts/probitas.py",
-      "sha256": "82679d551c7150e2dc2dd8bbc007662d6fc7f2dcc9a537cd3d359bd8aa53d41c",
+      "sha256": "43cad0bc29446eddcab936580d79f7ef952f64023db7a2b084dc314f3d9954ec",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     {
@@ -5055,9 +5055,9 @@
       "source": "plugins/probitas/scripts/probitas_lib/__init__.py"
     },
     {
-      "bytes": 1950,
+      "bytes": 4150,
       "path": "plugins/probitas/scripts/probitas_lib/adapters/__init__.py",
-      "sha256": "1d8e11d7f43cbca146f4b1accbdba3b8e7368fecba871171eb8bfa3d6a2ba105",
+      "sha256": "9b105a69e70cb584d034916943b3b8927d796f9f6e84b99471ae7e6e9092cd8d",
       "source": "plugins/probitas/scripts/probitas_lib/adapters/__init__.py"
     },
     {
@@ -5091,9 +5091,9 @@
       "source": "plugins/probitas/scripts/probitas_lib/endpoints.py"
     },
     {
-      "bytes": 13642,
+      "bytes": 17481,
       "path": "plugins/probitas/scripts/probitas_lib/evidence.py",
-      "sha256": "43968b73372035906b3f63dae92073ca400f31dfdcd2acb664a646ba4d6cf430",
+      "sha256": "819cd1769e1b3d696d11168d76f787fe2aba01fe10b7018fab72de7c5aecd792",
       "source": "plugins/probitas/scripts/probitas_lib/evidence.py"
     },
     {
@@ -5103,9 +5103,9 @@
       "source": "plugins/probitas/scripts/probitas_lib/formatting.py"
     },
     {
-      "bytes": 13342,
+      "bytes": 15590,
       "path": "plugins/probitas/scripts/probitas_lib/gates.py",
-      "sha256": "cf062fbded39d12254bc05bfbb03f103c0bfc7357002629acf9b70cc540a41ba",
+      "sha256": "da6d4d56da1af2cd72d47ad14e85feed118162d937d7a0e08c76b221068a75f1",
       "source": "plugins/probitas/scripts/probitas_lib/gates.py"
     },
     {
@@ -5121,9 +5121,9 @@
       "source": "plugins/probitas/scripts/probitas_lib/registry.py"
     },
     {
-      "bytes": 10365,
+      "bytes": 11365,
       "path": "plugins/probitas/scripts/probitas_lib/render.py",
-      "sha256": "66ebd4846e20808fd5bcfa684c65c4e25555f39300134cedd0fc32ce53d78dbf",
+      "sha256": "6921747846b397e8b4ea325454c7d5e02cb5e42b8036c4d0e817cdac94c282c1",
       "source": "plugins/probitas/scripts/probitas_lib/render.py"
     },
     {
@@ -5133,15 +5133,15 @@
       "source": "plugins/probitas/scripts/probitas_lib/sanitise.py"
     },
     {
-      "bytes": 991,
+      "bytes": 2117,
       "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
-      "sha256": "713a6db4ed6d35332cd585e4e3afbac904d55284e8ae10229e099938932a9c97",
+      "sha256": "3e3427abeab425a728bc0bc96b1191c8178b812cc296cb5d497ae87f84ce6e29",
       "source": "plugins/probitas/skills/probitas/EVOLUTION.md"
     },
     {
-      "bytes": 11820,
+      "bytes": 13511,
       "path": "plugins/probitas/skills/probitas/SKILL.md",
-      "sha256": "562e41c6508e92e0436ab632972e7d1c6bc0c4d0204eb472f54062dba94270d7",
+      "sha256": "bc1c9063269ab4aa0e6aa48d8c38c2dd908d46ad8b457ec7ab82c9bfe49430a0",
       "source": "plugins/probitas/skills/probitas/SKILL.md"
     },
     {
@@ -5151,15 +5151,15 @@
       "source": "plugins/probitas/skills/probitas/agents/openai.yaml"
     },
     {
-      "bytes": 6012,
+      "bytes": 7283,
       "path": "plugins/probitas/skills/probitas/references/gates.md",
-      "sha256": "8f1986e6033205712e3730bc3a37fecefa66bdaaec3b4815bc62dca7995cf4d9",
+      "sha256": "e9353635b84d1d5d23f6b85c8870275c66c0abe249b82804e50eb6220243f2a5",
       "source": "plugins/probitas/skills/probitas/references/gates.md"
     },
     {
-      "bytes": 7558,
+      "bytes": 8065,
       "path": "plugins/probitas/skills/probitas/references/venues.md",
-      "sha256": "ba0e6e850b895d75d907238d17e460d841f26f64af48ab0e81bd1842448d0162",
+      "sha256": "5898d6607c58c6e3f9e95dceaf3261695ad99d351b8073241ff2be0d9ce5a396",
       "source": "plugins/probitas/skills/probitas/references/venues.md"
     },
     {

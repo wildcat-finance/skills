@@ -13,6 +13,7 @@ from . import support
 
 from probitas_lib import gates, render  # noqa: E402
 from probitas_lib.evidence import Coverage, Evidence, Gap, Record  # noqa: E402
+from probitas_lib.adapters import run_adapter  # noqa: E402
 from probitas_lib.adapters.wildcat import adapter  # noqa: E402
 from probitas_lib import registry  # noqa: E402
 
@@ -27,8 +28,9 @@ def evidence(case="defaulted", inferred=False):
         addresses.append((INFERRED, "inferred"))
     subject = Evidence(entity="Acme Trading Ltd", addresses=addresses, run_id="test")
 
-    records, coverage = adapter(
-        dict(subject.addresses), {"fixtures": os.path.join(FIXTURES, case)}
+    records, coverage = run_adapter(
+        "wildcat", adapter, dict(subject.addresses),
+        {"fixtures": os.path.join(FIXTURES, case)},
     )
     for record in records:
         subject.add_record(record)
@@ -37,7 +39,7 @@ def evidence(case="defaulted", inferred=False):
     for venue in registry.all_venues():
         if venue.id == "wildcat":
             continue
-        subject.add_coverage(Coverage(venue.id, "unimplemented", note=venue.note))
+        subject.add_coverage(Coverage(venue.id, "unimplemented", note=venue.note, source="none"))
         subject.add_gap(Gap(f"{venue.id} borrowing history", venue.note))
 
     return subject.to_dict()
@@ -50,8 +52,9 @@ def with_an_inferred_finding():
         addresses=[(DECLARED, "declared"), (INFERRED, "inferred")],
         run_id="test",
     )
-    records, coverage = adapter(
-        {DECLARED: "declared"}, {"fixtures": os.path.join(FIXTURES, "defaulted")}
+    records, coverage = run_adapter(
+        "wildcat", adapter, {DECLARED: "declared"},
+        {"fixtures": os.path.join(FIXTURES, "defaulted")},
     )
     for record in records:
         subject.add_record(record)
@@ -70,7 +73,7 @@ def with_an_inferred_finding():
     subject.add_coverage(coverage)
     for venue in registry.all_venues():
         if venue.id != "wildcat":
-            subject.add_coverage(Coverage(venue.id, "unimplemented", note=venue.note))
+            subject.add_coverage(Coverage(venue.id, "unimplemented", note=venue.note, source="none"))
             subject.add_gap(Gap(f"{venue.id} borrowing history", venue.note))
     return subject.to_dict()
 
@@ -156,6 +159,74 @@ class TestGateTwoCoverage(unittest.TestCase):
         payload = copy.deepcopy(evidence())
         payload["coverage"][0]["status"] = ""
         self.assertEqual(caught_by(dossier(payload), payload), 2)
+
+    def test_a_second_row_for_one_venue_and_source_fails(self):
+        """The collapse this gate used to do silently, now named."""
+        payload = copy.deepcopy(evidence())
+        wildcat = next(c for c in payload["coverage"] if c["venue"] == "wildcat")
+        payload["coverage"].append(copy.deepcopy(wildcat))
+        breached = failures(dossier(payload), payload)
+        self.assertEqual(breached[0].number, 2)
+        self.assertIn("two fixtures rows", breached[0].detail)
+
+    def test_a_row_that_names_no_source_fails(self):
+        payload = copy.deepcopy(evidence())
+        payload["coverage"][0]["source"] = None
+        breached = failures(dossier(payload), payload)
+        self.assertEqual(breached[0].number, 2)
+        self.assertIn("names no source", breached[0].detail)
+
+    def test_an_archive_row_that_names_no_release_fails(self):
+        payload = copy.deepcopy(evidence())
+        wildcat = next(c for c in payload["coverage"] if c["venue"] == "wildcat")
+        wildcat["source"] = "archive"
+        wildcat["releases"] = None
+        breached = failures(dossier(payload), payload)
+        self.assertEqual(breached[0].number, 2)
+        self.assertIn("names no release", breached[0].detail)
+
+    def test_two_routes_over_one_venue_are_both_counted(self):
+        """A union run answers for a venue twice, and both answers survive."""
+        payload = copy.deepcopy(evidence())
+        wildcat = next(c for c in payload["coverage"] if c["venue"] == "wildcat")
+        archive = copy.deepcopy(wildcat)
+        archive["source"] = "archive"
+        archive["releases"] = "sha256:" + "ab" * 32
+        archive["endpoint"] = "Alexandria index"
+        payload["coverage"].append(archive)
+        result = gates.check(dossier(payload), payload)[1]
+        self.assertTrue(result.passed, result.detail)
+        self.assertIn("15 venue(s) accounted for over 16 row(s)", result.detail)
+
+    def test_a_row_whose_venue_is_not_a_name_fails_rather_than_crashing(self):
+        """`verify` is pointed at files it did not write, so it may not raise."""
+        payload = copy.deepcopy(evidence())
+        stray = copy.deepcopy(payload["coverage"][0])
+        stray["venue"] = None
+        payload["coverage"].append(stray)
+        document = dossier(evidence())
+        breached = failures(document, payload)
+        self.assertEqual(breached[0].number, 2)
+        self.assertIn("names no venue", breached[0].detail)
+
+    def test_an_empty_archive_row_needs_a_release_too(self):
+        """Empty is the answer a reader is most likely to over-trust."""
+        payload = copy.deepcopy(evidence())
+        wildcat = next(c for c in payload["coverage"] if c["venue"] == "wildcat")
+        wildcat["source"] = "archive"
+        wildcat["status"] = "empty"
+        wildcat["releases"] = None
+        breached = failures(dossier(payload), payload)
+        self.assertEqual(breached[0].number, 2)
+        self.assertIn("names no release", breached[0].detail)
+
+    def test_a_release_identity_is_a_permitted_figure(self):
+        """Gate 3 rebuilds its allowed set from the fields, this one included."""
+        payload = copy.deepcopy(evidence())
+        wildcat = next(c for c in payload["coverage"] if c["venue"] == "wildcat")
+        wildcat["source"] = "archive"
+        wildcat["releases"] = "sha256:" + "ab" * 32
+        self.assertIn("0x" + "ab" * 32, gates.known_tokens(payload))
 
     def test_an_unchecked_venue_needs_no_range(self):
         """It never queried anything, so a range would be a claim it cannot make."""

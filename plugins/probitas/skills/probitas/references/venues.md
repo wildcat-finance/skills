@@ -27,6 +27,14 @@ All four adapters name their chain in the coverage note. Wildcat is deployed on
 Plasma as well and Morpho on several chains, and a row that says only `checked`
 would let a reader take one chain's silence for all of them.
 
+These four are the adapter route. Goldfinch and Clearpool are reachable through
+the archive route instead, from verified Alexandria releases, and one `collect`
+run can ask for both: `--fixtures DIR` or `--live` backs the adapter route and
+`--alexandria-index X` adds the archive one. Every coverage row names which
+route produced it, so a venue read from a preserved release never reads as one
+an adapter queried today. An index passed on its own still suppresses the
+adapter route and reaches no network.
+
 ## What does not, and why
 
 | Venue | Blocker |

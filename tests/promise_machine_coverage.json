@@ -3399,12 +3399,12 @@
         "evidence_references": "evidence records, citations, figures and source hashes",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "venue coverage rows and five verification gates",
+        "scope": "venue coverage rows keyed on venue and source, and five verification gates",
         "subject": "dossier bytes, evidence digest and declared entity addresses",
         "transition": "five passing gates and zero exit joined to the canonical Authorises field",
         "unknowns": "unchecked venues, unsupported claims and explicit gaps"
       },
-      "sha256": "82679d551c7150e2dc2dd8bbc007662d6fc7f2dcc9a537cd3d359bd8aa53d41c",
+      "sha256": "43cad0bc29446eddcab936580d79f7ef952f64023db7a2b084dc314f3d9954ec",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     "tabularium-release-build": {
