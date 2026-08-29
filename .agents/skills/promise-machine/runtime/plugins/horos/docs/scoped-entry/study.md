@@ -49,7 +49,11 @@ outside-scope drift: not evaluated
 
 Exit 0 admits the scope. Exit 1 means hard drift inside the scope. Exit 2 means
 no usable ancestor boundary, or a path that escapes the worktree. Candidate
-drift never changes the exit code.
+classification or content drift never changes a scoped check's exit code;
+scoped checks compare entries only. This does not weaken root currency:
+candidate drift itself remains advisory there, but raw canonical metadata stays
+hard, so adding or removing a tracked candidate can fail through
+`files_walked`.
 
 Two guards ship with it, because a gate that answers differently on each
 machine cannot admit anything:
@@ -253,8 +257,11 @@ Contract: `plugins/hexaemeron/skills/elenchus/SKILL.md`.
 
 Refuse admission when the path is absent, escapes the worktree, has no usable
 ancestor boundary, carries an unreadable or unsupported boundary document, or
-holds hard drift inside the scope. Do not refuse for candidate drift or for hard
-drift outside the scope, and say which of those two conditions applied.
+holds hard drift inside the scope. Do not refuse scoped admission for candidate
+classification or content drift, or for hard drift outside the scope, and say
+which condition applied; scoped checks remain entry-only. At the root,
+candidate drift itself remains advisory while raw canonical metadata stays hard,
+so adding or removing a tracked candidate can fail through `files_walked`.
 
 Every fix carries a test that fails without it. Two are already owed by the
 record: the phantom-entry class, and the evidence-copy recurrence that this loop

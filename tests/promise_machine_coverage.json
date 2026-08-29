@@ -138,7 +138,7 @@
     "ariadne-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
       "path": "plugins/ariadne/tests/test_examples.py",
-      "selector": "test_both_examples_verify_with_nothing_unchecked"
+      "selector": "test_all_examples_verify_with_nothing_unchecked"
     },
     "ariadne-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
@@ -2885,7 +2885,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "f0202a8083eaa41b441ebac09228a5867263823092d0e81029d7db95a8b0fb48"
+      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -3050,10 +3050,10 @@
         "promise_id": "coverage key joined to the canonical promise heading",
         "scope": "recorded command, arguments and exact replay mode",
         "subject": "statement subject digest and replay project",
-        "transition": "allow-execution authority and replay exit joined to the canonical Authorises field",
-        "unknowns": "redacted arguments, unchecked predicates and non-deterministic records"
+        "transition": "allow-execution authority, registered predicate gates 2 and 5, and replay exit joined to the canonical Authorises field",
+        "unknowns": "redacted arguments, non-deterministic records and external effects of executed commands"
       },
-      "sha256": "ba45c1fcfba8a2bf9cafbcf09b97c752d3c756eee97cd5d4124da94bea359412",
+      "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     "ariadne-verify-statement": {
@@ -3062,12 +3062,12 @@
         "evidence_references": "predicate materials, claims and gate report",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "predicate type and complete gate set",
+        "scope": "predicate type, gates actually run and explicit unchecked set",
         "subject": "in-toto subject name and digest",
-        "transition": "zero-exit gate result joined to the canonical Authorises field",
+        "transition": "zero-exit result for applicable gates actually run joined to the canonical Authorises field",
         "unknowns": "unchecked predicates, unsigned status and skipped records"
       },
-      "sha256": "ba45c1fcfba8a2bf9cafbcf09b97c752d3c756eee97cd5d4124da94bea359412",
+      "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     "berean-release-promotion": {
@@ -3123,7 +3123,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "f0202a8083eaa41b441ebac09228a5867263823092d0e81029d7db95a8b0fb48",
+      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -3137,7 +3137,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work and any unrun external check"
       },
-      "sha256": "f0202a8083eaa41b441ebac09228a5867263823092d0e81029d7db95a8b0fb48",
+      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -3151,7 +3151,7 @@
         "transition": "local archive, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "f0202a8083eaa41b441ebac09228a5867263823092d0e81029d7db95a8b0fb48",
+      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -3165,7 +3165,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "f0202a8083eaa41b441ebac09228a5867263823092d0e81029d7db95a8b0fb48",
+      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -3179,7 +3179,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "f0202a8083eaa41b441ebac09228a5867263823092d0e81029d7db95a8b0fb48",
+      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -3193,7 +3193,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "f0202a8083eaa41b441ebac09228a5867263823092d0e81029d7db95a8b0fb48",
+      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -3207,7 +3207,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "f0202a8083eaa41b441ebac09228a5867263823092d0e81029d7db95a8b0fb48",
+      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {
@@ -3305,7 +3305,7 @@
         "transition": "atomic scan write and zero exit joined to the canonical Authorises field",
         "unknowns": "omitted paths and fail-open unproven classifications"
       },
-      "sha256": "baffc31c6b40703361f05175d3c233b33f1abf1802a4139032094f58fb15aeae",
+      "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
       "source": "plugins/horos/skills/horos/scripts/horos.py"
     },
     "hypomnema-record-placement": {

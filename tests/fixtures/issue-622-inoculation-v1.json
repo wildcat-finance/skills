@@ -110,25 +110,25 @@
       "source": "plugins/horos/tests/test_scoped_entry.py",
       "target": "plugins/horos/tests/test_scoped_entry.py",
       "archive_sha256": "227da20c8428e64dab612a446dce21c2711d40f1a6f4a23f25362322e2318318",
-      "current_sha256": "2aba2ac960f89dc92a2f9450d7d66636613c80fe71b4deec4bf08ae0760b4477"
+      "current_sha256": "cdf28f97708a2004df5f67a8182228d30d9c38f1a955fed7ef8a9fcfa9fde8f5"
     },
     {
       "source": "plugins/horos/tests/test_universe.py",
       "target": "plugins/horos/tests/test_universe.py",
       "archive_sha256": "42aeeb2f4411be02e8f72274f769efb6369bc2a7bc96298901e2fd902bb00a47",
-      "current_sha256": "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
+      "current_sha256": "7cbfcacc8b3f989dd6204669da8479460c5f945e489a2066c6659ef2f39e0fda"
     },
     {
       "source": "tests/promise_machine_coverage.json",
       "target": "tests/promise_machine_coverage.json",
       "archive_sha256": "89b5b34c8960691fd98ea62cb088cd5e96f2fa5fb1d4654e71877b6d4a3fe089",
-      "current_sha256": "d1d2b9f37fc97005f3c8fb1d8410c5c8aab78d49607e905dc479a52856db3e97"
+      "current_sha256": "947c01fd254b3c8389aaa0f36c772de31ffe49ed5a297699bcd99f7fb38b8c81"
     },
     {
       "source": "tests/test_boundary_currency.py",
       "target": "tests/test_boundary_currency.py",
       "archive_sha256": "4af04fbe530ce7d0e0029fdbff8960b6b9cb43289162e90ff945b1852b9a2d3d",
-      "current_sha256": "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
+      "current_sha256": "7a24d9d3433d2c87ff8bb5570de7b7a79fb285f0f85fe43747a1224b0d092c69"
     }
   ],
   "families": [
