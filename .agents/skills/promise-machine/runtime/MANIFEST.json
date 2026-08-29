@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 938,
-  "total_bytes": 20354675,
+  "total_bytes": 20356274,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3427,9 +3427,9 @@
       "source": "plugins/janus/examples/findings.sample.json"
     },
     {
-      "bytes": 35011,
+      "bytes": 35903,
       "path": "plugins/janus/harness/adapters/ManifestFuzz.sol",
-      "sha256": "baed280c5a9c36c5544ea658ab48a7da3dfca80336d50969ac748f86a5b74446",
+      "sha256": "c359bf1adeea66abb4b76653ce0b77ccb6f9a4e93b2d1c3ca1f6564985cddae7",
       "source": "plugins/janus/harness/adapters/ManifestFuzz.sol"
     },
     {
@@ -3541,9 +3541,9 @@
       "source": "plugins/janus/harness/test/HostileHooks.t.sol"
     },
     {
-      "bytes": 53870,
+      "bytes": 54577,
       "path": "plugins/janus/harness/test/ManifestReader.t.sol",
-      "sha256": "cc3100f236abb2c6c74f428b756eaa24a0a838b2dd169da93591fe4f25079614",
+      "sha256": "0c54177420e06c9b411ba98b3a1829492f3c8f1380ab19a08bf11fdbb7a80bd7",
       "source": "plugins/janus/harness/test/ManifestReader.t.sol"
     },
     {

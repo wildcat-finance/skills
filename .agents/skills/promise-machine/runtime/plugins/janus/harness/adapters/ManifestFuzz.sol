@@ -94,6 +94,7 @@ contract ManifestFuzz {
 
   bool public sawAdapterAnsweredUnknown;
   bool public sawAdapterCrossBound;
+  bool public sawAdapterDroppedHeldName;
   uint256 public adapterDraws;
   uint256 public adapterResolved;
 
@@ -638,9 +639,13 @@ contract ManifestFuzz {
     }
 
     if (!ok) {
-      // A held name that stops answering is a widening in the other
-      // direction: the permit it carries silently disappears.
-      sawAdapterCrossBound = true;
+      // A held name that stops answering is its own failure, and it gets its
+      // own ghost. Folding it into GL13 made a vanished permit and a
+      // misdirected one report identically, and those are opposite defects:
+      // one drops a permission the manifest granted, the other points it at an
+      // account the manifest never named. GL10 needed two ambiguous names for
+      // exactly this reason one step earlier.
+      sawAdapterDroppedHeldName = true;
       return;
     }
     adapterResolved++;
@@ -722,5 +727,15 @@ contract ManifestFuzz {
   ///      table collapsing to one address cannot agree with it.
   function echidna_GL13_adapter_names_keep_their_own_addresses() public view returns (bool) {
     return !sawAdapterCrossBound;
+  }
+
+  /// @dev GL14. A name the table holds keeps answering for it. This is GL13's
+  ///      opposite failure and not a weaker form of it: GL13 catches a permit
+  ///      pointed at the wrong account, GL14 catches one that silently stops
+  ///      existing, and a manifest that grants a permission the adapter then
+  ///      refuses to resolve fails closed in a way no other property here
+  ///      reports.
+  function echidna_GL14_adapter_keeps_answering_for_held_names() public view returns (bool) {
+    return !sawAdapterDroppedHeldName;
   }
 }
