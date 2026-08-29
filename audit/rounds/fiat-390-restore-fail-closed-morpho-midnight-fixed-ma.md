@@ -1,0 +1,15 @@
+## Step 1, round 1 -- 2026-08-29T09:14:51Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: api-schema-drift=not-applicable; cursor-incompleteness=not-applicable; unknown-event=not-applicable; subject-misattribution=not-applicable; maturity-boundary=reviewed; unit-accounting=reviewed; settlement-language=reviewed; derived-citation=reviewed; source-completeness=reviewed; rest-origin=not-applicable; response-bounds=not-applicable; fixture-fidelity=not-applicable; partial-output=reviewed; marketplace-drift=not-applicable
+
+Not checked: the Pashov X-Ray, Solidity Auditor and Fizz pipelines under the recorded non-Solidity waiver; Steps 2 through 4 adapter, API, dossier, demonstration and marketplace behavior; live Morpho responses or archive-chain completeness; power-loss durability; a hostile same-user writer able to enumerate and replace the unpredictable private stage or rewrite the published report; hosted CI, controller receipt, push, pull request, merge and issue closure
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: No product defect survived the full diff review from immutable run base `66da3817761415f31bd467140ac1510f77b91b62` through signed Step 1 head `7bac2c291275e3c4d0c13659a1907cb5c45860e1`. The study, historical product runbook, runner, runner guards and prior audit records are byte-identical to historical source tip `88e745947270fd27891b5a99f7a33c8583d63ca2`; the decision record is byte-identical after the authorised `ADR-043` to `ADR-048` allocation, and only current generated closure differs. The study matches receipt SHA-256 `83cce2c5b5d0584080ab25627b72c755fb444fd794874ea72cd7627ca50d5ae9`; the current effective Step 1 runbook SHA-256 is `873c7056d2e8b763850d7ea2a484c4681f39c0752e15945bce894b1d4de031e2`. The exact source-bound runner produced a complete `elenchus.unittest.v1` report with 290 of 290 tests, zero failures, errors, skips, expected failures or unexpected successes; all 14 focused report-runner guards passed. Portable runtime check and `git diff --check` passed. Phylax, Ephoros and Hypomnema each exited zero on all 14 final changed paths, including this record and its generated synopsis. The selected current check graph passed the Probitas suite and all three lints; its root suite reproduced only inherited immutable-base conditions outside this diff. With the default macOS temporary root, the isolated-package model-proxy check refused symlinked lexical parent `/var` as `MP407`; `TMPDIR=/private/tmp` removed that failure. The remaining primer setup error says its shipped study records Hexaemeron 1.6.5 while the checker requires 1.6.8; merged PR #759 at `19933673bf572964efcb61e72e2f309034317df1` repairs that aggregate, and the runbook assigns proof after signed base composition. Neither inherited path changes a Step 1 product claim. The audit-filter declaration is exactly `--audit-filter sapheneia:sapheneia`. No further leads remain for this round.
