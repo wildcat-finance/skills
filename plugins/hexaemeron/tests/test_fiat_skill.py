@@ -1453,9 +1453,9 @@ class RunWorktreeDemoTests(unittest.TestCase):
         self.repo = os.path.join(self.tmp, "repo")
         os.makedirs(self.repo)
         for argv in (["init", "-q", "-b", "main"],
+                     ["config", "--local", "commit.gpgsign", "false"],
                      ["config", "user.email", "demo@example.invalid"],
                      ["config", "user.name", "Demo"],
-                     ["config", "commit.gpgsign", "false"],
                      ["commit", "-q", "--allow-empty", "-m", "base"]):
             subprocess.run(["git", *argv], cwd=self.repo, check=True, capture_output=True)
 

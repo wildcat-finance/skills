@@ -50,9 +50,9 @@ def make_origin_checkout(path):
     """
     for argv in (
         ["init", "-q", "-b", "main"],
+        ["config", "--local", "commit.gpgsign", "false"],
         ["config", "user.email", "fixture@example.invalid"],
         ["config", "user.name", "Fixture"],
-        ["config", "commit.gpgsign", "false"],
         ["commit", "-q", "--allow-empty", "-m", "base"],
     ):
         subprocess.run(["git", *argv], cwd=path, check=True, capture_output=True)

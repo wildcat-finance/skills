@@ -862,3 +862,596 @@ study copy for the same reason it already carried the runbook copy.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
 holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Goal: Apply the rule to the remaining
+four construction sites, harden the two that already declare it, and extend the
+guard's enumeration to both suites.
+
+Complete replacement Tests: No new test module.
+`tests/test_disposable_fixture_signing.py` gains one enumeration entry per
+suite. Each representative must be a test that commits fixture history, never
+one that verifies a signature. Step 2's third audit round measured
+`plugins/hexaemeron/tests/test_issue_429_recovery.py` reaching the hostile
+signer through `git verify-commit`, which the enumeration's contract of exit 0
+with an empty sentinel cannot distinguish from a fixture signing itself, so a
+verifying representative can never pass however correctly its fixtures declare
+the rule. Confirm the chosen representative records a signing invocation rather
+than a verifying one when its declaration is removed.
+
+The signature-verification legs must be shown untouched: the Hexaemeron suite
+reports the same test count as at step 3's exit plus nothing, and `git diff`
+over `plugins/hexaemeron/tests/test_issue_429_recovery.py` is empty.
+
+```text
+test command: /Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report {report}
+report format: unittest-json-v1
+expected report schema: elenchus.unittest.v1
+report file: .elenchus/fiat-621-step-4.json
+```
+
+Expected exact Elenchus result: `passed`, for the reason step 3's amended tests
+field gives. The classifier copies a commit's changed test files onto its parent
+before running the declared command, so a test-only change carries its own fix
+and the parent cannot fail. `unguarded` is not the mechanical answer for this
+step's code change and must not be recorded as one: the classifier reserves it
+for a commit that changed no test files at all, measured against
+`plugins/hexaemeron/skills/elenchus/scripts/elenchus.py:281`.
+
+**Why.** The goal said five remaining sites. The study's section 2b table
+records ten in total and step 3 declared six of them, leaving four: sites 2, 3,
+4 and 5. The other two paths this step touches, at
+`plugins/hexaemeron/tests/test_hexctl.py:55` and
+`plugins/hexaemeron/tests/test_fiat_skill.py:1458`, already declare the rule and
+are hardened for uniformity rather than repaired, which the files field already
+says; counting them as remaining sites conflates repair with tidying. The tests
+field predicted `unguarded` by pointing at step 3, whose own prediction has
+since been corrected to `passed` by amendment, so the pointer now resolves to
+the opposite of what it was written to mean. The representative-selection rule
+is added because this is the step whose suites contain the verifying tests step
+2's audit measured.
+
+**Steps touched.** Step 4's goal and tests.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: Both remaining suites pass, and no
+fixture construction in either reaches the signer. All of the following exit 0:
+
+```bash
+npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py'
+/Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+/Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-4.json
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+```
+
+And, under a hostile configuration this step generates for itself:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1' "$HOSTILE_DIR/hexaemeron.log"
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+The Hermes suite still exits 0 with nothing of its own in the sentinel. The
+Hexaemeron suite does not, and cannot: `plugins/hexaemeron/tests/test_issue_429_recovery.py:154`
+runs `git verify-commit` against this repository's own history, and the commit it
+names carries a real signature header, so git consults the hostile
+`gpg.program` to verify it and that program refuses by design. The remaining four
+assertions state what the rule actually claims. The one error is exactly that
+test and no other; the sentinel records a verification; and it records no
+`-bsau`, which is the argument form git uses when it asks a program to *sign*.
+No fixture construction in either suite reaches the signer.
+
+**Why.** The replaced exit required the hostile Hexaemeron run to exit 0 with an
+empty sentinel. Neither is reachable while the suite contains a
+signature-verification test, and this step is forbidden to touch that file
+because the study excludes signature-subject tests from the rule by design. The
+criterion therefore demanded that an excluded test satisfy the rule it is
+excluded from. Step 2's third audit round measured this exact behaviour and
+recorded it as a lead for step 4; it arrived as predicted. Emptiness was the
+wrong proxy: it conflates a fixture asking the signer to sign with a
+verification test asking it to verify, and only the first is the defect under
+repair. The replacement distinguishes them by argument form, which is the
+distinction the rule has always rested on. No criterion is weakened: every
+fixture site in both suites must still construct and commit without reaching the
+signer, and that is now asserted directly rather than inferred from an empty
+file.
+
+**Steps touched.** Step 4's exit.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Files: Changed:
+`plugins/hexaemeron/tests/test_elenchus_checker.py` (the `Fixture` constructor at
+line 114), `plugins/hexaemeron/tests/test_kronos_scoreboard.py` (lines 664 and
+759), `plugins/hermes/skills/hermes/scripts/test_hermes.py` (line 173),
+`plugins/hexaemeron/tests/test_hexctl.py` and
+`plugins/hexaemeron/tests/test_fiat_skill.py` for the scope hardening only, and
+`tests/test_disposable_fixture_signing.py` (enumeration entries for both
+suites).
+
+Regenerated, not hand-edited:
+`.agents/skills/promise-machine/runtime/plugins/hermes/skills/hermes/scripts/test_hermes.py`
+and `.agents/skills/promise-machine/runtime/MANIFEST.json`, because the portable
+runtime mirrors the Hermes test module and `tests/test_skills_sh_package.py`
+fails until `scripts/portable_promise_machine.py sync` restores the mirror; and
+`.horos/boundary.json` and `.horos/candidates.json`, because those mirrored
+bytes drift the boundary and `tests/test_boundary_currency.py` fails until
+`plugins/horos/skills/horos/scripts/horos.py scan . --write` restores it. Stage
+before scanning, because the scan walks tracked files, and run it last, because
+anything written afterwards invalidates it. The candidates file also gains the
+two `audit/rounds/fiat-621-*` entries the earlier steps added.
+
+The Kronos site at line 759 is a `git clone`, not a `git init`; the declaration
+goes immediately after the clone, because the rule is stated at creation
+whichever verb created the repository, and step 2's audit measured that a clone
+inherits no local configuration from the repository it was cloned from. The
+hardening at `plugins/hexaemeron/tests/test_hexctl.py:55` and
+`plugins/hexaemeron/tests/test_fiat_skill.py:1458` adds the explicit `--local`
+scope and moves the call to immediately after `init`; both are already correct
+and neither is a defect, so this is uniformity, not repair. Do not change
+`plugins/hexaemeron/tests/test_hexctl.py:1366` or `:1388`: both re-initialise
+the repository `make_origin_checkout` already configured, and a re-init
+preserves local config. Do not change
+`plugins/hexaemeron/tests/test_issue_429_recovery.py` or the signature classes
+of `plugins/hexaemeron/tests/test_hexctl.py`; the study's section 2b lists them
+as excluded because signing is their subject.
+
+**Why.** The files list named the six paths the step edits by hand and omitted
+the four it must regenerate. Those four are not optional and not incidental: the
+portable runtime mirrors one of the edited modules, the Horos boundary is
+computed over the tracked tree, and a suite guards each, so a step that changed
+the six and stopped would leave the repository red. Naming them, with the order
+the regeneration has to run in, is what stops the next reader treating a
+generated diff as an unexplained edit.
+
+**Steps touched.** Step 4's files.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: Both remaining suites pass, and no
+fixture construction in either reaches the signer. All of the following exit 0:
+
+```bash
+npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py'
+/Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+/Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-4.json
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+```
+
+And, under a hostile configuration this step generates for itself:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1\)' "$HOSTILE_DIR/hexaemeron.log"
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+The Hermes suite exits 0 with nothing of its own in the sentinel. The Hexaemeron
+suite does not, and cannot: `plugins/hexaemeron/tests/test_issue_429_recovery.py:154`
+runs `git verify-commit` against this repository's own history, and the commit it
+names carries a real signature header, so git consults the hostile `gpg.program`
+to verify it and that program refuses by design. The four assertions state what
+the rule actually claims: the one error is exactly that test and no other, the
+sentinel records a verification, and it records no `-bsau`, which is the argument
+form git uses under this harness's openpgp arm when it asks a program to sign.
+
+Two bounds on that last assertion, stated so nobody reads it as wider than it is.
+`-bsau` discriminates signing from verification under the openpgp arm, which is
+the arm `--emit` writes and the only one these commands run; every signing form
+measured under it, including `git tag -s`, `git merge -S`, and a commit with an
+empty signing key, carries `-bsau`, and verification never does. It is not the
+discriminator under the ssh arm, where signing appears as `-Y sign`; that arm is
+not reachable from these commands, and the emptiness criterion this replaces had
+the identical bound.
+
+Complete replacement Tests: No new test module.
+`tests/test_disposable_fixture_signing.py` gains one enumeration entry per suite.
+Each representative must be a test that commits fixture history, never one that
+verifies a signature. Step 2's third audit round measured
+`plugins/hexaemeron/tests/test_issue_429_recovery.py` reaching the hostile signer
+through `git verify-commit`, which the enumeration's contract of exit 0 with an
+empty sentinel cannot distinguish from a fixture signing itself, so a verifying
+representative can never pass however correctly its fixtures declare the rule.
+Confirm the chosen representative records a signing invocation rather than a
+verifying one when its declaration is removed.
+
+The signature-verification legs must be shown untouched: the Hexaemeron suite
+reports the same test count as at step 3's exit plus nothing, and `git diff` over
+`plugins/hexaemeron/tests/test_issue_429_recovery.py` is empty.
+
+```text
+test command: /Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report {report}
+report format: unittest-json-v1
+expected report schema: elenchus.unittest.v1
+report file: .elenchus/fiat-621-step-4.json
+```
+
+Expected exact Elenchus result: `guarded`. This step is not a test-only change.
+Its files field requires four regenerated artefacts alongside the six hand
+edits, and the classifier copies only a commit's changed *test* files onto the
+parent, so `MANIFEST.json` and the two `.horos` files stay at their parent
+state and the currency guards that watch them fail there: the committed-boundary
+check and three `SkillsShPackageTests` cases. That is a real red-to-green guard,
+which is what `guarded` names. It is not the signing guard, and the record should
+say so rather than implying the fixture rule was proved by it.
+
+**Why.** Two defects in the amendments this step already carries, both mine, both
+found by its first audit round.
+
+The error-count assertion was written `FAILED \(errors=1` with no closing paren,
+so it accepts `errors=1`, `errors=10`, `errors=13` and `errors=100`. That band is
+reachable rather than theoretical: dropping both kronos declarations makes that
+module alone report fifteen errors with fifteen signing invocations, which the
+pattern would have accepted. The fourth assertion still catches the signing
+claim, so nothing false could have been recorded about the rule, but the "and no
+other error" half was not being checked. The closing paren restores it.
+
+The expected verdict said `passed` on the reasoning that a test-only change
+carries its own fix. That reasoning was sound and its premise was not: the eighth
+amendment had already established this step regenerates four non-test artefacts,
+which is precisely what makes the classifier's copy incomplete and the parent
+fail. The measured value is `guarded`, and it is the better outcome — but a
+prediction that contradicts its own step's files field should never have been
+written.
+
+**Steps touched.** Step 4's exit and tests.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: Both remaining suites pass, and no
+fixture construction in either reaches the signer. All of the following exit 0:
+
+```bash
+npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py'
+/Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+/Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-4.json
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+```
+
+And, under a hostile configuration this step generates for itself:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1[,)]' "$HOSTILE_DIR/hexaemeron.log"
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+The Hermes suite exits 0 with nothing of its own in the sentinel. The Hexaemeron
+suite does not, and cannot: `plugins/hexaemeron/tests/test_issue_429_recovery.py:154`
+runs `git verify-commit` against this repository's own history, and the commit it
+names carries a real signature header, so git consults the hostile `gpg.program`
+to verify it and that program refuses by design. The four assertions state what
+the rule actually claims: the one error is exactly that test and no other, the
+sentinel records a verification, and it records no `-bsau`, which is the argument
+form git uses under this harness's openpgp arm when it asks a program to sign.
+
+The error-count pattern ends `[,)]` rather than `\)` because the suite carries
+one skip, so unittest prints `FAILED (errors=1, skipped=1)` and the closing paren
+does not follow the digit. The character class anchors the digit boundary, which
+is the whole point: it matches that line and the skip-free `FAILED (errors=1)`,
+and rejects `errors=10`, `errors=13` and `errors=100`.
+
+Two bounds on the `-bsau` assertion, stated so nobody reads it as wider than it
+is. It discriminates signing from verification under the openpgp arm, which is
+the arm `--emit` writes and the only one these commands run; every signing form
+measured under it, including `git tag -s`, `git merge -S`, and a commit with an
+empty signing key, carries `-bsau`, and verification never does. It is not the
+discriminator under the ssh arm, where signing appears as `-Y sign`; that arm is
+not reachable from these commands, and the emptiness criterion this replaces had
+the identical bound.
+
+Complete replacement Files: Changed:
+`plugins/hexaemeron/tests/test_elenchus_checker.py` (the `Fixture` constructor at
+line 114), `plugins/hexaemeron/tests/test_kronos_scoreboard.py` (lines 664 and
+759), `plugins/hermes/skills/hermes/scripts/test_hermes.py` (line 173),
+`plugins/hexaemeron/tests/test_hexctl.py` and
+`plugins/hexaemeron/tests/test_fiat_skill.py` for the scope hardening only, and
+`tests/test_disposable_fixture_signing.py` (enumeration entries for both
+suites).
+
+Refreshed: `docs/disposable-fixture-signing/runbook.md` and
+`docs/disposable-fixture-signing/study.md`, so the shipped copies stay
+byte-identical to the receipted artefacts. This step records several amendments
+of its own, and each one moves the canonical runbook, so the refresh is the last
+thing the step does rather than something it can do once and forget.
+
+Regenerated, not hand-edited:
+`.agents/skills/promise-machine/runtime/plugins/hermes/skills/hermes/scripts/test_hermes.py`
+and `.agents/skills/promise-machine/runtime/MANIFEST.json`, because the portable
+runtime mirrors the Hermes test module and `tests/test_skills_sh_package.py`
+fails until `scripts/portable_promise_machine.py sync` restores the mirror; and
+`.horos/boundary.json` and `.horos/candidates.json`, because those mirrored bytes
+drift the boundary and `tests/test_boundary_currency.py` fails until
+`plugins/horos/skills/horos/scripts/horos.py scan . --write` restores it. Stage
+before scanning, because the scan walks tracked files, and run it last, because
+anything written afterwards invalidates it.
+
+The Kronos site at line 759 is a `git clone`, not a `git init`; the declaration
+goes immediately after the clone, because the rule is stated at creation whichever
+verb created the repository, and step 2's audit measured that a clone inherits no
+local configuration from the repository it was cloned from. The hardening at
+`plugins/hexaemeron/tests/test_hexctl.py:55` and
+`plugins/hexaemeron/tests/test_fiat_skill.py:1458` adds the explicit `--local`
+scope and moves the call to immediately after `init`; both are already correct and
+neither is a defect, so this is uniformity, not repair. Do not change
+`plugins/hexaemeron/tests/test_hexctl.py:1366` or `:1388`: both re-initialise the
+repository `make_origin_checkout` already configured, and a re-init preserves
+local config. Do not change
+`plugins/hexaemeron/tests/test_issue_429_recovery.py` or the signature classes of
+`plugins/hexaemeron/tests/test_hexctl.py`; the study's section 2b lists them as
+excluded because signing is their subject.
+
+**Why.** My correction to the error-count pattern overcorrected. Demanding
+`errors=1\)` requires the closing paren to follow the digit, which it does not:
+the suite carries one skip, so the real line reads `FAILED (errors=1, skipped=1)`
+and the assertion failed on a correct tree, making the exit unsatisfiable. The
+character class fixes the digit boundary without demanding the paren, and was
+measured against the real line and against `errors=10`, `errors=13` and
+`errors=100` before being written here. That is three revisions of one assertion,
+which is worth recording plainly: the first was too loose, the second too strict,
+and only the third was checked against the string it has to match before it was
+committed to the spec.
+
+The files field gains the two shipped copies. Step 3's amendment named them and
+step 4's did not, and the consequence was exactly what that inconsistency
+predicts: the shipped runbook fell 9288 bytes behind, step 1's byte-identity
+criterion stopped passing, and the audit had to refresh it twice in one round.
+
+**Steps touched.** Step 4's exit and files.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: Both remaining suites pass, and no
+fixture construction in either reaches the signer. All of the following exit 0:
+
+```bash
+npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py'
+/Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+/Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-4.json
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+```
+
+And, under a hostile configuration this step generates for itself and removes
+when it is done:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+trap 'rm -rf "$HOSTILE_DIR"' EXIT
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1[,)]' "$HOSTILE_DIR/hexaemeron.log"
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+The `trap` is set immediately after the directory is made and before anything is
+written into it, so the emitted signer is removed whether the assertions pass,
+fail, or the shell exits early. A reader running these blocks by hand in one
+shell session gets the same guarantee; a reader who runs them in separate
+sessions must remove the directory themselves, because a trap does not outlive
+the shell that set it.
+
+The Hermes suite exits 0 with nothing of its own in the sentinel. The Hexaemeron
+suite does not, and cannot: `plugins/hexaemeron/tests/test_issue_429_recovery.py:154`
+runs `git verify-commit` against this repository's own history, and the commit it
+names carries a real signature header, so git consults the hostile `gpg.program`
+to verify it and that program refuses by design. The four assertions state what
+the rule actually claims: the one error is exactly that test and no other, the
+sentinel records a verification, and it records no `-bsau`, which is the argument
+form git uses under this harness's openpgp arm when it asks a program to sign.
+
+The error-count pattern ends `[,)]` rather than `\)` because the suite carries
+one skip, so unittest prints `FAILED (errors=1, skipped=1)` and the closing paren
+does not follow the digit. The character class anchors the digit boundary: it
+matches that line and the skip-free `FAILED (errors=1)`, and rejects `errors=10`,
+`errors=13` and `errors=100`.
+
+Two bounds on the `-bsau` assertion. It discriminates signing from verification
+under the openpgp arm, which is the only arm these commands can produce, because
+`--emit` takes no arm argument, the emitted configuration contains no occurrence
+of `ssh`, and no fixture in any covered suite sets `gpg.format`,
+`gpg.ssh.program` or `gpg.program`. Every signing form measured under it carries
+`-bsau`, including `git tag -s`, `git merge -S`, and a commit with an empty
+signing key. It is not the discriminator under the ssh arm, where signing appears
+as `-Y sign`; a fixture that declared ssh signing for itself would reach the real
+`ssh-keygen` rather than the sentinel and fail at 128 with the sentinel empty,
+which is a bound the emptiness criterion this replaces shared rather than one
+introduced here.
+
+**Why.** The hostile blocks created a temporary directory and never removed it.
+Across the preamble and steps 2 through 5 the runbook has nine such sites and no
+cleanup of any kind, so every invocation leaves behind a complete working hostile
+configuration: a mode-0700 signing program beside a config naming it by absolute
+path. The register entry `sentinel-leak` claims both files are removed with the
+temporary directory that holds them, which is true of the Python guard, measured,
+and false of these shell blocks, which write the same two files through the same
+entry point. The signer is inert on its own and owner-readable only, so the
+severity is low, but a runbook that ships a claim its own commands contradict is
+the defect regardless of blast radius.
+
+Only this step's exit and step 5's can be repaired. Steps 2 and 3 are complete,
+and the preamble is not a step field, so their blocks keep the leak; that
+limitation belongs in the run's carried-forward list rather than in a silent
+partial fix.
+
+**Steps touched.** Step 4's exit.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: The demo path passes, both
+measurements are recorded, and the decision record is committed and lints clean.
+
+Capture the two configuration baselines first, before any suite runs, into a
+directory that outlives the hostile one:
+
+```bash
+CAPTURE_DIR="$(mktemp -d)"
+git config --global --list > "$CAPTURE_DIR/global-before.txt"
+git -C . config --local --list > "$CAPTURE_DIR/local-before.txt"
+```
+
+Then generate the hostile configuration with the harness step 2 committed,
+removing it when the shell exits:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+trap 'rm -rf "$HOSTILE_DIR" "$CAPTURE_DIR"' EXIT
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+The demo path is the study's section 1, run under inherited signing. Three of
+the four suites exit 0:
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 -m unittest discover -s plugins/horos/tests -t plugins/horos
+```
+
+The fourth cannot, and these three assertions exit 0 instead:
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1[,)]' "$HOSTILE_DIR/hexaemeron.log"
+```
+
+The other half of the criterion is what the sentinel holds after all four suites
+have run. Both exit 0:
+
+```bash
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+Then the remaining exit commands, all 0:
+
+```bash
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-5.json
+/Users/kethcode/.local/bin/python3.14 -m unittest tests.test_decision_records
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/decisions/ADR-045-declare-signing-policy-on-disposable-git-fixtures.md
+/Users/kethcode/.local/bin/python3.14 plugins/brevitas/skills/brevitas/scripts/brevitas.py docs/decisions/ADR-045-declare-signing-policy-on-disposable-git-fixtures.md
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
+/Users/kethcode/.local/bin/python3.14 plugins/horos/skills/horos/scripts/horos.py check .
+```
+
+Acceptance item 2 is proved by comparison rather than assertion, and both
+commands must print nothing:
+
+```bash
+git config --global --list | diff - "$CAPTURE_DIR/global-before.txt"
+git -C . config --local --list | diff - "$CAPTURE_DIR/local-before.txt"
+```
+
+**Why.** Two defects, both already met and answered elsewhere in this runbook,
+and both worse here than where they were found because this step is the
+acceptance proof.
+
+The sentinel assertion was `test ! -s "$HOSTILE_SENTINEL"` after a demo path
+that runs the Hexaemeron suite. That suite contains
+`plugins/hexaemeron/tests/test_issue_429_recovery.py:154`, which verifies this
+repository's own signed history, so the hostile program is consulted and the
+sentinel is never empty. Step 4 met this and replaced emptiness with the
+distinction the rule actually rests on: a fixture asking the signer to sign
+carries `-bsau` under this harness's openpgp arm, and a verification never does.
+The same replacement is made here, together with the two assertions that bound
+the Hexaemeron suite's one permitted error to exactly that test. A demonstration
+step whose criterion cannot be satisfied on a correct tree would have failed the
+delivery it exists to prove.
+
+The hostile directory was created and never removed, leaving a mode-0700 signing
+program beside a configuration naming it by absolute path. The `trap` is set
+before anything is written into either directory, so both go whether the demo
+path passes, fails, or the shell exits early. Steps 2 and 3 are complete and the
+preamble is not a step field, so their blocks keep the leak and it stays on the
+carried-forward list; this is the last block that could still be repaired, and
+repairing it is why the run's own demonstration no longer contributes to the
+problem it documents.
+
+The two baseline captures moved from fixed `/tmp` paths into a temporary
+directory of their own. A fixed name in a shared directory is a collision
+between two concurrent runs and a stale-file trap for one run repeated, and
+acceptance item 2 is the claim that this delivery changes no configuration
+outside its own fixtures, which a comparison against another run's leftovers
+cannot establish.
+
+**Steps touched.** Step 5's exit.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
