@@ -491,6 +491,43 @@ class HexctlCheckpointTests(HexctlCase):
         self.assert_no_stage(destination)
         self.assertEqual(before, self.state_ledger_bytes())
 
+    def test_replaced_private_stage_is_not_deleted(self):
+        self.to_post_push()
+        module = hexctl_module()
+        destination = Path(self.dir) / "stage-replaced"
+        detached_stage = Path(self.dir) / "detached-stage"
+        original_snapshot = module._checkpoint_snapshot
+        replacement_marker = None
+
+        def replace_stage_after_capture(source, target):
+            nonlocal replacement_marker
+            inventory = original_snapshot(source, target)
+            if target is not None and replacement_marker is None:
+                stage = Path(target).parent
+                stage.rename(detached_stage)
+                stage.mkdir(mode=0o700)
+                replacement_marker = stage / "unowned-marker"
+                replacement_marker.write_text("must survive", encoding="utf-8")
+            return inventory
+
+        before = self.state_ledger_bytes()
+        stderr = StringIO()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(
+                module, "_checkpoint_snapshot", replace_stage_after_capture
+            ):
+                with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module.cmd_checkpoint_export(
+                        SimpleNamespace(dir=self.target, out=str(destination))
+                    )
+
+        self.assertIn("checkpoint", stderr.getvalue())
+        self.assertIsNotNone(replacement_marker)
+        self.assertTrue(replacement_marker.exists())
+        self.assertTrue(detached_stage.exists())
+        self.assertFalse(destination.exists())
+        self.assertEqual(before, self.state_ledger_bytes())
+
     def test_occupied_and_racing_destinations_are_never_replaced(self):
         self.to_post_push()
         occupied = Path(self.dir) / "occupied"

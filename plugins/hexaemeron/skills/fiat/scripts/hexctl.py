@@ -8225,6 +8225,22 @@ def _checkpoint_directory_still_at_path(path: str, descriptor: int) -> bool:
                 os.close(current)
 
 
+def _checkpoint_directory_still_in_parent(
+    parent_descriptor: int, name: str, descriptor: int
+) -> bool:
+    """Return whether one parent entry still names the opened directory."""
+    try:
+        named = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
+        opened = os.fstat(descriptor)
+    except OSError:
+        return False
+    return (
+        stat.S_ISDIR(named.st_mode)
+        and stat.S_ISDIR(opened.st_mode)
+        and (named.st_dev, named.st_ino) == (opened.st_dev, opened.st_ino)
+    )
+
+
 def _checkpoint_destination(base_dir: str, supplied: str) -> tuple[str, str, int]:
     """Resolve and pin one new sibling-publish target and its parent."""
     if not isinstance(supplied, str) or not supplied:
@@ -8470,14 +8486,35 @@ def cmd_checkpoint_export(args) -> None:
             os.chmod(stage, 0o700)
         except OSError:
             die("checkpoint private stage could not be created")
+        stage_name = os.path.basename(stage)
+        stage_descriptor = None
         published = False
         try:
+            try:
+                stage_descriptor = os.open(
+                    stage_name,
+                    os.O_RDONLY
+                    | getattr(os, "O_CLOEXEC", 0)
+                    | getattr(os, "O_DIRECTORY", 0)
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    dir_fd=parent_descriptor,
+                )
+            except OSError:
+                die("checkpoint private stage changed before capture")
+            if not _checkpoint_directory_still_in_parent(
+                parent_descriptor, stage_name, stage_descriptor
+            ):
+                die("checkpoint private stage changed before capture")
             controller_stage = os.path.join(stage, CHECKPOINT_CONTROLLER_DIR)
             try:
                 os.mkdir(controller_stage, 0o700)
             except OSError:
                 die("checkpoint private stage changed before capture")
             inventory = _checkpoint_snapshot(state_root(base_dir), controller_stage)
+            if not _checkpoint_directory_still_in_parent(
+                parent_descriptor, stage_name, stage_descriptor
+            ):
+                die("checkpoint private stage changed during capture")
             if _checkpoint_snapshot(controller_stage, None) != inventory:
                 die("checkpoint private stage changed during capture")
             manifest, manifest_bytes, manifest_digest = _checkpoint_manifest(
@@ -8504,10 +8541,18 @@ def cmd_checkpoint_export(args) -> None:
             ) != manifest_bytes:
                 die("checkpoint manifest changed before publication")
             _checkpoint_fsync_directories(stage)
+            if not _checkpoint_directory_still_in_parent(
+                parent_descriptor, stage_name, stage_descriptor
+            ):
+                die("checkpoint private stage changed before publication")
             if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
                 die("checkpoint output parent changed before publication")
             destination_name = os.path.basename(destination)
-            _checkpoint_atomic_publish(stage, destination_name)
+            _checkpoint_atomic_publish(stage_name, destination_name)
+            if not _checkpoint_directory_still_in_parent(
+                parent_descriptor, destination_name, stage_descriptor
+            ):
+                die("checkpoint private stage changed during publication", 1)
             if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
                 try:
                     shutil.rmtree(destination_name, dir_fd=parent_descriptor)
@@ -8525,9 +8570,18 @@ def cmd_checkpoint_export(args) -> None:
             except OSError:
                 die("checkpoint publication could not be made durable", 1)
         finally:
-            if not published and os.path.isdir(stage) and not os.path.islink(stage):
+            if (
+                not published
+                and stage_descriptor is not None
+                and _checkpoint_directory_still_in_parent(
+                    parent_descriptor, stage_name, stage_descriptor
+                )
+            ):
                 with contextlib.suppress(OSError):
-                    shutil.rmtree(stage)
+                    shutil.rmtree(stage_name, dir_fd=parent_descriptor)
+            if stage_descriptor is not None:
+                with contextlib.suppress(OSError):
+                    os.close(stage_descriptor)
     finally:
         if working_descriptor is not None:
             with contextlib.suppress(OSError):
