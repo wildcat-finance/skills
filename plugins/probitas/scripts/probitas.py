@@ -19,7 +19,11 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from probitas_lib import registry, sanitise  # noqa: E402
-from probitas_lib.adapters import run_adapter, unchecked_coverage  # noqa: E402
+from probitas_lib.adapters import (  # noqa: E402
+    ADAPTER_ROUTES,
+    run_adapter,
+    unchecked_coverage,
+)
 from probitas_lib.adapters import euler, euler_v1, morpho, wildcat  # noqa: E402
 from probitas_lib.evidence import (  # noqa: E402
     Coverage,
@@ -83,7 +87,7 @@ def cmd_collect(args):
     evidence = Evidence(entity=entity, addresses=declared + inferred, run_id=args.run_id)
     routes = routes_for(args)
 
-    if routes[0] in ("live", "fixtures"):
+    if any(route in ADAPTER_ROUTES for route in routes):
         config = {"fixtures": args.fixtures, "timeout": args.timeout}
         for venue in registry.all_venues():
             adapter = ADAPTERS.get(venue.id)

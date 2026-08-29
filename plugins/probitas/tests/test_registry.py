@@ -55,7 +55,7 @@ class TestRegistry(unittest.TestCase):
 
 class TestCoverageForUncheckedVenues(unittest.TestCase):
     def test_a_venue_with_no_adapter_says_unimplemented(self):
-        coverage = unchecked_coverage(registry.BY_ID["maple"])
+        coverage = unchecked_coverage(registry.BY_ID["maple"], ("live",))
         self.assertEqual(coverage.status, "unimplemented")
         self.assertIn("introspection", coverage.note)
 
@@ -106,7 +106,7 @@ class TestAdapterFailures(unittest.TestCase):
     def test_a_venue_nobody_checked_names_none(self):
         for venue in registry.all_venues():
             with self.subTest(venue=venue.id):
-                self.assertEqual(unchecked_coverage(venue).source, "none")
+                self.assertEqual(unchecked_coverage(venue, ("live",)).source, "none")
 
     def test_an_adapter_returning_no_coverage_is_a_bug_not_a_silence(self):
         def sloppy(addresses, config):
@@ -122,6 +122,22 @@ class TestAdapterFailures(unittest.TestCase):
         self.assertEqual(both.source, "none")
         self.assertIn("no adapter ships for it", both.note)
         self.assertIn("not harvested into the selected Alexandria index", both.note)
+
+    def test_a_union_note_keeps_the_venue_description(self):
+        """Gate 4 reads this note as the gap's reason.
+
+        A union dossier whose negative space said only "no adapter ships for
+        it" would tell a reader less about the hole than a single-route one.
+        """
+        venue = registry.BY_ID["goldfinch"]
+        note = unchecked_coverage(venue, ("fixtures", "archive")).note
+        self.assertTrue(note.startswith(venue.note), note[:80])
+        self.assertIn("Not reached by this run:", note)
+
+    def test_unchecked_coverage_will_not_guess_a_route(self):
+        """The note is provenance, and a default would invent some."""
+        with self.assertRaises(TypeError):
+            unchecked_coverage(registry.BY_ID["maple"])
 
     def test_a_single_route_run_keeps_the_sentence_it_always_printed(self):
         """An existing dossier's reader already knows these words."""
