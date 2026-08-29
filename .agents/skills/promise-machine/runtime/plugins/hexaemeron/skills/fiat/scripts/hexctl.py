@@ -215,6 +215,10 @@ SOURCE_BYTES_MAX = 2 * 1024 * 1024
 AMENDMENT_HISTORY_MAX = 500
 GIT_OUTPUT_MAX = 2 * 1024 * 1024
 GIT_PATHS_MAX = 500
+# Integration revalidation reads a surface that grows with the base, so it
+# carries its own ceiling. GIT_PATHS_MAX still bounds the commit range, the
+# prose diff and the checkpoint ref set, none of which grow that way.
+INTEGRATION_PATHS_MAX = 4096
 GIT_TIMEOUT = 30
 INTEGRATION_REVALIDATION_SCHEMA = "fiat-integration-revalidation/v1"
 INTEGRATION_REVALIDATION_SCHEMA_V2 = "fiat-integration-revalidation/v2"
@@ -3967,8 +3971,8 @@ def git_diff_paths(base_dir: str, before: str, after: str) -> list[str]:
         die("integration path delta is not UTF-8")
     paths = [path for path in decoded.split("\0") if path]
     unique = sorted(set(paths))
-    if len(unique) > GIT_PATHS_MAX:
-        die(f"integration path delta exceeds {GIT_PATHS_MAX} paths")
+    if len(unique) > INTEGRATION_PATHS_MAX:
+        die(f"integration path delta exceeds {INTEGRATION_PATHS_MAX} paths")
     if len(unique) != len(paths):
         die("integration path delta contains duplicate paths")
     root = os.path.realpath(base_dir)
@@ -3997,7 +4001,7 @@ def git_diff_paths_for_aggregates(
 ) -> list[str]:
     """Read one complete bounded delta before aggregate classification.
 
-    Version 1 continues through ``git_diff_paths`` and its 500-path refusal.
+    Version 1 continues through ``git_diff_paths`` and its integration refusal.
     Version 2 may cross that count only because a later exact registry join
     classifies the excess. The existing byte and time ceilings still bound the
     Git read, and this reader keeps the same path grammar and diagnostics.
@@ -4037,8 +4041,8 @@ def _strict_json_object(pairs):
 
 
 def _manifest_paths(value, label: str, allowed: set[str] | None = None) -> list[str]:
-    if not isinstance(value, list) or len(value) > GIT_PATHS_MAX:
-        die(f"{label} must be an array of at most {GIT_PATHS_MAX} paths")
+    if not isinstance(value, list) or len(value) > INTEGRATION_PATHS_MAX:
+        die(f"{label} must be an array of at most {INTEGRATION_PATHS_MAX} paths")
     if any(not isinstance(path, str) for path in value):
         die(f"{label} must contain only path strings")
     if value != sorted(set(value)):

@@ -74,7 +74,7 @@
       "source": "plugins/hexaemeron/tests/test_disposable_git_signing.py",
       "target": "plugins/hexaemeron/tests/test_disposable_git_signing.py",
       "archive_sha256": "63f73e943c9652fd7220227e46dba451d8f0c403167f614312a22b8cb9e54b83",
-      "current_sha256": "a99e726b0ca3cda5a0a7487fb00243b66075a4352e1e6eea781adaf09d3cf7e0"
+      "current_sha256": "58bc0c80f64c8bac6bda0c539af89721837a44ee22eaac04fac56ce5f5ca4c78"
     },
     {
       "source": "plugins/hexaemeron/tests/test_elenchus_checker.py",
@@ -122,7 +122,7 @@
       "source": "tests/promise_machine_coverage.json",
       "target": "tests/promise_machine_coverage.json",
       "archive_sha256": "89b5b34c8960691fd98ea62cb088cd5e96f2fa5fb1d4654e71877b6d4a3fe089",
-      "current_sha256": "1cbd633bf9bdb80040a3b49a1200502236fb6fdfdf287b56dcce5802e3e78b7c"
+      "current_sha256": "d1d2b9f37fc97005f3c8fb1d8410c5c8aab78d49607e905dc479a52856db3e97"
     },
     {
       "source": "tests/test_boundary_currency.py",
