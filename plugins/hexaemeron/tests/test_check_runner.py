@@ -44,6 +44,21 @@ class CheckMapContractTests(unittest.TestCase):
         self.assertTrue(self.check_map.checks)
         self.assertTrue(self.check_map.scopes)
 
+    def test_hypomnema_check_excludes_the_generated_portable_runtime(self) -> None:
+        self.assertEqual(
+            self.check_map.checks["lint-hypomnema"].argv,
+            (
+                "python3",
+                "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+                "README.md",
+                "AGENTS.md",
+                ".agents/skills/promise-machine/SKILL.md",
+                ".agents/skills/promise-machine/PORTABLE.md",
+                "plugins",
+                "docs",
+            ),
+        )
+
     def test_every_tracked_path_has_exactly_one_owner(self) -> None:
         listing = subprocess.run(
             ["git", "ls-files"],

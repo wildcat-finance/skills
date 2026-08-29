@@ -86,7 +86,7 @@
       "source": "plugins/hexaemeron/tests/test_hexctl.py",
       "target": "plugins/hexaemeron/tests/test_hexctl.py",
       "archive_sha256": "64c71ec6e481000e740579f80676cc41ee2a2cae3e42e024df4b263f662d1953",
-      "current_sha256": "3e0fc237f94f3b5c246f074fbf928ccfd28d0dfd6642858f3236e63989c67f15"
+      "current_sha256": "a5d22f2d488856dfbefbd7c9bde899aeeeade4570d01bc0104a277cbe13abd7f"
     },
     {
       "source": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
@@ -122,7 +122,7 @@
       "source": "tests/promise_machine_coverage.json",
       "target": "tests/promise_machine_coverage.json",
       "archive_sha256": "89b5b34c8960691fd98ea62cb088cd5e96f2fa5fb1d4654e71877b6d4a3fe089",
-      "current_sha256": "e749f49acd9e2d042159f3e8daa5dd794fba9be61c241802963cb08f21fe20ee"
+      "current_sha256": "69962cc4d4a45cc3cad58f86be09ac2cd07e1bd4cdb4526b23c7f405c5fb006e"
     },
     {
       "source": "tests/test_boundary_currency.py",

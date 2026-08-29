@@ -102,6 +102,20 @@ DEFAULT_CONFIG = {
     "solidity": "auto",
 }
 
+CONFIG_SET_EXACT_PATHS = frozenset({"audit.log_path", "git"})
+CONFIG_SET_PREFIXES = ("git.",)
+"""The complete mutable Fiat configuration surface.
+
+Audit policy, skill identity and Solidity classification are controller gates, not
+operator tuning knobs.  A run may move its own audit record and may change Git
+settings, but no other stored config path can be rewritten after ``init``.
+"""
+
+
+def config_path_is_mutable(path: str) -> bool:
+    """Return whether ``config set`` may write this exact path."""
+    return path in CONFIG_SET_EXACT_PATHS or path.startswith(CONFIG_SET_PREFIXES)
+
 LINTS = ("phylax", "ephoros", "hypomnema")
 """The three bundled lints a non-Solidity audit round runs.
 
@@ -150,11 +164,11 @@ def audit_filter_obligation() -> dict:
 
 
 SOLIDITY_MODES = ("auto", True, False)
-"""What `config solidity` accepts.
+"""What a stored legacy ``config.solidity`` value may contain.
 
 `auto` reads the answer off the `security_suite` receipt, which is where the run
 already recorded whether the Pashov pair applies. `true` and `false` force it, for a
-repository where the receipt does not tell the truth about the diff.
+legacy run that recorded an override before the config write gate existed.
 """
 
 
@@ -163,7 +177,7 @@ def solidity_mode(value) -> bool:
 
     Checked by identity rather than by `in SOLIDITY_MODES`, because Python makes
     `1 == True` and `0 == False`, so membership would accept an integer as a mode and
-    store it. `config set solidity 1` is a caller error, not a way to spell `true`.
+    store it. An integer in an older state is not a way to spell ``true``.
     """
     if isinstance(value, bool):
         return True
@@ -2948,6 +2962,11 @@ def cmd_config(args) -> None:
             node = node[part]
         print(json.dumps(node))
         return
+    if not config_path_is_mutable(args.path):
+        die(
+            f"config path is immutable: {args.path}; config set may change only "
+            "audit.log_path, git, or git.*"
+        )
     if not args.value:
         die("config set requires a value")
     for part in parts[:-1]:
@@ -2958,20 +2977,8 @@ def cmd_config(args) -> None:
     if not isinstance(node, dict) or leaf not in node:
         die(f"config path not found: {args.path}")
     value = parse_value(args.value)
-    if args.path == "solidity" and not solidity_mode(value):
-        die(
-            "config solidity takes %s; got %r"
-            % (", ".join(json.dumps(m) for m in SOLIDITY_MODES), value)
-        )
     if args.path == "audit.log_path":
         value = check_audit_log_path(args.dir, state, value)
-    elif args.path == "audit" and isinstance(value, dict) and "log_path" in value:
-        # Replacing the whole section reaches the same field. Without this the
-        # constraint is one `config set audit '{...}'` away from not existing,
-        # which is how the shared path would come back.
-        value["log_path"] = check_audit_log_path(
-            args.dir, state, value["log_path"]
-        )
     node[leaf] = value
     commit(args.dir, state, "config-set", {"path": args.path, "value": node[leaf]})
     print(f"set {args.path}")
@@ -3520,8 +3527,8 @@ def cmd_audit_round(args) -> None:
                 + ("that" if one else "them")
                 + " cannot say whether "
                 + ("it ran" if one else "they ran")
-                + " (see references/audit-loop.md; `config set solidity true` if this "
-                "run really is a Solidity one)"
+                + " (see references/audit-loop.md; the security_suite receipt must "
+                "classify the run before audit because Solidity config is immutable)"
             )
 
     recorded = {lint: value for lint, value in exits.items() if value is not None}

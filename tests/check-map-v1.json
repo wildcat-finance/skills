@@ -164,7 +164,7 @@
     },
     "lint-hypomnema": {
       "title": "Hypomnema record lint",
-      "argv": ["python3", "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py", "README.md", "AGENTS.md", ".agents", "plugins", "docs"],
+      "argv": ["python3", "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py", "README.md", "AGENTS.md", ".agents/skills/promise-machine/SKILL.md", ".agents/skills/promise-machine/PORTABLE.md", "plugins", "docs"],
       "cwd": ".",
       "kind": "lint",
       "script": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"

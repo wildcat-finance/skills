@@ -74,7 +74,7 @@ No in-scope finding remains open against this design. S4-R1-02 and the #377 cens
 
 ## 3. Constraints and non-goals
 
-Starting ref: `main` at `fc0374bcd2d4311a2ce7d1f710e6809e40f00c92`, checked out on `docs/a-child-or-a-golden-retriever`. Current contracts: `shoggoth-collective/v2`, `promise-machine/v1`, Hexaemeron package `1.6.8`, Fiat `5.33.1`. Layout runtime: bundled Python 3.12.13, ReportLab 4.4.9, Pillow 12.3.0; visual inspection: Poppler `pdfinfo` and `pdftoppm` 26.08.0. The ordinary `python3` is 3.14.6 and lacks ReportLab, so it is not the PDF builder unless the dependency change is separately approved.
+Starting ref: `main` at `fc0374bcd2d4311a2ce7d1f710e6809e40f00c92`, checked out on `docs/a-child-or-a-golden-retriever`. Current contracts: `shoggoth-collective/v2`, `promise-machine/v1`, Hexaemeron package `1.6.9`, Fiat `5.34.1`. Layout runtime: bundled Python 3.12.13, ReportLab 4.4.9, Pillow 12.3.0; visual inspection: Poppler `pdfinfo` and `pdftoppm` 26.08.0. The ordinary `python3` is 3.14.6 and lacks ReportLab, so it is not the PDF builder unless the dependency change is separately approved.
 
 The user fixes the scope to one implementation step, PDFs and infographics, use of the supplied mascot kit, push to the exact branch, and no merge to `main`. The branch must remain reviewable and reproducible; generated text inside image-model output is forbidden. All labels and body copy are laid out by code over text-free mascot imagery.
 

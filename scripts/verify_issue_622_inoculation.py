@@ -83,6 +83,8 @@ GUARD_PATH_BY_OWNER = {
 # - tests/promise_machine_coverage.json is the sole current-main path overlap;
 #   the current map and rows are retained and only the reviewed reporter
 #   digest for the reconstructed runner is refreshed.
+# - The later #700 composition retains that map and adds the reviewed Phylax
+#   model-proxy promise digest without changing the archived source bytes.
 # - The live scheduling decision is physically renamed from the packet's
 #   ADR-037 path to the then-free number 038 because current main introduced
 #   an unrelated ADR-037 decision after the patch preimage; the logical
@@ -117,7 +119,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
     ),
     "plugins/hexaemeron/tests/test_hexctl.py": (
-        "3e0fc237f94f3b5c246f074fbf928ccfd28d0dfd6642858f3236e63989c67f15"
+        "a5d22f2d488856dfbefbd7c9bde899aeeeade4570d01bc0104a277cbe13abd7f"
     ),
     "plugins/hexaemeron/tests/test_kronos_scoreboard.py": (
         "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
@@ -132,7 +134,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
     ),
     "tests/promise_machine_coverage.json": (
-        "e749f49acd9e2d042159f3e8daa5dd794fba9be61c241802963cb08f21fe20ee"
+        "69962cc4d4a45cc3cad58f86be09ac2cd07e1bd4cdb4526b23c7f405c5fb006e"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
@@ -169,7 +171,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
     ),
     "plugins/hexaemeron/tests/test_hexctl.py": (
-        "3e0fc237f94f3b5c246f074fbf928ccfd28d0dfd6642858f3236e63989c67f15"
+        "a5d22f2d488856dfbefbd7c9bde899aeeeade4570d01bc0104a277cbe13abd7f"
     ),
     "plugins/hexaemeron/tests/test_kronos_scoreboard.py": (
         "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
@@ -193,7 +195,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "7b5b9bc7049cecf2de268a163f7429f0a4e14ff2203cdb32907379414d59f591"
     ),
     "tests/promise_machine_coverage.json": (
-        "e749f49acd9e2d042159f3e8daa5dd794fba9be61c241802963cb08f21fe20ee"
+        "69962cc4d4a45cc3cad58f86be09ac2cd07e1bd4cdb4526b23c7f405c5fb006e"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
@@ -998,6 +1000,22 @@ def bounded_fd_bytes(file_descriptor, maximum, label):
     if before.st_size > maximum:
         raise InoculationError(f"{label} exceeds {maximum} bytes")
 
+    first_pass = bytearray()
+    try:
+        while len(first_pass) <= maximum:
+            chunk = os.pread(
+                file_descriptor,
+                min(65_536, maximum + 1 - len(first_pass)),
+                len(first_pass),
+            )
+            if not chunk:
+                break
+            first_pass.extend(chunk)
+    except OSError as error:
+        raise InoculationError(f"{label} read failed: {error}") from None
+    if len(first_pass) > maximum:
+        raise InoculationError(f"{label} exceeds {maximum} bytes")
+
     payload = bytearray()
     try:
         while len(payload) <= maximum:
@@ -1027,7 +1045,11 @@ def bounded_fd_bytes(file_descriptor, maximum, label):
         after.st_mtime_ns,
         after.st_ctime_ns,
     )
-    if before_identity != after_identity or len(payload) != after.st_size:
+    if (
+        before_identity != after_identity
+        or len(payload) != after.st_size
+        or payload != first_pass
+    ):
         raise InoculationError(f"{label} changed while it was read")
     return bytes(payload)
 

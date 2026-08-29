@@ -137,21 +137,21 @@ another pass.
   items in the audit file marked `accepted`, with the reason.
 - **Max rounds.** At `config audit.max_rounds` (default 8) the controller
   refuses further rounds and `next` returns `audit-verdict`: stop and put
-  the choice to the user.
+  the choice to the user. The ceiling is immutable after `init`; never raise
+  it to replace that gate with another numbered round.
 
 ## Folding
 
-`config audit.fold` is false by default: the stacked PR stays open as a
-review artefact and the step's PR body links it. Set it true to merge the
-stacked branch into the step branch once the loop closes, before the prose
-phase.
+`config audit.fold` is false and immutable for a new run: the stacked PR stays
+open as a review artefact and the step's PR body links it. A legacy run that
+already recorded true still folds the stacked branch when the loop closes.
 
 Steps chain, so an unfolded fix branch costs more than a stray review
 artefact: the next step branches from this step's branch, and fixes parked
 elsewhere are missing from every step above it and from the run branch that
-finally lands. Either set `config audit.fold true` for the run or commit the
-fixes onto the step branch itself before the prose phase. Leave fixes on an
-unmerged side branch only when nothing further will build on this step.
+finally lands. Commit the fixes onto the step branch itself before the prose
+phase. Leave fixes on an unmerged side branch only when nothing further will
+build on this step.
 
 ## Non-Solidity steps
 
@@ -190,9 +190,10 @@ round was clean.
 Which rounds owe them comes from the `security_suite` receipt. A waiver means
 these three are the mechanical part. A recorded list of suite ids means the
 Pashov pair ran. Anything else is not a suite that ran, so the lints are
-required. `config set solidity true` overrides that for a run whose receipt
-cannot be read but which really is a Solidity one, and the override records
-itself on the ledger.
+required. Solidity classification is immutable after `init`; record the
+correct suite or waiver before audit rather than rewriting the classification
+after the gate is active. Boolean overrides already recorded by older
+controllers remain readable.
 
 When a round surfaces a failure -- a test gone red, a lint that will not come
 clean, behaviour that stopped matching -- work it under `elenchus`: reproduce,
