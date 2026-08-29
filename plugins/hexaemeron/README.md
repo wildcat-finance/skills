@@ -263,11 +263,15 @@ Six skills carry the standards each phase is held to, and each runs on its own
 outside the loop. `protasis` says what a study and a runbook must answer.
 `elenchus` works an observed failure down to its cause and guards it.
 `phylax` holds the off-chain surface: input, subprocesses, fetched hosts,
-secrets, dependencies and model output. `ephoros` chooses what a step emits
-once it runs unattended. `metron` refuses a performance change without a
-recorded before and after. `hypomnema` decides which decisions earn a written
-reason and where each record lives. Each carries its own `EVOLUTION.md`, so
-Kronos ranks their frontiers alongside the rest.
+secrets, dependencies and model output. It also ships the synthetic
+job-scoped model proxy component and its digest-bound fourteen-row conformance
+command. That proof leaves the JobSpec acceptance receipt, launch receipt,
+live provider, public pilot and #702 Fiat integration/end-to-end digest join
+open. `ephoros` chooses
+what a step emits once it runs unattended. `metron` refuses a performance
+change without a recorded before and after. `hypomnema` decides which
+decisions earn a written reason and where each record lives. Each carries its
+own `EVOLUTION.md`, so Kronos ranks their frontiers alongside the rest.
 
 ## The prose masks
 

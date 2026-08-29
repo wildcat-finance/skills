@@ -44,6 +44,17 @@ from model_proxy_lib import (  # noqa: E402
     sha256_bytes,
     verify_golden,
 )
+import model_proxy_lib.conformance as conformance  # noqa: E402
+from model_proxy_lib.conformance import (  # noqa: E402
+    CONFORMANCE_MANIFEST_SCHEMA,
+    CONFORMANCE_RESULT_SCHEMA,
+    DEPENDENCY_BOUNDARIES,
+    EXPECTED_ROWS,
+    POSITIVE_SURFACES,
+    ConformanceRowResult,
+    check_conformance_manifest,
+    conformance_manifest_digest,
+)
 from model_proxy_lib.framing import (  # noqa: E402
     FRAME_EVENT_SCHEMA,
     FRAMING_MANIFEST_SCHEMA,
@@ -5149,6 +5160,466 @@ class LifecycleTests(unittest.TestCase):
             self.assertIn(f"{name}={value}", text)
         self.assertIn("do not prove", text)
         self.assertIn("retain or exfiltrate", text)
+
+
+class ConformanceTests(unittest.TestCase):
+    maxDiff = None
+
+    def setUp(self):
+        self.manifest_path = FIXTURES / "manifest.json"
+        self.manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        self.policy = compile_policy_file(FIXTURES / "accepted-job.json")
+
+    def _write_manifest(
+        self,
+        root: Path,
+        document: dict[str, object],
+        *,
+        update_digest: bool = True,
+    ) -> Path:
+        value = deepcopy(document)
+        if update_digest:
+            value["manifest_sha256"] = conformance_manifest_digest(value)
+        path = root / "manifest.json"
+        path.write_text(
+            json.dumps(value, indent=2, ensure_ascii=True) + "\n",
+            encoding="utf-8",
+        )
+        (root / "accepted-job.json").write_bytes(
+            (FIXTURES / "accepted-job.json").read_bytes()
+        )
+        return path
+
+    def _assert_manifest_refuses(self, mutate, *, update_digest: bool = True):
+        with tempfile.TemporaryDirectory() as directory:
+            document = deepcopy(self.manifest)
+            mutate(document)
+            path = self._write_manifest(
+                Path(directory), document, update_digest=update_digest
+            )
+            with self.assertRaisesRegex(PolicyError, "MP500"):
+                check_conformance_manifest(path)
+
+    def test_manifest_digest_order_and_complete_row_contract_are_exact(self):
+        self.assertEqual(CONFORMANCE_MANIFEST_SCHEMA, self.manifest["schema"])
+        self.assertEqual(
+            self.manifest["manifest_sha256"],
+            conformance_manifest_digest(self.manifest),
+        )
+        self.assertEqual(
+            [(identifier, outcome) for identifier, outcome, _state in EXPECTED_ROWS],
+            [
+                (row["id"], row["expected_outcome"])
+                for row in self.manifest["rows"]
+            ],
+        )
+        self.assertEqual(14, len(self.manifest["rows"]))
+        self.assertEqual(14, len({row["id"] for row in self.manifest["rows"]}))
+        self.assertEqual(self.policy.jobspec_sha256, self.manifest["jobspec_sha256"])
+        self.assertEqual(self.policy.policy_sha256, self.manifest["policy_sha256"])
+
+    def test_manifest_refuses_schema_shape_digest_and_every_row_drift(self):
+        cases = (
+            ("unknown-root", lambda value: value.__setitem__("extra", True), True),
+            (
+                "schema",
+                lambda value: value.__setitem__("schema", "model-proxy-conformance-manifest/v2"),
+                True,
+            ),
+            (
+                "accepted-job",
+                lambda value: value.__setitem__("accepted_job", "other.json"),
+                True,
+            ),
+            ("stale-digest", lambda value: value["rows"].reverse(), False),
+            ("omitted", lambda value: value["rows"].pop(), True),
+            (
+                "duplicate",
+                lambda value: value["rows"].__setitem__(1, deepcopy(value["rows"][0])),
+                True,
+            ),
+            (
+                "order",
+                lambda value: value["rows"].__setitem__(
+                    slice(0, 2), [value["rows"][1], value["rows"][0]]
+                ),
+                True,
+            ),
+            (
+                "unknown-row",
+                lambda value: value["rows"][3].__setitem__("id", "unknown"),
+                True,
+            ),
+            (
+                "expected-outcome",
+                lambda value: value["rows"][3].__setitem__(
+                    "expected_outcome", "MP000"
+                ),
+                True,
+            ),
+            (
+                "row-shape",
+                lambda value: value["rows"][3].__setitem__("skip", True),
+                True,
+            ),
+        )
+        for name, mutate, update_digest in cases:
+            with self.subTest(name=name):
+                self._assert_manifest_refuses(
+                    mutate, update_digest=update_digest
+                )
+
+    def test_manifest_pins_jobspec_and_policy_before_any_row_executes(self):
+        digest_mutations = (
+            ("jobspec", "jobspec_sha256"),
+            ("policy", "policy_sha256"),
+        )
+        for name, field in digest_mutations:
+            with self.subTest(name=name):
+                document = deepcopy(self.manifest)
+                document[field] = "0" * 64
+                with tempfile.TemporaryDirectory() as directory:
+                    path = self._write_manifest(Path(directory), document)
+                    with mock.patch.object(
+                        conformance, "_execute_case"
+                    ) as execute:
+                        with self.assertRaisesRegex(PolicyError, "MP500"):
+                            check_conformance_manifest(path)
+                        execute.assert_not_called()
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            path = self._write_manifest(root, self.manifest)
+            accepted = accepted_document()
+            jobspec = jobspec_document(accepted)
+            jobspec["job_id"] = "fiat-700-substituted-job"
+            accepted["verified"]["job_id"] = jobspec["job_id"]
+            raw_jobspec = encode_document(jobspec)
+            accepted["jobspec_b64"] = base64.b64encode(raw_jobspec).decode("ascii")
+            accepted["jobspec_sha256"] = sha256_bytes(raw_jobspec)
+            (root / "accepted-job.json").write_bytes(encode_document(accepted))
+            with mock.patch.object(conformance, "_execute_case") as execute:
+                with self.assertRaisesRegex(PolicyError, "MP500"):
+                    check_conformance_manifest(path)
+                execute.assert_not_called()
+
+    def test_unexecuted_or_missing_result_cannot_pass(self):
+        unexecuted = ConformanceRowResult(
+            identifier="positive",
+            outcome="MP000",
+            disclosure_state="provider-only",
+            requests=0,
+            request_bytes=0,
+            response_bytes=0,
+            guest_bytes=0,
+            receipts=0,
+            duration_ns=0,
+            executed=False,
+        )
+        for value in (unexecuted, None):
+            with self.subTest(result=value):
+                with mock.patch.object(conformance, "_execute_case", return_value=value):
+                    with self.assertRaisesRegex(PolicyError, "MP501"):
+                        check_conformance_manifest(self.manifest_path)
+
+    def test_every_hostile_case_executes_independently_with_its_fixed_outcome(self):
+        for identifier, outcome, disclosure_state in EXPECTED_ROWS[1:]:
+            with self.subTest(identifier=identifier):
+                result = conformance._execute_case(identifier, self.policy)
+                self.assertEqual(identifier, result.identifier)
+                self.assertEqual(outcome, result.outcome)
+                self.assertEqual(disclosure_state, result.disclosure_state)
+                self.assertTrue(result.executed)
+                self.assertEqual("complete", result.cleanup_state)
+                if identifier == "replay-after-expiry":
+                    self.assertEqual(1, result.requests)
+                    self.assertEqual(1, result.request_bytes)
+                    self.assertEqual("not-read", result.disclosure_state)
+
+    def test_positive_surface_inventory_is_closed_and_each_scan_fails_shut(self):
+        credential = b"credential-canary"
+        input_content = b"input-content-canary"
+        output_content = b"output-content-canary"
+        empty = {name: b"" for name in POSITIVE_SURFACES}
+        conformance._scan_positive_surfaces(
+            empty,
+            credential=credential,
+            input_content=input_content,
+            output_content=output_content,
+        )
+        poison = {
+            "guest_frames": credential,
+            "receipts": input_content,
+            "events": output_content,
+            "diagnostics": credential,
+            "argv": input_content,
+            "environment_fixture": output_content,
+            "produced_tree": credential,
+        }
+        self.assertEqual(
+            {
+                "argv",
+                "diagnostics",
+                "environment_fixture",
+                "events",
+                "guest_frames",
+                "produced_tree",
+                "receipts",
+            },
+            set(poison),
+        )
+        for name, value in poison.items():
+            with self.subTest(surface=name):
+                surfaces = dict(empty)
+                surfaces[name] = value
+                with self.assertRaisesRegex(PolicyError, "MP501"):
+                    conformance._scan_positive_surfaces(
+                        surfaces,
+                        credential=credential,
+                        input_content=input_content,
+                        output_content=output_content,
+                    )
+        missing = dict(empty)
+        missing.pop("argv")
+        with self.assertRaisesRegex(PolicyError, "MP501"):
+            conformance._scan_positive_surfaces(
+                missing,
+                credential=credential,
+                input_content=input_content,
+                output_content=output_content,
+            )
+
+    def test_positive_row_proves_component_path_and_keeps_dependencies_open(self):
+        result = check_conformance_manifest(self.manifest_path)
+        document = result.document()
+        self.assertEqual(
+            {
+                "policy_jobspec_binding": "established",
+                "loopback_credential_injection": "established",
+                "normalised_response": "established",
+                "bounded_receipts": "established",
+                "operator_disclosure": "established",
+                "canary_content_absence": "established",
+            },
+            document["proofs"],
+        )
+        self.assertEqual(DEPENDENCY_BOUNDARIES, document["dependencies"])
+        self.assertEqual(
+            {
+                "issue_698_acceptance_receipt",
+                "issue_699_launch_receipt",
+                "live_provider",
+                "public_pilot",
+                "end_to_end_digest_join",
+            },
+            set(document["dependencies"]),
+        )
+        self.assertTrue(
+            all(
+                status == "not-established"
+                for status in document["dependencies"].values()
+            )
+        )
+        with self.assertRaises(TypeError):
+            DEPENDENCY_BOUNDARIES["live_provider"] = "established"
+
+    def test_cli_summary_is_exact_safe_and_content_free(self):
+        result = check_conformance_manifest(self.manifest_path)
+        expected = result.document()
+        completed = subprocess.run(  # phylax: allow subprocess: fixed local Python argv
+            [
+                sys.executable,
+                str(CLI),
+                "conformance",
+                "--manifest",
+                str(self.manifest_path),
+            ],
+            check=False,
+            capture_output=True,
+        )
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertEqual(b"", completed.stderr)
+        self.assertEqual(expected, json.loads(completed.stdout))
+        self.assertEqual(CONFORMANCE_RESULT_SCHEMA, expected["schema"])
+        self.assertEqual(
+            {
+                "rows": 14,
+                "positive": 1,
+                "hostile": 13,
+                "executed": 14,
+                "requests": 13,
+                "receipts": 3,
+            },
+            expected["counts"],
+        )
+        self.assertEqual(
+            {"request_bytes": 313, "response_bytes": 133, "guest_bytes": 90},
+            expected["sizes"],
+        )
+        self.assertEqual({"duration_ns": "3000000"}, expected["timings"])
+        self.assertEqual("complete", expected["cleanup_state"])
+        self.assertEqual(
+            [(identifier, outcome) for identifier, outcome, _state in EXPECTED_ROWS],
+            [(row["id"], row["outcome"]) for row in expected["rows"]],
+        )
+        encoded = completed.stdout
+        for marker in (
+            b"input-",
+            b"output-",
+            b"hostile-input",
+            b"Authorization",
+            b"Bearer ",
+            b"WILDCAT_MODEL_PROXY_CREDENTIAL",
+        ):
+            self.assertNotIn(marker, encoded)
+
+    def test_cli_refusal_is_fixed_and_does_not_echo_manifest_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            document = deepcopy(self.manifest)
+            document["manifest_sha256"] = "0" * 64
+            path = self._write_manifest(root, document, update_digest=False)
+            marker = b"positive"
+            completed = subprocess.run(  # phylax: allow subprocess: fixed local Python argv
+                [sys.executable, str(CLI), "conformance", "--manifest", str(path)],
+                check=False,
+                capture_output=True,
+            )
+        self.assertEqual(2, completed.returncode)
+        self.assertEqual(b"", completed.stdout)
+        self.assertNotIn(marker, completed.stderr)
+        self.assertNotIn(str(path).encode("utf-8"), completed.stderr)
+        self.assertEqual(
+            {
+                "schema": "model-proxy-diagnostic/v1",
+                "outcome": "refused",
+                "code": "MP500",
+                "field": "conformance.manifest",
+            },
+            json.loads(completed.stderr),
+        )
+
+    def test_skill_package_marketplace_coverage_and_portable_versions_are_exact(self):
+        repository = PLUGIN_ROOT.parents[1]
+        skill_root = PLUGIN_ROOT / "skills" / "phylax"
+        skill = (skill_root / "SKILL.md").read_text(encoding="utf-8")
+        evolution = (skill_root / "EVOLUTION.md").read_text(encoding="utf-8")
+        self.assertIn('metadata:\n  version: "1.4.0"', skill)
+        self.assertIn("- Current version: `phylax-v1.4.0`", evolution)
+        for unchanged in (
+            "- Frontier status: `mature`",
+            "- Frontier revision: `off-chain-boundary-controls`",
+            "- Current frontier: Phylax mechanically checks its established Python boundaries and source-local TypeScript controls for raw HTML ordering, persisted session credentials and runtime-selected absolute fetch hosts.",
+            "- Next Fiat job: None -- mature",
+            "| `phylax-v1.4.0` | generation | `off-chain-boundary-controls` | `3d0057bb195f303c0e40b5782bf59ab0cba53e3172478c6a331d5990236ac604` |",
+        ):
+            self.assertIn(unchanged, evolution)
+        self.assertIn("#702 Fiat integration/end-to-end", skill)
+        self.assertIn("#702 Fiat integration/end-to-end", evolution)
+        self.assertIn(
+            "#702 Fiat integration/end-to-end",
+            (skill_root / "references" / "model-proxy-v1.md").read_text(
+                encoding="utf-8"
+            ),
+        )
+        self.assertIn(
+            "#702 Fiat integration/end-to-end",
+            (PLUGIN_ROOT / "README.md").read_text(encoding="utf-8"),
+        )
+
+        package_versions = {
+            "claude_manifest": json.loads(
+                (PLUGIN_ROOT / ".claude-plugin" / "plugin.json").read_text(
+                    encoding="utf-8"
+                )
+            )["version"],
+            "codex_manifest": json.loads(
+                (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text(
+                    encoding="utf-8"
+                )
+            )["version"],
+        }
+        claude_marketplace = json.loads(
+            (repository / ".claude-plugin" / "marketplace.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        agents_marketplace = json.loads(
+            (repository / ".agents" / "plugins" / "marketplace.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        package_versions["claude_marketplace"] = next(
+            entry["version"]
+            for entry in claude_marketplace["plugins"]
+            if entry["name"] == "hexaemeron"
+        )
+        package_versions["agents_marketplace"] = next(
+            entry["version"]
+            for entry in agents_marketplace["plugins"]
+            if entry["name"] == "hexaemeron"
+        )
+        self.assertEqual({"1.6.7"}, set(package_versions.values()))
+        self.assertNotEqual("1.4.0", package_versions["claude_manifest"])
+
+        coverage = json.loads(
+            (repository / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            hashlib.sha256((skill_root / "SKILL.md").read_bytes()).hexdigest(),
+            coverage["runtime"]["phylax-boundary-review"]["sha256"],
+        )
+
+        portable_root = (
+            repository
+            / ".agents"
+            / "skills"
+            / "promise-machine"
+            / "runtime"
+            / "plugins"
+            / "hexaemeron"
+        )
+        copied = (
+            "README.md",
+            "skills/phylax/SKILL.md",
+            "skills/phylax/EVOLUTION.md",
+            "skills/phylax/agents/openai.yaml",
+            "skills/phylax/references/model-proxy-v1.md",
+            "skills/phylax/scripts/model_proxy.py",
+            "skills/phylax/scripts/model_proxy_lib/__init__.py",
+            "skills/phylax/scripts/model_proxy_lib/conformance.py",
+            "tests/fixtures/model-proxy-v1/accepted-job.json",
+            "tests/fixtures/model-proxy-v1/duplicate-field.json",
+            "tests/fixtures/model-proxy-v1/excessive-depth.json",
+            "tests/fixtures/model-proxy-v1/framing-cases.json",
+            "tests/fixtures/model-proxy-v1/invalid-unicode.json",
+            "tests/fixtures/model-proxy-v1/jobspec.json",
+            "tests/fixtures/model-proxy-v1/lifecycle-cases.json",
+            "tests/fixtures/model-proxy-v1/manifest.json",
+            "tests/fixtures/model-proxy-v1/policy.json",
+            "tests/fixtures/model-proxy-v1/policy.sha256",
+            "tests/fixtures/model-proxy-v1/provider-cases.json",
+            "tests/fixtures/model-proxy-v1/rejections.json",
+        )
+        portable_manifest = json.loads(
+            (
+                repository
+                / ".agents/skills/promise-machine/runtime/MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        manifested = {row["path"]: row for row in portable_manifest["files"]}
+        for relative in copied:
+            with self.subTest(portable=relative):
+                canonical = (PLUGIN_ROOT / relative).read_bytes()
+                self.assertEqual(canonical, (portable_root / relative).read_bytes())
+                path = f"plugins/hexaemeron/{relative}"
+                self.assertEqual(path, manifested[path]["source"])
+                self.assertEqual(
+                    hashlib.sha256(canonical).hexdigest(),
+                    manifested[path]["sha256"],
+                )
 
 
 if __name__ == "__main__":

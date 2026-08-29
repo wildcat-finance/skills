@@ -1,0 +1,65 @@
+{
+  "schema": "model-proxy-conformance-manifest/v1",
+  "accepted_job": "accepted-job.json",
+  "jobspec_sha256": "524a4f49bd13077b331e1477dc3c11fffcea0efd446dac735918b377a1c96b79",
+  "policy_sha256": "807f6425499696cd4aedd68152b20b11f5c4558d0cfb10e71ac363d88033dd84",
+  "manifest_sha256": "6bf6a6d541e73e2f0b08b7bade672d71fba8bce25c17f2df68f900decfefcc8b",
+  "rows": [
+    {
+      "id": "positive",
+      "expected_outcome": "MP000"
+    },
+    {
+      "id": "arbitrary-url",
+      "expected_outcome": "MP207"
+    },
+    {
+      "id": "dns-rebinding",
+      "expected_outcome": "MP303"
+    },
+    {
+      "id": "redirect",
+      "expected_outcome": "MP307"
+    },
+    {
+      "id": "credential-header",
+      "expected_outcome": "MP207"
+    },
+    {
+      "id": "unsupported-method",
+      "expected_outcome": "MP211"
+    },
+    {
+      "id": "unsupported-model",
+      "expected_outcome": "MP207"
+    },
+    {
+      "id": "oversized",
+      "expected_outcome": "MP201"
+    },
+    {
+      "id": "nested",
+      "expected_outcome": "MP104"
+    },
+    {
+      "id": "request-flood",
+      "expected_outcome": "MP217"
+    },
+    {
+      "id": "response-flood",
+      "expected_outcome": "MP310"
+    },
+    {
+      "id": "cross-job",
+      "expected_outcome": "MP401"
+    },
+    {
+      "id": "replay-after-expiry",
+      "expected_outcome": "MP404"
+    },
+    {
+      "id": "call-after-cancellation",
+      "expected_outcome": "MP406"
+    }
+  ]
+}

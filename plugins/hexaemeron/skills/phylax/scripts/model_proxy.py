@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check model proxy policy, framing, provider, and lifecycle boundaries."""
+"""Check model proxy policy, runtime, and hostile-conformance boundaries."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from model_proxy_lib import (
     POLICY_SCHEMA,
     PolicyError,
     canonical_json,
+    check_conformance_manifest,
     compile_policy_file,
     verify_golden,
 )
@@ -57,6 +58,12 @@ def _parser() -> argparse.ArgumentParser:
         allow_abbrev=False,
     )
     lifecycle_command.add_argument("--manifest", required=True, metavar="PATH")
+    conformance_command = commands.add_parser(
+        "conformance",
+        help="run the closed positive and hostile component manifest",
+        allow_abbrev=False,
+    )
+    conformance_command.add_argument("--manifest", required=True, metavar="PATH")
     return parser
 
 
@@ -137,6 +144,12 @@ def _lifecycle_demo(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def _conformance(arguments: argparse.Namespace) -> int:
+    result = check_conformance_manifest(arguments.manifest)
+    sys.stdout.buffer.write(canonical_json(result.document()) + b"\n")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     try:
         arguments = _parser().parse_args(argv)
@@ -148,6 +161,8 @@ def main(argv: list[str] | None = None) -> int:
             return _provider_demo(arguments)
         if arguments.command == "lifecycle-demo":
             return _lifecycle_demo(arguments)
+        if arguments.command == "conformance":
+            return _conformance(arguments)
     except PolicyError as error:
         _write_diagnostic(error.diagnostic())
         return 2
