@@ -1391,15 +1391,15 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "10bc0dd2e2a25df8d56e140aba1d16d29b6c784e96c07361822800b2eec6fe18"
+        "sha256": "bd7cf10281c1666523c97f8ab37391c091865a4c097a7c535e625245a69818ef"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
-        "sha256": "ca60f7d10a3749c164440cfdf9b6e9be59e3517a063758f5811d1dde2dcafcbf"
+        "sha256": "6c8a5eba777ca961b5cebc58fbb0990d5c0b6d0620f69efa768da66e110c873e"
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "b5ab4aeed353f9ca3f461bc579ef87738ea684d4d3426caa7f81d353adf4d078"
+        "sha256": "9589a112393ff93dc396a670c7403987cec0866309edff22ab37db7b3fa94f96"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
