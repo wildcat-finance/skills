@@ -41,4 +41,25 @@ abstract contract HostAdapter {
 
   /// @dev The economic roles whose balances the gates watch.
   function roles() external view virtual returns (address[] memory);
+
+  /// @dev Resolve one manifest account symbol to a concrete address on this
+  ///      host. This is the seam `ManifestReader` resolves through, and it is
+  ///      the adapter's job rather than the reader's because only the host
+  ///      knows which contract a name like `roleProvider` stands for.
+  ///
+  ///      `ok` is false for a name this adapter does not hold. A name it does
+  ///      hold answers `ok` true and returns the address it has, including
+  ///      `address(0)` when that name is present but unconfigured. The two
+  ///      answers are kept apart on purpose: the reader raises
+  ///      `UnresolvableSymbol` for the first and `SymbolResolvesToZero` for
+  ///      the second, and collapsing them into one would make a name nobody
+  ///      configured indistinguishable from a name nobody has ever heard of.
+  ///
+  ///      Resolution is by name, never by category. An adapter that answered
+  ///      for a class of addresses would let a permit written for one symbol
+  ///      admit every address sharing its kind, which is the widening the
+  ///      manifest exists to prevent.
+  function resolveAccount(
+    string calldata name
+  ) external view virtual returns (bool ok, address addr);
 }

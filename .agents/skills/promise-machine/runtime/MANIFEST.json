@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 936,
-  "total_bytes": 20330057,
+  "total_bytes": 20333340,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3463,9 +3463,9 @@
       "source": "plugins/janus/harness/schemas/hook-manifest.schema.json"
     },
     {
-      "bytes": 1968,
+      "bytes": 3192,
       "path": "plugins/janus/harness/src/HostAdapter.sol",
-      "sha256": "47ae64db0607f587c1fcfa1ffdde7e91d39f6e263bbbb94db72098bf29a7f160",
+      "sha256": "8dab949aab5c4b6529d6a2493ef6b6497490c97ab3a35d29753bb92720360cb2",
       "source": "plugins/janus/harness/src/HostAdapter.sol"
     },
     {
@@ -3517,9 +3517,9 @@
       "source": "plugins/janus/harness/src/wildcat/IWildcatHook.sol"
     },
     {
-      "bytes": 3299,
+      "bytes": 5358,
       "path": "plugins/janus/harness/src/wildcat/WildcatHostAdapter.sol",
-      "sha256": "84b36a4439811f1629ad9f15b1147a2ee9600aaf184ef24997bcf4002e87f068",
+      "sha256": "031d5a5ea15dbc6fe5a4dfae177039ee432fc6cfac817302016afab59164d514",
       "source": "plugins/janus/harness/src/wildcat/WildcatHostAdapter.sol"
     },
     {
