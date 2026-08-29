@@ -862,3 +862,171 @@ study copy for the same reason it already carried the runbook copy.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
 holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Goal: Apply the rule to the remaining
+four construction sites, harden the two that already declare it, and extend the
+guard's enumeration to both suites.
+
+Complete replacement Tests: No new test module.
+`tests/test_disposable_fixture_signing.py` gains one enumeration entry per
+suite. Each representative must be a test that commits fixture history, never
+one that verifies a signature. Step 2's third audit round measured
+`plugins/hexaemeron/tests/test_issue_429_recovery.py` reaching the hostile
+signer through `git verify-commit`, which the enumeration's contract of exit 0
+with an empty sentinel cannot distinguish from a fixture signing itself, so a
+verifying representative can never pass however correctly its fixtures declare
+the rule. Confirm the chosen representative records a signing invocation rather
+than a verifying one when its declaration is removed.
+
+The signature-verification legs must be shown untouched: the Hexaemeron suite
+reports the same test count as at step 3's exit plus nothing, and `git diff`
+over `plugins/hexaemeron/tests/test_issue_429_recovery.py` is empty.
+
+```text
+test command: /Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report {report}
+report format: unittest-json-v1
+expected report schema: elenchus.unittest.v1
+report file: .elenchus/fiat-621-step-4.json
+```
+
+Expected exact Elenchus result: `passed`, for the reason step 3's amended tests
+field gives. The classifier copies a commit's changed test files onto its parent
+before running the declared command, so a test-only change carries its own fix
+and the parent cannot fail. `unguarded` is not the mechanical answer for this
+step's code change and must not be recorded as one: the classifier reserves it
+for a commit that changed no test files at all, measured against
+`plugins/hexaemeron/skills/elenchus/scripts/elenchus.py:281`.
+
+**Why.** The goal said five remaining sites. The study's section 2b table
+records ten in total and step 3 declared six of them, leaving four: sites 2, 3,
+4 and 5. The other two paths this step touches, at
+`plugins/hexaemeron/tests/test_hexctl.py:55` and
+`plugins/hexaemeron/tests/test_fiat_skill.py:1458`, already declare the rule and
+are hardened for uniformity rather than repaired, which the files field already
+says; counting them as remaining sites conflates repair with tidying. The tests
+field predicted `unguarded` by pointing at step 3, whose own prediction has
+since been corrected to `passed` by amendment, so the pointer now resolves to
+the opposite of what it was written to mean. The representative-selection rule
+is added because this is the step whose suites contain the verifying tests step
+2's audit measured.
+
+**Steps touched.** Step 4's goal and tests.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: Both remaining suites pass, and no
+fixture construction in either reaches the signer. All of the following exit 0:
+
+```bash
+npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py'
+/Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+/Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-4.json
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+```
+
+And, under a hostile configuration this step generates for itself:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1' "$HOSTILE_DIR/hexaemeron.log"
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+The Hermes suite still exits 0 with nothing of its own in the sentinel. The
+Hexaemeron suite does not, and cannot: `plugins/hexaemeron/tests/test_issue_429_recovery.py:154`
+runs `git verify-commit` against this repository's own history, and the commit it
+names carries a real signature header, so git consults the hostile
+`gpg.program` to verify it and that program refuses by design. The remaining four
+assertions state what the rule actually claims. The one error is exactly that
+test and no other; the sentinel records a verification; and it records no
+`-bsau`, which is the argument form git uses when it asks a program to *sign*.
+No fixture construction in either suite reaches the signer.
+
+**Why.** The replaced exit required the hostile Hexaemeron run to exit 0 with an
+empty sentinel. Neither is reachable while the suite contains a
+signature-verification test, and this step is forbidden to touch that file
+because the study excludes signature-subject tests from the rule by design. The
+criterion therefore demanded that an excluded test satisfy the rule it is
+excluded from. Step 2's third audit round measured this exact behaviour and
+recorded it as a lead for step 4; it arrived as predicted. Emptiness was the
+wrong proxy: it conflates a fixture asking the signer to sign with a
+verification test asking it to verify, and only the first is the defect under
+repair. The replacement distinguishes them by argument form, which is the
+distinction the rule has always rested on. No criterion is weakened: every
+fixture site in both suites must still construct and commit without reaching the
+signer, and that is now asserted directly rather than inferred from an empty
+file.
+
+**Steps touched.** Step 4's exit.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Files: Changed:
+`plugins/hexaemeron/tests/test_elenchus_checker.py` (the `Fixture` constructor at
+line 114), `plugins/hexaemeron/tests/test_kronos_scoreboard.py` (lines 664 and
+759), `plugins/hermes/skills/hermes/scripts/test_hermes.py` (line 173),
+`plugins/hexaemeron/tests/test_hexctl.py` and
+`plugins/hexaemeron/tests/test_fiat_skill.py` for the scope hardening only, and
+`tests/test_disposable_fixture_signing.py` (enumeration entries for both
+suites).
+
+Regenerated, not hand-edited:
+`.agents/skills/promise-machine/runtime/plugins/hermes/skills/hermes/scripts/test_hermes.py`
+and `.agents/skills/promise-machine/runtime/MANIFEST.json`, because the portable
+runtime mirrors the Hermes test module and `tests/test_skills_sh_package.py`
+fails until `scripts/portable_promise_machine.py sync` restores the mirror; and
+`.horos/boundary.json` and `.horos/candidates.json`, because those mirrored
+bytes drift the boundary and `tests/test_boundary_currency.py` fails until
+`plugins/horos/skills/horos/scripts/horos.py scan . --write` restores it. Stage
+before scanning, because the scan walks tracked files, and run it last, because
+anything written afterwards invalidates it. The candidates file also gains the
+two `audit/rounds/fiat-621-*` entries the earlier steps added.
+
+The Kronos site at line 759 is a `git clone`, not a `git init`; the declaration
+goes immediately after the clone, because the rule is stated at creation
+whichever verb created the repository, and step 2's audit measured that a clone
+inherits no local configuration from the repository it was cloned from. The
+hardening at `plugins/hexaemeron/tests/test_hexctl.py:55` and
+`plugins/hexaemeron/tests/test_fiat_skill.py:1458` adds the explicit `--local`
+scope and moves the call to immediately after `init`; both are already correct
+and neither is a defect, so this is uniformity, not repair. Do not change
+`plugins/hexaemeron/tests/test_hexctl.py:1366` or `:1388`: both re-initialise
+the repository `make_origin_checkout` already configured, and a re-init
+preserves local config. Do not change
+`plugins/hexaemeron/tests/test_issue_429_recovery.py` or the signature classes
+of `plugins/hexaemeron/tests/test_hexctl.py`; the study's section 2b lists them
+as excluded because signing is their subject.
+
+**Why.** The files list named the six paths the step edits by hand and omitted
+the four it must regenerate. Those four are not optional and not incidental: the
+portable runtime mirrors one of the edited modules, the Horos boundary is
+computed over the tracked tree, and a suite guards each, so a step that changed
+the six and stopped would leave the repository red. Naming them, with the order
+the regeneration has to run in, is what stops the next reader treating a
+generated diff as an unexplained edit.
+
+**Steps touched.** Step 4's files.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
