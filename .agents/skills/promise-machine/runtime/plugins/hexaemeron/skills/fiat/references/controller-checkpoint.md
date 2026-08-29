@@ -162,7 +162,9 @@ manifest digest, run branch and exact owned paths. An existing controller
 directory, occupied derived worktree, conflicting marker, symlink or changed
 ref refuses without replacing or deleting it. Creation pins the origin and new
 controller directory and writes both private files relative to those open
-directories, so moving the new directory cannot redirect either write.
+directories, so moving the new directory cannot redirect either write. The
+derived worktree home is traversed component by component without following a
+link, and its exact ignore file is read or created through the pinned home.
 
 The private stage receives the verified controller tree. All files other than
 `state.json` and `ledger.jsonl` remain byte-identical. Fiat changes only
@@ -170,13 +172,16 @@ The private stage receives the verified controller tree. All files other than
 `checkpoint:restore` entry to the exact imported ledger prefix. That entry
 binds the manifest, source state and ledger digests, prior tail, full ref map
 and relocated state fingerprint. The completed controller directory is
-published with an atomic no-replace rename. The relocated state remains under
-the controller-source cap and the appended ledger remains under the capsule
-file cap. The closed inventory and every opaque file digest are rechecked from
-the active tree around finalization. Local refs are checked before publication,
-after the rename and again after the internal checks and breadcrumb write. The
-worktree's symbolic `HEAD` must remain attached to the recorded run branch at
-the same finalization boundaries.
+published with an atomic no-replace rename. State and ledger replacements are
+written relative to the pinned private-stage directory and stop if its named
+identity changes. The relocated state remains under the controller-source cap
+and the appended ledger remains under the capsule file cap. The closed
+inventory and every opaque file digest are rechecked from the active tree
+around finalization. Local refs are checked before publication, after the
+rename and again after the internal checks and breadcrumb write. The
+worktree's directory identity and symbolic `HEAD` must remain unchanged across
+the internal checks and the same finalization boundaries, including an
+interrupted-publication retry.
 
 A retry after an interruption never guesses ownership. A marker with no owned
 path may resume. A marker whose private stage or incomplete worktree remains

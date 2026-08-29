@@ -1195,6 +1195,82 @@ class HexctlCheckpointTests(HexctlCase):
         self.assertIn("marker could not be published", stderr.getvalue())
         self.assertEqual([], list(outside.iterdir()))
 
+    def test_restore_moved_worktree_home_cannot_redirect_writes(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        imported = json.loads(
+            capsule.joinpath("controller", "state.json").read_bytes()
+        )
+        module = hexctl_module()
+        home = origin / "tmp" / "fiat"
+        outside = Path(self.dir) / "outside-worktree-home"
+        outside.mkdir()
+        original_marker = module._checkpoint_restore_marker
+
+        def replace_home_after_marker(*args):
+            result = original_marker(*args)
+            home.parent.mkdir(parents=True, exist_ok=True)
+            home.symlink_to(outside, target_is_directory=True)
+            return result
+
+        stderr = StringIO()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(
+                module,
+                "_checkpoint_restore_marker",
+                side_effect=replace_home_after_marker,
+            ):
+                with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module.cmd_checkpoint_restore(
+                        SimpleNamespace(
+                            dir=str(origin),
+                            source=str(capsule),
+                            manifest_sha256=exported["manifest_sha256"],
+                        )
+                    )
+        self.assertEqual([], list(outside.iterdir()))
+
+    def test_restore_moved_private_stage_cannot_redirect_writes(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        imported = json.loads(
+            capsule.joinpath("controller", "state.json").read_bytes()
+        )
+        module = hexctl_module()
+        worktree, stage_name, _ = module._checkpoint_restore_marker_paths(
+            str(origin), imported, exported["manifest_sha256"]
+        )
+        stage = Path(stage_name)
+        detached = Path(f"{stage_name}-detached")
+        outside = Path(self.dir) / "outside-restore-stage"
+        outside.mkdir()
+        original_state = module._checkpoint_restore_state
+
+        def replace_stage_before_write(*args):
+            result = original_state(*args)
+            stage.rename(detached)
+            stage.symlink_to(outside, target_is_directory=True)
+            return result
+
+        stderr = StringIO()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(
+                module,
+                "_checkpoint_restore_state",
+                side_effect=replace_stage_before_write,
+            ):
+                with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module.cmd_checkpoint_restore(
+                        SimpleNamespace(
+                            dir=str(origin),
+                            source=str(capsule),
+                            manifest_sha256=exported["manifest_sha256"],
+                        )
+                    )
+        self.assertEqual([], list(outside.iterdir()))
+
     def test_restore_moving_capsule_refuses_before_marker(self):
         self.to_post_push()
         capsule, _, exported = self.export("capsule")
@@ -1536,6 +1612,46 @@ class HexctlCheckpointTests(HexctlCase):
                             )
                         )
         self.assertIn("worktree branch changed", stderr.getvalue())
+        self.assertTrue(
+            origin.joinpath(
+                ".hexaemeron", "checkpoint-restore.json"
+            ).is_file()
+        )
+
+    def test_restore_moved_worktree_during_checks_refuses(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        module = hexctl_module()
+        original_checks = module._checkpoint_restore_internal_checks
+        detached = None
+
+        def move_after_checks(worktree, manifest, ledger):
+            nonlocal detached
+            result = original_checks(worktree, manifest, ledger)
+            worktree_path = Path(worktree)
+            detached = worktree_path.with_name(worktree_path.name + "-detached")
+            worktree_path.rename(detached)
+            worktree_path.symlink_to(detached, target_is_directory=True)
+            return result
+
+        stderr = StringIO()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(
+                module,
+                "_checkpoint_restore_internal_checks",
+                side_effect=move_after_checks,
+            ):
+                with redirect_stdout(StringIO()), redirect_stderr(stderr):
+                    with self.assertRaises(SystemExit):
+                        module.cmd_checkpoint_restore(
+                            SimpleNamespace(
+                                dir=str(origin),
+                                source=str(capsule),
+                                manifest_sha256=exported["manifest_sha256"],
+                            )
+                        )
+        self.assertTrue(detached.is_dir())
         self.assertTrue(
             origin.joinpath(
                 ".hexaemeron", "checkpoint-restore.json"

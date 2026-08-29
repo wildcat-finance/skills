@@ -9020,6 +9020,95 @@ def _checkpoint_restore_marker(
     return worktree, stage, marker, False
 
 
+def _checkpoint_restore_prepare_worktree_home(
+    origin: str, worktree: str
+) -> None:
+    """Create the derived worktree home through pinned directory entries."""
+    home = os.path.dirname(worktree)
+    expected = os.path.join(origin, *WORKTREE_HOME)
+    if home != expected:
+        die("checkpoint restore derived worktree home changed")
+
+    directory_descriptor = None
+    gitignore_descriptor = None
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        directory_descriptor = os.open(origin, directory_flags)
+        if not _checkpoint_directory_still_at_path(origin, directory_descriptor):
+            raise OSError("checkpoint restore origin changed")
+        for component in WORKTREE_HOME:
+            try:
+                os.mkdir(component, 0o700, dir_fd=directory_descriptor)
+            except FileExistsError:
+                pass
+            next_descriptor = os.open(
+                component, directory_flags, dir_fd=directory_descriptor
+            )
+            if not _checkpoint_directory_still_in_parent(
+                directory_descriptor, component, next_descriptor
+            ):
+                os.close(next_descriptor)
+                raise OSError("checkpoint restore worktree home changed")
+            os.close(directory_descriptor)
+            directory_descriptor = next_descriptor
+
+        if not _checkpoint_directory_still_at_path(home, directory_descriptor):
+            raise OSError("checkpoint restore worktree home changed")
+        try:
+            initial = os.stat(
+                ".gitignore", dir_fd=directory_descriptor, follow_symlinks=False
+            )
+        except FileNotFoundError:
+            gitignore_descriptor = os.open(
+                ".gitignore",
+                os.O_RDWR
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+                dir_fd=directory_descriptor,
+            )
+            _checkpoint_write_all(gitignore_descriptor, b"*\n")
+            os.fsync(gitignore_descriptor)
+        else:
+            if (
+                not stat.S_ISREG(initial.st_mode)
+                or initial.st_nlink != 1
+                or initial.st_size != 2
+            ):
+                raise OSError("checkpoint restore worktree ignore changed")
+            gitignore_descriptor = os.open(
+                ".gitignore",
+                os.O_RDONLY
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=directory_descriptor,
+            )
+            opened = os.fstat(gitignore_descriptor)
+            if (
+                _checkpoint_stat_identity(opened)
+                != _checkpoint_stat_identity(initial)
+                or os.read(gitignore_descriptor, 3) != b"*\n"
+            ):
+                raise OSError("checkpoint restore worktree ignore changed")
+        if not _checkpoint_directory_still_at_path(home, directory_descriptor):
+            raise OSError("checkpoint restore worktree home changed")
+        os.fsync(directory_descriptor)
+    except OSError:
+        die("checkpoint restore could not prepare its marker-owned worktree home")
+    finally:
+        for descriptor in (gitignore_descriptor, directory_descriptor):
+            if descriptor is not None:
+                with contextlib.suppress(OSError):
+                    os.close(descriptor)
+
+
 def _checkpoint_restore_retire_marker(
     origin: str, state: dict, digest: str, marker: str
 ) -> None:
@@ -9312,6 +9401,39 @@ def _checkpoint_restore_worktree_branch(worktree: str, state: dict) -> None:
         die("checkpoint restored worktree branch changed during finalization")
 
 
+def _checkpoint_restore_worktree_identity(
+    worktree: str, expected: tuple[int, int] | None = None
+) -> tuple[int, int]:
+    """Pin the directory identity used by path-based restore checks."""
+    descriptor = None
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        initial = os.lstat(worktree)
+        descriptor = os.open(worktree, flags)
+        opened = os.fstat(descriptor)
+        identity = (opened.st_dev, opened.st_ino)
+        if (
+            not stat.S_ISDIR(initial.st_mode)
+            or stat.S_ISLNK(initial.st_mode)
+            or (initial.st_dev, initial.st_ino) != identity
+            or not _checkpoint_directory_still_at_path(worktree, descriptor)
+            or (expected is not None and identity != expected)
+        ):
+            raise OSError("checkpoint restored worktree changed")
+        return identity
+    except OSError:
+        die("checkpoint restored worktree changed during finalization", 1)
+    finally:
+        if descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+
+
 def _checkpoint_restore_write_files(
     stage: str, state: dict, ledger_prefix: bytes, receipt: dict
 ) -> tuple[bytes, str]:
@@ -9331,10 +9453,19 @@ def _checkpoint_restore_write_files(
         die("checkpoint relocated state exceeds the bounded controller-source cap")
     if len(ledger) > CHECKPOINT_FILE_BYTES_MAX:
         die("checkpoint relocated ledger exceeds the file byte ceiling")
-    for name, payload in ((STATE_FILE, state_payload), (LEDGER_FILE, ledger)):
-        path = os.path.join(stage, name)
-        temporary = path + ".restore"
-        try:
+    stage_descriptor = None
+    try:
+        stage_descriptor = os.open(
+            stage,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        if not _checkpoint_directory_still_at_path(stage, stage_descriptor):
+            raise OSError("checkpoint restore stage changed")
+        for name, payload in ((STATE_FILE, state_payload), (LEDGER_FILE, ledger)):
+            temporary = name + ".restore"
             descriptor = os.open(
                 temporary,
                 os.O_WRONLY
@@ -9343,15 +9474,28 @@ def _checkpoint_restore_write_files(
                 | getattr(os, "O_CLOEXEC", 0)
                 | getattr(os, "O_NOFOLLOW", 0),
                 0o600,
+                dir_fd=stage_descriptor,
             )
             try:
                 _checkpoint_write_all(descriptor, payload)
                 os.fsync(descriptor)
             finally:
                 os.close(descriptor)
-            os.replace(temporary, path)
-        except OSError:
-            die("checkpoint restore stage could not record relocated state")
+            os.replace(
+                temporary,
+                name,
+                src_dir_fd=stage_descriptor,
+                dst_dir_fd=stage_descriptor,
+            )
+            if not _checkpoint_directory_still_at_path(stage, stage_descriptor):
+                raise OSError("checkpoint restore stage changed")
+        os.fsync(stage_descriptor)
+    except OSError:
+        die("checkpoint restore stage could not record relocated state")
+    finally:
+        if stage_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(stage_descriptor)
     count, tail = _checkpoint_ledger(ledger, state)
     if count < 2 or tail != entry["hash"]:
         die("checkpoint restore receipt could not be verified")
@@ -9444,6 +9588,7 @@ def cmd_checkpoint_restore(args) -> None:
         except OSError:
             final_safe = False
     if resumed and final_safe and os.path.isfile(state_path(worktree)):
+        worktree_identity = _checkpoint_restore_worktree_identity(worktree)
         state, ledger, ledger_tail = _checkpoint_restore_active_state(
             worktree,
             imported,
@@ -9453,10 +9598,12 @@ def cmd_checkpoint_restore(args) -> None:
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
         _checkpoint_restore_worktree_branch(worktree, imported)
         verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
             worktree, manifest, ledger
         )
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
         state, ledger, ledger_tail = _checkpoint_restore_active_state(
             worktree,
             imported,
@@ -9466,10 +9613,12 @@ def cmd_checkpoint_restore(args) -> None:
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
         _checkpoint_restore_worktree_branch(worktree, imported)
         if _checkpoint_refs(origin, imported) != refs:
             die("checkpoint restored Git refs changed during finalization")
         _checkpoint_restore_breadcrumb(origin, worktree)
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
         state, ledger, ledger_tail = _checkpoint_restore_active_state(
             worktree,
             imported,
@@ -9479,6 +9628,7 @@ def cmd_checkpoint_restore(args) -> None:
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
         _checkpoint_restore_worktree_branch(worktree, imported)
         if _checkpoint_refs(origin, imported) != refs:
             die("checkpoint restored Git refs changed during finalization")
@@ -9509,17 +9659,7 @@ def cmd_checkpoint_restore(args) -> None:
             "its marker-owned paths were preserved for inspection"
         )
 
-    home = os.path.dirname(worktree)
-    try:
-        os.makedirs(home, exist_ok=True)
-        home_gitignore = os.path.join(home, ".gitignore")
-        if not os.path.exists(home_gitignore):
-            with open(home_gitignore, "x", encoding="utf-8") as handle:
-                handle.write("*\n")
-                handle.flush()
-                os.fsync(handle.fileno())
-    except OSError:
-        die("checkpoint restore could not prepare its marker-owned worktree home")
+    _checkpoint_restore_prepare_worktree_home(origin, worktree)
     bounded_git(
         origin,
         ["worktree", "add", worktree, run_branch_of(imported)],
@@ -9536,7 +9676,9 @@ def cmd_checkpoint_restore(args) -> None:
         or repository_root(worktree) != worktree
     ):
         die("checkpoint restore derived worktree changed after Git created it")
+    worktree_identity = _checkpoint_restore_worktree_identity(worktree)
     _checkpoint_restore_worktree_branch(worktree, imported)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed during relocation")
     if os.path.lexists(final_root) or os.path.lexists(stage):
@@ -9619,10 +9761,12 @@ def cmd_checkpoint_restore(args) -> None:
                 with contextlib.suppress(OSError):
                     os.close(descriptor)
     _checkpoint_restore_opaque_evidence(final_root, inventory)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
     _checkpoint_restore_worktree_branch(worktree, imported)
     verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
         worktree, manifest, ledger
     )
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
     relocated, ledger, ledger_tail = _checkpoint_restore_active_state(
         worktree,
         imported,
@@ -9632,10 +9776,12 @@ def cmd_checkpoint_restore(args) -> None:
         ledger_prefix,
     )
     _checkpoint_restore_opaque_evidence(final_root, inventory)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
     _checkpoint_restore_worktree_branch(worktree, imported)
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed during finalization")
     _checkpoint_restore_breadcrumb(origin, worktree)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
     relocated, ledger, ledger_tail = _checkpoint_restore_active_state(
         worktree,
         imported,
@@ -9645,6 +9791,7 @@ def cmd_checkpoint_restore(args) -> None:
         ledger_prefix,
     )
     _checkpoint_restore_opaque_evidence(final_root, inventory)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
     _checkpoint_restore_worktree_branch(worktree, imported)
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed during finalization")

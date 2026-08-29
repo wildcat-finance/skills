@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 957,
-  "total_bytes": 20666751,
+  "total_bytes": 20673239,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1869,9 +1869,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
     },
     {
-      "bytes": 10227,
+      "bytes": 10583,
       "path": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md",
-      "sha256": "5817a1edc81cbe6abc09d99e3bd1a15c5bf9a013948619b266ba0a65b23d3566",
+      "sha256": "31911c2f6939e036c83c4dc05c7e10915fd173e4c03bbc170d0265d02f18ba35",
       "source": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md"
     },
     {
@@ -1917,9 +1917,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 403678,
+      "bytes": 409810,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "7851637ff189845993b5b76032e096e739bce7e95655652f5c16dfd1e0c0ffb5",
+      "sha256": "6a12e2453f5ada0cdcb6d40711de47189ce44a3844ee8dfb56d2479bc1484f42",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
