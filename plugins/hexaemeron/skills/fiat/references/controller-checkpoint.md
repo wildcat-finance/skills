@@ -1,7 +1,7 @@
 # Fiat controller checkpoint
 
 This reference specifies the controller-owned capsule accepted by
-[ADR-028](../../../../../docs/decisions/ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md).
+[ADR-028](https://github.com/wildcat-finance/skills/blob/main/docs/decisions/ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md).
 The capsule moves exact `.hexaemeron` bytes. It does not replace the standing
 Git bundle, signature proof, checkpoint archive, outer sidecar, Drive object or
 issue note.
