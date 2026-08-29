@@ -40,6 +40,13 @@ FIXTURE_COMMIT_MATRIX = (
              "test_temporary_git_repositories_demonstrate_holding_and_broken_runs"),
         ),
         (
+            "hexctl-integration-path-bounds",
+            (sys.executable,
+             "plugins/hexaemeron/tests/test_hexctl_integration_path_bounds.py",
+             "V2OutsideSurfaceTests."
+             "test_a_v2_artifact_with_more_than_500_outside_paths_is_accepted"),
+        ),
+        (
             "horos-demonstration",
             (sys.executable, "plugins/horos/tests/test_demonstration.py",
              "DemonstrationTests.test_entering_the_repository_matches_the_documented_wording"),
