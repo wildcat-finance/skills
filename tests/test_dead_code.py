@@ -849,6 +849,52 @@ class CommandLineTests(TemporaryRepositoryTestCase):
             + document["universe"]["excluded_count"],
         )
 
+    def test_repository_substitution_after_render_cannot_redirect_output(self):
+        outside = self.root.parent / (self.root.name + "-outside-directory")
+        held = self.root.parent / (self.root.name + "-opened-repository")
+        outside.mkdir()
+
+        def restore_repository():
+            outside_report = outside / ".dead-code" / "report.json"
+            outside_report.unlink(missing_ok=True)
+            try:
+                outside_report.parent.rmdir()
+            except FileNotFoundError:
+                pass
+            if self.root.is_symlink():
+                self.root.unlink()
+            if held.exists():
+                held.rename(self.root)
+            outside.rmdir()
+
+        self.addCleanup(restore_repository)
+        real_render_json = dead_code.render_json
+
+        def substitute_repository(report):
+            rendered = real_render_json(report)
+            self.root.rename(held)
+            self.root.symlink_to(outside, target_is_directory=True)
+            return rendered
+
+        arguments = dead_code.argparse.Namespace(
+            directory=str(self.root),
+            json=True,
+            output=".dead-code/report.json",
+        )
+        with mock.patch.object(
+            dead_code,
+            "render_json",
+            side_effect=substitute_repository,
+        ):
+            result = dead_code.command_report(arguments)
+        self.assertEqual(result, 0)
+        self.assertFalse((outside / ".dead-code" / "report.json").exists())
+        report_path = held / ".dead-code" / "report.json"
+        self.assertEqual(
+            json.loads(report_path.read_text(encoding="utf-8"))["schema"],
+            "dead-code-report/v1",
+        )
+
     def test_unsafe_output_path_exits_two(self):
         completed = self._run("report", "--output", "../escape.json")
         self.assertEqual(completed.returncode, 2)
