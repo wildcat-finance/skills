@@ -12,6 +12,8 @@ to report anything useful.
 """
 
 import json
+import math
+from decimal import Decimal, DecimalException
 
 DEFAULT_MAX_BYTES = 8 * 1024 * 1024
 DEFAULT_MAX_DEPTH = 64
@@ -65,6 +67,36 @@ def no_duplicate_keys(pairs):
     return dict(pairs)
 
 
+def no_non_json_constant(value):
+    """Refuse Python's NaN and infinity extensions to the JSON grammar."""
+    raise InputError("non-JSON numeric constant %s" % value)
+
+
+def finite_json_float(value):
+    """Refuse float overflow and preserve exact integral JSON numbers."""
+    try:
+        parsed = float(value)
+    except (OverflowError, ValueError):
+        raise InputError("JSON number is outside the finite float range")
+    if not math.isfinite(parsed):
+        raise InputError("JSON number is outside the finite float range")
+    try:
+        exact = Decimal(value)
+        if exact == exact.to_integral_value():
+            return int(exact)
+    except (DecimalException, OverflowError, ValueError):
+        raise InputError("JSON number is outside the supported decimal range")
+    return parsed
+
+
+def bounded_json_integer(value):
+    """Turn Python's integer digit ceiling into an ordinary input refusal."""
+    try:
+        return int(value)
+    except ValueError:
+        raise InputError("JSON integer exceeds the parser's digit bound")
+
+
 def loads(data, max_bytes=DEFAULT_MAX_BYTES, max_depth=DEFAULT_MAX_DEPTH):
     if max_bytes < 1 or max_depth < 1:
         raise InputError(
@@ -81,7 +113,13 @@ def loads(data, max_bytes=DEFAULT_MAX_BYTES, max_depth=DEFAULT_MAX_DEPTH):
         )
     check_depth(data, max_depth)
     try:
-        return json.loads(data.decode("utf-8"), object_pairs_hook=no_duplicate_keys)
+        return json.loads(
+            data.decode("utf-8"),
+            object_pairs_hook=no_duplicate_keys,
+            parse_constant=no_non_json_constant,
+            parse_float=finite_json_float,
+            parse_int=bounded_json_integer,
+        )
     except UnicodeDecodeError as error:
         raise InputError("not UTF-8: %s" % error)
     except json.JSONDecodeError as error:

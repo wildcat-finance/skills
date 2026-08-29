@@ -342,7 +342,7 @@ def manifest_of(root):
     # anyway: requiring a field and accepting any value for it is a presence test
     # that carries nothing, and it would let this capture call a document a Lazarus
     # manifest on the strength of a key holding `{"a": 1}`.
-    if not isinstance(found["fixture_digest"], str) or not DIGEST.match(
+    if not isinstance(found["fixture_digest"], str) or not DIGEST.fullmatch(
         found["fixture_digest"]
     ):
         raise CaptureError(

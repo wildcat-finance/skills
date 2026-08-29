@@ -536,7 +536,7 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
         call a document a Lazarus manifest on the strength of a key holding
         `{"a": 1}`."""
         for value in (None, "", "   ", 0, True, [], {}, {"a": 1}, "beef",
-                      "F" * 64, "0x" + "a" * 64):
+                      "F" * 64, "0x" + "a" * 64, "a" * 64 + "\n"):
             manifest = self.manifest()
             manifest["fixture_digest"] = value
             self.rewrite(manifest)

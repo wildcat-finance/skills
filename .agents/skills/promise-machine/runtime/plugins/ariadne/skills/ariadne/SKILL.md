@@ -91,11 +91,12 @@ python3 scripts/ariadne.py verify <statement-or-envelope.json>
 python3 scripts/ariadne.py replay <statement.json> [--allow-execution --project <dir>]
 ```
 
-`predicates` lists the predicate types this build understands. Four are registered:
+`predicates` lists the predicate types this build understands. Five are registered:
 `https://ariadne.wildcat.finance/solidity-release/v1`,
 `https://ariadne.wildcat.finance/dataset/v1`,
-`https://ariadne.wildcat.finance/state-fixture/v1`, and
-`https://ariadne.wildcat.finance/state-fixture/v2`. A statement of any other type
+`https://ariadne.wildcat.finance/state-fixture/v1`,
+`https://ariadne.wildcat.finance/state-fixture/v2`, and
+`https://ariadne.wildcat.finance/grounded-agent/v1`. A statement of any other type
 still parses and still gets its core gates.
 
 `capture` reads a Foundry project's build output into a release statement that
@@ -144,7 +145,15 @@ all adjustable with `--max-bytes` and `--max-depth`.
 `--allow-execution` it prints the plan and runs nothing, which is the default
 because the commands inside a statement are somebody else's data rather than
 instructions. It never uses a shell, refuses a command whose arguments were
-redacted at capture, and refuses a program name carrying a path separator.
+redacted at capture, refuses a program name carrying a path separator or
+Windows drive prefix, and refuses known shells and Windows batch programs.
+The JSON result reports execution authority as `executionAllowed`; `executed`
+is true only when an eligible process actually started.
+Only the Solidity-release predicate has a local output recomputer, and it is
+used only for the exact command recorded by that predicate's build environment.
+An exact command on another predicate, or a different command on a Solidity
+statement, may run, but replay does not compare it with an unrelated Foundry
+artefact bundle or report that output as a match.
 
 Exit codes: 0 success, 1 a gate was breached, 2 usage or validation error.
 
@@ -284,6 +293,17 @@ field by field. `schemas/state-fixture-v1.json` and
 Type URIs: `https://ariadne.wildcat.finance/state-fixture/v1` and
 `https://ariadne.wildcat.finance/state-fixture/v2`.
 
+## Grounded-agent predicate
+
+`https://ariadne.wildcat.finance/grounded-agent/v1` binds a semantic
+`berean-release/v1` identity, its exact component bytes, its policy boundary and
+adapter provenance, and an explicit baseline/current comparison. It keeps
+inputs under `given` and outputs under `produced`. Optional reads, evaluations
+and promotion evidence are objects or explicit `null` with a paired absence
+reason; promotion projects only non-conclusion identity metadata.
+[`docs/grounded-agent.md`](../../docs/grounded-agent.md)
+publishes the field and gate contract. Capture remains outside this step.
+
 ## Examples
 
 [`examples/`](../../examples) holds two attestations over the fixture project:
@@ -299,9 +319,8 @@ fails a named gate.
 
 Named so the edge is visible rather than implied.
 
-The registry holds four predicates. The grounded-agent predicate is specified and
-not implemented here, so a statement of that type verifies its core gates and is
-told which gates went unchecked.
+The registry holds five predicates. The grounded-agent predicate is registered
+and checked, but Ariadne does not yet capture one from a local Berean release.
 
 Nothing confirms a deployment against a chain, nothing signs, and nothing runs
 as a GitHub Action. Each of those is a deliberate boundary rather than an

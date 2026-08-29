@@ -34,6 +34,7 @@ FOR_TYPE = {
     "https://ariadne.wildcat.finance/dataset/v1": "dataset-v1.json",
     "https://ariadne.wildcat.finance/state-fixture/v1": "state-fixture-v1.json",
     "https://ariadne.wildcat.finance/state-fixture/v2": "state-fixture-v2.json",
+    "https://ariadne.wildcat.finance/grounded-agent/v1": "grounded-agent-v1.json",
 }
 
 ACCEPTED_BY_THE_SCHEMA = {

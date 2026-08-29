@@ -2742,10 +2742,10 @@
         "promise_id": "coverage key joined to the canonical promise heading",
         "scope": "recorded command, arguments and exact replay mode",
         "subject": "statement subject digest and replay project",
-        "transition": "allow-execution authority and replay exit joined to the canonical Authorises field",
-        "unknowns": "redacted arguments, unchecked predicates and non-deterministic records"
+        "transition": "allow-execution authority, registered predicate gates 2 and 5, and replay exit joined to the canonical Authorises field",
+        "unknowns": "redacted arguments, non-deterministic records and external effects of executed commands"
       },
-      "sha256": "ba45c1fcfba8a2bf9cafbcf09b97c752d3c756eee97cd5d4124da94bea359412",
+      "sha256": "e8e38c62307737c32c82caac7782c15032edc6383655c50b96a0ec0b158f8156",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     "ariadne-verify-statement": {
@@ -2754,12 +2754,12 @@
         "evidence_references": "predicate materials, claims and gate report",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "predicate type and complete gate set",
+        "scope": "predicate type, gates actually run and explicit unchecked set",
         "subject": "in-toto subject name and digest",
-        "transition": "zero-exit gate result joined to the canonical Authorises field",
+        "transition": "zero-exit result for applicable gates actually run joined to the canonical Authorises field",
         "unknowns": "unchecked predicates, unsigned status and skipped records"
       },
-      "sha256": "ba45c1fcfba8a2bf9cafbcf09b97c752d3c756eee97cd5d4124da94bea359412",
+      "sha256": "e8e38c62307737c32c82caac7782c15032edc6383655c50b96a0ec0b158f8156",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     "berean-release-promotion": {
