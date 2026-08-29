@@ -199,7 +199,7 @@ class CaptureTests(unittest.TestCase):
         document = envelope.read(json.dumps(statement).encode("utf-8"))
         return verify.report(document, registry.DEFAULT)
 
-    def run_cli(self, producer_command=None, previous=None):
+    def run_cli(self, producer_command=None, previous=None, extra=None):
         out = io.StringIO()
         err = io.StringIO()
         argv = [
@@ -220,8 +220,12 @@ class CaptureTests(unittest.TestCase):
         else:
             argv.extend(["--previous", previous])
         argv.extend(["--output", self.output])
+        argv.extend(extra or [])
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = ariadne.main(argv)
+            try:
+                code = ariadne.main(argv)
+            except SystemExit as error:
+                code = error.code
         return code, out.getvalue(), err.getvalue()
 
     def test_capture_is_deterministic_and_projects_only_byte_backed_evidence(self):
@@ -653,6 +657,19 @@ class CaptureTests(unittest.TestCase):
         self.assertNotIn("Traceback", err)
         self.assertEqual(len(err.splitlines()), 1)
         self.assertFalse(os.path.exists(self.output))
+
+    def test_cli_argument_diagnostics_are_bounded_and_do_not_dump_tokens(self):
+        for size in (8 * 1024, 1024 * 1024):
+            token = "--" + "x" * size
+            with self.subTest(size=size):
+                code, out, err = self.run_cli(extra=[token])
+                self.assertEqual(code, 2)
+                self.assertEqual(out, "")
+                self.assertLessEqual(len(err.encode("utf-8")), 1024)
+                self.assertNotIn(token, err)
+                self.assertNotIn("Traceback", err)
+                self.assertEqual(len(err.splitlines()), 1)
+                self.assertFalse(os.path.exists(self.output))
 
     def test_cli_writes_utf8_under_an_ascii_process_locale(self):
         self.build_release(promotion=False)

@@ -36,6 +36,14 @@ USAGE_ERROR = 2
 READ_ERRORS = (envelope.EnvelopeError, StatementError, safejson.InputError)
 
 
+class BoundedArgumentParser(argparse.ArgumentParser):
+    """Refuse malformed argv without echoing an input-sized token or usage block."""
+
+    def error(self, message):
+        rendered = grounded_agent_capture.diagnostic(message)
+        self.exit(USAGE_ERROR, "%s: error: %s\n" % (self.prog, rendered))
+
+
 def print_read_error(path, error):
     """Emit one line even when a rejected document supplied the reason."""
     print(gates.one_line("%s: %s" % (path, error)), file=sys.stderr)
@@ -452,7 +460,7 @@ def add_input_bounds(parser):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(
+    parser = BoundedArgumentParser(
         prog="ariadne", description="Signed evidence another person can check."
     )
     subcommands = parser.add_subparsers(dest="command")
