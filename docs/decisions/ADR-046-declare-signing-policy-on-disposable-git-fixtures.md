@@ -20,7 +20,7 @@ retired below rather than corrected in place.
 ## Context
 
 Tests across four suites build throwaway Git repositories and commit into them.
-At `f5d94a5f`, ten such sites in six files declared no signing policy, so each
+At `f5d94a5f`, ten such sites in seven files declared no signing policy, so each
 inherited the contributor's global `commit.gpgsign`. Fixture history is not
 evidence about signatures. It exists so a scanner, a checker or a controller has
 a tree to read, and letting a contributor's signing configuration decide whether
@@ -148,8 +148,8 @@ signature. On a GPG host this turns three failing tests into passing ones; on an
 SSH host it returns about 4.6 ms per fixture commit, which is inside noise at
 suite scale and is not a suite-level speedup claim.
 
-Ten sites became six edit points, one per chokepoint, and a single point of
-control is what the choice trades away. An eleventh construction site added later
+Ten sites became ten edit points, one per chokepoint across seven files, and a
+single point of control is what the choice trades away. An eleventh construction site added later
 can forget the declaration. That cost is paid by
 `tests/test_disposable_fixture_signing.py`, which enumerates all four suites and
 fails when a disposable repository reaches the signer, rather than by asking
