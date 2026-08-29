@@ -63,3 +63,19 @@ Elenchus verdict: guarded
 | S2-R1-03 | low | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | Revalidating an accepted observation imported the validator with bytecode writes enabled, so read-only checkpoint identity could create `__pycache__`. | fixed and guarded in c44550a13e2618da22dd3aeb709741c10ae2646b |
 
 Leads not pursued: none
+
+## Step 2, round 2 -- 2026-08-29T20:39:47Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: base-resolution-race=reviewed; integration-branch-loss=reviewed; legacy-reanchor=reviewed; anchor-mismatch=reviewed; repository-substitution=reviewed; boundary-substitution=reviewed; working-commit-substitution=reviewed; ledger-prefix-substitution=reviewed; canonical-json-drift=reviewed; policy-projection-drift=reviewed; observation-overclaim=reviewed; semantic-transport-confusion=reviewed; path-or-secret-leak=reviewed; concurrent-read=reviewed; scope-bleed-508-547=reviewed; scope-bleed-561-682=reviewed; schema-compatibility=reviewed
+
+Not checked: waived: non-Solidity Python controller-state identity work; bundled Solidity audit suite does not apply
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: none
