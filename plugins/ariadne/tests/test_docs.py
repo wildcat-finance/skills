@@ -28,6 +28,19 @@ PREDICATE_DOC = os.path.join(PLUGIN, "docs", "solidity-release.md")
 DATASET_DOC = os.path.join(PLUGIN, "docs", "dataset.md")
 STATE_FIXTURE_DOC = os.path.join(PLUGIN, "docs", "state-fixture.md")
 GROUNDED_AGENT_DOC = os.path.join(PLUGIN, "docs", "grounded-agent.md")
+CAPTURE_GROUNDED_AGENT_DOC = os.path.join(
+    PLUGIN, "docs", "capturing-a-grounded-agent.md"
+)
+
+STAGED_COMMAND_DOCS = {
+    "capture-grounded-agent": CAPTURE_GROUNDED_AGENT_DOC,
+}
+"""A command whose bounded guide lands before Step 4 updates marketplace prose.
+
+Every other command remains mandatory in both top-level surfaces. The final
+grounded-agent step removes this staged entry when those surfaces stop saying
+the capture is unimplemented.
+"""
 
 DOCUMENTED = (
     (release, PREDICATE_DOC),
@@ -68,9 +81,14 @@ class SubcommandTests(unittest.TestCase):
     def test_every_subcommand_is_named_in_the_skill_and_the_readme(self):
         found = subcommands()
         self.assertTrue(found)
+        for name, guide in STAGED_COMMAND_DOCS.items():
+            self.assertIn(name, found)
+            self.assertIn("ariadne.py %s" % name, read(guide))
         for path in (SKILL, README):
             text = read(path)
             for name in found:
+                if name in STAGED_COMMAND_DOCS:
+                    continue
                 self.assertIn(
                     "ariadne.py %s" % name,
                     text,

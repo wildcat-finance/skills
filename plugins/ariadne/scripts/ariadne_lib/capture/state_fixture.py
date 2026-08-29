@@ -45,6 +45,11 @@ from ..predicates import state_fixture as predicate
 from . import tree
 from .tree import CaptureError, confined
 
+
+class ComponentLimitError(CaptureError):
+    """A stable component crossed the caller's pre-read byte ceiling."""
+
+
 MANIFEST = "manifest.json"
 HEADER = "header.json"
 
@@ -208,6 +213,7 @@ def read_component(root, relative, what, max_bytes, keep_bytes=False):
     """Digest one stable regular-file descriptor under a pre-read byte cap."""
     descriptor = _open_component(root, relative, what)
     problem = None
+    error_type = CaptureError
     raw = bytearray() if keep_bytes else None
     digest = hashlib.sha256()
     size = 0
@@ -216,6 +222,7 @@ def read_component(root, relative, what, max_bytes, keep_bytes=False):
         if not stat.S_ISREG(before.st_mode):
             problem = "%s is not a regular file" % what
         elif before.st_size > max_bytes:
+            error_type = ComponentLimitError
             problem = "%s is %d bytes, over the %d this capture will read" % (
                 what,
                 before.st_size,
@@ -232,6 +239,7 @@ def read_component(root, relative, what, max_bytes, keep_bytes=False):
                     if raw is not None:
                         raw.extend(block)
             if size > max_bytes:
+                error_type = ComponentLimitError
                 problem = "%s grew past the %d byte cap while being read" % (
                     what,
                     max_bytes,
@@ -251,11 +259,12 @@ def read_component(root, relative, what, max_bytes, keep_bytes=False):
                 if before_state != after_state or size != before.st_size:
                     problem = "%s changed while it was read" % what
     except OSError:
+        error_type = CaptureError
         problem = "cannot read %s" % what
     finally:
         os.close(descriptor)
     if problem is not None:
-        raise CaptureError(problem)
+        raise error_type(problem)
     return {"sha256": digest.hexdigest()}, size, bytes(raw) if raw is not None else None
 
 
@@ -855,7 +864,13 @@ def write(path, body):
     """
     directory = os.path.dirname(os.path.abspath(path)) or "."
     handle = tempfile.NamedTemporaryFile(
-        mode="w", dir=directory, prefix=".ariadne-", suffix=".tmp", delete=False
+        mode="w",
+        encoding="utf-8",
+        newline="\n",
+        dir=directory,
+        prefix=".ariadne-",
+        suffix=".tmp",
+        delete=False,
     )
     try:
         with handle:
