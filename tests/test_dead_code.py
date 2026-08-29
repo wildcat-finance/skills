@@ -1168,6 +1168,18 @@ class PythonAnalyserTests(TemporaryRepositoryTestCase):
         self.assertTrue(snapshot.degraded)
         self.assertTrue(any(item.state == "skipped" for item in snapshot.records))
 
+    def test_global_assignment_is_not_reported_as_an_unused_local(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "def configure():" + NL
+                    + "    global setting" + NL
+                    + "    setting = 1" + NL
+                )
+            }
+        )
+        self.assertFalse(any(item.symbol == "configure.setting@3" for item in findings))
+
 
 class CoverageAggregationTests(unittest.TestCase):
     def setUp(self):
@@ -1181,6 +1193,7 @@ class CoverageAggregationTests(unittest.TestCase):
             ],
         }
         self.run = {
+            **self.plan,
             "schema": "wildcat.check-run.v1",
             "outcome": "green",
             "checks": [
@@ -1320,6 +1333,11 @@ class CoverageAggregationTests(unittest.TestCase):
             str(ROOT / dead_code.MONITOR_DIRECTORY),
         )
 
+    def test_run_map_digest_must_match_the_preflight_plan(self):
+        run = {**self.run, "map_digest": "c" * 64}
+        with self.assertRaisesRegex(dead_code.Refusal, "preflight plan"):
+            self._aggregate([self._process()], run)
+
 
 class MonitoringProbeTests(TemporaryRepositoryTestCase):
     def _free_tool_id(self):
@@ -1387,6 +1405,28 @@ class MonitoringProbeTests(TemporaryRepositoryTestCase):
         self.assertIs(result, sys.monitoring.DISABLE)
 
 
+class CoverageContainmentTests(unittest.TestCase):
+    @staticmethod
+    def _stop(process):
+        if process.poll() is None:
+            process.kill()
+        process.wait(timeout=5)
+
+    def test_recovery_terminates_a_process_carrying_the_run_identity(self):
+        run_id = "d" * 32
+        environment = dict(os.environ)
+        environment[dead_code.COVERAGE_ACTIVE_ENV] = run_id
+        process = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            env=environment,
+            start_new_session=True,
+        )
+        self.addCleanup(self._stop, process)
+        dead_code._terminate_coverage_processes(run_id)
+        process.wait(timeout=5)
+        self.assertIsNotNone(process.returncode)
+
+
 class CoverageAnalyserTests(TemporaryRepositoryTestCase):
     SOURCE = (
         "def plain(flag):" + NL
@@ -1427,6 +1467,8 @@ class CoverageAnalyserTests(TemporaryRepositoryTestCase):
             ],
             "processes": [
                 {
+                    "check": "alpha",
+                    "bytes": 100,
                     "status": {"state": "ran", "truncated": False, "errors": []},
                     "lines": [] if lines is None else lines,
                     "branches": [] if branches is None else branches,
@@ -1477,6 +1519,27 @@ class CoverageAnalyserTests(TemporaryRepositoryTestCase):
         build_repository(self.root, files={"app.py": self.SOURCE})
         with self.assertRaisesRegex(dead_code.Refusal, "requires --coverage"):
             dead_code.analyse_coverage(self.root, dead_code.discover(self.root), None)
+
+    def test_claimed_complete_without_process_aggregate_degrades(self):
+        universe, target, document = self._fixture()
+        document["checks"][0]["processes"] = 1
+        document["processes"] = []
+        target.write_text(json.dumps(document), encoding="utf-8")
+        status, findings = dead_code.analyse_coverage(
+            self.root, universe, ".dead-code/coverage.json"
+        )
+        self.assertEqual(status.state, "degraded")
+        self.assertEqual(findings, ())
+
+    def test_malformed_line_event_refuses_instead_of_implying_absence(self):
+        universe, target, document = self._fixture(
+            lines=[{"path": "app.py", "function": "plain", "line": "two"}]
+        )
+        target.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(dead_code.Refusal, "line event"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
 
 
 class ShippedSurfaceTests(unittest.TestCase):
