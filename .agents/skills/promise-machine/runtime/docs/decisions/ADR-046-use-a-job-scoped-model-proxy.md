@@ -1,4 +1,4 @@
-# ADR-042: Use a job-scoped model proxy
+# ADR-046: Use a job-scoped model proxy
 
 ## Status
 

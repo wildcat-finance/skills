@@ -24,8 +24,8 @@ these two runtime paths has loaded the same law and the selected plugin
 contract.
 
 The router sees the complete collective. Fourteen first-party specialists live
-in their own plugins; Synkrisis is one of them, although its present command
-surface refuses every operation. Hexaemeron contains Fiat, Kronos, six phase
+in their own plugins; Synkrisis is one of them, although its command surface
+refuses every operation whose runbook step has not landed. Hexaemeron contains Fiat, Kronos, six phase
 disciplines, two prose masks, four Fiat worker briefs, and the untouched Pashov
 security suite. The worker briefs are packets Fiat may delegate; they are not
 canonical skills a user selects through this router.
@@ -50,7 +50,7 @@ canonical skill only when the selected workflow requires a named handoff.
 | Apply executable credit laws | [Pandects](../../../plugins/pandects/AGENTS.md) | `pandects` |
 | Build a declared-address counterparty dossier | [Probitas](../../../plugins/probitas/AGENTS.md) | `probitas` |
 | Shape the agent's own replies for an AuDHD reader, or shape durable agent-authored audit records and GitHub issue titles, bodies and comments | [Sapheneia](../../../plugins/sapheneia/AGENTS.md) | `sapheneia` |
-| Inspect the specified cross-run comparison boundary or its refusing scaffold | [Synkrisis](../../../plugins/synkrisis/AGENTS.md) | `synkrisis` |
+| Compare validated run observations across runs, or inspect the cross-run comparison boundary | [Synkrisis](../../../plugins/synkrisis/AGENTS.md) | `synkrisis` |
 | Build a venue-qualified credit-event release | [Tabularium](../../../plugins/tabularium/AGENTS.md) | `tabularium` |
 
 Hexaemeron is one plugin with several distinct owners. Use the same runtime
@@ -75,10 +75,11 @@ implementation step, Warden for one audit round, or Scribe for one prose pass.
 They return evidence to Fiat; they never select themselves or receipt their own
 work.
 
-Synkrisis is outside Fiat's controller loop. Its current scaffold cannot build
-a cohort, emit a finding, file an issue, mutate a repository, or dispatch a
-Fiat run. A future comparison result will still require a person to choose any
-next owner and action.
+Synkrisis is outside Fiat's controller loop. Its delivered surface reads and
+compares declared observations and stops there: it cannot file an issue,
+mutate a repository, or dispatch a Fiat run, and any operation whose runbook
+step has not landed refuses by name. A comparison result still requires a
+person to choose any next owner and action.
 
 ## Preserve the selected promise
 

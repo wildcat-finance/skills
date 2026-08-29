@@ -50,12 +50,17 @@ def make_origin_checkout(path):
     """
     for argv in (
         ["init", "-q", "-b", "main"],
+        ["config", "--local", "commit.gpgsign", "false"],
         ["config", "user.email", "fixture@example.invalid"],
         ["config", "user.name", "Fixture"],
-        ["config", "commit.gpgsign", "false"],
         ["commit", "-q", "--allow-empty", "-m", "base"],
     ):
-        subprocess.run(["git", *argv], cwd=path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", *argv],
+            cwd=path,
+            check=True,
+            capture_output=True,
+        )
 
 
 def run_target(base_dir):
@@ -198,8 +203,17 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             url = args[args.index("--pr-url") + 1]
             merge = args[args.index("--merge-commit") + 1]
             head = pending_refs.get(state["run_branch"], self.fake_sha(state["run_branch"]))
+            body = "Delivery evidence."
+            match = re.fullmatch(
+                r"https://github\.com/([^/]+/[^/]+)/issues/([1-9][0-9]*)/?",
+                state["receipts"].get("task_issue") or "",
+            )
+            if match is not None:
+                body += f"\n\nCloses {match.group(1)}#{match.group(2)}"
+            body += "\n\n<!-- wildcat-origin: shoggoth -->"
             pending_prs[url] = self.fake_pr(
-                url, state["run_branch"], self.integration_base(state), head, merge
+                url, state["run_branch"], self.integration_base(state), head, merge,
+                body=body,
             )
         env = dict(self.env)
         env["FAKE_GIT_REFS"] = json.dumps(pending_refs)
@@ -313,7 +327,7 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
         return ref if re.fullmatch(r"[0-9a-f]{40}", ref) else hashlib.sha1(ref.encode()).hexdigest()
 
     @staticmethod
-    def fake_pr(url, head, base, head_sha, merge_sha=None):
+    def fake_pr(url, head, base, head_sha, merge_sha=None, *, body=None):
         """One pull request as the REST endpoint spells it.
 
         REST fills `merge_commit_sha` on an open pull request too, with the
@@ -325,7 +339,7 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             "state": "closed" if merge_sha else "open",
             "merged": bool(merge_sha),
             "user": {"login": "shoggoth-wildcat"},
-            "body": "Delivery evidence.\n\n<!-- wildcat-origin: shoggoth -->",
+            "body": body or "Delivery evidence.\n\n<!-- wildcat-origin: shoggoth -->",
             "head": {"ref": head, "sha": head_sha},
             "base": {"ref": base},
             "merge_commit_sha": merge_sha if merge_sha else "f" * 40,
@@ -354,6 +368,8 @@ if args and args[0] == "rev-parse" and "--show-toplevel" not in args:
     refs = json.loads(os.environ.get("FAKE_GIT_REFS", "{{}}"))
     print(refs.get(ref, ref if re.fullmatch(r"[0-9a-f]{{40}}", ref) else hashlib.sha1(ref.encode()).hexdigest()))
 elif args[:3] == ["remote", "get-url", "origin"]:
+    if mode == "slow-remote":
+        time.sleep(0.6)
     print(os.environ.get("FAKE_GIT_ORIGIN", "https://github.com/wildcat-finance/example.git"))
 elif args and args[0] == "ls-remote":
     if os.environ.get("FAKE_GIT_LS_REMOTE_LOG"):
@@ -748,9 +764,8 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
         steps = self.write("steps.json", json.dumps(list(titles)))
         self.run_ctl("done", "runbook", "--artifact", runbook,
                      "--steps-file", steps)
-        # The repository and the run branch both exist already: the fixture is a
-        # real checkout, and `init` cut the run branch when it created the run's
-        # worktree. Only the step branches are still this helper's to make.
+        # The fixture checkout and the run branch already exist (`init` cut the
+        # branch); only the step branches are this helper's to make.
         self.git("add", study, runbook, steps)
         self.git("commit", "-m", "fixture")
         state = self.state()
@@ -844,7 +859,10 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
 
     def git(self, *args, expect=0):
         proc = subprocess.run(
-            ["git", *args], cwd=self.target, capture_output=True, text=True
+            ["git", "-c", "commit.gpgsign=false", *args],
+            cwd=self.target,
+            capture_output=True,
+            text=True,
         )
         if proc.returncode != expect:
             raise AssertionError(
@@ -865,13 +883,10 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
         self.run_ctl("done", "audit")
         self.run_ctl("done", "prose", "--files", "3",
                      "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate")
-        # A real push receipt always records the branch's actual head, because
-        # `done push` takes the sha the agent pushed. A placeholder like
-        # "head2" broke that invariant: the fake remote stores fake_sha(head)
-        # as the branch tip, so the receipt and the tip disagreed and the
-        # rewritten-stack refusal fired on a stack nothing had rewritten.
-        # Passing a 40-hex head makes fake_sha the identity, which is exactly
-        # the receipt-equals-tip state a genuine run is in.
+        # `done push` records the pushed sha, which must equal the fake
+        # remote's tip, fake_sha(head).  A 40-hex head makes fake_sha the
+        # identity, the receipt-equals-tip state of a genuine run; a
+        # placeholder like "head2" fired the rewritten-stack refusal.
         self.run_ctl(
             "done", "push",
             "--pr-url", f"https://github.com/wildcat-finance/example/pull/{step_no}",
@@ -1355,6 +1370,7 @@ class TestStudyAmendments(HexctlCase):
     def test_temporary_git_repositories_demonstrate_holding_and_broken_runs(self):
         original = self.to_amendable_steps()
         self.git("init", "-b", "main")
+        self.git("config", "--local", "commit.gpgsign", "false")
         self.git("config", "user.email", "tests@example.com")
         self.git("config", "user.name", "Hexctl Tests")
         self.git("add", "study.md", "runbook.md", "steps.json")
@@ -1377,6 +1393,7 @@ class TestStudyAmendments(HexctlCase):
         try:
             original = broken.to_amendable_steps()
             broken.git("init", "-b", "main")
+            broken.git("config", "--local", "commit.gpgsign", "false")
             broken.git("config", "user.email", "tests@example.com")
             broken.git("config", "user.name", "Hexctl Tests")
             broken.git("add", "study.md", "runbook.md", "steps.json")
@@ -2096,9 +2113,9 @@ class TestMergedState(HexctlCase):
 
     def integrate(self, *, expect=0, git_mode=None, gh_mode=None):
         if expect != 0:
-            # `run_ctl` only seeds the integration pull request for a call it
-            # expects to succeed, so a refusal case has to stand it up itself
-            # or it fails on the topology read instead of the check under test.
+            # `run_ctl` seeds the integration pull request only for expected
+            # successes; a refusal case stands it up itself or fails on the
+            # topology read instead of the check under test.
             state = self.state()
             self.fake_refs[state["run_branch"]] = "e" * 40
             self.fake_prs[self.RUN_URL] = self.fake_pr(
@@ -4000,6 +4017,15 @@ class TestProseAndPush(HexctlCase):
         self.assertIn("integrate", proc.stderr)
 
 
+try:
+    from .task_issue_closure_cases import build_task_issue_closure_tests
+except ImportError:
+    from task_issue_closure_cases import build_task_issue_closure_tests
+
+
+TestTaskIssueClosure = build_task_issue_closure_tests(globals())
+
+
 class TestControls(HexctlCase):
     def test_halt_blocks_progress_and_resume_restores(self):
         self.to_steps()
@@ -4058,9 +4084,8 @@ class TestControls(HexctlCase):
         self.integrate_run()
         self.assertEqual(self.next_json()["do"], "done")
 
-        # A run that lived in a worktree archives into the checkout it was
-        # started from, because archiving inside the tree and then removing the
-        # tree would destroy the archive in the same breath.
+        # A worktree run archives into its starting checkout: archiving inside
+        # the tree and then removing the tree would destroy the archive.
         root = os.path.join(self.dir, ".hexaemeron")
         self.run_ctl("reset")
         self.assertFalse(os.path.exists(os.path.join(root, "state.json")))
@@ -5759,8 +5784,12 @@ class FrontierRowAttributionTests(OriginCheckoutMixin, unittest.TestCase):
         relative = self.before["ledger"]
         subprocess.run(["git", "add", relative], cwd=self.dir, check=True,
                        capture_output=True)
-        subprocess.run(["git", "commit", "-q", "-m", "ledger"], cwd=self.dir,
-                       check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", "commit", "-q", "-m", "ledger"],
+            cwd=self.dir,
+            check=True,
+            capture_output=True,
+        )
         head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.dir,
                               check=True, capture_output=True,
                               text=True).stdout.strip()

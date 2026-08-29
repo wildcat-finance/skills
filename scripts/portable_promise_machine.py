@@ -38,7 +38,7 @@ ROOT_FILES = (
     Path("docs/decisions/ADR-009-four-issue-queues-and-their-titles.md"),
     Path("docs/decisions/ADR-010-split-address-telemetry-from-boundary-control.md"),
     Path("docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md"),
-    Path("docs/decisions/ADR-042-use-a-job-scoped-model-proxy.md"),
+    Path("docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md"),
     Path("docs/fiat-run-observation-binding-v1.md"),
 )
 

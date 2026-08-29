@@ -37,7 +37,18 @@ plugins/*/harness/cache/
 # a plugin that wants its own tmp/ still decides for itself.
 /tmp/
 
+# Demo output. The Synkrisis example commands write their cohort here; the
+# committed expected copies live under the plugin's examples tree.
+/build/
+
 # Orphaned atomic-write temporaries from scripts/contributors.py. A hard-killed
 # run leaves one; it must never be committed and must never look like a change.
 .CONTRIBUTORS.md.*
 .README.md.*
+
+# Elenchus reports. ADR-038 keeps them inside the invocation checkout and
+# outside every Git control namespace, so they land here as ordinary untracked
+# files. They are generated evidence rather than source: without this rule
+# scripts/run_checks.py sees a relevant untracked path with no declared owner
+# and refuses its own plan the moment an Elenchus report has been written.
+/.elenchus/

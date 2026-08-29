@@ -121,17 +121,17 @@ scope-creep | beginner primer versus the complete marketplace catalogue | the ar
 
 ## 6. Glossary seeds
 
-- **Shoggoth:** the Wildcat agent-and-skill collective.
-- **Shog / Shoggy / Big S / the Goth:** affectionate names for the same collective or the active member; not invocations.
-- **Shoggoth Interceptor:** the same collective operating through the external repository-and-issue harness.
-- **Hexaemeron / Hex:** the delivery plugin and ordered system containing Fiat, workers, phase disciplines, prose masks, and vendored security tools.
-- **Fiat:** the explicit controller that emits one next action, validates its receipt, and keeps the run's order.
-- **Worker:** Surveyor, Mason, Warden, or Scribe executing one source-bound Fiat packet without advancing the controller.
-- **Skill:** one bounded working method selected for a matching job.
-- **Promise Machine:** the suite-wide law that limits claims and actions to their evidence.
-- **Receipt:** a durable record that one named phase crossed its required boundary; not proof of perfection.
-- **Gate:** a check that blocks the dependent action while leaving inspection, repair, rerun, or safe exit available.
-- **Target repository:** the repository being worked on; its instructions and permissions still govern the Interceptor and Fiat.
+- Shoggoth: the Wildcat agent-and-skill collective.
+- Shog / Shoggy / Big S / the Goth: affectionate names for the same collective or the active member; not invocations.
+- Shoggoth Interceptor: the same collective operating through the external repository-and-issue harness.
+- Hexaemeron / Hex: the delivery plugin and ordered system containing Fiat, workers, phase disciplines, prose masks, and vendored security tools.
+- Fiat: the explicit controller that emits one next action, validates its receipt, and keeps the run's order.
+- Worker: Surveyor, Mason, Warden, or Scribe executing one source-bound Fiat packet without advancing the controller.
+- Skill: one bounded working method selected for a matching job.
+- Promise Machine: the suite-wide law that limits claims and actions to their evidence.
+- Receipt: a durable record that one named phase crossed its required boundary; not proof of perfection.
+- Gate: a check that blocks the dependent action while leaving inspection, repair, rerun, or safe exit available.
+- Target repository: the repository being worked on; its instructions and permissions still govern the Interceptor and Fiat.
 
 ## 7. Sources
 

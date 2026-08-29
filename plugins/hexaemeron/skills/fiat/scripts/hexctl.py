@@ -199,6 +199,7 @@ GIT_OUTPUT_MAX = 2 * 1024 * 1024
 GIT_PATHS_MAX = 500
 GIT_TIMEOUT = 30
 INTEGRATION_REVALIDATION_SCHEMA = "fiat-integration-revalidation/v1"
+INTEGRATION_REVALIDATION_SCHEMA_V2 = "fiat-integration-revalidation/v2"
 INTEGRATION_REVALIDATION_FILE = os.path.join(
     STATE_DIR_NAME, "integration-revalidation.json"
 )
@@ -207,6 +208,20 @@ INTEGRATION_COMMAND_BYTES_MAX = 2048
 INTEGRATION_CHECK_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 INTEGRATION_SYNC_SUPERSESSIONS_MAX = 8
 INTEGRATION_SYNC_REASON_BYTES_MAX = 1024
+GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN = b"fiat-generator-file/v1\0"
+GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN = b"fiat-generator-tree/v1\0"
+GENERATOR_AGGREGATE_REGISTRY = {
+    "promise-machine-portable-runtime-v1": {
+        "prefix": ".agents/skills/promise-machine/runtime/",
+        "generator": "scripts/portable_promise_machine.py",
+        "manifest": "MANIFEST.json",
+        "manifest_schema": "promise-machine-portable-runtime/v1",
+        "manifest_contract": "promise-machine/v1",
+        "command": "python3 scripts/portable_promise_machine.py check",
+        "max_files": 1024,
+        "max_bytes": 32 * 1024 * 1024,
+    },
+}
 OBSERVATION_BINDING_CONTRACT = "fiat-run-observation-binding/v1"
 OBSERVATION_CONTRACT = "promise-machine-run-observation/v1"
 OBSERVATION_BYTES_MAX = 1_048_576
@@ -3657,6 +3672,7 @@ def done_push(args, state: dict) -> None:
     if not args.head_commit:
         die("--head-commit is required")
     stacked = run_branch_of(state) is not None
+    expected_issue = expected_task_issue(state)
     if stacked:
         expected_base = step_pr_base(state, step)
         if not args.pr_base:
@@ -3682,7 +3698,6 @@ def done_push(args, state: dict) -> None:
                 "--merge-commit is required; the pull request is not terminal "
                 "until merged"
             )
-        expected_issue = expected_task_issue(state)
         if state["receipts"].get("task_issue") is not None and not args.closed_issue_url:
             die("--closed-issue-url is required because a task_issue receipt exists")
         if expected_issue and args.closed_issue_url != expected_issue:
@@ -3712,6 +3727,7 @@ def done_push(args, state: dict) -> None:
         expected_base=(args.pr_base if stacked else state["base"]),
         expected_head_sha=verified_commits[-1],
         expected_merge_sha=args.merge_commit,
+        expected_closing_issue=(expected_issue if not stacked else None),
     )
     github_verified, attribution = verified_github_attribution(
         args.dir, verified_commits
@@ -3789,7 +3805,8 @@ def _integrate_directive(state: dict) -> dict:
             ),
         }
     then = "hexctl done integrate --pr-url <url> --merge-commit <sha>"
-    if expected_task_issue(state):
+    task_issue = expected_task_issue(state)
+    if task_issue:
         then += " --closed-issue-url <url>"
     final_step = state["steps"][-1]["n"]
     merge_records = as_dict(as_dict(state.get("integrate")).get("merges"))
@@ -3813,7 +3830,7 @@ def _integrate_directive(state: dict) -> dict:
             "--reason <bounded-repair-reason>"
         )
         sync_recovery = "supersede-sync-and-revalidate"
-    return {
+    directive = {
         "do": "integrate",
         "run_branch": run_branch,
         "base": integration_base,
@@ -3840,6 +3857,18 @@ def _integrate_directive(state: dict) -> dict:
         },
         "then": then,
     }
+    identity = github_issue_identity(task_issue)
+    if identity is not None:
+        issue_repository, issue_number = identity
+        directive["task_issue_closure"] = {
+            "issue": task_issue,
+            "required_before_merge": f"Closes {issue_repository}#{issue_number}",
+            "gate": (
+                "done integrate reads the final pull request body and refuses "
+                "without a recognised closing reference to this exact issue"
+            ),
+        }
+    return directive
 
 
 def product_evidence_record(state: dict, product_head: str) -> dict:
@@ -3926,6 +3955,41 @@ def git_diff_paths(base_dir: str, before: str, after: str) -> list[str]:
     return unique
 
 
+def git_diff_paths_for_aggregates(
+    base_dir: str, before: str, after: str
+) -> list[str]:
+    """Read one complete bounded delta before aggregate classification.
+
+    Version 1 continues through ``git_diff_paths`` and its 500-path refusal.
+    Version 2 may cross that count only because a later exact registry join
+    classifies the excess. The existing byte and time ceilings still bound the
+    Git read, and this reader keeps the same path grammar and diagnostics.
+    """
+    raw = bounded_git(
+        base_dir,
+        ["diff", "--name-only", "-z", f"{before}..{after}", "--"],
+        "could not read the integration path delta",
+    )
+    try:
+        decoded = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        die("integration path delta is not UTF-8")
+    paths = [path for path in decoded.split("\0") if path]
+    unique = sorted(set(paths))
+    if len(unique) != len(paths):
+        die("integration path delta contains duplicate paths")
+    for index, path in enumerate(unique):
+        if (
+            not path
+            or os.path.isabs(path)
+            or path in (".", "..")
+            or ".." in path.split("/")
+            or any(ord(character) < 32 or ord(character) == 127 for character in path)
+        ):
+            die(f"integration path delta contains an unsafe path at index {index}")
+    return unique
+
+
 def _strict_json_object(pairs):
     result = {}
     for key, value in pairs:
@@ -3961,6 +4025,625 @@ def _manifest_paths(value, label: str, allowed: set[str] | None = None) -> list[
     return value
 
 
+def _sha256_value(value, label: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        die(f"{label} must be a lowercase SHA-256 digest")
+    return value
+
+
+def _aggregate_relative_path(value, label: str) -> str:
+    if not isinstance(value, str):
+        die(f"{label} must be a path string")
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError:
+        encoded = b""
+    if (
+        not encoded
+        or len(encoded) > 4096
+        or os.path.isabs(value)
+        or value in (".", "..")
+        or ".." in value.split("/")
+        or value.startswith("./")
+        or value.endswith("/")
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        die(f"{label} is unsafe")
+    return value
+
+
+def _git_tree_record(raw: bytes, label: str) -> tuple[str, str, str, str]:
+    try:
+        metadata, path_bytes = raw.split(b"\t", 1)
+        mode, kind, object_id = metadata.decode("ascii", "strict").split(" ")
+        path = path_bytes.decode("utf-8", "strict")
+    except (UnicodeError, ValueError):
+        die(f"{label} has malformed Git tree metadata")
+    if re.fullmatch(r"[0-9a-f]{40}", object_id) is None:
+        die(f"{label} has a malformed Git object id")
+    return mode, kind, object_id, path
+
+
+def _git_aggregate_tree(
+    base_dir: str, sync_head: str, aggregate_id: str, registry: dict
+) -> tuple[str, list[dict]]:
+    prefix = registry["prefix"]
+    tree_path = prefix.removesuffix("/")
+    root_raw = bounded_git(
+        base_dir,
+        ["ls-tree", "-z", sync_head, "--", tree_path],
+        f"generator aggregate {aggregate_id} tree could not be read",
+    )
+    root_rows = [row for row in root_raw.split(b"\0") if row]
+    if len(root_rows) != 1:
+        die(f"generator aggregate {aggregate_id} prefix is not one Git tree")
+    mode, kind, tree_id, path = _git_tree_record(
+        root_rows[0], f"generator aggregate {aggregate_id} prefix"
+    )
+    if path != tree_path or mode != "040000" or kind != "tree":
+        die(f"generator aggregate {aggregate_id} prefix is not a Git tree")
+
+    raw = bounded_git(
+        base_dir,
+        ["ls-tree", "-r", "-z", "--full-tree", sync_head, "--", prefix],
+        f"generator aggregate {aggregate_id} contents could not be read",
+    )
+    rows = []
+    for index, encoded in enumerate(row for row in raw.split(b"\0") if row):
+        mode, kind, object_id, member = _git_tree_record(
+            encoded, f"generator aggregate {aggregate_id} member {index}"
+        )
+        if not member.startswith(prefix):
+            die(f"generator aggregate {aggregate_id} escaped its registered prefix")
+        _aggregate_relative_path(
+            member, f"generator aggregate {aggregate_id} member {index}"
+        )
+        if kind != "blob":
+            die(f"generator aggregate {aggregate_id} member {member} is not a blob")
+        if mode not in ("100644", "100755"):
+            die(f"generator aggregate {aggregate_id} member {member} has an unsafe mode")
+        rows.append(
+            {"path": member, "mode": mode, "object": object_id}
+        )
+    paths = [row["path"] for row in rows]
+    if paths != sorted(set(paths)):
+        die(f"generator aggregate {aggregate_id} Git tree paths are not sorted and unique")
+    if not rows:
+        die(f"generator aggregate {aggregate_id} Git tree is empty")
+    if len(rows) > registry["max_files"]:
+        die(
+            f"generator aggregate {aggregate_id} exceeds its "
+            f"{registry['max_files']}-file ceiling"
+        )
+    return tree_id, rows
+
+
+def _git_batch_blobs(
+    base_dir: str, aggregate_id: str, rows: list[dict], max_bytes: int
+) -> dict[str, bytes]:
+    """Read every final aggregate blob through one bounded batch process."""
+    requests = b"".join(row["object"].encode("ascii") + b"\n" for row in rows)
+    try:
+        process = subprocess.Popen(
+            ["git", "cat-file", "--batch"],
+            cwd=os.path.realpath(base_dir),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=False,
+        )
+    except OSError:
+        die(f"generator aggregate {aggregate_id} Git object batch could not start")
+    assert process.stdin is not None
+    assert process.stdout is not None
+    try:
+        process.stdin.write(requests)
+        process.stdin.close()
+    except (BrokenPipeError, OSError):
+        process.kill()
+        process.wait()
+        process.stdout.close()
+        die(f"generator aggregate {aggregate_id} Git object batch rejected its request")
+
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ)
+    output = bytearray()
+    output_max = max_bytes + GIT_OUTPUT_MAX
+    deadline = time.monotonic() + GIT_TIMEOUT
+    try:
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                process.kill()
+                process.wait()
+                die(
+                    f"generator aggregate {aggregate_id} Git object batch "
+                    f"timed out after {GIT_TIMEOUT} seconds"
+                )
+            events = selector.select(min(remaining, 0.1))
+            if not events and process.poll() is not None:
+                events = [
+                    (key, selectors.EVENT_READ)
+                    for key in selector.get_map().values()
+                ]
+            for key, _ in events:
+                chunk = os.read(key.fd, 65536)
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                output.extend(chunk)
+                if len(output) > output_max:
+                    process.kill()
+                    process.wait()
+                    die(
+                        f"generator aggregate {aggregate_id} Git object batch "
+                        "exceeded its bounded output envelope"
+                    )
+        try:
+            returncode = process.wait(timeout=max(0.0, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+            die(
+                f"generator aggregate {aggregate_id} Git object batch "
+                f"timed out after {GIT_TIMEOUT} seconds"
+            )
+    finally:
+        selector.close()
+        process.stdout.close()
+    if returncode != 0:
+        die(f"generator aggregate {aggregate_id} Git object batch failed")
+
+    cursor = 0
+    metadata_bytes = 0
+    blob_bytes = 0
+    blobs = {}
+    for row in rows:
+        header_end = output.find(b"\n", cursor)
+        if header_end < 0:
+            die(f"generator aggregate {aggregate_id} Git object batch is partial")
+        header = bytes(output[cursor:header_end])
+        metadata_bytes += len(header) + 1
+        if metadata_bytes > GIT_OUTPUT_MAX:
+            die(
+                f"generator aggregate {aggregate_id} Git object metadata "
+                f"exceeds {GIT_OUTPUT_MAX} bytes"
+            )
+        try:
+            object_id, kind, size_text = header.decode("ascii", "strict").split(" ")
+            size = int(size_text, 10)
+        except (UnicodeError, ValueError):
+            die(f"generator aggregate {aggregate_id} Git object batch is malformed")
+        if (
+            object_id != row["object"]
+            or kind != "blob"
+            or size < 0
+            or str(size) != size_text
+        ):
+            die(f"generator aggregate {aggregate_id} Git object batch is malformed")
+        blob_bytes += size
+        if blob_bytes > max_bytes:
+            die(
+                f"generator aggregate {aggregate_id} exceeds its "
+                f"{max_bytes}-byte ceiling"
+            )
+        start = header_end + 1
+        end = start + size
+        if end >= len(output) or output[end:end + 1] != b"\n":
+            die(f"generator aggregate {aggregate_id} Git object batch is partial")
+        blobs[row["path"]] = bytes(output[start:end])
+        cursor = end + 1
+    if cursor != len(output):
+        die(f"generator aggregate {aggregate_id} Git object batch has extra output")
+    return blobs
+
+
+def _manifest_document(data: bytes, aggregate_id: str) -> dict:
+    try:
+        document = json.loads(
+            data.decode("utf-8", "strict"), object_pairs_hook=_strict_json_object
+        )
+    except (UnicodeError, ValueError) as exc:
+        die(f"generator aggregate {aggregate_id} manifest is not valid JSON: {exc}")
+    if not isinstance(document, dict):
+        die(f"generator aggregate {aggregate_id} manifest must be an object")
+    return document
+
+
+def _validate_generator_aggregate(
+    base_dir: str,
+    sync_head: str,
+    declaration: dict,
+    registry: dict,
+) -> dict:
+    aggregate_id = declaration["id"]
+    tree_id, rows = _git_aggregate_tree(
+        base_dir, sync_head, aggregate_id, registry
+    )
+    blobs = _git_batch_blobs(
+        base_dir, aggregate_id, rows, registry["max_bytes"]
+    )
+    by_path = {row["path"]: row for row in rows}
+    manifest_path = registry["prefix"] + registry["manifest"]
+    if manifest_path not in blobs:
+        die(f"generator aggregate {aggregate_id} manifest is missing")
+    manifest_bytes = blobs[manifest_path]
+    manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
+    if manifest_digest != declaration["manifest_sha256"]:
+        die(f"generator aggregate {aggregate_id} manifest digest does not match")
+    document = _manifest_document(manifest_bytes, aggregate_id)
+    if set(document) != {
+        "schema",
+        "contract",
+        "generated_by",
+        "file_count",
+        "total_bytes",
+        "omissions",
+        "files",
+    }:
+        die(f"generator aggregate {aggregate_id} manifest has the wrong fields")
+    if document.get("schema") != registry["manifest_schema"]:
+        die(f"generator aggregate {aggregate_id} manifest has the wrong schema")
+    if document.get("contract") != registry["manifest_contract"]:
+        die(f"generator aggregate {aggregate_id} manifest has the wrong contract")
+    if document.get("generated_by") != registry["generator"]:
+        die(f"generator aggregate {aggregate_id} manifest has the wrong generator")
+    if not isinstance(document.get("omissions"), list):
+        die(f"generator aggregate {aggregate_id} manifest omissions must be an array")
+    payload = document.get("files")
+    if not isinstance(payload, list):
+        die(f"generator aggregate {aggregate_id} manifest files must be an array")
+    if len(payload) + 1 > registry["max_files"]:
+        die(
+            f"generator aggregate {aggregate_id} exceeds its "
+            f"{registry['max_files']}-file ceiling"
+        )
+    normalized_rows = []
+    for index, item in enumerate(payload):
+        if not isinstance(item, dict) or set(item) not in (
+            {"bytes", "path", "sha256", "source"},
+            {"bytes", "generated_by", "path", "sha256", "source"},
+        ):
+            die(
+                f"generator aggregate {aggregate_id} manifest row {index} "
+                "has the wrong fields"
+            )
+        path = _aggregate_relative_path(
+            item.get("path"),
+            f"generator aggregate {aggregate_id} manifest row {index} path",
+        )
+        if path == registry["manifest"]:
+            die(f"generator aggregate {aggregate_id} manifest contains a self row")
+        size = item.get("bytes")
+        if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+            die(
+                f"generator aggregate {aggregate_id} manifest row {index} "
+                "has an invalid byte count"
+            )
+        digest = _sha256_value(
+            item.get("sha256"),
+            f"generator aggregate {aggregate_id} manifest row {index} digest",
+        )
+        source = item.get("source")
+        if source is not None and not isinstance(source, str):
+            die(
+                f"generator aggregate {aggregate_id} manifest row {index} "
+                "has an invalid source"
+            )
+        if "generated_by" in item and not isinstance(item["generated_by"], str):
+            die(
+                f"generator aggregate {aggregate_id} manifest row {index} "
+                "has an invalid generator"
+            )
+        normalized_rows.append({"path": path, "bytes": size, "sha256": digest})
+    manifest_paths = [item["path"] for item in normalized_rows]
+    if manifest_paths != sorted(set(manifest_paths)):
+        die(f"generator aggregate {aggregate_id} manifest paths are not sorted and unique")
+    manifest_file_count = document.get("file_count")
+    if (
+        isinstance(manifest_file_count, bool)
+        or not isinstance(manifest_file_count, int)
+        or manifest_file_count != len(normalized_rows)
+    ):
+        die(f"generator aggregate {aggregate_id} manifest file count does not match")
+    payload_bytes = sum(item["bytes"] for item in normalized_rows)
+    manifest_total_bytes = document.get("total_bytes")
+    if (
+        isinstance(manifest_total_bytes, bool)
+        or not isinstance(manifest_total_bytes, int)
+        or manifest_total_bytes != payload_bytes
+    ):
+        die(f"generator aggregate {aggregate_id} manifest byte count does not match")
+    total_bytes = payload_bytes + len(manifest_bytes)
+    if total_bytes > registry["max_bytes"]:
+        die(
+            f"generator aggregate {aggregate_id} exceeds its "
+            f"{registry['max_bytes']}-byte ceiling"
+        )
+
+    expected_paths = {
+        registry["prefix"] + item["path"] for item in normalized_rows
+    }
+    expected_paths.add(manifest_path)
+    if set(by_path) != expected_paths:
+        die(f"generator aggregate {aggregate_id} manifest membership does not match Git")
+    if declaration["file_count"] != len(expected_paths):
+        die(f"generator aggregate {aggregate_id} file count does not match")
+
+    file_digests = []
+    for item in normalized_rows:
+        full_path = registry["prefix"] + item["path"]
+        data = blobs[full_path]
+        if len(data) != item["bytes"]:
+            die(f"generator aggregate {aggregate_id} blob byte count does not match")
+        digest = hashlib.sha256(data).hexdigest()
+        if digest != item["sha256"]:
+            die(f"generator aggregate {aggregate_id} blob digest does not match")
+        mode = by_path[full_path]["mode"]
+        file_digests.append(
+            (
+                full_path,
+                hashlib.sha256(
+                    GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN
+                    + full_path.encode("utf-8")
+                    + b"\0"
+                    + mode.encode("ascii")
+                    + b"\0"
+                    + str(len(data)).encode("ascii")
+                    + b"\0"
+                    + digest.encode("ascii")
+                ).digest(),
+            )
+        )
+    manifest_mode = by_path[manifest_path]["mode"]
+    file_digests.append(
+        (
+            manifest_path,
+            hashlib.sha256(
+                GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN
+                + manifest_path.encode("utf-8")
+                + b"\0"
+                + manifest_mode.encode("ascii")
+                + b"\0"
+                + str(len(manifest_bytes)).encode("ascii")
+                + b"\0"
+                + manifest_digest.encode("ascii")
+            ).digest(),
+        )
+    )
+    file_digests.sort(key=lambda item: item[0])
+    tree_digest = hashlib.sha256(
+        GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN
+        + b"".join(digest for _, digest in file_digests)
+    ).hexdigest()
+    if tree_digest != declaration["tree_sha256"]:
+        die(f"generator aggregate {aggregate_id} tree digest does not match")
+    return {
+        **declaration,
+        "git_tree": tree_id,
+        "payload_file_count": len(normalized_rows),
+        "total_bytes": total_bytes,
+    }
+
+
+def _affected_aggregates(value) -> list[dict]:
+    label = "affected_aggregates"
+    if not isinstance(value, list) or not value:
+        die(f"{label} must be a non-empty array")
+    normalized = []
+    for index, aggregate in enumerate(value):
+        if not isinstance(aggregate, dict) or set(aggregate) != {
+            "id",
+            "prefix",
+            "generator",
+            "manifest",
+            "manifest_sha256",
+            "file_count",
+            "tree_sha256",
+        }:
+            die(f"{label} entry {index} has the wrong fields")
+        aggregate_id = aggregate["id"]
+        if not isinstance(aggregate_id, str):
+            die(f"{label} entry {index} has an invalid id")
+        registry = GENERATOR_AGGREGATE_REGISTRY.get(aggregate_id)
+        if registry is None:
+            die(f"{label} entry {index} names an unknown aggregate")
+        for key in ("prefix", "generator", "manifest"):
+            if aggregate[key] != registry[key]:
+                die(
+                    f"generator aggregate {aggregate_id} {key} does not match "
+                    "the source registry"
+                )
+        _sha256_value(
+            aggregate["manifest_sha256"],
+            f"generator aggregate {aggregate_id} manifest digest",
+        )
+        _sha256_value(
+            aggregate["tree_sha256"],
+            f"generator aggregate {aggregate_id} tree digest",
+        )
+        count = aggregate["file_count"]
+        if (
+            isinstance(count, bool)
+            or not isinstance(count, int)
+            or count < 1
+            or count > registry["max_files"]
+        ):
+            die(f"generator aggregate {aggregate_id} has an invalid file count")
+        normalized.append(dict(aggregate))
+    ids = [aggregate["id"] for aggregate in normalized]
+    if ids != sorted(set(ids)):
+        die(f"{label} must be sorted and unique by id")
+    prefixes = [aggregate["prefix"] for aggregate in normalized]
+    for left, prefix in enumerate(prefixes):
+        for other in prefixes[left + 1:]:
+            if prefix.startswith(other) or other.startswith(prefix):
+                die("affected_aggregates contains overlapping registered prefixes")
+    return normalized
+
+
+def _integration_checks_v2(
+    value, affected_paths: list[str], aggregates: list[dict]
+) -> list[dict]:
+    if (
+        not isinstance(value, list)
+        or not value
+        or len(value) > INTEGRATION_CHECKS_MAX
+    ):
+        die(
+            "integration revalidation checks must be a non-empty array of at "
+            f"most {INTEGRATION_CHECKS_MAX} entries"
+        )
+    selected_ids = {aggregate["id"] for aggregate in aggregates}
+    normalized = []
+    seen_ids = set()
+    covered_paths = set()
+    covered_aggregates = set()
+    for index, check in enumerate(value):
+        if not isinstance(check, dict) or set(check) != {
+            "id", "command", "paths", "aggregates", "exit"
+        }:
+            die(
+                f"integration revalidation check {index} must contain exactly "
+                "id, command, paths, aggregates and exit"
+            )
+        check_id = check["id"]
+        if (
+            not isinstance(check_id, str)
+            or not INTEGRATION_CHECK_ID_RE.fullmatch(check_id)
+            or check_id in seen_ids
+        ):
+            die(f"integration revalidation check {index} has an invalid id")
+        seen_ids.add(check_id)
+        command = check["command"]
+        try:
+            command_bytes = command.encode("utf-8") if isinstance(command, str) else b""
+        except UnicodeEncodeError:
+            command_bytes = b""
+        if (
+            not command_bytes
+            or len(command_bytes) > INTEGRATION_COMMAND_BYTES_MAX
+            or any(ord(character) < 32 or ord(character) == 127 for character in command)
+        ):
+            die(f"integration revalidation check {index} has an invalid command")
+        if isinstance(check["exit"], bool) or check["exit"] != 0:
+            die(f"integration revalidation check {check_id} must record exit 0")
+        paths = _manifest_paths(
+            check["paths"],
+            f"integration revalidation check {check_id} paths",
+            set(affected_paths),
+        )
+        ids = check["aggregates"]
+        if not isinstance(ids, list) or any(not isinstance(item, str) for item in ids):
+            die(f"integration revalidation check {check_id} aggregates must be an array")
+        if ids != sorted(set(ids)):
+            die(
+                f"integration revalidation check {check_id} aggregates must be "
+                "sorted and unique"
+            )
+        if not set(ids) <= selected_ids:
+            die(f"integration revalidation check {check_id} names an undeclared aggregate")
+        for aggregate_id in ids:
+            expected = GENERATOR_AGGREGATE_REGISTRY[aggregate_id]["command"]
+            if command != expected:
+                die(
+                    f"integration revalidation check {check_id} must use the "
+                    f"registered verification command for {aggregate_id}"
+                )
+        covered_paths.update(paths)
+        covered_aggregates.update(ids)
+        normalized.append(
+            {
+                "id": check_id,
+                "command": command,
+                "paths": paths,
+                "aggregates": ids,
+                "exit": 0,
+            }
+        )
+    if covered_paths != set(affected_paths):
+        die("integration revalidation checks do not cover every affected path")
+    if covered_aggregates != selected_ids:
+        die("integration revalidation checks do not cover every affected aggregate")
+    return normalized
+
+
+def _integration_revalidation_record_v2(
+    base_dir: str,
+    artifact: str,
+    data: bytes,
+    raw: dict,
+    product_head: str,
+    base_head: str,
+    sync_head: str,
+) -> dict:
+    if set(raw) != {"schema", "affected_paths", "affected_aggregates", "checks"}:
+        die(
+            "integration revalidation v2 artefact must contain exactly schema, "
+            "affected_paths, affected_aggregates and checks"
+        )
+    declarations = _affected_aggregates(raw["affected_aggregates"])
+    base_before = merge_base_commit(base_dir, product_head, base_head)
+    product_paths = git_diff_paths_for_aggregates(
+        base_dir, base_before, product_head
+    )
+    upstream_paths = git_diff_paths_for_aggregates(
+        base_dir, base_before, base_head
+    )
+    overlap_paths = sorted(set(product_paths) & set(upstream_paths))
+    composition_paths = git_diff_paths_for_aggregates(
+        base_dir, product_head, sync_head
+    )
+    required_paths = sorted(set(composition_paths) | set(overlap_paths))
+    prefixes = [aggregate["prefix"] for aggregate in declarations]
+    owned_paths = [
+        path for path in required_paths if any(path.startswith(prefix) for prefix in prefixes)
+    ]
+    if not owned_paths:
+        die("affected_aggregates does not own any computed integration path")
+    outside_paths = sorted(set(required_paths) - set(owned_paths))
+    affected_paths = _manifest_paths(
+        raw["affected_paths"], "affected_paths", set(required_paths)
+    )
+    if affected_paths != outside_paths:
+        missing = sorted(set(outside_paths) - set(affected_paths))
+        if missing:
+            die(
+                "affected_paths omits the computed outside integration surface: "
+                + ", ".join(missing)
+            )
+        die("affected_paths must contain only the exact outside integration surface")
+
+    aggregates = [
+        _validate_generator_aggregate(
+            base_dir,
+            sync_head,
+            declaration,
+            GENERATOR_AGGREGATE_REGISTRY[declaration["id"]],
+        )
+        for declaration in declarations
+    ]
+    checks = _integration_checks_v2(raw["checks"], affected_paths, aggregates)
+    return {
+        "schema": INTEGRATION_REVALIDATION_SCHEMA_V2,
+        "artifact": os.path.relpath(artifact, os.path.realpath(base_dir)),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "base_before": base_before,
+        "base_after": base_head,
+        "sync_head": sync_head,
+        "product_paths": product_paths,
+        "upstream_paths": upstream_paths,
+        "overlap_paths": overlap_paths,
+        "composition_paths": composition_paths,
+        "required_path_count": len(required_paths),
+        "aggregate_owned_path_count": len(owned_paths),
+        "individual_path_count": len(affected_paths),
+        "affected_paths": affected_paths,
+        "affected_aggregates": aggregates,
+        "checks": checks,
+    }
+
+
 def integration_revalidation_record(
     base_dir: str,
     supplied: str,
@@ -3979,6 +4662,19 @@ def integration_revalidation_record(
         )
     except ValueError as exc:
         die(f"integration revalidation artefact is not valid JSON: {exc}")
+    if (
+        isinstance(raw, dict)
+        and raw.get("schema") == INTEGRATION_REVALIDATION_SCHEMA_V2
+    ):
+        return _integration_revalidation_record_v2(
+            base_dir,
+            artifact,
+            data,
+            raw,
+            product_head,
+            base_head,
+            sync_head,
+        )
     if not isinstance(raw, dict) or set(raw) != {
         "schema", "affected_paths", "checks"
     }:
@@ -4584,6 +5280,7 @@ def done_integrate(args, state: dict) -> None:
         expected_head_sha=remote_tip,
         expected_merge_sha=args.merge_commit,
         expected_head_label="remote run branch tip",
+        expected_closing_issue=expected_issue,
     )
     github_verified = verify_github_commits(args.dir, [args.merge_commit])
     attribution = merged_attribution(args.dir, state, args.merge_commit)
@@ -6517,6 +7214,13 @@ GITHUB_SSH_RE = re.compile(
 GITHUB_PR_RE = re.compile(
     r"^https://github\.com/(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/pull/(?P<number>[1-9][0-9]*)/?$"
 )
+GITHUB_ISSUE_RE = re.compile(
+    r"^https://github\.com/(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/issues/(?P<number>[1-9][0-9]*)/?$"
+)
+GITHUB_CLOSING_KEYWORD_RE = re.compile(
+    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+",
+    re.IGNORECASE,
+)
 
 
 def require_full_sha(value: object, label: str) -> str:
@@ -6554,6 +7258,78 @@ def github_repository(base_dir: str) -> str:
     if repository.casefold() != target.casefold():
         die("GitHub repository identity does not match target origin")
     return target
+
+
+def github_issue_identity(issue_url: object) -> tuple[str, str] | None:
+    """Return the repository and number for one canonical GitHub issue URL.
+
+    ``task_issue`` predates the GitHub delivery gate and deliberately accepts
+    other HTTP issue trackers. Those keep their explicit closure receipt. A
+    GitHub issue gets the stronger pull-request closing-reference rule.
+    """
+    if not isinstance(issue_url, str):
+        return None
+    match = GITHUB_ISSUE_RE.fullmatch(issue_url)
+    if match is None:
+        return None
+    return match.group("repo"), match.group("number")
+
+
+def github_issue_closing_references(
+    issue_url: object, pull_request_repository: str
+) -> tuple[str, ...]:
+    identity = github_issue_identity(issue_url)
+    if identity is None:
+        return ()
+    issue_repository, number = identity
+    references = [f"{issue_repository}#{number}"]
+    if issue_repository.casefold() == pull_request_repository.casefold():
+        references.insert(0, f"#{number}")
+    return tuple(references)
+
+
+def markdown_prose_lines(body: str) -> list[str]:
+    """Return lines where GitHub can interpret a closing keyword.
+
+    A keyword displayed as an example in a fence, inline code, an HTML comment,
+    or a quotation is evidence about syntax, not an instruction to close.
+    """
+    without_comments = re.sub(r"<!--.*?-->", "", body, flags=re.DOTALL)
+    lines = []
+    fence = None
+    for line in without_comments.splitlines():
+        stripped = line.lstrip()
+        marker = stripped[:3]
+        if marker in ("```", "~~~"):
+            fence = None if fence == marker else marker if fence is None else fence
+            continue
+        if fence is not None or stripped.startswith(">"):
+            continue
+        lines.append(re.sub(r"`+[^`\n]*`+", "", line))
+    return lines
+
+
+def pull_request_closing_reference(
+    body: str, issue_url: object, repository: str
+) -> dict | None:
+    references = github_issue_closing_references(issue_url, repository)
+    if not references:
+        return None
+    alternatives = "|".join(re.escape(reference) for reference in references)
+    pattern = re.compile(
+        GITHUB_CLOSING_KEYWORD_RE.pattern
+        + rf"(?P<reference>{alternatives})(?![A-Za-z0-9_.#/-])",
+        GITHUB_CLOSING_KEYWORD_RE.flags,
+    )
+    for line in markdown_prose_lines(body):
+        match = pattern.search(line)
+        if match is not None:
+            return {
+                "issue_url": issue_url,
+                "reference": match.group("reference"),
+                "body_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
+            }
+    return None
 
 
 def pull_request_target(pr_url: object, repository: str) -> tuple[str, str]:
@@ -6594,6 +7370,7 @@ def inspect_pull_request(
     expected_head_sha: str | None,
     expected_merge_sha: str | None,
     expected_head_label: str = "verified pushed branch tip",
+    expected_closing_issue: str | None = None,
 ) -> dict:
     head_sha = (
         require_full_sha(expected_head_sha, "pull request head")
@@ -6630,6 +7407,21 @@ def inspect_pull_request(
         die("pull request topology is missing its body")
     if HOST_BYLINE_RE.search(body):
         die(f"pull request body carries a runtime-host byline. {CAUSE_HOST_PR_BYLINE}")
+    closing_issue = None
+    if expected_closing_issue is not None:
+        references = github_issue_closing_references(
+            expected_closing_issue, repository
+        )
+        if references:
+            closing_issue = pull_request_closing_reference(
+                body, expected_closing_issue, repository
+            )
+            if closing_issue is None:
+                canonical = f"Closes {references[-1]}"
+                die(
+                    "pull request body has no recognised closing reference for "
+                    f"the recorded task_issue; add `{canonical}` before merge"
+                )
     returned_url = payload.get("html_url")
     if not isinstance(returned_url, str):
         die("pull request topology is missing its URL")
@@ -6659,7 +7451,7 @@ def inspect_pull_request(
             die("pull request is not the expected merged topology")
     elif merged:
         die("step pull request was already merged before integrate")
-    return {
+    record = {
         "url": url,
         "head": expected_head,
         "base": expected_base,
@@ -6668,6 +7460,9 @@ def inspect_pull_request(
         "merge_sha": returned_merge,
         "author_login": author_login,
     }
+    if closing_issue is not None:
+        record["closing_issue"] = closing_issue
+    return record
 
 
 def github_commit_payload(base_dir: str, repository: str, commit_sha: str) -> dict:
@@ -7069,7 +7864,16 @@ def _next_directive(state: dict) -> dict:
     if phase == "integrate":
         return _integrate_directive(state)
     if phase == "done":
-        return {"do": "done", "steps": len(state["steps"])}
+        return {
+            "do": "done",
+            "steps": len(state["steps"]),
+            "finalise": {
+                "status": "hexctl status",
+                "verify": "hexctl verify",
+                "retire": "hexctl reset",
+                "archive": "local .hexaemeron/archive",
+            },
+        }
     step = current_step(state)
     base = {"step": step["n"], "title": step["title"]}
     if step["phase"] == "audit":
@@ -7340,8 +8144,8 @@ def cmd_reset(args) -> None:
         os.replace(os.path.join(root, entry), os.path.join(destination, entry))
 
     print(
-        f"archived completed run ({count} ledger entries) at {destination}; "
-        "active state cleared"
+        f"archived verified completed run ({count} ledger entries) locally at "
+        f"{destination}; active state cleared"
     )
     if retiring:
         if worktree_is_clean(worktree) and remove_run_worktree(origin, worktree):

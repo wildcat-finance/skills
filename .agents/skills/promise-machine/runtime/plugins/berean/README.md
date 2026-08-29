@@ -20,9 +20,9 @@ neither job: it binds the corpus and reads used by an agent, grades recorded
 answers against a held evaluation set, and records promotion or rollback.
 Ariadne can then bind the finished Berean release to its supporting evidence.
 
-Synkrisis is specified to compare validated observations from several runs,
-not to grade recorded answers or judge a model. Its current scaffold refuses
-all four operations and produces no finding.
+Synkrisis compares validated observations from several runs, and it does not
+grade recorded answers or judge a model. Two of its four operations are
+delivered; the report and the whole-path verification refuse.
 
 A protocol agent can answer from documentation, contract state and its own
 synthesis in one paragraph. Unless those sources stay separate, the reader

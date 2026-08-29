@@ -15,7 +15,7 @@ and the library under `../scripts/model_proxy_lib/`. Golden and refusing
 vectors are under
 [`tests/fixtures/model-proxy-v1`](../../../tests/fixtures/model-proxy-v1/).
 The architectural reason is recorded in
-[ADR-042](../../../../../docs/decisions/ADR-042-use-a-job-scoped-model-proxy.md).
+[ADR-046](../../../../../docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md).
 
 ## Vocabulary
 

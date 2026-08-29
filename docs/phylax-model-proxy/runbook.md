@@ -17,7 +17,7 @@ closed, credential-free policy from digest-bound accepted-job evidence.
 runbook as the only run-local artefacts and Python pinned to 3.13.15.
 
 **Exit.** Tracked copies of the study and runbook preserve the receipted bytes,
-apart from any mechanically necessary relative-link rebasing. ADR-042 records
+apart from any mechanically necessary relative-link rebasing. ADR-046 records
 the per-job normalised-protocol choice, its digest join, the rejected generic
 proxy and guest-token alternatives, and the provider non-exfiltration limit.
 The normative Phylax reference fixes the `model-proxy-policy/v1` vocabulary,
@@ -36,7 +36,7 @@ the existing Hexaemeron and root suites are the CI hook. Prove the exit with
 `mise exec python@3.13.15 -- python3 scripts/portable_promise_machine.py check`.
 
 **Files.** Create `docs/phylax-model-proxy/{study.md,runbook.md}`,
-`docs/decisions/ADR-042-use-a-job-scoped-model-proxy.md`,
+`docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md`,
 `plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md`,
 `plugins/hexaemeron/skills/phylax/scripts/model_proxy.py`,
 `plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/{__init__.py,canonical.py,errors.py,policy.py,profiles.py}`,
@@ -65,7 +65,7 @@ digest, and fixed refusal codes; no metrics backend is introduced. metron:
 none, hard size and time ceilings are safety limits rather than a speed claim.
 elenchus: every malformed vector is a cause-level guard and an unexpected
 exception is a refusal defect. hypomnema: the wire and policy choice is costly
-to reverse, so ADR-042 and the normative reference are its durable homes.
+to reverse, so ADR-046 and the normative reference are its durable homes.
 
 ## Step 2: Enforce the guest framing boundary
 
@@ -167,7 +167,7 @@ outcome-family, byte-count, token-count, and duration signals replace raw
 traffic diagnostics. metron: none, the loopback timing is feasibility evidence
 only. elenchus: each origin, redirect, response, and credential counterexample
 must fail on the parent before its cause is repaired. hypomnema: the provider
-profile rules extend ADR-042 and the normative reference; no live-provider
+profile rules extend ADR-046 and the normative reference; no live-provider
 retention record is created before a provider is selected.
 
 ## Step 4: Enforce lifecycle, quotas, and content-free receipts
@@ -291,7 +291,7 @@ emits complete safe outcomes, counts, sizes, timings, digests, disclosure
 states, and cleanup state with bounded cardinality. metron: none, final counts
 and elapsed time are evidence that all rows ran, not a speed budget. elenchus:
 every confirmed defect retains a parent-red, fixed-green hostile row and no
-missing or skipped row can pass. hypomnema: ADR-042, the normative reference,
+missing or skipped row can pass. hypomnema: ADR-046, the normative reference,
 the skill contract, evolution ledger, and operator disclosure are reconciled;
 the final proof explicitly preserves the #698/#699 dependency boundary.
 

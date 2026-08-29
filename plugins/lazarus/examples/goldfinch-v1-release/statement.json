@@ -10,7 +10,7 @@
     {
       "name": "demo.py",
       "digest": {
-        "sha256": "64f4f9447b511cc792592501249a295cce00ef52043c4613d2cceb7a24b988a2"
+        "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2"
       }
     },
     {
@@ -46,7 +46,7 @@
     {
       "name": "goldfinch-v1",
       "digest": {
-        "sha256": "d1d11a6d4c2912211f85929af2402fc6ea26e4d1db78dfaf4b3e6cb370738daf"
+        "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
       }
     }
   ],
@@ -86,9 +86,9 @@
         "name": "demo.py",
         "path": "demo.py",
         "digest": {
-          "sha256": "64f4f9447b511cc792592501249a295cce00ef52043c4613d2cceb7a24b988a2"
+          "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2"
         },
-        "bytes": 36956
+        "bytes": 36994
       },
       {
         "name": "header.json",
@@ -147,7 +147,7 @@
       "current": {
         "name": "goldfinch-v1",
         "digest": {
-          "sha256": "d1d11a6d4c2912211f85929af2402fc6ea26e4d1db78dfaf4b3e6cb370738daf"
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
         }
       },
       "reason": "first receipts-root-proved Goldfinch fixture"
@@ -167,12 +167,12 @@
       {
         "name": "digest and byte count read from the component on disk",
         "subject": {
-          "sha256": "64f4f9447b511cc792592501249a295cce00ef52043c4613d2cceb7a24b988a2"
+          "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2"
         },
         "disposition": "passed",
         "detail": {
           "path": "demo.py",
-          "bytes": 36956
+          "bytes": 36994
         }
       },
       {
@@ -233,7 +233,7 @@
       {
         "name": "evidence counts read from the manifest",
         "subject": {
-          "sha256": "d1d11a6d4c2912211f85929af2402fc6ea26e4d1db78dfaf4b3e6cb370738daf"
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
         },
         "disposition": "passed",
         "detail": {
@@ -246,7 +246,7 @@
       {
         "name": "receipt-trie relations re-checked by this capture",
         "subject": {
-          "sha256": "d1d11a6d4c2912211f85929af2402fc6ea26e4d1db78dfaf4b3e6cb370738daf"
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
         },
         "disposition": "skipped",
         "reason": "this capture reads local manifest evidence and component bytes; Lazarus verification owns receipt-trie proof"
@@ -254,7 +254,7 @@
       {
         "name": "independent providers established",
         "subject": {
-          "sha256": "d1d11a6d4c2912211f85929af2402fc6ea26e4d1db78dfaf4b3e6cb370738daf"
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
         },
         "disposition": "skipped",
         "reason": "operator-chosen source labels do not establish provider independence"
@@ -262,7 +262,7 @@
       {
         "name": "transaction hash attributed by the receipt trie",
         "subject": {
-          "sha256": "d1d11a6d4c2912211f85929af2402fc6ea26e4d1db78dfaf4b3e6cb370738daf"
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
         },
         "disposition": "skipped",
         "reason": "transaction hashes are recorded RPC decorations outside the consensus receipt and log-projection proof"
@@ -270,7 +270,7 @@
       {
         "name": "state proofs re-checked by this capture",
         "subject": {
-          "sha256": "d1d11a6d4c2912211f85929af2402fc6ea26e4d1db78dfaf4b3e6cb370738daf"
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
         },
         "disposition": "skipped",
         "reason": "this capture reads what Lazarus recorded and does not re-verify a trie proof; the counts come from the manifest and re-deriving one would put a judgement in the statement that Ariadne did not make"
@@ -278,7 +278,7 @@
       {
         "name": "the pinned block placed on the canonical chain",
         "subject": {
-          "sha256": "d1d11a6d4c2912211f85929af2402fc6ea26e4d1db78dfaf4b3e6cb370738daf"
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
         },
         "disposition": "skipped",
         "reason": "neither tool re-derives a chain, so whether this block is canonical is not established here"

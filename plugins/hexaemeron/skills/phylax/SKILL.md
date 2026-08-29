@@ -200,7 +200,7 @@ The version-1 model proxy gives a disposable guest one closed text operation
 without giving it a provider URL, header, credential, model selector, lifecycle
 action, or general network path. Its normative contract is
 [model-proxy-v1.md](references/model-proxy-v1.md), and
-[ADR-042](../../../../docs/decisions/ADR-042-use-a-job-scoped-model-proxy.md)
+[ADR-046](../../../../docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md)
 holds the design and rejected alternatives.
 
 Run its final component proof from the repository root:

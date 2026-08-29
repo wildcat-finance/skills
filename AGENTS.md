@@ -41,10 +41,12 @@ named skill, while Lemma stops after producing
 source-linked chunks. Horos decides what an agent does not read. Janus checks
 what a contract hook may observe and change around a host action, where
 Pandects supplies the economic laws such a transition must preserve. Synkrisis
-reserves the cross-run comparison boundary, but its current scaffold refuses
-cohort, diagnosis, render, and verification operations. Its specified future
-findings remain bounded inferences: capture, redaction, receipt binding, causal
-triage, and every decision to act stay with their owners. Sapheneia
+owns the cross-run comparison boundary: it builds one checked cohort from
+declared run observations and infers only bounded relations between named
+events, and any operation whose runbook step has not landed refuses by name
+rather than guessing. Its findings stay bounded inferences: capture,
+redaction, receipt binding, causal triage, and every decision to act stay
+with their owners. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
 durable audit, issue, and comment prose. It does not change another skill's
 facts or gates. Brevitas controls the volume and structure of engineering prose
@@ -162,7 +164,22 @@ these instructions.
 
 ## Checks for changes to this repository
 
-Run the checks that cover every changed area.
+The checked runner is the entrypoint. It reads the declared ownership graph
+at `tests/check-map-v1.json`, unions any requested scope with every actual
+changed path, closes that set over the declared dependencies, and executes
+the selected checks from a disposable snapshot under one process budget
+(ADR-041).
+
+```bash
+python3 scripts/run_checks.py            # select from the current diff and run
+python3 scripts/run_checks.py --plan     # show the selection without running
+python3 scripts/run_checks.py --full     # run every declared check
+```
+
+A plan or run refuses when a changed path has no declared owner, a command in
+the map is stale, or the map is malformed; fix `tests/check-map-v1.json` in
+the same change. Hosted CI is unchanged by this entrypoint. The suites below
+are the inventory the map declares, and each remains directly runnable.
 
 Every `python3` command below means the exact interpreter recorded in
 [`.python-version`](.python-version). The supported minor is declared in

@@ -10,9 +10,9 @@ whole Wildcat agent-and-skill collective. Context supplies the intended scope;
 the wording does not create a separate identity.
 
 The current roster has 25 members: 16 domain agents and 9 phase agents.
-Synkrisis is included in that count even though its cross-run comparison
-surface is still a specification backed by a command that refuses every
-operation.
+Synkrisis is included in that count with its cross-run comparison surface
+built: it constructs a checked cohort, infers bounded findings over it,
+renders the report and verifies that all three recompute.
 
 ## The Interceptor
 
