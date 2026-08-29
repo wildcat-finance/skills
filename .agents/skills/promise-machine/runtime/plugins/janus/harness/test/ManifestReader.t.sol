@@ -363,20 +363,44 @@ contract ManifestReaderTest is JanusBase {
   ///      ASCII space.
   function test_control_byte_only_symbols_revert() external {
     OmniResolver omni = new OmniResolver();
-    string[3] memory targets = [
-      "\\u000b.getCredential",
-      "\\u000c.getCredential",
-      "\\u0000.getCredential"
-    ];
-    for (uint256 i = 0; i < targets.length; i++) {
-      vm.expectRevert();
+    // Named, not bare. A bare `expectRevert` here accepted any refusal, so it
+    // stopped distinguishing the blank guard from every other guard the reader
+    // grew afterwards: narrowing `_isBlank` back to four whitespace bytes left
+    // this test green because the dotted names below refuse for a different
+    // reason. The escape and the byte it decodes to are both named.
+    string[3] memory escapes = ["\\u000b", "\\u000c", "\\u0000"];
+    bytes1[3] memory bytesOf = [bytes1(0x0b), bytes1(0x0c), bytes1(0x00)];
+    for (uint256 i = 0; i < escapes.length; i++) {
+      bytes memory raw = new bytes(1);
+      raw[0] = bytesOf[i];
+      // Dotless, so the symbol is the whole written name and the only guard
+      // that can refuse it is the blank guard.
+      vm.expectRevert(
+        abi.encodeWithSelector(ManifestReader.EmptyAccountSymbol.selector, string(raw))
+      );
       reader.resolveJson(
         string.concat(
           '{"thresholds":[{"action":"deposit","gasBudget":7,'
           '"permittedStorageWrites":[],"permittedValueMovements":[],'
           '"permittedCalls":[{"target":"',
-          targets[i],
+          escapes[i],
           '","kind":"call"}]}]}'
+        ),
+        "deposit",
+        omni
+      );
+      // And dotted, where the grammar takes the prefix: still the blank guard,
+      // which runs before the reader asks the adapter anything.
+      vm.expectRevert(
+        abi.encodeWithSelector(ManifestReader.EmptyAccountSymbol.selector, string(raw))
+      );
+      reader.resolveJson(
+        string.concat(
+          '{"thresholds":[{"action":"deposit","gasBudget":7,'
+          '"permittedStorageWrites":[],"permittedValueMovements":[],'
+          '"permittedCalls":[{"target":"',
+          escapes[i],
+          '.getCredential","kind":"call"}]}]}'
         ),
         "deposit",
         omni
@@ -422,6 +446,123 @@ contract ManifestReaderTest is JanusBase {
     );
   }
 
+  // -- Unknown kinds and scopes -------------------------------------------------
+
+  /// @dev S2-R3-07. Neither refusal had a unit test: admitting an unknown kind
+  ///      silently, or treating it as a plain call, failed only the fuzz
+  ///      invariant. Both are register line over-permit-by-category, and the
+  ///      fuzz suite is the one artefact this round proved can go vacuous.
+  function test_unknown_call_kind_reverts() external {
+    vm.expectRevert(abi.encodeWithSelector(ManifestReader.UnknownCallKind.selector, "weird"));
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"roleProvider","kind":"weird"}]}]}',
+      "deposit",
+      stub
+    );
+  }
+
+  /// @dev The kind check is case-sensitive and exact, so a near-miss spelling
+  ///      refuses rather than falling into the nearest admitting branch.
+  function test_a_near_miss_call_kind_reverts_rather_than_being_admitted() external {
+    vm.expectRevert(abi.encodeWithSelector(ManifestReader.UnknownCallKind.selector, "Call"));
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"roleProvider","kind":"Call"}]}]}',
+      "deposit",
+      stub
+    );
+  }
+
+  function test_unknown_storage_scope_reverts() external {
+    vm.expectRevert(abi.encodeWithSelector(ManifestReader.UnknownStorageScope.selector, "global"));
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedCalls":[],"permittedValueMovements":[],'
+      '"permittedStorageWrites":[{"scope":"global","slot":"anything"}]}]}',
+      "deposit",
+      stub
+    );
+  }
+
+  // -- Dotted account names on the two paths the grammar splits ----------------
+
+  /// @dev S2-R3-01. be6987b7 stopped the value path splitting `USDC.e`, on the
+  ///      reasoning that the dot is part of the name. The call-target and
+  ///      external-slot paths still split, so the same string bound the permit
+  ///      to `USDC` there -- one resolver, one string, two different accounts.
+  ///      Where the adapter knows the whole written name, the reader now
+  ///      refuses instead of choosing a prefix.
+  function test_a_dotted_call_target_the_adapter_knows_whole_is_ambiguous() external {
+    StubResolver both = new StubResolver();
+    both.set("USDC", address(0xC0));
+    both.set("USDC.e", address(0xCE));
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.AmbiguousAccountSymbol.selector, "USDC.e")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"USDC.e","kind":"call"}]}]}',
+      "deposit",
+      both
+    );
+  }
+
+  function test_a_dotted_external_slot_the_adapter_knows_whole_is_ambiguous() external {
+    StubResolver both = new StubResolver();
+    both.set("USDC", address(0xC0));
+    both.set("USDC.e", address(0xCE));
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.AmbiguousAccountSymbol.selector, "USDC.e")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedCalls":[],"permittedValueMovements":[],'
+      '"permittedStorageWrites":[{"scope":"external","slot":"USDC.e"}]}]}',
+      "deposit",
+      both
+    );
+  }
+
+  /// @dev The refusal is narrow. A function suffix is not a name any adapter
+  ///      holds, so the ordinary grammar is untouched -- this is the shipped
+  ///      manifest's own shape.
+  function test_a_function_suffix_is_not_ambiguous() external view {
+    ResolvedThreshold memory t = reader.resolveFile(MANIFEST, "deposit", stub);
+    assertEq(t.allowedCallTargets.length, 1, "roleProvider.validateCredential still resolves");
+    assertEq(t.allowedCallTargets[0], PROVIDER, "and still to the prefix account");
+  }
+
+  /// @dev And a dotted name the adapter does not hold whole is not ambiguous
+  ///      either: there is only one reading, so the grammar keeps it.
+  function test_a_dotted_name_the_adapter_does_not_hold_is_not_ambiguous() external view {
+    ResolvedThreshold memory t = reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"roleProvider.someFunction","kind":"call"}]}]}',
+      "deposit",
+      stub
+    );
+    assertEq(t.allowedCallTargets[0], PROVIDER, "one reading, so the prefix stands");
+  }
+
+  /// @dev The blank guard still precedes the ambiguity question, so a leading
+  ///      dot is the reader's own refusal and the adapter is never asked.
+  function test_a_leading_dot_is_still_blank_not_ambiguous() external {
+    OmniResolver omni = new OmniResolver();
+    vm.expectRevert(abi.encodeWithSelector(ManifestReader.EmptyAccountSymbol.selector, ""));
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":".getCredential","kind":"call"}]}]}',
+      "deposit",
+      omni
+    );
+  }
+
   /// @dev The boundary the blank guard must not cross: a symbol that merely
   ///      contains whitespace is still a name, and stays the adapter's call.
   function test_a_name_containing_a_space_is_still_a_name() external {
@@ -442,14 +583,110 @@ contract ManifestReaderTest is JanusBase {
 ///      Echidna and Medusa, but neither engine implements the JSON cheatcodes
 ///      `ManifestReader` is built on: under both, every generated manifest
 ///      reverts with empty return data before the reader resolves anything, so
-///      all seven GL properties hold without being tested. Foundry's invariant
-///      engine does carry those cheatcodes, so this contract drives the same
-///      generator and asserts the same properties where they can fail.
+///      GL01 to GL09 hold without being tested and only GL00 fails. Foundry's
+///      invariant engine does carry those cheatcodes, so this contract drives
+///      the same generator and asserts all ten properties where they can fail.
 ///
 ///      Importing the suite here has a second effect worth stating: the suite
 ///      lives outside `src` and `test`, so `forge test` did not compile it and
 ///      a compile break inside it was invisible to this run. The import ends
 ///      that.
+/// @dev A derived generator that can set each ghost flag directly.
+///
+///      The ten property functions are the suite's engine-facing surface, and
+///      nothing could catch a mistake inside one of them: under Foundry they
+///      were not called at all, and under Echidna and Medusa they are called
+///      but hold vacuously. Asserting through them fixes half of that -- an
+///      inverted property fails at once -- but a property that returns `true`
+///      unconditionally, or reads a neighbour's ghost, still agrees with the
+///      truth on every clean run, because a correct reader never sets a ghost.
+///      The only way to tell those apart is to set the ghost and look.
+contract ManifestFuzzGhostProbe is ManifestFuzz {
+  function forceWidenedSet() external { sawWidenedSet = true; }
+  function forceZeroAddress() external { sawZeroAddress = true; }
+  function forcePairMismatch() external { sawPairMismatch = true; }
+  function forceKindConfusion() external { sawKindConfusion = true; }
+  function forceBudgetDrift() external { sawBudgetDrift = true; }
+  function forceUnresolvableAccepted() external { sawUnresolvableAccepted = true; }
+  function forceBlankSymbolAccepted() external { sawBlankSymbolAccepted = true; }
+  function forceDuplicateActionAccepted() external { sawDuplicateActionAccepted = true; }
+  function forceWrongAddress() external { sawWrongAddress = true; }
+}
+
+/// @dev Each of GL01 to GL09 is shown to report its own ghost and no other:
+///      set one flag, and exactly one property goes false.
+contract ManifestFuzzPropertyTest is JanusBase {
+  ManifestFuzzGhostProbe fuzz;
+
+  function setUp() external {
+    fuzz = new ManifestFuzzGhostProbe();
+  }
+
+  /// @dev The nine properties as a bitmap, so "exactly one went false" is one
+  ///      comparison rather than nine.
+  function _live() internal view returns (uint256 bits) {
+    if (!fuzz.echidna_GL01_set_never_widened()) bits |= 1 << 1;
+    if (!fuzz.echidna_GL02_no_zero_address()) bits |= 1 << 2;
+    if (!fuzz.echidna_GL03_value_pairs_aligned()) bits |= 1 << 3;
+    if (!fuzz.echidna_GL04_call_kind_carried_through()) bits |= 1 << 4;
+    if (!fuzz.echidna_GL05_budget_is_the_actions_own()) bits |= 1 << 5;
+    if (!fuzz.echidna_GL06_unresolvable_fails_closed()) bits |= 1 << 6;
+    if (!fuzz.echidna_GL07_blank_symbol_fails_closed()) bits |= 1 << 7;
+    if (!fuzz.echidna_GL08_duplicate_action_fails_closed()) bits |= 1 << 8;
+    if (!fuzz.echidna_GL09_every_entry_resolved_to_its_own_name()) bits |= 1 << 9;
+  }
+
+  function test_every_property_holds_before_any_ghost_is_set() external view {
+    assertEq(_live(), 0, "a fresh generator violates nothing");
+    assertTrue(fuzz.echidna_GL00_the_reader_was_actually_reached(), "and GL00 holds at zero attempts");
+  }
+
+  function test_gl01_reports_a_widened_set_and_nothing_else() external {
+    fuzz.forceWidenedSet();
+    assertEq(_live(), 1 << 1, "only GL01");
+  }
+
+  function test_gl02_reports_a_zero_address_and_nothing_else() external {
+    fuzz.forceZeroAddress();
+    assertEq(_live(), 1 << 2, "only GL02");
+  }
+
+  function test_gl03_reports_a_pair_mismatch_and_nothing_else() external {
+    fuzz.forcePairMismatch();
+    assertEq(_live(), 1 << 3, "only GL03");
+  }
+
+  function test_gl04_reports_kind_confusion_and_nothing_else() external {
+    fuzz.forceKindConfusion();
+    assertEq(_live(), 1 << 4, "only GL04");
+  }
+
+  function test_gl05_reports_budget_drift_and_nothing_else() external {
+    fuzz.forceBudgetDrift();
+    assertEq(_live(), 1 << 5, "only GL05");
+  }
+
+  function test_gl06_reports_an_accepted_unresolvable_and_nothing_else() external {
+    fuzz.forceUnresolvableAccepted();
+    assertEq(_live(), 1 << 6, "only GL06");
+  }
+
+  function test_gl07_reports_an_accepted_blank_symbol_and_nothing_else() external {
+    fuzz.forceBlankSymbolAccepted();
+    assertEq(_live(), 1 << 7, "only GL07");
+  }
+
+  function test_gl08_reports_an_accepted_duplicate_action_and_nothing_else() external {
+    fuzz.forceDuplicateActionAccepted();
+    assertEq(_live(), 1 << 8, "only GL08");
+  }
+
+  function test_gl09_reports_a_wrong_address_and_nothing_else() external {
+    fuzz.forceWrongAddress();
+    assertEq(_live(), 1 << 9, "only GL09");
+  }
+}
+
 contract ManifestFuzzInvariantTest is JanusBase {
   ManifestFuzz fuzz;
 
@@ -464,25 +701,46 @@ contract ManifestFuzzInvariantTest is JanusBase {
     addrs[0] = address(fuzz);
   }
 
+  /// @dev Asserted through the ten property functions, not through the ghost
+  ///      getters behind them. Reading the getters directly left the nine
+  ///      `echidna_GL01` to `echidna_GL09` bodies executed by nothing that
+  ///      could fail: Foundry never called them, and under Echidna and Medusa
+  ///      they run but hold vacuously, so inverting one, or pointing it at the
+  ///      wrong ghost, changed no result anywhere. They are the suite's
+  ///      engine-facing surface, so they are what this asserts.
   function invariant_manifest_resolution_holds() external view {
     assertTrue(
       fuzz.echidna_GL00_the_reader_was_actually_reached(),
-      "GL00: the generator reached the reader, so the eight ghosts below were actually tested"
+      "GL00: the generator reached the reader, so the nine ghosts below were actually tested"
     );
-    assertTrue(!fuzz.sawWidenedSet(), "GL01: no resolved set is wider than the manifest entries behind it");
-    assertTrue(!fuzz.sawZeroAddress(), "GL02: no resolved set carries the zero address");
-    assertTrue(!fuzz.sawPairMismatch(), "GL03: the value asset and recipient sets stay the same length");
-    assertTrue(!fuzz.sawKindConfusion(), "GL04: each call set holds exactly its own kind's entries");
-    assertTrue(!fuzz.sawBudgetDrift(), "GL05: the gas budget is the named action's own");
-    assertTrue(!fuzz.sawUnresolvableAccepted(), "GL06: an unresolvable symbol or unknown kind or scope never resolves");
-    assertTrue(!fuzz.sawBlankSymbolAccepted(), "GL07: a manifest carrying a blank account symbol never resolves");
-    assertTrue(!fuzz.sawDuplicateActionAccepted(), "GL08: a manifest naming one action twice never resolves");
-    assertTrue(!fuzz.sawWrongAddress(), "GL09: every entry resolved to the address its own name holds");
+    assertTrue(fuzz.echidna_GL01_set_never_widened(), "GL01: no resolved set is wider than the manifest entries behind it");
+    assertTrue(fuzz.echidna_GL02_no_zero_address(), "GL02: no resolved set carries the zero address");
+    assertTrue(fuzz.echidna_GL03_value_pairs_aligned(), "GL03: the value asset and recipient sets stay the same length");
+    assertTrue(fuzz.echidna_GL04_call_kind_carried_through(), "GL04: each call set holds exactly its own kind's entries");
+    assertTrue(fuzz.echidna_GL05_budget_is_the_actions_own(), "GL05: the gas budget is the named action's own");
+    assertTrue(fuzz.echidna_GL06_unresolvable_fails_closed(), "GL06: an unresolvable symbol or unknown kind or scope never resolves");
+    assertTrue(fuzz.echidna_GL07_blank_symbol_fails_closed(), "GL07: a manifest carrying a blank account symbol never resolves");
+    assertTrue(fuzz.echidna_GL08_duplicate_action_fails_closed(), "GL08: a manifest naming one action twice never resolves");
+    assertTrue(fuzz.echidna_GL09_every_entry_resolved_to_its_own_name(), "GL09: every entry resolved to the address its own name holds");
   }
 
-  /// @dev The anti-vacuity guard, deterministic rather than sampled: the seven
-  ///      properties above are all negated ghost flags, so a generator that
-  ///      never reaches the reader satisfies every one of them. This drives a
+  /// @dev And the getters behind them, so a property function that ignored its
+  ///      own ghost is caught from the other side too.
+  function invariant_every_ghost_flag_agrees_with_its_property() external view {
+    assertEq(fuzz.echidna_GL01_set_never_widened(), !fuzz.sawWidenedSet(), "GL01 reads its own ghost");
+    assertEq(fuzz.echidna_GL02_no_zero_address(), !fuzz.sawZeroAddress(), "GL02 reads its own ghost");
+    assertEq(fuzz.echidna_GL03_value_pairs_aligned(), !fuzz.sawPairMismatch(), "GL03 reads its own ghost");
+    assertEq(fuzz.echidna_GL04_call_kind_carried_through(), !fuzz.sawKindConfusion(), "GL04 reads its own ghost");
+    assertEq(fuzz.echidna_GL05_budget_is_the_actions_own(), !fuzz.sawBudgetDrift(), "GL05 reads its own ghost");
+    assertEq(fuzz.echidna_GL06_unresolvable_fails_closed(), !fuzz.sawUnresolvableAccepted(), "GL06 reads its own ghost");
+    assertEq(fuzz.echidna_GL07_blank_symbol_fails_closed(), !fuzz.sawBlankSymbolAccepted(), "GL07 reads its own ghost");
+    assertEq(fuzz.echidna_GL08_duplicate_action_fails_closed(), !fuzz.sawDuplicateActionAccepted(), "GL08 reads its own ghost");
+    assertEq(fuzz.echidna_GL09_every_entry_resolved_to_its_own_name(), !fuzz.sawWrongAddress(), "GL09 reads its own ghost");
+  }
+
+  /// @dev The anti-vacuity guard, deterministic rather than sampled: the nine
+  ///      nine properties above are all negated ghost flags, so a generator
+  ///      that never reaches the reader satisfies every one of them. This drives a
   ///      fixed sequence of 256 draws and requires that some of them resolved.
   ///      About one manifest in sixteen resolves, so 256 fixed draws clear the
   ///      bar by a wide margin; it is the test that fails first if the JSON

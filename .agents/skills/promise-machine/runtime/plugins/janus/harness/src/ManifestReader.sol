@@ -45,6 +45,16 @@ struct ResolvedThreshold {
 ///      carry no suffix in the schema, so their whole string is the name and
 ///      the dot is part of it: `USDC.e` is the bridged token, not `USDC`.
 ///
+///      That reading also constrains the two paths the grammar does apply to.
+///      A dot is an ordinary character in an account name, so `USDC.e` as a
+///      call target or an external slot would bind the permit to `USDC` --
+///      the same substitution, on the paths that split. The reader cannot
+///      tell a suffix from a dotted name by looking, so where the adapter
+///      knows the whole written string as well, the manifest is ambiguous and
+///      the reader refuses rather than choosing a prefix the author may not
+///      have meant. A real suffix is not a name an adapter holds, so
+///      `roleProvider.getCredential` is unaffected.
+///
 ///      Staticcall reading: a `staticcall` kind entry never admits a
 ///      state-changing call to its target. Only kinds `call` and
 ///      `delegatecall` enter the state-changing allowed set; gate 1 never
@@ -85,6 +95,10 @@ contract ManifestReader {
   error UnresolvableSymbol(string symbol);
   error SymbolResolvesToZero(string symbol);
   error UnknownStorageScope(string scope);
+  /// @dev Raised for a written name that carries a dot and whose whole string
+  ///      the adapter also knows, so the grammar's prefix and the name the
+  ///      manifest wrote are two different accounts.
+  error AmbiguousAccountSymbol(string name);
   error UnknownCallKind(string kind);
 
   /// @dev Resolve the named action's threshold from a manifest file, read
@@ -164,8 +178,10 @@ contract ManifestReader {
     uint256 delegated = 0;
     for (uint256 i = 0; i < length; i++) {
       string memory entry = _indexed(base, i);
-      string memory symbol = _symbolOf(vm.parseJsonString(json, string.concat(entry, ".target")));
-      address addr = _resolveSymbol(symbol, resolver);
+      address addr = _resolveDotted(
+        vm.parseJsonString(json, string.concat(entry, ".target")),
+        resolver
+      );
       string memory kind = vm.parseJsonString(json, string.concat(entry, ".kind"));
       if (_eq(kind, "call")) {
         targets[admitted++] = addr;
@@ -192,17 +208,18 @@ contract ManifestReader {
     for (uint256 i = 0; i < length; i++) {
       string memory entry = _indexed(base, i);
       string memory scope = vm.parseJsonString(json, string.concat(entry, ".scope"));
-      string memory symbol;
       if (_eq(scope, "hook")) {
-        symbol = "hook";
+        accounts[i] = _resolveSymbol("hook", resolver);
       } else if (_eq(scope, "host")) {
-        symbol = "host";
+        accounts[i] = _resolveSymbol("host", resolver);
       } else if (_eq(scope, "external")) {
-        symbol = _symbolOf(vm.parseJsonString(json, string.concat(entry, ".slot")));
+        accounts[i] = _resolveDotted(
+          vm.parseJsonString(json, string.concat(entry, ".slot")),
+          resolver
+        );
       } else {
         revert UnknownStorageScope(scope);
       }
-      accounts[i] = _resolveSymbol(symbol, resolver);
     }
   }
 
@@ -229,6 +246,38 @@ contract ManifestReader {
         resolver
       );
     }
+  }
+
+  /// @dev Resolve a written name on one of the two paths the dot grammar
+  ///      applies to: a call target's `account.function`, or an external
+  ///      slot's `account.expression`.
+  ///
+  ///      The grammar reads the prefix as the account and the suffix as
+  ///      documentation. But a dot is also an ordinary character in an account
+  ///      name -- which is exactly why the value path resolves its strings
+  ///      whole, and why `USDC.e` is the bridged token there. On these two
+  ///      paths the same string would silently bind to `USDC`: a permit on an
+  ///      account the manifest did not name, chosen by the reader. That is the
+  ///      defect the value path was fixed for, and it lives here too.
+  ///
+  ///      The reader cannot tell the two readings apart from the string alone,
+  ///      so it asks. If the adapter knows the whole written name as well, the
+  ///      manifest is ambiguous and the reader refuses instead of choosing.
+  ///      A suffix that is genuinely documentation -- `roleProvider.getCredential`
+  ///      -- is not a name any adapter holds, so nothing changes for it.
+  function _resolveDotted(
+    string memory written,
+    AccountResolver resolver
+  ) private view returns (address addr) {
+    string memory symbol = _symbolOf(written);
+    // Blankness first, so a malformed `.getCredential` is still the reader's
+    // own refusal and the adapter is never asked about it.
+    if (_isBlank(symbol)) revert EmptyAccountSymbol(symbol);
+    if (!_eq(symbol, written)) {
+      (bool whole, address wholeAddr) = resolver.resolveAccount(written);
+      if (whole && wholeAddr != address(0)) revert AmbiguousAccountSymbol(written);
+    }
+    return _resolveSymbol(symbol, resolver);
   }
 
   function _resolveSymbol(
