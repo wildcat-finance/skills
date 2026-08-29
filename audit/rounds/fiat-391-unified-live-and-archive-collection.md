@@ -131,3 +131,19 @@ Elenchus verdict: passed
 | S4-R1-02 | low | plugins/probitas/skills/probitas/SKILL.md | The `probitas-evidence-collection` promise claimed one coverage row per venue and route the run asked for. A venue no route reached gets one row rather than one per route, so the declaration overstated the cardinality of the thing it governs. | fixed in e2a70493 |
 
 Leads not pursued: the verdict is `passed` rather than `guarded`. The runner named by step 4's contract reports 324 of 324 against the fixes commit, and the new guard passes against the unfixed parent too, because the parent's defect only appears when the demonstration is absent. That condition was induced by hand instead: with `demo.py` moved aside the unfixed tree reported a clean skip and the fixed tree reported an error and a failing guard. Calling that `guarded` would claim a comparison the runner did not make. One thing is recorded rather than fixed: the Alexandria ledger row cites only the issue where the Probitas row also cites the committed study, which is a thinner pointer than its sibling for a change the study explains. The items recorded under steps 2 and 3 all still stand.
+
+## Step 4, round 2 -- 2026-08-29T09:18:37Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-row-collapse=reviewed; unrequested-network=reviewed; schema-refusal=not-applicable; release-id-figures=reviewed; overlap-attribution=reviewed; gap-double-count=reviewed; demo-receipt-drift=reviewed; markdown-injection=not-applicable
+
+Not checked: nothing new. The two concerns settled in step 2 stay settled and the Pashov pair remains waived by the `security_suite` receipt.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the whole battery ran against the fixed tree and came back clean. The three bundled lints exited 0, the Probitas suite reported 324 of 324 through the runner step 4's contract names, Alexandria 298, the repository suite 466, the Alexandria demonstration built and verified, and `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with the working tree clean. The thinner Alexandria ledger citation recorded under round 1 still stands, as do the items from steps 2 and 3. Nothing else is open.
