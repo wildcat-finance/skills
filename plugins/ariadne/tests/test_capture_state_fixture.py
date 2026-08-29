@@ -341,14 +341,46 @@ class ReceiptFixtureTests(SkipUnlessReceiptFixture):
                 self.assertEqual(component_reads, [])
 
     def test_empty_directories_count_against_the_capture_tree_bound(self):
-        names = ["empty-%04d" % index for index in range(capture.tree.MAX_FILES + 1)]
+        class EmptyDirectory:
+            def __init__(self, root, index):
+                self.name = "empty-%04d" % index
+                self.path = os.path.join(root, self.name)
 
-        def too_many_entries(root, onerror):
-            yield root, names, []
-            raise AssertionError("capture descended after crossing the entry cap")
+            def is_dir(self, follow_symlinks=True):
+                return True
+
+            def is_symlink(self):
+                return False
+
+            def stat(self, follow_symlinks=True):
+                return os.stat_result((0o040755, 0, 0, 1, 0, 0, 0, 0, 0, 0))
+
+        class WideScan:
+            def __init__(self, root):
+                self.entries = iter(
+                    EmptyDirectory(root, index)
+                    for index in range(capture.tree.MAX_FILES + 1)
+                )
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                return next(self.entries)
+
+            def close(self):
+                pass
 
         with mock.patch.object(
-            capture.tree.os, "walk", side_effect=too_many_entries
+            capture.tree.os,
+            "scandir",
+            return_value=WideScan(RECEIPT_FIXTURE),
         ):
             with self.assertRaisesRegex(
                 capture.CaptureError,

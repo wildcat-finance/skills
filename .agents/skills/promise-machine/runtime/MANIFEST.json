@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 852,
-  "total_bytes": 11193585,
+  "total_bytes": 11194326,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -655,9 +655,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py"
     },
     {
-      "bytes": 5742,
+      "bytes": 6483,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/tree.py",
-      "sha256": "3572dc571f3e25970e469f2476bf1bcb0b822e4fde976d29a2bb4fbe2ad0dbfa",
+      "sha256": "d9e7110951d0b67ddd7d5e1636f9c55c8d89ed3d4df0f6f270ac1ca1f2e59833",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/tree.py"
     },
     {

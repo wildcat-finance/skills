@@ -511,6 +511,60 @@ class CaptureTests(unittest.TestCase):
             with self.assertRaisesRegex(capture.CaptureError, "total more"):
                 self.taken()
 
+    def test_wide_directory_refuses_before_scandir_is_drained(self):
+        class Entry:
+            def __init__(self, root, index):
+                self.name = "wide-%06d.json" % index
+                self.path = os.path.join(root, self.name)
+
+            def is_dir(self, follow_symlinks=True):
+                return False
+
+            def is_symlink(self):
+                return False
+
+            def stat(self, follow_symlinks=True):
+                return os.stat_result((0o100644, 0, 0, 1, 0, 0, 0, 0, 0, 0))
+
+        class WideScan:
+            def __init__(self, root, total):
+                self.root = root
+                self.total = total
+                self.consumed = 0
+                self.closed = False
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                self.close()
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                if self.consumed == self.total:
+                    raise StopIteration
+                entry = Entry(self.root, self.consumed)
+                self.consumed += 1
+                return entry
+
+            def close(self):
+                self.closed = True
+
+        scan = WideScan(self.release, capture.tree.MAX_FILES + 1024)
+        with mock.patch.object(capture.tree.os, "scandir", return_value=scan):
+            code, out, err = self.run_cli()
+
+        self.assertEqual(code, 2)
+        self.assertEqual(out, "")
+        self.assertIn("more than %d entries" % capture.tree.MAX_FILES, err)
+        self.assertLessEqual(len(err.encode("utf-8")), 1024)
+        self.assertEqual(len(err.splitlines()), 1)
+        self.assertLessEqual(scan.consumed, capture.tree.MAX_FILES + 1)
+        self.assertTrue(scan.closed)
+        self.assertFalse(os.path.exists(self.output))
+
     def test_an_unstable_descriptor_read_is_a_controlled_refusal(self):
         original = capture.state_fixture.read_component
 
