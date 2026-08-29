@@ -49,6 +49,41 @@ contract WildcatHostAdapter is HostAdapter {
     r[0] = model.borrower();
   }
 
+  /// @dev The name table `ManifestReader` resolves through. Four names, each
+  ///      answering with exactly the address this adapter holds for it.
+  ///
+  ///      It mirrors `categoryOf` and runs in the opposite direction, and the
+  ///      asymmetry between them is deliberate. `categoryOf` maps an address
+  ///      to a kind, which is a many-to-one question; this maps a name to one
+  ///      address. Building this out of `categoryOf` -- answering `asset` for
+  ///      anything classified `Asset`, say -- would let a permit the manifest
+  ///      wrote for one symbol admit every address sharing its category, and
+  ///      widening a permit by category is the failure this table exists to
+  ///      avoid. So `host` and `asset` never enter a set written for `hook`,
+  ///      and no name resolves to more than the one address it names.
+  ///
+  ///      `roleProvider` answers `ok` true even when it holds `address(0)`,
+  ///      because this adapter does have that name; it is the configuration
+  ///      that is missing, not the name. The reader then raises
+  ///      `SymbolResolvesToZero` rather than `UnresolvableSymbol`, and the two
+  ///      stay distinguishable. `WildcatConformance.t.sol` constructs this
+  ///      adapter with a zero role provider today, so that path is reachable
+  ///      in the suite rather than hypothetical.
+  ///
+  ///      An unknown name answers `(false, address(0))`. Nothing is guessed
+  ///      from the string and no prefix or suffix is stripped here: the reader
+  ///      owns the symbol grammar and hands this table a finished symbol.
+  function resolveAccount(
+    string calldata name
+  ) external view override returns (bool ok, address addr) {
+    bytes32 tag = keccak256(bytes(name));
+    if (tag == keccak256("hook")) return (true, model.hook());
+    if (tag == keccak256("host")) return (true, address(model));
+    if (tag == keccak256("asset")) return (true, address(asset));
+    if (tag == keccak256("roleProvider")) return (true, roleProvider);
+    return (false, address(0));
+  }
+
   function categoryOf(address account) external view returns (Category) {
     if (account == model.hook()) return Category.Hook;
     if (account == address(model)) return Category.Host;
