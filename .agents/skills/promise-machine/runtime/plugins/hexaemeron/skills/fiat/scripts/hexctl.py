@@ -8169,19 +8169,30 @@ def _checkpoint_read_staged(path: str, ceiling: int) -> bytes:
                 if len(data) > ceiling:
                     die("checkpoint stage file exceeds the byte ceiling")
             after = os.fstat(descriptor)
+            named = os.lstat(path)
         finally:
             os.close(descriptor)
     except OSError:
         die("checkpoint stage could not be verified")
-    if len(data) != before.st_size or _checkpoint_stat_identity(after) != _checkpoint_stat_identity(before):
+    if (
+        len(data) != before.st_size
+        or _checkpoint_stat_identity(after) != _checkpoint_stat_identity(before)
+        or _checkpoint_stat_identity(named) != _checkpoint_stat_identity(before)
+    ):
         die("checkpoint stage changed during verification")
     return bytes(data)
 
 
 def _checkpoint_json(data: bytes, label: str):
     try:
-        return json.loads(data.decode("utf-8"), object_pairs_hook=_strict_json_object)
-    except (UnicodeDecodeError, ValueError):
+        return json.loads(
+            data.decode("utf-8"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=lambda _: (_ for _ in ()).throw(
+                ValueError("non-finite number")
+            ),
+        )
+    except (RecursionError, UnicodeDecodeError, ValueError):
         die(f"checkpoint {label} is not strict UTF-8 JSON")
 
 
@@ -8190,7 +8201,7 @@ def _checkpoint_ledger(data: bytes, state: dict) -> tuple[int, str]:
     previous = "genesis"
     count = 0
     last_state = None
-    for raw_line in data.splitlines():
+    for raw_line in io.BytesIO(data):
         if not raw_line.strip():
             continue
         entry = _checkpoint_json(raw_line, "ledger")
@@ -8338,6 +8349,8 @@ def _checkpoint_manifest(
     ledger_bytes = _checkpoint_read_staged(
         os.path.join(controller_root, LEDGER_FILE), CHECKPOINT_FILE_BYTES_MAX
     )
+    if not ledger_bytes.endswith(b"\n"):
+        die("checkpoint ledger is not an appendable exact prefix")
     captured_state = _checkpoint_json(state_bytes, "state")
     captured_state = validate_state_shape(captured_state)
     if canonical(captured_state) != canonical(state):
@@ -8753,14 +8766,16 @@ def _checkpoint_restore_capsule(
         },
         "resource limits",
     )
-    if limits != {
-        "files": CHECKPOINT_FILES_MAX,
-        "directories": CHECKPOINT_DIRECTORIES_MAX,
-        "total_bytes": CHECKPOINT_TOTAL_BYTES_MAX,
-        "file_bytes": CHECKPOINT_FILE_BYTES_MAX,
-        "manifest_bytes": CHECKPOINT_MANIFEST_BYTES_MAX,
-        "path_bytes": CHECKPOINT_PATH_BYTES_MAX,
-    }:
+    if canonical(limits) != canonical(
+        {
+            "files": CHECKPOINT_FILES_MAX,
+            "directories": CHECKPOINT_DIRECTORIES_MAX,
+            "total_bytes": CHECKPOINT_TOTAL_BYTES_MAX,
+            "file_bytes": CHECKPOINT_FILE_BYTES_MAX,
+            "manifest_bytes": CHECKPOINT_MANIFEST_BYTES_MAX,
+            "path_bytes": CHECKPOINT_PATH_BYTES_MAX,
+        }
+    ):
         die("checkpoint manifest resource limits do not match this controller")
 
     controller_root = os.path.join(capsule, CHECKPOINT_CONTROLLER_DIR)
@@ -8815,33 +8830,38 @@ def _checkpoint_restore_capsule(
     ledger_count, ledger_tail = _checkpoint_ledger(ledger_bytes, state)
     if not ledger_bytes.endswith(b"\n"):
         die("checkpoint ledger is not an appendable exact prefix")
-    if source != {
-        "state_sha256": hashlib.sha256(state_bytes).hexdigest(),
-        "state_fingerprint": state_fingerprint(state),
-        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
-        "ledger_entries": ledger_count,
-        "ledger_tail": ledger_tail,
-    }:
+    if canonical(source) != canonical(
+        {
+            "state_sha256": hashlib.sha256(state_bytes).hexdigest(),
+            "state_fingerprint": state_fingerprint(state),
+            "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+            "ledger_entries": ledger_count,
+            "ledger_tail": ledger_tail,
+        }
+    ):
         die("checkpoint source identities do not match controller bytes")
 
     current_version = ledger_version(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
     )
-    if controller != {
-        "name": state.get("controller"),
-        "state_version": state.get("version"),
-        "version": current_version,
-    }:
+    if canonical(controller) != canonical(
+        {
+            "name": state.get("controller"),
+            "state_version": state.get("version"),
+            "version": current_version,
+        }
+    ):
         die("checkpoint controller identity does not match this controller")
-    entries = [
-        _checkpoint_json(line, "ledger")
-        for line in ledger_bytes.splitlines()
-        if line.strip()
-    ]
-    expected_kind, expected_next = _checkpoint_boundary(state, entries)
+    last_entry = None
+    for line in io.BytesIO(ledger_bytes):
+        if line.strip():
+            last_entry = _checkpoint_json(line, "ledger")
+    expected_kind, expected_next = _checkpoint_boundary(
+        state, [] if last_entry is None else [last_entry]
+    )
     if (
         boundary["kind"] != expected_kind
-        or boundary["next"] != expected_next
+        or canonical(boundary["next"]) != canonical(expected_next)
         or not isinstance(boundary["refs"], dict)
         or sorted(boundary["refs"]) != _checkpoint_ref_names(state)
         or any(
@@ -8934,36 +8954,69 @@ def _checkpoint_restore_marker(
             die("checkpoint restore marker belongs to another transaction")
         return worktree, stage, marker, True
 
+    origin_descriptor = None
+    root_descriptor = None
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    create_flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | os.O_EXCL
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
     try:
-        os.mkdir(root, 0o700)
-        gitignore = os.path.join(root, ".gitignore")
-        with open(gitignore, "x", encoding="utf-8") as handle:
-            handle.write("*\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        descriptor = os.open(
-            marker,
-            os.O_WRONLY
-            | os.O_CREAT
-            | os.O_EXCL
-            | getattr(os, "O_CLOEXEC", 0)
-            | getattr(os, "O_NOFOLLOW", 0),
+        origin_descriptor = os.open(origin, directory_flags)
+        if not _checkpoint_directory_still_at_path(origin, origin_descriptor):
+            raise OSError("checkpoint restore origin changed")
+        os.mkdir(STATE_DIR_NAME, 0o700, dir_fd=origin_descriptor)
+        root_descriptor = os.open(
+            STATE_DIR_NAME, directory_flags, dir_fd=origin_descriptor
+        )
+        if not _checkpoint_directory_still_in_parent(
+            origin_descriptor, STATE_DIR_NAME, root_descriptor
+        ):
+            raise OSError("checkpoint restore state path changed")
+
+        gitignore_descriptor = os.open(
+            ".gitignore", create_flags, 0o600, dir_fd=root_descriptor
+        )
+        try:
+            _checkpoint_write_all(gitignore_descriptor, b"*\n")
+            os.fsync(gitignore_descriptor)
+        finally:
+            os.close(gitignore_descriptor)
+
+        marker_descriptor = os.open(
+            CHECKPOINT_RESTORE_MARKER_FILE,
+            create_flags,
             0o600,
+            dir_fd=root_descriptor,
         )
         try:
             _checkpoint_write_all(
-                descriptor, canonical(expected).encode("utf-8") + b"\n"
+                marker_descriptor, canonical(expected).encode("utf-8") + b"\n"
             )
-            os.fsync(descriptor)
+            os.fsync(marker_descriptor)
         finally:
-            os.close(descriptor)
-        root_descriptor = os.open(root, os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
-        try:
-            os.fsync(root_descriptor)
-        finally:
-            os.close(root_descriptor)
+            os.close(marker_descriptor)
+        if not _checkpoint_directory_still_in_parent(
+            origin_descriptor, STATE_DIR_NAME, root_descriptor
+        ):
+            raise OSError("checkpoint restore state path changed")
+        os.fsync(root_descriptor)
+        os.fsync(origin_descriptor)
     except OSError:
         die("checkpoint restore marker could not be published")
+    finally:
+        for descriptor in (root_descriptor, origin_descriptor):
+            if descriptor is not None:
+                with contextlib.suppress(OSError):
+                    os.close(descriptor)
     return worktree, stage, marker, False
 
 
@@ -9247,6 +9300,18 @@ def _checkpoint_restore_opaque_evidence(
             die("checkpoint restore changed opaque controller evidence")
 
 
+def _checkpoint_restore_worktree_branch(worktree: str, state: dict) -> None:
+    """Require the restored worktree to remain attached to its recorded branch."""
+    expected = run_branch_of(state)
+    current = bounded_git(
+        worktree,
+        ["symbolic-ref", "--quiet", "--short", "HEAD"],
+        refusal="checkpoint restored worktree branch changed during finalization",
+    ).decode("utf-8", "replace").strip()
+    if current != expected:
+        die("checkpoint restored worktree branch changed during finalization")
+
+
 def _checkpoint_restore_write_files(
     stage: str, state: dict, ledger_prefix: bytes, receipt: dict
 ) -> tuple[bytes, str]:
@@ -9388,6 +9453,7 @@ def cmd_checkpoint_restore(args) -> None:
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
+        _checkpoint_restore_worktree_branch(worktree, imported)
         verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
             worktree, manifest, ledger
         )
@@ -9400,6 +9466,7 @@ def cmd_checkpoint_restore(args) -> None:
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
+        _checkpoint_restore_worktree_branch(worktree, imported)
         if _checkpoint_refs(origin, imported) != refs:
             die("checkpoint restored Git refs changed during finalization")
         _checkpoint_restore_breadcrumb(origin, worktree)
@@ -9412,6 +9479,7 @@ def cmd_checkpoint_restore(args) -> None:
             ledger_prefix,
         )
         _checkpoint_restore_opaque_evidence(final_root, inventory)
+        _checkpoint_restore_worktree_branch(worktree, imported)
         if _checkpoint_refs(origin, imported) != refs:
             die("checkpoint restored Git refs changed during finalization")
         _checkpoint_restore_retire_marker(
@@ -9468,6 +9536,7 @@ def cmd_checkpoint_restore(args) -> None:
         or repository_root(worktree) != worktree
     ):
         die("checkpoint restore derived worktree changed after Git created it")
+    _checkpoint_restore_worktree_branch(worktree, imported)
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed during relocation")
     if os.path.lexists(final_root) or os.path.lexists(stage):
@@ -9495,6 +9564,7 @@ def cmd_checkpoint_restore(args) -> None:
         stage, relocated, ledger_prefix, receipt
     )
     _checkpoint_restore_opaque_evidence(stage, inventory)
+    _checkpoint_restore_worktree_branch(worktree, imported)
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed before publication")
     _checkpoint_fsync_directories(stage)
@@ -9535,6 +9605,7 @@ def cmd_checkpoint_restore(args) -> None:
             )
         ):
             die("checkpoint restore active state changed during publication", 1)
+        _checkpoint_restore_worktree_branch(worktree, imported)
         if _checkpoint_refs(origin, imported) != refs:
             die("checkpoint restored Git refs changed during publication")
     except OSError:
@@ -9548,6 +9619,7 @@ def cmd_checkpoint_restore(args) -> None:
                 with contextlib.suppress(OSError):
                     os.close(descriptor)
     _checkpoint_restore_opaque_evidence(final_root, inventory)
+    _checkpoint_restore_worktree_branch(worktree, imported)
     verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
         worktree, manifest, ledger
     )
@@ -9560,6 +9632,7 @@ def cmd_checkpoint_restore(args) -> None:
         ledger_prefix,
     )
     _checkpoint_restore_opaque_evidence(final_root, inventory)
+    _checkpoint_restore_worktree_branch(worktree, imported)
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed during finalization")
     _checkpoint_restore_breadcrumb(origin, worktree)
@@ -9572,6 +9645,7 @@ def cmd_checkpoint_restore(args) -> None:
         ledger_prefix,
     )
     _checkpoint_restore_opaque_evidence(final_root, inventory)
+    _checkpoint_restore_worktree_branch(worktree, imported)
     if _checkpoint_refs(origin, imported) != refs:
         die("checkpoint restored Git refs changed during finalization")
     _checkpoint_restore_retire_marker(

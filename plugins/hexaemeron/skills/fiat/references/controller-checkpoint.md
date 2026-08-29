@@ -93,9 +93,10 @@ ctime before and after each read. It then reads and hashes the complete source
 tree a second time and compares the sorted inventory before publication.
 
 `state.json` and every non-empty ledger line must be strict UTF-8 JSON with no
-duplicate object key. The captured state must equal the verified live state.
-The captured ledger must reproduce its full hash chain, end at that state's
-fingerprint, and agree with the manifest's count and tail.
+duplicate object key or non-finite number. The captured state must equal the
+verified live state. The captured ledger must reproduce its full hash chain,
+end at that state's fingerprint, terminate with LF so the exact prefix remains
+appendable, and agree with the manifest's count and tail.
 
 Each ref already named by the state is resolved with fixed-argument, bounded
 Git. The base, run branch and every receipted implementation branch are
@@ -159,7 +160,9 @@ The new origin's `.hexaemeron/checkpoint-restore.json` is published before the
 derived worktree or its sibling private stage is created. It binds the
 manifest digest, run branch and exact owned paths. An existing controller
 directory, occupied derived worktree, conflicting marker, symlink or changed
-ref refuses without replacing or deleting it.
+ref refuses without replacing or deleting it. Creation pins the origin and new
+controller directory and writes both private files relative to those open
+directories, so moving the new directory cannot redirect either write.
 
 The private stage receives the verified controller tree. All files other than
 `state.json` and `ledger.jsonl` remain byte-identical. Fiat changes only
@@ -171,7 +174,9 @@ published with an atomic no-replace rename. The relocated state remains under
 the controller-source cap and the appended ledger remains under the capsule
 file cap. The closed inventory and every opaque file digest are rechecked from
 the active tree around finalization. Local refs are checked before publication,
-after the rename and again after the internal checks and breadcrumb write.
+after the rename and again after the internal checks and breadcrumb write. The
+worktree's symbolic `HEAD` must remain attached to the recorded run branch at
+the same finalization boundaries.
 
 A retry after an interruption never guesses ownership. A marker with no owned
 path may resume. A marker whose private stage or incomplete worktree remains

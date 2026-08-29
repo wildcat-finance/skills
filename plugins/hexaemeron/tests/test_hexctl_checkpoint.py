@@ -15,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import tracemalloc
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -574,6 +575,18 @@ class HexctlCheckpointTests(HexctlCase):
         finally:
             ledger_path.write_text(original_ledger, encoding="utf-8")
 
+        module = hexctl_module()
+        stderr = StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module._checkpoint_json(b'{"value":NaN}', "state")
+        self.assertIn("strict UTF-8 JSON", stderr.getvalue())
+
+        stderr = StringIO()
+        nested = b"[" * 50_000 + b"0" + b"]" * 50_000
+        with redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module._checkpoint_json(nested, "state")
+        self.assertIn("strict UTF-8 JSON", stderr.getvalue())
+
     def test_moving_input_refuses_before_publication(self):
         self.to_post_push()
         moving = self.controller_root() / "moving"
@@ -750,6 +763,16 @@ class HexctlCheckpointTests(HexctlCase):
         )
         self.assertIn("non-symlink directory", result.stderr)
         self.assertFalse(real_parent.joinpath("capsule").exists())
+
+    def test_export_refuses_a_non_appendable_ledger_prefix(self):
+        self.to_post_push()
+        ledger_path = self.controller_root() / "ledger.jsonl"
+        ledger_path.write_bytes(ledger_path.read_bytes().removesuffix(b"\n"))
+
+        destination, result, _ = self.export("non-appendable", expect=2)
+        self.assertIn("appendable exact prefix", result.stderr)
+        self.assertFalse(destination.exists())
+        self.assert_no_stage(destination)
 
     def test_export_keeps_clone_local_recovery_explicitly_unavailable(self):
         self.init()
@@ -945,6 +968,7 @@ class HexctlCheckpointTests(HexctlCase):
     def test_restore_manifest_shape_and_caps_refuse_before_marker(self):
         self.to_post_push()
         capsule, _, _ = self.export("capsule")
+        module = hexctl_module()
 
         duplicate = Path(self.dir) / "duplicate-manifest"
         shutil.copytree(capsule, duplicate)
@@ -1002,6 +1026,57 @@ class HexctlCheckpointTests(HexctlCase):
         )
         self.assertNotIn("Traceback", refused.stderr)
         self.assertFalse(origin.joinpath(".hexaemeron").exists())
+
+        boolean_version = Path(self.dir) / "boolean-state-version"
+        shutil.copytree(capsule, boolean_version)
+        manifest_path = boolean_version / "MANIFEST.json"
+        manifest = json.loads(manifest_path.read_bytes())
+        manifest["controller"]["state_version"] = True
+        payload = module.canonical(manifest).encode("utf-8") + b"\n"
+        manifest_path.write_bytes(payload)
+        stderr = StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module._checkpoint_restore_capsule(
+                str(boolean_version), hashlib.sha256(payload).hexdigest()
+            )
+        self.assertIn("controller identity", stderr.getvalue())
+
+    def test_restore_blank_ledger_padding_stays_within_streaming_memory_bound(self):
+        self.to_post_push()
+        capsule, _, _ = self.export("capsule")
+        module = hexctl_module()
+        controller = capsule / "controller"
+        ledger_path = controller / "ledger.jsonl"
+        ledger = b"\n" * (2 * 1024 * 1024) + ledger_path.read_bytes()
+        ledger_path.write_bytes(ledger)
+        state = json.loads(controller.joinpath("state.json").read_bytes())
+        inventory = module._checkpoint_snapshot(str(controller), None)
+        manifest_path = capsule / "MANIFEST.json"
+        manifest = json.loads(manifest_path.read_bytes())
+        count, tail = module._checkpoint_ledger(ledger, state)
+        manifest["source"]["ledger_sha256"] = hashlib.sha256(ledger).hexdigest()
+        manifest["source"]["ledger_entries"] = count
+        manifest["source"]["ledger_tail"] = tail
+        manifest["files"] = inventory
+        manifest["resources"]["files"] = len(inventory)
+        manifest["resources"]["bytes"] = sum(
+            item["bytes"] for item in inventory
+        )
+        payload = module.canonical(manifest).encode("utf-8") + b"\n"
+        manifest_path.write_bytes(payload)
+        digest = hashlib.sha256(payload).hexdigest()
+
+        tracemalloc.start()
+        try:
+            module._checkpoint_restore_capsule(str(capsule), digest)
+            _, peak = tracemalloc.get_traced_memory()
+        finally:
+            tracemalloc.stop()
+        self.assertLess(
+            peak,
+            8 * 1024 * 1024,
+            f"blank-ledger verification peaked at {peak} bytes",
+        )
 
     def test_restore_rejects_unmanifested_lock_before_marker(self):
         self.to_post_push()
@@ -1081,6 +1156,45 @@ class HexctlCheckpointTests(HexctlCase):
         self.assertFalse(origin.joinpath(".hexaemeron").exists())
         self.assertEqual(manifest["boundary"]["refs"], exported["refs"])
 
+    def test_restore_moved_marker_root_cannot_redirect_writes(self):
+        self.to_post_push()
+        capsule, _, _ = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        imported = json.loads(
+            capsule.joinpath("controller", "state.json").read_bytes()
+        )
+        module = hexctl_module()
+        root = origin / ".hexaemeron"
+        detached = origin / ".hexaemeron-detached"
+        outside = Path(self.dir) / "outside-marker-root"
+        outside.mkdir()
+        original_mkdir = module.os.mkdir
+        moved = False
+
+        def move_root_after_mkdir(name, mode=0o777, *args, **kwargs):
+            nonlocal moved
+            result = original_mkdir(name, mode, *args, **kwargs)
+            candidate = Path(name)
+            if not candidate.is_absolute():
+                candidate = origin / candidate
+            if not moved and candidate == root:
+                moved = True
+                os.rename(root, detached)
+                os.symlink(outside, root, target_is_directory=True)
+            return result
+
+        stderr = StringIO()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(
+                module.os, "mkdir", side_effect=move_root_after_mkdir
+            ):
+                with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module._checkpoint_restore_marker(
+                        str(origin), imported, "1" * 64
+                    )
+        self.assertIn("marker could not be published", stderr.getvalue())
+        self.assertEqual([], list(outside.iterdir()))
+
     def test_restore_moving_capsule_refuses_before_marker(self):
         self.to_post_push()
         capsule, _, exported = self.export("capsule")
@@ -1110,6 +1224,35 @@ class HexctlCheckpointTests(HexctlCase):
                     )
         self.assertIn("changed during verification", stderr.getvalue())
         self.assertFalse(origin.joinpath(".hexaemeron").exists())
+
+    def test_restore_staged_read_rejects_named_file_substitution(self):
+        module = hexctl_module()
+        target = Path(self.dir) / "staged-state.json"
+        replacement = Path(self.dir) / "replacement-state.json"
+        detached = Path(self.dir) / "detached-state.json"
+        target.write_bytes(b"expected\n")
+        replacement.write_bytes(b"substituted\n")
+        original_open = module.os.open
+        moved = False
+
+        def replace_after_open(name, flags, *args, **kwargs):
+            nonlocal moved
+            descriptor = original_open(name, flags, *args, **kwargs)
+            if not moved and os.fspath(name) == os.fspath(target):
+                moved = True
+                os.rename(target, detached)
+                os.rename(replacement, target)
+            return descriptor
+
+        stderr = StringIO()
+        with mock.patch.object(
+            module.os, "open", side_effect=replace_after_open
+        ):
+            with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                module._checkpoint_read_staged(str(target), 1024)
+        self.assertIn("changed during verification", stderr.getvalue())
+        self.assertEqual(b"substituted\n", target.read_bytes())
+        self.assertEqual(b"expected\n", detached.read_bytes())
 
     def test_restore_interruption_preserves_marker_owned_paths(self):
         self.to_post_push()
@@ -1353,6 +1496,46 @@ class HexctlCheckpointTests(HexctlCase):
                             )
                         )
         self.assertIn("refs changed during publication", stderr.getvalue())
+        self.assertTrue(
+            origin.joinpath(
+                ".hexaemeron", "checkpoint-restore.json"
+            ).is_file()
+        )
+
+    def test_restore_worktree_branch_change_during_checks_refuses(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        module = hexctl_module()
+        original_checks = module._checkpoint_restore_internal_checks
+        real_git = shutil.which("git")
+
+        def detach_after_checks(worktree, manifest, ledger):
+            result = original_checks(worktree, manifest, ledger)
+            subprocess.run(
+                [real_git, "-C", worktree, "checkout", "--detach", "main"],
+                check=True,
+                capture_output=True,
+            )
+            return result
+
+        stderr = StringIO()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(
+                module,
+                "_checkpoint_restore_internal_checks",
+                side_effect=detach_after_checks,
+            ):
+                with redirect_stdout(StringIO()), redirect_stderr(stderr):
+                    with self.assertRaises(SystemExit):
+                        module.cmd_checkpoint_restore(
+                            SimpleNamespace(
+                                dir=str(origin),
+                                source=str(capsule),
+                                manifest_sha256=exported["manifest_sha256"],
+                            )
+                        )
+        self.assertIn("worktree branch changed", stderr.getvalue())
         self.assertTrue(
             origin.joinpath(
                 ".hexaemeron", "checkpoint-restore.json"
