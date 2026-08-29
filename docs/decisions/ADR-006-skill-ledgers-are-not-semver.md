@@ -52,3 +52,33 @@ pay a one-time cost of unlearning SemVer, which this record and the contract
 both state plainly. Tools that want compatibility semantics read the package
 versions in the plugin manifests instead, which ADR-004 keeps deliberately
 separate.
+
+## Issue 556 addendum: relation and resolved label
+
+Accepted, 2026-08-28, for
+[skills#556](https://github.com/wildcat-finance/skills/issues/556).
+
+A runbook may declare `next-generation-after-integration-base` for a governed
+skill instead of naming a future label. The declaration fixes the arithmetic:
+retain evolution and epoch, then select the generation one above the ledger at
+the exact integration base. Capturing that declaration and its compatibility
+anchor does not reserve a label.
+
+Resolution is a separate transition. Fiat reads one exact integration base
+and candidate head and checks that the candidate already carries the selected
+generation row and matching skill metadata. Compatible generation drift can
+move the answer; evolution, epoch, or held-frontier drift refuses it. The
+controller observes this product state and records the evidence, but does not
+edit the product.
+
+After the audited step stack closes, a changed projection can travel only in
+Fiat's existing signed two-parent sync. Every changed ledger and `SKILL.md`
+path must then be covered by the digest-bound
+`fiat-integration-revalidation/v1` record before another resolution. This
+keeps relation, product correction, and publication evidence separate.
+
+The issue #556 run is self-hosted: its pinned controller predates the receipt
+it ships. Its product follows this decision, while the new
+`fiat-version-resolution/v1` receipt first governs a later run under the
+updated controller. Any correction during this run remains signed sync and
+revalidation evidence rather than a receipt constructed after the fact.

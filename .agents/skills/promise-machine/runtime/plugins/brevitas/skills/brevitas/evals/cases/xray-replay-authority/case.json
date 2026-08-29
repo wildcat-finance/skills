@@ -1,0 +1,7 @@
+{
+  "expectation": "compress",
+  "mode": "report",
+  "origin_artifact_path": "outputs/t0-rc3-1/sol56/artifacts/x-ray/attack-surfaces.md",
+  "origin_ranges": [[3, 19]],
+  "origin_sha256": "ed8fbcf14186a1c79f9db8f971796d192969ec729edeb2bba0fc78f30ff75e48"
+}

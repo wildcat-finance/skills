@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ariadne.wildcat.finance/state-fixture/v2/schema.json",
+  "title": "Ariadne state-fixture predicate v2",
+  "description": "The https://ariadne.wildcat.finance/state-fixture/v2 predicate for a local Lazarus fixture with independently authorised state-trie and receipt-trie evidence. A positive proof_backed count requires state_root; a positive receipt_trie_proved count requires receipts_root. Neither root grants the other's authority, and transaction hashes remain outside proved evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "chain",
+    "capture",
+    "fixture_subjects",
+    "evidence",
+    "replay",
+    "deltas",
+    "claims",
+    "commands"
+  ],
+  "properties": {
+    "chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chain_id", "block_number", "block_hash"],
+      "properties": {
+        "chain_id": {"type": "integer", "minimum": 1},
+        "block_number": {"type": "integer", "minimum": 0},
+        "block_hash": {"$ref": "#/$defs/hash32"},
+        "state_root": {
+          "$ref": "#/$defs/hash32",
+          "description": "Authority only for the proof_backed count."
+        },
+        "receipts_root": {
+          "$ref": "#/$defs/hash32",
+          "description": "Authority only for the scoped consensus receipt and log-projection relations counted by receipt_trie_proved."
+        }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool", "tool_version", "command", "parameters_digest"],
+      "properties": {
+        "tool": {"$ref": "#/$defs/portableText"},
+        "tool_version": {"$ref": "#/$defs/portableText"},
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/portableText"}
+        },
+        "parameters_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "fixture_subjects": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 1024,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "path", "digest", "bytes"],
+        "properties": {
+          "name": {"$ref": "#/$defs/portableText"},
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "pattern": "^(?![^/\\\\]:)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?=[^\\u0000/\\\\]*[!-.0-\\[\\]-~])[^\\u0000/\\\\]+(?:/(?=[^\\u0000/\\\\]*[!-.0-\\[\\]-~])[^\\u0000/\\\\]+)*$"
+          },
+          "digest": {"$ref": "#/$defs/digest"},
+          "bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 536870912
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proof_backed",
+        "header_bound",
+        "recorded_rpc",
+        "receipt_trie_proved"
+      ],
+      "properties": {
+        "proof_backed": {"$ref": "#/$defs/count"},
+        "header_bound": {"$ref": "#/$defs/count"},
+        "recorded_rpc": {"$ref": "#/$defs/count"},
+        "receipt_trie_proved": {
+          "$ref": "#/$defs/count",
+          "description": "Only scoped consensus receipt and log-projection relations, never transaction-hash attribution."
+        }
+      }
+    },
+    "replay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reaches_network",
+        "canonical_chain_claim",
+        "provider_independence_claim"
+      ],
+      "properties": {
+        "reaches_network": {"const": false},
+        "canonical_chain_claim": {"const": false},
+        "provider_independence_claim": {"const": false}
+      }
+    },
+    "deltas": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["baseline", "current"],
+      "properties": {
+        "baseline": {
+          "oneOf": [
+            {"$ref": "#/$defs/side"},
+            {"type": "null"}
+          ]
+        },
+        "current": {"$ref": "#/$defs/side"},
+        "reason": {"type": "string"},
+        "components": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "added": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/portableText"}
+            },
+            "removed": {
+              "type": "array",
+              "items": {"$ref": "#/$defs/portableText"}
+            },
+            "changed": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["baseline", "current"],
+                "properties": {
+                  "baseline": {"$ref": "#/$defs/portableText"},
+                  "current": {"$ref": "#/$defs/portableText"}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "subject", "disposition"],
+        "properties": {
+          "name": {"$ref": "#/$defs/portableText"},
+          "subject": {"$ref": "#/$defs/digest"},
+          "disposition": {
+            "enum": ["passed", "failed", "skipped", "timed_out", "redacted"]
+          },
+          "reason": {"type": "string"},
+          "detail": {"type": "object"}
+        }
+      }
+    },
+    "commands": {
+      "type": "array",
+      "maxItems": 0,
+      "description": "Version 2 replay is local-file verification only and carries no executable command."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "evidence": {
+            "properties": {"proof_backed": {"minimum": 1}}
+          }
+        }
+      },
+      "then": {
+        "properties": {"chain": {"required": ["state_root"]}}
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "evidence": {
+            "properties": {"receipt_trie_proved": {"minimum": 1}}
+          }
+        }
+      },
+      "then": {
+        "properties": {"chain": {"required": ["receipts_root"]}}
+      }
+    },
+    {
+      "if": {
+        "properties": {"deltas": {"properties": {"baseline": {"type": "null"}}}}
+      },
+      "then": {
+        "properties": {
+          "deltas": {
+            "required": ["reason"],
+            "properties": {
+              "reason": {"type": "string", "minLength": 1, "pattern": "\\S"},
+              "components": false
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "portableText": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "[!-~]"
+    },
+    "hash32": {
+      "type": "string",
+      "minLength": 66,
+      "maxLength": 66,
+      "pattern": "^0x(?!0{64}$)[0-9a-f]{64}$"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000
+    },
+    "digest": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"type": "string", "minLength": 1},
+      "properties": {
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "sha384": {"type": "string", "pattern": "^[0-9a-f]{96}$"},
+        "sha512": {"type": "string", "pattern": "^[0-9a-f]{128}$"}
+      },
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[0-9a-f]+$"
+      },
+      "anyOf": [
+        {"required": ["sha256"]},
+        {"required": ["sha384"]},
+        {"required": ["sha512"]}
+      ]
+    },
+    "side": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "digest"],
+      "properties": {
+        "name": {"$ref": "#/$defs/portableText"},
+        "digest": {"$ref": "#/$defs/digest"}
+      }
+    }
+  }
+}

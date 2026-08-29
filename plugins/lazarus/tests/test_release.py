@@ -16,12 +16,23 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 from lazarus_lib.binding import CHECKS
 from lazarus_lib.canonical import dump, dumps, loads
-from lazarus_lib.errors import FormatError, IntegrityError, LazarusError, PathError
+from lazarus_lib.errors import (
+    FormatError,
+    IntegrityError,
+    LazarusError,
+    PathError,
+    ResourceLimitError,
+)
 from lazarus_lib.manifest import build_manifest, write_manifest
-from lazarus_lib.records import write_proof_records, write_rpc_records
+from lazarus_lib.records import (
+    write_anchor_records,
+    write_proof_records,
+    write_rpc_records,
+)
 from lazarus_lib.release import (
     FIXTURE_DIRECTORY,
     RELEASE_NAME,
@@ -36,11 +47,13 @@ from lazarus_lib.verifier import verify_fixture
 from . import support
 
 COMPONENTS = ("header.json", "plan.json", "proofs.jsonl", "rpc.jsonl")
+ANCHORED_COMPONENTS = (*COMPONENTS, "anchors.jsonl")
 STATE_FIXTURE_TYPE = "https://ariadne.wildcat.finance/state-fixture/v1"
+STATE_FIXTURE_TYPE_V2 = "https://ariadne.wildcat.finance/state-fixture/v2"
 CLI = support.PLUGIN_ROOT / "scripts" / "lazarus.py"
 
 
-def write_fixture(root: Path, *, hash_source=None):
+def write_fixture(root: Path, *, hash_source=None, anchor_source_ids=None):
     """A fixture that verifies, built from synthetic material.
 
     `hash_source` changes one string nothing verifies against, which is enough
@@ -49,13 +62,32 @@ def write_fixture(root: Path, *, hash_source=None):
     material = support.synthetic_fixture_material()
     if hash_source is not None:
         material["plan"]["block"]["hash_source"] = hash_source
+    components = COMPONENTS
+    if anchor_source_ids is not None:
+        material["plan"]["schema_version"] = 2
+        material["plan"]["anchor_sources"] = [
+            {"source_id": source_id} for source_id in anchor_source_ids
+        ]
+        components = ANCHORED_COMPONENTS
     dump(root / "plan.json", material["plan"])
     dump(root / "header.json", material["header"])
     write_rpc_records(root / "rpc.jsonl", material["rpc_records"])
     write_proof_records(root / "proofs.jsonl", material["proof_records"])
+    if anchor_source_ids is not None:
+        write_anchor_records(
+            root / "anchors.jsonl",
+            [
+                support.sample_anchor_record(
+                    source_id,
+                    block_number=material["header"]["number"],
+                    block_hash=material["header"]["hash"],
+                )
+                for source_id in anchor_source_ids
+            ],
+        )
     manifest = build_manifest(
         root,
-        COMPONENTS,
+        components,
         chain_id="0x1",
         block_number=material["header"]["number"],
         block_hash=material["header"]["hash"],
@@ -81,24 +113,54 @@ def statement_for(root: Path):
         }
         for entry in manifest["components"]
     ]
+    version = manifest["schema_version"]
+    chain = {
+        "chain_id": int(manifest["chain_id"], 16),
+        "block_number": int(report["block_number"], 16),
+        "block_hash": report["block_hash"],
+        "state_root": report["state_root"],
+    }
+    replay = {"reaches_network": False, "canonical_chain_claim": False}
+    predicate_type = STATE_FIXTURE_TYPE
+    if version == 2:
+        predicate_type = STATE_FIXTURE_TYPE_V2
+        chain["receipts_root"] = report["receipts_root"]
+        replay["provider_independence_claim"] = False
+    predicate = {
+        "chain": chain,
+        "evidence": dict(report["evidence_counts"]),
+        "replay": replay,
+        "fixture_subjects": subjects,
+    }
+    if version == 2:
+        predicate.update(
+            {
+                "capture": {
+                    "tool": "lazarus",
+                    "tool_version": manifest["tool_version"],
+                    "command": ["lazarus", "capture", str(root)],
+                    "parameters_digest": {"sha256": "f" * 64},
+                },
+                "deltas": {
+                    "baseline": None,
+                    "current": {
+                        "name": "synthetic-v0",
+                        "digest": {"sha256": report["fixture_digest"]},
+                    },
+                    "reason": "first receipt-aware fixture",
+                },
+                "claims": [],
+                "commands": [],
+            }
+        )
     return {
         "_type": "https://in-toto.io/Statement/v1",
-        "predicateType": STATE_FIXTURE_TYPE,
+        "predicateType": predicate_type,
         "subject": [
             {"name": entry["name"], "digest": entry["digest"]} for entry in subjects
         ]
         + [{"name": "synthetic-v0", "digest": {"sha256": report["fixture_digest"]}}],
-        "predicate": {
-            "chain": {
-                "chain_id": int(manifest["chain_id"], 16),
-                "block_number": int(report["block_number"], 16),
-                "block_hash": report["block_hash"],
-                "state_root": report["state_root"],
-            },
-            "evidence": dict(report["evidence_counts"]),
-            "replay": {"reaches_network": False, "canonical_chain_claim": False},
-            "fixture_subjects": subjects,
-        },
+        "predicate": predicate,
     }
 
 
@@ -131,7 +193,66 @@ class Prepared:
         )
 
 
+class PreparedV2(Prepared):
+    """The checked receipt-proof fixture with its matching v2 statement."""
+
+    def __init__(self, directory):
+        self.root = Path(directory)
+        self.fixture = self.root / "fixture-source"
+        shutil.copytree(support.RECEIPT_PROOF_FIXTURE, self.fixture)
+        self.statement = self.root / "statement.json"
+        self.document = statement_for(self.fixture)
+        self.write_statement(self.document)
+        self.out = self.root / "release"
+
+
 class WrittenReleaseTests(unittest.TestCase):
+    def test_an_anchored_fixture_round_trips_without_changing_release_v1(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = root / "fixture-source"
+            fixture.mkdir()
+            write_fixture(
+                fixture, anchor_source_ids=("archive-a", "archive-b")
+            )
+            statement_path = root / "statement.json"
+            statement_path.write_bytes(
+                json.dumps(statement_for(fixture), indent=2).encode()
+            )
+            out = root / "release"
+            document = write_release(fixture, statement_path, out)
+            read_back = verify_release(out)
+            fixture_report = verify_fixture(out / FIXTURE_DIRECTORY)
+
+            self.assertIn("chain_anchors", fixture_report)
+            self.assertEqual(fixture_report["chain_anchors"]["records"], 2)
+            self.assertEqual(
+                set(document),
+                {
+                    "schema_version",
+                    "tool_version",
+                    "fixture",
+                    "statement",
+                    "verified",
+                    "binding",
+                    "release_digest",
+                },
+            )
+            self.assertEqual(
+                set(document["verified"]),
+                {"block_hash", "evidence_counts", "canonical_chain_claim"},
+            )
+            self.assertNotIn("chain_anchors", document)
+            self.assertNotIn("chain_anchors", read_back)
+            self.assertEqual(
+                document["fixture"]["fixture_digest"],
+                fixture_report["fixture_digest"],
+            )
+            self.assertTrue(
+                (out / FIXTURE_DIRECTORY / "anchors.jsonl").is_file()
+            )
+            self.assertEqual(document["binding"]["checks"], list(CHECKS))
+
     def test_a_release_holds_the_fixture_the_statement_and_the_document(self):
         with tempfile.TemporaryDirectory() as directory:
             prepared = Prepared(directory)
@@ -204,6 +325,101 @@ class WrittenReleaseTests(unittest.TestCase):
             self.assertEqual(prepared.staged(), [])
 
 
+class ReceiptAwareReleaseTests(unittest.TestCase):
+    def test_v2_records_the_recomputed_root_four_counts_and_witness(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            report = verify_fixture(prepared.fixture)
+            document = prepared.release()
+
+            self.assertEqual(document["schema_version"], 2)
+            self.assertEqual(
+                document["statement"]["predicate_type"], STATE_FIXTURE_TYPE_V2
+            )
+            self.assertEqual(
+                document["verified"]["receipts_root"], report["receipts_root"]
+            )
+            self.assertEqual(
+                document["verified"]["evidence_counts"], report["evidence_counts"]
+            )
+            self.assertEqual(
+                set(document["verified"]["evidence_counts"]),
+                {
+                    "proof_backed",
+                    "header_bound",
+                    "recorded_rpc",
+                    "receipt_trie_proved",
+                },
+            )
+            self.assertTrue(
+                (prepared.out / FIXTURE_DIRECTORY / "receipt-witness.json").is_file()
+            )
+            self.assertNotIn("transaction_hash", json.dumps(document).lower())
+
+    def test_v2_verifies_after_its_source_fixture_is_unavailable(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            document = prepared.release()
+            shutil.rmtree(prepared.fixture)
+            report = verify_release(prepared.out)
+            self.assertEqual(
+                report["receipts_root"], document["verified"]["receipts_root"]
+            )
+
+    def test_v1_and_v2_statements_are_not_cross_bound(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            statement = copy.deepcopy(prepared.document)
+            statement["predicateType"] = STATE_FIXTURE_TYPE
+            prepared.write_statement(statement)
+            with self.assertRaisesRegex(IntegrityError, "state-fixture/v2"):
+                prepared.release()
+            self.assertFalse(prepared.out.exists())
+            self.assertEqual(prepared.staged(), [])
+
+    def test_release_and_fixture_versions_are_not_cross_read(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            prepared.release()
+            document = loads((prepared.out / RELEASE_NAME).read_bytes())
+            document["schema_version"] = 1
+            del document["verified"]["receipts_root"]
+            del document["verified"]["evidence_counts"]["receipt_trie_proved"]
+            document["statement"]["predicate_type"] = STATE_FIXTURE_TYPE
+            document["release_digest"] = release_digest(document)
+            (prepared.out / RELEASE_NAME).write_bytes(dumps(document) + b"\n")
+            with self.assertRaisesRegex(IntegrityError, "never upgraded implicitly"):
+                verify_release(prepared.out)
+
+    def test_restamped_v2_root_count_statement_and_release_drift_are_refused(self):
+        edits = (
+            ("root", lambda document: document["verified"].__setitem__(
+                "receipts_root", "0x" + "99" * 32
+            )),
+            ("count", lambda document: document["verified"]["evidence_counts"].__setitem__(
+                "receipt_trie_proved", 3
+            )),
+        )
+        for name, edit in edits:
+            with tempfile.TemporaryDirectory() as directory:
+                prepared = PreparedV2(directory)
+                prepared.release()
+                document = loads((prepared.out / RELEASE_NAME).read_bytes())
+                edit(document)
+                document["release_digest"] = release_digest(document)
+                (prepared.out / RELEASE_NAME).write_bytes(dumps(document) + b"\n")
+                with self.subTest(field=name), self.assertRaises(IntegrityError):
+                    verify_release(prepared.out)
+
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            prepared.release()
+            statement = prepared.out / STATEMENT_NAME
+            statement.write_bytes(statement.read_bytes() + b" ")
+            with self.assertRaisesRegex(IntegrityError, "statement digests"):
+                verify_release(prepared.out)
+
+
 class RefusedReleaseTests(unittest.TestCase):
     """Every one of these must also leave nothing behind."""
 
@@ -225,6 +441,44 @@ class RefusedReleaseTests(unittest.TestCase):
             error = self.refuse(prepared, IntegrityError)
             self.assertIn("proof_backed", str(error))
             self.assertIn("more than the records support", str(error))
+
+    def test_v2_refuses_subject_references_ariadne_would_reject(self):
+        def uncover_current(document):
+            document["predicate"]["deltas"]["current"]["digest"] = {
+                "sha256": "9" * 64
+            }
+
+        def uncover_claim(document):
+            document["predicate"]["claims"] = [
+                {
+                    "name": "receipt membership",
+                    "subject": {"sha256": "9" * 64},
+                    "disposition": "passed",
+                }
+            ]
+
+        for name, mutate in (
+            ("current delta", uncover_current),
+            ("claim", uncover_claim),
+        ):
+            with tempfile.TemporaryDirectory() as directory:
+                prepared = PreparedV2(directory)
+                mutate(prepared.document)
+                prepared.write_statement(prepared.document)
+                with self.subTest(reference=name):
+                    self.refuse(prepared, IntegrityError)
+
+    def test_v2_refuses_noncanonical_chain_hash_spellings(self):
+        for field in ("block_hash", "state_root", "receipts_root"):
+            with tempfile.TemporaryDirectory() as directory:
+                prepared = PreparedV2(directory)
+                value = prepared.document["predicate"]["chain"][field]
+                prepared.document["predicate"]["chain"][field] = (
+                    value.upper().replace("0X", "0x")
+                )
+                prepared.write_statement(prepared.document)
+                with self.subTest(field=field):
+                    self.refuse(prepared, IntegrityError)
 
     def test_a_statement_about_another_fixture_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -375,6 +629,44 @@ class RefusedReleaseTests(unittest.TestCase):
             error = self.refuse(prepared, PathError, statement=link)
             self.assertIn("symlink", str(error))
 
+    def test_a_statement_below_a_symlinked_parent_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            real = prepared.root / "statement-parent"
+            real.mkdir()
+            (real / "statement.json").write_bytes(prepared.statement.read_bytes())
+            link = prepared.root / "statement-link"
+            link.symlink_to(real, target_is_directory=True)
+
+            error = self.refuse(
+                prepared, PathError, statement=link / "statement.json"
+            )
+            self.assertIn("symlink", str(error))
+
+    def test_a_checked_statement_cannot_be_swapped_to_a_symlink_before_read(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = Prepared(directory)
+            outside = prepared.root / "matching-statement.json"
+            outside.write_bytes(prepared.statement.read_bytes())
+            mismatching = copy.deepcopy(prepared.document)
+            mismatching["predicate"]["chain"]["block_hash"] = "0x" + "99" * 32
+            prepared.write_statement(mismatching)
+
+            original_is_file = Path.is_file
+            swapped = {"done": False}
+
+            def swap_after_check(path):
+                result = original_is_file(path)
+                if path == prepared.statement and result and not swapped["done"]:
+                    swapped["done"] = True
+                    path.unlink()
+                    path.symlink_to(outside)
+                return result
+
+            with mock.patch.object(Path, "is_file", swap_after_check):
+                self.refuse(prepared, IntegrityError)
+            self.assertFalse(swapped["done"])
+
     def test_a_statement_larger_than_the_read_cap_is_refused(self):
         from lazarus_lib.canonical import MAX_JSON_BYTES
 
@@ -382,6 +674,21 @@ class RefusedReleaseTests(unittest.TestCase):
             prepared = Prepared(directory)
             prepared.statement.write_bytes(b'{"a": "' + b"x" * MAX_JSON_BYTES + b'"}')
             error = self.refuse(prepared, FormatError)
+            self.assertIn(str(MAX_JSON_BYTES), str(error))
+
+    def test_an_oversized_statement_is_refused_before_its_body_is_read(self):
+        from lazarus_lib.canonical import MAX_JSON_BYTES
+
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = Prepared(directory)
+            with prepared.statement.open("wb") as handle:
+                handle.truncate(MAX_JSON_BYTES + 1)
+            with mock.patch.object(
+                Path,
+                "read_bytes",
+                side_effect=AssertionError("oversized statement body was read"),
+            ):
+                error = self.refuse(prepared, FormatError)
             self.assertIn(str(MAX_JSON_BYTES), str(error))
 
     def test_a_staged_directory_already_in_the_way_is_refused(self):
@@ -678,6 +985,59 @@ class CopyTests(unittest.TestCase):
             target = prepared.root / "copy"
             _copy_fixture(prepared.fixture, target, report["manifest"])
             self.assertFalse((target / "stowaway.txt").exists())
+
+    def test_a_component_grown_after_verification_is_not_copied(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            report = verify_fixture(prepared.fixture)
+            target = prepared.root / "copy"
+            victim = "plan.json"
+            grown = (prepared.fixture / victim).read_bytes() + b"x"
+            from lazarus_lib import release as module
+
+            original = module.read_confined_bytes
+
+            def changed(root, relative, *, max_bytes):
+                if relative == victim:
+                    if len(grown) > max_bytes:
+                        raise ResourceLimitError("simulated post-verification growth")
+                    return grown
+                return original(root, relative, max_bytes=max_bytes)
+
+            with mock.patch.object(
+                module, "read_confined_bytes", side_effect=changed
+            ):
+                with self.assertRaises(ResourceLimitError):
+                    module._copy_fixture(
+                        prepared.fixture, target, report["manifest"]
+                    )
+            self.assertFalse((target / victim).exists())
+
+    def test_a_same_size_component_change_is_refused_before_copying(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            report = verify_fixture(prepared.fixture)
+            target = prepared.root / "copy"
+            victim = "plan.json"
+            original_bytes = (prepared.fixture / victim).read_bytes()
+            changed_bytes = bytes([original_bytes[0] ^ 1]) + original_bytes[1:]
+            from lazarus_lib import release as module
+
+            original = module.read_confined_bytes
+
+            def changed(root, relative, *, max_bytes):
+                if relative == victim:
+                    return changed_bytes
+                return original(root, relative, max_bytes=max_bytes)
+
+            with mock.patch.object(
+                module, "read_confined_bytes", side_effect=changed
+            ):
+                with self.assertRaisesRegex(IntegrityError, "after verification"):
+                    module._copy_fixture(
+                        prepared.fixture, target, report["manifest"]
+                    )
+            self.assertFalse((target / victim).exists())
 
     def test_the_copy_is_not_writable_by_anybody_else(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -1289,6 +1649,19 @@ class OtherLayoutTests(unittest.TestCase):
             with self.assertRaises(IntegrityError) as caught:
                 verify_release(nested)
             self.assertIn("unaccounted.txt", str(caught.exception))
+
+    def test_a_file_beside_a_nested_v2_fixture_is_unaccounted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = PreparedV2(directory)
+            prepared.release()
+            nested = self.laid_out(
+                prepared, prepared.root / "nested-v2", "inner/state", "note.json"
+            )
+            stowaway = nested / "inner" / "unaccounted.txt"
+            stowaway.write_bytes(b"neither the release nor the fixture lists this")
+            with self.assertRaises(IntegrityError) as caught:
+                verify_release(nested)
+            self.assertIn("inner/unaccounted.txt", str(caught.exception))
 
 
 class TwoReleasesTests(unittest.TestCase):

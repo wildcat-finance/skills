@@ -4,7 +4,11 @@ import unittest
 
 
 CASES = Path(__file__).parent / "fixtures" / "promise-machine" / "cases.json"
-EXPECTED = {"sapheneia-session-shape", "sapheneia-deactivation"}
+EXPECTED = {
+    "sapheneia-session-shape",
+    "sapheneia-deactivation",
+    "sapheneia-durable-record-shape",
+}
 
 
 class SapheneiaPromiseCaseTests(unittest.TestCase):

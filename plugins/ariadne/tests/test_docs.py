@@ -14,6 +14,7 @@ from . import support  # noqa: F401  (sets sys.path)
 import ariadne  # noqa: E402
 from ariadne_lib import core_predicate, gates, registry  # noqa: E402
 from ariadne_lib.predicates import dataset  # noqa: E402
+from ariadne_lib.predicates import grounded_agent  # noqa: E402
 from ariadne_lib.predicates import solidity_release as release  # noqa: E402
 from ariadne_lib.predicates import state_fixture  # noqa: E402
 
@@ -26,11 +27,14 @@ CONFORMANCE = os.path.join(PLUGIN, "docs", "conformance.md")
 PREDICATE_DOC = os.path.join(PLUGIN, "docs", "solidity-release.md")
 DATASET_DOC = os.path.join(PLUGIN, "docs", "dataset.md")
 STATE_FIXTURE_DOC = os.path.join(PLUGIN, "docs", "state-fixture.md")
+GROUNDED_AGENT_DOC = os.path.join(PLUGIN, "docs", "grounded-agent.md")
 
 DOCUMENTED = (
     (release, PREDICATE_DOC),
     (dataset, DATASET_DOC),
     (state_fixture, STATE_FIXTURE_DOC),
+    (state_fixture.V2, STATE_FIXTURE_DOC),
+    (grounded_agent, GROUNDED_AGENT_DOC),
 )
 """Each shipped predicate and the document that describes its fields."""
 EXAMPLES = os.path.join(PLUGIN, "examples")
@@ -134,6 +138,17 @@ class PredicateTests(unittest.TestCase):
                         "`%s`" % field, text, "%s omits %s" % (doc, field)
                     )
 
+    def test_the_grounded_agent_guide_preserves_its_two_digest_domains(self):
+        text = read(GROUNDED_AGENT_DOC)
+        self.assertIn("semantic `release_digest`", text)
+        self.assertIn("exact `release.json` bytes", text)
+        self.assertIn("must not be equal", text)
+
+    def test_the_grounded_agent_guide_names_the_non_conclusion_boundary(self):
+        text = read(GROUNDED_AGENT_DOC)
+        for field in ("score", "grade", "verdict", "threshold", "result count"):
+            self.assertIn("`%s`" % field, text)
+
 
 class PrintedCommandTests(unittest.TestCase):
     """A file path printed in a document is a claim that the file is there.
@@ -170,6 +185,22 @@ class FixtureTests(unittest.TestCase):
                 self.assertIn(
                     name, text, "docs/conformance.md does not list %s" % name
                 )
+
+    def test_the_grounded_agent_inventory_has_one_row_per_fixture(self):
+        text = read(CONFORMANCE)
+        directory = os.path.join(PLUGIN, "tests", "fixtures", "conformance")
+        expected = sorted(
+            name
+            for name in os.listdir(directory)
+            if "grounded-agent" in name and name.endswith(".json")
+        )
+        rows = sorted(
+            re.findall(
+                r"(?m)^\| `((?:pass|fail)-[^`]*grounded-agent[^`]*\.json)` \|",
+                text,
+            )
+        )
+        self.assertEqual(rows, expected)
 
     def test_the_examples_document_names_every_example(self):
         text = read(os.path.join(EXAMPLES, "README.md"))

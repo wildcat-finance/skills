@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from lazarus_lib.records import make_rpc_record, request_key
+from lazarus_lib.records import make_rpc_record, read_rpc_records, request_key
 from lazarus_lib.replay import (
     INVALID_REQUEST,
     METHOD_NOT_FOUND,
@@ -72,6 +72,33 @@ class ReplayTests(unittest.TestCase):
                 response["result"],
                 {"array": ["0x0", "0x00", 0, None], "quantity": "0x0"},
             )
+
+    def test_receipt_proof_fixture_replays_recorded_block_receipts_exactly(self):
+        root = support.FIXTURES / "receipt-proof-v1"
+        plan = support.load_json("tests/fixtures/receipt-proof-v1/plan.json")
+        request = next(
+            item
+            for item in plan["requests"]
+            if item["method"] == "eth_getBlockReceipts"
+        )
+        record = next(
+            item
+            for item in read_rpc_records(root / "rpc.jsonl")
+            if item["method"] == "eth_getBlockReceipts"
+        )
+        response = ReplayStore.from_fixture(root).dispatch(
+            {
+                "jsonrpc": "2.0",
+                "id": 383,
+                "method": request["method"],
+                "params": request["params"],
+            }
+        )
+        self.assertEqual(
+            response,
+            {"jsonrpc": "2.0", "id": 383, **record["outcome"]},
+        )
+        self.assertEqual(len(response["result"]), 224)
 
     def test_exact_values_and_omitted_params_are_not_coerced(self):
         with tempfile.TemporaryDirectory() as directory:

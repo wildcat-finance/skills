@@ -1,0 +1,7 @@
+{
+  "expectation": "retain-evidence",
+  "mode": "report",
+  "origin_artifact_path": "outputs/t0-rc3-1/sol56/artifacts/redteam/raw/database-enforcement-agent.md",
+  "origin_ranges": [[1, 19]],
+  "origin_sha256": "08e534ff9fd8005778e2224f374bd1e42a4bb129c2504e8aa54549f8621f0494"
+}

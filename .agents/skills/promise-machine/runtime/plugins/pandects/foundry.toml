@@ -1,0 +1,22 @@
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+libs = []
+solc_version = "0.8.28"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+build_info = true
+extra_output = ["storageLayout"]
+
+# A law returns rather than reverts, so a revert in the target is not a law
+# failing. Campaigns run with reverts allowed and counted.
+[invariant]
+runs = 64
+depth = 64
+fail_on_revert = false
+call_override = false
+
+[fuzz]
+runs = 256

@@ -1,39 +1,51 @@
 {
   "rows": [
     {
-      "boundary_bytes": 74017,
-      "bytes": 9429658,
-      "files": 331,
+      "boundary_bytes": 19665033,
+      "bytes": 19665033,
+      "files": 8,
+      "suffix": ".png"
+    },
+    {
+      "boundary_bytes": 17298422,
+      "bytes": 17298422,
+      "files": 2,
+      "suffix": ".pdf"
+    },
+    {
+      "boundary_bytes": 64487,
+      "bytes": 9971989,
+      "files": 420,
       "suffix": ".json"
     },
     {
       "boundary_bytes": 7844971,
-      "bytes": 7923048,
-      "files": 93,
+      "bytes": 8024859,
+      "files": 101,
       "suffix": "(no suffix)"
     },
     {
-      "boundary_bytes": 59150,
-      "bytes": 2873862,
-      "files": 295,
+      "boundary_bytes": 1151,
+      "bytes": 6757095,
+      "files": 547,
+      "suffix": ".md"
+    },
+    {
+      "boundary_bytes": 73,
+      "bytes": 5328133,
+      "files": 385,
       "suffix": ".py"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 2303144,
-      "files": 295,
-      "suffix": ".md"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 1155282,
-      "files": 16,
+      "bytes": 1250054,
+      "files": 31,
       "suffix": ".jsonl"
     },
     {
       "boundary_bytes": 949,
-      "bytes": 293391,
-      "files": 69,
+      "bytes": 364405,
+      "files": 87,
       "suffix": ".sol"
     },
     {
@@ -56,21 +68,21 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 7964,
-      "files": 24,
+      "bytes": 13506,
+      "files": 5,
+      "suffix": ".yml"
+    },
+    {
+      "boundary_bytes": 0,
+      "bytes": 10006,
+      "files": 32,
       "suffix": ".yaml"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 7058,
-      "files": 3,
+      "bytes": 7990,
+      "files": 10,
       "suffix": ".ts"
-    },
-    {
-      "boundary_bytes": 0,
-      "bytes": 3538,
-      "files": 3,
-      "suffix": ".yml"
     },
     {
       "boundary_bytes": 0,
@@ -92,15 +104,15 @@
     },
     {
       "boundary_bytes": 0,
-      "bytes": 1139,
-      "files": 1,
-      "suffix": ".go"
+      "bytes": 1325,
+      "files": 4,
+      "suffix": ".toml"
     },
     {
       "boundary_bytes": 0,
-      "bytes": 811,
-      "files": 3,
-      "suffix": ".toml"
+      "bytes": 1139,
+      "files": 1,
+      "suffix": ".go"
     },
     {
       "boundary_bytes": 108,
@@ -147,6 +159,6 @@
   ],
   "schema": 1,
   "tool": "horos",
-  "total_bytes": 24241934,
-  "total_files": 1164
+  "total_bytes": 68936995,
+  "total_files": 1664
 }

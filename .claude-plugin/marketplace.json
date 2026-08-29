@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.5.6",
+      "version": "1.6.11",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -47,6 +47,28 @@
         "fuzzing",
         "solidity",
         "receipts"
+      ]
+    },
+    {
+      "name": "homologia",
+      "displayName": "Homologia",
+      "source": "./plugins/homologia",
+      "description": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/homologia",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "solidity",
+        "differential-testing",
+        "fixed-point",
+        "rounding",
+        "evidence",
+        "parity"
       ]
     },
     {
@@ -96,8 +118,8 @@
       "name": "sapheneia",
       "displayName": "Sapheneia",
       "source": "./plugins/sapheneia",
-      "description": "AuDHD-shaped replies with visible state and next actions.",
-      "version": "0.1.1",
+      "description": "AuDHD-shaped replies, audit records, issues and comments.",
+      "version": "0.1.2",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -118,7 +140,7 @@
       "displayName": "Probitas",
       "source": "./plugins/probitas",
       "description": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
-      "version": "0.1.1",
+      "version": "0.1.3",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -161,7 +183,7 @@
       "displayName": "Lazarus",
       "source": "./plugins/lazarus",
       "description": "Proof-checked historical Ethereum fixtures with exact-request replay, no live fallback, and preservation releases a stranger can check.",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -205,7 +227,7 @@
       "displayName": "Ariadne",
       "source": "./plugins/ariadne",
       "description": "Release evidence statements binding artefact digests to the record behind them.",
-      "version": "1.2.1",
+      "version": "1.3.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -247,8 +269,8 @@
       "name": "alexandria",
       "displayName": "Alexandria",
       "source": "./plugins/alexandria",
-      "description": "Digest-bound lending-data releases with reviewed credit views and address queries.",
-      "version": "0.2.1",
+      "description": "Digest-bound lending-data releases with unsigned evidence statements, reviewed credit views and address queries.",
+      "version": "0.3.1",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -292,7 +314,7 @@
       "displayName": "Berean",
       "source": "./plugins/berean",
       "description": "Digest-pinned agent releases with byte-exact citations, block-bound reads and evaluated refusals.",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -309,25 +331,25 @@
       ]
     },
     {
-      "name": "homologia",
-      "displayName": "Homologia",
-      "source": "./plugins/homologia",
-      "description": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
-      "version": "0.1.0",
+      "name": "synkrisis",
+      "displayName": "Synkrisis",
+      "source": "./plugins/synkrisis",
+      "description": "Checked cohort construction, bounded diagnosis, fixed-template rendering and whole-path verification over validated run observations, held to a measured work budget.",
+      "version": "0.5.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
       },
-      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/homologia",
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/synkrisis",
       "repository": "https://github.com/wildcat-finance/skills",
       "category": "Developer Tools",
       "tags": [
-        "solidity",
-        "differential-testing",
-        "fixed-point",
-        "rounding",
-        "evidence",
-        "parity"
+        "run-observations",
+        "telemetry",
+        "diagnosis",
+        "comparison",
+        "promise-machine",
+        "agents"
       ]
     }
   ]

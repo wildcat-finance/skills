@@ -1,0 +1,1 @@
+{"method":"eth_getBlockByNumber","observed_at":"2026-08-26T07:30:04.759880Z","params":["0xc7da16",false],"returned":{"chain_id":"0x1","hash":"0x41119192a8acdaae5ab06ca8f1d5943fd7ca2fb0a14323642dd6daf74eed2cfc","number":"0xc7da16"},"schema_version":1,"source_id":"publicnode"}

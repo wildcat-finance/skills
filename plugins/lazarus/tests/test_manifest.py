@@ -15,13 +15,21 @@ from lazarus_lib.manifest import (
     verify_manifest,
     write_manifest,
 )
-from lazarus_lib.records import make_rpc_record, write_proof_records, write_rpc_records
+from lazarus_lib.records import (
+    make_rpc_record,
+    write_anchor_records,
+    write_proof_records,
+    write_receipt_witness,
+    write_rpc_records,
+)
 
 from . import support
 from lazarus import run
 
 
 COMPONENTS = ("header.json", "plan.json", "proofs.jsonl", "rpc.jsonl")
+ANCHORED_COMPONENTS = (*COMPONENTS, "anchors.jsonl")
+RECEIPT_COMPONENTS = (*ANCHORED_COMPONENTS, "receipt-witness.json")
 
 
 def write_components(root: Path) -> None:
@@ -43,10 +51,19 @@ def write_components(root: Path) -> None:
     write_proof_records(root / "proofs.jsonl", [support.sample_proof_record()])
 
 
-def make_manifest(root: Path):
+def write_anchored_components(root: Path, source_ids=("archive-a",)) -> None:
+    write_components(root)
+    dump(root / "plan.json", support.sample_plan_v2(source_ids))
+    write_anchor_records(
+        root / "anchors.jsonl",
+        [support.sample_anchor_record(source_id) for source_id in source_ids],
+    )
+
+
+def make_manifest(root: Path, components=COMPONENTS):
     manifest = build_manifest(
         root,
-        COMPONENTS,
+        components,
         chain_id="0x1",
         block_number="0x10",
         block_hash=support.hash32("11"),
@@ -56,7 +73,171 @@ def make_manifest(root: Path):
     return manifest
 
 
+def write_receipt_components(root: Path):
+    material = support.receipt_fixture_material()
+    dump(root / "plan.json", material["plan"])
+    dump(root / "header.json", material["header"])
+    write_rpc_records(root / "rpc.jsonl", material["rpc_records"])
+    write_proof_records(root / "proofs.jsonl", material["proof_records"])
+    write_anchor_records(root / "anchors.jsonl", material["anchor_records"])
+    write_receipt_witness(root / "receipt-witness.json", material["receipt_witness"])
+    return material
+
+
+def make_receipt_manifest(root: Path):
+    material = write_receipt_components(root)
+    manifest = build_manifest(
+        root,
+        RECEIPT_COMPONENTS,
+        chain_id="0x1",
+        block_number=material["header"]["number"],
+        block_hash=material["header"]["hash"],
+    )
+    write_manifest(root, manifest)
+    return manifest
+
+
 class ManifestTests(unittest.TestCase):
+    def test_manifest_v2_derives_and_binds_receipt_relations(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = make_receipt_manifest(root)
+            self.assertEqual(manifest["schema_version"], 2)
+            self.assertEqual(
+                manifest["receipts_root"],
+                "0x19d164adced738c05eb7a37ae987233ccd63f4a3f754042b27a13a929050278b",
+            )
+            self.assertEqual(
+                manifest["evidence_counts"],
+                {
+                    "proof_backed": 3,
+                    "header_bound": 1,
+                    "recorded_rpc": 4,
+                    "receipt_trie_proved": 2,
+                },
+            )
+            self.assertIn(
+                "receipt-witness.json",
+                {item["path"] for item in manifest["components"]},
+            )
+            self.assertEqual(verify_manifest(root), manifest)
+
+    def test_manifest_v2_repeated_builds_are_byte_identical(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            first = make_receipt_manifest(root)
+            first_bytes = (root / "manifest.json").read_bytes()
+            second = build_manifest(
+                root,
+                RECEIPT_COMPONENTS,
+                chain_id="0x1",
+                block_number=first["block"]["number"],
+                block_hash=first["block"]["hash"],
+            )
+            self.assertEqual(first, second)
+            write_manifest(root, second)
+            self.assertEqual((root / "manifest.json").read_bytes(), first_bytes)
+
+    def test_manifest_v2_refuses_rebound_root_count_and_witness_claims(self):
+        mutations = (
+            (
+                "root",
+                lambda manifest: manifest.__setitem__(
+                    "receipts_root", support.hash32("ff")
+                ),
+                "receipts root",
+            ),
+            (
+                "count",
+                lambda manifest: manifest["evidence_counts"].__setitem__(
+                    "receipt_trie_proved", 3
+                ),
+                "evidence counts",
+            ),
+        )
+        for name, mutate, message in mutations:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                make_receipt_manifest(root)
+                manifest = load(root / "manifest.json")
+                mutate(manifest)
+                manifest["fixture_digest"] = fixture_digest(manifest)
+                dump(root / "manifest.json", manifest)
+                with self.assertRaisesRegex(IntegrityError, message):
+                    verify_manifest(root)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            make_receipt_manifest(root)
+            witness = load(root / "receipt-witness.json")
+            witness["receipts"][0]["status"] = "0x0"
+            dump(root / "receipt-witness.json", witness)
+            with self.assertRaisesRegex(IntegrityError, "component digest"):
+                verify_manifest(root)
+
+    def test_manifest_v1_fixture_digests_remain_unchanged(self):
+        fixtures = (
+            (
+                support.PLUGIN_ROOT / "examples" / "goldfinch-v0",
+                "d93cd09fcb2c6bd689a223398ebd4ae4dc480ec7d8fd8e64283b88341d0a7e49",
+            ),
+            (
+                support.PLUGIN_ROOT / "examples" / "multi-provider-anchor-v0",
+                "188eb293ac1de8036ff4be861e339fe5757b51995c88e8ea1afcfa498134a72e",
+            ),
+        )
+        for root, expected in fixtures:
+            manifest = load(root / "manifest.json")
+            with self.subTest(root=root.name):
+                self.assertEqual(manifest["schema_version"], 1)
+                self.assertEqual(manifest["fixture_digest"], expected)
+                self.assertEqual(fixture_digest(manifest), expected)
+
+    def test_manifest_v1_accepts_the_optional_anchor_component_without_new_counts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_anchored_components(root)
+            manifest = make_manifest(root, ANCHORED_COMPONENTS)
+            self.assertEqual(
+                set(manifest),
+                {
+                    "schema_version",
+                    "tool_version",
+                    "chain_id",
+                    "block",
+                    "components",
+                    "evidence_counts",
+                    "optional_failures",
+                    "fixture_digest",
+                },
+            )
+            self.assertEqual(
+                manifest["evidence_counts"],
+                {"proof_backed": 2, "header_bound": 1, "recorded_rpc": 1},
+            )
+            self.assertIn(
+                "anchors.jsonl",
+                {component["path"] for component in manifest["components"]},
+            )
+            self.assertEqual(verify_manifest(root), manifest)
+
+    def test_anchor_component_presence_tracks_the_plan_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_components(root)
+            dump(root / "plan.json", support.sample_plan_v2())
+            with self.assertRaisesRegex(IntegrityError, "plan-v2 requires anchors.jsonl"):
+                make_manifest(root)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            write_components(root)
+            write_anchor_records(
+                root / "anchors.jsonl", [support.sample_anchor_record()]
+            )
+            with self.assertRaisesRegex(IntegrityError, "plan-v1 refuses anchors.jsonl"):
+                make_manifest(root, ANCHORED_COMPONENTS)
+
     def test_repeated_builds_and_writes_are_byte_identical(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

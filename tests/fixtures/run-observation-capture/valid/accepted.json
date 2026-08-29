@@ -1,0 +1,18 @@
+{
+  "event": {
+    "run_id": "run-435",
+    "event_id": "event-1",
+    "event_type": "run.started",
+    "time": "2026-08-23T22:00:00Z",
+    "status": "success",
+    "count": 1
+  },
+  "repository_path": "docs",
+  "redactions": [
+    {
+      "field_class": "content",
+      "reason_code": "forbidden_content",
+      "method": "omitted"
+    }
+  ]
+}

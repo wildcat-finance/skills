@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kronos"
+  short_description: "Ranks and runs the best remaining Fiat frontier"
+  default_prompt: "Use $hexaemeron:kronos to rank eligible frontier jobs and run the best one through Fiat until none remain."

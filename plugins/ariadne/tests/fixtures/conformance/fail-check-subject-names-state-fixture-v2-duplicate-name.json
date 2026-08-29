@@ -1,0 +1,90 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "header.json",
+      "digest": {
+        "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+      }
+    },
+    {
+      "name": "header.json",
+      "digest": {
+        "sha256": "05e7f2bca51899ca907df296f2c4be0666c40f972c19b6893353b1d40b3ec4f4"
+      }
+    }
+  ],
+  "predicateType": "https://ariadne.wildcat.finance/state-fixture/v2",
+  "predicate": {
+    "chain": {
+      "chain_id": 1,
+      "block_number": 13097494,
+      "block_hash": "0x41119192a8acdaae5ab06ca8f1d5943fd7ca2fb0a14323642dd6daf74eed2cfc",
+      "state_root": "0x0f7edccdfc1d09f4ecb7d32b8954b475184ab6ccc68c721a070e73368a705730",
+      "receipts_root": "0xaf03b0508121deb9ed0282a8961dc0ea695a97244a42ed2b0af04cb9bbc6226e"
+    },
+    "capture": {
+      "tool": "lazarus",
+      "tool_version": "0.1.0",
+      "command": [
+        "python3",
+        "scripts/lazarus.py",
+        "verify",
+        "tests/fixtures/receipt-proof-v1"
+      ],
+      "parameters_digest": {
+        "sha256": "aea2887ffb155876be3314e148886893f0ba91365758f9797cc38a3a7403a733"
+      }
+    },
+    "fixture_subjects": [
+      {
+        "name": "header.json",
+        "path": "header.json",
+        "digest": {
+          "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+        },
+        "bytes": 17204
+      },
+      {
+        "name": "receipt-witness.json",
+        "path": "receipt-witness.json",
+        "digest": {
+          "sha256": "05e7f2bca51899ca907df296f2c4be0666c40f972c19b6893353b1d40b3ec4f4"
+        },
+        "bytes": 8688
+      }
+    ],
+    "evidence": {
+      "proof_backed": 2,
+      "header_bound": 1,
+      "recorded_rpc": 4,
+      "receipt_trie_proved": 2
+    },
+    "replay": {
+      "reaches_network": false,
+      "canonical_chain_claim": false,
+      "provider_independence_claim": false
+    },
+    "deltas": {
+      "baseline": null,
+      "current": {
+        "name": "receipt-proof-v1",
+        "digest": {
+          "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+        }
+      },
+      "reason": "first receipt-root-proved fixture"
+    },
+    "claims": [
+      {
+        "name": "receipt proof remains local to Lazarus verification",
+        "subject": {
+          "sha256": "05e7f2bca51899ca907df296f2c4be0666c40f972c19b6893353b1d40b3ec4f4"
+        },
+        "disposition": "skipped",
+        "reason": "Ariadne records the verified manifest result and does not re-run the trie proof"
+      }
+    ],
+    "commands": []
+  }
+}

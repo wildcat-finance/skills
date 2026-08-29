@@ -3,7 +3,10 @@
 The repository suite holds every plugin to the marketplace contract from the
 outside. These tests hold berean's shell together from the inside, so a
 drifted description, ledger digest or frontier sentence fails here, in this
-plugin's suite, before the root suite has to say so.
+plugin's suite, before the root suite has to say so. The repo-wide invariants
+(version agreement, cross-host description parity) route through the shared
+``repo_contract`` helper so the check has one definition; the ledger digest and
+frontier assertions below stay berean's own.
 """
 
 import hashlib
@@ -11,9 +14,13 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 import unittest
 
 from tests.support import PLUGIN_ROOT, REPO_ROOT
+
+sys.path.insert(0, str(REPO_ROOT))
+from repo_contract import assert_version_agreement, assert_host_descriptions_agree
 
 
 def read(path):
@@ -49,20 +56,8 @@ class PackagingTests(unittest.TestCase):
 
 class ManifestTests(unittest.TestCase):
     def test_the_three_manifests_agree(self):
-        claude = json.loads(read(PLUGIN_ROOT / ".claude-plugin" / "plugin.json"))
-        codex = json.loads(read(PLUGIN_ROOT / ".codex-plugin" / "plugin.json"))
-        marketplace = json.loads(
-            read(REPO_ROOT / ".claude-plugin" / "marketplace.json")
-        )
-        entry = {p["name"]: p for p in marketplace["plugins"]}["berean"]
-        self.assertEqual(claude["version"], "0.1.1")
-        self.assertEqual(codex["version"], claude["version"])
-        self.assertEqual(entry["version"], claude["version"])
-        self.assertEqual(codex["description"], claude["description"])
-        self.assertEqual(entry["description"], claude["description"])
-        self.assertEqual(
-            codex["interface"]["shortDescription"], claude["description"]
-        )
+        assert_version_agreement(self, "berean")
+        assert_host_descriptions_agree(self, "berean")
 
     def test_the_openai_interface_carries_the_same_description(self):
         claude = json.loads(read(PLUGIN_ROOT / ".claude-plugin" / "plugin.json"))

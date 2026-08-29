@@ -1,0 +1,24 @@
+{
+  "analyzer": "pashov-x-ray-v2",
+  "config_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "instruction_sha256": "b23bb94517805c1b8ce717d0e1e0282b0b5c14c7b16f4c32e73940292d3d4a41",
+  "schema": "hexaemeron.xray.scope.v1",
+  "sources": [
+    {
+      "dependencies": [],
+      "path": "src/Base.sol"
+    },
+    {
+      "dependencies": [
+        "src/Vault.sol"
+      ],
+      "path": "src/Router.sol"
+    },
+    {
+      "dependencies": [
+        "src/Base.sol"
+      ],
+      "path": "src/Vault.sol"
+    }
+  ]
+}

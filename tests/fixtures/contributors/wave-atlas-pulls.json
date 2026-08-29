@@ -1,0 +1,27 @@
+[
+  {
+    "number": 5,
+    "merged_at": "2026-08-27T22:21:40Z",
+    "user": {"login": "clawdina", "type": "User"}
+  },
+  {
+    "number": 4,
+    "merged_at": "2026-08-27T18:36:06Z",
+    "user": {"login": "shoggoth-wildcat", "type": "User"}
+  },
+  {
+    "number": 3,
+    "merged_at": "2026-08-27T18:21:31Z",
+    "user": {"login": "shoggoth-wildcat", "type": "User"}
+  },
+  {
+    "number": 2,
+    "merged_at": "2026-08-27T17:58:42Z",
+    "user": {"login": "claude[bot]", "type": "Bot"}
+  },
+  {
+    "number": 1,
+    "merged_at": "2026-08-27T17:43:44Z",
+    "user": {"login": "claude[bot]", "type": "Bot"}
+  }
+]

@@ -1,0 +1,32 @@
+name: janus-forge
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "plugins/janus/harness/**"
+      - ".github/workflows/janus-forge.yml"
+  pull_request:
+    paths:
+      - "plugins/janus/harness/**"
+      - ".github/workflows/janus-forge.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Build with no dependency to fetch
+        run: forge build
+        working-directory: plugins/janus/harness
+      - name: The gates against ordinary and hostile hooks
+        run: forge test -vv
+        working-directory: plugins/janus/harness

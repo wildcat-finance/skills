@@ -12,6 +12,7 @@ Pandects Foundry checks pass.
 
 Leads not pursued: none.
 
+
 ## Compound v3 Phase 0, step 1, round 1 -- 2026-08-17
 
 | id | severity | file | finding | status |
@@ -11452,6 +11453,2630 @@ Leads not pursued: capture, redaction, persistence, Fiat receipt binding, and
 cross-run diagnosis remain assigned to their separate issues. This record does
 not claim capture completeness, external truth, cause, model quality, delivery
 correctness, deployment readiness, security, or mutation authority.
+## Step 1, round 1 -- 2026-08-24
+
+Covered: `evidence-loss`, `false-semantic-proof`, `final-byte-drift`,
+`queue-format-drift`, `github-bypass`, `history-rewrite`, `session-leak`,
+`open-issue-collision`, and `frontier-drift` reviewed; `pr-509-overlap` and
+`task-comment-mismatch` not applicable until Step 2.
+
+Not checked: Solidity security suite (waived); cross-model corpus execution;
+GitHub signature state and publication state.
+
+Evidence: signed commit `96acb17c36601532ee6d3ad45f5fc8f369332e23` verified
+locally with both provenance trailers once; 11 Sapheneia, 105 focused, and 195
+root tests passed; Promise Machine, Protasis, Horos, Imprimatur, Brevitas,
+Phylax, Ephoros, Hypomnema, and diff checks passed.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Step 2 controller behaviour, PR #509 combined-tree
+reconciliation, and remote task-comment byte readback.
+
+## Step 2, round 1 -- 2026-08-24
+
+Finding count: 1. Audit filter declaration:
+`--audit-filter sapheneia:sapheneia`. Security suite: waived because the
+repository framework change contains no Solidity.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | medium | `docs/durable-agent-prose-gates/runbook.md:127` | PR #518 advanced `origin/main` from `dd23413ef6e9021bd80b930ad57e1766bf166f0b` to `191f2ce1d60abb8068887095a8c39fb4341f0be6` at 2026-08-24T01:03:30+01:00, before signed Step 2 commit `6dcfb93374ab825817fa2bcd5f832fe9aea22397` at 2026-08-24T01:27:35+01:00. The step remains on the old base although its exit requires reconciliation when main advances first. A combined-tree probe conflicts at `.horos/boundary.json`, so current checks do not prove the post-advance delivery tree. | open; reconcile the base, regenerate Horos, and rerun the gates |
+
+Risk coverage: `evidence-loss`, `false-semantic-proof`, `final-byte-drift`,
+`queue-format-drift`, `github-bypass`, `history-rewrite`, `session-leak`,
+`open-issue-collision`, `frontier-drift`, and `task-comment-mismatch` are clean
+within the signed range. `pr-509-overlap` remains external: merge commit
+`c04718fc700b09bf2d6c089f3ac5a8bf05a5738c` is not on `main`, and its branch
+overlaps 15 Step 2 paths, including the controller, Warden contract, audit-loop
+reference, evolution ledger, manifests, and tests.
+
+Evidence: signed range
+`6b91fcc61feabb8504b46006d65197bc731b0845..6dcfb93374ab825817fa2bcd5f832fe9aea22397`
+contains one locally verified Shoggoth commit with both provenance trailers
+once. The controller packet names round 1, state digest
+`3c667578d6dddb2ee2eb4584d3cea35968d5d8eeb311fb33264e2d9d835656c7`, study
+digest `dd3f12d317e01271fdc5636d1c3eae2b1fe0b276a0ed784617f3655ad21bc4e0`,
+runbook digest `700e59cdca0b67d41b195c1223d15152477213d85bc739aa771bf89d838fe9df`,
+and the exact audit-filter obligation. The dated amendment preserves frontier
+revision `state-shape-validation`, digest
+`e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa`, status
+`open`, and issue #363 as the Next Fiat job while advancing only the generation.
+
+Checks: Phylax exit 0; Ephoros exit 0; Hypomnema exit 0. Fiat focused tests
+passed 327/327; Hexaemeron passed 881/881; focused root passed 106/106; root
+passed 196/196; Sapheneia passed 11/11. Promise Machine, Protasis, Horos,
+Imprimatur, Brevitas, and `git diff --check` passed.
+
+Unknowns: the reconciled PR #518 tree and any future PR #509 combined tree were
+not tested. GitHub signature state, issue-comment publication, remote byte
+readback, and model-level semantic correctness were not established.
+
+Sapheneia comparison: the compact candidate retains the finding, severity,
+status, exact locations, SHAs, dates, counts, digests, lint exits, waiver,
+declaration, qualifications, unknowns, negative results, and unpursued leads.
+No protected item changed or disappeared.
+
+Leads not pursued: reconcile PR #509 only if its integration branch approaches
+`main`; exercise the task-issue comment sequence when a run has a bound issue;
+verify remote signatures only after publication.
+
+## Step 2, round 2 -- 2026-08-24
+
+Finding count: 0. Audit filter declaration:
+`--audit-filter sapheneia:sapheneia`. Security suite: waived because the
+repository framework change contains no Solidity.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Prior finding `S2-R1-01` is fixed at the instruction layer by signed commit
+`2290b6851c67423867f26e72c25fd57ef5776675`. Receipted amendment SHA-256
+`9d347b7cb89e6971e019cae3c6f5e8362e6bdeb39b0e8eea49532b378f85a989`
+supersedes the runbook's rebase wording with Fiat's canonical rule: do not
+rewrite the signed stack; if the integration pull request conflicts, merge the
+exact remote base tip once through a signed `sync-run` after the final step
+merge. PR #518's actual main merge, the `.horos/boundary.json` conflict,
+combined-tree regeneration, and all post-sync checks remain mandatory
+integrate-phase work. They are not claimed complete here.
+
+Elenchus verdict: `unguarded`. The exact fixed commit changed no test files, so
+Elenchus returned `the commit changed no test files`; no process exit or clean
+fixed-tree suite was substituted for that verdict.
+
+Risk coverage: `evidence-loss`, `false-semantic-proof`, `final-byte-drift`,
+`queue-format-drift`, `github-bypass`, `history-rewrite`, `session-leak`,
+`open-issue-collision`, `frontier-drift`, and `task-comment-mismatch` are
+clean for the fixes range. `pr-509-overlap` remains external and unresolved:
+its non-main branch still overlaps the controller, Warden contract, audit-loop
+reference, evolution ledger, manifests, and tests.
+
+Evidence: fixes range
+`6dcfb93374ab825817fa2bcd5f832fe9aea22397..2290b6851c67423867f26e72c25fd57ef5776675`
+contains one locally verified Shoggoth commit with both provenance trailers
+once. The canonical rule is at
+`plugins/hexaemeron/skills/fiat/SKILL.md:443-446` and
+`plugins/hexaemeron/skills/fiat/references/push-discipline.md:180-189`.
+The controller packet names round 2, study digest
+`cdb4c122872db7e291bc4057531e198a7faa32557ae87f3eb2c909a221106f19`,
+state digest `372160e4aa61cb90991bbc4e59e8f05b2f99b1695315b18402da5be98a9fa949`,
+and the exact audit-filter obligation.
+
+Checks: Phylax exit 0; Ephoros exit 0; Hypomnema exit 0. Hexaemeron passed
+881/881; root passed 196/196; Sapheneia passed 11/11. Promise Machine,
+Protasis, Horos, controller verification, and `git diff --check` passed.
+Round-1 Imprimatur and Brevitas evidence covered every changed target required
+by the runbook. This round does not claim that this one-row audit candidate is
+Brevitas-clean: Fiat's required five-column audit table conflicts with that
+structural rule.
+
+Unknowns: no `sync-run`, Horos regeneration on the combined tree, remote
+signature check, task-issue comment publication, remote byte readback, PR #509
+reconciliation, or model-level semantic proof occurred in this round.
+
+Sapheneia comparison: the compact candidate retains the zero finding count,
+prior finding id and fix status, exact SHAs, amendment and state digests,
+locations, verdict and cause, lint exits, test counts, waiver, declaration,
+qualifications, unknowns, negative evidence, and unpursued leads. The table
+shape and every protected token match the source inventory.
+
+Leads not pursued: execute and receipt the signed `sync-run` only at the
+canonical integrate transition if the integration pull request conflicts;
+reconcile PR #509 only if it approaches `main`; exercise the task-issue comment
+sequence only for a bound issue.
+## Fiat merged attribution, step 1, round 1 -- 2026-08-24
+
+The Pashov pair did not run. The `security_suite` receipt records a waiver:
+this step commits three Markdown documents and changes no Solidity. The three
+bundled lints are the mechanical part and all exited 0 against the changed
+paths. The diff was then read against every id in the study's risk register.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | low | `plugins/hexaemeron/docs/fiat-merged-attribution/study.md` | The prior-art paragraph quotes a contributor's work address where a description would carry the same point. A document whose subject is not publishing addresses reads better without one. | accepted, not fixed |
+| S1-R1-02 | low | `docs/decisions/ADR-017-bind-merged-authorship-to-the-integration-receipt.md` | The Decision section describes the receipt and the integration check in the present tense, one step before either exists. A reader landing on the record at this step would read it as a description of the shipped controller. | fixed in this round: Status now names the steps that implement it and states that v5.13.1 records no attribution |
+
+S1-R1-01 is accepted rather than fixed. This step's exit requires the committed
+study to be byte-identical to the receipted artefact, and a Protasis amendment
+appends rather than edits, so the prefix cannot be corrected without abandoning
+a receipted artefact. The address is a company-domain work address already
+published by the organisation in issue 515 and in the public default-branch
+commit history, and the study's own "Never" entry governs the attribution
+record the controller persists, which stores a digest and never an address. The
+wording is carried forward for the next study over this target.
+
+Risk register disposition. `attribution-private-email` is the id S1-R1-01 sits
+under, dispositioned above; nothing in this step writes state.
+`attribution-overclaim` is the id S1-R1-02 sits under and is closed by the
+Status fix. `attribution-null-login`, `attribution-unbounded-field`,
+`attribution-coauthor-parse`, `attribution-ancestor-check`,
+`attribution-rewritten-merge` and `attribution-state-shape` are not applicable
+to a step that ships no code.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 192/192, Hexaemeron suite
+874/874. Protasis both modes, Imprimatur, Brevitas and the Horos scan exit 0 on
+the changed paths. The implementation commit
+`8ed925488c888cce3633226356e6cd1e0d24d741` has a good local signature and
+exactly one copy of each required trailer.
+
+Leads not pursued: none beyond the accepted S1-R1-01.
+
+## Fiat merged attribution, step 1, round 2 -- 2026-08-24
+
+Against the tree with round 1's fix applied. Zero findings. Status: clean.
+
+The Pashov pair did not run, for the reason the waiver records. The three
+bundled lints exited 0 again over the same changed paths. The re-read confirmed
+S1-R1-02 closed: ADR-017's Status now states that the decision is recorded
+before the code, names steps 2 and 3 as the ones that carry it, and says
+plainly that v5.13.1 records no attribution and checks nothing at the merge.
+The two committed copies remain byte-identical to the receipted artefacts.
+
+Risk register disposition. `attribution-overclaim` is clean on the fixed tree.
+`attribution-private-email` carries the accepted S1-R1-01 and is otherwise
+clean: no state is written by this step. The remaining six ids stay not
+applicable to a step that ships no code.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 192/192, Hexaemeron suite
+874/874. The fixes commit `64ea0e7e599048eac0988d46f38ecadc2b236bdd` has a good
+local signature and exactly one copy of each required trailer.
+
+Leads not pursued: none beyond the accepted S1-R1-01, which is carried forward.
+
+## Fiat merged attribution, step 2, round 1 -- 2026-08-24
+
+The Pashov pair did not run, for the reason the waiver records: this step
+changes a Python controller and its tests. The three bundled lints exited 0.
+The review then read the diff against every id in the study's risk register,
+and both findings came out of that read rather than out of a lint.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | medium | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | `checked_login` treated an `author` object carrying no usable login as an unlinked commit and recorded `null`. GitHub spells "matched to no account" as a literal `null`, so an object without a login is a payload nobody predicted, and reading it as unlinked lets a shape the reader does not understand become a claim about a person. | fixed in this round: only a literal `null` records `null`; an object must carry a login string |
+| S2-R1-02 | medium | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | `verify_github_commits` was implemented over the attribution reader, so the identity checks silently gated the merge-step, integration and run-sync receipts as well. A merge commit whose author name exceeded the cap, or whose message was absent, would have refused a receipt that has nothing to do with attribution. The step widened a gate it did not declare. | fixed in this round: verification keeps its own reader and fails only on GitHub's verification result |
+
+Both fixes are guarded. Against the implementation commit
+`afd1c92a00b289538af5851e74e1307c046ab914` the two guards report
+`FAILED (failures=1, errors=2)`; against the fixed tree they pass. The
+`attribution-null-account-object` case moved out of the "records null" test and
+into the negative matrix, and
+`test_verification_alone_does_not_apply_the_attribution_checks` is new.
+
+Risk register disposition. `attribution-null-login` carried S2-R1-01 and is
+closed by the fix: a literal `null` records `null`, an unlinked author keeps its
+digest, and the refusal names the commit. `attribution-unbounded-field` is
+clean: the account login is matched against a closed expression, the name and
+address are type-checked and capped at 256 and 320 bytes, and the co-author
+count is capped at 32. `attribution-coauthor-parse` is clean: the trailer is
+parsed with the same expression the local range gate uses, so the two cannot
+disagree, and a host identity in a trailer refuses on either view.
+`attribution-private-email` is clean: the recorded container holds a login, a
+display name and a digest, and the receipt and ledger tests both assert that no
+`@` appears in the recorded bytes. `attribution-state-shape` is clean: the new
+container sits inside `steps[i].receipts`, which the version-1 spine already
+validates, so `load_state` needed no change. `attribution-ancestor-check` and
+`attribution-rewritten-merge` belong to step 3. `attribution-overclaim` is not
+applicable: this step ships no prose.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 192/192, Hexaemeron suite
+882/882 with 8 new tests. `python3 scripts/promise_machine.py check` reports 14
+plugins and 14 copies clean after the three `fiat-*` runtime digests were
+refreshed to `64a9d2b7e16235e6503eac3b496bf281b2d9259e90a0272679175e2569b53f4a`.
+The Elenchus report at `tmp/elenchus/step-2.json` records
+`elenchus.unittest.v1`, complete, 882 tests, 0 failures.
+
+Leads not pursued, carried to step 3: `done_merge_step`'s repair path recomputes
+the verified range and the GitHub verification for a moved branch head but does
+not recompute the attribution container, so a repaired push receipt can hold
+attribution for commits that are no longer the branch tip. Step 3 owns the
+merged-state binding and must not read a stale container as current. Logged
+here rather than fixed, because the consumer does not exist yet and a guard
+written against no consumer guards nothing.
+
+## Fiat merged attribution, step 2, round 2 -- 2026-08-24
+
+Against the tree with round 1's fixes applied. Zero findings. Status: clean.
+
+The three bundled lints exited 0 again over the controller and its tests. The
+re-read confirmed both fixes and found no regression introduced by either.
+`checked_login` now refuses an account object without a login string and still
+records a literal `null` as `null` with the author's digest intact.
+`verify_github_commits` has its own loop over `github_commit_payload` and
+`require_github_verified`, so an oversized author name or an absent message on
+a merge commit no longer refuses a verification receipt, while the attribution
+reader still refuses both. The duplication is two lines of loop and is
+documented in the docstring as deliberate, because the alternative is one
+reader failing for two unrelated reasons.
+
+Risk register disposition. All eight ids read clean on the fixed tree, with
+`attribution-ancestor-check`, `attribution-rewritten-merge` still belonging to
+step 3 and `attribution-overclaim` still not applicable to a step shipping no
+prose. `attribution-null-login` is closed on the fixed tree.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 192/192, Hexaemeron suite
+882/882. Promise Machine reports 14 plugins and 14 copies clean.
+`hexctl verify` reports 15 ledger entries, chain intact, state consistent. The
+fixes commit `3800bd437524e1ec0db27e601f904932b1d42ce2` has a good local
+signature and exactly one copy of each required trailer.
+
+Leads not pursued: the stale-attribution repair path stays carried to step 3,
+as round 1 recorded.
+
+## Fiat merged attribution, step 3, round 1 -- 2026-08-24
+
+The Pashov pair did not run, for the reason the waiver records. The three
+bundled lints exited 0. The review read the diff against every id in the
+study's risk register, and both findings came out of that read.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | high | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | The rewritten-merge fallback inspected only the base merge. A step squash-merged into the run branch leaves its commits unreachable while its identity survives on that step's own merge commit, which is itself an ancestor of the base merge. The check would have refused an identity that did reach the base, and the refusal would have pointed at the wrong merge. | fixed in this round: the step's recorded merge is tried first and the base merge second, and a recorded merge counts only while it is reachable from the base merge |
+| S3-R1-02 | low | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | `recorded_run_attribution` chose between the repaired container and the push container by truthiness, so an empty repaired container would have been read as absent and the stale push attribution used in its place. Not reachable today, because a repaired range is never empty. | fixed in this round: presence decides, and a direct guard pins it |
+
+Three guards. `test_a_step_merge_is_tried_before_the_base_merge` and
+`test_a_step_merge_that_never_reached_the_base_is_not_a_carrier` cover
+S3-R1-01, and `test_an_empty_repaired_container_is_current_not_absent` covers
+S3-R1-02. Against the implementation commit
+`353adec7497a4effcff04ea90817b6ce511fd782` the three report
+`FAILED (failures=1, errors=2)`; against the fixed tree they pass. The fake
+git's ancestry answer was narrowed to a named set of commits, because a mode
+that answered "not an ancestor" to every question could not tell a detached
+step commit from a detached step merge, and the first version of the test
+passed for the wrong reason.
+
+Risk register disposition. `attribution-rewritten-merge` carried S3-R1-01 and
+is closed by the fix: a squash or rebase at either merge point now resolves
+through the merge that actually carried the identity, and an identity no
+recorded merge carries refuses the receipt by step, commit and account or
+digest prefix. `attribution-ancestor-check` is clean: `commit_is_ancestor`
+reads only exit 0 and 1 as an answer, refuses any other status, and runs
+argv-only through `bounded_tool_status` with no shell. A regression covers the
+unanswerable call. `attribution-private-email` is clean: the refusal names an
+identity by login or by a twelve-character digest prefix, and a test asserts no
+`@` reaches stderr. `attribution-null-login` is clean: an unlinked identity
+resolves on its digest, which is the only comparison available for it and for a
+co-author trailer. `attribution-unbounded-field` and
+`attribution-coauthor-parse` are unchanged from step 2 and clean; the merge
+commit's identity passes through the same checked reader.
+`attribution-state-shape` is clean: the new receipt containers sit inside
+`receipts` and `integrate`, both already validated by the version-1 spine.
+`attribution-overclaim` is not applicable: this step ships no prose.
+
+The step also closed the lead step 2 carried forward. The merge-time repair
+path recomputes the attribution beside the verified range it already
+recomputed, and a regression proves the integration check reads the refreshed
+container rather than the head it replaced.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 192/192, Hexaemeron suite
+893/893 with 11 new tests across steps 2 and 3. Promise Machine reports 14
+plugins and 14 copies clean after the three `fiat-*` runtime digests were
+refreshed to
+`56d4862f47da60968f19586b042bf4948f12119ca691f42b3460c4672736374f`. The
+Elenchus report at `tmp/elenchus/step-3.json` records `elenchus.unittest.v1`,
+complete, 893 tests, 0 failures, 0 errors.
+
+Leads not pursued: the live run is governed by the installed Fiat v5.13.1
+controller, which cannot write or read either new container. Every claim above
+rests on the checked-in controller under test, and step 4 owns the disposable
+replay that exercises both gates end to end. Nothing here claims the installed
+controller enforced a field it cannot parse.
+
+## Fiat merged attribution, step 3, round 2 -- 2026-08-24
+
+Against the tree with round 1's fixes applied. Zero findings. Status: clean.
+
+The three bundled lints exited 0. The re-read followed the resolution order
+through both fixes and found no regression.
+
+Carrier order is the step's own merge then the base merge, deduplicated, and a
+carrier not itself reachable from the base merge is skipped rather than
+trusted. The recorded `carriers` map is keyed by SHA and filled in step order,
+so a rerun over the same state records the same bytes. `identity_matches`
+compares accounts when both sides have one and digests otherwise, which is the
+only comparison available for a co-author trailer or an unlinked commit; two
+addresses on one account still resolve to one contributor.
+
+`github_repository` and every carrier read sit inside the branch that runs only
+after an ancestry check has failed. A run whose commits all reached the base
+intact therefore reads nothing extra and cannot be refused by an unexpected
+identity shape on a merge commit.
+
+Risk register disposition. All eight ids read clean on the fixed tree.
+`attribution-rewritten-merge` and `attribution-ancestor-check` are closed by
+this step. `attribution-overclaim` remains not applicable until step 4 ships
+prose.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 192/192, Hexaemeron suite
+893/893. Promise Machine reports 14 plugins and 14 copies clean. The fixes
+commit `e04e799041b92be3c5f6ecd3f589acdb61973fff` has a good local signature
+and exactly one copy of each required trailer.
+
+This record was shaped by the bounded `sapheneia:sapheneia` durable-record
+operation before append. The frozen inventory was compared item by item:
+verdict, status, the three lint exits, both suite counts, the Promise Machine
+counts, the fixes commit and its signature and trailer attribution, the four
+risk ids and the eight-id total, the four named identifiers, every
+qualification, and both unpursued leads all survive unchanged. Only connective
+and process prose was compacted.
+
+Leads not pursued: the installed-controller split stays as round 1 recorded it.
+Step 4 owns the disposable replay that exercises both gates end to end.
+
+## Fiat merged attribution, step 4, round 1 -- 2026-08-24
+
+The Pashov pair did not run, for the reason the waiver records: this step ships
+prose, metadata and a replay document. The three bundled lints exited 0. The
+review compared every published sentence against what the controller does, and
+read the replay document as a script a stranger runs in their own checkout.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R1-01 | medium | `plugins/hexaemeron/docs/fiat-merged-attribution/proof.md` | The red-to-green replay overwrites the controller in the reader's working tree and restores it on the next statement. A failed assertion, an unreadable `git show`, or a killed process left the checkout holding an older controller with no warning. A document that tells a stranger to run it owns that outcome. | fixed in this round: the loop restores from `HEAD` in a `finally` block, both `git show` reads are asserted non-empty, and the restore was proved against a simulated interruption |
+| S4-R1-02 | low | `plugins/hexaemeron/docs/fiat-merged-attribution/study.md` | The 2026-08-24 amendment states that step 4 regenerates `docs/pdf/how-to-help-shoggoth.pdf` with `scripts/build_contributor_guide.py`. Step 4 does not. That generator exists only on `main`, which this branch was cut before, and `reportlab` is absent locally while adding a dependency is an ask-first boundary in this study. The amendment put the work in the wrong place. | accepted, not fixed |
+
+S4-R1-02 is accepted rather than fixed. The amendment is receipted and this
+step's exit requires the committed study to match the receipted bytes, and a
+Protasis amendment appends rather than edits, so a second amendment could
+correct the placement but not the sentence. The guide gains a section and the
+generated PDF is that section behind until the generator next runs. Recorded
+here and carried forward in the run body.
+
+`attribution-overclaim` review, sentence by sentence. The README says Fiat
+stores the matched account and a digest for every commit it pushes, refuses to
+record a run as integrated unless the base still carries each identity, and
+records plainly when an address matches no account: all three hold. It names
+the two GitHub-side conditions and claims nothing about the list appearing. The
+contributor guide adds that a merge commit keeps the commits while a squash or
+rebase merge does not, and that the merge itself then has to carry the name:
+that matches the two mechanisms and the carrier order. Neither document claims
+the run's own receipts carry attribution, which they do not, and the
+`fiat-final-integration` promise boundary states that the result does not
+establish that GitHub will resolve an identity or list a contributor.
+
+Risk register disposition. `attribution-overclaim` is closed by the review
+above and by the promise boundary. `attribution-private-email` is clean: no
+address appears in the README, the guide, the ADR, the ledger row or the proof.
+`attribution-null-login`, `attribution-unbounded-field`,
+`attribution-coauthor-parse`, `attribution-ancestor-check`,
+`attribution-rewritten-merge` and `attribution-state-shape` are unchanged by
+this step and remain closed as steps 2 and 3 recorded them.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 192/192, Hexaemeron suite
+893/893. Promise Machine reports 14 plugins and 14 copies clean. Imprimatur
+scores 100.0 with zero defects on `README.md`,
+`docs/how-to-help-shoggoth.md`, the ADR and the proof; Brevitas exits 0 on each.
+The Horos scan leaves `.horos/boundary.json` at the one line this step's new
+documents earned. The implementation commit
+`7910706f4b7fc25309a974c46ea63ab324a54d27` has a good local signature and
+exactly one copy of each required trailer.
+
+Two facts about this step that are not findings. The `fiat-v5.14.1` row and
+`docs/decisions/ADR-017-gate-durable-agent-prose.md` are carried onto this
+branch verbatim from `origin/main` at `6c98a728a9f8ee25f4eed70b7032dc10f836eb17`,
+because this branch was cut before that run landed and its published row links
+to that file; without both, this branch's own ledger skips a generation and
+H001 fails. And `tests/test_evolution_contract.py` pins the newest row's
+evidence to one ADR, so every future generation row has to move that assertion.
+That brittleness predates this run and is left as it was found.
+
+Leads not pursued: the installed-controller split, recorded under step 2 round
+1 and step 3 rounds 1 and 2, and the frontier gate arithmetic that refuses two
+concurrent frontier runs on one skill. Both are carried forward in the run body.
+
+This record was shaped by the bounded `sapheneia:sapheneia` durable-record
+operation before append. The frozen inventory was compared item by item: both
+findings with their ids, severities, files and statuses, the accepted
+disposition and its reason, every sentence-by-sentence verdict, the eight risk
+ids, the three lint exits, both suite counts, the Promise Machine counts, the
+Imprimatur score, the two carried-verbatim artefacts with the exact base
+commit, the implementation commit with its signature and trailer attribution,
+and both unpursued leads all survive unchanged. Only connective and process
+prose was compacted.
+
+## Fiat merged attribution, step 4, round 2 -- 2026-08-24
+
+Against the tree with round 1's fix applied. Zero findings. Status: clean.
+
+The three bundled lints exited 0. The replay document's restore now runs in a
+`finally` block and was proved against a simulated interruption, leaving the
+controller byte-identical to `HEAD`. Both `git show` reads assert non-empty
+output, so an unreadable commit fails loudly instead of writing an empty file
+over the controller.
+
+The committed study and runbook still match the receipted artefacts byte for
+byte, including the 2026-08-24 amendment.
+
+Risk register disposition. All eight ids read clean on the fixed tree.
+`attribution-overclaim` stays closed on the published sentences reviewed in
+round 1.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 192/192, Hexaemeron suite
+893/893. Promise Machine reports 14 plugins and 14 copies clean. The fixes
+commit `76e50de022d037c2b70edb84c27654d7c28bf239` has a good local signature
+and exactly one copy of each required trailer.
+
+Leads not pursued: the accepted S4-R1-02, the installed-controller split and
+the frontier gate arithmetic, all carried forward in the run body.
+
+This record was shaped by the bounded `sapheneia:sapheneia` durable-record
+operation before append. The frozen inventory was compared item by item:
+verdict, status, the three lint exits, both suite counts, the Promise Machine
+counts, the byte-for-byte artefact claim, the eight risk ids, the fixes commit
+with its signature and trailer attribution, and all three unpursued leads
+survive unchanged. Only connective and process prose was compacted.
+
+## Fiat frontier row attribution, step 1, round 1 -- 2026-08-24
+
+The Pashov pair did not run, for the reason the waiver records: this step
+changes a Python controller and its tests. The three bundled lints exited 0.
+The review then read the diff against every id in the study's risk register.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | medium | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | The integration receipt recorded `frontier_published_rows` as the base ledger's entire row set, which for this repository is twenty versions, under a field name that says the gate subtracted them. The runbook's exit says the receipt records the subtracted versions. A reader would have taken a twenty-entry list as twenty discounted rows. | fixed in this round: `frontier_subtracted_rows` records the intersection of the base set with the rows after the anchor, and the field is renamed to match |
+| S1-R1-02 | low | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | The row slicing existed twice in effect: the gate sliced rows after the anchor to count them, and the receipt would have had to slice them again to say which were subtracted. Two copies of that rule drift, and a refusal would then count rows the receipt omitted. | fixed in this round: `frontier_rows_after_anchor` is shared by both, with a regression asserting they agree |
+
+Both fixes are guarded. Against the implementation commit
+`332c58e8b407d7bf527c7bb69ad58e6d8cc8c44a` the two new guards report
+`FAILED (errors=2)`; against the fixed tree they pass.
+
+Risk register disposition. `base-read-failure` is clean: the read goes through
+`bounded_run` rather than `bounded_git`, so a blob it cannot fetch returns a
+status this function handles instead of printing a refusal and exiting, and an
+unfetchable, non-UTF-8 or malformed blob subtracts nothing and leaves the older
+count. Three regressions cover an empty base, a non-SHA base and an
+unreachable SHA, and one asserts the fallback still refuses the issue 466
+topology. `foreign-row-overcount` is clean: only exact version labels present
+in the base are subtracted, and a regression shows a duplicated label
+subtracting both of its rows to `gained 0` rather than one of them.
+`own-row-not-newest` is clean and covered by a regression whose topology puts a
+published row after the run's own, which is the only arrangement where the
+count passes and the newest-row rule has to fire. `two-own-rows` is clean: a run
+appending two of its own rows is still refused, with and without an irrelevant
+published set. `no-sync-unchanged` is clean: `done_integrate` consults the base
+only when a sync receipt exists, so a run without one keeps today's arithmetic.
+`bounded-git-read` is clean: argv-only, no shell, the existing output cap, and
+the status distinguished from empty output.
+
+One behaviour change is not a finding and is recorded here. On the legacy path
+with no `version_at_init`, a ledger that has lost rows since `init` previously
+reported a negative `gained` and now reports `0`. Both refuse; only the number
+in the message differs. The append-only anchor check catches the same case
+whenever `version_at_init` is recorded, which every current run records.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 196/196, Hexaemeron suite
+912/912 with 12 new tests. Promise Machine reports 14 plugins and 14 copies
+clean after the three `fiat-*` runtime digests were refreshed. The Elenchus
+report at `tmp/elenchus/step-1.json` records `elenchus.unittest.v1`, complete,
+909 tests, 0 failures, against the implementation commit.
+
+Leads not pursued. This run drives the installed `fiat-v5.14.1` controller
+while the repository holds `fiat-v5.15.1`, recorded in the `controller_version`
+receipt, so its own receipts carry no attribution container and its own
+integration will not exercise the field this step adds. A run under a
+controller carrying `fiat-v5.16.1` is the first that can. Brevitas reports B010
+and B001 against the one-step runbook, because Protasis fixes that artefact's
+shape at one heading per step; Protasis owns the schema, so the runbook was not
+padded to satisfy a budget written for prose answers.
+
+This record was shaped by the bounded `sapheneia:sapheneia` durable-record
+operation before append. The frozen inventory was compared item by item: both
+findings with their ids, severities, files and statuses, the red-side result
+against the exact implementation commit, all six risk ids with their
+dispositions, the recorded behaviour change, the three lint exits, both suite
+counts, the Promise Machine counts, the Elenchus report fields, and both
+unpursued leads survive unchanged. Only connective and process prose was
+compacted.
+
+## Fiat frontier row attribution, step 1, round 2 -- 2026-08-24
+
+Against the tree with round 1's fixes applied. Zero findings. Status: clean.
+
+The three bundled lints exited 0. The re-read followed the shared slicing
+through both callers. `frontier_rows_after_anchor` is the only place the anchor
+rule lives, the gate counts what it returns, and `frontier_subtracted_rows`
+intersects the same slice with the base set, so the refusal and the receipt
+cannot name different rows. A regression asserts that agreement directly.
+
+Risk register disposition. All six ids read clean on the fixed tree.
+`base-read-failure` and `bounded-git-read` are unchanged by the fix, which
+touched neither the read nor its fallback.
+
+Gates: phylax 0, ephoros 0, hypomnema 0. Root suite 196/196, Hexaemeron suite
+912/912. Promise Machine reports 14 plugins and 14 copies clean. The fixes
+commit `37b6f941431452670faede130e32bef46af3fc49` has a good local signature
+and exactly one copy of each required trailer.
+
+Leads not pursued: the installed-controller split and the Brevitas budget on a
+one-step runbook, both as round 1 recorded them.
+
+This record was shaped by the bounded `sapheneia:sapheneia` durable-record
+operation before append. The frozen inventory was compared item by item:
+verdict, status, the three lint exits, both suite counts, the Promise Machine
+counts, the six risk ids, the fixes commit with its signature and trailer
+attribution, and both unpursued leads survive unchanged. Only connective and
+process prose was compacted.
+## Issue 435 CARRYOVER-12, step 1, round 1 -- 2026-08-24
+
+### Verdict
+
+Zero findings. The signed implementation under review is
+`5d41815783e27beeae5dfa81cfdd0862f2e4f7d0`; its signature is good and its
+required co-author and origin trailers each occur once. The tree is clean.
+
+### Risk register
+
+- `raw-descriptor`: raw prompt, command, header, and analysis probes become
+  non-echoing gaps.
+- `report-path`: writer-forgery and symlink-parent guards pass; absolute
+  outside and lexical-escape targets refuse with exit 2.
+- `receipt-drift`, `terminal-bytes`, and `authored-escape`: source/copy
+  comparisons pass, tails are `2e 0a`, and authored bytes contain no `5c 6e`.
+- `partial-tree`, `adr-allocation`, `coverage-drift`, `receipt-mutation`, and
+  `base-divergence`: the 25-ID preflight, ADR checks, coverage bindings, source
+  digests, and controller identity pass.
+- `detached-tree`: the narrow receipt-unavailable guard passes.
+- `guard-evidence`: no repair exists in this round, so no Elenchus verdict is
+  claimed.
+
+### Evidence and leads
+
+Gates: focused 107/107; direct reporter 108/108 with zero failures, errors,
+and skips; root 231/231; inoculation 1,258 cases with zero crashes and zero
+unexpected clean results; Promise sync/check/coverage 14/14 and 69/69;
+Phylax, Ephoros, Hypomnema, Imprimatur, Brevitas, Horos, and both diff checks
+exit 0.
+
+Leads not pursued: live capture, #436 receipt binding, #437 handover, and #508
+process work are outside issue #435. No controller receipt, push, PR, merge, or
+issue closure occurred in this audit.
+
+This record was shaped by the bounded `sapheneia:sapheneia` durable-record
+operation before append. The frozen inventory retained the zero-finding verdict,
+all twelve risk dispositions, signed implementation identity, check counts,
+known limits, and non-actions.
+## Step 1, round 1 -- 2026-08-24
+
+Non-Solidity round. The security suite is waived for this run: the step ships
+Python, Markdown and JSON only, with no Solidity and no Foundry or Hardhat
+project. Phylax, Ephoros and Hypomnema each returned clean over
+`scripts/contributors.py`, `tests/test_contributors.py`,
+`tests/emit_contributors_report.py` and `docs/contributors`. The three findings
+below came from reading the diff, not from a lint.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | medium | tests/emit_contributors_report.py | The emitter had no test at all. The step's exit requires it to write one `elenchus.unittest.v1` report to the supplied path and only that path, and nothing regressed it. It also imports `report_target`, `result_payload` and `write_report` from `tests/emit_run_observation_report.py`, so a signature change there breaks this module at import time, and the first symptom would be a broken audit round in a later step rather than a failing test here. The emitter cannot be executed from inside the module it loads without recursing, so the wiring is tested instead: the reused helpers import and are callable, every declared required file exists, the declared module list loads, an empty root produces a failing substitute suite, a present surface produces none, and the payload carries the `elenchus.unittest.v1` schema. | fixed in this round |
+| S1-R1-02 | low | tests/test_contributors.py | `frozensets_from_source` raised a clear `AssertionError` when an assignment was not a `frozenset(...)` call, but passed the call's argument straight to `ast.literal_eval`. A frozenset built from a comprehension or a name rather than a set literal therefore surfaced as a bare `ValueError`, so the parity test reported an error where it had a diagnosis available. The guard was one branch short of the message it intended. | fixed in this round |
+| S1-R1-03 | medium | scripts/contributors.py | Guard-order hazard reaching into step 2. `claude[bot]` and `app/claude` are both declared host identities and both fail `valid_login`, because neither is a legal GitHub login. The study's fail-closed posture stops the run on a login-grammar failure. So a ranking pipeline that validated grammar before excluding hosts would fail the whole weekly refresh on an identity the host set already knows how to drop, and nothing in the step recorded the required order. Fixed by stating the order in `valid_login`'s docstring next to the predicate it constrains, and by a test asserting that every host login failing the grammar check is still recognised by `is_host_login`. That test also fails loudly if the hazard ever disappears, so it cannot rot into a tautology. | fixed in this round |
+
+Leads not pursued: `LOGIN_RE` accepts consecutive hyphens, which GitHub itself
+rejects in a login. Left alone deliberately: the pattern exists to keep Markdown
+syntax out of a generated artefact, a hyphen carries none, and tightening it
+would trade a real guarantee for a cosmetic one. `.elenchus/` is not in the
+repository's `.gitignore`, which predates this run and belongs to whoever owns
+the run-observation emitter rather than to this step.
+
+## Step 1, round 2 -- 2026-08-24
+
+Against the tree with round 1's fixes applied. Phylax, Ephoros and Hypomnema
+each returned clean again. Both findings are in round 1's own fixes, which is
+what this round exists to catch.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R2-01 | medium | tests/test_contributors.py | The parity check compared only the three host sets it already knew by name. A fourth `HOST_*` frozenset added to `hexctl.py` would therefore pass every test here while `scripts/contributors.py` missed a whole class of runtime identity, and the contributor ranking would treat that class as people. Round 1 closed a drift gap in the sets it knew and left the discovery gap open. Fixed by discovering `HOST_*` frozensets by prefix and asserting the discovered names equal `SET_NAMES` exactly, so a new set fails by name until the generator accounts for it. Verified in both directions: discovery over the real `hexctl.py` finds exactly the three, and a synthetic fourth set breaks parity. The first attempt at this fix was itself wrong, matching `HOST_BYLINE_RE`, a compiled pattern rather than a set; the predicate now skips a `HOST_*` name that is not a `frozenset(...)` call and says why, and a missing known set is still caught by the name comparison rather than by asserting shape at the wrong place. | fixed in this round |
+| S1-R2-02 | low | tests/test_contributors.py | Round 1's guard around `ast.literal_eval` caught `ValueError` only. That is the exception every non-literal argument raises on the interpreter in hand, 3.14, but the repository's declared floor is 3.9 and the round-1 change pinned an exception type to behaviour observed on one version. Broadened to `(ValueError, TypeError)`. The `tempfile` import was also moved to module level, so no test body reaches for an import mid-run. | fixed in this round |
+
+Leads not pursued: none.
+
+## Step 1, round 3 -- 2026-08-24
+
+Against the tree with rounds 1 and 2 applied. Phylax, Ephoros and Hypomnema
+clean again. One finding, in the committed spec rather than the code.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R3-01 | medium | docs/contributors/study.md | Five dead relative links in a shipped document. The study is authored in the run's `.hexaemeron` directory, where `../ephoros/SKILL.md` correctly names the sibling skill. Copied to `docs/contributors/`, that same text resolves to `docs/ephoros/SKILL.md`, which does not exist, so every one of the study's five discipline citations was broken in the published copy. Copying a document changes what its relative links mean, and nothing in this repository checked a link in a shipped document. Fixed by rewriting the five to `../../plugins/hexaemeron/skills/<name>/SKILL.md`, each verified present, and by a test that resolves every relative link in both published spec files. The canonical `.hexaemeron/study.md` keeps its plugin-relative form and is deliberately not edited: it is receipted and digest-pinned, and its links are correct where it lives. The published copy diverging from it in link paths alone is the intended outcome, not drift. | fixed in this round |
+
+Leads not pursued: the parity test reads the repository's vendored
+`hexctl.py` rather than the installed controller running the loop. That is the
+correct authority for a test that has to pass in CI, where no plugin cache
+exists, but the test does not say so. Left as is; a comment would restate what
+the path already shows.
+
+## Step 1, round 4 -- 2026-08-24
+
+Against the tree with rounds 1 to 3 applied. Phylax, Ephoros and Hypomnema
+clean. One finding, again in the published spec rather than the code.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R4-01 | medium | docs/contributors/runbook.md | The published runbook's header sent readers to `` `.hexaemeron/study.md` `` for its study. `.hexaemeron/` carries its own `.gitignore` matching everything and has zero tracked files, so that path exists only on the machine that ran the delivery and never in a clone. Round 3 fixed the study's dead Markdown links and missed this because the reference is backticked prose rather than a link, so the round-3 guard could not see it. Fixed by pointing the published runbook at its sibling published study, and by a guard asserting no published spec file mentions `.hexaemeron` at all, which is the general form of the defect rather than the one instance. The `re` import was also moved to module level, matching the correction made to `tempfile` in round 2 and undoing an inconsistency round 3 introduced. | fixed in this round |
+
+Leads not pursued: the link-resolution regex truncates a URL containing a
+closing parenthesis and would read `](` inside a fenced code block as a link.
+Neither occurs in the two files it checks, and a stricter parser would be more
+machinery than the defect justifies.
+
+## Step 1, round 5 -- 2026-08-24
+
+Against the tree with rounds 1 to 4 applied. Zero findings.
+
+Phylax, Ephoros and Hypomnema clean. Root suite 211 tests, all passing. The
+four guards installed across rounds 1 to 4 were each confirmed to fail without
+their fix, three of them by Elenchus returning `guarded` on a recorded parent
+assertion failure.
+
+The remaining question this round examined was whether `docs/contributors/`
+needed registering anywhere. It does not: nothing in the repository enumerates
+`docs/` subdirectories, and `docs/protasis-discipline-cores/study.md` is
+existing precedent for a nested study and runbook pair alongside the flat
+`docs/<topic>-study.md` form. No index to update and no convention broken.
+
+Leads not pursued: none.
+
+## Step 2, round 1 -- 2026-08-24
+
+Non-Solidity round on the step that opens the network boundary. Phylax and
+Ephoros clean. Hypomnema clean once invoked correctly; see S2-R1-05.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | high | scripts/contributors.py | The reader checked the landing host with `response.geturl()` after `urlopen` returned. `urllib`'s `HTTPRedirectHandler.redirect_request` copies every request header onto the redirected request except `content-length` and `content-type`, confirmed by reading its source: `Authorization` is not excluded. So a 301 or 302 off `api.github.com` sent the bearer token to the redirect target, and the check fired only after that request had already completed. A token leak to an arbitrary host, detected one step too late to matter. Fixed with a `RefuseOffHostRedirect` handler that stops before the redirected request is issued, kept at module level so it is testable rather than sealed inside the reader factory. The landing-host check is retained as a second line. Three tests: the off-host stop, an on-host redirect still allowed, and one pinning `urllib`'s header-copying behaviour so nobody removes the guard as belt and braces. The stop's message is asserted not to echo the token. | fixed in this round |
+| S2-R1-02 | medium | scripts/contributors.py | `--repo` reached the API path unvalidated. A login is checked against the GitHub login grammar before it is interpolated, so a login cannot inject query syntax, but the repository came straight from the command line into `/repos/{repo}/contributors?...` and `q=repo:{repo}+...`. `--repo 'x/y&per_page=1'` rewrites the query. Operator-supplied rather than attacker-supplied, but the study names this read as a boundary with controls and an unvalidated path component is not one. Fixed with an `owner/name` grammar check, tested against seven malformed forms. | fixed in this round |
+| S2-R1-03 | low | scripts/contributors.py | The git-authorship corroboration counted how many sampled commits carried a non-host author, stored both counts on the working entry, and then dropped them: the rendered payload took only rank, login, commits and merged pull requests. Evidence gathered and discarded is evidence nobody can check. Both counts are now reported per contributor. | fixed in this round |
+| S2-R1-04 | medium | scripts/contributors.py | Two silent caps. The contributors read took `per_page=100` and used page one only, so a repository with more than a hundred contributors would lose everyone past the first page with no sign in the output. The closed-issue read did the same and additionally ignored `total_count`, so partial coverage read as full coverage. Both are the failure mode where a truncated list looks complete. Fixed with a paginating read that stops rather than truncating when pages outlast `MAX_PAGES`, and a closed-issue check that stops naming how many of how many it read. Three tests, including one asserting page two is actually fetched. | fixed in this round |
+| S2-R1-05 | low | audit procedure | Hypomnema was first run over `scripts tests` only and reported two H006 findings claiming `ADR-016` does not exist. It does. The lint resolves a comment's record citation against an index it builds from the record files it walked, so omitting `docs` from the invocation empties the index and turns every valid citation into a finding. The trap is worse than a wasted round: acting on the finding would mean deleting a correct citation to satisfy a lint that was never shown the record. Recorded here so later rounds on this run invoke it as `hypomnema.py docs scripts tests`. No code change. | recorded, no fix needed |
+
+Leads not pursued: the corroboration read samples at most twenty commits per
+contributor, which is a bound rather than a proof. It is now reported in the
+payload as `commits_sampled` alongside `human_authored_sampled`, so the bound is
+visible rather than implied, and widening it would cost an API call per
+contributor to strengthen a check that already fails closed.
+
+Elenchus verdict for this round: `inconclusive`, not `guarded`. Against the
+parent it recorded 45 executed, three assertion failures and four errors. The
+three failures are the guards working: the repository-grammar stop, the
+closed-issue coverage stop, and the corroboration-evidence report each failed on
+the unfixed tree. The four errors are `AttributeError` from two tests naming
+`RefuseOffHostRedirect` and `read_all_pages`, symbols the parent does not carry.
+Elenchus cannot tell a proved guard from a broken harness once errors appear, so
+it declines to call the round guarded, and that is the correct reading of the
+evidence rather than a tooling complaint. Round 2 reshapes those two tests to
+assert the symbol's presence instead of dereferencing it.
+
+## Step 2, round 2 -- 2026-08-24
+
+Against the tree with round 1's fixes applied. Phylax and Ephoros clean.
+Hypomnema clean, invoked as `hypomnema.py docs scripts tests` per S2-R1-05.
+One finding, in round 1's own guards.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R2-01 | medium | tests/test_contributors.py | Round 1's guards for the redirect and pagination fixes dereferenced `contributors.RefuseOffHostRedirect` and `contributors.read_all_pages` directly. On a tree without those symbols that raises `AttributeError`, which unittest records as an error rather than a failure, and Elenchus refuses to call a round guarded once errors appear because it cannot tell a proved guard from a broken harness. Round 1 therefore recorded `inconclusive` on five findings whose guards were mostly sound: three failed cleanly, four crashed. A guard that errors on the unfixed tree proves nothing it could not have proved by failing. Fixed by asserting each symbol's presence and returning it, through one helper per class carrying the reason. Verified directly rather than inferred: the reshaped guards run against the pre-fix `scripts/contributors.py` from `5f424e5` produce 7 assertion failures and 0 errors, where round 1's shape produced 3 failures and 4 errors. | fixed in this round |
+
+Leads not pursued: this round's Elenchus verdict is `passed` rather than
+`guarded`, and that is the honest reading. The change is a test reshape with no
+behaviour change, so against its own parent, which already carries round 1's
+fixes, nothing fails. The reshape cannot retroactively re-prove round 1; it makes
+the guards well-shaped from here on, and the proof of that is the direct
+comparison recorded above rather than a verdict this round could produce.
+
+## Step 2, round 3 -- 2026-08-24
+
+Against the tree with rounds 1 and 2 applied. All three lints clean. One
+finding, in a promise the study made that the code had not kept.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R3-01 | medium | scripts/contributors.py | The study's item 10 states the generator "must complete inside the unauthenticated rate limit when run without a token, or say plainly that it needs one." Nothing implemented that. Worse, `urllib.error.HTTPError` subclasses `URLError`, confirmed directly, so catching only `URLError` reported every HTTP status as a generic "api read failed" and discarded the one field that says what to do. A rate-limited run therefore looked like a network fault. The numbers make it reachable rather than theoretical: the search endpoints allow 30 requests a minute with a token and 10 without, and this generator issues two search calls per ranked contributor plus two more, so an unauthenticated run stops being viable at about four contributors. Fixed by catching `HTTPError` ahead of `URLError`, naming the status when it is not rate limiting, and on a 403 or 429 carrying an exhausted `X-RateLimit-Remaining` or a `Retry-After` saying which limit was hit, when it resets, and whether the answer is to set a token. Four tests, one of which pins the subclass relationship so a future reordering of the handlers cannot silently lose the status again. | fixed in this round |
+
+Leads not pursued: the generator does not pre-flight `/rate_limit` before
+starting, so it discovers exhaustion by hitting it. Adding a pre-flight would
+spend a request to predict a condition the run now diagnoses correctly when it
+happens, and the diagnosis is what was missing.
+
+### Correction to the step 2 round 3 record
+
+The controller ledger stores `elenchus_verdict: guarded` for step 2 round 3.
+That receipt is wrong. Elenchus returned `inconclusive` on that commit, with 49
+executed, 0 assertion failures and 3 errors. The wrong value was submitted to
+`hexctl audit-round` and the ledger is hash-chained and append-only, so the
+false entry cannot be rewritten; `hexctl amend` covers a study amendment and not
+an audit round. This paragraph is the correction, and round 4 below carries the
+verdict the round should have recorded.
+
+The cause is the defect S2-R2-01 named one round earlier, repeated. The three
+new rate-limit tests dereferenced `contributors.rate_limit_aware_message`, a
+symbol the parent does not carry, so they raised `AttributeError` and Elenchus
+saw errors rather than assertion failures. The round-2 fix established the shape
+that avoids this and round 3 did not apply it to its own new tests. Round 4
+applies it and re-derives the verdict.
+
+Anyone reading the ledger for step 2 round 3 should read `inconclusive`.
+
+## Step 2, round 4 -- 2026-08-24
+
+Against the tree with rounds 1 to 3 applied, plus the correction above. All
+three lints clean. One finding, and it is the same omission as S2-R2-01 made a
+third time.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R4-01 | medium | tests/test_contributors.py | Round 3's three rate-limit guards dereferenced `contributors.rate_limit_aware_message` directly and so errored rather than failed on the unfixed tree, which is exactly the defect S2-R2-01 named. Round 2 had fixed the same shape by adding a per-class accessor, and that fix was not generalised, so the next new test reintroduced it. The first attempt at this round's fix then put the accessor on `NetworkBoundary` while the three tests live in `Coverage`, breaking the suite outright and making the same class-scoping mistake visible a second time within one round. Fixed properly with a shared `RequiresSymbol` mixin carrying one `require(name, why)` method, used by both classes, so the next new guard inherits the right shape instead of depending on whoever writes it remembering. Verified directly: against the pre-round-3 `scripts/contributors.py` the reshaped guards give 3 assertion failures and 0 errors, where round 3's shape gave 0 failures and 3 errors. | fixed in this round |
+
+Leads not pursued: none. The pattern that produced S2-R2-01, S2-R4-01 and the
+false receipt corrected above is one pattern, and the mixin is the structural
+answer to it rather than a third instance of remembering.
+
+## Step 2, round 5 -- 2026-08-24
+
+Against the tree with rounds 1 to 4 applied. Zero findings.
+
+Phylax, Ephoros and Hypomnema clean. Root suite 241 tests, all passing. The
+live `--json` path runs clean against the real API and ranks `kethcode` then
+`radup1337`, excluding `claude`, `claude[bot]`, `laurenceday` and
+`shoggoth-wildcat` with a distinct reason for each.
+
+This round examined the one thing the local machine cannot check. The repository
+CI matrix pins Python 3.9 and this machine has only 3.14, so 3.9 behaviour is
+asserted by reading rather than running: both files carry
+`from __future__ import annotations`, so every annotation is a string and never
+evaluated, and an AST walk finds no `match` statement and no runtime `X | Y`
+union, the two 3.10 features that a future import does not cover. That is
+evidence about the syntax, not a passing 3.9 run. The 3.9 job on this step's
+pull request is the actual check, and step 1's equivalent job passed.
+
+Leads not pursued: `http_reader` imports `urllib.error` inside the factory while
+`urllib.parse` and `urllib.request` are imported at module scope, because the
+module-level pair is needed by `RefuseOffHostRedirect` at class-definition time
+and the third is not. Consistent enough to leave; moving it would change nothing
+a reader relies on.
+
+## Step 3, round 1 -- 2026-08-24
+
+Non-Solidity round on the step that writes tracked files. Phylax, Ephoros and
+Hypomnema clean. Four findings.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | medium | scripts/contributors.py | `atomic_write` built its replacement with `tempfile.NamedTemporaryFile`, which creates at 0600, and `os.replace` carries the temporary file's mode onto the target. Both artefacts landed as `-rw-------` where every other file in the repository is `-rw-r--r--`, confirmed by `stat`. The serious half is `README.md`: a tracked file that existed before this run was silently narrowed from 0644, and git records only the executable bit, so the change appears in no diff and no review would catch it. Fixed by preserving an existing file's mode and giving a new file 0644. The two artefacts already on disk were repaired and regenerated. Three tests: a tracked file keeps 0644, a new artefact is world-readable, and an unusual existing mode is preserved rather than normalised. | fixed in this round |
+| S3-R1-02 | medium | scripts/contributors.py | `rendered` read `README.md` with a bare `read_text`, so an absent or non-UTF-8 README came out of `--check` as `FileNotFoundError` or `UnicodeDecodeError` rather than a named stop. The study's fail-closed posture requires a stop to name what went wrong; a traceback from the middle of a weekly job names the line and not the cause. Both are now stops that name the file. | fixed in this round |
+| S3-R1-03 | medium | .horos/boundary.json | Adding `CONTRIBUTORS.md` at the repository root invalidated the committed Horos reading boundary, and the step did not refresh it. The repository's own `test_boundary_currency` caught this, which is the system working, but it also corrects a judgement made earlier in this run: during the post-spec marketplace reassessment Horos was dismissed as having no concrete job in the remaining steps. It had one, and the evidence was a failing test rather than an argument. Refreshed with `horos.py scan . --write`. | fixed in this round |
+| S3-R1-04 | low | tests/test_contributors.py | Two of this round's own guards used `assertRaises(Stop)` against code whose defect is that it raises the wrong exception type. `assertRaises` records a wrong type as an error, and the wrong type was the finding, so those guards could never prove their own fix. This is the third distinct shape of the same underlying mistake in this run, after a missing symbol and a mis-scoped helper. Fixed with an `assert_stops` helper on the shared mixin that catches everything and fails on any exception that is not a `Stop`. Verified: against the parent the round's guards now give 5 assertion failures and 0 errors, where before they gave 3 failures and 2 errors. | fixed in this round |
+
+Leads not pursued: `atomic_write` does not fsync the containing directory after
+`os.replace`, so the rename is not guaranteed durable across a host crash. The
+artefacts are regenerated weekly from a source of truth that is not this file, so
+the recovery for a lost rename is the next scheduled run.
+
+## Step 3, round 2 -- 2026-08-24
+
+Against the tree with round 1 applied. All three lints clean. One finding, in
+the atomic-write path round 1 touched but did not follow through.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R2-01 | medium | scripts/contributors.py, .gitignore | Round 1 established that `atomic_write` cleans up its temporary file when `os.replace` raises. It does not, and cannot, clean up after a hard kill. Confirmed by leaving one deliberately: `.CONTRIBUTORS.md.5le1z97x` appeared in the repository root, `git status` listed it as an untracked change, and `git check-ignore` confirmed nothing ignored it. Two consequences, and the second is the one that matters. A broad `git add` could commit the litter. More importantly step 4's workflow decides whether to open a pull request from whether anything changed, so an orphan from a killed run would make an unchanged ranking look changed and open an empty pull request every week. Fixed by ignoring `.CONTRIBUTORS.md.*` and `.README.md.*`, and by sweeping the script's own orphans at the start of a write. The sweep is anchored to the exact artefact names it writes and touches regular files only, so nothing outside its own litter is in scope; a test asserts a bystander file survives it. | fixed in this round |
+
+Leads not pursued: the sweep runs at the start of a write and not on a
+`--check`, so a check on a littered tree still reports the ranking correctly
+while leaving the orphan in place. That is deliberate: `--check` is the read-only
+mode and should not mutate the tree it is inspecting.
+
+Also in this round, and worth naming as a pattern rather than an incident: one of
+the round's own tests called `contributors.sweep_orphans` directly instead of
+going through the `require` helper, so Elenchus first returned `inconclusive` on
+one error. That is the fourth occurrence of the same mistake in this run, in a
+round whose predecessor added the very mixin that prevents it. The instance was
+fixed and the verdict re-derived as `guarded` with three assertion failures and
+zero errors.
+
+The lesson taken is that a helper only prevents the mistake for whoever
+remembers to call it. So the check is now mechanical: compare the symbols the
+test file dereferences against the symbols the parent commit defines, and treat
+any name present in the former and absent from the latter as a guard that will
+error rather than fail. Run against this round it reports none. That comparison
+is cheap enough to run before every audit round in the remaining steps.
+
+## Step 3, round 3 -- 2026-08-24
+
+Against the tree with rounds 1 and 2 applied. Zero findings.
+
+Phylax, Ephoros and Hypomnema clean. Root suite 260 tests, all passing.
+`--check` exits 0. Both artefacts are `-rw-r--r--` after a regeneration, no
+orphan temporaries remain, and the working tree is clean.
+
+The check this round added is the one step 5's demonstration depends on:
+`--write` followed by `git diff --exit-code` over both artefacts comes back
+clean, so what is committed is exactly what the generator produces. Without that,
+step 5 could pass its own demo against artefacts a human had edited by hand.
+
+Leads not pursued: `.gitignore` now also hides a file a person might genuinely
+name `.CONTRIBUTORS.md.bak`. Accepted: the pattern has to cover a random suffix,
+and losing a hand-made backup of a generated file from `git status` costs nothing
+that matters.
+
+## Step 4, round 1 -- 2026-08-24
+
+Non-Solidity round on the unattended trigger. All three lints clean. Two
+findings, one of them the inverse of the signal the study asked this step for.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R1-01 | high | .github/workflows/contributors.yml | The summary step ran under `if: always()` and its first branch tested `steps.decide.outputs.changed != 'true'`. A `decide` step that failed, which is what a rate-limited or unreachable API produces, sets no output at all, so the empty value satisfied that branch and the summary announced "No change. The committed list already matches the repository's history." A failed weekly run would therefore have reported a clean no-op, in the one place somebody looks to find out whether the refresh is still working. The study's item 8 asked for the opposite property in as many words: a no-op distinguishable from a failure. This inverted it. Fixed by testing `job.status` first and saying plainly that the run failed and established nothing, with a test asserting the status check precedes the changed check rather than merely existing. | fixed in this round |
+| S4-R1-02 | low | .github/workflows/contributors.yml | The two generated commits carried the message "chore(contributors): refresh the ranked list" and nothing about their origin, so a reader of `git log` could not tell they were machine-written or how to reproduce them. Each now names the workflow, the generator, and the command that reproduces the result. Deliberately no provenance trailers: a scheduled job is not the Shoggoth performing governed work under ADR-016, and `Co-authored-by: Shoggoth` on a cron commit would claim an authorship that did not happen. A test asserts both trailers stay absent from the workflow's executable lines. | fixed in this round |
+
+Leads not pursued: the workflow is not executed by this run and cannot be. Its
+shape is asserted by twelve tests and its behaviour is established by its first
+scheduled or dispatched run. Two things it depends on could not be verified from
+here. Whether organisation policy permits the Actions token to open a pull
+request returned HTTP 403 on the permissions endpoint for the account running
+this delivery, so it is unknown rather than confirmed. And whether a Contents API
+write satisfies the signed-commit ruleset is inferred from an existing merge
+commit in this repository reporting `verified: true` with committer `GitHub`,
+which is strong evidence about GitHub's signing but not a test of this workflow.
+Both are named in the pull request as first-run risks rather than left implicit.
+
+## Step 4, round 2 -- 2026-08-24
+
+Against the tree with round 1 applied. All three lints clean. One finding.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R2-01 | low | .github/workflows/contributors.yml | The job set no `timeout-minutes`, so a hung API call would hold a runner until GitHub's six-hour job ceiling, once a week, with nobody watching. No other workflow in this repository sets one either, but that is not the same precedent: the others are pull-request CI, bounded by the change that triggered them and observed by whoever opened it. This one is a scheduled writer making network calls unattended. Bounded at ten minutes, which is generous for a handful of API reads and two writes. The reason for departing from the surrounding style is recorded in the workflow itself, so the next reader does not normalise it away. A test asserts exactly one timeout exists and that it is not so large as to be no bound at all. | fixed in this round |
+
+Leads not pursued: `actions/checkout@v4` and `actions/setup-python@v5` are
+pinned by tag rather than commit digest. Every other workflow here does the same,
+so changing only this one would be inconsistent without being safer; pinning is a
+repository-wide decision rather than this step's.
+
+## Step 4, round 3 -- 2026-08-24
+
+Against the tree with rounds 1 and 2 applied. All three lints clean. One
+finding, and it is the most serious of the step.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R3-01 | high | .github/workflows/contributors.yml | The workflow was not valid YAML and would never have run. Round 1's own fix for S4-R1-02 introduced a multi-line shell string inside a `run: |` block whose continuation lines began at column 1. A block scalar ends at the first line indented less than the block, so YAML terminated the script there and tried to read `Generated by ...` as a new mapping key. Confirmed with a parser rather than by eye: Ruby's YAML reports `could not find expected ':' while scanning a simple key at line 112`, and the repository's other four workflows parse cleanly, so the fault was this file's alone. GitHub would have reported a workflow syntax error and the weekly refresh would simply never have happened, silently, from the moment it merged. Fixed by building the message with `printf` and properly indented continuations. | fixed in this round |
+
+The failure this round exposes is not only the broken file. Fifteen shape tests
+passed against an unparseable workflow. Every one of them read strings or
+indentation, so all of them were satisfied while the artefact they described
+could not load at all. Structural assertions about a file say nothing about
+whether the file is valid, and a suite of them can be entirely green over
+rubble. Two guards were added. A parser check is not one of them, because
+PyYAML is absent from this repository's root suite and adding a dependency to
+validate one file is the wrong trade. Instead the specific defect class is
+guarded directly: no line may sit at column 1 unless it is one of the five
+known top-level keys, which is exactly what a terminated block scalar produces.
+That guard was verified by reintroducing the original defect and confirming it
+flags the line.
+
+Leads not pursued: the guard catches an unindented line, not every possible way
+to invalidate YAML. A malformed nested mapping would still pass it. Accepted:
+the check is aimed at the one failure this file actually suffered, and GitHub's
+own workflow parser is the backstop for the rest.
+
+## Step 4, round 4 -- 2026-08-24
+
+Against the tree with rounds 1 to 3 applied. Zero findings.
+
+All three lints clean. Root suite 281 tests, all passing. `--check` exits 0 and
+the working tree is clean.
+
+This round re-read the workflow through an actual parser rather than through the
+string assertions that had already been fooled once. It loads, and the values it
+loads are the ones the runbook asked for: the job guard is
+`github.repository == 'wildcat-finance/skills'`, `timeout-minutes` is 10,
+`permissions` is exactly `contents: write` and `pull-requests: write` with
+nothing else, `concurrency` is grouped as `refresh-contributor-list` with
+`cancel-in-progress` false, and the triggers are one weekly cron at `17 4 * * 0`
+plus `workflow_dispatch`. Six steps.
+
+Leads not pursued: two properties of this workflow cannot be established from
+here and are named in the pull request rather than left implicit. Whether
+organisation policy permits the Actions token to open a pull request could not be
+read: the permissions endpoint returns HTTP 403 to the account running this
+delivery. And whether a Contents API write satisfies the signed-commit ruleset is
+inferred from an existing merge commit in this repository reporting
+`verified: true` with committer `GitHub`, which is good evidence about how GitHub
+signs but is not a test of this job. Both resolve on the first dispatched run,
+which is the correct place for them to resolve.
+
+## Step 5, round 1 -- 2026-08-24
+
+Non-Solidity round on the records this work leaves behind. All three lints
+clean. Three findings, the first of them external in origin.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R1-01 | medium | docs/decisions/ | Decision-record number collision. This run planned `ADR-017-rank-contributors-by-resolved-identity.md`, and the concurrent delivery for issue #466 had already opened pull request 521 carrying `ADR-017-bind-merged-authorship-to-the-integration-receipt.md`. Two records cannot share a number, and #521 claimed it first. Renumbered to ADR-018. The renumbering is recorded three ways rather than performed silently: inside the record's own Status section, in a dated Protasis amendment to the receipted study through `hexctl amend study`, which returned `step 5 holds`, and in the published spec copies. The study's item 12 still reads ADR-017 above the amendment, which is the point: the amendment appends so the run's earlier belief stays readable. | fixed in this round |
+| S5-R1-02 | low | tests/test_contributors.py | The dead-link guard added in step 1 round 3 listed only the two published spec files. Step 1 found that same defect twice, and a guard scoped to the files that had already failed could not cover the records added later, which is most of this step's output. Widened to every document this work ships, including the two new records and `CONTRIBUTORS.md`. The companion run-state guard was also over-broad: it flagged any line mentioning `.hexaemeron`, which would fail on a document that legitimately discusses the directory, so it now matches a citation rather than a mention. | fixed in this round |
+| S5-R1-03 | low | docs/decisions/ADR-018-rank-contributors-by-resolved-identity.md | The widened guard immediately earned itself. ADR-018 linked to #521's ADR-017 by relative path, and that file does not exist on this branch and will not until #466 lands, so the record shipped with a link that resolved to nothing. Changed to a named reference carrying the pull-request number, with the reason it is not a link stated in the record. | fixed in this round |
+
+Leads not pursued: this run and the #466 delivery both append to
+`audit/AUDIT.md`, so whichever merges second will conflict there. The conflict is
+textual and the resolution is to keep both blocks, since the file is an
+append-only log of rounds that genuinely both happened. Left for the merge rather
+than pre-empted, because reordering this run's own log to anticipate another
+branch's would make the record less true, not more.
+
+## Step 5, round 2 -- 2026-08-24
+
+Against the tree with round 1 applied. Zero findings.
+
+All three lints clean. Root suite 287 tests, all passing. The demonstration path
+from the study's problem statement runs clean end to end, including
+`git diff --exit-code` over both artefacts, which is what establishes that the
+committed files are exactly what the generator produces rather than something a
+hand edited afterwards. The working tree is clean and the guard-shape comparison
+against the parent commit reports nothing that would error rather than fail.
+
+Leads not pursued: none.
+
+## Issue 436 run-observation receipt binding, step 1, round 1 -- 2026-08-24
+
+### State
+
+Audit of signed implementation `8296e09402d1061508f976cc7b9027aaccd5927a`.
+Six findings were reproduced against that tree and repaired together in signed
+commit `f22e235dad0c20485eb3e10d96d38ffd551bb4dc`. The repair does not advance a
+Fiat phase or strengthen the observation claim.
+
+### Findings
+
+| id | severity | mechanism | remediation |
+| --- | --- | --- | --- |
+| I436-S1-R1-01 | high | The controller captured one stable byte snapshot, then asked the validator to reopen the named path. An ABA replacement could therefore validate later bytes while the receipt digested earlier invalid bytes. | Added immutable-byte validation, path/byte parity guards, and made binding validate only the captured snapshot. |
+| I436-S1-R1-02 | medium | Verification summed the unbound tail after every historical prefix. Two bindings over one stream overstated the actual latest tail. | Report only the bytes after the newest verified prefix; the two-binding guard pins the exact count. |
+| I436-S1-R1-03 | high | Each binding verified in isolation, but verification did not re-establish one ordered, strictly increasing stream. A later valid binding could name a different artefact or cease extending the earlier digest. | Recompute record order, artefact identity, byte and event growth, and the earlier-prefix digest for every adjacent binding. |
+| I436-S1-R1-04 | high | A binding was joined to a ledger record only by its binding digest and line adjacency. Edited `receipt_hash` or `capture_status` record data still verified. | Require one unused exact observation record whose receipt hash and capture status equal the binding. |
+| I436-S1-R1-05 | high | Extra `record:run-observation` ledger entries with no state binding were ignored. Verification could report one clean prefix while another observation receipt was orphaned. | Require an exact count match between bindings and observation ledger records, then consume each record once. |
+| I436-S1-R1-06 | high | Verification recomputed digest, count and interval but did not rerun structural validation. Malformed bytes carrying a forbidden hidden-work field could be rehashed into state and ledger and verify cleanly. | Rerun the immutable-byte structural validator over every exact bound prefix before accepting its summary. |
+
+### Risk dispositions
+
+- `companion-path` -- exercised. Canonical confined no-follow reads, symlinked
+  file and parent refusals, and stable double reads remain green.
+- `prefix-drift` -- exercised. Replacement, truncation, reorder, ABA capture,
+  and post-receipt mutation guards refuse with `FOB003` or `FOB004`.
+- `unbound-tail` -- exercised. One and two-binding guards preserve the earlier
+  claim and report only the newest tail.
+- `run-association` -- exercised. Wrong contract and wrong run refuse without
+  echoing either rejected value.
+- `receipt-association` -- exercised and repaired. Line adjacency, exact receipt
+  fields, record data, record count, uniqueness, and increasing ledger order are checked.
+- `contract-identity` -- exercised. Binding and observation contract drift
+  refuse, and every exact prefix is structurally revalidated.
+- `count-agreement` -- exercised. Byte count, event count, interval, final
+  newline, and adjacent-prefix growth are recomputed.
+- `gate-status` -- exercised and repaired. Accepted claims require passing
+  capture, validation and redaction fields plus a fresh structural result.
+- `controller-independence` -- exercised. Ordinary `hexctl verify` remains green
+  while each corrupted dependent observation claim refuses.
+- `legacy-state` -- exercised. A version-1 run without a binding verifies
+  normally; only `verify --observations` returns `FOB001`.
+- `partial-write` -- exercised. Stable descriptor reads, exact captured-byte
+  validation, final rereads, and digest checks prevent a clean torn prefix.
+- `diagnostic-echo` -- exercised. Findings expose only stable codes, bounded
+  descriptions and recovery; hostile path and event values remain absent.
+- `binding-growth` -- exercised and repaired. The 64-binding cap, one-to-one
+  ledger join, strict extension and increasing record order bound growth.
+- `coverage-drift` -- exercised. Promise coverage binds controller, validator,
+  documentation, fixtures, both test surfaces, and every new selector.
+
+### Evidence
+
+- Focused observation and Promise surface: 157 of 157 tests passed.
+- Root suite: 349 tests run; 344 passed and five detached-receipt tests skipped
+  under their existing explicit condition.
+- Hexaemeron suite and Elenchus fixed-tree report: 955 of 955 tests passed.
+- Inoculation matrix: 1,258 cases, zero crashes and zero unexpected clean.
+- Promise Machine: 14 copies exact; 70 promises and 70 selected coverage rows.
+- Elenchus verdict for `f22e235`: `guarded`; its parent report records assertion
+  failure in the new guard surfaces, with no infrastructure substitution.
+- Phylax, Ephoros, Hypomnema, both Protasis modes, Horos, syntax, JSON, receipt
+  byte identity, diff check, and all eight per-document prose gates exited zero.
+
+### Boundary and next
+
+ADR-024 is the allocated observation-binding decision; reserved ADR-023 and
+accepted ADR-015 and ADR-022 remain unchanged. No Solidity surface exists, so
+the security suite remains waived and Phylax carries the off-chain review.
+No push, pull request, issue mutation, integration or controller receipt was
+performed by Warden. Six findings prevent closure; an independent round 2 must
+review the repaired tree.
+
+Leads not pursued: none. A filename's host-specific Unicode spelling is not a
+portable artefact claim here; the declared boundary is lexical confinement,
+no-follow regular-file access and no rejected-path echo, all of which were
+exercised.
+
+## Issue 436 run-observation receipt binding, step 1, round 2 -- 2026-08-24
+
+### State
+
+Audit of round 1's signed fixed tree at
+`71f1471722c4de5e14f9ed7e7efd2435da97f7fa`. One high finding was reproduced
+twice on both affected command paths and repaired in signed commit
+`49b8652db3d19c1501e074582454d08fab54b8e6`.
+
+### Finding
+
+`I436-S1-R2-01` -- high -- `plugins/hexaemeron/skills/fiat/scripts/hexctl.py`.
+Binding and verification each captured stable named bytes and validated that
+immutable snapshot, but neither re-established the named file after validation
+finished. A deterministic replacement during the validator call therefore let
+`observe` record a receipt, or let `verify --observations` return clean, while
+the named path already held different bytes. The repair adds one shared final
+no-follow double reread after all validation and summary work. It compares the
+entire named snapshot, including any unbound tail, before state mutation or a
+clean verification result. Separate bind and verify guards fail on the signed
+parent and pass on the repair.
+
+### Risk dispositions
+
+- `companion-path` -- exercised and repaired: final named-byte identity now
+  follows validation on both commands.
+- `prefix-drift` -- exercised: before, during, and after-validation replacement
+  mechanisms refuse without weakening an earlier digest.
+- `unbound-tail` -- exercised: the final reread compares the complete current
+  file while the claim remains limited to the selected prefix.
+- `run-association` -- exercised: the derived controller identity and event run
+  id still match after final reread.
+- `receipt-association` -- exercised: exact selected entry, observation record,
+  record data, count, and order remain joined.
+- `contract-identity` -- exercised: both contract identifiers and structural
+  rules are checked against the captured bytes.
+- `count-agreement` -- exercised: byte count, event count, interval, prefix
+  digest, and final named bytes agree.
+- `gate-status` -- exercised: capture, validation and redaction must pass; the
+  validation result is no longer separated from the final named subject.
+- `controller-independence` -- exercised: ordinary verification remains green
+  when the dependent observation check refuses.
+- `legacy-state` -- exercised: no-binding runs remain valid outside the explicit
+  dependent claim.
+- `partial-write` -- exercised and repaired: deterministic post-validation swaps
+  now return bounded `FOB002` refusals in bind and verify.
+- `diagnostic-echo` -- exercised: the new refusal names no path or rejected byte.
+- `binding-growth` -- exercised: the count cap, exact record join and strict
+  extension checks remain green with the final reread.
+- `coverage-drift` -- exercised: both new selectors and the repaired controller
+  digest are bound in Promise coverage.
+
+### Evidence
+
+- Focused observation and Promise surface: 159 of 159 tests passed.
+- Root suite: 349 tests run; 344 passed and five explicit detached-receipt tests
+  skipped.
+- Hexaemeron suite and Elenchus fixed-tree report: 957 of 957 tests passed.
+- Inoculation matrix: 1,258 cases, zero crashes and zero unexpected clean.
+- Promise Machine: 14 exact copies and 70 of 70 coverage rows.
+- Elenchus verdict for `49b8652`: `guarded`; its parent report records assertion
+  failures rather than errors or missing tests.
+- All three discipline lints, both Protasis modes, Horos, syntax, JSON, receipt
+  byte identity, diff check, and eight per-document prose gates exited zero.
+
+### Boundary and next
+
+The exact round-2 section is Imprimatur- and Brevitas-clean. Whole-file Brevitas
+still names historical diagnostics before the issue #436 records; this round
+does not rewrite unrelated audit history or claim that whole-file result.
+ADR-024 remains the allocated decision and ADR-023 remains untouched. No push,
+pull request, issue mutation, integration or controller receipt was performed
+by Warden. One finding requires an independent round 3.
+
+Leads not pursued: none.
+
+## Issue 436 run-observation receipt binding, step 1, round 3 -- 2026-08-24
+
+### State
+
+Audit of the round-2 fixed tree at
+`811e7d43c3f5e670ffe770bb169fd8eec99f0f2f`. Two high findings were
+reproduced twice. The first is repaired in signed commit
+`08bafba5629692873cce5ecc58feed3009f1ee0a`; the second is repaired in
+signed commit `066e4524023a26aca1dcf2e1938536c0a6826f13`, which has the first
+repair in its ancestry. The third receipted study amendment, SHA-256
+`4fff8fe9b5a62463a6287e1b2f2395125235147c2ec1227b703975d5905a55be`,
+adds only the source-owned reporter and its coverage guard to this step.
+
+### Findings
+
+`I436-S1-R3-01` -- high -- the final stable read checked the named file and
+held its file descriptor, but it released the directory descriptors before
+returning. Renaming `.hexaemeron/observations` outside the worktree at that
+point left the original descriptor readable and made the named path disappear;
+the command could return a clean snapshot that no longer named an in-root
+artefact. The repair keeps the full no-follow descriptor chain and rechecks
+the root and each opened directory identity before returning the snapshot.
+The regression guard is
+`test_final_read_refuses_parent_escape_during_second_snapshot`.
+
+`I436-S1-R3-02` -- high -- the receipted source-bound command
+`python3 plugins/hexaemeron/tests/run_tests.py {report}` was rejected before
+the reporter emitted JSON because the runner accepted only
+`--elenchus-report PATH`. The exact command exited 2 twice on signed
+`08bafba`. The repair accepts one positional path as a compatibility alias,
+keeps the existing confined no-follow report handling, and refuses the
+positional and flagged forms together before creating either target. The guard
+is `test_receipted_elenchus_reporter_accepts_positional_target`.
+
+### Risk dispositions
+
+- `companion-path` -- exercised and repaired. Final reads retain and verify
+  every directory identity back to the confined root.
+- `prefix-drift` -- exercised. Replacement, truncation, reordering, and
+  before, during, and after-validation swaps refuse the dependent claim.
+- `unbound-tail` -- exercised. The complete final reread detects alteration
+  while preserving the prior prefix boundary.
+- `run-association` -- exercised. The stable controller run identity remains
+  required for the recorded prefix.
+- `receipt-association` -- exercised. Each prefix still consumes one exact
+  preceding receipt and record data.
+- `contract-identity` -- exercised. Event and capture contracts are
+  structurally revalidated over immutable bytes.
+- `count-agreement` -- exercised. Byte count, event count, interval, and
+  digest remain recomputed from the final stable snapshot.
+- `gate-status` -- exercised. Capture, validation, and redaction status must
+  pass before a binding can be recorded.
+- `controller-independence` -- exercised. A refused observation never
+  invalidates ordinary Fiat verification.
+- `legacy-state` -- exercised. Version-1 runs remain valid until the
+  explicitly dependent observation claim is requested.
+- `partial-write` -- exercised and repaired. The second-snapshot
+  parent-escape and post-validation replacement guards return bounded
+  refusals rather than a clean result.
+- `diagnostic-echo` -- exercised. The new path and argument refusals retain
+  codes and recovery without echoing hostile bytes or paths.
+- `binding-growth` -- exercised. Exact ordered receipt joins and the
+  64-binding cap remain unchanged.
+- `coverage-drift` -- exercised and repaired. Promise coverage now binds the
+  reporter source, its exact digest, and the positional compatibility guard.
+
+### Evidence
+
+- Focused binding suite: 23 of 23 tests passed.
+- Observation validator suite: 65 of 65 tests passed.
+- Promise-contract suite: 73 of 73 tests passed.
+- Source-owned fixed-tree reporter: 959 of 959 tests passed in 289.684
+  seconds; its `elenchus.unittest.v1` record is complete with zero failures,
+  errors, skips, expected failures, and unexpected successes. Its generated
+  report was checked then removed.
+- Root suite: 349 of 349 tests passed, with five existing explicit
+  detached-receipt skips. The inoculation matrix ran 1,258 cases with zero
+  crashes and zero unexpected clean results.
+- Promise Machine has 14 exact copies and 70 selected coverage rows of 70.
+  Both Protasis modes, Phylax, Ephoros, Hypomnema, Horos, syntax, JSON,
+  receipt-copy parity, and diff check exited zero. Each of the four changed
+  documents passed Imprimatur and Brevitas separately.
+- The exact source-bound Elenchus command against `066e452` returned
+  `passed`, not `guarded`: it overlays changed files in a detached parent
+  worktree, and its current test classifier treats
+  `plugins/hexaemeron/tests/run_tests.py` as a test because it is below a
+  `tests` directory. The fixed reporter therefore also runs in the parent.
+  This is not represented as `guarded`. The direct exact command red result
+  on signed `08bafba` was preserved twice, and `passed` is an accepted
+  controller verdict.
+
+### Boundary and next
+
+The framework classification detail is retained as a bounded lead for the
+existing executable-gate prior art; no framework file is changed inside issue
+#436. No push, pull request, issue mutation, integration, or controller
+receipt was performed by Warden. Two findings require an independent round 4.
+
+Leads not pursued: no new product mechanism after the complete fixed-tree
+matrix.
+
+## Issue 436 run-observation receipt binding, step 1, round 4 -- 2026-08-24
+
+### State
+
+Independent review of the signed round-3 tree at
+`69a9ab36a307e58cf4da24933451a44e0bbae064`. The controller verified an
+11-entry intact chain before review. No product or dependency bytes changed
+after the fixed-tree reporter and root evidence recorded in round 3. This
+round found zero product findings.
+
+### Risk dispositions
+
+- `companion-path` -- re-read. The final no-follow directory chain remains
+  bound to the run root; the parent-escape regression refuses.
+- `prefix-drift` -- re-read. Bind and verify still refuse replacement before,
+  during, and after validation.
+- `unbound-tail` -- re-read. The selected prefix remains distinct from later
+  bytes in the same stream.
+- `run-association` -- re-read. The controller-derived run identity and
+  observation event identity remain exact.
+- `receipt-association` -- re-read. A malformed matching ledger data value
+  returns `FOB003`, not a Python exception.
+- `contract-identity` -- re-read. Immutable bytes undergo the validator and
+  closed interval checks before a receipt claim.
+- `count-agreement` -- re-read. Digest, byte count, event count, and
+  contiguous interval remain recomputed.
+- `gate-status` -- re-read. Only accepted capture, passing validation, and
+  passing redaction can support the dependent claim.
+- `controller-independence` -- re-read. Ordinary controller verification
+  remains separate from the optional observation claim.
+- `legacy-state` -- re-read. The explicit observation verifier retains the
+  bounded absence result for an older run.
+- `partial-write` -- re-read. Stable double reads and the final named reread
+  refuse torn, replaced, or escaped subjects.
+- `diagnostic-echo` -- re-read. Refusals expose codes and recovery only.
+- `binding-growth` -- re-read. Ordered receipt joins, strict extension, and
+  the binding cap remain in force.
+- `coverage-drift` -- re-read. Promise source digests, reporter guard, and
+  all selected coverage rows remain current.
+
+### Evidence
+
+- The fresh binding and observation-validator slice passed 88 of 88 tests in
+  28.468 seconds. It includes the three post-validation and parent-escape
+  refusal guards.
+- A direct malformed-ledger-data probe returned the bounded `FOB003`
+  refusal. Positional and flagged reporter forms both resolved to confined
+  in-worktree targets without creating a file; the duplicate-form probe exited
+  2 before a write.
+- The unchanged signed product tree retains round 3's fixed reporter result of
+  959 of 959 tests passed and root result of 349 of 349 passed with five
+  explicit detached-receipt skips. The 1,258-case inoculation matrix has zero
+  crashes and zero unexpected clean results.
+- Promise Machine remains at 14 exact copies and 70 selected coverage rows of
+  70. The required discipline, copy, prose, syntax, JSON, Horos, and diff
+  gates have the clean exits recorded in round 3.
+
+### Boundary and next
+
+No repair was made in this round, so no new Elenchus comparison is claimed.
+The round-3 source-bound result remains `passed` with its classifier
+limitation recorded there. Whole-file Brevitas retains historical findings
+before the issue #436 sections; no new-line defect is introduced here.
+No push, pull request, issue mutation, integration, or controller receipt was
+performed by Warden. A zero-finding record permits the controller's audit-close
+transition.
+
+Leads not pursued: no new mechanism after the receipt, path, reporter, and
+coverage review.
+# Run: give the Kronos scoreboard and parked lane a durable home across ephemeral runners
+
+## Step 1, round 1 -- 2026-08-24
+
+Two Markdown documents, no code. The Solidity suite is waived for this run.
+phylax exit 0, ephoros exit 0, hypomnema exit 0 over `docs/kronos-durable-home`.
+
+<!-- brevitas: archival-table rendered as a record because this historical table is below the 3x3 presentation threshold -->
+- id: --; severity: --; file: --; finding: none; status: --
+
+The risk register describes the git subprocess and the working-copy write that
+step 2 has not built, so none of those concerns can be exercised by two
+documents. The look went at the claims the documents rest on. The frontier
+digest
+`ac28d95d80724aa001a92740f76416164e65d7b7b9cb5da43674d1ea73a214d1`
+matches `plugins/hexaemeron/skills/kronos/EVOLUTION.md` byte for byte. The
+starting ref `2b6848b95e9d90f4bc9995b8cd89106d1807e9a9` is this run's HEAD
+parent. The five discipline citations in the committed study resolve from
+`docs/kronos-durable-home/` to files that exist. Protasis and Imprimatur both
+exit 0 over both documents. The committed copies are the receipted artefacts
+with those five links rewritten for the new depth.
+
+Root suite 310/310. Plugin suite 928/930: the two failures are
+`test_elenchus_checker.ForgeReports.test_fixture_exercised_the_declared_forge_version`
+(`1.7.1` vs local `1.4.0`) and
+`test_elenchus_checker.NodeReports.test_fixture_exercised_the_declared_node_version`
+(`v26.6.0` vs local `v22.14.0`). Both fail on the unfixed starting commit
+`2b6848b95e9d90f4bc9995b8cd89106d1807e9a9` as well. This step does not touch
+those fixtures.
+
+Leads not pursued: none.
+
+## Step 2, round 1 -- 2026-08-24
+
+Non-Solidity round on `pull` and `push`. The Solidity suite is waived for this run.
+phylax exit 0, ephoros exit 0, hypomnema exit 0 over `plugins/hexaemeron/skills/kronos` and the tests.
+
+<!-- brevitas: archival-table rendered as a record because this historical table is below the 3x3 presentation threshold -->
+- id: --; severity: --; file: --; finding: none; status: --
+
+The risk register was exercised by the new cases, all of which fail on the unfixed tree.
+
+- symlink-escape: K010 still fires on `pull` and `push` when `.kronos` or a JSONL path is a symlink; nothing is written through the link.
+- dirty-tree: after `pull`, `record`, `park` and `push`, `git status --short` in the scope is empty. `.kronos/.gitignore` still holds `*`.
+- partial-write: a failed `os.replace` leaves the previous complete scoreboard; a missing final newline still refuses with K008.
+- subprocess-git: git is a fixed argv list, no shell, 30s timeout, 2 MiB cap. A URL argument is refused with K020 before git starts. Git stderr is not copied into Kronos diagnostics; the K018 and K019 messages contain no `fatal` text.
+- empty-as-cleared: a configured remote whose URL cannot be read refuses with K018 and leaves a standing park on disk.
+- concurrent-push: a second tree's push updates the ref; a first tree that did not pull then refuses with K019 and its JSONL bytes are unchanged.
+- remote-url-fetch: `https://example.invalid/skills.git` is K020 with `subprocess.Popen` patched to raise, so no fetch runs.
+- state-commit-identity: throwaway commits use `git config` `user.name` / `user.email` from the scope and `commit.gpgsign=false`. No Shoggoth trailers.
+
+A local `.kronos/tip` file, gitignored by `*`, records the last pulled or pushed SHA so a runner that has not pulled cannot fast-forward over a newer ref. It is not copied onto `refs/heads/kronos/state`. The two JSONL files remain the only blobs the ref holds.
+
+Root suite 310/310. Plugin suite 944/946: the two failures are
+`test_elenchus_checker.ForgeReports.test_fixture_exercised_the_declared_forge_version`
+(`1.7.1` vs local `1.4.0`) and
+`test_elenchus_checker.NodeReports.test_fixture_exercised_the_declared_node_version`
+(`v26.6.0` vs local `v22.14.0`). Both fail on the unfixed starting commit
+`2b6848b95e9d90f4bc9995b8cd89106d1807e9a9` as well. This step does not touch
+those fixtures. Promise Machine coverage digests for `kronos-fiat-dispatch` and
+`kronos-parked-lane` were updated to the new `kronos.py` bytes after reviewing
+those field maps as unchanged; `pull` / `push` are not those promises' result
+surface.
+
+Leads not pursued: none.
+
+## Step 3, round 1 -- 2026-08-24
+
+Non-Solidity round on the skill text, the generation row and ADR-022. The
+Solidity suite is waived for this run. phylax exit 0, ephoros exit 0,
+hypomnema exit 0 over `plugins/hexaemeron/skills/kronos`, `docs/decisions`
+and `docs/kronos-durable-home`.
+
+<!-- brevitas: archival-table rendered as a record because this historical table is below the 3x3 presentation threshold -->
+- id: --; severity: --; file: --; finding: none; status: --
+
+This step adds no boundary and no new subprocess. The look went at the
+records. `SKILL.md` frontmatter is `0.6.0` and matches the ledger. The new
+history row is generation `kronos-v0.6.0` with frontier revision
+`terminal-goal-loop` and digest
+`ac28d95d80724aa001a92740f76416164e65d7b7b9cb5da43674d1ea73a214d1`, matching
+the prior row byte for byte. Status remains `mature` and the next job remains
+`None -- mature`. ADR-022 has the dated status and the five template sections.
+The five discipline links in the committed study still resolve. The field-drift
+guard still finds every `record` field named in the skill. The demo path on a
+local bare remote: `parked` on the second tree exits 3 with the same held-job
+hash and the same reason bytes; `show` prints the pass; `git status --short`
+is empty.
+
+Root suite 310/310. Plugin suite 944/946: the two failures are
+`test_elenchus_checker.ForgeReports.test_fixture_exercised_the_declared_forge_version`
+(`1.7.1` vs local `1.4.0`) and
+`test_elenchus_checker.NodeReports.test_fixture_exercised_the_declared_node_version`
+(`v26.6.0` vs local `v22.14.0`). Both fail on the unfixed starting commit
+`2b6848b95e9d90f4bc9995b8cd89106d1807e9a9` as well. This step does not touch
+those fixtures.
+
+Leads not pursued: none.
+## H003 quoted specimen, step 1, round 1 -- 2026-08-24
+
+Non-Solidity round over the two Markdown documents step 1 commits. Zero
+findings.
+
+The three bundled lints exit 0: Phylax and Ephoros over `plugins` and `tests`,
+Hypomnema over both changed documents and over the required tree
+`README.md AGENTS.md .agents plugins docs`. Protasis accepts the study and the
+runbook. Imprimatur reports no defect on either. The Hexaemeron suite passes
+935/935 and the boundary-currency guard 7/7 at commit
+`85933daa48353759b177c4a1a66588501b53d962`, whose local signature is good and
+which carries exactly one co-author and one origin trailer. The committed
+boundary still describes the tree, so `.horos/boundary.json` stands unchanged.
+
+Two register concerns are reachable at this step and both were checked.
+`code-scope-creep`: the step changes no script, so every H000 to H007 case is
+byte-identical to the entry state. `span-hides-live-pointer`: neither new
+document produces a pointer match at all, under the current rule or the one
+step 2 introduces, and the study carries exactly one Markdown link, which is
+absolute. The other five concerns sit in step 2's diff and are not yet
+reachable.
+
+Brevitas is recorded rather than gated, as the step states: B010 and B001 on
+the runbook, which a two-step specification cannot satisfy, and two B022
+line-start matches on the study where a wrapped line begins with the word
+`reading`. The shipped `docs/hypomnema-runbook-shape-check-runbook.md` carries
+the same two structure codes on `main`, and the study's bytes are frozen by its
+receipt.
+
+Leads not pursued: the root suite reports 5 failures in this worktree and none
+of them belong to this run. `tests/test_run_observation_capture.py` asserts
+that `.hexaemeron/study.md` and `.hexaemeron/runbook.md` under the repository
+root are byte-identical to the tracked issue 435 capture-profile copies,
+against the hard-coded digests
+`6858aaeadb12f204538b9120e51390b9c940fa995c8edb1471815d89aaa7f404` and
+`56df27b7faae2af8f7ba16ec89526413038def6a0bbf86ff0274dc566f8bf9c5`, and it
+skips only when those two files are absent. Every live Fiat run worktree holds
+them and they always belong to that run, so the five tests fail for every run
+except issue 435's. The same suite reports `OK (skipped=5)` on a clean checkout
+of `main` at `5d6fc67bb6c861f2be631eef2d7bef3c01c73e84`, which places the cause
+on `main` rather than in this step. Repairing it means editing another
+delivery's receipted evidence binding, which is outside issue 500 and outside
+this step's files, so it is named here rather than touched.
+
+## H003 quoted specimen, step 2, round 1 -- 2026-08-24
+
+Non-Solidity round over the checker change at
+`af576c1bc9be26ed3884a1296a0f9ad06ceb592d`. Zero findings.
+
+All three bundled lints exit 0: Phylax and Ephoros over `plugins` and `tests`,
+Hypomnema over the required tree `README.md AGENTS.md .agents plugins docs`.
+The demo path from the study's problem statement,
+`hypomnema.py audit/AUDIT.md`, exits 0 where it reported two findings at the
+step's entry. The Hexaemeron suite passes 946/946, the evolution and version
+propagation suites 16/16, boundary currency 7/7, and Promise Machine reports
+14 plugins and 14 copies clean after the `hypomnema-record-placement` runtime
+binding digest was moved to `dff041c5b5a4db5ff9556bdae566b25bdd6d3b5229b139282d151a263f72c5be`
+to match the edited `SKILL.md`. That file, `tests/promise_machine_coverage.json`,
+is the one path this step changed that its runbook Files field did not name; the
+gate the same step's exit runs is what required it. Imprimatur and per-file
+Brevitas accept `SKILL.md` and `EVOLUTION.md`. The commit has a good local
+signature and exactly one co-author and one origin trailer.
+
+The whole-tree finding sets were compared between the parent checker at
+`008364c78a47972dc033382e5b66d7983dd39a76` and this one, vendored trees
+included. The parent reports four findings, this one reports two, and the
+difference is exactly the two intended ledger specimens at `audit/AUDIT.md`
+lines 6041 and 6186. Nothing anywhere in the repository is newly reported. The
+two surviving findings are H001 link targets in
+`plugins/hexaemeron/skills/x-ray/SKILL.md` line 344, inside the vendored Pashov
+suite the default walk excludes, and they are unchanged by this step.
+
+Every register concern was exercised. `backtick-run-blowup`: pairing is one
+pass keyed by run length and the escape count walks backwards from each run
+rather than over a prefix slice, which was the first draft and quadratic; a
+line of 30,000 runs resolves its pointer in 0.008s, one of 20,000 mixed-length
+runs in 0.006s, and 30,000 preceding backslashes in 0.002s. `span-hides-live-pointer`:
+21 hand-built probes covering bare and quoted keywords, a backticked path after
+a bare keyword, two spans with the keyword between them, a span closing
+immediately before the keyword, double and triple backtick runs, an unbalanced
+double-open, case variants, table cells, and a hash-bearing path all classify as
+specified. `unmatched-run-drift`: an unpaired run opens no span, so a single
+stray backtick cannot swallow a later pointer. `multiline-span-boundary`: a span
+opened on one line and closed on the next is not read as a span and the pointer
+stays reported. `code-scope-creep`: H001 and H002 still fire inside a span, and
+the whole-tree comparison above is the wider proof. `yaml-pass-isolation`: the
+YAML pass shares no helper with the span scan and its cases are byte-identical.
+`pragma-interaction`: suppression runs after span state is computed and still
+suppresses a live pointer.
+
+One property of the demo path was checked rather than assumed. The fence state
+machine over `audit/AUDIT.md` is balanced: 2 fence markers, 5 lines inside a
+fence, the file ends outside one, and no pointer anywhere in it is hidden by
+fence state. The clean exit is therefore a real clean and not a fence artefact.
+
+Eleven guards ship with the change. Three are red against the parent: a wholly
+quoted pointer earns no finding, an escaped backslash still opens a span, and
+both recorded ledger specimens go clean. Eight are invariance pins, green on
+both sides by construction, and the study's dated amendment of 2026-08-24
+records why demanding red from those inverts their purpose.
+
+Leads not pursued: three, each named rather than fixed.
+
+The `RUNBOOK` pattern carries no leading word boundary, so `myrunbook: a/b`
+matches and reports. That is a false positive rather than a false clean, it
+predates this step, and closing it means narrowing what H003 reads in the same
+run that narrows where it reads, which is the scope creep the study rules out
+as a non-goal.
+
+A backtick run of three or more on its own line is a fence opener under
+CommonMark and the existing scan treats it as one, so a pointer on that line is
+never reached. This is the fence rule rather than the span rule and it predates
+the step; the parity check above establishes that it hides nothing in the
+document this step unblocks.
+
+The root suite still reports the same five capture-profile failures step 1
+recorded, from the issue 435 receipt binding on `main`. Nothing in this step
+touches them.
+
+## H003 quoted specimen, step 2, round 2 -- 2026-08-24
+
+Against the tree with round 1's record appended. Zero findings.
+
+All three lints exit 0 again, the demo path over `audit/AUDIT.md` exits 0, and
+the focused Hypomnema suite passes 91/91.
+
+Round 1's own record turned out to be the clearest evidence the change was
+needed. That block quotes a pattern specimen inside a code span, and the parent
+checker at `008364c78a47972dc033382e5b66d7983dd39a76` reports H003 on it at
+line 12544 for the target `a/b`, alongside the two older specimens at 6041 and
+6186. The fixed checker reports none of the three. So the defect was not a
+historical residue of two frozen lines: an ordinary round writing an ordinary
+record added a third instance, permanently, on a file whose append-only
+contract forbids the repair. That is what the three earlier rounds were
+recording as a lead each time they met it.
+
+Leads not pursued: the three named in round 1 stand unchanged, and no new lead
+was found.
+
+## Step 1, round 1 -- 2026-08-24
+
+Zero findings.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+The audited range is
+`84abae32d6d65b3a3ce27648ca144852a9e22e98..fae33c7e68f82095cf723ce72af858b7cbdc4018`
+on
+`fiat/554-runbook-amendment-receipts-step-1-publish-the-accepted-runbook-ame`.
+It changes only `.horos/boundary.json`,
+`docs/fiat-runbook-amendments-study.md`, and
+`docs/fiat-runbook-amendments-runbook.md`; all three paths remain regular
+non-executable files. The two documents are byte-identical to their receipted
+sources: the study SHA-256 is
+`1258efb979883681cc97e850dc9b641dd63f37a0f7beaf5bd5029d705ef76806`
+and the runbook SHA-256 is
+`21fa5133526f29a57bc7ada26b911c9d41e5d484eaf076a918023f75a53e6fcd`.
+The relative skill links resolve from both sibling publication directories.
+The boundary check reports `boundary matches the tree`.
+
+Both source-bound repair runners use CLI report format
+`unittest-json-v1` and separately name expected report schema
+`elenchus.unittest.v1`, at runbook lines 71-73 and 199-201. Step 1's Files
+field permits `audit/AUDIT.md` solely for append-only Warden round records at
+line 46; this append therefore does not violate the implementation boundary.
+The `audit-record-scope` row is discharged by this cold review only, not by a
+product guard. `elenchus-identifier-swap` is also discharged by the labelled
+role comparison rather than token presence.
+
+Protasis exits 0 for the study and runbook. Imprimatur exits 0 for each, with
+score 100.0/100 and zero defects. Phylax, Ephoros, and Hypomnema each exit 0
+over the exact three-path committed surface and again over the four-path
+candidate including `audit/AUDIT.md`. The root suite passes 349/349 with 5
+skips, the Hexaemeron suite passes 986/986, Horos exits 0, and
+`git diff --check` exits 0. The security suite waiver is unchanged: this
+range contains JSON and Markdown, no Solidity. No Elenchus repair report was
+created and no Elenchus verdict applies to this zero-finding round.
+
+The implementation commit has a good Shoggoth signature, parent
+`84abae32d6d65b3a3ce27648ca144852a9e22e98`, and exactly one
+`Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` trailer and one
+`Wildcat-Origin: shoggoth` trailer. The range adds no executable path,
+dependency, subprocess, service, unattended operation, or trust boundary.
+
+The fifteen product risks `subject-confusion`, `prefix-forgery`,
+`amendment-selection`, `field-ambiguity`, `step-verdict-coverage`,
+`duplicate-step-source`, `effective-step-source`, `repair-precedence`,
+`partial-write`, `pending-collision`, `checker-binding`, `post-amend-drift`,
+`legacy-recovery`, `evidence-overclaim`, and `generation-collision` sit in
+Step 2's controller, checker, tests, Promise, or ledger work and are not
+reachable in this docs-only range. They remain owed there; this round makes no
+claim about their implementation.
+
+Qualification: the tracked study is a run artefact, not Hypomnema's standing
+record. The governed-skill choice and rejected alternatives remain required
+in the Fiat and Protasis `EVOLUTION.md` generation rows before the stack can
+integrate, as Step 2's Files and Exit fields state. This Step 1 tip preserves
+that placement contract; integration without those rows would not. No Step 2
+runtime behaviour, receipt recovery, packet source, generation label, remote
+link content, push, pull request, or integration state was checked in this
+round.
+
+The Sapheneia durable-record comparison preserved the heading, empty finding
+table, zero verdict, date, identifiers, paths, digests, command results,
+qualifications, unknowns, and lead disposition item by item. It changes no
+existing audit bytes and does not claim audit-host enforcement.
+
+Leads not pursued: the fifteen product risks above require Step 2's absent
+implementation and remain assigned to that step. No other lead was found.
+
+## Step 2, round 1 -- 2026-08-24
+
+Finding count: 2. Audit filter declaration:
+`--audit-filter sapheneia:sapheneia`. The Solidity security suite is waived
+because the signed implementation and this repair contain Python, Markdown,
+and JSON only.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | high | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py:3435`; `plugins/hexaemeron/skills/protasis/scripts/protasis.py:74` | Both fence scanners accepted arbitrary leading whitespace. Four spaces make an indented CommonMark code block, not a fence, so a candidate could put `## Step 3` between four-space-indented backtick lines, hide that real heading from topology checks, then carry it in delegated step source. | fixed and guarded in `3d8ef99537ab0ccbf39a9f81d42159b061ba613b`; both scanners now permit at most three leading spaces, and controller plus Protasis guards cover the four-space rejection |
+| S2-R1-02 | medium | `plugins/hexaemeron/skills/protasis/scripts/protasis.py:301` | `Complete replacement Exit: Reviewed and working.` passed because replacement parsing checked only that the value was non-empty. That let Fiat receipt and carry a replacement exit with no command even though Protasis's existing Exit contract requires one. | fixed and guarded in `3d8ef99537ab0ccbf39a9f81d42159b061ba613b`; Protasis applies its existing command-presence rule to a replacement Exit, while Fiat remains bound to Protasis and adds no separate semantic parser |
+
+Brevitas report mode exits 1 only with B011 because the required table has two
+finding rows; evidence precedence and Fiat's one-row-per-finding format forbid
+fabricating a third row, so no Brevitas-clean claim is made.
+
+### Evidence
+
+The audited implementation is signed commit
+`a36768abf65d4afbcb310f1c231e98866798fbe7`, parent
+`68cd65757ada8756a72d4596cb8aaa58f7adec66`; its local Shoggoth signature and
+single co-author and origin trailers are good. The tracked study SHA-256 is
+`1258efb979883681cc97e850dc9b641dd63f37a0f7beaf5bd5029d705ef76806`
+and the tracked runbook SHA-256 is
+`21fa5133526f29a57bc7ada26b911c9d41e5d484eaf076a918023f75a53e6fcd`;
+both remain byte-identical to their receipted `.hexaemeron` sources.
+Repair commit `3d8ef99537ab0ccbf39a9f81d42159b061ba613b` also has a good
+local Shoggoth signature and exactly one co-author and one origin trailer.
+
+The exact source runner used CLI report format `unittest-json-v1`. Its red
+parent report,
+`.elenchus/fiat-runbook-amendments-step-2-round-1-red.json`, has SHA-256
+`3ec86c5b210c7f37ae078ed17e92bf8c3adbb3df763b0a17a76e8840f87e8c8d`,
+schema `elenchus.unittest.v1`, `complete: true`, 1,019 tests, four assertion
+failures, zero errors, and zero skips. The canonical repaired-tree report,
+`.elenchus/fiat-runbook-amendments-step-2.json`, has SHA-256
+`6deeed2b4b0b58b1c83d57bb03f31362f8c1a86a0826669390a5e59408ceba9a`,
+the same schema, `complete: true`, and 1,019/1,019 green with zero errors and
+zero skips. Verdict: `guarded`.
+
+Mason's source-runner layout repair is also closed. The preserved early report
+`.elenchus/fiat-runbook-amendments-step-2-red.json` has SHA-256
+`ad5953059354e3d5b41946caeb8f382e1f41f711df8bcb1187bf45ff4f8de0b2`,
+schema `elenchus.unittest.v1`, 931 tests, and one import-context error. The
+preserved signed-tree report
+`.elenchus/fiat-runbook-amendments-step-2-mason-green.json` has SHA-256
+`cd494b76389778edda0015b96069ea84c741bfa00e92f51c816fb6037d85179c`,
+the same schema, and 1,015/1,015 green. The bounded fallback import now works
+in package and source-runner layouts; the fresh repaired-tree run above remains
+green.
+
+The focused Fiat, Protasis, and controller suite passes 473/473; evolution
+passes 9/9; root passes 349/349 with five skips; and Hexaemeron passes
+1,019/1,019. Promise Machine sync and contract checks are clean across 14
+plugins and 14 copies; coverage is 71/71. The six changed controller-digest
+bindings in `tests/promise_machine_coverage.json` now equal
+`b84075e32d73602eb2e05bb12070845740811008f203e6422497f99827982a6b`;
+their field maps are unchanged and no write-mode sync ran. Protasis accepts
+both tracked specifications. Phylax, Ephoros, and Hypomnema exit 0;
+Imprimatur gives all six specified prose files 100/100 with zero defects;
+Horos, `py_compile`, both receipt comparisons, and `git diff --check` exit 0.
+
+### Risk dispositions
+
+- `subject-confusion`: clean. Diagnostics, pending markers, receipts, and ledger events retain one exact subject; legacy study recovery and two-subject refusal stay guarded.
+- `prefix-forgery`: clean. A forged byte prefix refuses before durable mutation.
+- `amendment-selection`: fixed by S2-R1-01. Fenced decoys, short or mismatched fences, duplicate final blocks, trailing sections, and four-space indented code cannot select or hide a block.
+- `field-ambiguity`: fixed by S2-R1-02. The four ordered amendment fields, full replacement clauses, and replacement Exit command presence are checked by Protasis before Fiat mutates.
+- `step-verdict-coverage`: clean. Every unbuilt step has one entry-and-exit verdict; unknown and completed steps, omissions, duplicates, and broken current-step verdicts refuse or block as specified.
+- `duplicate-step-source`: fixed by S2-R1-01. A packet retains one numbered and titled baseline block; appended, fenced-decoy, and four-space-hidden step headings refuse.
+- `effective-step-source`: clean. Mason and Warden receive byte-identical baseline and applicable amendment bytes with matching digests in receipt order, including exact Unicode and whitespace.
+- `repair-precedence`: clean. A repair binds the current study digest and step; a later study receipt makes the older repair inapplicable.
+- `partial-write`: clean. Each interrupted write window finishes or rolls back once, without duplicate ledger events or mixed receipt state.
+- `pending-collision`: clean. One labelled pending marker blocks other commands; two subjects refuse without deleting either marker.
+- `checker-binding`: clean. Protasis receives the captured candidate bytes through fixed argv with bounded input and output; non-zero, unsafe-path, and oversized cases refuse before mutation.
+- `post-amend-drift`: clean. `next`, `status`, `verify`, source packets, and receipt-history checks recompute digests and refuse unreceipted drift.
+- `legacy-recovery`: clean. Version-1 state and subjectless study markers remain readable and recover exactly once.
+- `evidence-overclaim`: clean. The `fiat-runbook-amendment` Promise is limited to checked continuity, structure, receipt history, and source carriage; it does not claim replacement truth, command success, or plan correctness.
+- `generation-collision`: clean on the recorded base. Fiat is `fiat-v5.21.1` and Protasis is `protasis-v4.7.0`; each adds one generation row while retaining its frontier revision, digest, status, current-frontier text, and next job. No frontier counter moved.
+- `elenchus-identifier-swap`: clean by cold review. The role-swapped specimen was refused; the accepted contract names `unittest-json-v1` only as CLI report format and `elenchus.unittest.v1` only as expected JSON schema.
+- `audit-record-scope`: clean by cold review. Step 2's Files field names `audit/AUDIT.md` as the append-only Warden exception without widening Mason's product files.
+
+### Qualifications
+
+The fixed parser establishes the accepted structure, not that free-form
+replacement prose is a sound criterion or that a named future command will
+succeed. No remote signature, push, pull request, integration result, or
+GitHub state was checked. The Sapheneia comparison preserves the required
+heading and table, both findings, severities, exact locations, commits,
+hashes, report roles, counts, verdict, risk dispositions, qualifications,
+unknowns, negative results, and lead disposition; it changes no earlier audit
+byte and does not claim audit-host enforcement.
+
+Leads not pursued: none.
+
+## Step 2, round 2 -- 2026-08-24
+
+Finding count: 0. Audit filter declaration:
+`--audit-filter sapheneia:sapheneia`. The Solidity security suite remains
+waived because the audited range contains Python, Markdown, and JSON only.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+Brevitas report mode exits 1 only with B011 because the required table has zero
+finding rows; evidence precedence and Fiat's one-row-per-finding format forbid
+fabricating a row, so no Brevitas-clean claim is made.
+
+### Evidence
+
+This round re-audited the complete fixed tree at signed tip
+`2acea79bb16225ffe9028e776dbfbed7b375ff1c`. The implementation
+`a36768abf65d4afbcb310f1c231e98866798fbe7`, mechanism fix
+`3d8ef99537ab0ccbf39a9f81d42159b061ba613b`, and round-1 audit commit all
+have good local Shoggoth signatures and exactly one required co-author and one
+origin trailer. Round 1's receipt records two findings, fixes tip
+`2acea79bb16225ffe9028e776dbfbed7b375ff1c`, Elenchus `guarded`, all three
+lint exits 0, and the two verified local commits. Its append remains unchanged.
+
+All four round-1 guards pass directly: Fiat refuses both the commandless
+replacement Exit and the four-space-hidden step heading without mutation or
+carriage, and Protasis independently refuses both forms. The parent red report
+`.elenchus/fiat-runbook-amendments-step-2-round-1-red.json` retains SHA-256
+`3ec86c5b210c7f37ae078ed17e92bf8c3adbb3df763b0a17a76e8840f87e8c8d`,
+schema `elenchus.unittest.v1`, 1,019 tests, four failures, zero errors, and zero
+skips. The fixed report `.elenchus/fiat-runbook-amendments-step-2.json` retains
+SHA-256
+`6deeed2b4b0b58b1c83d57bb03f31362f8c1a86a0826669390a5e59408ceba9a`
+and 1,019/1,019 green. The runner contract still labels
+`unittest-json-v1` as the CLI report format and `elenchus.unittest.v1` as the
+expected JSON schema. This round changed no product or guard, created no new
+report, and therefore carries no fixes commit and `elenchus_verdict: null`.
+
+The focused Fiat, Protasis, and controller suite passes 473/473; evolution
+passes 9/9; root passes 349/349 with five skips; and Hexaemeron passes
+1,019/1,019. Promise Machine sync and contract checks are clean across 14
+plugins and 14 copies; coverage is 71/71. The six Fiat controller bindings
+still carry digest
+`b84075e32d73602eb2e05bb12070845740811008f203e6422497f99827982a6b`
+with unchanged field maps. The receipted study and runbook still match tracked
+SHA-256 values
+`1258efb979883681cc97e850dc9b641dd63f37a0f7beaf5bd5029d705ef76806`
+and `21fa5133526f29a57bc7ada26b911c9d41e5d484eaf076a918023f75a53e6fcd`.
+Protasis accepts both. Phylax, Ephoros, and Hypomnema exit 0; all six specified
+Imprimatur runs score 100/100 with zero defects; Horos, `py_compile`, both
+receipt comparisons, and `git diff --check` exit 0.
+
+Fiat remains `fiat-v5.21.1`, frontier `state-shape-validation`, digest
+`e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa`,
+status `open`, with issue 363 as its next job. Protasis remains
+`protasis-v4.7.0`, frontier `amendment-block-check`, digest
+`1014071026a149d38e7d79c222dfcfc25dd061d825fac9e7813a3a46b184cd29`,
+status `open`, with its held amendment-block check as the next job. The two
+generation rows preserve those held fields.
+
+### Risk dispositions
+
+- `subject-confusion`: clean. Subject-labelled diagnostics, markers, receipts, and events remain distinct; legacy and two-subject recovery guards pass.
+- `prefix-forgery`: clean. Exact-prefix mismatch still refuses before mutation.
+- `amendment-selection`: clean after S2-R1-01. Only CommonMark fences with at most three leading spaces affect selection; decoys, duplicate blocks, and trailing sections refuse.
+- `field-ambiguity`: clean after S2-R1-02. Protasis owns the four fields, full replacement clauses, and replacement Exit command-presence rule before Fiat mutates.
+- `step-verdict-coverage`: clean. Every unbuilt step has one complete verdict; unknown, completed, missing, duplicate, and broken cases remain guarded.
+- `duplicate-step-source`: clean after S2-R1-01. Packets retain one numbered and titled baseline; visible appended or indented-code step headings refuse.
+- `effective-step-source`: clean. Mason and Warden receive the same exact baseline and applicable digest-matched amendment bytes in receipt order.
+- `repair-precedence`: clean. Current study digest and step remain required, and later study receipts invalidate older repairs.
+- `partial-write`: clean. Every interruption window finishes or rolls back once without mixed state or duplicate ledger events.
+- `pending-collision`: clean. One marker blocks other commands and two subject markers refuse without deletion.
+- `checker-binding`: clean. Captured bytes reach Protasis through fixed argv and bounded I/O; checker failure, unsafe path, and oversize refuse before mutation.
+- `post-amend-drift`: clean. Status, next, verify, packets, and receipt-history checks refuse unreceipted byte drift.
+- `legacy-recovery`: clean. Version-1 state and subjectless study markers remain readable and recover once.
+- `evidence-overclaim`: clean. The Promise remains limited to continuity, structure, receipt history, and source carriage, not truth or future command success.
+- `generation-collision`: clean on the recorded base. Both generation labels and all held frontier fields remain internally consistent and unchanged by the audit fixes.
+- `elenchus-identifier-swap`: clean by cold review. Format and schema retain their separate labelled roles in the source-bound Step 2 contract.
+- `audit-record-scope`: clean by cold review. Both round records use only the append-only `audit/AUDIT.md` exception; Mason's product scope is not widened.
+
+### Qualifications
+
+The round establishes no semantic correctness for free-form replacement prose,
+future command success, remote signature, push, pull request, integration
+result, GitHub state, or audit-host enforcement. The Sapheneia comparison
+preserves the zero finding count, required empty table, date, identifiers,
+paths, hashes, roles, counts, prior verdict, current null verdict, all 17 risk
+dispositions, qualifications, unknowns, negative results, and lead disposition;
+it changes no earlier audit byte.
+
+Leads not pursued: none.
+
+## Capture receipt binding, step 1, round 1 -- 2026-08-24
+
+Non-Solidity round over the two Markdown documents step 1 commits, at
+`3dbabca3f87a5dd542fc0f49d04cbede60de1742`. Zero findings.
+
+The three bundled lints exit 0: Phylax and Ephoros over `plugins` and `tests`,
+Hypomnema over both new documents and over the required tree
+`README.md AGENTS.md .agents plugins docs`. Protasis accepts the study in
+`--study` mode and the runbook in runbook mode. Imprimatur reports no defect on
+either, both scoring 100.0. Horos reports the boundary matches the tree, so
+`.horos/boundary.json` stands unchanged. The Hexaemeron suite passes 962/962.
+The commit's local signature is good and it carries exactly one co-author and
+one origin trailer.
+
+The root suite needs stating precisely, because this step's exit criterion was
+written before the receipts it describes existed. In a clean worktree of
+`3dbabca` it reports 345 tests, `OK (skipped=5)`, which is the criterion as
+written. In this run's own worktree the same command reports 5 failures, every
+one of them `tests/test_run_observation_capture.py` reading this delivery's
+`.hexaemeron/study.md` and `.hexaemeron/runbook.md` instead of issue 435's. That
+is issue 574 itself, the defect step 2 removes, and it shows up at step 1
+because writing a study and a runbook is what creates it. The tracked tree meets
+the exit and the run worktree cannot. No amendment was made: the criterion is
+right about the artefact the step delivers, and the run worktree figure is the
+reproduction step 2 starts from.
+
+Two register concerns are reachable at this step and both were checked.
+`digest-transcription`: both digests the study quotes,
+`6858aaeadb12f204538b9120e51390b9c940fa995c8edb1471815d89aaa7f404` and
+`56df27b7faae2af8f7ba16ec89526413038def6a0bbf86ff0274dc566f8bf9c5`, appear
+byte-identical in `tests/test_run_observation_capture.py`, and the base SHA the
+study states matches the run's recorded base `7f4264ecc26ac2149ddb99834433bee3b5dd9fdc`.
+`untracked-path-read`: the step changes no code, so every read in the module is
+byte-identical to the entry state. The other four concerns, `weakened-claim`,
+`guard-map-drift`, `dormant-skip` and `subprocess-argv`, sit in step 2's diff
+and are not yet reachable.
+
+Brevitas is recorded rather than gated: clean on the study, B010 and B001 on the
+runbook, which a two-step specification cannot satisfy. The shipped
+`docs/hypomnema-quoted-specimen-runbook.md` carries the same two codes on `main`.
+
+Leads not pursued: none.
+
+## Capture receipt binding, step 2, round 1 -- 2026-08-24
+
+Non-Solidity round over the test rebinding at
+`4141b8593e9c568f9e01d04c2dbd70ebd228f599`. Zero findings.
+
+The three bundled lints exit 0: Phylax and Ephoros over `plugins` and `tests`,
+Hypomnema over the required tree `README.md AGENTS.md .agents plugins docs`.
+Horos reports the boundary matches the tree. `promise_machine.py` reports clean
+on `coverage --check`, `check` and `sync --check` after the module's recorded
+digest moved to
+`cb2eb238380a216033f115a23398c18072ad1f227113aae97b57a4bb74c05b74`. The Elenchus
+reporter exits 0 with 0 failures, 0 errors and 0 skipped. The root suite reports
+345 tests OK with no skips, where the same command reported 5 failures at the
+step's entry. The Hexaemeron suite passes 962/962. The commit's local signature
+is good and it carries exactly one co-author and one origin trailer.
+
+All six register concerns are reachable at this step and each was checked.
+`weakened-claim`: appending one byte to
+`docs/promise-machine/run-observation-capture-study.md` fails four of the five,
+and appending the two-byte sequence `5c 6e` to the runbook copy fails the fifth,
+so each assertion still bites on the artefact it now reads.
+`guard-map-drift`: the union-manifest test passes, so all twenty-three carryover
+ids still name a test that exists, R9-01 among them under its new name
+`test_receipt_assertions_never_read_a_live_run_path`.
+`dormant-skip`: the module reports 0 skipped, and the one remaining `skipTest`
+is the class setUp's guard for a detached parent worktree with no capture
+runtime, which is a real absence rather than a path a live run owns.
+`digest-transcription`: both recorded digests are unchanged from the entry state
+and each equals the recomputed hash of its tracked copy, which is what two of
+the five now assert.
+`untracked-path-read`: the module carries no live-run state read at all, down
+from ten lines at the step's entry, and the new guard makes that a standing
+assertion rather than a one-time check.
+`subprocess-argv`: two subprocess calls remain, the `git show` in the
+newline-escape test and the `elenchus.py --help` in R1-08, both argv lists, with
+no `shell=True` anywhere in the module.
+
+One deviation from the runbook's stated method. Its Tests field said the
+mutation proof would run against a copy in a temporary directory. It ran against
+the tracked copies in the worktree instead, restored with `git checkout --` after
+each of the two mutations, with `git status --short docs/` empty afterwards. The
+proof is the same and the tree is where it started, but the method is not the one
+the step named.
+
+Leads not pursued: none.
+
+## Where the rounds after this one are
+
+Every run appended here, from a literal default in the Fiat controller. That put
+this file in `done sync-run`'s overlap set on every integration where anything
+else had merged, so a run that had only appended to it still owed a green check
+over it. `fiat-v5.22.1` derives `audit/rounds/<run branch with separators
+flattened>.md` at `init` instead, one record per run.
+
+This file keeps every round written before that change and takes no new ones.
+Nothing above this line was edited. The reasoning is in
+[ADR-025](../docs/decisions/ADR-025-give-each-fiat-run-its-own-audit-record.md),
+and Protasis item 2 tells a study to read both.
+
+## Step 1, round 1 -- 2026-08-24
+
+Zero findings.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+The audited range is
+`08512d4ada7b1d7418e1af213be0d4b8c1494b6d..da5069195737aa17ece2ba9ebc448b6072b951cf`
+on `fiat/controller-currency-guarantee-step-1-publish-the-accepted-controller`.
+One commit; its parent is the run branch tip and the study's stated starting
+ref. It adds only `docs/fiat-controller-currency-study.md` and
+`docs/fiat-controller-currency-runbook.md`, both regular non-executable
+files. Both are byte-identical to their receipted sources: `cmp` against
+`.hexaemeron/study.md` and `.hexaemeron/runbook.md` exits 0 for each, the
+study SHA-256 is
+`ebc957fd8570d36f39b2e1597d09f61369498c390b9f4ef7a2158d7ed764cbee`, and the
+runbook SHA-256 is
+`964e52909a0e91951069d6d0e83032b5e04e6baa853b2544747604912ad46a7c`. The
+runbook's embedded source receipt quotes that same study digest, starting
+ref, and run branch. The study's five relative links resolve from `docs/` to
+the elenchus, ephoros, hypomnema, metron, and phylax `SKILL.md` files, and
+the runbook carries no relative link. Step 1's Files field permits
+`audit/AUDIT.md` solely for append-only Warden round records, so this append
+stays inside the implementation boundary.
+
+The three bundled lints exit 0: Phylax and Ephoros over `plugins` and
+`tests`, Hypomnema over `README.md AGENTS.md .agents plugins docs`. Protasis
+exits 0 on the study in `--study` mode and on the runbook. Imprimatur exits 0
+on each, score 100.0/100 with zero defects; its runbook output lists only
+known-false-positive and cadence signals. Horos reports `boundary matches the
+tree`, so the untouched `.horos/boundary.json` is correct. `git diff --check`
+over the range exits 0. The root suite passes 349/349 and the Hexaemeron
+suite passes 1019/1019, each at exit 0. The security suite stays waived: no
+Solidity in scope, and this range is Markdown only. The commit has a good
+local Shoggoth signature and exactly one
+`Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` trailer and one
+`Wildcat-Origin: shoggoth` trailer. No Elenchus repair report was created and
+no Elenchus verdict applies to this zero-finding round.
+
+Two of the study's internal citations were spot-checked: `audit/AUDIT.md`
+line 11977 carries the `controller_version` lead driving installed
+`fiat-v5.14.1` against repository `fiat-v5.15.1`, as the study quotes it, and
+`I320-S3-R2-01` exists as the `ls-remote` parsing record.
+
+Eight register ids are not reachable in this docs-only range and remain owed
+to their steps: `upstream-read-surface`, `url-source-confusion`,
+`registry-hostile-input`, `route-misdetection`, and `state-compat` sit in
+step 2's controller work; `repin-partiality` sits in step 3;
+`ledger-arithmetic` and `version-propagation` sit in step 4. This round makes
+no claim about their implementation. The other four are reachable at
+specification level and were reviewed. `verdict-honesty`: both documents keep
+`behind` and `unknown` distinct at every occurrence -- the study's option B,
+glossary, and fail-closed section, and the runbook's step 2 exit conditions 1
+and 4. `waiver-visibility`: the flag, the recorded reason, and the runbook's
+empty-reason refusal agree across both documents. `secret-echo`: neither
+document carries a credentialed URL, raw child output, or registry bytes, and
+the only remote URL quoted is the public marketplace origin.
+`bootstrap-limit`: the study states the gate governs runs after the next
+re-pin, and the runbook's step 4 exit condition 1 binds `plugin-currency.md`
+to state both limits. The implementations of all four remain owed where the
+runbook places them.
+
+Qualification: this round establishes publication fidelity and tree health,
+not step 2 to 4 behaviour, remote signature verification, push, pull request,
+or integration state.
+
+The Sapheneia durable-record comparison preserved the heading, the empty
+finding table, the zero count, the date, every identifier, path, digest,
+exit code, suite count, and quoted token, all twelve register dispositions,
+the qualification, and the lead disposition item by item. It changes no
+existing audit byte.
+
+Leads not pursued: the study's three external links (issue 363, pull requests
+583 and 585) were not fetched, and its 2026-08-24 host-state measurements
+under `~/.claude/plugins` describe a host outside the tracked tree and were
+not re-measured; both stand as receipted study claims. No other lead was
+found.
+
+## Step 2, round 1 -- 2026-08-24
+
+Two findings, both fixed on the stacked branch.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | `hexctl record controller_currency` replaced the init-written provenance receipt in state with an arbitrary value; `verify` stayed green afterwards and the honest values survived only in the init transition, while `task_issue`, the other init-written receipt, already had an immutability guard | fixed |
+| S2-R1-02 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | a git-pinned install whose marketplace clone is missing read route and verdict `managed` with the pin recorded and no warning, so deleting one directory silenced the gate without a trace, against the study glossary (pin absent on the managed route) and the verdict-honesty control (an unobservable head warns) | fixed |
+
+The audited range is
+`f97b10a90e69db3c2e48a42680967ec1fcc7137f..d113c06b7eb267e1aade53d81a3c0ad940e7a72a`
+on `fiat/controller-currency-guarantee-step-2-observe-controller-currency-at-i`,
+two commits: `068a8da2bbd66c6f04c36cdc596d059115114dcc` adds the observation,
+the init gate, the waiver flag, the `test_hexctl_currency.py` suite, the
+shared fake-git `ls-remote` log hook in `test_hexctl.py`, and the six
+refreshed digest pins; `d113c06b7eb267e1aade53d81a3c0ad940e7a72a` adds
+ADR-033. Both commits have a good local Shoggoth signature and exactly one
+`Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` trailer and one
+`Wildcat-Origin: shoggoth` trailer. The range touches only files the amended
+Step 2 Files boundary names; this append and the fixes stay inside it too.
+
+Six-pin note, recorded as directed: the coverage refresh in `068a8da2`
+changed six `hexctl.py` digest pins in `tests/promise_machine_coverage.json`
+-- five `runtime.*` rows plus `run_observation_binding.controller.sha256` --
+where the amendment's Why field counted five. The Files clause ("refreshed
+runtime digests only") governs, and all six are digests of the same runtime
+file: the JSON diff replaces only sha256 values on `hexctl.py` rows, 12
+changed lines, nothing else, from
+`b84075e32d73602eb2e05bb12070845740811008f203e6422497f99827982a6b` to
+`7a629f691cc65c588dbdd9ee22392a0a61e9371f9581dd30688f230cd549be54`, and the
+new value equals the file's digest at both commits. The fixes commit
+refreshes the same six pins again to
+`43ee3e565d20a41fab4df1c8b417ec562828e73c008199ff416fe2538e1c50f5` for the
+repaired controller bytes.
+
+Mechanical results, re-run on the fixed tree after a session interruption so
+every number below is from a completed run: Phylax, Ephoros (each over
+`plugins tests`) and Hypomnema (over `README.md AGENTS.md .agents plugins
+docs`) all print `clean` and exit 0, both before and after the fixes. The
+Hexaemeron suite passed 1037/1037 at the step tip and passes 1039/1039 with
+the fixes; the root suite passes 349/349 at both points. Imprimatur exits 0
+on ADR-033 at score 100.0/100 with zero defects. Horos reports `boundary
+matches the tree` and `git diff --check` exits 0 over the range and after
+the fixes. The security suite stays waived: no Solidity in scope; the range
+changes the Python controller, tests, one JSON fixture and one ADR.
+
+The Elenchus convention was checked directly: with the
+`observe_controller_currency()` call neutralised in `cmd_init`, the three
+sampled guards (behind refusal, waiver receipt, current provenance) fail
+3/3, and the tree was restored byte-clean afterwards. The suite carries 18
+gate tests at the step tip, six beyond the required twelve, and 20 after
+the fixes.
+
+Fixes: one commit, `561252ff2f287e72c4e339f81ed921cb62cc75fc` on
+`fiat/controller-currency-guarantee-step-2-observe-controller-currency-at-i--audit`,
+referencing both finding ids, signed with a good Shoggoth signature and the
+two trailers. S2-R1-01: `cmd_record` now refuses the `controller_currency`
+key by name, as it already did for `task_issue`, with a guard test that
+drives the CLI. S2-R1-02: only a pin-absent record classifies as `managed`;
+a recorded pin with a missing clone now reads route `git-backed`, verdict
+`unknown`, warning `clone-missing`, pin recorded and head an explicit null,
+with a guard test; the managed-route test now models a true pinless managed
+install and additionally asserts `pin` null with the clone present but
+unread. The source-bound Elenchus runner was invoked exactly as Step 2
+declares it -- test command `python3 plugins/hexaemeron/tests/run_tests.py
+--elenchus-report {report}`, format `unittest-json-v1`, report file
+`.elenchus/fiat-controller-currency-step-2.json`, fresh path inside the
+runner's detached parent worktree -- against the fixes commit. Its verdict
+is `guarded`: the parent report is complete, 1039 tests executed, exactly
+the two new guards fail as assertions, zero errors, zero skips.
+
+Risk-id dispositions for this range:
+
+- `upstream-read-surface`: holds. The one `ls-remote` runs argv-fixed
+  (`ls-remote --refs origin refs/heads/<branch>`), shell-free, with
+  `GIT_TERMINAL_PROMPT=0` (witnessed by a test), `GIT_TIMEOUT` and the
+  output cap through `bounded_probe`, and the URL-confinement test proves
+  exactly one read at init. Failure vocabulary is fixed
+  (`remote-start|timeout|output-cap|failed|malformed`); no child byte
+  reaches any diagnosis, transition or receipt.
+- `url-source-confusion`: holds. The read runs with cwd inside the
+  marketplace clone naming remote `origin`; no URL string passes through
+  controller code, and a hostile target-repository `url.insteadOf` rewrite
+  is proven inert by test. The plugins root derives from
+  `os.path.realpath(__file__)`, which also normalises `..`, so no registry
+  or environment value can steer the directory; a crafted `installPath` is
+  only string-compared, never opened or followed.
+- `registry-hostile-input`: holds. Missing, oversized (1 MiB cap),
+  malformed, wrong-kind and unmatched registries each read `unknown` with a
+  named warning, by test; a non-hex pin reads
+  `unknown`/`registry-pin-malformed` and mixed-kind entries are skipped, by
+  direct probe; nothing echoes registry bytes. Multiple matching install
+  records resolve first-match in registry order, deterministically.
+- `route-misdetection`: S2-R1-02 found here and fixed. Cache-split
+  precedence over the in-repo check is deterministic when both conditions
+  hold; an unmatched install path reads `unknown` per test; the deepest
+  `cache` ancestor with marketplace, plugin and version components decides,
+  and a wrong split degrades to `registry-missing`, never a verdict.
+- `verdict-honesty`: holds with the S2-R1-02 repair. `behind` requires a
+  validated pin and one well-formed observed head that differ; every
+  `unknown` path returns before the comparison, so `unknown` cannot promote;
+  a malformed remote line, wrong ref, duplicate line, non-SHA and empty
+  answer each read `remote-malformed` by test. A waiver passed when the
+  verdict is not `behind` is recorded verbatim beside the true verdict --
+  the receipt stays honest about both.
+- `waiver-visibility`: holds, strengthened by S2-R1-01. An empty reason is
+  refused by test; a waived init records verdict `behind` and the reason;
+  no other flag or environment value silences the gate; and the receipt can
+  no longer be rewritten after init, so the ledger and the receipt now
+  agree durably.
+- `secret-echo`: holds. The refusal states only the two validated hex SHAs
+  the exit condition requires; warnings come from a closed vocabulary; the
+  behind-refusal test asserts no `https://` reaches stderr and the
+  confinement test asserts no URL reaches the receipt.
+- `state-compat`: holds. The compat test strips the receipt from state and
+  the init transition, re-fingerprints and re-hashes the ledger entry, then
+  drives `status`, `verify` and `next` through the CLI at exit 0 -- real
+  `load_state` and `verify` paths, not a JSON reload.
+- `bootstrap-limit`: reviewed at its documentation surface: ADR-033 states
+  the gate ships inside the artifact it gates and governs runs after the
+  next re-pin. The reference and SKILL text land in step 4; no claim here.
+- `repin-partiality` sits in step 3, `ledger-arithmetic` and
+  `version-propagation` in step 4: not reachable in this range, no claim.
+
+The `bounded_run` refactor preserves every existing caller: `bounded_run`
+now wraps the non-dying `bounded_probe` core, the three refusal messages
+(`could not start`, `timed out after {GIT_TIMEOUT} seconds`, `exceeded
+{GIT_OUTPUT_MAX}-byte output cap`) are byte-identical at the same exit 2,
+the returncode passes through unchanged, and `env=None` inherits the parent
+environment exactly as before, so `bounded_tool`, `bounded_tool_status`,
+`bounded_git` and the publishable-versions `git show` reader keep their
+refusal semantics; the full green suites at both ends carry the regression
+evidence. The `branch_name_ok` extraction keeps `check_branch_name`
+behaviour identical and gives the clone-HEAD read the same conservative
+refname subset, which also keeps a leading-dash argv confusion out of the
+`ls-remote` call because the passed ref always begins `refs/heads/`.
+
+Qualification: this round establishes the audited range's behaviour under
+the study's boundary controls and the fixes above, not step 3 or 4
+behaviour, remote signature verification, push, pull request, or
+integration state. The Elenchus line records the runner's declared result;
+it does not attest the report bytes.
+
+The Sapheneia durable-record comparison preserved the heading, the finding
+table with both ids, severities, files and statuses, the audited range,
+branch and three commit SHAs, all four digests, the six-pin count and
+12-line measurement, every exit code, all four suite counts, the 3/3
+spot-check, the 18/20 test counts, the Elenchus contract tokens and
+`guarded` verdict with its counters, all twelve register dispositions, the
+qualification, and every lead below, item by item. The comparison caught one
+mismatched number in the draft -- the gate-test tally, drafted 17/19 against
+the measured 18/20 -- which was corrected before this append. It changes no
+existing audit byte.
+
+Leads seen and not pursued: the `registry-pin-malformed` branch has no
+dedicated suite guard (probed by hand here, reads `unknown`); `COMMIT_RE`
+accepts 64-hex object-format pins alongside 40-hex, consistent with the
+codebase-wide validator and still hex-bounded, though the amendment's test
+list says "not 40-hex"; a hostile registry record with a crafted
+`installPath` prefix such as `/` can supply the pin for any file, which
+stays inside the registry's existing authority over pin values and is never
+echoed or dereferenced; `bounded_probe` inherits stdin as every
+`bounded_run` caller always has, bounded by the timeout; and a clone whose
+`.git/HEAD` is detached or unreadable reads `clone-head-unreadable` by
+probe, without a dedicated suite guard. None of these changes a verdict or
+crosses a boundary; they stand for a later round or step.
+
+## Step 2, round 2 -- 2026-08-24
+
+Zero findings.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+The audited range is
+`d113c06b7eb267e1aade53d81a3c0ad940e7a72a..fb98d4da595070ec3533f6cabdf30e59355653b0`
+on
+`fiat/controller-currency-guarantee-step-2-observe-controller-currency-at-i--audit`,
+two commits: `561252ff2f287e72c4e339f81ed921cb62cc75fc` carries the round 1
+fixes for S2-R1-01 and S2-R1-02 with their guard tests and the six digest
+pins refreshed to
+`43ee3e565d20a41fab4df1c8b417ec562828e73c008199ff416fe2538e1c50f5`, and
+`fb98d4da595070ec3533f6cabdf30e59355653b0` appends the round 1 record to
+`audit/AUDIT.md` and touches nothing else. Both commits have a good local
+Shoggoth signature and exactly one
+`Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` trailer and one
+`Wildcat-Origin: shoggoth` trailer. This round re-audits the two repairs on
+the fixed tree.
+
+The S2-R1-01 repair breaks no legitimate record path: the only writers of
+the `controller_currency` key are init's receipt and init transition, a
+search across `plugins/hexaemeron/skills`, `docs` and `README.md` finds no
+flow that directs `hexctl record controller_currency`, and the refusal sits
+after the phase-receipt check and before the `halt_note` and `task_issue`
+handling, which keep their behaviour. The refusal message is one fixed
+string with no interpolated value.
+
+The S2-R1-02 repair reads honestly on every side. A pinned install with the
+marketplace clone missing warns on stderr with the pre-existing unknown
+sentence naming `clone-missing` and stating that the receipt records the
+nulls rather than a verdict, so the wording claims neither `current` nor
+`behind`; the guard test pins the receipt to route `git-backed`, verdict
+`unknown`, warning `clone-missing`, the pin recorded and the head an
+explicit null, with no network read. The rewritten managed fixture is a true
+pinless install: `gitCommitSha` null classifies `absent`, the receipt
+asserts `pin` null, and the clone is present but unread.
+
+The four risk ids the fixes touched were re-checked on the fixed code.
+`verdict-honesty`: the `clone-missing` path returns before the comparison,
+and the only verdict assignments remain `no-pin`, `managed` on a pin-absent
+record, `current`/`behind` after one validated head, and `unknown`
+everywhere else. `route-misdetection`: `git-backed` now follows the
+registry's recorded pin, matching the study glossary, and the cache-split
+precedence is unchanged. `registry-hostile-input`: registry parsing is
+untouched by the fixes and its named-warning vocabulary is unchanged.
+`secret-echo`: the two new strings -- the `clone-missing` warning token and
+the record refusal -- are fixed vocabulary with no value bytes.
+
+Mechanical results for this round: Phylax, Ephoros (each over `plugins
+tests`) and Hypomnema (over `README.md AGENTS.md .agents plugins docs`) all
+print `clean` and exit 0. The Hexaemeron suite passes 1039/1039 and the root
+suite passes 349/349. Horos reports `boundary matches the tree` and `git
+diff --check` exits 0 over the range. The security suite stays waived: no
+Solidity in scope, unchanged from round 1. No repair was made this round, so
+no Elenchus report was created and no Elenchus verdict applies.
+
+Qualification: this round establishes that the round 1 repairs hold on the
+fixed tree and that the tree is healthy, not step 3 or 4 behaviour, remote
+signature verification, push, pull request, or integration state.
+
+The Sapheneia durable-record comparison preserved the heading, the zero
+count, the empty finding table, the date, the range, branch and both commit
+SHAs, the refreshed digest, both finding ids named as context with their
+held repairs, every exit code and suite count, all four re-checked register
+dispositions, the qualification, and the lead line below, item by item. It
+changes no existing audit byte.
+
+Leads not pursued: the five recorded at round 1 stand unchanged --
+the unguarded `registry-pin-malformed` branch, the 64-hex pin acceptance,
+the crafted `installPath` prefix inside the registry's existing authority,
+`bounded_probe` stdin inheritance, and the unguarded `clone-head-unreadable`
+branch. No new lead was found this round.
+
+## Step 3, round 1 -- 2026-08-24
+
+One finding, fixed on the stacked branch.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | low | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | a plugin key or version carrying control bytes forged extra `hexctl currency` text lines -- a demonstrated fabricated row reading as another plugin's all-clear verdict -- while the exit code and `--json` stayed honest | fixed |
+
+The audited range is
+`79a1df75719c44882847ef130f79b43b2bdf95d0..014b1c5f83801058a71bc4ced1cd95aea75630fa`
+on `fiat/controller-currency-guarantee-step-3-expose-the-currency-observation`,
+two commits: `75107d7cf3a162011caccd8675e7fe5febf81406` adds the read-only
+`hexctl currency [--json]` subcommand, the `currency_report` core, three
+extractions of the step 2 reads, the per-report remote memo and seven guard
+tests, with the six digest pins refreshed;
+`014b1c5f83801058a71bc4ced1cd95aea75630fa` names the re-pin boundary in the
+Kronos loop text. Both commits have a good local Shoggoth signature and
+exactly one `Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` trailer
+and one `Wildcat-Origin: shoggoth` trailer. The range touches only files the
+amended Step 3 Files boundary names; the fix and this append stay inside it.
+
+Six-pin note: the refresh replaces only sha256 values on the same six
+`hexctl.py` rows as step 2 -- five `runtime.*` rows plus
+`run_observation_binding.controller.sha256` -- 12 changed lines, from
+`43ee3e565d20a41fab4df1c8b417ec562828e73c008199ff416fe2538e1c50f5` to
+`b00e525ef023dd2bf516197bcdd905e5bb4bbe653da41d4669af300eebe7ecc4`, and the
+new value equals the file's digest at both range commits. The fixes commit
+refreshes the same six to
+`ccc703a00792f0447a1a4d8ab7d04ac2853229ae8897fc7b5392a184f9aa4495`.
+
+Extraction compatibility: `currency_registry_load`, `currency_record_pin`
+and `currency_pin_observation` re-host the step 2 logic line-faithfully --
+the bounded registry read with its four named failure kinds, the per-record
+pin answer including `registry-pin-malformed`, and the
+managed/git-backed/`clone-missing` tail carrying the S2-R1-02 semantics and
+comment. All twenty step 2 guards run green through the refactor, first-match
+multi-record resolution is unchanged in `currency_registry_pin`, and a direct
+probe of defective records through the new report path reads `unknown` rows
+with fixed warnings (`registry-wrong-kind` for a non-list value, an empty
+list and a non-dict record; `install-path-unrecognised` for a path outside
+the derived root) while the plugin never vanishes from the report.
+
+Read-only honesty: `cmd_currency` is absent from `MUTATING`, so the
+dispatcher runs it without `held_lock`, whose directory creation is
+init-only besides; the refusal paths go through `die`, which writes nothing;
+and the mixed-verdict guard asserts no `.hexaemeron` exists after a report.
+No lock, state, or breadcrumb is possible on any path.
+
+The dedup memo is per-report, keyed on (clone directory, branch): fourteen
+plugins over two marketplaces cost exactly two reads by test, asserted on
+realpath'd clone directories, so no cross-marketplace head can label another
+marketplace's row. A memoized failure is (null, warning), so poisoning can
+only mark same-origin rows `unknown` with the named warning, never mint a
+`current` or `behind`; each row compares its own registry pin against the
+shared head.
+
+Exit-code honesty: a registry that cannot answer at all refuses at exit 1
+with empty stdout (missing and malformed both tested), a controller outside
+an install cache refuses at exit 1 (tested), one hostile record is a
+row-level `unknown` (tested via the malformed pin), exit 3 while anything is
+behind and 0 when nothing is (both tested). The refusal/row boundary is
+principled and stated in the docstring: an empty success would read as a
+fleet with nothing behind.
+
+The superset call is recorded in the docstring and matches behaviour: every
+install record gets a row because filtering by a hard-coded marketplace name
+would blind the report on a private-mirror host; the wildcat-labs
+requirement is satisfied as a subset, and each row's marketplace is derived
+from its own realpath'd `installPath` under the controller's derived plugins
+root or the row reads `install-path-unrecognised`. The warning field is a
+closed vocabulary with no URL or registry byte; row identity fields (plugin,
+version) are the report's spec-required subject, and S3-R1-01 closed the one
+channel where their bytes could forge report structure.
+
+Kronos: the re-pin text sits at the rescan boundary of loop step 8, before
+"Then rescan the entire scope from disk", runs `hexctl currency`, loops
+while exit 3 reinstalling through the host's own installer, refreshes and
+re-resolves paths, and cites `../fiat/references/plugin-currency.md`, which
+resolves; it contradicts neither the `pull`/`push` state rules, which govern
+`kronos.py` subcommands, nor phase-only mode, which runs the same loop over
+a narrower scope. Imprimatur on the changed `SKILL.md` exits 0 at 100.0/100
+with zero defects, listing only known-false-positive and cadence signals.
+
+Mechanical results: Phylax, Ephoros and Hypomnema print `clean` and exit 0
+at the step tip and again on the fixed tree. The Hexaemeron suite passes
+1046/1046 at the tip and 1047/1047 with the fix; the root suite passes
+349/349 at both points. Horos reports `boundary matches the tree` and
+`git diff --check` exits 0 over the range and on the fixed tree. The
+security suite stays waived: no Solidity in scope; the range changes the
+Python controller, its tests, one JSON fixture and one skill's loop prose.
+
+Fix: one commit, `61ddcfe32c05fc81c9be509db8c25a39e7fdb85d` on
+`fiat/controller-currency-guarantee-step-3-expose-the-currency-observation--audit`,
+signed with a good Shoggoth signature and the two trailers: text mode renders
+every row field through one helper that maps control bytes to `?`, leaving
+`--json` and the exit contract as the machine surfaces, with a guard test.
+The source-bound Elenchus runner was invoked exactly as Step 3 declares it --
+test command `python3 plugins/hexaemeron/tests/run_tests.py
+--elenchus-report {report}`, format `unittest-json-v1`, report file
+`.elenchus/fiat-controller-currency-step-3.json`, fresh inside the runner's
+detached parent worktree -- against the fixes commit. Its verdict is
+`guarded`: the parent report is complete, 1047 tests executed, exactly the
+one new guard fails as an assertion, zero errors, zero skips.
+
+Risk-id dispositions for this range: `repin-partiality`, the step's
+headline, holds at its report half -- every install record is a row across
+the fourteen-plugin fleet by test, one bounded read per distinct origin by
+test, exit 3 gates the loop, and the Kronos text reinstalls everything
+behind -- while the operational half, the next init receipt evidencing the
+new pin, is stated in prose and owed to operation, with no claim here.
+`verdict-honesty` holds: rows reuse the init observation's verdict logic,
+a hostile pin is a row-level `unknown`, and a refusal replaces the empty
+all-clear. `secret-echo` holds with the S3-R1-01 repair; the refusal
+interpolates only the fixed warning token. `upstream-read-surface` holds:
+the memo wraps the same bounded `currency_remote_head` with no new argv
+shape. `url-source-confusion` holds: no target-repository or environment
+value reaches routing; the marketplace comes from the record's install path
+confined under the derived root. `registry-hostile-input` holds: the
+load/record split keeps the named-warning contract at both granularities.
+`route-misdetection` and `state-compat` are unchanged by this range and
+their step 2 evidence stands; `waiver-visibility` and `bootstrap-limit` are
+not reachable here; `ledger-arithmetic` and `version-propagation` sit in
+step 4, no claim.
+
+Qualification: this round establishes the subcommand's behaviour, the
+refactor's fidelity and the loop text's placement, not the reinstall
+operation itself, step 4 behaviour, remote signature verification, push,
+pull request, or integration state. The Elenchus line records the runner's
+declared result; it does not attest the report bytes.
+
+The Sapheneia durable-record comparison preserved the heading, the finding
+with its id, severity, file and status, the range, branch and three commit
+SHAs, all three digests, the six-pin and 12-line measurements, every exit
+code, all four suite counts, the two-read memo evidence, the guard tallies,
+the Elenchus contract tokens and `guarded` verdict with its counters, all
+twelve register dispositions, the qualification, and every lead below, item
+by item. It changes no existing audit byte.
+
+Leads seen and not pursued: a well-formed registry whose plugins map is
+empty yields zero rows at exit 0, an all-clear a lying-but-valid registry
+could stage, inside the registry's existing authority (the unreadable case
+refuses); a space inside a plugin name shifts text columns without forging
+lines, and `--json` is the parse surface; the defective-record row shapes
+and the empty-plugins case above were probed by hand but carry no dedicated
+suite guard; a fleet with unknowns and nothing behind exits 0 by
+construction without a dedicated guard; and the step 2 leads stand as
+recorded. None of these changes a verdict or crosses a boundary.
+
+## Step 3, round 2 -- 2026-08-24
+
+One finding, fixed on the stacked branch.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R2-01 | medium | plugins/hexaemeron/skills/fiat/scripts/hexctl.py | the round 1 sanitizer mapped only C0 controls and DEL, so a Unicode line or paragraph separator in a plugin key still forged a text row for any `splitlines` consumer, and a lone surrogate in a registry value crashed `hexctl currency` text mode mid-report with a raw `UnicodeEncodeError` traceback at exit 1 -- the hostile-registry traceback the study contract names -- both demonstrated end to end | fixed |
+
+This round re-audits round 1's fix commit
+`61ddcfe32c05fc81c9be509db8c25a39e7fdb85d` on
+`fiat/controller-currency-guarantee-step-3-expose-the-currency-observation--audit`,
+entered at `63adaf8c1d2416e4b900cb489d76f35965f42fd3` with both suites green
+(1047/1047 and 349/349) and all three lints at exit 0.
+
+The regression audit of `currency_text_field` found the finding above and
+otherwise holds. Byte-for-byte preservation was probed directly: plugin
+slugs, semver strings, 40-hex SHAs, every verdict and route token, and the
+`null` rendering pass unchanged through the old and new predicate alike.
+`--json` stays byte-honest and crash-free: `json.dumps` under its default
+ASCII escaping carries raw registry values, a lone surrogate included, which
+the new guard asserts by reading the hostile value back from the JSON rows.
+No other text-rendering path in the step 3 code prints registry bytes: the
+two refusal messages and every warning token are fixed vocabulary.
+`secret-echo` and `verdict-honesty` hold on the fixed rendering because the
+sanitizer is display-only -- verdicts, rows and the exit code are computed
+before any rendering, and the JSON surface is untouched.
+
+The repair replaces the byte-class predicate with printability: every
+non-printable character renders as `?`, which a direct probe shows inert for
+NEL, the line and paragraph separators, the bidi override, the zero-width
+space, the no-break space and a lone surrogate, while every legitimate value
+above passes byte for byte. The bidi-override display residue is thereby
+closed along with the reported classes.
+
+Fix: one commit, `f4cc25c1bfff65940b12c49fa34d043f0bbc0e9f`, signed with a
+good Shoggoth signature and the two trailers, carrying the predicate change,
+the guard test (a `\u2028`-forged key plus a `\ud800` version: no traceback,
+line count equals row count, one `hexaemeron` row, raw value present in
+`--json`), and the six digest pins refreshed from
+`ccc703a00792f0447a1a4d8ab7d04ac2853229ae8897fc7b5392a184f9aa4495` to
+`782629a7d37d68a31ba53503534ece05fb6432f3bc97ac8aa486240294d24a5e`, values
+only, same six rows. The source-bound Elenchus runner was invoked with the
+step's declared test command and format at this round's fresh report path
+`.elenchus/fiat-controller-currency-step-3-r2.json` against the fixes
+commit. Its verdict is `guarded`: the parent report is complete, 1048 tests
+executed, exactly the one new guard fails as an assertion, zero errors,
+zero skips.
+
+Mechanical results on the fixed tree: Phylax, Ephoros and Hypomnema print
+`clean` and exit 0; the Hexaemeron suite passes 1048/1048 and the root suite
+349/349; Horos reports `boundary matches the tree`; `git diff --check`
+exits 0. The security suite stays waived: no Solidity in scope, unchanged.
+
+Qualification: this round establishes the round 1 repair's completion and
+the fixed rendering's behaviour, not the reinstall operation, step 4
+behaviour, remote signature verification, push, pull request, or
+integration state. The Elenchus line records the runner's declared result;
+it does not attest the report bytes.
+
+The Sapheneia durable-record comparison preserved the heading, the finding
+with its id, severity, file and status, both commit SHAs and the entry SHA,
+both digests, every suite count and exit code, the probe inventories, the
+Elenchus contract tokens and `guarded` verdict with its counters, the
+qualification, and the leads below, item by item. It changes no existing
+audit byte.
+
+Leads not pursued: the round 1 leads stand as recorded -- a well-formed
+registry with an empty plugins map still reads zero rows at exit 0, a space
+inside a plugin name still shifts text columns without forging lines, and
+the defective-record row shapes and the unknowns-only fleet still carry no
+dedicated suite guard. One new lead: lookalike printable names (homoglyphs)
+remain renderable, as any name display leaves them. The step 2 leads stand
+as recorded.
+
+## Step 3, round 3 -- 2026-08-24
+
+Zero findings.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+This convergence round re-audits round 2's fix commit
+`f4cc25c1bfff65940b12c49fa34d043f0bbc0e9f` on
+`fiat/controller-currency-guarantee-step-3-expose-the-currency-observation--audit`,
+entered at `4d858a7570659cecc3654e822e3cd85dce448954` with a clean tree.
+
+The printability predicate cannot misrender a value this registry
+legitimately carries. A direct probe passes byte for byte: plugin slugs
+including hyphenated ones, semver strings including pre-release and build
+metadata, 40- and 64-hex pins, every route and verdict token, marketplace
+names, and exotic-but-printable names -- accented, CJK, emoji and umlaut
+samples -- while `None` renders `null` and interior spaces are kept, since
+U+0020 is the one whitespace `str.isprintable` admits. The only characters
+the helper mutates are non-printables, which no legitimate name, version,
+hex pin or enum contains.
+
+The round 2 guard reads the fix and not an accident: with the predicate
+reverted in place to round 1's byte-class form, the guard fails on the
+separator-forgery assertion, and the tree was restored byte-clean
+afterwards.
+
+No rendering path in the range prints registry bytes unsanitized. The
+range's complete output inventory in the controller: the two refusal
+strings, whose only interpolation is the fixed registry warning token; the
+row warning suffix, a closed vocabulary; the text line, built exclusively
+from the sanitizing field helper; and the `--json` dump, the deliberate raw
+machine surface under native JSON escaping.
+
+Mechanical results: Phylax, Ephoros and Hypomnema print `clean` and exit 0.
+The Hexaemeron suite passes 1048/1048 and the root suite 349/349. The
+security suite stays waived: no Solidity in scope, unchanged. No repair was
+made this round, so no Elenchus report was created and no Elenchus verdict
+applies.
+
+Qualification: this round establishes the sanitizer's convergence and the
+range's rendering inventory, not the reinstall operation, step 4 behaviour,
+remote signature verification, push, pull request, or integration state.
+
+The Sapheneia durable-record comparison preserved the heading, the zero
+count, the empty finding table, the date, both commit SHAs, the probe
+inventories, the revert-check result, the rendering inventory, every exit
+code and suite count, the qualification, and the lead line below, item by
+item. It changes no existing audit byte.
+
+Leads not pursued: the standing step 2 and step 3 leads as recorded at
+rounds 1 and 2, unchanged. No new lead was found this round.
+
+## Step 4, round 1 -- 2026-08-24
+
+Zero findings.
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+
+The audited range is
+`74b46b5c01d7769980913dd7b179980016f716df..69b8b4205e221bb56ad81e1b6e2f91fdf962bd92`
+on
+`fiat/controller-currency-guarantee-step-4-align-the-documentation-and-vers`,
+two commits: `3dec30e33f545d9596d84c9e1985a3ae9db87865` rewrites
+`plugin-currency.md`; `69b8b4205e221bb56ad81e1b6e2f91fdf962bd92` carries both
+ledgers, both frontmatters, preflight step 3, the four manifests, the two
+pinned test surfaces and the seven base-verbatim evidence imports. Both
+commits have a good local Shoggoth signature and exactly one
+`Co-authored-by: Shoggoth <shoggoth@wildcat.finance>` trailer and one
+`Wildcat-Origin: shoggoth` trailer. The 18 touched files are exactly the
+third amendment's Files list; nothing else rode in.
+
+Ledger arithmetic, the headline risk, was checked byte by byte and by the
+controller's own gate. The absorbed `fiat-v5.22.1` and `fiat-v5.23.1` rows
+are byte-identical to `origin/main`'s at
+`0f835d5f5f7c95ad2716eb63bd9bdd8f68b0a841`, whose ledger head is
+`fiat-v5.23.1`, so `fiat-v5.24.1` is the next free version and appears
+exactly once; all three appended rows retain frontier revision
+`state-shape-validation` and digest `e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa` byte for byte, the
+header matches the newest row, and the held issue 363 job text is untouched
+-- the contract test's unchanged `FIAT_NEXT_JOB` literal enforces that
+mechanically. `frontier_close_fault` run against the tree ledger with the
+run's init snapshot (`fiat-v5.21.1`, 26 rows, sha256 `a4e5a531a53eafc779dae3f7aedc282292a9b01d4a0a55eb73a792032ec396a7`) and the
+28 base-published versions returns `None`: exactly one row this run owns.
+Kronos: one new `kronos-v0.7.0` generation row, absent from the base,
+retaining revision `terminal-goal-loop` and digest `ac28d95d80724aa001a92740f76416164e65d7b7b9cb5da43674d1ea73a214d1` byte
+for byte, the trailing evolution counter still 0, status still `mature`, and
+the header matching the newest row.
+
+Version propagation: all five compared surfaces read 1.6.0 -- both plugin
+manifests, both marketplace manifests, and the pinned
+`DELIVERY_PACKAGE_VERSIONS` map -- and the propagation suite passes. A
+tree-wide `1.5.9` sweep finds no sixth live surface: the remaining hits are
+fixture literals in the currency test's fabricated install layout, one
+receipted historical delivery doc describing the move to 1.5.9, and the
+receipted study's own host measurement.
+
+The seven base-verbatim imports hash-compare byte-identical to
+`origin/main`: `ADR-025-give-each-fiat-run-its-own-audit-record.md` and the
+six files under `plugins/hexaemeron/docs/fiat-per-run-audit-log/` and
+`plugins/hexaemeron/docs/fiat-bound-step-merge/`. The two pinned test
+surfaces change literals only: the propagation map's one version line, and
+the evolution contract's head-row literals (current version, latest version,
+three evidence substrings) with every assertion, the digest literal, and the
+frontier and next-job constants unchanged.
+
+`plugin-currency.md` describes the landed behaviour accurately, audit fixes
+included: the closed verdict vocabulary with `managed` defined as a pinless
+record and a missing clone reading `unknown` (S2-R1-02's semantics), the
+init refusal at exit 1 before any state with the two exits and the verbatim
+`--controller-currency-waiver '<reason>'` flag, the empty-reason refusal,
+the seven receipt fields as named in code, the `hexctl record` refusal of
+the receipt key (S2-R1-01), the read-only fleet report with the 0/3/1 exit
+contract and both refusal causes, one read per distinct origin, and the
+printability sanitizer (S3-R1-01/S3-R2-01). Every documented flag, key,
+route, verdict and field token greps verbatim in `hexctl.py`. Both honesty
+limits are stated in their own section -- currency at init rather than for
+the run's duration, and the gate governing runs after the next re-pin, never
+the run that wrote it -- and the bootstrap property also appears in
+ADR-033, the `fiat-v5.24.1` row, and the re-pin boundary's between-runs
+placement in the kronos row. The still-true sections are retained: per-host
+refresh, the mirror chain, the route check, the version gate, the
+`controller_version` receipt with its two-gaps distinction, and the in-repo
+identity case now stated in the observation's vocabulary. Preflight step 3
+reflects the enforced gate, names the waiver flag verbatim, keeps the
+stale-controller warning path, and cites the reference rather than
+restating it.
+
+Mechanical results: Phylax, Ephoros and Hypomnema print `clean` and exit 0
+-- the imported evidence targets satisfy the pointer walk. The Hexaemeron
+suite passes 1048/1048, the root suite 349/349, and
+`scripts/promise_machine.py check` reports `clean: 14 plugin(s), 14
+copy/copies` at exit 0. Imprimatur exits 0 at 100.0/100 with zero defects on
+`plugin-currency.md` and on the fiat `SKILL.md`. Horos reports `boundary
+matches the tree` and `git diff --check` exits 0 over the range. The
+security suite stays waived: no Solidity in scope; the range is Markdown,
+JSON manifests and two test-literal surfaces. No repair was made, so no
+Elenchus report was created and no Elenchus verdict applies.
+
+Risk-id dispositions for this range: `ledger-arithmetic` holds as measured
+above. `version-propagation` holds as measured above. `bootstrap-limit`
+holds: every surface describing the gate states it governs runs after the
+next re-pin. `repin-partiality`'s report half stands on step 3's evidence,
+its prose now restated in the reference and the kronos row; the operational
+half stays owed to operation. `verdict-honesty`, `waiver-visibility`,
+`secret-echo`, `upstream-read-surface`, `url-source-confusion`,
+`registry-hostile-input`, `route-misdetection` and `state-compat` are
+untouched by this range and their step 2 and 3 evidence stands; the
+demonstration suite (behind refusal, waiver receipt, in-repo nulls,
+currency exit contract) runs green inside the 1048.
+
+Qualification: this round establishes the range's fidelity to the amended
+step and the accuracy of its prose against the landed code, not remote
+signature verification, push, pull request, integration state, or the
+reinstall operation. The absorbed-row and import comparisons are against
+the locally recorded `origin/main` ref named above, not a fresh network
+fetch.
+
+The Sapheneia durable-record comparison preserved the heading, the zero
+count, the empty finding table, the date, the range, branch and three
+commit or ref SHAs, both ledger digests and both frontier revisions, the
+init-snapshot values, the 28-row published set size, the gate's `None`,
+the five surfaces and the version 1.6.0, the seven import identities, every
+exit code and suite count, the promise-machine line, all twelve register
+dispositions, the qualification, and the lead line below, item by item. It
+changes no existing audit byte.
+
+Leads not pursued: the package version moved minor (1.5.9 to 1.6.0), a
+choice the propagation suite accepts without policy input, taken as the
+mason's call and not re-litigated; the standing step 2 and step 3 leads as
+recorded. No new lead was found this round.
 
 ## Homologia, step 1, round 1 -- 2026-08-23
 

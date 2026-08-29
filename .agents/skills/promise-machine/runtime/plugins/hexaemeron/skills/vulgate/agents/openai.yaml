@@ -1,0 +1,4 @@
+interface:
+  display_name: "Vulgate"
+  short_description: "Voice mask that renders text into a plain human register without touching content"
+  default_prompt: "Use the vulgate skill from $hexaemeron to rewrite this text in a plain human register, content held constant."

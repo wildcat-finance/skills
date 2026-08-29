@@ -1,7 +1,7 @@
 {
   "name": "alexandria",
-  "version": "0.2.1",
-  "description": "Digest-bound lending-data releases with reviewed credit views and address queries.",
+  "version": "0.3.1",
+  "description": "Digest-bound lending-data releases with unsigned evidence statements, reviewed credit views and address queries.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
@@ -18,12 +18,12 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Alexandria",
-    "shortDescription": "Digest-bound lending-data releases with reviewed credit views and address queries.",
-    "longDescription": "Alexandria preserves heterogeneous lending-protocol captures as unchanged digest-addressed objects, binds them to exact scope and coverage, derives reviewed Goldfinch and Clearpool credit rows, and rebuilds a disposable address index for Probitas. A separate Compound v3 Phase 0 path pins the Comet registry, captures a bounded RPC corpus and verifies its method gates offline; the resumable interval collector remains unimplemented.",
+    "shortDescription": "Digest-bound lending-data releases with unsigned evidence statements, reviewed credit views and address queries.",
+    "longDescription": "Alexandria preserves heterogeneous lending-protocol captures as unchanged digest-addressed objects, binds them to exact scope and coverage, emits unsigned in-toto statements after offline verification, derives reviewed Goldfinch and Clearpool credit rows, and rebuilds a disposable address index for Probitas. Statement signing, publisher identity, provider completeness and canonical-chain claims remain outside Alexandria. A separate Compound v3 Phase 0 path pins the Comet registry, captures a bounded RPC corpus and verifies its method gates offline; the resumable interval collector remains unimplemented.",
     "developerName": "Wildcat Labs",
     "category": "Research",
     "capabilities": [],
-    "defaultPrompt": "Use $alexandria to preserve or verify this lending-data release, query its source-bound credit view, or build and check a bounded Compound v3 Phase 0 method release."
+    "defaultPrompt": "Use $alexandria to preserve or verify this lending-data release, emit its unsigned in-toto statement, query its source-bound credit view, or build and check a bounded Compound v3 Phase 0 method release."
   },
   "license": "Apache-2.0"
 }

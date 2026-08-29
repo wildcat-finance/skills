@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import re
 import sys
 import unittest
 from pathlib import Path
@@ -10,6 +9,9 @@ from pathlib import Path
 
 PLUGIN = Path(__file__).resolve().parents[1]
 ROOT = PLUGIN.parents[1]
+sys.path.insert(0, str(ROOT))
+from repo_contract import assert_host_descriptions_agree, assert_router_reaches
+
 SCRIPT = PLUGIN / "skills" / "brevitas" / "scripts" / "brevitas.py"
 SPEC = importlib.util.spec_from_file_location("brevitas", SCRIPT)
 assert SPEC and SPEC.loader
@@ -119,23 +121,16 @@ class BrevitasTests(unittest.TestCase):
         self.assertNotIn("B002", self.codes(VALID_FINDING))
 
     def test_host_descriptions_remain_identical(self) -> None:
-        claude = json.loads(
-            (PLUGIN / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
-        )
+        # Cross-host parity is the repo-wide contract; length is brevitas's own bound.
+        assert_host_descriptions_agree(self, "brevitas")
         codex = json.loads(
             (PLUGIN / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
         )
-        self.assertEqual(claude["description"], codex["description"])
-        self.assertEqual(codex["description"], codex["interface"]["shortDescription"])
         self.assertGreaterEqual(len(codex["description"]), 25)
         self.assertLessEqual(len(codex["description"]), 64)
 
     def test_promise_machine_router_reaches_the_runtime_contract(self) -> None:
-        portable = ROOT / ".agents" / "skills" / "promise-machine" / "SKILL.md"
-        links = re.findall(r"\[[^]]+\]\(([^)]+)\)", portable.read_text(encoding="utf-8"))
-        self.assertIn("../../../plugins/brevitas/AGENTS.md", links)
-        contract = (PLUGIN / "AGENTS.md").read_text(encoding="utf-8")
-        self.assertIn("`skills/brevitas/SKILL.md`", contract)
+        assert_router_reaches(self, "brevitas")
 
 
 if __name__ == "__main__":

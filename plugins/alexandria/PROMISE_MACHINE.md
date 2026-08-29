@@ -1,6 +1,10 @@
-# Promise Machine contract
-
 <!-- promise-machine: contract=promise-machine/v1; canonical=PROMISE_MACHINE.md; copies=generated -->
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/wildcat-finance/skills/main/assets/characters/promise-machine-binding.png" width="1200">
+</p>
+
+# Promise Machine contract
 
 This document is the normative contract for every skill distributed as part of
 Wildcat Labs Skills. Plugin-local files with this name are generated,
@@ -128,6 +132,16 @@ In particular:
   cross-host conformance.
 - Ariadne binds an artefact digest to declared evidence; without an external
   signature verifier it does not establish author identity.
+- A Fiat run-observation binding preserves the observation validator and
+  capture boundaries. It attaches only the checked prefix to one receipt; it
+  does not make observation availability or event truth delivery evidence.
+- Synkrisis contributes a checked cohort, bounded findings over it, a
+  fixed-template report and a recomputation of all three. Verification
+  establishes recomputability alone: it cannot turn repeated observations into
+  cause, model quality, or authority to
+  act. It preserves the validated observation and receipt boundaries, so a
+  comparison result carries its counterevidence and unknown runs into any
+  hand-off and strengthens nothing.
 
 Any unexplained strengthening is a conformance failure.
 
@@ -201,6 +215,46 @@ findings. The checker reaches no network and executes no evidence command.
 - Consequence: 1
 - Refuses: Unsafe or unbounded input, a final byte or identity mismatch, malformed or duplicate-key JSON, an open event shape, missing identity, invalid order or lifecycle, a forward or cross-run reference, unbound or strengthened evidence, hidden reasoning, raw payloads, non-scalar, non-NFC, control-bearing, bidirectional or otherwise unsafe repository paths, placeholder host facts, invalid token counts or a non-zero finding report.
 - Recovery: Inspect the stable finding code, repair the source record without having the checker mutate it, preserve unknowns and evidence boundaries, then rerun the same command.
+- Exceptions: none
+
+### promise-machine-run-observation-capture
+
+- Promise: A successful `python3 scripts/run_observation_capture.py check <candidate>` establishes that the named bounded candidate was processed by `promise-machine-run-observation-capture/v1` into one accepted event, visible gap, or refusal before a durable observation exists.
+- Evidence: The named candidate, closed standard-library adapter, capture schema, direct-allowlist fixtures, hostile byte-survival tests, source-owned reporter, and zero command exit.
+- Evidence classes: checked
+- Boundary: The result does not prove the source is true or complete, detect every secret, govern another host memory, itself bind a Fiat receipt, make a security conclusion, or authorise another controller transition.
+- Authorises: Passing an accepted result to the capture writer, or recording the bounded gap or refusal without treating it as an accepted observation.
+- Consequence: 1
+- Refuses: An open or oversized candidate, raw payload family, malformed redaction, unsafe repository path, low-entropy correlation input, unknown shape, or writer bypass.
+- Recovery: Remove the unsafe field from the candidate adapter, retain only a closed redaction or safe descriptor, then rerun the same command and hostile fixture surface.
+- Exceptions: none
+
+## Contributor ranking promise
+
+### promise-machine-contributor-ranking
+
+- Promise: A successful `python3 scripts/contributors.py --check` establishes that every contributor row GitHub returned for `wildcat-finance/skills`, and every merged pull-request author returned for each named supplemental repository, was placed in exactly one of ranked, excluded with a named reason, or refused; that each ranked login is a valid GitHub login absent from the declared runtime-host set and is neither the Shoggoth's account nor the repository owner; that a login qualified either through a resolved Skills commit with at least one bounded non-host authorship sample or by authoring a merged pull request in `wildcat-finance/shoggoth-wave-atlas`; that the order is Skills commits, then merged pull requests across both repositories, then login; and that `CONTRIBUTORS.md` and the marked region of `README.md` match that one computation byte for byte.
+- Evidence: The recorded Skills contributors, per-account Skills merged-pull-request and commit-authorship reads, the complete paginated closed-pull-request read for each supplemental repository, the host-set parity check against `hexctl.py`'s declaration, the login grammar check, the per-identity classification lines, the ranking digest, the byte comparison of both artefacts and zero command exit.
+- Evidence classes: checked, recorded
+- Boundary: Ranking does not establish that the counts fairly measure contribution, that a commit carried judgement, who wrote which line, who else worked on a pull request, anything about a person beyond the account GitHub attached to the commit or pull request, or that GitHub's account resolution is correct. The commit column counts `wildcat-finance/skills` only; it does not count Wave Atlas commits. A pull-request author is the account that opened the PR, not every commit author, reviewer or collaborator. The run does not detect a merge that discarded commit authorship before the commit reached the Skills default branch, and its Skills authorship corroboration samples at most twenty commits per account rather than all of them.
+- Authorises: Writing `CONTRIBUTORS.md` and the marked region of `README.md` and nothing outside those two targets, and reporting the ranking without strengthening what the counts mean.
+- Consequence: 1
+- Refuses: An account type other than User or Bot, a Bot absent from the declared host set, a merged pull request without a classifiable author, a login failing the GitHub login grammar, a repository argument carrying query syntax, a duplicate repository source, any failed API read including a rate limit, a host set diverged from `hexctl.py` in either direction, an excluded login reaching the ranked output, a `README.md` that is absent or not UTF-8, and a read that would silently truncate.
+- Recovery: Read the stop, which names the identity or field at fault; extend the host set in `hexctl.py` and `scripts/contributors.py` together for an unknown host, set a token or wait for the named reset for a rate limit, and rerun with `--write` for a stale artefact. The generator never repairs an input.
+- Exceptions: none
+
+## Router selection promise
+
+### promise-machine-router-selection
+
+- Promise: A successful `python3 -m unittest tests.test_router_selection` establishes that `tests/fixtures/router-selection/cases.json` declares schema `promise-machine-router-selection/v1`, that every case carries the seven fields that schema names with a unique id and a recognised expectation, that every canonical name a case expects or contests and every name a pair separates is the frontmatter name of a real `SKILL.md` under `plugins/`, that every quoted deciding sentence still occurs in the section of the file its entry names, that every row of the router's selection tables is named by at least one case, that every pair the corpus declares is contested by at least one case, and that any recorded run block carries a corpus digest recomputed from the cases on disk, names the model, date and prompt-template digest a reader needs to recount it, carries a prompt-template digest equal to the digest of the template committed beside the corpus, and names each of its failures by a case id this corpus holds and by what the graded context answered, either a canonical skill that resolves or a refusal in the corpus's two-reason vocabulary.
+- Evidence: The one fixed repository-relative corpus path, the closed quotable set of `AGENTS.md` and `.agents/skills/promise-machine/SKILL.md`, the canonical skill names discovered under `plugins/`, the whitespace-collapsed sentence search inside each named section, the cases digest recomputed from the cases on disk, the malformed-corpus guard and the two degraded-corpus guards read from a closed set of fixture constants, zero command exit, and, for a run block once one is recorded, its preserved model, date and prompt-template digest, the prompt template committed beside the corpus and digested from those bytes, and its observed case, pass and fail counts.
+- Evidence classes: checked, measured, recomputed, recorded
+- Boundary: The check establishes nothing about how any agent routes, that the corpus is representative of real requests, or that a case expects the selection a reader would agree with. A contested case establishes that the corpus declares a boundary, not that the request it carries could only be answered by reading the sentence that separates it. A recorded score is evidence about one model, one prompt template, one corpus digest and one date, and it is never a gate. The prompt-template digest names the prompt the grading supplied and not the whole context the graded agent ran in, since a harness system prompt, repository instruction files and tool definitions reach that context and no digest here covers them.
+- Authorises: Reporting the corpus coverage and the latest recorded run through `tests/emit_router_selection_report.py`, whose bytes the `router_selection` coverage entry pins beside the corpus and the checker, and citing a recorded run with the model, date, prompt-template digest and corpus digest it names attached.
+- Consequence: 0
+- Refuses: An absent, unreadable, non-UTF-8 or non-JSON corpus, a corpus declaring a schema this checker does not support, a top-level value that is not an object, a missing or mistyped `cases`, `pairs` or `runs` key, an empty case list, a case whose field set or expectation the schema does not name, a repeated case id, a required case field that is present but empty, a `contested` that is not a list of canonical names, a quotation that is not the three keys the schema names, a quoted path outside the closed set, a canonical name no `SKILL.md` declares, a sentence its named section no longer contains, an empty or whitespace-only quotation, which would otherwise occur in every section, a pair whose field set, id, separated skills or quotation the schema does not name, and a run block whose field set the schema does not name, whose digest disagrees with the cases on disk, whose `failures` is present but is not a list, or whose case, pass and fail counts cannot all be true. It also refuses a router row whose canonical selection no case expects, two rows selecting the same canonical skill, which one case would cover for both, the one row that names no canonical skill left unquoted by every case that selects, a selection cell that is neither a canonical name in backticks nor that row's known phrase, a router carrying no `## Select one runtime contract` section or no selection table inside it, a section whose parsed rows and table lines disagree, a corpus declaring no pairs at all, a declared pair no case contests in full, and a pair carrying no list of separated skills to contest. It also refuses a run block that is not an object, a `model` that is absent, empty or not a string, a `date` that is not a `YYYY-MM-DD` date, a `prompt_template_sha256` that is not a lowercase sha256 digest, without which the prompt the run used is unrecoverable, an absent or unreadable prompt template, a `prompt_template_sha256` that is not the digest of the prompt template committed beside the corpus, since a digest naming bytes the repository does not hold is evidence about no prompt at all, a run covering no cases at all, whose counts agree with each other while measuring nothing, a failure entry whose field set is not exactly `case` and `selected`, a failure naming a case id this corpus does not hold, the same case id named by two failures, and a failure recording an answer that is neither a canonical name a `SKILL.md` declares nor one of the two refusal forms.
+- Recovery: Read the failure, which names the case or pair, the file and the sentence it looked for; requote the current sentence or retire the case rather than rewording the source the corpus grades, correct a canonical name that no longer resolves, and regrade a stale run block instead of editing its digest to agree.
 - Exceptions: none
 
 ## Installation copies

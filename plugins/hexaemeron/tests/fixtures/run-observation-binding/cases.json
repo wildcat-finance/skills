@@ -1,0 +1,60 @@
+{
+  "contract": "fiat-run-observation-binding/v1",
+  "cases": [
+    {
+      "id": "normal-prefix",
+      "disposition": "accepted",
+      "guard": "test_normal_prefix_binds_to_the_selected_receipt"
+    },
+    {
+      "id": "replacement",
+      "disposition": "FOB004",
+      "guard": "test_replacement_and_truncation_break_only_the_dependent_claim"
+    },
+    {
+      "id": "truncation",
+      "disposition": "FOB004",
+      "guard": "test_replacement_and_truncation_break_only_the_dependent_claim"
+    },
+    {
+      "id": "reordered-events",
+      "disposition": "FOB004",
+      "guard": "test_reordered_events_break_only_the_dependent_claim"
+    },
+    {
+      "id": "wrong-run-association",
+      "disposition": "FOB003",
+      "guard": "test_bound_run_contract_and_event_count_are_recomputed"
+    },
+    {
+      "id": "event-count-mismatch",
+      "disposition": "FOB003",
+      "guard": "test_bound_run_contract_and_event_count_are_recomputed"
+    },
+    {
+      "id": "contract-drift",
+      "disposition": "FOB003",
+      "guard": "test_bound_run_contract_and_event_count_are_recomputed"
+    },
+    {
+      "id": "failed-redaction",
+      "disposition": "FOB005",
+      "guard": "test_wrong_run_contract_and_failed_redaction_refuse_before_receipt"
+    },
+    {
+      "id": "missing-binding",
+      "disposition": "FOB001",
+      "guard": "test_legacy_run_stays_valid_until_the_dependent_claim_is_requested"
+    },
+    {
+      "id": "appended-event-confusion",
+      "disposition": "unbound-tail",
+      "guard": "test_appended_bytes_remain_explicitly_unbound"
+    },
+    {
+      "id": "unsafe-path",
+      "disposition": "FOB002",
+      "guard": "test_symlinked_file_and_parent_are_refused_before_receipt"
+    }
+  ]
+}

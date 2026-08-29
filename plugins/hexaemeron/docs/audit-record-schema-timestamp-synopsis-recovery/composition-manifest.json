@@ -1,0 +1,156 @@
+{
+  "schema": "fiat-429-composition/v1",
+  "product_head": "f11fe174161f46bf79080422169ad943214e1b4f",
+  "pinned_base": "c4650f02a979e859ce36374779eac9cd70744288",
+  "parent_order": [
+    "f11fe174161f46bf79080422169ad943214e1b4f",
+    "c4650f02a979e859ce36374779eac9cd70744288"
+  ],
+  "product_commits": 52,
+  "overlaps": [
+    {
+      "path": ".agents/plugins/marketplace.json",
+      "textual_conflict": true,
+      "current_blob": "9cbcfbb2d518a13b4838406b05e671d965849345",
+      "product_blob": "f0765f5d8787ff560726e499fc33182343cc2132",
+      "current_behaviour": "Advertise the live Hexaemeron 1.6.0 package.",
+      "product_behaviour": "Advertise the original issue 429 package generation.",
+      "resolution": "Keep the pinned-base package entry; the recovered behaviour is ported without replaying the stale generation."
+    },
+    {
+      "path": ".claude-plugin/marketplace.json",
+      "textual_conflict": true,
+      "current_blob": "fa773f13f68b7bb856b19dee7036eddc3f67353c",
+      "product_blob": "52b0afd5ec6975994db970b1e457be5ce9502305",
+      "current_behaviour": "Advertise the live Hexaemeron 1.6.0 package.",
+      "product_behaviour": "Advertise the original issue 429 package generation.",
+      "resolution": "Keep the pinned-base package entry; the recovered behaviour is ported without replaying the stale generation."
+    },
+    {
+      "path": "audit/AUDIT.md",
+      "textual_conflict": true,
+      "current_blob": "4b741574f23d320ae6cc48ababffbd9b0cac2abb",
+      "product_blob": "9083341b9085f33f4af60e2228ac333e15e5bbe9",
+      "current_behaviour": "Retain every audit byte present at the pinned base.",
+      "product_behaviour": "Retain the 574-line, 29-record issue 429 audit suffix.",
+      "resolution": "Keep the current blob byte-for-byte and relocate the exact product suffix to its named per-run source."
+    },
+    {
+      "path": "plugins/hexaemeron/.claude-plugin/plugin.json",
+      "textual_conflict": true,
+      "current_blob": "65d7bef163db5d02ac7cfa45103224b9f5a9d392",
+      "product_blob": "5fa01abaca895447cd9d93d9f1040d9d7d96e4c8",
+      "current_behaviour": "Publish Hexaemeron 1.6.0.",
+      "product_behaviour": "Publish the stale product package generation.",
+      "resolution": "Keep the pinned-base release value for this composition step."
+    },
+    {
+      "path": "plugins/hexaemeron/.codex-plugin/plugin.json",
+      "textual_conflict": true,
+      "current_blob": "849010a48f3f445c67c533f76f2dde0391eaa8f3",
+      "product_blob": "ca234fd4bd8e4d4ae043b25b48518d053e051b71",
+      "current_behaviour": "Publish Hexaemeron 1.6.0.",
+      "product_behaviour": "Publish the stale product package generation.",
+      "resolution": "Keep the pinned-base release value for this composition step."
+    },
+    {
+      "path": "plugins/hexaemeron/README.md",
+      "textual_conflict": false,
+      "current_blob": "9bb2898f8cc7ffea8d80332a70d08a50432f32ef",
+      "product_blob": "865171c760768f7ba60e746f32fffcfe149fa087",
+      "current_behaviour": "Document the current controller and per-run audit topology.",
+      "product_behaviour": "Document strict audit records and deterministic synopses.",
+      "resolution": "Retain the current guide and add the recovered schema and collision-free synopsis rules."
+    },
+    {
+      "path": "plugins/hexaemeron/agents/warden.md",
+      "textual_conflict": true,
+      "current_blob": "925d2dcfb094c87144030d705e85bd9bb8db6381",
+      "product_blob": "1d6ab94a10dc9b8cf721e8b0acd10a0f09dfc728",
+      "current_behaviour": "Write to the controller-configured per-run path and declare the Sapheneia audit filter.",
+      "product_behaviour": "Write a strict timestamped audit record with complete coverage, findings, verdict and leads.",
+      "resolution": "Use the current path/filter gates and the v2 strict record grammar; preserve v1 only as historical input."
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
+      "textual_conflict": true,
+      "current_blob": "3c23edcf3bb09b532b5946f6b275b2bbfe06d375",
+      "product_blob": "3d2e892e53efcd5fd5cd0ffaf99f5be079760760",
+      "current_behaviour": "Name fiat-v5.24.1 and its current predecessor chain.",
+      "product_behaviour": "Name the stale product release and issue 429 evolution row.",
+      "resolution": "Keep the pinned-base ledger in step 1; version allocation remains a later receipted release action."
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
+      "textual_conflict": true,
+      "current_blob": "65e0bc602e98bc09090476dda8404e8d6f4044a2",
+      "product_blob": "2f2b90c56dfbf06a5680a85cbf8fbc4e449586b7",
+      "current_behaviour": "Retain per-run audit paths, controller currency, amendments, revalidation and final visible-state gates.",
+      "product_behaviour": "Require strict audit records and current deterministic synopses before an audit receipt.",
+      "resolution": "Compose both contracts while keeping the current version in this step."
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/references/audit-loop.md",
+      "textual_conflict": true,
+      "current_blob": "8c81f5bfaeb0d8c15b552bded9cf1da55fa11a78",
+      "product_blob": "05605ac1f27a96e949e69207ea2242bb3c9ece79",
+      "current_behaviour": "Describe the configured per-run log, audit filter and three lint receipts.",
+      "product_behaviour": "Describe the exact schema, timestamp and synopsis gate.",
+      "resolution": "Document v2 for new rounds, v1 compatibility, unique siblings and every existing audit obligation."
+    },
+    {
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "textual_conflict": true,
+      "current_blob": "dd27f6953e741c17fdf3da466969462eb782d089",
+      "product_blob": "27e070d43b5b8054bfa52edaf2f44ac016e85fe2",
+      "current_behaviour": "Implement Fiat 5.24.1 state, per-run logs, amendments, currency and integration gates.",
+      "product_behaviour": "Validate an appended strict audit record and its committed synopsis before state mutation.",
+      "resolution": "Keep the current controller and port the bounded dual-schema parser and synopsis validation into its audit transition."
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "textual_conflict": true,
+      "current_blob": "e77e5c37b9c9c844975c74b7ab4d7eb6d5b9cff8",
+      "product_blob": "9d3fb10f7071c8ea55f3c84b665d7cb3d23b4fc9",
+      "current_behaviour": "Guard every current user-facing controller contract.",
+      "product_behaviour": "Guard the audit schema and synopsis contract named by the skill prose.",
+      "resolution": "Retain both sets of contract assertions and update their shared wording for v2."
+    },
+    {
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "textual_conflict": true,
+      "current_blob": "5f23dc28d069bf00921fb45ed6be8b0f626f25ea",
+      "product_blob": "67f71eab113ae2e83c31cee2f7436f923d309c15",
+      "current_behaviour": "Guard the current controller state machine and integration boundaries.",
+      "product_behaviour": "Guard strict record parsing, append-only reads and synopsis refusal before mutation.",
+      "resolution": "Retain all current cases and adapt the inherited issue 429 cases to v1/v2 and per-run paths."
+    },
+    {
+      "path": "tests/promise_machine_coverage.json",
+      "textual_conflict": true,
+      "current_blob": "cc2ee50a05a2e42fd898fb3316dbaa6dacdc0241",
+      "product_blob": "aa2a790e2f1b84a9c88880ebf4f4dd8ba42eedb6",
+      "current_behaviour": "Bind every current Promise Machine surface and runtime digest.",
+      "product_behaviour": "Bind the issue 429 controller runtime and synopsis promises.",
+      "resolution": "Keep current coverage and refresh only the checked runtime digest after the composed controller is final."
+    },
+    {
+      "path": "tests/test_evolution_contract.py",
+      "textual_conflict": true,
+      "current_blob": "cf24b33e069304dd7cb99c753a62a09f370a9138",
+      "product_blob": "7ae8d9631e97d4edb9340a8b920726668025781b",
+      "current_behaviour": "Enforce the live evolution-ledger contract.",
+      "product_behaviour": "Enforce the stale product's expected release row.",
+      "resolution": "Keep the pinned-base release contract; recovered behaviour is guarded without replaying its version."
+    },
+    {
+      "path": "tests/test_version_propagation.py",
+      "textual_conflict": true,
+      "current_blob": "c2aaa2874c8a28c2f7f6d4401344d58cb16f1308",
+      "product_blob": "d5a090bbcf8c7a932d3b2c87eb84c9aaf22076e6",
+      "current_behaviour": "Require the live Hexaemeron and Fiat versions on every published surface.",
+      "product_behaviour": "Require the stale product versions on those surfaces.",
+      "resolution": "Keep the pinned-base propagation test until the later release version is allocated."
+    }
+  ]
+}

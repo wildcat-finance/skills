@@ -1,7 +1,7 @@
 {
   "name": "sapheneia",
-  "version": "0.1.1",
-  "description": "AuDHD-shaped replies with visible state and next actions.",
+  "version": "0.1.2",
+  "description": "AuDHD-shaped replies, audit records, issues and comments.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
@@ -18,8 +18,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Sapheneia",
-    "shortDescription": "AuDHD-shaped replies with visible state and next actions.",
-    "longDescription": "Shapes the agent's own commentary and final replies for AuDHD engineers. Actions, task boundaries, done conditions, working state, evidence, assumptions, unknowns and next steps remain explicit from turn to turn. The contract persists for the session until the reader turns it off and yields to stated personal preferences.",
+    "shortDescription": "AuDHD-shaped replies, audit records, issues and comments.",
+    "longDescription": "Shapes the agent's own commentary and final replies for AuDHD engineers, or one bounded agent-authored audit record, GitHub issue, or issue comment. Session shaping keeps actions, boundaries, working state, evidence, unknowns and next steps explicit until the reader turns it off. The durable-record operation preserves protected evidence and host structure without activating session mode.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

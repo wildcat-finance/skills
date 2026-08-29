@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lazarus.wildcat.finance/schemas/rpc-record-v1.json",
+  "title": "Lazarus exact RPC record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "request_key", "method", "params", "required", "evidence", "outcome"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "request_key": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "name": {"type": "string", "pattern": "^[a-z][a-z0-9_.-]{0,127}$"},
+    "method": {"type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_]{0,127}$"},
+    "params": {"type": ["array", "object"]},
+    "required": {"type": "boolean"},
+    "evidence": {"enum": ["proof-backed", "header-bound", "recorded-rpc"]},
+    "outcome": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["result"],
+          "properties": {"result": {}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["error"],
+          "properties": {
+            "error": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["code", "message"],
+              "properties": {
+                "code": {"type": "integer"},
+                "message": {"type": "string", "maxLength": 4096},
+                "data": {}
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

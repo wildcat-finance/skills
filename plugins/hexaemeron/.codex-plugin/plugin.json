@@ -1,6 +1,6 @@
 {
   "name": "hexaemeron",
-  "version": "1.5.6",
+  "version": "1.6.11",
   "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
   "author": {
     "name": "Wildcat Labs",
@@ -21,11 +21,11 @@
   "interface": {
     "displayName": "Hexaemeron",
     "shortDescription": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-    "longDescription": "Takes a topic from nothing to a working prototype through a receipt-backed controller that records a known task issue during initialization, puts its issue number in its run branch, and validates its required state containers before traversal: a study and runbook held to Protasis's contract, then per step the simplest satisfying implementation, audit rounds over the vendored Pashov suite with the bundled phylax, ephoros and hypomnema lints covering what ships no Solidity, a prose pass through Hypomnema, Imprimatur and Vulgate, and one stacked pull request per step that comes down in order onto a single run branch, which merges into the base once with its task issue closed. Six further skills hold each phase to a standard, six of them with an executable check. Kronos can rank eligible held frontiers and repeat complete Fiat runs until no worthwhile frontier remains.",
+    "longDescription": "Takes a topic from nothing to a working prototype through a receipt-backed controller that records a known task issue during initialization, puts its issue number in its run branch, and validates its required state containers before traversal: a study and runbook held to Protasis's contract, then per step the simplest satisfying implementation, Sapheneia-declared audit records over the vendored Pashov suite with the bundled phylax, ephoros and hypomnema lints covering what ships no Solidity, a prose pass through Hypomnema, Imprimatur and Vulgate, and one stacked pull request per step that comes down in order onto a single run branch, which merges into the base once with its task issue comment checked, posted verbatim, read back, and closed. Six further skills hold each phase to a standard, six of them with an executable check. Kronos can rank eligible held frontiers and repeat complete Fiat runs until no worthwhile frontier remains.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],
-    "defaultPrompt": "Use $hexaemeron:fiat to start \"<topic>\" in the current repository without creating GitHub issues. Validate existing controller state before resuming; if it is complete, archive and reset it automatically before starting."
+    "defaultPrompt": "Use $hexaemeron:fiat to start \"<topic>\" in the current repository without creating GitHub issues. A completed run captures status, verifies, and archives its controller state locally before handoff; treat any completed state found at startup as interrupted cleanup."
   },
   "license": "Apache-2.0"
 }

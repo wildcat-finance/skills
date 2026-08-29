@@ -75,7 +75,8 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("drift: data.wasm: evidenced by the tree", output)
 
-    def test_a_candidate_never_fails_check(self):
+    def test_candidate_classification_drift_at_the_same_file_count_is_advisory(self):
+        write(self.root, "notes.svg", "hand-written notes\n")
         horos.write_boundary(self.root, self.document())
         horos.write_candidates(
             self.root, horos.candidates_document(horos.scan_tree(self.root))
@@ -110,6 +111,63 @@ class BoundaryTests(unittest.TestCase):
     def test_a_changed_entry_drifts_and_is_named(self):
         horos.write_boundary(self.root, self.document())
         write(self.root, "yarn.lock", "lock grew longer\n")
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: yarn.lock: entry changed", output)
+
+    def test_count_only_drift_fails_the_check(self):
+        document = self.document()
+        document["counts"]["files_walked"] += 1
+        horos.write_boundary(self.root, document)
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: .horos/boundary.json#counts", output)
+
+    def test_root_metadata_float_drift_fails_the_check(self):
+        document = self.document()
+        self.assertIs(type(document["schema"]), int)
+        document["schema"] = 2.0
+        horos.write_boundary(self.root, document)
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: .horos/boundary.json#schema", output)
+
+    def test_nested_count_boolean_drift_fails_the_check(self):
+        document = self.document()
+        self.assertIs(type(document["counts"]["files_skipped_unreadable"]), int)
+        document["counts"]["files_skipped_unreadable"] = False
+        horos.write_boundary(self.root, document)
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: .horos/boundary.json#counts", output)
+
+    def test_an_extra_top_level_assertion_fails_the_check(self):
+        document = self.document()
+        document["assertion"] = "not part of the canonical boundary"
+        horos.write_boundary(self.root, document)
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: .horos/boundary.json#fields", output)
+
+    def test_duplicate_schema_keys_are_refused_even_when_the_last_is_current(self):
+        raw = horos.render(self.document()).replace(
+            '"schema": 2',
+            '"schema": 999,\n  "schema": 2',
+            1,
+        )
+        write(self.root, horos.BOUNDARY_RELPATH, raw)
+        code, output = self.check()
+        self.assertEqual(code, 2)
+        self.assertIn("unreadable boundary", output)
+        self.assertIn("duplicate JSON key 'schema'", output)
+
+    def test_entry_numeric_type_drift_fails_by_path(self):
+        document = self.document()
+        entry = next(item for item in document["entries"] if item["path"] == "yarn.lock")
+        self.assertEqual(entry["bytes"], 5)
+        self.assertIs(type(entry["bytes"]), int)
+        entry["bytes"] = 5.0
+        horos.write_boundary(self.root, document)
         code, output = self.check()
         self.assertEqual(code, 1)
         self.assertIn("drift: yarn.lock: entry changed", output)

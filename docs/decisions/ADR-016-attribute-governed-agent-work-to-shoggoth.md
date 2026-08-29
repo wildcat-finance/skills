@@ -21,20 +21,28 @@ Shoggoth provenance or sign-off added rather than substituted.
 
 ## Decision
 
-Agent-produced work that invokes a Wildcat domain or phase skill is authored
-by Shoggoth. All Interceptor-produced work is authored by Shoggoth. Runtime
-hosts and models are execution metadata, not Git authors, co-authors,
+Authorship follows the contributing actor, not the runtime host. Agent-produced
+work contributed by Shoggoth that invokes a Wildcat domain or phase skill is
+authored by Shoggoth. All Interceptor-produced work is authored by Shoggoth.
+Runtime hosts and models are execution metadata, not Git authors, co-authors,
 pull-request bylines, or generated-by footers for that governed work.
 
-A human contributor retains human authorship. Work outside the Interceptor
-that invokes no Wildcat domain or phase skill may retain ordinary Claude,
-Codex, or other host attribution.
+A human contributor retains human authorship, including when a host helps them
+run Fiat. Their commits use their own Git author and valid signing identity,
+and their pull request uses their own GitHub account. Shoggoth provenance and
+sign-off supplement that authorship. They do not call for the Shoggoth private
+signing key or GitHub account to be requested, copied, uploaded or provisioned.
+Work outside the Interceptor that invokes no Wildcat domain or phase skill may
+retain ordinary Claude, Codex, or other host attribution.
 
 Fiat rejects known host identities in its exact local commit range and in the
-pull request it receipts. A cloud run that cannot use the Shoggoth signer and
-GitHub account stops before publication and hands its exact branch or patch to
-a Shoggoth environment. The Interceptor applies the same check before its
-sanctioned pull-request wrapper publishes a branch.
+pull request it receipts. When Shoggoth is the contributing actor, a cloud run
+that cannot use the Shoggoth signer and GitHub account stops before publication
+and hands its exact branch or patch to a Shoggoth environment. When a human is
+the contributing actor, the run instead signs and publishes as that human; it
+never solves missing access by asking for Shoggoth credentials. The Interceptor
+applies the Shoggoth check before its sanctioned pull-request wrapper publishes
+a branch.
 
 ## Alternatives
 
@@ -57,7 +65,10 @@ Governed agent work has one durable author across Claude, Codex, and later
 hosts. Human contributors remain visible. Host diagnostics can still record
 the runtime privately without turning it into repository authorship.
 
-Cloud work needs a publication handoff while the Shoggoth private key remains
-local. Fiat and the Interceptor fail closed on the known host identities they
-can inspect; prose still owns unfamiliar future host names until the mechanical
-set is extended. Historical attribution remains unchanged.
+Cloud work contributed by Shoggoth needs a publication handoff while the
+Shoggoth private key remains local. External human work instead needs an
+environment that can sign and publish through the human's own identity. Neither
+case transfers the Shoggoth key. Fiat and the Interceptor fail closed on the
+known host identities they can inspect; prose still owns unfamiliar future host
+names until the mechanical set is extended. Historical attribution remains
+unchanged.

@@ -2,23 +2,26 @@ name: lazarus
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/lazarus/**"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
-      - "README.md"
-      - "tests/**"
+      - "docs/lazarus-multi-provider-chain-anchor/**"
+      - "docs/lazarus-receipt-inclusion-proofs/**"
+      - "docs/decisions/ADR-037-prove-receipts-with-a-full-ordered-witness.md"
+      - ".python-version"
+      - "pyproject.toml"
       - ".github/workflows/lazarus.yml"
   pull_request:
     paths:
       - "plugins/lazarus/**"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
-      - "README.md"
-      - "tests/**"
+      - "docs/lazarus-multi-provider-chain-anchor/**"
+      - "docs/lazarus-receipt-inclusion-proofs/**"
+      - "docs/decisions/ADR-037-prove-receipts-with-a-full-ordered-witness.md"
+      - ".python-version"
+      - "pyproject.toml"
       - ".github/workflows/lazarus.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -26,22 +29,16 @@ permissions:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version-file: ".python-version"
           cache: pip
           cache-dependency-path: |
             plugins/lazarus/requirements.txt
             plugins/lazarus/requirements.lock
       - name: Install locked Lazarus dependencies
         run: python3 -m pip install --requirement plugins/lazarus/requirements.lock
-      - name: Portable entrypoints and repository contracts
-        run: python3 -m unittest discover -s tests -v
       - name: Lazarus test suite
         run: python3 -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus -v

@@ -31,6 +31,24 @@ COMPLETE_STEP = """## Step 1: A complete step
 **Disciplines.** none, docs only.
 """
 
+COMPLETE_RUNBOOK_AMENDMENT = """
+### Amendment -- 2026-08-24
+
+**What changed.** Complete replacement Exit: Proved by `fiat-v2.0.0`.
+**Why.** The target changed.
+**Steps touched.** Step 1.
+**Still holding.** Step 1: entry holds; exit holds.
+"""
+
+VERSION_RELATION_ROW = (
+    "protasis | plugins/hexaemeron/skills/protasis/EVOLUTION.md | "
+    "next-generation-after-integration-base"
+)
+
+
+def relation_block(*rows):
+    return "```version-relations\n" + "\n".join(rows) + "\n```\n\n"
+
 
 def findings(source):
     with tempfile.TemporaryDirectory() as directory:
@@ -71,6 +89,242 @@ class RequiredFields(unittest.TestCase):
     def test_the_finding_points_at_the_heading_line(self):
         found = findings("\n" + without("Goal"))
         self.assertEqual(found[0].line, 2)
+
+
+class RunbookAmendments(unittest.TestCase):
+    def test_a_complete_final_amendment_is_clean(self):
+        self.assertEqual(codes(COMPLETE_STEP + COMPLETE_RUNBOOK_AMENDMENT), [])
+
+    def test_the_amendment_stops_the_last_step_before_replacement_fields(self):
+        source = without("Exit") + COMPLETE_RUNBOOK_AMENDMENT
+        found = codes(source)
+        self.assertIn("P001", found)
+        self.assertNotIn("P002", found)
+
+    def test_each_amendment_field_occurs_once_in_order_and_is_not_empty(self):
+        for field in protasis.AMENDMENT_FIELDS:
+            with self.subTest(field=field):
+                lines = [
+                    line for line in COMPLETE_RUNBOOK_AMENDMENT.splitlines()
+                    if not line.startswith(f"**{field}.**")
+                ]
+                self.assertIn("P005", codes(COMPLETE_STEP + "\n".join(lines) + "\n"))
+
+        reordered = COMPLETE_RUNBOOK_AMENDMENT.replace(
+            "**What changed.** Complete replacement Exit: Proved by `fiat-v2.0.0`.\n"
+            "**Why.** The target changed.\n",
+            "**Why.** The target changed.\n"
+            "**What changed.** Complete replacement Exit: Proved by `fiat-v2.0.0`.\n",
+        )
+        self.assertIn("P005", codes(COMPLETE_STEP + reordered))
+        empty = COMPLETE_RUNBOOK_AMENDMENT.replace(
+            "**Why.** The target changed.", "**Why.**"
+        )
+        self.assertIn("P005", codes(COMPLETE_STEP + empty))
+
+    def test_unknown_duplicate_and_partial_replacement_clauses_refuse(self):
+        cases = (
+            "Complete replacement Unknown: no.",
+            "Complete replacement Exit: first. Complete replacement Exit: second.",
+            "The Exit should use v2.",
+        )
+        for replacement in cases:
+            with self.subTest(replacement=replacement):
+                source = COMPLETE_STEP + COMPLETE_RUNBOOK_AMENDMENT.replace(
+                    "Complete replacement Exit: Proved by `fiat-v2.0.0`.",
+                    replacement,
+                )
+                self.assertIn("P005", codes(source))
+
+    def test_a_complete_replacement_exit_still_needs_its_command(self):
+        source = COMPLETE_STEP + COMPLETE_RUNBOOK_AMENDMENT.replace(
+            "Complete replacement Exit: Proved by `fiat-v2.0.0`.",
+            "Complete replacement Exit: Reviewed and working.",
+        )
+        self.assertIn("P005", codes(source))
+
+    def test_fenced_amendment_decoy_does_not_end_or_validate_the_step(self):
+        decoy = (
+            "\n````markdown\n```\n### Amendment -- 2026-08-24\n"
+            "**What changed.** vague\n````\n"
+        )
+        self.assertEqual(codes(COMPLETE_STEP + decoy), [])
+
+    def test_only_three_leading_spaces_may_open_a_markdown_fence(self):
+        hidden = (
+            "**What changed.** Complete replacement Exit: Proved by `fiat-v2.0.0`.\n"
+            "{indent}```\n"
+            "## Step 2: Smuggled visible heading\n"
+            "{indent}```\n"
+        )
+        three_spaces = COMPLETE_RUNBOOK_AMENDMENT.replace(
+            "**What changed.** Complete replacement Exit: Proved by `fiat-v2.0.0`.\n",
+            hidden.format(indent="   "),
+        )
+        four_spaces = COMPLETE_RUNBOOK_AMENDMENT.replace(
+            "**What changed.** Complete replacement Exit: Proved by `fiat-v2.0.0`.\n",
+            hidden.format(indent="    "),
+        )
+        self.assertNotIn("P005", codes(COMPLETE_STEP + three_spaces))
+        self.assertIn("P005", codes(COMPLETE_STEP + four_spaces))
+
+    def test_invalid_date_and_a_trailing_step_heading_refuse(self):
+        invalid = COMPLETE_RUNBOOK_AMENDMENT.replace("2026-08-24", "2026-02-30")
+        self.assertIn("P005", codes(COMPLETE_STEP + invalid))
+        malformed = COMPLETE_RUNBOOK_AMENDMENT.replace("2026-08-24", "2026/08/24")
+        self.assertIn("P005", codes(COMPLETE_STEP + malformed))
+        trailing = COMPLETE_STEP + COMPLETE_RUNBOOK_AMENDMENT + "\n## Step 2: Smuggled\n"
+        self.assertIn("P005", codes(trailing))
+
+    def test_two_sequential_complete_amendments_are_checked(self):
+        second = COMPLETE_RUNBOOK_AMENDMENT.replace("2026-08-24", "2026-08-25")
+        self.assertEqual(codes(COMPLETE_STEP + COMPLETE_RUNBOOK_AMENDMENT + second), [])
+
+
+class VersionRelations(unittest.TestCase):
+    def test_one_valid_block_and_an_absent_legacy_block_are_clean(self):
+        self.assertEqual(codes(relation_block(VERSION_RELATION_ROW) + COMPLETE_STEP), [])
+        self.assertEqual(codes(COMPLETE_STEP), [])
+
+    def test_partial_target_coverage_is_clean(self):
+        two_targets = relation_block(
+            "fiat | plugins/hexaemeron/skills/fiat/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+            VERSION_RELATION_ROW,
+        ) + COMPLETE_STEP
+        self.assertEqual(codes(two_targets.replace(
+            "fiat | plugins/hexaemeron/skills/fiat/EVOLUTION.md | "
+            "next-generation-after-integration-base\n",
+            "",
+        )), [])
+
+    def test_a_second_block_or_a_block_after_step_one_refuses(self):
+        second = relation_block(VERSION_RELATION_ROW) * 2 + COMPLETE_STEP
+        self.assertIn("P006", codes(second))
+        self.assertIn(
+            "P006",
+            codes(COMPLETE_STEP + "\n" + relation_block(VERSION_RELATION_ROW)),
+        )
+
+    def test_each_row_has_exactly_three_non_empty_fields(self):
+        malformed = (
+            "protasis | plugins/hexaemeron/skills/protasis/EVOLUTION.md",
+            VERSION_RELATION_ROW + " | extra",
+            "protasis |  | next-generation-after-integration-base",
+        )
+        for row in malformed:
+            with self.subTest(row=row):
+                self.assertIn("P006", codes(relation_block(row) + COMPLETE_STEP))
+
+    def test_ids_and_paths_are_unique(self):
+        duplicate_id = relation_block(VERSION_RELATION_ROW, VERSION_RELATION_ROW)
+        duplicate_path = relation_block(
+            VERSION_RELATION_ROW,
+            "fiat | plugins/hexaemeron/skills/protasis/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+        )
+        self.assertIn("P006", codes(duplicate_id + COMPLETE_STEP))
+        self.assertIn("P006", codes(duplicate_path + COMPLETE_STEP))
+
+    def test_unsafe_paths_refuse(self):
+        paths = (
+            "/plugins/hexaemeron/skills/protasis/EVOLUTION.md",
+            "plugins/hexaemeron/skills/../protasis/EVOLUTION.md",
+            "plugins/hexaemeron/skills/./protasis/EVOLUTION.md",
+            "plugins\\hexaemeron\\skills\\protasis\\EVOLUTION.md",
+            "plugins/hexaemeron/skills/protasis/EVOLUTION.md\x1f",
+            "plugins/hexa\x80emeron/skills/protasis/EVOLUTION.md",
+            "plugins/hexa\u202eemeron/skills/protasis/EVOLUTION.md",
+        )
+        for path in paths:
+            with self.subTest(path=repr(path)):
+                row = (
+                    f"protasis | {path} | "
+                    "next-generation-after-integration-base"
+                )
+                self.assertIn("P006", codes(relation_block(row) + COMPLETE_STEP))
+
+    def test_unknown_relation_blank_row_and_target_directory_mismatch_refuse(self):
+        unknown = VERSION_RELATION_ROW.replace(
+            "next-generation-after-integration-base", "next-minor"
+        )
+        mismatch = VERSION_RELATION_ROW.replace(
+            "/protasis/EVOLUTION.md", "/fiat/EVOLUTION.md"
+        )
+        self.assertIn("P006", codes(relation_block(unknown) + COMPLETE_STEP))
+        self.assertIn(
+            "P006",
+            codes("```version-relations\n" + VERSION_RELATION_ROW + "\n\n```\n" + COMPLETE_STEP),
+        )
+        self.assertIn("P006", codes(relation_block(mismatch) + COMPLETE_STEP))
+
+    def test_a_fenced_decoy_is_not_a_declaration(self):
+        decoy = (
+            "````markdown\n"
+            "```version-relations\n"
+            "bad | row\n"
+            "```\n"
+            "````\n\n"
+        )
+        self.assertEqual(codes(decoy + COMPLETE_STEP), [])
+
+    def test_the_closed_block_has_a_row_cap_and_exact_info_string(self):
+        rows = tuple(
+            f"skill-{number} | plugins/example/skills/skill-{number}/EVOLUTION.md | "
+            "next-generation-after-integration-base"
+            for number in range(32)
+        )
+        self.assertEqual(codes(relation_block(*rows) + COMPLETE_STEP), [])
+        self.assertIn("P006", codes(relation_block(*rows, VERSION_RELATION_ROW) + COMPLETE_STEP))
+        malformed_info = relation_block(VERSION_RELATION_ROW).replace(
+            "```version-relations", "```version-relations extra", 1
+        )
+        self.assertIn("P006", codes(malformed_info + COMPLETE_STEP))
+
+    def test_a_declared_target_has_no_concrete_version_token_outside_the_block(self):
+        token = "protasis-v4.8.0"
+        valid = relation_block(VERSION_RELATION_ROW) + COMPLETE_STEP
+        candidates = (
+            valid.replace("```version-relations", token + "\n```version-relations", 1),
+            valid.replace("## Step 1", token + "\n\n## Step 1", 1),
+            valid.replace("Do the thing.", f"Do the thing for {token}."),
+            valid.replace("A clean tree.", f"A clean tree at `{token}`."),
+            valid.replace("Proved by `pytest`.", f"Proved by `pytest {token}`."),
+            valid.replace("`a.py`.", f"`a.py` and {token}."),
+            valid.replace("One case.", f"One case for {token}."),
+            valid.replace("none, docs only.", f"none for {token}, docs only."),
+            valid.replace(
+                "**Tests.** One case.",
+                f"**Tests.** One case.\n\n```bash\nprintf '{token}'\n```",
+            ),
+            valid + COMPLETE_RUNBOOK_AMENDMENT.replace("fiat-v2.0.0", token),
+        )
+        for position, source in enumerate(candidates):
+            with self.subTest(position=position):
+                self.assertIn("P006", codes(source))
+
+    def test_relation_findings_do_not_echo_runbook_controlled_values(self):
+        rows = (
+            "PRIVATE-ID | plugins/example/skills/PRIVATE-ID/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+            "unknown | plugins/example/skills/unknown/EVOLUTION.md | private-relation",
+            "private-target | private-segment/private-target/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+            "other-target | private-segment/private-target/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+        )
+        source = relation_block(*rows) + COMPLETE_STEP.replace(
+            "Do the thing.", "Do the thing at private-target-v1.2.3."
+        )
+        messages = " ".join(finding.message for finding in findings(source))
+        for value in (
+            "PRIVATE-ID",
+            "private-relation",
+            "private-segment",
+            "private-target",
+        ):
+            with self.subTest(value=value):
+                self.assertNotIn(value, messages)
 
 
 class ExitCommands(unittest.TestCase):
@@ -120,6 +374,8 @@ class Documents(unittest.TestCase):
     def test_a_document_with_no_step_is_a_finding(self):
         self.assertEqual(codes("# Title\n\n## Steps\n\nDecided later.\n"),
                          ["P003"])
+        malformed_relation = relation_block("bad | row")
+        self.assertEqual(codes(malformed_relation), ["P003", "P006"])
 
     def test_a_step_heading_inside_a_fence_is_not_a_step(self):
         source = "# Title\n\n```markdown\n## Step 1: Example\n```\n"

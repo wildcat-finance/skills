@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/tabularium/canonical-event-v2.json",
+  "title": "Tabularium canonical credit event v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "event_family",
+    "action",
+    "venue",
+    "chain",
+    "transaction",
+    "parties",
+    "instrument",
+    "amounts",
+    "provenance",
+    "native_record"
+  ],
+  "properties": {
+    "schema_version": {"const": 2},
+    "id": {"type": "string", "minLength": 1},
+    "event_family": {
+      "enum": [
+        "borrowing",
+        "repayment",
+        "debt-resolution",
+        "debt-transfer",
+        "interest-accrual"
+      ]
+    },
+    "action": {"type": "string", "minLength": 1},
+    "venue": {"enum": ["euler-v1", "euler-v2"]},
+    "chain": {"const": "ethereum-mainnet"},
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "hash",
+        "block_number",
+        "block_hash",
+        "transaction_index",
+        "log_index",
+        "timestamp"
+      ],
+      "properties": {
+        "hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+        "block_number": {"type": "integer", "minimum": 0},
+        "block_hash": {
+          "oneOf": [
+            {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+            {"type": "null"}
+          ]
+        },
+        "transaction_index": {
+          "oneOf": [{"type": "integer", "minimum": 0}, {"type": "null"}]
+        },
+        "log_index": {"type": "integer", "minimum": 0},
+        "timestamp": {
+          "oneOf": [{"type": "string", "minLength": 1}, {"type": "null"}]
+        }
+      }
+    },
+    "parties": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "address"],
+        "properties": {
+          "role": {"type": "string", "minLength": 1},
+          "address": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"}
+        }
+      }
+    },
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"type": "string", "minLength": 1},
+        "id": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"}
+      }
+    },
+    "amounts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["kind", "base_units", "asset"],
+        "properties": {
+          "kind": {"type": "string", "minLength": 1},
+          "base_units": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"},
+          "asset": {
+            "oneOf": [
+              {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
+              {"type": "null"}
+            ]
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_kind",
+        "source_contract",
+        "source_entity",
+        "source_id",
+        "source_selector",
+        "supporting_selectors",
+        "mapping_rule",
+        "adapter",
+        "adapter_version",
+        "protocol_generation",
+        "source_api"
+      ],
+      "properties": {
+        "source_kind": {"type": "string", "minLength": 1},
+        "source_contract": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
+        "source_entity": {"type": "string", "minLength": 1},
+        "source_id": {"type": "string", "minLength": 1},
+        "source_selector": {"type": "string", "minLength": 1},
+        "supporting_selectors": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "mapping_rule": {"type": "string", "minLength": 1},
+        "adapter": {"enum": ["euler-v1", "euler-v2"]},
+        "adapter_version": {"const": "1.0.0"},
+        "protocol_generation": {"enum": ["euler-v1", "euler-v2"]},
+        "source_api": {"enum": ["ethereum-json-rpc", "euler-v3"]}
+      }
+    },
+    "native_record": {"type": "object"}
+  }
+}

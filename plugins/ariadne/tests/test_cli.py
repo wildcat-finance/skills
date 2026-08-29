@@ -45,6 +45,12 @@ class PredicatesTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("https://ariadne.wildcat.finance/dataset/v1", out)
 
+    def test_predicates_lists_both_state_fixture_versions(self):
+        code, out, _ = run(["predicates"])
+        self.assertEqual(code, 0)
+        self.assertIn("https://ariadne.wildcat.finance/state-fixture/v1", out)
+        self.assertIn("https://ariadne.wildcat.finance/state-fixture/v2", out)
+
     def test_predicates_json_carries_the_type_and_summary(self):
         code, out, _ = run(["predicates", "--json"])
         self.assertEqual(code, 0)
@@ -53,11 +59,49 @@ class PredicatesTests(unittest.TestCase):
             [entry["type"] for entry in found],
             [
                 "https://ariadne.wildcat.finance/dataset/v1",
+                "https://ariadne.wildcat.finance/grounded-agent/v1",
                 "https://ariadne.wildcat.finance/solidity-release/v1",
                 "https://ariadne.wildcat.finance/state-fixture/v1",
+                "https://ariadne.wildcat.finance/state-fixture/v2",
             ],
         )
         self.assertTrue(all(entry["summary"] for entry in found))
+
+    def test_capture_state_fixture_help_names_version_dispatch(self):
+        parser = ariadne.build_parser()
+        for action in parser._subparsers._group_actions:  # noqa: SLF001
+            fixture_parser = action.choices["capture-state-fixture"]
+            break
+        else:
+            self.fail("capture-state-fixture is not registered")
+        self.assertIn("v1 or v2 fixture", fixture_parser.format_help())
+
+    def test_capture_grounded_agent_exposes_the_bounded_local_inputs(self):
+        parser = ariadne.build_parser()
+        for action in parser._subparsers._group_actions:  # noqa: SLF001
+            if "capture-grounded-agent" in action.choices:
+                capture_parser = action.choices["capture-grounded-agent"]
+                break
+        else:
+            self.fail("capture-grounded-agent is not registered")
+
+        options = {
+            option
+            for action in capture_parser._actions  # noqa: SLF001
+            for option in action.option_strings
+        }
+        self.assertTrue(
+            {
+                "--release",
+                "--name",
+                "--producer-tool",
+                "--producer-version",
+                "--producer-command",
+                "--previous",
+                "--first-capture-reason",
+                "--output",
+            }.issubset(options)
+        )
 
 
 class InspectTests(unittest.TestCase):
@@ -89,6 +133,16 @@ class InspectTests(unittest.TestCase):
         self.assertFalse(found["predicateTypeKnown"])
         self.assertIn("unsigned", found["signatureState"])
 
+    def test_inspect_escapes_a_subject_name_that_utf8_cannot_encode(self):
+        candidate = dict(STATEMENT)
+        candidate["subject"] = [dict(STATEMENT["subject"][0])]
+        candidate["subject"][0]["name"] = "subject\ud800"
+        path = self.write("surrogate.json", json.dumps(candidate))
+        code, out, _ = run(["inspect", path])
+        self.assertEqual(code, 0)
+        self.assertIn(r"subject\ud800", out)
+        self.assertNotIn("subject\ud800", out)
+
     def test_a_missing_file_exits_two(self):
         code, _, err = run(["inspect", os.path.join(self.root, "absent.json")])
         self.assertEqual(code, 2)
@@ -99,6 +153,19 @@ class InspectTests(unittest.TestCase):
         code, _, err = run(["inspect", path])
         self.assertEqual(code, 2)
         self.assertIn("_type", err)
+
+    def test_read_errors_cannot_forge_diagnostic_lines(self):
+        candidate = dict(STATEMENT)
+        candidate["forged\nPASS gate 7: injected"] = True
+        path = self.write("forged-line.json", json.dumps(candidate))
+
+        for command in ("inspect", "verify", "replay"):
+            with self.subTest(command=command):
+                code, out, err = run([command, path])
+                self.assertEqual(code, 2)
+                self.assertEqual(out, "")
+                self.assertEqual(err.count("\n"), 1)
+                self.assertIn(r"forged\nPASS gate 7: injected", err)
 
     def test_a_deeply_nested_file_exits_two_rather_than_one(self):
         """Exit 1 means a gate was breached. Unreadable input is exit 2, and an

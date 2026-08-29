@@ -8,7 +8,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY = ROOT / "SHOGGOTH.md"
 CONTRACT = "shoggoth-collective/v2"
-EXPECTED_SHA256 = "d74ddcf9082b8ff3bcdd14a8a17b3ef4632696edd348d21500cd892cab632740"
+EXPECTED_SHA256 = "e983c7e7cc170190bc04b2dcf5de207f8e27051c9dba99480f6ab0c559607fce"
 
 
 class ShoggothIdentityTests(unittest.TestCase):
@@ -45,9 +45,13 @@ class ShoggothIdentityTests(unittest.TestCase):
 
     def test_governed_agent_work_uses_shoggoth_authorship(self):
         text = self.identity_text()
+        self.assertIn("Authorship follows the contributing actor", text)
         self.assertIn("after invoking a Wildcat domain or phase skill", text)
         self.assertIn("Every piece of work produced through the Shoggoth Interceptor", text)
         self.assertIn("A human contributor keeps authorship", text)
+        self.assertIn("The human remains the Git author and signer", text)
+        self.assertIn("publishes through their own GitHub account", text)
+        self.assertIn("Never request, copy, upload or provision those Shoggoth credentials", text)
         self.assertIn("may retain the host's ordinary authorship", text)
 
 

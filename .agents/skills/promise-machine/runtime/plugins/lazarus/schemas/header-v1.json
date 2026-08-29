@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lazarus.wildcat.finance/schemas/header-v1.json",
+  "title": "Lazarus captured header v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "chain_id", "number", "hash", "parent_hash", "state_root", "rpc_result"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "chain_id": {"const": "0x1"},
+    "number": {"$ref": "#/$defs/quantity"},
+    "hash": {"$ref": "#/$defs/hash32"},
+    "parent_hash": {"$ref": "#/$defs/hash32"},
+    "state_root": {"$ref": "#/$defs/hash32"},
+    "rpc_result": {
+      "type": "object",
+      "required": ["number", "hash", "parentHash", "stateRoot"],
+      "properties": {
+        "number": {"$ref": "#/$defs/quantity"},
+        "hash": {"$ref": "#/$defs/hash32"},
+        "parentHash": {"$ref": "#/$defs/hash32"},
+        "stateRoot": {"$ref": "#/$defs/hash32"}
+      }
+    }
+  },
+  "$defs": {
+    "quantity": {"type": "string", "pattern": "^0x(?:0|[1-9a-f][0-9a-f]{0,63})$"},
+    "hash32": {"type": "string", "pattern": "^0x[0-9a-fA-F]{64}$"}
+  }
+}

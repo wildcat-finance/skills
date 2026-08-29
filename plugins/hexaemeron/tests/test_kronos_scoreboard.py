@@ -10,10 +10,13 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
+import subprocess
 import tempfile
 import unittest
 from contextlib import redirect_stdout, redirect_stderr
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills" / "kronos" / "scripts" / "kronos.py"
@@ -608,6 +611,325 @@ class ScoreboardTest(unittest.TestCase):
         ledger = REPO / "plugins" / "hexaemeron" / "skills" / "kronos" / "EVOLUTION.md"
         computed = kronos.held_job_hash(ledger)
         self.assertIn(f"`{computed}`", ledger.read_text(encoding="utf-8"))
+
+    def test_record_park_and_parked_start_no_subprocess(self):
+        def boom(*_args, **_kwargs):
+            raise AssertionError("ranking verbs start no subprocess")
+
+        original_popen = kronos.subprocess.Popen
+        original_run = kronos.subprocess.run
+        kronos.subprocess.Popen = boom
+        kronos.subprocess.run = boom
+        try:
+            code, _, err = self.run_record(self.document())
+            self.assertEqual(code, 0, err)
+            code, _, err = self.run_park()
+            self.assertEqual(code, 0, err)
+            code, _, err = self.run_parked()
+            self.assertEqual(code, kronos.STANDS, err)
+        finally:
+            kronos.subprocess.Popen = original_popen
+            kronos.subprocess.run = original_run
+
+
+class DurableHomeTest(unittest.TestCase):
+    """pull and push against a local bare remote, never the network."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.home = Path(self.tmp.name)
+        self.bare = self.home / "remote.git"
+        self.git(None, "init", "--bare", str(self.bare))
+        self.addCleanup(self.tmp.cleanup)
+
+    def git(self, cwd, *args):
+        result = subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", *args],
+            cwd=cwd,
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout
+
+    def make_scope(self, name, remotes=None):
+        path = self.home / name
+        path.mkdir()
+        (path / "alpha").mkdir()
+        (path / "alpha" / "EVOLUTION.md").write_text(LEDGER, encoding="utf-8")
+        (path / "beta").mkdir()
+        (path / "beta" / "EVOLUTION.md").write_text(
+            LEDGER.replace("some-revision", "other-revision"), encoding="utf-8"
+        )
+        self.git(path, "init")
+        self.git(path, "config", "--local", "commit.gpgsign", "false")
+        self.git(path, "config", "user.name", "Kronos Test")
+        self.git(path, "config", "user.email", "kronos@test.invalid")
+        self.git(path, "add", "alpha", "beta")
+        self.git(path, "commit", "-m", "init")
+        for remote_name, url in (remotes or (("origin", self.bare),)):
+            self.git(path, "remote", "add", remote_name, str(url))
+        return path
+
+    def runner(self, scope):
+        helper = ScoreboardTest()
+        helper.scoreboard = scope / ".kronos" / "scoreboard.jsonl"
+        helper.root = scope
+        helper.tmp = self.tmp
+        return helper
+
+    def run_cli(self, argv):
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = kronos.main(argv)
+        return code, out.getvalue(), err.getvalue()
+
+    def pull(self, scope, remote=None):
+        argv = ["pull", "--root", str(scope)]
+        if remote is not None:
+            argv.extend(["--remote", remote])
+        return self.run_cli(argv)
+
+    def push(self, scope, remote=None):
+        argv = ["push", "--root", str(scope)]
+        if remote is not None:
+            argv.extend(["--remote", remote])
+        return self.run_cli(argv)
+
+    def status(self, scope):
+        return self.git(scope, "status", "--short")
+
+    def test_pull_of_a_missing_ref_leaves_both_jsonl_files_absent(self):
+        scope = self.make_scope("a")
+        (scope / ".kronos").mkdir()
+        (scope / ".kronos" / "scoreboard.jsonl").write_text("{}\n", encoding="utf-8")
+        (scope / ".kronos" / "parked.jsonl").write_text("{}\n", encoding="utf-8")
+        code, out, err = self.pull(scope)
+        self.assertEqual(code, 0, err)
+        self.assertIn("empty start", out)
+        self.assertFalse((scope / ".kronos" / "scoreboard.jsonl").exists())
+        self.assertFalse((scope / ".kronos" / "parked.jsonl").exists())
+
+    def test_park_and_record_on_one_tree_are_visible_on_a_fresh_tree(self):
+        tree_a = self.make_scope("a")
+        tree_b = self.make_scope("b")
+        helper = self.runner(tree_a)
+        code, _, err = helper.run_record(helper.document())
+        self.assertEqual(code, 0, err)
+        code, _, err = helper.run_park(reason="Waiting on a person.")
+        self.assertEqual(code, 0, err)
+        parked = json.loads((tree_a / ".kronos" / "parked.jsonl").read_text(encoding="utf-8"))
+        code, _, err = self.push(tree_a)
+        self.assertEqual(code, 0, err)
+        code, _, err = self.pull(tree_b)
+        self.assertEqual(code, 0, err)
+        helper_b = self.runner(tree_b)
+        code, out, err = helper_b.run_parked()
+        self.assertEqual(code, kronos.STANDS, err)
+        self.assertIn(parked["held_job"][:12], out)
+        self.assertIn("Waiting on a person.", out)
+        self.assertEqual(
+            json.loads((tree_b / ".kronos" / "parked.jsonl").read_text(encoding="utf-8"))["reason"],
+            "Waiting on a person.",
+        )
+        code, shown = helper_b.run_show()
+        self.assertEqual(code, 0)
+        self.assertIn("pass 1", shown)
+        self.assertIn("alpha", shown)
+
+    def test_show_on_the_second_tree_prints_drift_against_a_later_pass(self):
+        tree_a = self.make_scope("a")
+        tree_b = self.make_scope("b")
+        helper = self.runner(tree_a)
+        helper.run_record(helper.document())
+        self.push(tree_a)
+        self.pull(tree_b)
+        helper.run_record(helper.document([helper.candidate(impact=35)]))
+        self.push(tree_a)
+        self.pull(tree_b)
+        code, out = self.runner(tree_b).run_show()
+        self.assertEqual(code, 0)
+        self.assertIn("drift: impact 30 -> 35, held job unchanged", out)
+
+    def test_extra_blobs_in_the_state_ref_are_ignored(self):
+        tree_a = self.make_scope("a")
+        helper = self.runner(tree_a)
+        helper.run_record(helper.document())
+        self.push(tree_a)
+        edit = self.home / "edit"
+        self.git(None, "clone", "--branch", "kronos/state", str(self.bare), str(edit))
+        self.git(edit, "config", "--local", "commit.gpgsign", "false")
+        self.git(edit, "config", "user.name", "Kronos Test")
+        self.git(edit, "config", "user.email", "kronos@test.invalid")
+        (edit / "README").write_text("not a kronos file\n", encoding="utf-8")
+        self.git(edit, "add", "README")
+        self.git(edit, "commit", "-m", "extra blob")
+        self.git(edit, "push", "origin", "HEAD:refs/heads/kronos/state")
+        tree_b = self.make_scope("b")
+        code, _, err = self.pull(tree_b)
+        self.assertEqual(code, 0, err)
+        names = {path.name for path in (tree_b / ".kronos").iterdir()}
+        self.assertNotIn("README", names)
+        self.assertTrue((tree_b / ".kronos" / "scoreboard.jsonl").is_file())
+
+    def test_a_failed_read_of_an_existing_ref_does_not_clear_a_park(self):
+        tree_a = self.make_scope("a")
+        helper = self.runner(tree_a)
+        helper.run_park()
+        parked = (tree_a / ".kronos" / "parked.jsonl").read_bytes()
+        broken = self.home / "not-a-git"
+        broken.mkdir()
+        self.git(tree_a, "remote", "add", "broken", str(broken))
+        code, _, err = self.pull(tree_a, remote="broken")
+        self.assertEqual(code, 1)
+        self.assertIn("K018", err)
+        self.assertNotIn("fatal", err)
+        self.assertEqual((tree_a / ".kronos" / "parked.jsonl").read_bytes(), parked)
+
+    def test_a_symlink_at_the_kronos_directory_is_refused_on_pull_and_push(self):
+        tree_a = self.make_scope("a")
+        elsewhere = tree_a / "elsewhere"
+        elsewhere.mkdir()
+        (tree_a / ".kronos").symlink_to(elsewhere)
+        code, _, err = self.pull(tree_a)
+        self.assertEqual(code, 1)
+        self.assertIn("K010", err)
+        self.assertEqual(list(elsewhere.iterdir()), [])
+        code, _, err = self.push(tree_a)
+        self.assertEqual(code, 1)
+        self.assertIn("K010", err)
+
+    def test_a_symlink_at_a_jsonl_file_is_refused_on_pull_and_push(self):
+        tree_a = self.make_scope("a")
+        holder = tree_a / ".kronos"
+        holder.mkdir()
+        target = tree_a / "elsewhere.jsonl"
+        (holder / "scoreboard.jsonl").symlink_to(target)
+        code, _, err = self.pull(tree_a)
+        self.assertEqual(code, 1)
+        self.assertIn("K010", err)
+        self.assertFalse(target.exists())
+        code, _, err = self.push(tree_a)
+        self.assertEqual(code, 1)
+        self.assertIn("K010", err)
+
+    def test_a_url_remote_and_an_unknown_name_are_refused(self):
+        tree_a = self.make_scope("a")
+
+        def boom(*_args, **_kwargs):
+            raise AssertionError("a URL remote must be refused before git starts")
+
+        original = kronos.subprocess.Popen
+        kronos.subprocess.Popen = boom
+        try:
+            code, _, err = self.pull(tree_a, remote="https://example.invalid/skills.git")
+        finally:
+            kronos.subprocess.Popen = original
+        self.assertEqual(code, 1)
+        self.assertIn("K020", err)
+        code, _, err = self.pull(tree_a, remote="not-a-remote")
+        self.assertEqual(code, 1)
+        self.assertIn("K020", err)
+
+    def test_kronos_state_remote_is_used_when_remote_is_absent(self):
+        other = self.home / "other.git"
+        self.git(None, "init", "--bare", str(other))
+        tree_a = self.make_scope("a", remotes=(("origin", other), ("special", self.bare)))
+        helper = self.runner(tree_a)
+        helper.run_record(helper.document())
+        code, _, err = self.push(tree_a, remote="special")
+        self.assertEqual(code, 0, err)
+        tree_b = self.make_scope("b", remotes=(("origin", other), ("special", self.bare)))
+        with patch.dict(os.environ, {kronos.REMOTE_ENV: "special"}):
+            code, _, err = self.pull(tree_b)
+        self.assertEqual(code, 0, err)
+        self.assertTrue((tree_b / ".kronos" / "scoreboard.jsonl").is_file())
+
+    def test_a_non_fast_forward_push_leaves_local_files_untouched(self):
+        tree_a = self.make_scope("a")
+        tree_b = self.make_scope("b")
+        helper_a = self.runner(tree_a)
+        helper_a.run_record(helper_a.document())
+        before = (tree_a / ".kronos" / "scoreboard.jsonl").read_bytes()
+        self.push(tree_a)
+        helper_b = self.runner(tree_b)
+        self.pull(tree_b)
+        helper_b.run_record(helper_b.document([helper_b.candidate(impact=35)]))
+        self.push(tree_b)
+        code, _, err = self.push(tree_a)
+        self.assertEqual(code, 1)
+        self.assertIn("K019", err)
+        self.assertNotIn("fatal", err)
+        self.assertEqual((tree_a / ".kronos" / "scoreboard.jsonl").read_bytes(), before)
+
+    def test_git_status_is_empty_after_pull_record_park_and_push(self):
+        tree_a = self.make_scope("a")
+        self.assertEqual(self.status(tree_a), "")
+        helper = self.runner(tree_a)
+        self.pull(tree_a)
+        self.assertEqual(self.status(tree_a), "")
+        helper.run_record(helper.document())
+        self.assertEqual(self.status(tree_a), "")
+        helper.run_park()
+        self.assertEqual(self.status(tree_a), "")
+        self.push(tree_a)
+        self.assertEqual(self.status(tree_a), "")
+
+    def test_a_failed_replace_does_not_leave_a_truncated_scoreboard(self):
+        tree_a = self.make_scope("a")
+        tree_b = self.make_scope("b")
+        helper = self.runner(tree_a)
+        helper.run_record(helper.document())
+        self.push(tree_a)
+        self.pull(tree_b)
+        previous = (tree_b / ".kronos" / "scoreboard.jsonl").read_bytes()
+        helper.run_record(helper.document())
+        self.push(tree_a)
+
+        def boom(_src, _dst):
+            raise OSError("simulated kill")
+
+        with patch.object(kronos.os, "replace", side_effect=boom):
+            code, _, err = self.pull(tree_b)
+        self.assertEqual(code, 1)
+        self.assertIn("K000", err)
+        self.assertEqual((tree_b / ".kronos" / "scoreboard.jsonl").read_bytes(), previous)
+        code, _, err = self.runner(tree_b).run_record(self.runner(tree_b).document())
+        self.assertEqual(code, 0, err)
+
+    def test_a_missing_final_newline_still_refuses_with_k008(self):
+        tree_a = self.make_scope("a")
+        helper = self.runner(tree_a)
+        helper.run_record(helper.document())
+        path = tree_a / ".kronos" / "scoreboard.jsonl"
+        path.write_text(path.read_text(encoding="utf-8").rstrip("\n"), encoding="utf-8")
+        code, _, err = helper.run_record(helper.document())
+        self.assertEqual(code, 1)
+        self.assertIn("K008", err)
+
+    def test_default_remote_prefers_upstream_over_origin(self):
+        empty = self.home / "empty.git"
+        self.git(None, "init", "--bare", str(empty))
+        tree_a = self.make_scope("a", remotes=(("origin", self.bare), ("upstream", empty)))
+        helper = self.runner(tree_a)
+        helper.run_record(helper.document())
+        self.push(tree_a, remote="origin")
+        tree_b = self.make_scope("b", remotes=(("origin", self.bare), ("upstream", empty)))
+        code, out, err = self.pull(tree_b)
+        self.assertEqual(code, 0, err)
+        self.assertIn("empty start", out)
+        self.assertFalse((tree_b / ".kronos" / "scoreboard.jsonl").exists())
+
+    def test_git_that_cannot_start_is_k021(self):
+        tree_a = self.make_scope("a")
+
+        def boom(*_args, **_kwargs):
+            raise FileNotFoundError("git")
+
+        with patch.object(kronos.subprocess, "Popen", side_effect=boom):
+            code, _, err = self.pull(tree_a)
+        self.assertEqual(code, 1)
+        self.assertIn("K021", err)
 
 
 if __name__ == "__main__":

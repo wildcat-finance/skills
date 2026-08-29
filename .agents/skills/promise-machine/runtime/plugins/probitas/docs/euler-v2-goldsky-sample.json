@@ -1,0 +1,47 @@
+{
+  "data": {
+    "trackingVaultBalances": [
+      {
+        "id": "0xa47b8a0f97f4f666a99d672b2aa2481e8d018089d8b27cf359b7d15710a5be299af6e7bf904984c2",
+        "vault": "0xd8b27cf359b7d15710a5be299af6e7bf904984c2",
+        "addressPrefix": "0xa47b8a0f97f4f666a99d672b2aa2481e8d0180",
+        "account": "0xa47b8a0f97f4f666a99d672b2aa2481e8d018089",
+        "balance": "0",
+        "debt": "616302988477917179",
+        "blockNumber": "25739856",
+        "blockTimestamp": "1786549007",
+        "transactionHash": "0x64513dec72610d5e8cb3fca39207f4d1fb59e9ebf9c994aa85a37f39fdf181c2"
+      },
+      {
+        "id": "0xa47b8a0f97f4f666a99d672b2aa2481e8d01808d2daca71cb58285212dc05d65cfd4f59a82bc4cf6",
+        "vault": "0x2daca71cb58285212dc05d65cfd4f59a82bc4cf6",
+        "addressPrefix": "0xa47b8a0f97f4f666a99d672b2aa2481e8d0180",
+        "account": "0xa47b8a0f97f4f666a99d672b2aa2481e8d01808d",
+        "balance": "0",
+        "debt": "7910694743928141813777",
+        "blockNumber": "25749039",
+        "blockTimestamp": "1786659455",
+        "transactionHash": "0x0b31ebbce996cb5d15a38b25574eeee9fe5b1248bbc314b91e41d8a17b1d7332"
+      },
+      {
+        "id": "0xa47b8a0f97f4f666a99d672b2aa2481e8d01808ee0a80d35bb6618cba260120b279d357978c42bce",
+        "vault": "0xe0a80d35bb6618cba260120b279d357978c42bce",
+        "addressPrefix": "0xa47b8a0f97f4f666a99d672b2aa2481e8d0180",
+        "account": "0xa47b8a0f97f4f666a99d672b2aa2481e8d01808e",
+        "balance": "0",
+        "debt": "7799013207",
+        "blockNumber": "25768542",
+        "blockTimestamp": "1786894367",
+        "transactionHash": "0x55cf62b0c36ee9b07f5c5986e2ac0cf9000c905d6ecbbe9793772ffb8893a68d"
+      }
+    ],
+    "_meta": {
+      "block": {
+        "number": 25770110,
+        "hash": "0xfbfd70c72a96d09a12a45bca1bf15ae39814b235e13bcf7733549813a04a1c5e"
+      },
+      "deployment": "QmarAreSkQbcWfUbKJW2EJ1N3XyAGxzHVnzG85F8B3ZmSe",
+      "hasIndexingErrors": false
+    }
+  }
+}

@@ -4,7 +4,7 @@ import unittest
 
 from . import support  # noqa: F401  (sets sys.path)
 
-from ariadne_lib import registry  # noqa: E402
+from ariadne_lib import gates, registry  # noqa: E402
 
 
 class Fake(object):
@@ -87,6 +87,51 @@ class DefaultRegistryTests(unittest.TestCase):
             [type_uri for type_uri, _ in registry.DEFAULT.entries()], shipped
         )
         self.assertTrue(len(shipped) >= 2)
+
+    def test_the_default_registry_holds_all_five_public_contracts(self):
+        from ariadne_lib import predicates
+
+        expected = {
+            predicates.dataset.TYPE,
+            predicates.grounded_agent.TYPE,
+            predicates.solidity_release.TYPE,
+            predicates.state_fixture.TYPE,
+            predicates.state_fixture_v2.TYPE,
+        }
+        self.assertEqual(
+            {type_uri for type_uri, _ in registry.DEFAULT.entries()}, expected
+        )
+        self.assertEqual(len(registry.DEFAULT), 5)
+
+    def test_all_five_shipped_checks_declare_their_complete_result_set(self):
+        from ariadne_lib import predicates
+
+        shipped = (
+            predicates.dataset,
+            predicates.grounded_agent,
+            predicates.solidity_release,
+            predicates.state_fixture,
+            predicates.state_fixture_v2,
+        )
+        for module in shipped:
+            with self.subTest(predicate_type=module.TYPE):
+                declared = getattr(module, "EXPECTED_RESULTS", None)
+                self.assertIsInstance(declared, tuple)
+                self.assertEqual(
+                    tuple(number for number, _ in declared if number is not None),
+                    gates.PREDICATE_GATES,
+                )
+                names = tuple(name for _, name in declared)
+                self.assertEqual(len(names), len(set(names)))
+
+    def test_state_fixture_versions_are_distinct_registered_contracts(self):
+        from ariadne_lib import predicates
+
+        self.assertIs(registry.DEFAULT.get(predicates.state_fixture.TYPE),
+                      predicates.state_fixture)
+        self.assertIs(registry.DEFAULT.get(predicates.state_fixture_v2.TYPE),
+                      predicates.state_fixture_v2)
+        self.assertIsNot(predicates.state_fixture, predicates.state_fixture_v2)
 
 
 if __name__ == "__main__":

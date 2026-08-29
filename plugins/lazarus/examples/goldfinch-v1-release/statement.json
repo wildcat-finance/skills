@@ -1,0 +1,289 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "anchors.jsonl",
+      "digest": {
+        "sha256": "093add8a6bc9631a3d23beb0fd9f6a92eed23c7a07ae71f4927128c1a87096d8"
+      }
+    },
+    {
+      "name": "demo.py",
+      "digest": {
+        "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2"
+      }
+    },
+    {
+      "name": "header.json",
+      "digest": {
+        "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+      }
+    },
+    {
+      "name": "plan.json",
+      "digest": {
+        "sha256": "86fee2ec4ba3ed0723037fff950107d9ea48c56d72fb7535c5ebce7fc57fe75d"
+      }
+    },
+    {
+      "name": "proofs.jsonl",
+      "digest": {
+        "sha256": "05e7f2bca51899ca907df296f2c4be0666c40f972c19b6893353b1d40b3ec4f4"
+      }
+    },
+    {
+      "name": "receipt-witness.json",
+      "digest": {
+        "sha256": "8e46a0a192169f57620a1341a4c99f830c748c31578a01893c358a19dcf52995"
+      }
+    },
+    {
+      "name": "rpc.jsonl",
+      "digest": {
+        "sha256": "54a515978354b53493e3dca42abf3a60767710199a7813858fb20dd4c1ac6d4c"
+      }
+    },
+    {
+      "name": "goldfinch-v1",
+      "digest": {
+        "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
+      }
+    }
+  ],
+  "predicateType": "https://ariadne.wildcat.finance/state-fixture/v2",
+  "predicate": {
+    "chain": {
+      "chain_id": 1,
+      "block_number": 13097494,
+      "block_hash": "0x41119192a8acdaae5ab06ca8f1d5943fd7ca2fb0a14323642dd6daf74eed2cfc",
+      "state_root": "0x0f7edccdfc1d09f4ecb7d32b8954b475184ab6ccc68c721a070e73368a705730",
+      "receipts_root": "0xaf03b0508121deb9ed0282a8961dc0ea695a97244a42ed2b0af04cb9bbc6226e"
+    },
+    "capture": {
+      "tool": "lazarus",
+      "tool_version": "0.2.0",
+      "command": [
+        "python3",
+        "plugins/lazarus/examples/goldfinch-v1/demo.py",
+        "build-fixture",
+        "--out",
+        "tmp/goldfinch-v1-rebuild"
+      ],
+      "parameters_digest": {
+        "sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+      }
+    },
+    "fixture_subjects": [
+      {
+        "name": "anchors.jsonl",
+        "path": "anchors.jsonl",
+        "digest": {
+          "sha256": "093add8a6bc9631a3d23beb0fd9f6a92eed23c7a07ae71f4927128c1a87096d8"
+        },
+        "bytes": 276
+      },
+      {
+        "name": "demo.py",
+        "path": "demo.py",
+        "digest": {
+          "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2"
+        },
+        "bytes": 36994
+      },
+      {
+        "name": "header.json",
+        "path": "header.json",
+        "digest": {
+          "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+        },
+        "bytes": 17204
+      },
+      {
+        "name": "plan.json",
+        "path": "plan.json",
+        "digest": {
+          "sha256": "86fee2ec4ba3ed0723037fff950107d9ea48c56d72fb7535c5ebce7fc57fe75d"
+        },
+        "bytes": 1847
+      },
+      {
+        "name": "proofs.jsonl",
+        "path": "proofs.jsonl",
+        "digest": {
+          "sha256": "05e7f2bca51899ca907df296f2c4be0666c40f972c19b6893353b1d40b3ec4f4"
+        },
+        "bytes": 8688
+      },
+      {
+        "name": "receipt-witness.json",
+        "path": "receipt-witness.json",
+        "digest": {
+          "sha256": "8e46a0a192169f57620a1341a4c99f830c748c31578a01893c358a19dcf52995"
+        },
+        "bytes": 349333
+      },
+      {
+        "name": "rpc.jsonl",
+        "path": "rpc.jsonl",
+        "digest": {
+          "sha256": "54a515978354b53493e3dca42abf3a60767710199a7813858fb20dd4c1ac6d4c"
+        },
+        "bytes": 657455
+      }
+    ],
+    "evidence": {
+      "proof_backed": 2,
+      "header_bound": 1,
+      "recorded_rpc": 5,
+      "receipt_trie_proved": 2
+    },
+    "replay": {
+      "reaches_network": false,
+      "canonical_chain_claim": false,
+      "provider_independence_claim": false
+    },
+    "deltas": {
+      "baseline": null,
+      "current": {
+        "name": "goldfinch-v1",
+        "digest": {
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
+        }
+      },
+      "reason": "first receipts-root-proved Goldfinch fixture"
+    },
+    "claims": [
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "093add8a6bc9631a3d23beb0fd9f6a92eed23c7a07ae71f4927128c1a87096d8"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "anchors.jsonl",
+          "bytes": 276
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "demo.py",
+          "bytes": 36994
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "header.json",
+          "bytes": 17204
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "86fee2ec4ba3ed0723037fff950107d9ea48c56d72fb7535c5ebce7fc57fe75d"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "plan.json",
+          "bytes": 1847
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "05e7f2bca51899ca907df296f2c4be0666c40f972c19b6893353b1d40b3ec4f4"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "proofs.jsonl",
+          "bytes": 8688
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "8e46a0a192169f57620a1341a4c99f830c748c31578a01893c358a19dcf52995"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "receipt-witness.json",
+          "bytes": 349333
+        }
+      },
+      {
+        "name": "digest and byte count read from the component on disk",
+        "subject": {
+          "sha256": "54a515978354b53493e3dca42abf3a60767710199a7813858fb20dd4c1ac6d4c"
+        },
+        "disposition": "passed",
+        "detail": {
+          "path": "rpc.jsonl",
+          "bytes": 657455
+        }
+      },
+      {
+        "name": "evidence counts read from the manifest",
+        "subject": {
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
+        },
+        "disposition": "passed",
+        "detail": {
+          "proof_backed": 2,
+          "header_bound": 1,
+          "recorded_rpc": 5,
+          "receipt_trie_proved": 2
+        }
+      },
+      {
+        "name": "receipt-trie relations re-checked by this capture",
+        "subject": {
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
+        },
+        "disposition": "skipped",
+        "reason": "this capture reads local manifest evidence and component bytes; Lazarus verification owns receipt-trie proof"
+      },
+      {
+        "name": "independent providers established",
+        "subject": {
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
+        },
+        "disposition": "skipped",
+        "reason": "operator-chosen source labels do not establish provider independence"
+      },
+      {
+        "name": "transaction hash attributed by the receipt trie",
+        "subject": {
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
+        },
+        "disposition": "skipped",
+        "reason": "transaction hashes are recorded RPC decorations outside the consensus receipt and log-projection proof"
+      },
+      {
+        "name": "state proofs re-checked by this capture",
+        "subject": {
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
+        },
+        "disposition": "skipped",
+        "reason": "this capture reads what Lazarus recorded and does not re-verify a trie proof; the counts come from the manifest and re-deriving one would put a judgement in the statement that Ariadne did not make"
+      },
+      {
+        "name": "the pinned block placed on the canonical chain",
+        "subject": {
+          "sha256": "c53db2ee7991826c20684c7ec40bdcd0b3cd78bd1aa7440a01d00ee207884bc2"
+        },
+        "disposition": "skipped",
+        "reason": "neither tool re-derives a chain, so whether this block is canonical is not established here"
+      }
+    ],
+    "commands": []
+  }
+}

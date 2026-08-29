@@ -11,6 +11,8 @@ REPO_ROOT = PLUGIN_ROOT.parents[1]
 SCRIPTS = PLUGIN_ROOT / "scripts"
 SKILL = PLUGIN_ROOT / "skills" / "lazarus" / "SKILL.md"
 FIXTURES = PLUGIN_ROOT / "tests" / "fixtures"
+RECEIPT_CAPTURE_FIXTURE = FIXTURES / "receipt-capture-v1"
+RECEIPT_PROOF_FIXTURE = FIXTURES / "receipt-proof-v1"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
@@ -73,6 +75,18 @@ def sample_release():
     }
 
 
+def sample_release_v2():
+    """A receipt-aware release whose extra authority is explicit and closed."""
+    release = sample_release()
+    release["schema_version"] = 2
+    release["statement"]["predicate_type"] = (
+        "https://ariadne.wildcat.finance/state-fixture/v2"
+    )
+    release["verified"]["receipts_root"] = hash32("22")
+    release["verified"]["evidence_counts"]["receipt_trie_proved"] = 2
+    return release
+
+
 def sample_plan():
     return {
         "schema_version": 1,
@@ -96,6 +110,147 @@ def sample_plan():
             "max_requests": 10,
             "max_component_bytes": 1048576,
             "max_total_bytes": 4194304,
+        },
+    }
+
+
+def sample_plan_v2(source_ids=("archive-a",)):
+    plan = sample_plan()
+    plan["schema_version"] = 2
+    plan["anchor_sources"] = [{"source_id": source_id} for source_id in source_ids]
+    return plan
+
+
+def sample_plan_v3():
+    plan = sample_plan_v2()
+    plan["schema_version"] = 3
+    plan["requests"].extend(
+        [
+            {
+                "name": "block-receipts",
+                "method": "eth_getBlockReceipts",
+                "params": [plan["block"]["hash"]],
+                "required": True,
+                "evidence": "recorded-rpc",
+            },
+            {
+                "name": "target-receipt",
+                "method": "eth_getTransactionReceipt",
+                "params": [hash32("44")],
+                "required": True,
+                "evidence": "recorded-rpc",
+            },
+            {
+                "name": "filtered-logs",
+                "method": "eth_getLogs",
+                "params": [
+                    {
+                        "blockHash": plan["block"]["hash"],
+                        "address": address("55"),
+                    }
+                ],
+                "required": True,
+                "evidence": "recorded-rpc",
+            },
+        ]
+    )
+    plan["receipt_witness"] = {
+        "block_receipts_request": "block-receipts",
+        "target_receipt_lookup_request": "target-receipt",
+        "target_transaction_index": "0x1",
+        "filtered_logs_request": "filtered-logs",
+    }
+    return plan
+
+
+def sample_manifest_v2():
+    return {
+        "schema_version": 2,
+        "tool_version": "0.1.0",
+        "chain_id": "0x1",
+        "block": {"number": "0x10", "hash": hash32("11")},
+        "receipts_root": hash32("22"),
+        "components": [
+            {"path": "header.json", "bytes": 1, "sha256": digest("33")},
+            {"path": "plan.json", "bytes": 1, "sha256": digest("44")},
+            {
+                "path": "receipt-witness.json",
+                "bytes": 1,
+                "sha256": digest("55"),
+            },
+        ],
+        "evidence_counts": {
+            "proof_backed": 2,
+            "header_bound": 1,
+            "recorded_rpc": 4,
+            "receipt_trie_proved": 2,
+        },
+        "optional_failures": [],
+        "fixture_digest": digest("66"),
+    }
+
+
+def sample_receipt_witness():
+    block_hash = hash32("11")
+    block_number = "0x10"
+    return {
+        "schema_version": 1,
+        "header": {
+            "number": block_number,
+            "hash": block_hash,
+            "receipts_root": hash32("22"),
+        },
+        "receipts": [
+            {
+                "transaction_index": "0x0",
+                "receipt_type": "legacy",
+                "status": "0x1",
+                "cumulative_gas_used": "0x1",
+                "logs_bloom": "0x" + "00" * 256,
+                "logs": [],
+            },
+            {
+                "transaction_index": "0x1",
+                "receipt_type": "0x2",
+                "status": "0x1",
+                "cumulative_gas_used": "0x2",
+                "logs_bloom": "0x" + "00" * 256,
+                "logs": [
+                    {
+                        "address": address("55"),
+                        "topics": [hash32("66")],
+                        "data": "0x1234",
+                    }
+                ],
+            },
+        ],
+        "target_receipt": {
+            "transaction_index": "0x1",
+        },
+        "filtered_logs": {
+            "filter": {"blockHash": block_hash, "address": address("55")},
+        },
+    }
+
+
+def sample_anchor_record(
+    source_id="archive-a",
+    *,
+    chain_id="0x1",
+    block_number="0x10",
+    block_hash=None,
+):
+    block_hash = hash32("11") if block_hash is None else block_hash
+    return {
+        "schema_version": 1,
+        "source_id": source_id,
+        "observed_at": "2026-08-25T08:30:45.123456Z",
+        "method": "eth_getBlockByNumber",
+        "params": [block_number, False],
+        "returned": {
+            "chain_id": chain_id,
+            "number": block_number,
+            "hash": block_hash,
         },
     }
 
@@ -235,6 +390,198 @@ def synthetic_fixture_material():
         "state_trie": state_trie,
         "storage_trie": storage_trie,
     }
+
+
+def anchored_fixture_material(source_ids=("archive-a", "archive-b")):
+    material = synthetic_fixture_material()
+    material["plan"]["schema_version"] = 2
+    material["plan"]["anchor_sources"] = [
+        {"source_id": source_id} for source_id in source_ids
+    ]
+    return material
+
+
+def receipt_capture_material():
+    """The fixed provider material used to recapture receipt-proof-v1."""
+
+    from lazarus_lib.canonical import load
+    from lazarus_lib.records import (
+        read_anchor_records,
+        read_proof_records,
+        read_receipt_witness,
+        read_rpc_records,
+    )
+
+    return {
+        "plan": load(RECEIPT_CAPTURE_FIXTURE / "plan.json"),
+        "header": load(RECEIPT_PROOF_FIXTURE / "header.json"),
+        "proof_records": read_proof_records(RECEIPT_PROOF_FIXTURE / "proofs.jsonl"),
+        "rpc_records": read_rpc_records(RECEIPT_PROOF_FIXTURE / "rpc.jsonl"),
+        "receipt_witness": read_receipt_witness(
+            RECEIPT_PROOF_FIXTURE / "receipt-witness.json"
+        ),
+        "anchor_records": read_anchor_records(
+            RECEIPT_PROOF_FIXTURE / "anchors.jsonl"
+        ),
+    }
+
+
+def rewrite_recorded_target_hash(material, transaction_hash):
+    """Rewrite recorded target identity without changing consensus receipt data."""
+
+    from lazarus_lib.records import request_key
+
+    relation = material["plan"]["receipt_witness"]
+    index = int(relation["target_transaction_index"], 16)
+    material["header"]["rpc_result"]["transactions"][index] = transaction_hash
+
+    target_request = next(
+        item
+        for item in material["plan"]["requests"]
+        if item["name"] == relation["target_receipt_lookup_request"]
+    )
+    target_request["params"] = [transaction_hash]
+
+    records = {record["name"]: record for record in material["rpc_records"]}
+    target_record = records[relation["target_receipt_lookup_request"]]
+    target_record["params"] = [transaction_hash]
+    target_record["request_key"] = request_key(
+        target_record["method"], target_record["params"]
+    )
+
+    block_receipts = records[relation["block_receipts_request"]]["outcome"]["result"]
+    for receipt in (block_receipts[index], target_record["outcome"]["result"]):
+        receipt["transactionHash"] = transaction_hash
+        for log in receipt["logs"]:
+            log["transactionHash"] = transaction_hash
+    filtered_logs = records[relation["filtered_logs_request"]]["outcome"]["result"]
+    for log in filtered_logs:
+        if int(log["transactionIndex"], 16) == index:
+            log["transactionHash"] = transaction_hash
+
+
+def receipt_fixture_material():
+    """A two-receipt, fully bound manifest-v2 fixture for focused tests."""
+
+    from lazarus_lib.header import compute_header_hash
+    from lazarus_lib.hexvalue import encode_hex
+    from lazarus_lib.receipts import receipt_trie_root
+    from lazarus_lib.records import make_rpc_record
+
+    material = synthetic_fixture_material()
+    witness = sample_receipt_witness()
+    receipt_root = encode_hex(receipt_trie_root(witness["receipts"]))
+    header = material["header"]
+    transactions = [hash32("33"), hash32("44")]
+    header["rpc_result"]["receiptsRoot"] = receipt_root
+    header["rpc_result"]["transactions"] = transactions
+    header["hash"] = header["rpc_result"]["hash"] = hash32("00")
+    block_hash = encode_hex(compute_header_hash(header))
+    header["hash"] = header["rpc_result"]["hash"] = block_hash
+    material["proof_records"][0]["block_hash"] = block_hash
+
+    witness["header"] = {
+        "number": header["number"],
+        "hash": block_hash,
+        "receipts_root": receipt_root,
+    }
+    witness["filtered_logs"]["filter"]["blockHash"] = block_hash
+
+    plan = sample_plan_v3()
+    plan["block"] = {
+        "number": header["number"],
+        "hash": block_hash,
+        "hash_source": "synthetic receipt-root vector",
+    }
+    plan["proof_targets"] = material["plan"]["proof_targets"]
+    plan["limits"] = material["plan"]["limits"]
+    plan["requests"][1]["params"] = [block_hash]
+    plan["requests"][2]["params"] = [transactions[1]]
+    plan["requests"][3]["params"] = [witness["filtered_logs"]["filter"]]
+
+    global_log_index = 0
+    rpc_receipts = []
+    for index, receipt in enumerate(witness["receipts"]):
+        transaction_hash = transactions[index]
+        result = {
+            "blockHash": block_hash,
+            "blockNumber": header["number"],
+            "transactionHash": transaction_hash,
+            "transactionIndex": hex(index),
+            "type": "0x0" if receipt["receipt_type"] == "legacy" else receipt["receipt_type"],
+            "cumulativeGasUsed": receipt["cumulative_gas_used"],
+            "logsBloom": receipt["logs_bloom"],
+            "logs": [],
+        }
+        if "status" in receipt:
+            result["status"] = receipt["status"]
+        else:
+            result["root"] = receipt["root"]
+        for log in receipt["logs"]:
+            result["logs"].append(
+                {
+                    **log,
+                    "blockHash": block_hash,
+                    "blockNumber": header["number"],
+                    "transactionHash": transaction_hash,
+                    "transactionIndex": hex(index),
+                    "logIndex": hex(global_log_index),
+                    "removed": False,
+                }
+            )
+            global_log_index += 1
+        rpc_receipts.append(result)
+
+    relation_requests = {item["name"]: item for item in plan["requests"]}
+    material["rpc_records"] = [
+        make_rpc_record(
+            "eth_chainId",
+            [],
+            required=True,
+            evidence="recorded-rpc",
+            result="0x1",
+            name="chain-id",
+        ),
+        make_rpc_record(
+            "eth_getBlockReceipts",
+            relation_requests["block-receipts"]["params"],
+            required=True,
+            evidence="recorded-rpc",
+            result=rpc_receipts,
+            name="block-receipts",
+        ),
+        make_rpc_record(
+            "eth_getTransactionReceipt",
+            relation_requests["target-receipt"]["params"],
+            required=True,
+            evidence="recorded-rpc",
+            result=rpc_receipts[1],
+            name="target-receipt",
+        ),
+        make_rpc_record(
+            "eth_getLogs",
+            relation_requests["filtered-logs"]["params"],
+            required=True,
+            evidence="recorded-rpc",
+            result=rpc_receipts[1]["logs"],
+            name="filtered-logs",
+        ),
+    ]
+    material.update(
+        {
+            "plan": plan,
+            "header": header,
+            "receipt_witness": witness,
+            "anchor_records": [
+                sample_anchor_record(
+                    "archive-a",
+                    block_number=header["number"],
+                    block_hash=block_hash,
+                )
+            ],
+        }
+    )
+    return material
 
 
 def sample_proof_record():

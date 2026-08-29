@@ -65,7 +65,7 @@ def answer_document(record):
             {
                 "text": "You said your desk treats a set flag as a hold.",
                 "source_class": "user_supplied",
-                "evidence": [],
+                "evidence": ["question:7-21"],  # "pause flag set", bytes 7 to 21 of the question
             },
         ],
         "citations": [
@@ -158,7 +158,7 @@ def discrepancy_document(record):
 
 
 def eval_cases(record):
-    """Six cases: one per expectation, adversarial classes represented."""
+    """Seven cases: every expectation and every adversarial class represented."""
     grounded = answer_document(record)
     refusal = refusal_document()
 
@@ -176,6 +176,15 @@ def eval_cases(record):
         {
             "text": "So the flag will certainly stay set next quarter.",
             "source_class": "calculation",
+            "evidence": [],
+        }
+    )
+
+    reclassified = answer_document(record)
+    reclassified["sentences"].append(
+        {
+            "text": "So the flag will certainly stay set next quarter.",
+            "source_class": "user_supplied",
             "evidence": [],
         }
     )
@@ -242,6 +251,16 @@ def eval_cases(record):
                 "expected_boundary": None,
                 "forbidden_content": [],
                 "answer": inference,
+            },
+            {
+                "id": "c-reclassified",
+                "family": "registry state",
+                "question": grounded["question"],
+                "expectation": "rejected",
+                "adversarial": "unsupported-inference",
+                "expected_boundary": None,
+                "forbidden_content": [],
+                "answer": reclassified,
             },
         ],
     }

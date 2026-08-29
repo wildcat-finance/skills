@@ -12,12 +12,16 @@ import sys
 import tempfile
 import time
 import unittest
-from contextlib import redirect_stderr
-from io import StringIO
+from contextlib import ExitStack, redirect_stderr
+from io import BytesIO, StringIO, TextIOWrapper
+from pathlib import Path
 from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 HEXCTL = os.path.join(HERE, "..", "skills", "fiat", "scripts", "hexctl.py")
+AUDIT_SYNOPSIS = os.path.join(
+    HERE, "..", "skills", "fiat", "scripts", "audit_synopsis.py"
+)
 PROTASIS = os.path.join(HERE, "..", "skills", "protasis", "scripts", "protasis.py")
 COMPLETE_STUDY = os.path.join(HERE, "fixtures", "protasis", "complete-study.md")
 
@@ -33,6 +37,9 @@ test about a Solidity round.
 LINTS_CLEAN = ("--phylax-exit", "0", "--ephoros-exit", "0", "--hypomnema-exit", "0")
 """What a non-Solidity round records when all three lints came back clean."""
 
+AUDIT_FILTER = ("--audit-filter", "sapheneia:sapheneia")
+"""The exact checked operator declaration every new audit round owes."""
+
 
 def make_origin_checkout(path):
     """A real repository on `main` at `path`.
@@ -43,12 +50,17 @@ def make_origin_checkout(path):
     """
     for argv in (
         ["init", "-q", "-b", "main"],
+        ["config", "--local", "commit.gpgsign", "false"],
         ["config", "user.email", "fixture@example.invalid"],
         ["config", "user.name", "Fixture"],
-        ["config", "commit.gpgsign", "false"],
         ["commit", "-q", "--allow-empty", "-m", "base"],
     ):
-        subprocess.run(["git", *argv], cwd=path, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", *argv],
+            cwd=path,
+            check=True,
+            capture_output=True,
+        )
 
 
 def run_target(base_dir):
@@ -93,6 +105,18 @@ def hexctl_module():
     return module
 
 
+def audit_synopsis_module():
+    """The sibling renderer imported under the controller test runner."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "audit_synopsis_under_test", AUDIT_SYNOPSIS
+    )
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def protasis_module():
     import importlib.util
 
@@ -122,7 +146,14 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
                 process.wait(timeout=5)
         self.tmp.cleanup()
 
-    def run_ctl(self, *args, expect=0):
+    def run_ctl(self, *args, expect=0, audit_filter=True):
+        if (
+            args
+            and args[0] == "audit-round"
+            and audit_filter
+            and "--audit-filter" not in args
+        ):
+            args = (*args, *AUDIT_FILTER)
         pending_refs = dict(self.fake_refs)
         pending_prs = json.loads(json.dumps(self.fake_prs))
         pending_parents = json.loads(json.dumps(self.fake_parents))
@@ -134,6 +165,12 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
                     state = json.load(handle)
             except (OSError, ValueError):
                 state = None
+        if (
+            args[:1] == ("audit-round",)
+            and expect == 0
+            and getattr(self, "auto_audit_records", True)
+        ):
+            self.append_valid_audit_record(args, state)
         if args[:2] == ("done", "implement") and expect == 0:
             branch = args[args.index("--branch") + 1]
             head = args[args.index("--commit") + 1]
@@ -153,20 +190,30 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             number = int(args[args.index("--step") + 1])
             url = state["steps"][number - 1]["receipts"]["push"]["pr_url"]
             merge = args[args.index("--merge-commit") + 1]
-            pending_prs[url]["state"] = "MERGED"
-            pending_prs[url]["mergeCommit"] = {"oid": merge}
+            pending_prs[url]["state"] = "closed"
+            pending_prs[url]["merged"] = True
+            pending_prs[url]["merge_commit_sha"] = merge
             pending_refs[state["run_branch"]] = merge
             if number < len(state["steps"]):
                 next_push = state["steps"][number]["receipts"].get("push", {})
                 next_url = next_push.get("pr_url")
                 if next_url in pending_prs:
-                    pending_prs[next_url]["baseRefName"] = state["run_branch"]
+                    pending_prs[next_url]["base"]["ref"] = state["run_branch"]
         if args[:2] == ("done", "integrate") and expect == 0 and state is not None:
             url = args[args.index("--pr-url") + 1]
             merge = args[args.index("--merge-commit") + 1]
             head = pending_refs.get(state["run_branch"], self.fake_sha(state["run_branch"]))
+            body = "Delivery evidence."
+            match = re.fullmatch(
+                r"https://github\.com/([^/]+/[^/]+)/issues/([1-9][0-9]*)/?",
+                state["receipts"].get("task_issue") or "",
+            )
+            if match is not None:
+                body += f"\n\nCloses {match.group(1)}#{match.group(2)}"
+            body += "\n\n<!-- wildcat-origin: shoggoth -->"
             pending_prs[url] = self.fake_pr(
-                url, state["run_branch"], state["base"], head, merge
+                url, state["run_branch"], self.integration_base(state), head, merge,
+                body=body,
             )
         env = dict(self.env)
         env["FAKE_GIT_REFS"] = json.dumps(pending_refs)
@@ -190,21 +237,112 @@ class HexctlCase(OriginCheckoutMixin, unittest.TestCase):
             self.fake_parents = pending_parents
         return proc
 
+    def append_valid_audit_record(self, args, state):
+        """Stand in for Warden when a controller test is not about log syntax."""
+        if state is None:
+            raise AssertionError("cannot write an audit record without controller state")
+        findings = int(args[args.index("--findings") + 1])
+        verdict = (
+            args[args.index("--elenchus-verdict") + 1]
+            if "--elenchus-verdict" in args
+            else "null"
+        )
+        study_path = state["receipts"]["study"]["artifact"]
+        if not os.path.isabs(study_path):
+            study_path = os.path.join(self.target, study_path)
+        with open(study_path, encoding="utf-8") as handle:
+            study = handle.read()
+        block = re.search(
+            r"(?ms)^```risk-register\s*$\n(?P<body>.*?)^```\s*$",
+            study,
+        )
+        if block is None:
+            raise AssertionError("fixture study has no risk register")
+        risk_ids = [
+            line.split("|", 1)[0].strip()
+            for line in block.group("body").splitlines()
+            if line.strip()
+        ]
+        covered = "; ".join(f"{risk_id}=reviewed" for risk_id in risk_ids)
+        round_number = len(
+            state["steps"][state["current_step"] - 1]["audit"]["rounds"]
+        ) + 1
+        table_rows = (
+            ["| -- | -- | -- | none | -- |"]
+            if findings == 0
+            else [
+                f"| F-{index:02d} | low | fixture.py | finding {index} | open |"
+                for index in range(1, findings + 1)
+            ]
+        )
+        record = "\n".join(
+            [
+                f"## Step {state['current_step']}, round {round_number} "
+                "-- 2026-08-23T02:17:46Z",
+                "",
+                "Audit schema: fiat-audit-round/v2",
+                "",
+                f"Covered: {covered}",
+                "",
+                "Not checked: none",
+                "",
+                f"Elenchus verdict: {verdict}",
+                "",
+                "| id | severity | file | finding | status |",
+                "| --- | --- | --- | --- | --- |",
+                *table_rows,
+                "",
+                "Leads not pursued: none",
+                "",
+            ]
+        )
+        log_path = state["config"]["audit"]["log_path"]
+        path = log_path if os.path.isabs(log_path) else os.path.join(self.target, log_path)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        needs_gap = os.path.exists(path) and os.path.getsize(path) > 0
+        with open(path, "a", encoding="utf-8") as handle:
+            if needs_gap:
+                handle.write("\n")
+            handle.write(record)
+        synopsis_result = subprocess.run(
+            [sys.executable, AUDIT_SYNOPSIS, "--write", self.target],
+            cwd=self.target,
+            capture_output=True,
+            text=True,
+        )
+        if synopsis_result.returncode:
+            raise AssertionError(
+                f"audit synopsis fixture failed\nstdout: {synopsis_result.stdout}"
+                f"stderr: {synopsis_result.stderr}"
+            )
+        # Warden owns and commits the append in a real run. Keep the fixture's
+        # worktree equally clean so retirement tests exercise controller state,
+        # not an untracked stand-in log.
+        synopsis_path = os.path.splitext(log_path)[0] + ".synopsis.md"
+        self.git("add", "--", log_path, synopsis_path)
+        self.git("commit", "-q", "-m", "fixture audit record")
+
     @staticmethod
     def fake_sha(ref):
         return ref if re.fullmatch(r"[0-9a-f]{40}", ref) else hashlib.sha1(ref.encode()).hexdigest()
 
     @staticmethod
-    def fake_pr(url, head, base, head_sha, merge_sha=None):
+    def fake_pr(url, head, base, head_sha, merge_sha=None, *, body=None):
+        """One pull request as the REST endpoint spells it.
+
+        REST fills `merge_commit_sha` on an open pull request too, with the
+        test merge GitHub computes for it, so the fixture carries one either
+        way and `merged` is what says whether it is a real merge.
+        """
         return {
-            "url": url,
-            "state": "MERGED" if merge_sha else "OPEN",
-            "author": {"login": "shoggoth-wildcat"},
-            "body": "Delivery evidence.\n\n<!-- wildcat-origin: shoggoth -->",
-            "headRefName": head,
-            "headRefOid": head_sha,
-            "baseRefName": base,
-            "mergeCommit": {"oid": merge_sha} if merge_sha else None,
+            "html_url": url,
+            "state": "closed" if merge_sha else "open",
+            "merged": bool(merge_sha),
+            "user": {"login": "shoggoth-wildcat"},
+            "body": body or "Delivery evidence.\n\n<!-- wildcat-origin: shoggoth -->",
+            "head": {"ref": head, "sha": head_sha},
+            "base": {"ref": base},
+            "merge_commit_sha": merge_sha if merge_sha else "f" * 40,
         }
 
     def install_fake_delivery_tools(self):
@@ -221,7 +359,19 @@ import re
 import sys
 import time
 
-args = sys.argv[1:]
+raw_args = sys.argv[1:]
+args = raw_args
+candidate = raw_args[1:] if raw_args[:1] == ["--no-replace-objects"] else raw_args
+while len(candidate) >= 2 and candidate[0] == "-c":
+    candidate = candidate[2:]
+if candidate and candidate[0] in (
+    "verify-commit",
+    "show",
+    "diff",
+    "merge-base",
+    "ls-remote",
+):
+    args = candidate
 mode = os.environ.get("FAKE_GIT_MODE", "valid")
 if args and args[0] == "rev-parse" and "--show-toplevel" not in args:
     if mode == "missing-commit":
@@ -230,8 +380,13 @@ if args and args[0] == "rev-parse" and "--show-toplevel" not in args:
     refs = json.loads(os.environ.get("FAKE_GIT_REFS", "{{}}"))
     print(refs.get(ref, ref if re.fullmatch(r"[0-9a-f]{{40}}", ref) else hashlib.sha1(ref.encode()).hexdigest()))
 elif args[:3] == ["remote", "get-url", "origin"]:
+    if mode == "slow-remote":
+        time.sleep(0.6)
     print(os.environ.get("FAKE_GIT_ORIGIN", "https://github.com/wildcat-finance/example.git"))
 elif args and args[0] == "ls-remote":
+    if os.environ.get("FAKE_GIT_LS_REMOTE_LOG"):
+        with open(os.environ["FAKE_GIT_LS_REMOTE_LOG"], "a", encoding="utf-8") as log:
+            log.write(json.dumps({{"args": args, "cwd": os.getcwd()}}) + "\\n")
     ref = args[-1]
     branch = ref.removeprefix("refs/heads/")
     refs = json.loads(os.environ.get("FAKE_GIT_REFS", "{{}}"))
@@ -246,7 +401,59 @@ elif args and args[0] == "ls-remote":
     else:
         print(f"{{tip}}\\t{{ref}}")
 elif args and args[0] == "merge-base":
-    raise SystemExit(0)
+    if "--is-ancestor" in args:
+        if mode == "ancestry-error":
+            raise SystemExit(128)
+        if mode == "not-ancestor":
+            detached = os.environ.get("FAKE_GIT_NOT_ANCESTOR", "d" * 40).split(",")
+            if args[-2] in detached:
+                raise SystemExit(1)
+        raise SystemExit(0)
+    print(os.environ.get("FAKE_GIT_MERGE_BASE", "4" * 40))
+elif args and args[0] == "ls-tree":
+    if mode == "baseline-unavailable":
+        raise SystemExit(128)
+    baseline_hex = os.environ.get("FAKE_GIT_BASELINE_HEX")
+    if baseline_hex is not None:
+        baseline = bytes.fromhex(baseline_hex)
+        object_id = hashlib.sha1(
+            b"blob " + str(len(baseline)).encode() + b"\\0" + baseline
+        ).hexdigest()
+        path = args[-1].encode()
+        if mode == "baseline-ambiguous":
+            sys.stdout.buffer.write(b"ambiguous\\0")
+        elif mode == "baseline-unsafe":
+            sys.stdout.buffer.write(
+                f"120000 blob {{object_id}}\\t".encode() + path + b"\\0"
+            )
+        else:
+            sys.stdout.buffer.write(
+                f"100644 blob {{object_id}}\\t".encode() + path + b"\\0"
+            )
+elif args and args[:2] == ["cat-file", "-s"]:
+    baseline = bytes.fromhex(os.environ.get("FAKE_GIT_BASELINE_HEX", ""))
+    if mode == "baseline-oversized":
+        print(2 * 1024 * 1024 + 1)
+    elif mode == "baseline-malformed-size":
+        print("not-a-size")
+    elif mode == "baseline-short-read":
+        print(len(baseline) + 1)
+    else:
+        print(len(baseline))
+elif args and args[:2] == ["cat-file", "blob"]:
+    baseline = bytes.fromhex(os.environ.get("FAKE_GIT_BASELINE_HEX", ""))
+    sys.stdout.buffer.write(baseline)
+elif (
+    args
+    and args[0] == "diff"
+    and "--name-only" in args
+    and any(".." in value for value in args)
+    and "FAKE_GIT_DIFF_PATHS" in os.environ
+):
+    pair = next(value for value in args if ".." in value)
+    paths = json.loads(os.environ.get("FAKE_GIT_DIFF_PATHS", "{{}}")).get(pair, [])
+    if paths:
+        sys.stdout.write("\\0".join(paths) + "\\0")
 elif args and args[0] == "rev-list":
     pair = next(value for value in args if ".." in value)
     base, head = pair.split("..", 1)
@@ -298,6 +505,7 @@ else:
             handle.write("""#!/usr/bin/env python3
 import json
 import os
+import re
 import sys
 import time
 
@@ -317,33 +525,95 @@ if mode == "nonzero":
 if mode == "invalid-json":
     print("not json")
     raise SystemExit(0)
-if args[:2] == ["repo", "view"]:
+path = args[-1]
+if re.fullmatch(r"repos/[^/]+/[^/]+", path):
     repository = "elsewhere/example" if mode == "repo-mismatch" else "wildcat-finance/example"
-    print(json.dumps({"nameWithOwner": repository}))
+    print(json.dumps({"full_name": repository}))
     raise SystemExit(0)
-if args[:2] == ["pr", "view"]:
-    url = args[2]
+pull = re.fullmatch(r"repos/(?P<repo>[^/]+/[^/]+)/pulls/(?P<number>[0-9]+)", path)
+if pull:
+    url = "https://github.com/%s/pull/%s" % (pull.group("repo"), pull.group("number"))
     payload = json.loads(os.environ.get("FAKE_GH_PRS", "{}")).get(url)
     if payload is None:
         raise SystemExit(4)
     if mode == "pr-mismatch":
-        payload["baseRefName"] = "wrong-base"
+        payload["base"]["ref"] = "wrong-base"
     if mode == "pr-head-mismatch":
-        payload["headRefOid"] = "9" * 40
+        payload["head"]["sha"] = "9" * 40
     if mode == "host-pr-author":
-        payload["author"] = {"login": "app/claude"}
+        payload["user"] = {"login": "app/claude"}
     if mode == "host-pr-byline":
         payload["body"] += "\\n\\nGenerated by [Claude Code](https://claude.ai/code)"
     print(json.dumps(payload))
     raise SystemExit(0)
 sha = args[-1].rsplit("/", 1)[-1]
+account = {"login": "shoggoth-wildcat"}
+identity = {"name": "Shoggoth", "email": "shoggoth@wildcat.finance"}
+message = "subject\\n\\nCo-authored-by: Shoggoth <shoggoth@wildcat.finance>\\nWildcat-Origin: shoggoth"
+if mode == "external-author":
+    account = {"login": "kethcode"}
+    identity = {"name": "Kethcode", "email": "Kethcode@Example.Invalid"}
+elif mode == "unlinked-author":
+    account = None
+    identity = {"name": "Kethcode", "email": "kethcode@example.invalid"}
+elif mode == "attribution-null-account-object":
+    account = {"login": None}
+elif mode == "attribution-host-account":
+    account = {"login": "claude[bot]"}
+elif mode == "attribution-account-not-object":
+    account = "kethcode"
+elif mode == "attribution-bad-login":
+    account = {"login": "not a login"}
+elif mode == "attribution-host-author":
+    identity = {"name": "Claude", "email": "noreply@anthropic.com"}
+elif mode == "attribution-missing-identity":
+    identity = None
+elif mode == "attribution-blank-name":
+    identity = {"name": "   ", "email": "kethcode@example.invalid"}
+elif mode == "attribution-long-name":
+    identity = {"name": "n" * (256 + 1), "email": "kethcode@example.invalid"}
+elif mode == "attribution-spaced-email":
+    identity = {"name": "Kethcode", "email": "keth code@example.invalid"}
+elif mode == "attribution-long-email":
+    identity = {"name": "Kethcode", "email": "k" * 310 + "@example.invalid"}
+elif mode == "attribution-missing-message":
+    message = None
+elif mode == "attribution-host-coauthor":
+    message = "subject\\n\\nCo-authored-by: Claude <noreply@anthropic.com>"
+elif mode == "attribution-many-coauthors":
+    message = "subject\\n\\n" + "\\n".join(
+        "Co-authored-by: Person%d <person%d@example.invalid>" % (i, i)
+        for i in range(40)
+    )
+elif mode == "attribution-merge-coauthor":
+    account = {"login": "maintainer"}
+    identity = {"name": "Maintainer", "email": "maintainer@example.invalid"}
+    message = (
+        "Merge pull request #1\\n\\n"
+        "Co-authored-by: Kethcode <kethcode@example.invalid>"
+    )
+elif mode == "attribution-merge-stranger":
+    account = {"login": "maintainer"}
+    identity = {"name": "Maintainer", "email": "maintainer@example.invalid"}
+    message = "Merge pull request #1"
+elif mode == "attribution-second-coauthor":
+    message = (
+        "subject\\n\\nCo-authored-by: Shoggoth <shoggoth@wildcat.finance>\\n"
+        "Co-authored-by: Kethcode <kethcode@example.invalid>\\n"
+        "Wildcat-Origin: shoggoth"
+    )
 payload = {
     "sha": None if mode == "missing-sha" else sha,
-    "commit": {"verification": {
-        "verified": mode != "verified-false",
-        "reason": os.environ.get("FAKE_GH_REASON", "expired_key") if mode == "invalid-reason" else "valid",
-        "signature": "RAW FAKE SIGNATURE",
-    }},
+    "author": account,
+    "commit": {
+        "author": identity,
+        "message": message,
+        "verification": {
+            "verified": mode != "verified-false",
+            "reason": os.environ.get("FAKE_GH_REASON", "expired_key") if mode == "invalid-reason" else "valid",
+            "signature": "RAW FAKE SIGNATURE",
+        },
+    },
 }
 print(json.dumps(payload))
 """)
@@ -367,14 +637,43 @@ print(json.dumps(payload))
             body += "\n## Carried forward\n\n" + carried
         return self.write(os.path.join(".hexaemeron", "run-pr.md"), body)
 
-    def init(self, topic="test topic", task_issue=None):
+    def init(self, topic="test topic", task_issue=None, base=None):
         args = ["init", "--topic", topic]
         if task_issue is not None:
             args += ["--task-issue", task_issue]
+        if base is not None:
+            args += ["--base", base]
         self.run_ctl(*args)
 
+    @staticmethod
+    def integration_base(state):
+        starting_base = state["base"]
+        if re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", starting_base):
+            return state["config"]["git"]["base"]
+        return starting_base
+
     def state(self):
-        return json.loads(self.run_ctl("status", "--json").stdout)
+        payload = json.loads(self.run_ctl("status", "--json").stdout)
+        payload.pop("observation_run_id", None)
+        payload.pop("version_resolution_status", None)
+        return payload
+
+    def record_legacy_config(self, path, value):
+        """Create a ledger-valid state that an older controller could have stored."""
+        state_path = os.path.join(self.target, ".hexaemeron", "state.json")
+        with open(state_path, encoding="utf-8") as handle:
+            state = json.load(handle)
+        node = state["config"]
+        parts = path.split(".")
+        for part in parts[:-1]:
+            node = node[part]
+        node[parts[-1]] = value
+        hexctl_module().commit(
+            self.target,
+            state,
+            "fixture:legacy-config",
+            {"path": path, "value": value},
+        )
 
     def run_branch(self):
         return self.state()["run_branch"]
@@ -475,8 +774,8 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
         stdout, stderr = process.communicate(timeout=5)
         self.assertEqual(process.returncode, 0, (stdout, stderr))
 
-    def to_steps(self, titles=("Scaffold", "Core"), task_issue=None):
-        self.init(task_issue=task_issue)
+    def to_steps(self, titles=("Scaffold", "Core"), task_issue=None, base=None):
+        self.init(task_issue=task_issue, base=base)
         study = self.write(
             "study.md",
             "# Study\n\n```risk-register\n"
@@ -495,9 +794,8 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
         steps = self.write("steps.json", json.dumps(list(titles)))
         self.run_ctl("done", "runbook", "--artifact", runbook,
                      "--steps-file", steps)
-        # The repository and the run branch both exist already: the fixture is a
-        # real checkout, and `init` cut the run branch when it created the run's
-        # worktree. Only the step branches are still this helper's to make.
+        # The fixture checkout and the run branch already exist (`init` cut the
+        # branch); only the step branches are this helper's to make.
         self.git("add", study, runbook, steps)
         self.git("commit", "-m", "fixture")
         state = self.state()
@@ -523,6 +821,32 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
         )
         return original
 
+    def to_runbook_amendable_steps(self, titles=("Core", "Finish")):
+        """A source-bound run whose baseline also passes Protasis runbook mode."""
+        self.init()
+        with open(COMPLETE_STUDY, encoding="utf-8") as handle:
+            study_text = handle.read()
+        study = self.write("study.md", study_text)
+        self.run_ctl("done", "study", "--artifact", study)
+        blocks = []
+        for number, title in enumerate(titles, 1):
+            blocks.append(
+                f"## Step {number}: {title}\n\n"
+                f"**Goal.** Ship {title}.\n"
+                f"**Entry.** Step {number} is ready.\n"
+                "**Exit.** Run `fiat-v1.0.0`.\n"
+                f"**Files.** `step-{number}.md`.\n"
+                "**Tests.** Run `python3 -m unittest`.\n"
+                "**Disciplines.** none, fixture only.\n"
+            )
+        runbook_text = "# Runbook\n\n" + "\n".join(blocks)
+        runbook = self.write("runbook.md", runbook_text)
+        steps = self.write("steps.json", json.dumps(list(titles)))
+        self.run_ctl(
+            "done", "runbook", "--artifact", runbook, "--steps-file", steps
+        )
+        return study_text, runbook_text
+
     @staticmethod
     def amendment(
         verdicts=(
@@ -543,9 +867,32 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
             f"**Still holding.** {verdicts}\n"
         )
 
+    @staticmethod
+    def runbook_amendment(
+        verdicts=(
+            "Step 1: entry holds; exit holds. "
+            "Step 2: entry holds; exit holds."
+        ),
+        *,
+        date="2026-08-24",
+        what="Complete replacement Exit: Run `fiat-v2.0.0`.",
+        why="The target version changed.",
+        touched="Steps 1 and 2.",
+    ):
+        return (
+            f"\n### Amendment -- {date}\n\n"
+            f"**What changed.** {what}\n"
+            f"**Why.** {why}\n"
+            f"**Steps touched.** {touched}\n"
+            f"**Still holding.** {verdicts}\n"
+        )
+
     def git(self, *args, expect=0):
         proc = subprocess.run(
-            ["git", *args], cwd=self.target, capture_output=True, text=True
+            ["git", "-c", "commit.gpgsign=false", *args],
+            cwd=self.target,
+            capture_output=True,
+            text=True,
         )
         if proc.returncode != expect:
             raise AssertionError(
@@ -562,15 +909,18 @@ with module.held_lock(sys.argv[2], sys.argv[3]):
     def finish_step(self, step_no=1):
         self.run_ctl("done", "implement", "--branch", self.step_branch(step_no),
                      "--commit", f"abc{step_no}")
-        self.run_ctl("audit-round", "--findings", "0", "--log", "audit/AUDIT.md",
-                     *LINTS_CLEAN)
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
         self.run_ctl("done", "audit")
         self.run_ctl("done", "prose", "--files", "3",
                      "--skills", "hexaemeron:imprimatur,hexaemeron:vulgate")
+        # `done push` records the pushed sha, which must equal the fake
+        # remote's tip, fake_sha(head).  A 40-hex head makes fake_sha the
+        # identity, the receipt-equals-tip state of a genuine run; a
+        # placeholder like "head2" fired the rewritten-stack refusal.
         self.run_ctl(
             "done", "push",
             "--pr-url", f"https://github.com/wildcat-finance/example/pull/{step_no}",
-            "--head-commit", f"head{step_no}",
+            "--head-commit", self.fake_sha(f"head{step_no}"),
             "--pr-base", self.step_base(step_no),
         )
 
@@ -679,7 +1029,16 @@ class TestDelegationPackets(HexctlCase):
         mason = self.next_json()
         self.assert_packet(mason, "mason", ("runbook_step", "branch", "branch_from"))
         source = mason["brief"]["runbook_step"]
-        self.assertEqual(set(source), {"markdown", "path", "sha256", "number", "title"})
+        self.assertEqual(
+            set(source),
+            {
+                "markdown", "baseline_markdown", "baseline_sha256",
+                "amendments", "effective_sha256", "path", "sha256",
+                "number", "title",
+            },
+        )
+        self.assertEqual(source["baseline_markdown"], source["markdown"])
+        self.assertEqual(source["amendments"], [])
         self.assertEqual(source["number"], 1)
         self.assertEqual(source["title"], "Core")
         self.assertTrue(source["markdown"].startswith("## Step 1: Core\n"))
@@ -695,7 +1054,8 @@ class TestDelegationPackets(HexctlCase):
             warden,
             "warden",
             ("step_branch", "stacked_branch", "security_suite", "plugin_root",
-             "audit_log_path", "round", "risk_register", "runbook_step"),
+             "audit_log_path", "round", "audit_filter", "risk_register",
+             "runbook_step"),
         )
         risk = warden["brief"]["risk_register"]
         self.assertEqual(set(risk), {"markdown", "path", "sha256"})
@@ -712,7 +1072,13 @@ class TestDelegationPackets(HexctlCase):
         self.assert_packet(
             scribe, "scribe", ("files", "pr_base", "pr_draft_path", "plugin_root")
         )
-        self.assertEqual(scribe["brief"]["files"], [])
+        self.assertEqual(
+            scribe["brief"]["files"],
+            [
+                "audit/rounds/fiat-test-topic.md",
+                "audit/rounds/fiat-test-topic.synopsis.md",
+            ],
+        )
         self.run_ctl("done", "prose", "--files", "1", "--skills",
                      "hexaemeron:imprimatur,hexaemeron:vulgate")
         push = self.next_json()
@@ -874,7 +1240,7 @@ class TestDelegationPackets(HexctlCase):
     def test_warden_refuses_an_invalid_assembled_stacked_branch(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
-        self.run_ctl("config", "set", "audit.stacked_suffix", '" bad"')
+        self.record_legacy_config("audit.stacked_suffix", " bad")
         proc = self.run_ctl("next", expect=2)
         self.assertIn("stacked_branch is not a valid Git branch", proc.stderr)
 
@@ -922,8 +1288,15 @@ class TestDelegationPackets(HexctlCase):
             self.write(name, name)
         self.git("add", "zeta.md", "alpha.md")
         self.git("commit", "-m", "step")
-        self.assertEqual(self.next_json()["brief"]["files"],
-                         ["alpha.md", "zeta.md"])
+        self.assertEqual(
+            self.next_json()["brief"]["files"],
+            [
+                "alpha.md",
+                "audit/rounds/fiat-test-topic.md",
+                "audit/rounds/fiat-test-topic.synopsis.md",
+                "zeta.md",
+            ],
+        )
 
         for number in range(499):
             self.write(f"many/{number:03d}.md", "x")
@@ -960,10 +1333,74 @@ class TestDelegationPackets(HexctlCase):
         self.assertIn("2097152-byte output cap", error.getvalue())
 
 
+class XRayReuseStateSeparationTests(HexctlCase):
+    FORBIDDEN_FIELDS = frozenset(
+        {
+            "cache",
+            "cache_key",
+            "cache_path",
+            "cache_payload",
+            "cache_verdict",
+            "preparation_entries",
+            "reuse_cache",
+            "reuse_candidate",
+            "reuse_plan",
+            "xray_reuse",
+        }
+    )
+    FORBIDDEN_PAYLOAD_MARKERS = (
+        "hexaemeron.xray.",
+        "candidate_sha256",
+        "dependency_digests",
+        "reverse_invalidated",
+        "source_sha256",
+    )
+
+    def field_names(self, value):
+        if isinstance(value, dict):
+            for key, nested in value.items():
+                yield key
+                yield from self.field_names(nested)
+        elif isinstance(value, list):
+            for nested in value:
+                yield from self.field_names(nested)
+
+    def assert_no_reuse_material(self, surface, value):
+        present = self.FORBIDDEN_FIELDS.intersection(self.field_names(value))
+        self.assertEqual(present, set(), f"{surface} gained reuse material")
+        encoded = json.dumps(value, sort_keys=True)
+        for marker in self.FORBIDDEN_PAYLOAD_MARKERS:
+            self.assertNotIn(marker, encoded, f"{surface} gained reuse payload")
+
+    def test_audit_directive_state_ledger_and_receipt_keep_existing_shapes(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        directive = self.next_json()
+
+        self.run_ctl("audit-round", "--findings", "0")
+        state_path = os.path.join(self.target, ".hexaemeron", "state.json")
+        ledger_path = os.path.join(self.target, ".hexaemeron", "ledger.jsonl")
+        with open(state_path, encoding="utf-8") as handle:
+            state = json.load(handle)
+        with open(ledger_path, encoding="utf-8") as handle:
+            ledger = [json.loads(line) for line in handle if line.strip()]
+        receipt = state["steps"][0]["audit"]["rounds"][0]
+
+        for name, value in (
+            ("audit directive", directive),
+            ("state", state),
+            ("ledger", ledger),
+            ("audit receipt", receipt),
+        ):
+            with self.subTest(surface=name):
+                self.assert_no_reuse_material(name, value)
+
+
 class TestStudyAmendments(HexctlCase):
     def test_temporary_git_repositories_demonstrate_holding_and_broken_runs(self):
         original = self.to_amendable_steps()
         self.git("init", "-b", "main")
+        self.git("config", "--local", "commit.gpgsign", "false")
         self.git("config", "user.email", "tests@example.com")
         self.git("config", "user.name", "Hexctl Tests")
         self.git("add", "study.md", "runbook.md", "steps.json")
@@ -986,6 +1423,7 @@ class TestStudyAmendments(HexctlCase):
         try:
             original = broken.to_amendable_steps()
             broken.git("init", "-b", "main")
+            broken.git("config", "--local", "commit.gpgsign", "false")
             broken.git("config", "user.email", "tests@example.com")
             broken.git("config", "user.name", "Hexctl Tests")
             broken.git("add", "study.md", "runbook.md", "steps.json")
@@ -1395,7 +1833,23 @@ class TestStudyAmendments(HexctlCase):
                 self.assertIn("study artefact digest changed", proc.stderr)
 
 
-class TestCommitVerification(HexctlCase):
+try:
+    from .host_identity_cases import build_host_identity_cases
+    from .replacement_object_cases import build_replacement_object_cases
+except ImportError:
+    from host_identity_cases import build_host_identity_cases
+    from replacement_object_cases import build_replacement_object_cases
+
+
+HostIdentityRefusalCases, FooterReappearanceCases = build_host_identity_cases(
+    globals()
+)
+(ReplacementObjectCases,) = build_replacement_object_cases(globals())
+
+
+class TestCommitVerification(
+    HostIdentityRefusalCases, ReplacementObjectCases, HexctlCase
+):
     def test_local_fake_git_negative_matrix_is_fail_closed_and_secret_safe(self):
         module = hexctl_module()
         module.GIT_TIMEOUT = 0.05
@@ -1500,7 +1954,24 @@ class TestCommitVerification(HexctlCase):
                         module.verify_github_commits(self.dir, ["a" * 40])
 
 
-class TestPublicationBindings(HexctlCase):
+try:
+    from .github_transport_cases import build_github_transport_tests
+except ImportError:
+    from github_transport_cases import build_github_transport_tests
+
+
+TestGithubTransport = build_github_transport_tests(globals())
+
+
+class TestMergedAttribution(HexctlCase):
+    """Who a run published under, recorded without an address.
+
+    The GitHub commits endpoint is the source: its `author` is the account the
+    commit was matched to, and it is `null` when nothing matched. These drive
+    the reader directly where the shape is the subject, and through the CLI
+    where the recorded receipt is.
+    """
+
     def to_push(self):
         self.to_steps(("Ship",))
         self.run_ctl(
@@ -1515,16 +1986,401 @@ class TestPublicationBindings(HexctlCase):
             "hexaemeron:imprimatur,hexaemeron:vulgate",
         )
 
-    def to_merge_step(self):
+    def attribution_of(self, mode, commits=("a" * 40,)):
+        module = hexctl_module()
+        with mock.patch.dict(
+            os.environ, {"PATH": self.env["PATH"], "FAKE_GH_MODE": mode}
+        ):
+            return module.verified_github_attribution(self.dir, list(commits))[1]
+
+    def test_an_external_author_is_recorded_by_account_and_normalised_digest(self):
+        record = self.attribution_of("external-author")[0]
+        self.assertEqual(record["login"], "kethcode")
+        self.assertEqual(record["name"], "Kethcode")
+        self.assertEqual(record["commit"], "a" * 40)
+        self.assertEqual(
+            record["email_sha256"],
+            hashlib.sha256(b"kethcode@example.invalid").hexdigest(),
+        )
+
+    def test_an_unlinked_author_records_an_explicit_null(self):
+        record = self.attribution_of("unlinked-author")[0]
+        self.assertIsNone(record["login"])
+        self.assertEqual(len(record["email_sha256"]), 64)
+
+    def test_every_coauthor_trailer_becomes_its_own_identity(self):
+        record = self.attribution_of("attribution-second-coauthor")[0]
+        self.assertEqual(
+            [entry["name"] for entry in record["coauthors"]],
+            ["Shoggoth", "Kethcode"],
+        )
+        self.assertEqual(
+            len({entry["email_sha256"] for entry in record["coauthors"]}), 2
+        )
+
+    def test_attribution_negative_matrix_is_fail_closed_and_secret_safe(self):
+        module = hexctl_module()
+        for mode, expected in (
+            ("attribution-host-account", "runtime host account"),
+            ("attribution-account-not-object", "account is not an object"),
+            ("attribution-null-account-object", "account login is not a string"),
+            ("attribution-bad-login", "account login is malformed"),
+            ("attribution-host-author", "runtime host as author"),
+            ("attribution-missing-identity", "identity is not an object"),
+            ("attribution-blank-name", "identity name is malformed"),
+            ("attribution-long-name", "identity name is malformed"),
+            ("attribution-spaced-email", "identity address is malformed"),
+            ("attribution-long-email", "identity address is malformed"),
+            ("attribution-missing-message", "commit message is missing"),
+            ("attribution-host-coauthor", "runtime host as co-author"),
+            ("attribution-many-coauthors", "co-author trailers"),
+        ):
+            with self.subTest(mode=mode):
+                error = StringIO()
+                with mock.patch.dict(
+                    os.environ, {"PATH": self.env["PATH"], "FAKE_GH_MODE": mode}
+                ), redirect_stderr(error):
+                    with self.assertRaises(SystemExit):
+                        module.verified_github_attribution(self.dir, ["a" * 40])
+                self.assertIn(expected, error.getvalue())
+                self.assertNotIn("RAW FAKE SIGNATURE", error.getvalue())
+                self.assertNotIn("ghp_FAKE_SECRET", error.getvalue())
+
+    def test_verification_alone_does_not_apply_the_attribution_checks(self):
+        """A merge commit refuses on its signature, never on its identity shape.
+
+        `verify_github_commits` also covers the merge and sync receipts. If it
+        read identities too, an unexpected author shape on a merge commit would
+        refuse a receipt that has nothing to do with attribution.
+        """
+        module = hexctl_module()
+        for mode in ("attribution-long-name", "attribution-missing-message",
+                     "attribution-null-account-object"):
+            with self.subTest(mode=mode):
+                with mock.patch.dict(
+                    os.environ, {"PATH": self.env["PATH"], "FAKE_GH_MODE": mode}
+                ):
+                    self.assertEqual(
+                        module.verify_github_commits(self.dir, ["a" * 40]),
+                        ["a" * 40],
+                    )
+
+    def test_verification_and_attribution_share_one_request_per_sha(self):
+        module = hexctl_module()
+        log_path = os.path.join(self.dir, "gh.log")
+        with mock.patch.dict(
+            os.environ,
+            {"PATH": self.env["PATH"], "FAKE_GH_LOG": log_path},
+        ):
+            module.verified_github_attribution(self.dir, ["a" * 40, "b" * 40])
+        with open(log_path, encoding="utf-8") as handle:
+            calls = [json.loads(line) for line in handle if line.strip()]
+        commit_reads = [
+            call for call in calls if any("/commits/" in value for value in call)
+        ]
+        self.assertEqual(len(commit_reads), 2)
+
+    def test_the_push_receipt_records_the_accounts_and_no_address(self):
         self.to_push()
+        self.env["FAKE_GH_MODE"] = "external-author"
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
+            "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
+        )
+        receipt = self.state()["steps"][0]["receipts"]["push"]
+        attribution = receipt["attribution"]
+        self.assertEqual(attribution["pull_request_author"], "shoggoth-wildcat")
+        self.assertEqual(
+            [entry["login"] for entry in attribution["commits"]], ["kethcode"]
+        )
+        self.assertEqual(receipt["pull_request"]["author_login"], "shoggoth-wildcat")
+        self.assertNotIn("@", json.dumps(attribution))
+
+    def test_the_ledger_carries_the_attribution_and_no_address(self):
+        self.to_push()
+        self.env["FAKE_GH_MODE"] = "unlinked-author"
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
+            "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
+        )
+        path = os.path.join(self.target, ".hexaemeron", "ledger.jsonl")
+        with open(path, encoding="utf-8") as handle:
+            events = [json.loads(line) for line in handle if line.strip()]
+        pushed = [event for event in events if event["event"] == "done:push"]
+        self.assertEqual(len(pushed), 1)
+        recorded = pushed[0]["data"]["attribution"]
+        self.assertIsNone(recorded["commits"][0]["login"])
+        self.assertNotIn("@", json.dumps(recorded))
+        self.run_ctl("verify")
+
+
+class TestMergedState(HexctlCase):
+    """Whether the base still carries the identities a run published under."""
+
+    URL = "https://github.com/wildcat-finance/example/pull/1"
+    RUN_URL = "https://github.com/wildcat-finance/example/pull/9"
+
+    def to_integrate(self, push_mode="external-author", base=None):
+        self.to_steps(("Ship",), base=base)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc123",
+        )
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("audit-round", "--findings", "0")
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        self.env["FAKE_GH_MODE"] = push_mode
+        self.run_ctl(
+            "done", "push", "--pr-url", self.URL,
+            "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
+        )
+        self.env.pop("FAKE_GH_MODE", None)
+        self.run_ctl(
+            "done", "merge-step", "--step", "1", "--merge-commit", "e" * 40
+        )
+        self.write_run_pr()
+
+    def integrate(self, *, expect=0, git_mode=None, gh_mode=None):
+        if expect != 0:
+            # `run_ctl` seeds the integration pull request only for expected
+            # successes; a refusal case stands it up itself or fails on the
+            # topology read instead of the check under test.
+            state = self.state()
+            self.fake_refs[state["run_branch"]] = "e" * 40
+            self.fake_prs[self.RUN_URL] = self.fake_pr(
+                self.RUN_URL, state["run_branch"], self.integration_base(state),
+                "e" * 40, "f" * 40,
+            )
+        if git_mode:
+            self.env["FAKE_GIT_MODE"] = git_mode
+        if gh_mode:
+            self.env["FAKE_GH_MODE"] = gh_mode
+        try:
+            return self.run_ctl(
+                "done", "integrate", "--pr-url", self.RUN_URL,
+                "--merge-commit", "f" * 40, expect=expect,
+            )
+        finally:
+            self.env.pop("FAKE_GIT_MODE", None)
+            self.env.pop("FAKE_GH_MODE", None)
+
+    def recorded(self):
+        return self.state()["receipts"]["integrate"]["attribution"]
+
+    def test_a_preserved_merge_records_the_ancestor_mechanism(self):
+        self.to_integrate()
+        self.integrate()
+        recorded = self.recorded()
+        self.assertEqual(recorded["mechanisms"], ["ancestor"])
+        self.assertEqual(
+            [entry["login"] for entry in recorded["identities"]], ["kethcode"]
+        )
+        self.assertEqual(recorded["carriers"], {})
+        self.assertEqual(
+            [entry["carrier"] for entry in recorded["identities"]], [None]
+        )
+        self.run_ctl("verify")
+
+    def test_a_rewritten_merge_may_be_carried_by_the_merge_author(self):
+        self.to_integrate()
+        self.integrate(git_mode="not-ancestor", gh_mode="external-author")
+        recorded = self.recorded()
+        self.assertEqual(recorded["mechanisms"], ["merge-author"])
+        # The step's own merge into the run branch is tried before the base
+        # merge, and under this fixture it carries the identity.
+        self.assertEqual(
+            [entry["carrier"] for entry in recorded["identities"]], ["e" * 40]
+        )
+        self.assertEqual(recorded["carriers"], {"e" * 40: "kethcode"})
+
+    def test_a_rewritten_merge_may_be_carried_by_a_coauthor_trailer(self):
+        self.to_integrate()
+        self.integrate(git_mode="not-ancestor", gh_mode="attribution-merge-coauthor")
+        recorded = self.recorded()
+        self.assertEqual(recorded["mechanisms"], ["merge-coauthor"])
+        self.assertEqual(recorded["carriers"], {"e" * 40: "maintainer"})
+
+    def test_a_rewritten_merge_that_dropped_the_identity_refuses(self):
+        self.to_integrate()
+        proc = self.integrate(
+            expect=2, git_mode="not-ancestor", gh_mode="attribution-merge-stranger"
+        )
+        self.assertIn("no merge this run recorded carries that commit", proc.stderr)
+        self.assertIn("kethcode", proc.stderr)
+        self.assertNotIn("@", proc.stderr)
+        self.assertEqual(self.state()["phase"], "integrate")
+
+    def test_an_unanswerable_ancestry_call_refuses_rather_than_reporting_no(self):
+        self.to_integrate()
+        proc = self.integrate(expect=2, git_mode="ancestry-error")
+        self.assertIn("ancestry", proc.stderr)
+        self.assertIn("could not be determined", proc.stderr)
+
+    def test_a_legacy_receipt_without_attribution_still_integrates(self):
+        self.to_integrate()
+        path = os.path.join(self.target, ".hexaemeron", "state.json")
+        with open(path, encoding="utf-8") as handle:
+            state = json.load(handle)
+        state["steps"][0]["receipts"]["push"].pop("attribution", None)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(state, handle)
+        ledger_path = os.path.join(
+            self.target, ".hexaemeron", "ledger.jsonl"
+        )
+        with open(ledger_path, encoding="utf-8") as handle:
+            entries = [json.loads(line) for line in handle if line.strip()]
+        entries[-1]["state"] = hexctl_module().state_fingerprint(state)
+        entries[-1]["hash"] = hashlib.sha256(
+            hexctl_module().canonical(
+                {
+                    "ts": entries[-1]["ts"],
+                    "event": entries[-1]["event"],
+                    "data": entries[-1]["data"],
+                    "prev": entries[-1]["prev"],
+                    "state": entries[-1]["state"],
+                }
+            ).encode()
+        ).hexdigest()
+        with open(ledger_path, "w", encoding="utf-8") as handle:
+            for entry in entries:
+                handle.write(json.dumps(entry, sort_keys=True) + "\n")
+        self.integrate()
+        recorded = self.recorded()
+        self.assertEqual(recorded["identities"], [])
+        self.assertEqual(recorded["mechanisms"], [])
+        self.assertEqual(recorded["carriers"], {})
+
+    def test_a_step_merge_is_tried_before_the_base_merge(self):
+        """A squashed step keeps its identity on its own merge, not the base one.
+
+        The base merge's message names no contributor, so a fallback that
+        looked only there would refuse an identity that did reach the base.
+        """
+        self.to_integrate()
+        state = self.state()
+        self.assertEqual(
+            state["integrate"]["merges"]["1"]["merge_commit"], "e" * 40
+        )
+        self.integrate(git_mode="not-ancestor", gh_mode="attribution-merge-coauthor")
+        identities = self.recorded()["identities"]
+        self.assertEqual([entry["carrier"] for entry in identities], ["e" * 40])
+        self.assertNotIn("f" * 40, self.recorded()["carriers"])
+
+    def test_a_step_merge_that_never_reached_the_base_is_not_a_carrier(self):
+        """A recorded merge only counts while it is reachable from the base."""
+        self.to_integrate()
+        self.env["FAKE_GIT_NOT_ANCESTOR"] = ",".join(("d" * 40, "e" * 40))
+        try:
+            self.integrate(git_mode="not-ancestor", gh_mode="external-author")
+        finally:
+            self.env.pop("FAKE_GIT_NOT_ANCESTOR", None)
+        identities = self.recorded()["identities"]
+        self.assertEqual([entry["carrier"] for entry in identities], ["f" * 40])
+        self.assertEqual(self.recorded()["carriers"], {"f" * 40: "kethcode"})
+
+    def test_an_empty_repaired_container_is_current_not_absent(self):
+        """A repair that recorded no commits does not fall back to stale data.
+
+        `effective_push` is the fresher record by construction. Reading it by
+        truthiness rather than presence would treat an empty container as
+        absent and quietly use the head the repair replaced.
+        """
+        module = hexctl_module()
+        state = {
+            "steps": [{"n": 1, "receipts": {"push": {"attribution": {
+                "commits": [{"commit": "d" * 40, "login": "stale"}]}}}}],
+            "integrate": {"merges": {"1": {"effective_push": {"attribution": {}}}}},
+        }
+        self.assertEqual(module.recorded_run_attribution(state), [])
+
+    def test_the_integrate_directive_names_the_preserving_merge_method(self):
+        self.to_integrate()
+        directive = self.next_json()
+        self.assertEqual(directive["do"], "integrate")
+        self.assertEqual(directive["attribution"]["recorded_identities"], 1)
+        self.assertIn("merge commit", directive["attribution"]["preserved_by"])
+        self.assertIn("squash", directive["attribution"]["preserved_by"])
+
+    def test_a_merge_time_repair_refreshes_the_attribution(self):
+        """A repaired head must not be described by the old head's identities.
+
+        The lead step 2's round 1 carried forward: the repair path recomputes
+        the verified range and GitHub's result, so the attribution beside them
+        has to be recomputed too or it describes commits that are gone.
+        """
+        self.to_steps(("Ship",))
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc123",
+        )
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("audit-round", "--findings", "0")
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+        self.env["FAKE_GH_MODE"] = "external-author"
+        self.run_ctl(
+            "done", "push", "--pr-url", self.URL,
+            "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
+        )
+        self.env.pop("FAKE_GH_MODE", None)
+        branch = self.step_branch(1)
+        self.fake_refs[branch] = "c" * 40
+        self.fake_prs[self.URL]["head"]["sha"] = "c" * 40
+        self.env["FAKE_GH_MODE"] = "unlinked-author"
+        self.run_ctl(
+            "done", "merge-step", "--step", "1", "--merge-commit", "e" * 40
+        )
+        self.env.pop("FAKE_GH_MODE", None)
+        effective = self.state()["integrate"]["merges"]["1"]["effective_push"]
+        self.assertTrue(effective["repaired"])
+        self.assertEqual(effective["head"], "c" * 40)
+        refreshed = effective["attribution"]["commits"]
+        self.assertEqual([entry["login"] for entry in refreshed], [None])
+        self.assertEqual([entry["commit"] for entry in refreshed], ["c" * 40])
+        self.assertNotIn("@", json.dumps(effective["attribution"]))
+
+        # The integration check reads the refreshed container, not the stale one.
+        self.write_run_pr()
+        self.integrate()
+        self.assertEqual(
+            [entry["commit"] for entry in self.recorded()["identities"]], ["c" * 40]
+        )
+
+
+class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
+    def to_push(self, base=None):
+        self.to_steps(("Ship",), base=base)
+        self.run_ctl(
+            "done", "implement", "--branch", self.step_branch(1),
+            "--commit", "abc123",
+        )
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("audit-round", "--findings", "0")
+        self.run_ctl("done", "audit")
+        self.run_ctl(
+            "done", "prose", "--files", "1", "--skills",
+            "hexaemeron:imprimatur,hexaemeron:vulgate",
+        )
+
+    def to_merge_step(self, base=None):
+        self.to_push(base=base)
         self.run_ctl(
             "done", "push",
             "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
             "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
         )
 
-    def to_integrate(self):
-        self.to_merge_step()
+    def to_integrate(self, base=None):
+        self.to_merge_step(base=base)
         self.run_ctl(
             "done", "merge-step", "--step", "1",
             "--merge-commit", "e" * 40,
@@ -1541,15 +2397,16 @@ class TestPublicationBindings(HexctlCase):
 
     def prime_step_merge(self, merge_sha="e" * 40):
         pr = self.fake_prs["https://github.com/wildcat-finance/example/pull/1"]
-        pr["state"] = "MERGED"
-        pr["mergeCommit"] = {"oid": merge_sha}
+        pr["state"] = "closed"
+        pr["merged"] = True
+        pr["merge_commit_sha"] = merge_sha
 
     def set_post_push_head(self, head):
         branch = self.step_branch(1)
         self.fake_refs[branch] = head
         self.fake_prs["https://github.com/wildcat-finance/example/pull/1"][
-            "headRefOid"
-        ] = head
+            "head"
+        ]["sha"] = head
 
     def test_merge_repairs_legacy_push_receipt_missing_verified_head(self):
         self.to_merge_step()
@@ -1604,8 +2461,8 @@ class TestPublicationBindings(HexctlCase):
     def test_merge_time_repair_refuses_remote_pr_head_mismatch(self):
         self.to_merge_step()
         self.fake_prs["https://github.com/wildcat-finance/example/pull/1"][
-            "headRefOid"
-        ] = "7" * 40
+            "head"
+        ]["sha"] = "7" * 40
         self.prime_step_merge()
         proc = self.run_ctl(
             "done", "merge-step", "--step", "1",
@@ -1769,21 +2626,177 @@ class TestPublicationBindings(HexctlCase):
         )
         self.assertIn("final recorded step merge", proc.stderr)
 
-    def prepare_run_sync(self, sync_sha="7" * 40, base_sha="6" * 40):
-        self.to_integrate()
+    def prepare_run_sync(
+        self, sync_sha="7" * 40, base_sha="6" * 40, starting_base=None
+    ):
+        self.to_integrate(base=starting_base)
         state = self.state()
         final_merge = state["integrate"]["merges"]["1"]["merge_commit"]
+        base_before = "4" * 40
         self.fake_refs[state["run_branch"]] = sync_sha
-        self.fake_refs[state["base"]] = base_sha
+        self.fake_refs[self.integration_base(state)] = base_sha
         self.fake_parents[sync_sha] = [final_merge, base_sha]
+        self.env["FAKE_GIT_MERGE_BASE"] = base_before
+        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
+            {
+                f"{base_before}..{final_merge}": [
+                    "product.py",
+                    "shared.json",
+                ],
+                f"{base_before}..{base_sha}": [
+                    "shared.json",
+                    "upstream.py",
+                ],
+                f"{final_merge}..{sync_sha}": [
+                    "shared.json",
+                    "upstream.py",
+                ],
+            }
+        )
         return state, sync_sha, base_sha
+
+    def test_pinned_starting_commit_syncs_and_integrates_into_the_named_base(self):
+        starting_base = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=self.dir,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        _, sync_sha, base_sha = self.prepare_run_sync(
+            starting_base=starting_base
+        )
+        directive = self.next_json()
+        self.assertEqual(directive["base"], "main")
+        self.assertEqual(directive["starting_base"], starting_base)
+
+        revalidation = self.write_integration_revalidation()
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+        )
+        self.assertIn("synced with main", proc.stdout)
+        sync = self.state()["integrate"]["sync"]
+        self.assertEqual(sync["base"], "main")
+        self.assertEqual(sync["starting_base"], starting_base)
+
+        self.write_run_pr()
+        self.run_ctl(
+            "done", "integrate",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/2",
+            "--merge-commit", "f" * 40,
+        )
+        receipt = self.state()["receipts"]["integrate"]
+        self.assertEqual(receipt["base"], "main")
+        self.assertEqual(receipt["starting_base"], starting_base)
+
+    def test_integration_base_distinguishes_a_branch_from_a_pinned_commit(self):
+        module = hexctl_module()
+        self.assertEqual(
+            module.integration_base_of(
+                {"base": "release/one", "config": {"git": {"base": "main"}}}
+            ),
+            "release/one",
+        )
+        for configured, message in (
+            (None, "needs config.git.base"),
+            ("6" * 40, "must name an integration branch"),
+            ("../main", "not a usable branch name"),
+        ):
+            with self.subTest(configured=configured):
+                error = StringIO()
+                state = {
+                    "base": "5" * 40,
+                    "config": {"git": {"base": configured}},
+                }
+                with redirect_stderr(error), self.assertRaises(SystemExit):
+                    module.integration_base_of(state)
+                self.assertIn(message, error.getvalue())
+
+    def write_integration_revalidation(
+        self, *, affected_paths=None, checks=None
+    ):
+        affected_paths = (
+            ["shared.json", "upstream.py"]
+            if affected_paths is None else affected_paths
+        )
+        checks = checks or [
+            {
+                "id": "root-suite",
+                "command": "python3 -m unittest discover -s tests",
+                "paths": affected_paths,
+                "exit": 0,
+            }
+        ]
+        return self.write(
+            ".hexaemeron/integration-revalidation.json",
+            json.dumps(
+                {
+                    "schema": "fiat-integration-revalidation/v1",
+                    "affected_paths": affected_paths,
+                    "checks": checks,
+                }
+            ),
+        )
+
+    def configure_sync_replacement(self, sync_sha, base_sha):
+        state = self.state()
+        final_merge = state["integrate"]["merges"]["1"]["merge_commit"]
+        base_before = "4" * 40
+        self.fake_refs[state["run_branch"]] = sync_sha
+        self.fake_refs[self.integration_base(state)] = base_sha
+        self.fake_parents[sync_sha] = [final_merge, base_sha]
+        self.env["FAKE_GIT_DIFF_PATHS"] = json.dumps(
+            {
+                f"{base_before}..{final_merge}": [
+                    "product.py",
+                    "shared.json",
+                ],
+                f"{base_before}..{base_sha}": [
+                    "controller.py",
+                    "shared.json",
+                    "upstream.py",
+                ],
+                f"{final_merge}..{sync_sha}": [
+                    "controller.py",
+                    "shared.json",
+                    "upstream.py",
+                ],
+            }
+        )
+        return self.write_integration_revalidation(
+            affected_paths=["controller.py", "shared.json", "upstream.py"]
+        )
 
     def test_sync_run_receipts_exact_merge_and_allows_integration(self):
         state, sync_sha, base_sha = self.prepare_run_sync()
+        before = self.state()
+        revalidation = self.write_integration_revalidation()
         self.run_ctl(
             "done", "sync-run", "--commit", sync_sha,
-            "--base-commit", base_sha,
+            "--base-commit", base_sha, "--revalidation", revalidation,
         )
+        after_sync = self.state()
+        self.assertEqual(before["steps"], after_sync["steps"])
+        sync = after_sync["integrate"]["sync"]
+        self.assertEqual(sync["product_evidence"]["head"], "e" * 40)
+        self.assertEqual(sync["revalidation"]["base_before"], "4" * 40)
+        self.assertEqual(sync["revalidation"]["product_paths"], [
+            "product.py", "shared.json",
+        ])
+        self.assertEqual(sync["revalidation"]["upstream_paths"], [
+            "shared.json", "upstream.py",
+        ])
+        self.assertEqual(sync["revalidation"]["overlap_paths"], ["shared.json"])
+        self.assertEqual(sync["revalidation"]["composition_paths"], [
+            "shared.json", "upstream.py",
+        ])
+        self.assertEqual(sync["revalidation"]["affected_paths"], [
+            "shared.json", "upstream.py",
+        ])
+        status = self.run_ctl("status").stdout
+        self.assertIn("product eeeeeeeeeeee preserved", status)
+        self.assertIn("1 integration revalidation check(s) recorded", status)
         self.write_run_pr()
         self.run_ctl(
             "done", "integrate",
@@ -1795,38 +2808,337 @@ class TestPublicationBindings(HexctlCase):
         self.assertEqual(receipt["sync"]["base_head"], base_sha)
         self.assertEqual(receipt["sync"]["parents"], ["e" * 40, base_sha])
 
-    def test_sync_run_refuses_wrong_merge_parents(self):
+    def test_sync_run_supersedes_one_failed_composition_without_reopening_product(self):
+        _, first_sync, first_base = self.prepare_run_sync()
+        first_revalidation = self.write_integration_revalidation()
+        self.run_ctl(
+            "done", "sync-run", "--commit", first_sync,
+            "--base-commit", first_base,
+            "--revalidation", first_revalidation,
+        )
+        product = self.state()["integrate"]["sync"]["product_evidence"]
+
+        replacement_sync = "8" * 40
+        replacement_base = "9" * 40
+        replacement_revalidation = self.configure_sync_replacement(
+            replacement_sync, replacement_base
+        )
+        proc = self.run_ctl(
+            "done", "sync-run",
+            "--commit", replacement_sync,
+            "--base-commit", replacement_base,
+            "--revalidation", replacement_revalidation,
+            "--supersede-sync", first_sync,
+            "--reason", "the required integration check failed in a shallow clone",
+        )
+        self.assertIn("superseded", proc.stdout)
+
+        integrate = self.state()["integrate"]
+        self.assertEqual(integrate["sync"]["commit"], replacement_sync)
+        self.assertEqual(integrate["sync"]["base_head"], replacement_base)
+        self.assertEqual(integrate["sync"]["product_evidence"], product)
+        self.assertEqual(len(integrate["superseded_syncs"]), 1)
+        prior = integrate["superseded_syncs"][0]
+        self.assertEqual(prior["sync"]["commit"], first_sync)
+        self.assertEqual(prior["superseded_by"], replacement_sync)
+        self.assertEqual(
+            prior["reason"],
+            "the required integration check failed in a shallow clone",
+        )
+        status = self.run_ctl("status").stdout
+        self.assertIn("1 superseded sync(s) retained", status)
+        directive = self.next_json()
+        self.assertEqual(
+            directive["base_advance"]["recovery"],
+            "supersede-sync-and-revalidate",
+        )
+        self.assertIn(
+            f"--supersede-sync {replacement_sync}",
+            directive["base_advance"]["then"],
+        )
+
+        self.write_run_pr()
+        self.run_ctl(
+            "done", "integrate",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/2",
+            "--merge-commit", "f" * 40,
+        )
+        receipt = self.state()["receipts"]["integrate"]
+        self.assertEqual(receipt["sync"]["commit"], replacement_sync)
+        self.assertEqual(
+            receipt["superseded_syncs"][0]["sync"]["commit"], first_sync
+        )
+
+    def test_sync_supersession_requires_a_receipt_and_reason(self):
         _, sync_sha, base_sha = self.prepare_run_sync()
-        self.fake_parents[sync_sha] = ["9" * 40, base_sha]
+        revalidation = self.write_integration_revalidation()
+        self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+        )
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", "8" * 40,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+            expect=2,
+        )
+        self.assertIn("use --supersede-sync", proc.stderr)
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", "8" * 40,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+            "--supersede-sync", sync_sha, expect=2,
+        )
+        self.assertIn("--reason is required", proc.stderr)
+
+    def test_sync_supersession_refuses_stale_or_malformed_subject_evidence(self):
+        _, sync_sha, base_sha = self.prepare_run_sync()
+        revalidation = self.write_integration_revalidation()
+        self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+        )
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", "8" * 40,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+            "--supersede-sync", "5" * 40,
+            "--reason", "a failed check", expect=2,
+        )
+        self.assertIn("active recorded sync", proc.stderr)
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+            "--supersede-sync", sync_sha, "--reason", "a failed check",
+            expect=2,
+        )
+        self.assertIn("must use a new signed commit", proc.stderr)
+
+        for reason in ("   ", "line one\nline two", "bad\x7fvalue", "é" * 513):
+            with self.subTest(reason=repr(reason)):
+                proc = self.run_ctl(
+                    "done", "sync-run", "--commit", "8" * 40,
+                    "--base-commit", base_sha, "--revalidation", revalidation,
+                    "--supersede-sync", sync_sha, "--reason", reason,
+                    expect=2,
+                )
+                self.assertIn("reason is invalid", proc.stderr)
+
+    def test_sync_supersession_is_bounded_and_requires_an_existing_receipt(self):
+        _, active_sync, active_base = self.prepare_run_sync()
+        revalidation = self.write_integration_revalidation()
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", active_sync,
+            "--base-commit", active_base, "--revalidation", revalidation,
+            "--supersede-sync", "5" * 40, "--reason", "nothing active yet",
+            expect=2,
+        )
+        self.assertIn("requires an active recorded sync", proc.stderr)
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", active_sync,
+            "--base-commit", active_base, "--revalidation", revalidation,
+            "--reason", "not attached to a receipt", expect=2,
+        )
+        self.assertIn("--reason requires --supersede-sync", proc.stderr)
+        self.run_ctl(
+            "done", "sync-run", "--commit", active_sync,
+            "--base-commit", active_base, "--revalidation", revalidation,
+        )
+
+        for number in range(8):
+            replacement_sync = hashlib.sha1(
+                f"replacement-sync-{number}".encode()
+            ).hexdigest()
+            replacement_base = hashlib.sha1(
+                f"replacement-base-{number}".encode()
+            ).hexdigest()
+            replacement_revalidation = self.configure_sync_replacement(
+                replacement_sync, replacement_base
+            )
+            self.run_ctl(
+                "done", "sync-run", "--commit", replacement_sync,
+                "--base-commit", replacement_base,
+                "--revalidation", replacement_revalidation,
+                "--supersede-sync", active_sync,
+                "--reason", f"bounded replacement {number + 1}",
+            )
+            active_sync = replacement_sync
+
+        self.assertEqual(len(self.state()["integrate"]["superseded_syncs"]), 8)
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", "a" * 40,
+            "--base-commit", "b" * 40,
+            "--revalidation", revalidation,
+            "--supersede-sync", active_sync,
+            "--reason", "one replacement too many", expect=2,
+        )
+        self.assertIn("supersession limit", proc.stderr)
+
+    def test_sync_and_integration_refuse_edited_state_before_receipt_laundering(self):
+        _, sync_sha, base_sha = self.prepare_run_sync()
+        revalidation = self.write_integration_revalidation()
+        self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+        )
+        state_path = os.path.join(self.target, ".hexaemeron", "state.json")
+        ledger_path = os.path.join(self.target, ".hexaemeron", "ledger.jsonl")
+        with open(state_path, "rb") as handle:
+            valid_state = handle.read()
+        with open(ledger_path, "rb") as handle:
+            valid_ledger = handle.read()
+
+        for command in ("sync", "integrate"):
+            with self.subTest(command=command):
+                state = json.loads(valid_state)
+                state["integrate"]["sync"]["commit"] = "8" * 40
+                with open(state_path, "w", encoding="utf-8") as handle:
+                    json.dump(state, handle)
+                if command == "sync":
+                    proc = self.run_ctl(
+                        "done", "sync-run", "--commit", "9" * 40,
+                        "--base-commit", base_sha,
+                        "--revalidation", revalidation,
+                        "--supersede-sync", "8" * 40,
+                        "--reason", "try to absorb edited state", expect=1,
+                    )
+                else:
+                    proc = self.run_ctl(
+                        "done", "integrate",
+                        "--pr-url", "https://github.com/wildcat-finance/example/pull/2",
+                        "--merge-commit", "f" * 40, expect=1,
+                    )
+                self.assertIn("edited outside hexctl", proc.stderr)
+                with open(ledger_path, "rb") as handle:
+                    self.assertEqual(handle.read(), valid_ledger)
+                with open(state_path, "wb") as handle:
+                    handle.write(valid_state)
+
+    def test_sync_run_requires_bounded_green_revalidation(self):
+        _, sync_sha, base_sha = self.prepare_run_sync()
         proc = self.run_ctl(
             "done", "sync-run", "--commit", sync_sha,
             "--base-commit", base_sha, expect=2,
+        )
+        self.assertIn("--revalidation is required", proc.stderr)
+
+        failed = self.write_integration_revalidation(
+            checks=[
+                {
+                    "id": "root-suite",
+                    "command": "python3 -m unittest discover -s tests",
+                    "paths": ["shared.json", "upstream.py"],
+                    "exit": 1,
+                }
+            ]
+        )
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", failed, expect=2,
+        )
+        self.assertIn("must record exit 0", proc.stderr)
+
+    def test_sync_run_revalidation_covers_the_computed_composition_surface(self):
+        _, sync_sha, base_sha = self.prepare_run_sync()
+        outside = self.write_integration_revalidation(
+            affected_paths=["not-in-delta.py"]
+        )
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", outside, expect=2,
+        )
+        self.assertIn("outside the computed integration delta", proc.stderr)
+
+        omitted = self.write_integration_revalidation(
+            affected_paths=["upstream.py"],
+            checks=[
+                {
+                    "id": "upstream-suite",
+                    "command": "python3 -m unittest upstream_tests",
+                    "paths": ["upstream.py"],
+                    "exit": 0,
+                }
+            ],
+        )
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", omitted, expect=2,
+        )
+        self.assertIn("omits the computed integration surface", proc.stderr)
+
+        uncovered = self.write_integration_revalidation(
+            affected_paths=["shared.json", "upstream.py"],
+            checks=[
+                {
+                    "id": "shared-suite",
+                    "command": "python3 -m unittest shared_tests",
+                    "paths": ["shared.json"],
+                    "exit": 0,
+                }
+            ],
+        )
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", uncovered, expect=2,
+        )
+        self.assertIn("do not cover every affected path", proc.stderr)
+
+    def test_integrate_directive_preserves_product_evidence_on_base_drift(self):
+        self.to_integrate()
+        directive = self.next_json()
+        self.assertEqual(
+            directive["product_evidence"]["status"], "preserved-exact-tree"
+        )
+        self.assertEqual(directive["product_evidence"]["head"], "e" * 40)
+        self.assertEqual(
+            directive["base_advance"]["recovery"], "sync-run-and-revalidate"
+        )
+        self.assertIn(
+            "--revalidation .hexaemeron/integration-revalidation.json",
+            directive["base_advance"]["then"],
+        )
+        self.assertIn(
+            "does not authorise a carryover",
+            directive["base_advance"]["boundary"],
+        )
+
+    def test_sync_run_refuses_wrong_merge_parents(self):
+        _, sync_sha, base_sha = self.prepare_run_sync()
+        revalidation = self.write_integration_revalidation()
+        self.fake_parents[sync_sha] = ["9" * 40, base_sha]
+        proc = self.run_ctl(
+            "done", "sync-run", "--commit", sync_sha,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+            expect=2,
         )
         self.assertIn("merge parents", proc.stderr)
 
     def test_sync_run_refuses_unsigned_commit(self):
         _, sync_sha, base_sha = self.prepare_run_sync()
+        revalidation = self.write_integration_revalidation()
         self.env["FAKE_GIT_MODE"] = "unsigned"
         proc = self.run_ctl(
             "done", "sync-run", "--commit", sync_sha,
-            "--base-commit", base_sha, expect=2,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+            expect=2,
         )
         self.assertIn("valid local signature", proc.stderr)
 
     def test_sync_run_refuses_stale_remote_base(self):
         _, sync_sha, base_sha = self.prepare_run_sync()
+        revalidation = self.write_integration_revalidation()
         proc = self.run_ctl(
             "done", "sync-run", "--commit", sync_sha,
-            "--base-commit", "5" * 40, expect=2,
+            "--base-commit", "5" * 40, "--revalidation", revalidation,
+            expect=2,
         )
         self.assertIn("remote base branch tip", proc.stderr)
 
     def test_sync_run_refuses_invalid_github_verification(self):
         _, sync_sha, base_sha = self.prepare_run_sync()
+        revalidation = self.write_integration_revalidation()
         self.env["FAKE_GH_MODE"] = "verified-false"
         proc = self.run_ctl(
             "done", "sync-run", "--commit", sync_sha,
-            "--base-commit", base_sha, expect=2,
+            "--base-commit", base_sha, "--revalidation", revalidation,
+            expect=2,
         )
         self.assertIn("not verified:true", proc.stderr)
 
@@ -2058,7 +3370,7 @@ class TestAuditLoop(HexctlCase):
         self.run_ctl("record", "security_suite",
                      '["pashov-xray","pashov-solidity-auditor"]')
         self.assertEqual(self.next_json()["do"], "audit-round")
-        self.run_ctl("audit-round", "--findings", "3", "--log", "audit/AUDIT.md")
+        self.run_ctl("audit-round", "--findings", "3")
         out = self.next_json()
         self.assertEqual(out["do"], "audit-round")
         self.assertEqual(out["round"], 2)
@@ -2105,7 +3417,7 @@ class TestAuditLoop(HexctlCase):
     def test_max_rounds_forces_verdict(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
-        self.run_ctl("config", "set", "audit.max_rounds", "2")
+        self.record_legacy_config("audit.max_rounds", 2)
         self.run_ctl(
             "audit-round", "--findings", "2", "--fixes-commit", "b1",
             "--elenchus-verdict", "guarded",
@@ -2157,6 +3469,7 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         with open(state_path, encoding="utf-8") as handle:
             state = json.load(handle)
         state["steps"][0]["audit"]["rounds"][-1].pop("elenchus_verdict")
+        state["steps"][0]["audit"]["rounds"][-1].pop("audit_filter")
         canonical_state = json.dumps(state, sort_keys=True, separators=(",", ":"))
         with open(state_path, "w", encoding="utf-8") as handle:
             json.dump(state, handle, indent=2)
@@ -2166,6 +3479,7 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             entries = [json.loads(line) for line in handle if line.strip()]
         self.assertEqual(entries[-1]["event"], "audit-round")
         entries[-1]["data"].pop("elenchus_verdict")
+        entries[-1]["data"].pop("audit_filter")
         entries[-1]["state"] = hashlib.sha256(canonical_state.encode()).hexdigest()
         unsigned = {key: value for key, value in entries[-1].items() if key != "hash"}
         entries[-1]["hash"] = hashlib.sha256(
@@ -2264,6 +3578,10 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         expected_markdown = "## Step 1: Core\n\n**Goal.** Ship Core.\n"
         expected_source = {
             "markdown": expected_markdown,
+            "baseline_markdown": expected_markdown,
+            "baseline_sha256": hashlib.sha256(expected_markdown.encode()).hexdigest(),
+            "amendments": [],
+            "effective_sha256": hashlib.sha256(expected_markdown.encode()).hexdigest(),
             "path": os.path.realpath(os.path.join(self.target, "runbook.md")),
             "sha256": hashlib.sha256(
                 ("# Runbook\n\n" + expected_markdown).encode()
@@ -2289,7 +3607,8 @@ class ElenchusVerdictReceiptTests(HexctlCase):
             set(warden_first["brief"]),
             {
                 "step_branch", "stacked_branch", "security_suite", "plugin_root",
-                "audit_log_path", "round", "risk_register", "runbook_step",
+                "audit_log_path", "round", "audit_filter", "risk_register",
+                "runbook_step",
             },
         )
 
@@ -2297,6 +3616,10 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         self.to_receiptable_audit()
         self.run_ctl("audit-round", "--findings", "1")
         self.make_last_round_legacy()
+        log_path = self.state()["config"]["audit"]["log_path"]
+        self.env["FAKE_GIT_BASELINE_HEX"] = Path(
+            os.path.join(self.target, *log_path.split("/"))
+        ).read_bytes().hex()
 
         self.run_ctl("status")
         directive = self.next_json()
@@ -2311,9 +3634,28 @@ class ElenchusVerdictReceiptTests(HexctlCase):
         self.run_ctl("verify")
         rounds = self.state()["steps"][0]["audit"]["rounds"]
         self.assertNotIn("elenchus_verdict", rounds[0])
+        self.assertNotIn("audit_filter", rounds[0])
         self.assertEqual(rounds[1]["elenchus_verdict"], "passed")
+        self.assertEqual(rounds[1]["audit_filter"], "sapheneia:sapheneia")
         self.assertEqual(self.state()["steps"][0]["phase"], "prose")
 
+
+try:
+    from .audit_record_schema_cases import (
+        build_audit_record_schema_tests,
+        build_audit_synopsis_resource_boundary_tests,
+    )
+except ImportError:
+    from audit_record_schema_cases import (
+        build_audit_record_schema_tests,
+        build_audit_synopsis_resource_boundary_tests,
+    )
+
+
+AuditSynopsisResourceBoundaryTests = (
+    build_audit_synopsis_resource_boundary_tests(globals())
+)
+AuditRecordSchemaTests = build_audit_record_schema_tests(globals())
 
 class TestProseAndPush(HexctlCase):
     def to_prose(self, task_issue=None):
@@ -2710,6 +4052,15 @@ class TestProseAndPush(HexctlCase):
         self.assertIn("integrate", proc.stderr)
 
 
+try:
+    from .task_issue_closure_cases import build_task_issue_closure_tests
+except ImportError:
+    from task_issue_closure_cases import build_task_issue_closure_tests
+
+
+TestTaskIssueClosure = build_task_issue_closure_tests(globals())
+
+
 class TestControls(HexctlCase):
     def test_halt_blocks_progress_and_resume_restores(self):
         self.to_steps()
@@ -2768,9 +4119,8 @@ class TestControls(HexctlCase):
         self.integrate_run()
         self.assertEqual(self.next_json()["do"], "done")
 
-        # A run that lived in a worktree archives into the checkout it was
-        # started from, because archiving inside the tree and then removing the
-        # tree would destroy the archive in the same breath.
+        # A worktree run archives into its starting checkout: archiving inside
+        # the tree and then removing the tree would destroy the archive.
         root = os.path.join(self.dir, ".hexaemeron")
         self.run_ctl("reset")
         self.assertFalse(os.path.exists(os.path.join(root, "state.json")))
@@ -2792,13 +4142,11 @@ class TestControls(HexctlCase):
 
     def test_config_get_set_roundtrip(self):
         self.init()
-        self.run_ctl("config", "set", "audit.max_rounds", "3")
-        out = self.run_ctl("config", "get", "audit.max_rounds").stdout.strip()
-        self.assertEqual(out, "3")
+        self.run_ctl("config", "set", "git.draft_pr", "true")
+        out = self.run_ctl("config", "get", "git.draft_pr").stdout.strip()
+        self.assertEqual(out, "true")
         proc = self.run_ctl("config", "get", "audit.nope", expect=2)
         self.assertIn("not found", proc.stderr)
-
-
 
 class TestFuzzRegressions(HexctlCase):
     """Pins for the day-5 fuzz findings (F-01..F-09)."""
@@ -2815,9 +4163,8 @@ class TestFuzzRegressions(HexctlCase):
 
     def test_state_edit_detected_by_verify(self):
         self.to_audit_with_suite()
-        self.run_ctl("audit-round", "--findings", "2", "--log", "a.md",
-                     "--fixes-commit", "fff",
-                     "--elenchus-verdict", "guarded")
+        self.run_ctl("audit-round", "--findings", "2",
+                     "--fixes-commit", "fff", "--elenchus-verdict", "guarded")
         with open(self.state_file()) as fh:
             st = json.load(fh)
         st["steps"][0]["audit"]["rounds"][0]["findings"] = 0
@@ -2870,20 +4217,20 @@ class TestFuzzRegressions(HexctlCase):
 
     def test_max_rounds_validated(self):
         self.to_audit_with_suite()
-        self.run_ctl("config", "set", "audit.max_rounds", '"eight"')
+        self.record_legacy_config("audit.max_rounds", "eight")
         proc = self.run_ctl("audit-round", "--findings", "1", expect=2)
         self.assertNotIn("Traceback", proc.stderr)
         self.assertIn("must be an integer", proc.stderr)
-        self.run_ctl("config", "set", "audit.max_rounds", "0")
+        self.record_legacy_config("audit.max_rounds", 0)
         proc = self.run_ctl("audit-round", "--findings", "1", expect=2)
         self.assertIn(">= 1", proc.stderr)
-        self.run_ctl("config", "set", "audit.max_rounds", "8")
+        self.record_legacy_config("audit.max_rounds", 8)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("verify")
 
     def test_prose_nonstring_config_ids(self):
         self.to_audit_with_suite()
-        self.run_ctl("config", "set", "skills.prose_lint", "123")
+        self.record_legacy_config("skills.prose_lint", 123)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
         proc = self.run_ctl("done", "prose", "--files", "1",
@@ -2918,9 +4265,7 @@ class StateContainerValidationTests(HexctlCase):
         super().setUp()
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
-        self.run_ctl(
-            "audit-round", "--findings", "1", "--log", "audit/AUDIT.md"
-        )
+        self.run_ctl("audit-round", "--findings", "1")
         self.state_path = os.path.join(self.target, ".hexaemeron", "state.json")
         self.ledger_path = os.path.join(self.target, ".hexaemeron", "ledger.jsonl")
         with open(self.state_path, "rb") as handle:
@@ -3057,6 +4402,93 @@ class StateContainerValidationTests(HexctlCase):
         self.assertEqual(loaded["version"], 1)
 
 
+class AuditFilterReceiptTests(HexctlCase):
+    """The exact Sapheneia declaration is visible, checked, and retained."""
+
+    def to_receiptable_audit(self, *, solidity=True):
+        self.to_audit()
+        receipt = SUITE if solidity else '"waived: prose-only repo"'
+        self.run_ctl("record", "security_suite", receipt)
+
+    def state_ledger_digests(self):
+        paths = (
+            os.path.join(self.target, ".hexaemeron", "state.json"),
+            os.path.join(self.target, ".hexaemeron", "ledger.jsonl"),
+        )
+        digests = []
+        for path in paths:
+            with open(path, "rb") as handle:
+                digests.append(hashlib.sha256(handle.read()).hexdigest())
+        return tuple(digests)
+
+    def audit_events(self):
+        path = os.path.join(self.target, ".hexaemeron", "ledger.jsonl")
+        entries = []
+        with open(path, encoding="utf-8") as handle:
+            for line in handle:
+                if not line.strip():
+                    continue
+                entry = json.loads(line)
+                if entry["event"] == "audit-round":
+                    entries.append(entry)
+        return entries
+
+    def test_missing_declaration_is_refused_without_state_or_ledger_drift(self):
+        self.to_receiptable_audit()
+        before = self.state_ledger_digests()
+        result = self.run_ctl(
+            "audit-round", "--findings", "0", expect=2, audit_filter=False
+        )
+        self.assertIn("--audit-filter sapheneia:sapheneia", result.stderr)
+        self.assertEqual(self.state_ledger_digests(), before)
+
+    def test_different_declaration_is_refused_without_state_or_ledger_drift(self):
+        self.to_receiptable_audit()
+        before = self.state_ledger_digests()
+        result = self.run_ctl(
+            "audit-round", "--findings", "0",
+            "--audit-filter", "something:else", expect=2,
+        )
+        self.assertIn("must equal sapheneia:sapheneia", result.stderr)
+        self.assertEqual(self.state_ledger_digests(), before)
+
+    def test_exact_declaration_reaches_round_state_ledger_and_stdout(self):
+        self.to_receiptable_audit()
+        result = self.run_ctl("audit-round", "--findings", "0", *AUDIT_FILTER)
+        self.assertIn("audit filter sapheneia:sapheneia", result.stdout)
+        round_entry = self.state()["steps"][0]["audit"]["rounds"][0]
+        self.assertEqual(round_entry["audit_filter"], "sapheneia:sapheneia")
+        self.assertEqual(
+            self.audit_events()[0]["data"]["audit_filter"],
+            "sapheneia:sapheneia",
+        )
+
+    def test_next_and_warden_brief_name_the_exact_obligation_every_round(self):
+        self.to_receiptable_audit()
+        expected = {
+            "flag": "--audit-filter",
+            "value": "sapheneia:sapheneia",
+        }
+        first = self.next_json()
+        self.assertEqual(first["audit_filter"], expected)
+        self.assertEqual(first["brief"]["audit_filter"], expected)
+        self.run_ctl("audit-round", "--findings", "1", *AUDIT_FILTER)
+        second = self.next_json()
+        self.assertEqual(second["round"], 2)
+        self.assertEqual(second["audit_filter"], expected)
+        self.assertEqual(second["brief"]["audit_filter"], expected)
+
+    def test_non_solidity_round_needs_the_same_exact_declaration(self):
+        self.to_receiptable_audit(solidity=False)
+        self.run_ctl(
+            "audit-round", "--findings", "0", *AUDIT_FILTER, *LINTS_CLEAN
+        )
+        self.assertEqual(
+            self.state()["steps"][0]["audit"]["rounds"][0]["audit_filter"],
+            "sapheneia:sapheneia",
+        )
+
+
 class LintReceiptTests(HexctlCase):
     """The three lint results a non-Solidity round owes, and the refusals."""
 
@@ -3085,12 +4517,11 @@ class LintReceiptTests(HexctlCase):
         self.assertNotIn("--phylax-exit", proc.stderr)
         self.assertNotIn("--ephoros-exit", proc.stderr)
 
-    def test_the_refusal_points_at_the_override(self):
-        """A run whose receipt cannot be read but which really is a Solidity run has a
-        way out, and the refusal says what it is."""
+    def test_the_refusal_points_at_the_immutable_classification(self):
         self.to_waived_audit()
         proc = self.run_ctl("audit-round", "--findings", "0", expect=2)
-        self.assertIn("config set solidity true", proc.stderr)
+        self.assertIn("security_suite receipt", proc.stderr)
+        self.assertIn("Solidity config is immutable", proc.stderr)
 
     def test_a_complete_round_records_all_three(self):
         self.to_waived_audit()
@@ -3141,7 +4572,7 @@ class LintReceiptTests(HexctlCase):
 
     def test_a_solidity_round_needs_none_of_them(self):
         self.to_solidity_audit()
-        self.run_ctl("audit-round", "--findings", "0", "--log", "audit/AUDIT.md")
+        self.run_ctl("audit-round", "--findings", "0")
         self.assertIsNone(self.rounds()[0]["lints"])
 
     def test_a_solidity_round_may_still_record_them(self):
@@ -3160,13 +4591,13 @@ class LintReceiptTests(HexctlCase):
 
     def test_the_override_lifts_the_requirement(self):
         self.to_waived_audit()
-        self.run_ctl("config", "set", "solidity", "true")
-        self.run_ctl("audit-round", "--findings", "0", "--log", "audit/AUDIT.md")
+        self.record_legacy_config("solidity", True)
+        self.run_ctl("audit-round", "--findings", "0")
         self.assertIsNone(self.rounds()[0]["lints"])
 
     def test_the_override_can_impose_it_on_a_recorded_suite(self):
         self.to_solidity_audit()
-        self.run_ctl("config", "set", "solidity", "false")
+        self.record_legacy_config("solidity", False)
         proc = self.run_ctl("audit-round", "--findings", "0", expect=2)
         self.assertIn("--phylax-exit", proc.stderr)
 
@@ -3192,8 +4623,7 @@ class LintReceiptTests(HexctlCase):
 
     def test_closing_the_audit_reads_a_round_that_carries_lints(self):
         self.to_waived_audit()
-        self.run_ctl("audit-round", "--findings", "0", "--log", "audit/AUDIT.md",
-                     *LINTS_CLEAN)
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
         self.run_ctl("done", "audit")
         self.assertEqual(self.state()["steps"][0]["phase"], "prose")
 
@@ -3212,8 +4642,7 @@ class LintReceiptTests(HexctlCase):
         blocked = self.run_ctl("done", "audit", expect=2)
         self.assertIn("open", blocked.stderr)
 
-        self.run_ctl("audit-round", "--findings", "0", "--log", "audit/AUDIT.md",
-                     *LINTS_CLEAN)
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
         self.run_ctl("done", "audit", "--fixes-ref", "deadbeef")
         receipt = self.state()["steps"][0]["receipts"]["audit"]
         self.assertTrue(receipt["clean"])
@@ -3225,8 +4654,7 @@ class LintReceiptTests(HexctlCase):
         """Rounds already on disk carry no lints key. Every reader has to treat it as
         absent rather than assume it."""
         self.to_waived_audit()
-        self.run_ctl("audit-round", "--findings", "0", "--log", "audit/AUDIT.md",
-                     *LINTS_CLEAN)
+        self.run_ctl("audit-round", "--findings", "0", *LINTS_CLEAN)
         path = os.path.join(self.target, ".hexaemeron", "state.json")
         with open(path, encoding="utf-8") as fh:
             state = json.load(fh)
@@ -3346,30 +4774,6 @@ class RoundClassifierTests(unittest.TestCase):
         for value in (True, False, "auto"):
             with self.subTest(value=value):
                 self.assertTrue(self.ctl.solidity_mode(value))
-
-
-class SolidityConfigTests(HexctlCase):
-    def test_the_solidity_key_accepts_only_its_three_modes(self):
-        self.init()
-        for value in ('"auto"', "true", "false"):
-            with self.subTest(value=value):
-                self.run_ctl("config", "set", "solidity", value)
-        self.assertEqual(json.loads(self.run_ctl("config", "get", "solidity").stdout), False)
-
-    def test_a_value_outside_the_three_modes_is_refused(self):
-        """`1` and `0` are in here because Python makes them equal to `True` and
-        `False`, so a membership test would have stored an integer as a mode."""
-        self.init()
-        for value in ('"yes"', "1", "0", '"Auto"', '["auto"]', "null"):
-            with self.subTest(value=value):
-                proc = self.run_ctl("config", "set", "solidity", value, expect=2)
-                self.assertIn("config solidity takes", proc.stderr)
-
-    def test_a_refused_value_leaves_the_key_alone(self):
-        self.init()
-        self.run_ctl("config", "set", "solidity", "false")
-        self.run_ctl("config", "set", "solidity", '"nonsense"', expect=2)
-        self.assertEqual(json.loads(self.run_ctl("config", "get", "solidity").stdout), False)
 
 
 if __name__ == "__main__":
@@ -4292,3 +5696,368 @@ class ResumeAndRetirementTests(HexctlCase):
     @property
     def retired(self):
         return os.path.join(self.dir, "tmp", "fiat", "fiat-test-topic")
+
+
+class FrontierRowAttributionTests(OriginCheckoutMixin, unittest.TestCase):
+    """A run is charged for its own rows and no others.
+
+    The gate counted every row added since `init`, which cannot tell this run's
+    row from one another run published meanwhile. The issue 466 run added
+    `fiat-v5.15.1`, absorbed `fiat-v5.14.1` in its one permitted sync, and was
+    refused for two rows. It could renumber neither: `done_integrate` freezes
+    the run branch at the sync commit.
+    """
+
+    HELD = ("open", "held-thing", "The widget does not do the thing.",
+            "Make the widget do the thing.")
+    FOREIGN = "widget-v1.2.0"
+    OWN = "widget-v1.3.0"
+
+    def setUp(self):
+        self.dir = tempfile.mkdtemp()
+        make_origin_checkout(self.dir)
+        self.ledger = os.path.join(
+            self.dir, "plugins", "demo", "skills", "widget", "EVOLUTION.md")
+        self.base_digest = frontier_digest(*self.HELD)
+        self.base_row = row("widget-v1.1.0", "baseline", self.HELD[1],
+                            self.base_digest, "Versioning starts here.")
+        widget_ledger(self.ledger, [self.base_row], version="widget-v1.1.0",
+                      status=self.HELD[0], revision=self.HELD[1],
+                      frontier=self.HELD[2], job=self.HELD[3])
+        with open(self.ledger, "rb") as handle:
+            ledger_sha256 = hashlib.sha256(handle.read()).hexdigest()
+        self.before = {
+            "ledger": os.path.relpath(self.ledger, self.dir),
+            "sha256": ledger_sha256,
+            "rows": 1,
+        }
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self.dir, ignore_errors=True)
+
+    def held_row(self, version):
+        """One generation row retaining the held revision and digest."""
+        return row(version, "generation", self.HELD[1], self.base_digest)
+
+    def write_chain(self, versions, header_version=None):
+        widget_ledger(
+            self.ledger,
+            [self.base_row, *(self.held_row(v) for v in versions)],
+            version=header_version or versions[-1],
+            status=self.HELD[0], revision=self.HELD[1],
+            frontier=self.HELD[2], job=self.HELD[3],
+        )
+
+    def fault_with(self, published):
+        return hexctl_module().frontier_close_fault(
+            self.ledger, self.before, frozenset(published)
+        )
+
+    def test_a_row_published_meanwhile_is_not_charged_to_this_run(self):
+        self.write_chain([self.FOREIGN, self.OWN])
+        self.assertIsNone(self.fault_with({self.FOREIGN}))
+
+    def test_without_the_published_set_the_same_ledger_is_refused(self):
+        """The red side of the issue 466 refusal, on the same topology."""
+        self.write_chain([self.FOREIGN, self.OWN])
+        fault = self.fault_with(set())
+        self.assertIn("gained 2 history row(s)", fault)
+        self.assertNotIn("already published", fault)
+
+    def test_the_refusal_says_how_many_it_subtracted(self):
+        self.write_chain([self.FOREIGN, self.OWN, "widget-v1.4.0"])
+        fault = self.fault_with({self.FOREIGN})
+        self.assertIn("gained 2 history row(s)", fault)
+        self.assertIn("after subtracting 1 already published", fault)
+
+    def test_two_rows_of_its_own_are_still_refused(self):
+        self.write_chain([self.FOREIGN, self.OWN])
+        self.assertIn("gained 2", self.fault_with({"widget-v9.9.9"}))
+
+    def test_the_newest_row_may_not_be_a_published_one(self):
+        """One own row, then a row published on top of it during the sync."""
+        self.write_chain([self.FOREIGN, self.OWN], header_version=self.OWN)
+        fault = self.fault_with({self.OWN})
+        self.assertIn("was already published in the recorded base", fault)
+        self.assertIn("has to be the newest", fault)
+
+    def test_a_duplicated_published_label_cannot_subtract_twice(self):
+        self.write_chain([self.FOREIGN, self.FOREIGN], header_version=self.FOREIGN)
+        self.assertIn("gained 0", self.fault_with({self.FOREIGN}))
+
+    def test_the_base_ledger_read_returns_the_versions_it_committed(self):
+        module = hexctl_module()
+        self.write_chain([self.FOREIGN])
+        relative = self.before["ledger"]
+        subprocess.run(["git", "add", relative], cwd=self.dir, check=True,
+                       capture_output=True)
+        subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", "commit", "-q", "-m", "ledger"],
+            cwd=self.dir,
+            check=True,
+            capture_output=True,
+        )
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.dir,
+                              check=True, capture_output=True,
+                              text=True).stdout.strip()
+        self.assertEqual(
+            module.base_ledger_versions(self.dir, head, relative),
+            frozenset({"widget-v1.1.0", self.FOREIGN}),
+        )
+
+    def test_an_unreadable_base_ledger_subtracts_nothing(self):
+        module = hexctl_module()
+        self.write_chain([self.FOREIGN, self.OWN])
+        relative = self.before["ledger"]
+        for base in ("", "not-a-sha", "0" * 40):
+            with self.subTest(base=base):
+                self.assertEqual(
+                    module.base_ledger_versions(self.dir, base, relative),
+                    frozenset(),
+                )
+        # A read that answers nothing leaves the older, stricter arithmetic.
+        self.assertIn(
+            "gained 2",
+            self.fault_with(module.base_ledger_versions(self.dir, "0" * 40, relative)),
+        )
+
+    def test_the_receipt_records_only_what_was_subtracted(self):
+        """Not the whole base ledger: the rows the refusal actually discounted."""
+        module = hexctl_module()
+        self.write_chain([self.FOREIGN, self.OWN])
+        # A base carrying an unrelated row as well; only the overlap counts.
+        published = frozenset({self.FOREIGN, "widget-v0.9.0"})
+        self.assertEqual(
+            module.frontier_subtracted_rows(self.dir, self.before, published),
+            [self.FOREIGN],
+        )
+
+    def test_nothing_published_records_nothing(self):
+        module = hexctl_module()
+        self.write_chain([self.OWN])
+        self.assertEqual(
+            module.frontier_subtracted_rows(self.dir, self.before, frozenset()),
+            [],
+        )
+
+    def test_the_gate_and_the_receipt_slice_the_same_rows(self):
+        """One slicing rule, so a refusal cannot count rows the receipt omits."""
+        module = hexctl_module()
+        self.write_chain([self.FOREIGN, self.OWN])
+        rows = module.ledger_rows(open(self.ledger, encoding="utf-8").read())
+        after = module.frontier_rows_after_anchor(rows, self.before)
+        self.assertEqual([entry["version"] for entry in after],
+                         [self.FOREIGN, self.OWN])
+        self.assertEqual(
+            module.frontier_subtracted_rows(
+                self.dir, self.before, frozenset({self.FOREIGN})),
+            [self.FOREIGN],
+        )
+
+    def test_a_missing_ledger_path_subtracts_nothing(self):
+        module = hexctl_module()
+        head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.dir,
+                              check=True, capture_output=True,
+                              text=True).stdout.strip()
+        self.assertEqual(
+            module.base_ledger_versions(self.dir, head, "nowhere/EVOLUTION.md"),
+            frozenset(),
+        )
+
+
+class GitHubSignerDiagnosis(unittest.TestCase):
+    """A refusal must name GitHub's key as the cause, not just fail.
+
+    A commit GitHub rewrote carries GitHub's web-flow signature. `verify-commit`
+    then fails against a local keyring, and the bare message sends whoever reads
+    it looking for a broken signing setup rather than at the branch rewrite that
+    actually happened. The wrong repair for that message is importing GitHub's
+    public key, which makes the check pass and removes the guarantee it exists
+    for, so the message says so explicitly.
+    """
+
+    def setUp(self):
+        self.hexctl = hexctl_module()
+
+    def test_the_known_github_keys_are_declared(self):
+        self.assertIn("B5690EEEBB952194", self.hexctl.GITHUB_SIGNING_KEYS)
+        self.assertIn("4AEE18F83AFDEB23", self.hexctl.GITHUB_SIGNING_KEYS)
+
+    def _refusal(self, key):
+        """The message verify_local_commit dies with, for a given signing key."""
+        module = self.hexctl
+        captured = StringIO()
+        with mock.patch.object(module, "bounded_tool_status", return_value=1), \
+             mock.patch.object(module, "signing_key", return_value=key), \
+             mock.patch.object(module, "require_full_sha", side_effect=lambda s, _l: s), \
+             redirect_stderr(captured):
+            with self.assertRaises(SystemExit):
+                module.verify_local_commit(".", "a" * 40, "step 1")
+        return captured.getvalue()
+
+    def test_a_github_signed_commit_is_refused_and_the_cause_is_named(self):
+        message = self._refusal("b5690eeebb952194")
+        self.assertIn("signed by GitHub", message)
+        self.assertIn("B5690EEEBB952194", message)
+        self.assertIn("stacked", message, "the rewrite that causes this must be named")
+        self.assertIn(
+            "Do not import GitHub's public key",
+            message,
+            "the wrong repair is the obvious one and has to be ruled out in the message",
+        )
+
+    def test_an_unknown_key_is_reported_without_blaming_github(self):
+        message = self._refusal("DEADBEEFDEADBEEF")
+        self.assertIn("DEADBEEFDEADBEEF", message)
+        self.assertIn("no valid local signature", message)
+        self.assertNotIn("signed by GitHub", message)
+
+    def test_an_unsigned_commit_keeps_the_plain_message(self):
+        message = self._refusal("")
+        self.assertIn("no valid local signature", message)
+        self.assertNotIn("signed by GitHub", message)
+
+    def test_a_verifying_commit_is_not_refused_by_the_signature_check(self):
+        """The diagnosis must not turn a passing verification into a refusal.
+
+        Checks which refusal, not whether one happened. A commit that verifies
+        still goes on to the author and trailer checks, and those refuse this
+        synthetic sha for reasons that have nothing to do with signing. What must
+        not appear is a signature complaint.
+        """
+        module = self.hexctl
+        captured = StringIO()
+        with mock.patch.object(module, "bounded_tool_status", return_value=0), \
+             mock.patch.object(module, "require_full_sha", side_effect=lambda s, _l: s), \
+             redirect_stderr(captured):
+            try:
+                module.verify_local_commit(".", "a" * 40, "step 1")
+            except BaseException:
+                pass
+        message = captured.getvalue()
+        self.assertNotIn("no valid local signature", message)
+        self.assertNotIn("signed by GitHub", message)
+
+    def test_the_signature_check_runs_before_anything_else(self):
+        """A later check must not mask an unverifiable signature."""
+        module = self.hexctl
+        captured = StringIO()
+        with mock.patch.object(module, "bounded_tool_status", return_value=1), \
+             mock.patch.object(module, "signing_key", return_value=""), \
+             mock.patch.object(module, "require_full_sha", side_effect=lambda s, _l: s), \
+             mock.patch.object(module, "commit_author",
+                               side_effect=AssertionError("author read before signature check")), \
+             redirect_stderr(captured):
+            with self.assertRaises(SystemExit):
+                module.verify_local_commit(".", "a" * 40, "step 1")
+        self.assertIn("no valid local signature", captured.getvalue())
+
+
+class RewrittenStackRefusal(unittest.TestCase):
+    """The stack rewrite is caught at the first merge-step after it happens.
+
+    GitHub's native stacked-pull-request flow rebases every downstream branch on
+    each merge and re-signs the rewritten commits with its own key. Before this
+    check, the first symptom was an invalid local signature at a later
+    merge-step, which reads as a broken signing setup, and by then several steps
+    had already merged. The check compares each waiting step's remote tip with
+    the head its push receipt names, so the rewrite is named before any further
+    merge is receipted.
+    """
+
+    def setUp(self):
+        self.hexctl = hexctl_module()
+
+    def _state(self):
+        return {
+            "integrate": {"merged": [1]},
+            "steps": [
+                {"n": 1, "title": "one",
+                 "receipts": {"push": {"head_commit": "a" * 40}}},
+                {"n": 2, "title": "two",
+                 "receipts": {"push": {"head_commit": "b" * 40}}},
+                {"n": 3, "title": "three",
+                 "receipts": {"push": {"head_commit": "c" * 40}}},
+            ],
+        }
+
+    def _refusal(self, state, current_step, tips):
+        """The stderr the check dies with, or None when it returns."""
+        module = self.hexctl
+
+        def tip(_dir, branch, label="remote run branch tip"):
+            value = tips[branch]
+            if value is SystemExit:
+                module.die(f"{label} could not be read")
+            return value
+
+        captured = StringIO()
+        with mock.patch.object(module, "step_branch_name",
+                               side_effect=lambda _s, step: f"branch-{step['n']}"), \
+             mock.patch.object(module, "remote_branch_tip", side_effect=tip), \
+             redirect_stderr(captured):
+            try:
+                module.refuse_rewritten_stack(".", state, current_step)
+            except SystemExit:
+                return captured.getvalue()
+        return None
+
+    def test_an_untouched_stack_passes(self):
+        message = self._refusal(
+            self._state(), 2, {"branch-3": "c" * 40}
+        )
+        self.assertIsNone(message)
+
+    def test_a_rewritten_waiting_branch_is_refused_and_the_rewrite_named(self):
+        message = self._refusal(
+            self._state(), 2, {"branch-3": "d" * 40}
+        )
+        self.assertIsNotNone(message, "a rewritten waiting branch was not refused")
+        self.assertIn("has been rewritten since it was pushed", message)
+        self.assertIn("branch-3", message)
+        self.assertIn("stacked-pull-request", message)
+        self.assertIn(
+            "do not import GitHub's public key",
+            message,
+            "the wrong repair is the obvious one and must be ruled out in the message",
+        )
+
+    def test_the_step_being_merged_is_never_queried(self):
+        """The current step's branch may legitimately differ from its receipt
+        after audit-branch fast-forwards; only the WAITING steps are the rewrite
+        signal. Step order is enforced before this check runs, so the current
+        step is always the lowest unmerged one and everything below it is in
+        `merged`."""
+        module = self.hexctl
+        queried = []
+
+        def tip(_dir, branch, label="remote run branch tip"):
+            queried.append(branch)
+            return "c" * 40
+
+        with mock.patch.object(module, "step_branch_name",
+                               side_effect=lambda _s, step: f"branch-{step['n']}"), \
+             mock.patch.object(module, "remote_branch_tip", side_effect=tip):
+            module.refuse_rewritten_stack(".", self._state(), 2)
+        self.assertEqual(queried, ["branch-3"], "only the waiting steps are compared")
+
+    def test_merged_steps_are_not_compared(self):
+        state = self._state()
+        state["integrate"]["merged"] = [1, 2]
+        message = self._refusal(state, 3, {})
+        self.assertIsNone(message)
+
+    def test_an_unreadable_waiting_branch_is_reported_not_skipped(self):
+        message = self._refusal(
+            self._state(), 2, {"branch-3": SystemExit}
+        )
+        self.assertIsNotNone(message)
+        self.assertIn("could not be read", message)
+        self.assertIn("step 3", message)
+
+    def test_a_step_without_a_push_receipt_is_left_alone(self):
+        state = self._state()
+        state["steps"][2]["receipts"] = {}
+        message = self._refusal(state, 2, {})
+        self.assertIsNone(message)

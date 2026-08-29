@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lazarus.wildcat.finance/schemas/proof-record-v1.json",
+  "title": "Lazarus EIP-1186 proof record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "evidence", "block_hash", "address", "balance", "nonce", "code_hash", "storage_hash", "code", "account_proof", "storage_proof"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "evidence": {"const": "proof-backed"},
+    "block_hash": {"$ref": "#/$defs/hash32"},
+    "address": {"$ref": "#/$defs/address"},
+    "balance": {"$ref": "#/$defs/quantity"},
+    "nonce": {"$ref": "#/$defs/quantity"},
+    "code_hash": {"$ref": "#/$defs/hash32"},
+    "storage_hash": {"$ref": "#/$defs/hash32"},
+    "code": {"type": "string", "pattern": "^0x(?:[0-9a-fA-F]{2})*$"},
+    "account_proof": {"$ref": "#/$defs/proof"},
+    "storage_proof": {
+      "type": "array",
+      "maxItems": 100000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["key", "value", "proof"],
+        "properties": {
+          "key": {"$ref": "#/$defs/slot"},
+          "value": {"$ref": "#/$defs/quantity"},
+          "proof": {"$ref": "#/$defs/proof"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "quantity": {"type": "string", "pattern": "^0x(?:0|[1-9a-f][0-9a-f]{0,63})$"},
+    "address": {"type": "string", "pattern": "^0x[0-9a-fA-F]{40}$"},
+    "slot": {"type": "string", "pattern": "^0x[0-9a-fA-F]{64}$"},
+    "hash32": {"type": "string", "pattern": "^0x[0-9a-fA-F]{64}$"},
+    "proof": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 2048,
+      "items": {"type": "string", "pattern": "^0x(?:[0-9a-fA-F]{2})+$"}
+    }
+  }
+}

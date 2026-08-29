@@ -1,7 +1,7 @@
 {
   "name": "lazarus",
   "displayName": "Lazarus",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Proof-checked historical Ethereum fixtures with exact-request replay, no live fallback, and preservation releases a stranger can check.",
   "author": {
     "name": "Wildcat Labs",

@@ -1,8 +1,8 @@
 {
   "name": "sapheneia",
   "displayName": "Sapheneia",
-  "version": "0.1.1",
-  "description": "AuDHD-shaped replies with visible state and next actions.",
+  "version": "0.1.2",
+  "description": "AuDHD-shaped replies, audit records, issues and comments.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"
