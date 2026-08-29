@@ -1455,3 +1455,165 @@ cannot establish.
 
 **Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
 holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Files: Created:
+`docs/decisions/ADR-045-declare-signing-policy-on-disposable-git-fixtures.md`,
+`docs/disposable-fixture-signing/measurement.md`. Refreshed, as the last thing
+this step does: `docs/disposable-fixture-signing/runbook.md` and
+`docs/disposable-fixture-signing/study.md`, so the shipped copies stay
+byte-identical to the receipted artefacts. Changed:
+`plugins/horos/docs/marker-self-exclusion/runbook.md` is deliberately not
+changed; it recorded a true host condition at its own ref and ADR-045 supersedes
+it rather than editing it.
+
+ADR-045 carries the scope rule, the three rejected options from the study's
+section 4 with the measured reason for rejecting the process-wide override, the
+`GIT_CONFIG_GLOBAL` constraint, and the retirement of the `<sign-off>` prefix.
+Confirm before writing it that 045 is still free: `tests/test_decision_records.py`
+refuses a number already on the default branch, and `main` moves during a run.
+If it is taken, take the next free number and change the filename and first
+heading together, since that test also requires the heading to state the number
+its filename claims.
+
+`docs/disposable-fixture-signing/measurement.md` records both measurements with
+the host and its `commit.gpgsign`, `gpg.format` and `user.signingkey` beside the
+numbers.
+
+If any later amendment moves the canonical runbook after the refresh has run,
+the refresh runs again. It is the last action of the step, not a single event
+part-way through it.
+
+**Why.** The files field named neither shipped copy, which is the omission that
+produced three separate recurrences of the same finding during step 4: the
+canonical runbook moved with each amendment, the shipped copy fell behind, and
+step 1's byte-identity criterion failed until someone noticed. Step 3's files
+field named them and step 4's was amended to name them; step 5 is the last step
+that can still carry the same repair, and it is also the step most likely to need
+it, because its own exit was amended after the run's most recent refresh. Naming
+the copies and saying plainly that the refresh is the step's last action, rather
+than an event that happens once, is what stops the fourth recurrence.
+
+**Steps touched.** Step 5's files.
+
+**Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: The demo path passes, both
+measurements are recorded, and the decision record is committed and lints clean.
+
+Capture the two configuration baselines first, before any suite runs, into a
+directory that outlives the hostile one:
+
+```bash
+CAPTURE_DIR="$(mktemp -d)"
+git config --global --list > "$CAPTURE_DIR/global-before.txt"
+git -C . config --local --list > "$CAPTURE_DIR/local-before.txt"
+```
+
+Then generate the hostile configuration with the harness step 2 committed,
+removing it when the shell exits:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+trap 'rm -rf "$HOSTILE_DIR" "$CAPTURE_DIR"' EXIT
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+The demo path is the study's section 1, run under inherited signing. Three of
+the four suites exit 0:
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 -m unittest discover -s plugins/horos/tests -t plugins/horos
+```
+
+The fourth cannot, and these three assertions exit 0 instead:
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1[,)]' "$HOSTILE_DIR/hexaemeron.log"
+```
+
+The other half of the criterion is what the sentinel holds after all four suites
+have run. Both exit 0:
+
+```bash
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+Then the remaining exit commands, all 0:
+
+```bash
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-5.json
+/Users/kethcode/.local/bin/python3.14 -m unittest tests.test_decision_records
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/decisions/ADR-046-declare-signing-policy-on-disposable-git-fixtures.md
+/Users/kethcode/.local/bin/python3.14 plugins/brevitas/skills/brevitas/scripts/brevitas.py docs/decisions/ADR-046-declare-signing-policy-on-disposable-git-fixtures.md
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
+/Users/kethcode/.local/bin/python3.14 plugins/horos/skills/horos/scripts/horos.py check .
+```
+
+Acceptance item 2 is proved by comparison rather than assertion, and both
+commands must print nothing:
+
+```bash
+git config --global --list | diff - "$CAPTURE_DIR/global-before.txt"
+git -C . config --local --list | diff - "$CAPTURE_DIR/local-before.txt"
+```
+
+Complete replacement Files: Created:
+`docs/decisions/ADR-046-declare-signing-policy-on-disposable-git-fixtures.md`,
+`docs/disposable-fixture-signing/measurement.md`. Refreshed, as the last thing
+this step does: `docs/disposable-fixture-signing/runbook.md` and
+`docs/disposable-fixture-signing/study.md`, so the shipped copies stay
+byte-identical to the receipted artefacts. Changed:
+`plugins/horos/docs/marker-self-exclusion/runbook.md` is deliberately not
+changed; it recorded a true host condition at its own ref and the decision record
+supersedes it rather than editing it.
+
+The record carries the scope rule, the three rejected options from the study's
+section 4 with the measured reason for rejecting the process-wide override, the
+`GIT_CONFIG_GLOBAL` constraint, and the retirement of the `<sign-off>` prefix.
+Its number is 046 because 045 was taken while this run was in flight, by
+`ADR-045-select-and-schedule-repository-checks-from-one-graph.md`, which is issue
+622's work. Confirm 046 is still free before writing it, by the same reasoning
+that made 045 unavailable: `tests/test_decision_records.py` refuses a number
+already on the default branch, `main` moves during a run, and the filename and
+first heading must state the same number.
+
+`docs/disposable-fixture-signing/measurement.md` records both measurements with
+the host and its `commit.gpgsign`, `gpg.format` and `user.signingkey` beside the
+numbers.
+
+If any later amendment moves the canonical runbook after the refresh has run,
+the refresh runs again. It is the last action of the step, not a single event
+part-way through it.
+
+**Why.** ADR-045 was free when the runbook was written and is taken now. It went
+to `select-and-schedule-repository-checks-from-one-graph`, the decision record
+belonging to issue 622, which landed on the default branch while this run was
+building. The step anticipated exactly this and said to take the next free number
+and move the filename and first heading together; this amendment does that in the
+spec rather than leaving the builder to reconcile a number the exit commands name
+twice. 046 is the next free number on the default branch and no open pull request
+claims it.
+
+This is the base moving under a run, which the runbook cannot prevent and should
+not pretend to. What it can do is name the reason the number changed, so a reader
+who finds this delivery at 046 and the study still describing the rule does not
+go looking for a missing 045.
+
+**Steps touched.** Step 5's exit and files.
+
+**Still holding.** Step 5: entry holds; exit holds.

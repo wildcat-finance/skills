@@ -731,3 +731,46 @@ tree it built already matches what this correction says.
 
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
 holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Two counts in this study are wrong, and both were carried into
+the decision record before the final audit round caught them.
+
+The inventory in section 2b reads "Ten sites in six files". The table directly
+beneath it lists seven distinct files: `tests/test_boundary_currency.py`,
+`plugins/hermes/skills/hermes/scripts/test_hermes.py`,
+`plugins/hexaemeron/tests/test_elenchus_checker.py`,
+`plugins/hexaemeron/tests/test_kronos_scoreboard.py`,
+`plugins/horos/tests/test_scoped_entry.py`,
+`plugins/horos/tests/test_demonstration.py` and
+`plugins/horos/tests/test_universe.py`. Ten sites in **seven** files.
+
+Sections 2b, 4 and 12 each say the ten sites reduce to six edit points, one per
+chokepoint. They do not reduce at all. Each site is its own chokepoint, because
+the three Horos modules carry byte-identical but separate `git()` helpers and
+`test_kronos_scoreboard.py` constructs twice, so the rule is applied ten times.
+The delivered tree confirms it: ten declarations, at one site each, across the
+seven files above, plus two hardened sites that already carried the rule.
+
+**Why.** Neither number changes what was built or how it was checked. Steps 3
+and 4 worked from the table rather than the sentence above it, declared at every
+row, and their audits verified the count against the tree, so the delivery is
+correct and complete. What the wrong numbers would have cost is a later reader's
+trust: someone auditing this rule against the tree would count seven files and
+ten edit points and find the study asserting six of each, with no way to tell
+which number to believe. A study that contradicts its own table on the line
+above it is worse than one that simply omits the summary.
+
+The count of six edit points appears to have come from reading the three
+`test_universe.py` rows as one edit and the two `test_kronos_scoreboard.py` rows
+as one, which is what "one per chokepoint" would mean if a module were a
+chokepoint. A module is not: the helpers are separate, the constructions are
+separate, and removing any one declaration fails the guard on its own, which
+step 3's and step 4's audits each measured.
+
+**Steps touched.** Step 5's context. No field of that step changes; the
+correction is to this study's own prose and to the decision record that quotes
+it, which step 5 delivers.
+
+**Still holding.** Step 5: entry holds; exit holds.
