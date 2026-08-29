@@ -551,7 +551,7 @@ append its attribution line or session link after creation. Wait for its gates
 but leave it open: a step's work lands in the
 integrate phase, not here. Do not add an issue reference unless one was
 independently supplied or required by higher-priority repository policy. Receipt
-the head SHA, PR URL, and PR base. Then, before packaging or acting on the next
+the head SHA in full, from `git rev-parse HEAD`, with the PR URL and PR base. Then, before packaging or acting on the next
 directive, export the controller capsule with `hexctl checkpoint export` and
 upload the step checkpoint the `Step checkpoint` section of
 [push-discipline.md](references/push-discipline.md) requires. Preserve the
