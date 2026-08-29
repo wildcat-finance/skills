@@ -645,6 +645,23 @@ print(json.dumps(payload))
         payload.pop("observation_run_id", None)
         return payload
 
+    def record_legacy_config(self, path, value):
+        """Create a ledger-valid state that an older controller could have stored."""
+        state_path = os.path.join(self.target, ".hexaemeron", "state.json")
+        with open(state_path, encoding="utf-8") as handle:
+            state = json.load(handle)
+        node = state["config"]
+        parts = path.split(".")
+        for part in parts[:-1]:
+            node = node[part]
+        node[parts[-1]] = value
+        hexctl_module().commit(
+            self.target,
+            state,
+            "fixture:legacy-config",
+            {"path": path, "value": value},
+        )
+
     def run_branch(self):
         return self.state()["run_branch"]
 
@@ -1210,7 +1227,7 @@ class TestDelegationPackets(HexctlCase):
     def test_warden_refuses_an_invalid_assembled_stacked_branch(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
-        self.run_ctl("config", "set", "audit.stacked_suffix", '" bad"')
+        self.record_legacy_config("audit.stacked_suffix", " bad")
         proc = self.run_ctl("next", expect=2)
         self.assertIn("stacked_branch is not a valid Git branch", proc.stderr)
 
@@ -3382,7 +3399,7 @@ class TestAuditLoop(HexctlCase):
     def test_max_rounds_forces_verdict(self):
         self.to_audit()
         self.run_ctl("record", "security_suite", SUITE)
-        self.run_ctl("config", "set", "audit.max_rounds", "2")
+        self.record_legacy_config("audit.max_rounds", 2)
         self.run_ctl(
             "audit-round", "--findings", "2", "--fixes-commit", "b1",
             "--elenchus-verdict", "guarded",
@@ -4107,13 +4124,11 @@ class TestControls(HexctlCase):
 
     def test_config_get_set_roundtrip(self):
         self.init()
-        self.run_ctl("config", "set", "audit.max_rounds", "3")
-        out = self.run_ctl("config", "get", "audit.max_rounds").stdout.strip()
-        self.assertEqual(out, "3")
+        self.run_ctl("config", "set", "git.draft_pr", "true")
+        out = self.run_ctl("config", "get", "git.draft_pr").stdout.strip()
+        self.assertEqual(out, "true")
         proc = self.run_ctl("config", "get", "audit.nope", expect=2)
         self.assertIn("not found", proc.stderr)
-
-
 
 class TestFuzzRegressions(HexctlCase):
     """Pins for the day-5 fuzz findings (F-01..F-09)."""
@@ -4184,20 +4199,20 @@ class TestFuzzRegressions(HexctlCase):
 
     def test_max_rounds_validated(self):
         self.to_audit_with_suite()
-        self.run_ctl("config", "set", "audit.max_rounds", '"eight"')
+        self.record_legacy_config("audit.max_rounds", "eight")
         proc = self.run_ctl("audit-round", "--findings", "1", expect=2)
         self.assertNotIn("Traceback", proc.stderr)
         self.assertIn("must be an integer", proc.stderr)
-        self.run_ctl("config", "set", "audit.max_rounds", "0")
+        self.record_legacy_config("audit.max_rounds", 0)
         proc = self.run_ctl("audit-round", "--findings", "1", expect=2)
         self.assertIn(">= 1", proc.stderr)
-        self.run_ctl("config", "set", "audit.max_rounds", "8")
+        self.record_legacy_config("audit.max_rounds", 8)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("verify")
 
     def test_prose_nonstring_config_ids(self):
         self.to_audit_with_suite()
-        self.run_ctl("config", "set", "skills.prose_lint", "123")
+        self.record_legacy_config("skills.prose_lint", 123)
         self.run_ctl("audit-round", "--findings", "0")
         self.run_ctl("done", "audit")
         proc = self.run_ctl("done", "prose", "--files", "1",
@@ -4484,12 +4499,11 @@ class LintReceiptTests(HexctlCase):
         self.assertNotIn("--phylax-exit", proc.stderr)
         self.assertNotIn("--ephoros-exit", proc.stderr)
 
-    def test_the_refusal_points_at_the_override(self):
-        """A run whose receipt cannot be read but which really is a Solidity run has a
-        way out, and the refusal says what it is."""
+    def test_the_refusal_points_at_the_immutable_classification(self):
         self.to_waived_audit()
         proc = self.run_ctl("audit-round", "--findings", "0", expect=2)
-        self.assertIn("config set solidity true", proc.stderr)
+        self.assertIn("security_suite receipt", proc.stderr)
+        self.assertIn("Solidity config is immutable", proc.stderr)
 
     def test_a_complete_round_records_all_three(self):
         self.to_waived_audit()
@@ -4559,13 +4573,13 @@ class LintReceiptTests(HexctlCase):
 
     def test_the_override_lifts_the_requirement(self):
         self.to_waived_audit()
-        self.run_ctl("config", "set", "solidity", "true")
+        self.record_legacy_config("solidity", True)
         self.run_ctl("audit-round", "--findings", "0")
         self.assertIsNone(self.rounds()[0]["lints"])
 
     def test_the_override_can_impose_it_on_a_recorded_suite(self):
         self.to_solidity_audit()
-        self.run_ctl("config", "set", "solidity", "false")
+        self.record_legacy_config("solidity", False)
         proc = self.run_ctl("audit-round", "--findings", "0", expect=2)
         self.assertIn("--phylax-exit", proc.stderr)
 
@@ -4742,30 +4756,6 @@ class RoundClassifierTests(unittest.TestCase):
         for value in (True, False, "auto"):
             with self.subTest(value=value):
                 self.assertTrue(self.ctl.solidity_mode(value))
-
-
-class SolidityConfigTests(HexctlCase):
-    def test_the_solidity_key_accepts_only_its_three_modes(self):
-        self.init()
-        for value in ('"auto"', "true", "false"):
-            with self.subTest(value=value):
-                self.run_ctl("config", "set", "solidity", value)
-        self.assertEqual(json.loads(self.run_ctl("config", "get", "solidity").stdout), False)
-
-    def test_a_value_outside_the_three_modes_is_refused(self):
-        """`1` and `0` are in here because Python makes them equal to `True` and
-        `False`, so a membership test would have stored an integer as a mode."""
-        self.init()
-        for value in ('"yes"', "1", "0", '"Auto"', '["auto"]', "null"):
-            with self.subTest(value=value):
-                proc = self.run_ctl("config", "set", "solidity", value, expect=2)
-                self.assertIn("config solidity takes", proc.stderr)
-
-    def test_a_refused_value_leaves_the_key_alone(self):
-        self.init()
-        self.run_ctl("config", "set", "solidity", "false")
-        self.run_ctl("config", "set", "solidity", '"nonsense"', expect=2)
-        self.assertEqual(json.loads(self.run_ctl("config", "get", "solidity").stdout), False)
 
 
 if __name__ == "__main__":

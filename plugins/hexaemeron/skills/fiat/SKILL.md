@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.33.1"
+  version: "5.34.1"
 ---
 
 <p align="center">
@@ -581,6 +581,9 @@ Use `hexctl halt --reason ...` so the stop itself is on the ledger.
 ## Hard rules
 
 - Never advance past a phase whose receipt command failed.
+- Never change run configuration outside `audit.log_path`, `git`, or a path
+  below `git`; `config set` refuses every other path without changing state or
+  ledger bytes.
 - Never reconstruct progress from chat; `status` and `next` are the truth.
 - Never claim a lint, audit round, or test run happened when it did not.
 - Never receipt a Fiat-created commit without a valid local signature and one
@@ -682,12 +685,12 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-receipted-delivery
 
 - Promise: A successful `hexctl verify` establishes that the controller state has the required version-1 container shape, the state and append-only ledger agree, and every recorded phase transition occurred in the required order with the required receipt shape.
-- Evidence: The ordered state-container check, exact study and runbook receipts, step branches and locally verified commit ranges, GitHub-verified pushed commits and merge SHAs, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
+- Evidence: The ordered state-container check, post-init configuration write allowlist, exact study and runbook receipts, step branches and locally verified commit ranges, GitHub-verified pushed commits and merge SHAs, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
 - Evidence classes: checked, recorded
 - Boundary: Controller verification proves the required container shape, receipt order, integrity, checked audit-entry structure, the recorded receipt-time synopsis check, and the recorded local and GitHub signature checks; it does not establish current working-tree currency, establish that audit prose or coverage judgements are true, make the lossy synopsis authoritative, validate other heterogeneous leaf values, prove a test summary, implementation claim, signer authority beyond those checks, or user authority merely written into a receipt.
 - Authorises: Advancing only to the single next controller directive and reporting the recorded workflow state without strengthening any underlying receipt.
 - Consequence: 2
-- Refuses: Skipping a phase, reconstructing progress from chat, accepting a malformed or missing receipt, or describing an unrun check as complete.
+- Refuses: Skipping a phase, rewriting post-init configuration outside `audit.log_path` and `git`, reconstructing progress from chat, accepting a malformed or missing receipt, or describing an unrun check as complete.
 - Recovery: Inspect `hexctl status`, repair the current phase's real evidence without editing ledger history, submit the required receipt and rerun `hexctl verify`.
 - Exceptions: none
 
