@@ -733,8 +733,10 @@ def confine(root: Path, candidate: str) -> Path:
         raise Refusal(
             f"the output path must be beneath the owned {OWNED_OUTPUT_DIRECTORY}/ sink"
         )
-    target = root.resolve(strict=True).joinpath(*parts)
-    if target == root.resolve(strict=True):
+    if not root.is_absolute():
+        raise Refusal("the repository root is not absolute")
+    target = root.joinpath(*parts)
+    if target == root:
         raise Refusal("the repository root is not an output file")
     return target
 
@@ -765,18 +767,18 @@ def output_parts(root: Path, target: Path) -> tuple[str, ...]:
     return parts
 
 
-def open_repository_directory(root: Path) -> tuple[Path, int]:
+def open_repository_directory(root: Path) -> int:
     nofollow = getattr(os, "O_NOFOLLOW", None)
     directory_flag = getattr(os, "O_DIRECTORY", None)
     if nofollow is None or directory_flag is None:
         raise Refusal("this platform cannot open output directories without following links")
+    if not root.is_absolute():
+        raise Refusal("the repository root is not absolute")
     flags = os.O_RDONLY | nofollow | directory_flag | getattr(os, "O_CLOEXEC", 0)
     try:
-        resolved_root = root.resolve(strict=True)
-        root_fd = os.open(resolved_root, flags)
-    except (OSError, RuntimeError) as error:
+        return os.open(root, flags)
+    except OSError as error:
         raise Refusal(f"the repository root cannot be opened safely: {error}") from error
-    return resolved_root, root_fd
 
 
 def open_output_directory(root_fd: int, parts: tuple[str, ...]) -> int:
@@ -846,16 +848,25 @@ def create_temporary(directory_fd: int) -> tuple[int, str]:
     raise Refusal("report temporary name allocation was exhausted")
 
 
-def atomic_write(root: Path, target: Path, payload: str) -> None:
+def atomic_write(
+    root: Path,
+    target: Path,
+    payload: str,
+    *,
+    root_fd: int | None = None,
+) -> None:
     encoded = payload.encode("utf-8")
     if len(encoded) > MAX_REPORT_BYTES:
         raise Refusal(f"report exceeds {MAX_REPORT_BYTES} bytes")
-    resolved_root, root_fd = open_repository_directory(root)
+    owns_root_fd = root_fd is None
+    if root_fd is None:
+        root_fd = open_repository_directory(root)
     try:
-        parts = output_parts(resolved_root, target)
+        parts = output_parts(root, target)
         directory_fd = open_output_directory(root_fd, parts)
     finally:
-        os.close(root_fd)
+        if owns_root_fd:
+            os.close(root_fd)
     temporary_name: str | None = None
     try:
         require_regular_target(directory_fd, parts[-1])
@@ -887,14 +898,24 @@ def atomic_write(root: Path, target: Path, payload: str) -> None:
 
 def command_report(arguments: argparse.Namespace) -> int:
     root = repository_root(Path(arguments.directory).resolve())
-    report = build_report(root)
-    rendered = render_json(report) if arguments.json else render_text(report)
-    if arguments.output is None:
-        sys.stdout.write(rendered)
-    else:
-        target = confine(root, arguments.output)
-        atomic_write(root, target, rendered)
-    return 0
+    root_fd: int | None = None
+    target: Path | None = None
+    try:
+        if arguments.output is not None:
+            root_fd = open_repository_directory(root)
+            target = confine(root, arguments.output)
+        report = build_report(root)
+        rendered = render_json(report) if arguments.json else render_text(report)
+        if arguments.output is None:
+            sys.stdout.write(rendered)
+            return 0
+        assert root_fd is not None
+        assert target is not None
+        atomic_write(root, target, rendered, root_fd=root_fd)
+        return 0
+    finally:
+        if root_fd is not None:
+            os.close(root_fd)
 
 
 def build_parser() -> argparse.ArgumentParser:
