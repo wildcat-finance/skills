@@ -1,0 +1,22 @@
+{
+  "source": {
+    "date": "2026-08-28",
+    "origin": "https://api.morpho.org",
+    "observed_at": 1785374000,
+    "transactions_reference": "https://docs.morpho.org/api/midnight/transactions/list-user-transactions/",
+    "market_reference": "https://docs.morpho.org/api/midnight/markets/get-market/",
+    "token_reference": "https://docs.morpho.org/api/global/get-token/",
+    "position_reference": "https://docs.morpho.org/api/midnight/positions/get-position/"
+  },
+  "transactions": {
+    "0x535690cb1330232dd4f2ac5b724040751bdf4c91": [
+      {
+        "cursor": null,
+        "data": []
+      }
+    ]
+  },
+  "markets": {},
+  "tokens": {},
+  "positions": {}
+}

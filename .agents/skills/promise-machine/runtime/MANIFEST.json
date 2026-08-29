@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 958,
-  "total_bytes": 20646114,
+  "file_count": 959,
+  "total_bytes": 20711817,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -59,7 +59,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "423e2f0bb0da856b12cc97ed8b5eaaf7f1afbb64fa272474280bd4a89dd53039",
+      "sha256": "8bfd54f58d6347ecbe4e0abeeb6e2b36eb636c4202557bea7383f04963e3428d",
       "source": null
     },
     {
@@ -5043,15 +5043,15 @@
       "source": "plugins/probitas/docs/example-dossier.md"
     },
     {
-      "bytes": 22747,
+      "bytes": 40148,
       "path": "plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md",
-      "sha256": "31f3ef6749da8bd0a6529c9f1b2be14d4475a27fa07a73f543c7e4cebd1de7b8",
+      "sha256": "2f4c816b440eb0da03e369b991cf4f0913d514f2a21ad30c26308ab341e466e9",
       "source": "plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md"
     },
     {
-      "bytes": 41790,
+      "bytes": 44628,
       "path": "plugins/probitas/docs/morpho-midnight-fixed-maturity-study.md",
-      "sha256": "83cce2c5b5d0584080ab25627b72c755fb444fd794874ea72cd7627ca50d5ae9",
+      "sha256": "fbd2137915356d6c81366845ab3d066070db9ea63b8eda4ee464ec56f1e789a2",
       "source": "plugins/probitas/docs/morpho-midnight-fixed-maturity-study.md"
     },
     {
@@ -5091,15 +5091,21 @@
       "source": "plugins/probitas/scripts/probitas_lib/adapters/morpho.py"
     },
     {
+      "bytes": 45452,
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py",
+      "sha256": "7985fcb7d5b74eab91f705575ab4c14905540138ba8a4aeca690201af629f01b",
+      "source": "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py"
+    },
+    {
       "bytes": 17949,
       "path": "plugins/probitas/scripts/probitas_lib/adapters/wildcat.py",
       "sha256": "6e4a947253a5bc3903f7dab77569439892d5d1765d8d730b3e44854a56c8cc79",
       "source": "plugins/probitas/scripts/probitas_lib/adapters/wildcat.py"
     },
     {
-      "bytes": 3088,
+      "bytes": 3100,
       "path": "plugins/probitas/scripts/probitas_lib/endpoints.py",
-      "sha256": "14efdd14d6c175d8571abb8e2f81f011c4a933041e175676d2ca6367a8497c7b",
+      "sha256": "fa41d04d2a34d5dbb266d2760ca6683f782d124e6dd7eb6f47b9942e38ab929c",
       "source": "plugins/probitas/scripts/probitas_lib/endpoints.py"
     },
     {
