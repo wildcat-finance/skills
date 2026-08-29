@@ -351,6 +351,45 @@ class HexctlCheckpointTests(HexctlCase):
         finally:
             empty.rmdir()
 
+    def test_file_count_cap_stops_directory_enumeration(self):
+        source = Path(self.dir) / "enumeration-source"
+        source.mkdir()
+        for index in range(12):
+            source.joinpath(f"entry-{index:02d}").write_text("x", encoding="utf-8")
+
+        module = hexctl_module()
+        real_scandir = os.scandir
+        consumed = 0
+
+        class CountingScandir:
+            def __init__(self, path):
+                self.iterator = real_scandir(path)
+
+            def __enter__(self):
+                self.iterator.__enter__()
+                return self
+
+            def __exit__(self, *args):
+                return self.iterator.__exit__(*args)
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                nonlocal consumed
+                entry = next(self.iterator)
+                consumed += 1
+                return entry
+
+        stderr = StringIO()
+        with mock.patch.object(module, "CHECKPOINT_FILES_MAX", 2):
+            with mock.patch.object(module.os, "scandir", CountingScandir):
+                with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module._checkpoint_snapshot(str(source), None)
+
+        self.assertIn("too many files", stderr.getvalue())
+        self.assertEqual(3, consumed)
+
     def test_hostile_controller_entries_refuse_without_echo_or_mutation(self):
         self.to_post_push()
         root = self.controller_root()
@@ -483,6 +522,42 @@ class HexctlCheckpointTests(HexctlCase):
         self.assertIn("became occupied", error)
         self.assertTrue(raced.is_dir())
         self.assertEqual([], list(raced.iterdir()))
+
+    def test_replaced_output_parent_cannot_redirect_publication(self):
+        self.to_post_push()
+        parent = Path(self.dir) / "output-parent"
+        moved_parent = Path(self.dir) / "moved-output-parent"
+        alternate = Path(self.dir) / "alternate-parent"
+        parent.mkdir()
+        alternate.mkdir()
+        destination = parent / "capsule"
+
+        module = hexctl_module()
+        original_refs = module._checkpoint_refs
+        rebound = False
+
+        def rebind_after_validation(base_dir, state):
+            nonlocal rebound
+            refs = original_refs(base_dir, state)
+            if not rebound:
+                parent.rename(moved_parent)
+                parent.symlink_to(alternate, target_is_directory=True)
+                rebound = True
+            return refs
+
+        before = self.state_ledger_bytes()
+        stderr = StringIO()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(module, "_checkpoint_refs", rebind_after_validation):
+                with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module.cmd_checkpoint_export(
+                        SimpleNamespace(dir=self.target, out=str(destination))
+                    )
+
+        self.assertIn("parent changed", stderr.getvalue())
+        self.assertFalse(alternate.joinpath("capsule").exists())
+        self.assertFalse(moved_parent.joinpath("capsule").exists())
+        self.assertEqual(before, self.state_ledger_bytes())
 
     def test_pending_transaction_and_unsafe_output_parents_refuse(self):
         self.to_post_push()

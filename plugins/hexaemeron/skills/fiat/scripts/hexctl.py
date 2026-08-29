@@ -8034,27 +8034,45 @@ def _checkpoint_snapshot(source_root: str, destination_root: str | None) -> list
             if not stat.S_ISDIR(before_directory.st_mode):
                 die("checkpoint source contains a non-directory container")
             with os.scandir(source_dir) as iterator:
-                entries = sorted(list(iterator), key=lambda item: item.name)
+                entries = []
+                for entry in iterator:
+                    relative_parts = (*parts, entry.name)
+                    relative = _checkpoint_safe_relative(relative_parts)
+                    try:
+                        initial = os.stat(
+                            entry.name, dir_fd=source_dir, follow_symlinks=False
+                        )
+                    except OSError:
+                        die("checkpoint source changed during capture")
+
+                    if not parts and entry.name == "lock":
+                        if not stat.S_ISREG(initial.st_mode) or initial.st_nlink != 1:
+                            die("checkpoint lock is not a safe regular file")
+                        continue
+
+                    if stat.S_ISDIR(initial.st_mode):
+                        totals["directories"] += 1
+                        if totals["directories"] > CHECKPOINT_DIRECTORIES_MAX:
+                            die("checkpoint source has too many directories")
+                    elif stat.S_ISREG(initial.st_mode):
+                        totals["files"] += 1
+                        if totals["files"] > CHECKPOINT_FILES_MAX:
+                            die("checkpoint source has too many files")
+                        if initial.st_size > CHECKPOINT_FILE_BYTES_MAX:
+                            die("checkpoint source file exceeds the byte ceiling")
+                        totals["bytes"] += initial.st_size
+                        if totals["bytes"] > CHECKPOINT_TOTAL_BYTES_MAX:
+                            die("checkpoint source exceeds the total byte ceiling")
+                    else:
+                        die("checkpoint source contains a special or linked entry")
+
+                    entries.append((entry, initial, relative_parts, relative))
+                entries.sort(key=lambda item: item[0].name)
         except OSError:
             die("checkpoint source directory changed during capture")
 
-        for entry in entries:
-            relative_parts = (*parts, entry.name)
-            relative = _checkpoint_safe_relative(relative_parts)
-            try:
-                initial = os.stat(entry.name, dir_fd=source_dir, follow_symlinks=False)
-            except OSError:
-                die("checkpoint source changed during capture")
-
-            if not parts and entry.name == "lock":
-                if not stat.S_ISREG(initial.st_mode) or initial.st_nlink != 1:
-                    die("checkpoint lock is not a safe regular file")
-                continue
-
+        for entry, initial, relative_parts, relative in entries:
             if stat.S_ISDIR(initial.st_mode):
-                totals["directories"] += 1
-                if totals["directories"] > CHECKPOINT_DIRECTORIES_MAX:
-                    die("checkpoint source has too many directories")
                 child_destination = None
                 if destination_dir is not None:
                     child_destination = os.path.join(destination_dir, entry.name)
@@ -8081,16 +8099,6 @@ def _checkpoint_snapshot(source_root: str, destination_root: str | None) -> list
                     os.close(child)
                 continue
 
-            if not stat.S_ISREG(initial.st_mode):
-                die("checkpoint source contains a special or linked entry")
-            totals["files"] += 1
-            if totals["files"] > CHECKPOINT_FILES_MAX:
-                die("checkpoint source has too many files")
-            if initial.st_size > CHECKPOINT_FILE_BYTES_MAX:
-                die("checkpoint source file exceeds the byte ceiling")
-            totals["bytes"] += initial.st_size
-            if totals["bytes"] > CHECKPOINT_TOTAL_BYTES_MAX:
-                die("checkpoint source exceeds the total byte ceiling")
             destination = (
                 os.path.join(destination_dir, entry.name)
                 if destination_dir is not None
@@ -8193,8 +8201,32 @@ def _checkpoint_ledger(data: bytes, state: dict) -> tuple[int, str]:
     return count, previous
 
 
-def _checkpoint_destination(base_dir: str, supplied: str) -> tuple[str, str]:
-    """Resolve one new sibling-publish target without following its parent."""
+def _checkpoint_directory_still_at_path(path: str, descriptor: int) -> bool:
+    """Return whether one no-follow path still names the opened directory."""
+    current = None
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        if os.path.realpath(path) != path:
+            return False
+        current = os.open(path, flags)
+        opened = os.fstat(current)
+        expected = os.fstat(descriptor)
+        return (opened.st_dev, opened.st_ino) == (expected.st_dev, expected.st_ino)
+    except OSError:
+        return False
+    finally:
+        if current is not None:
+            with contextlib.suppress(OSError):
+                os.close(current)
+
+
+def _checkpoint_destination(base_dir: str, supplied: str) -> tuple[str, str, int]:
+    """Resolve and pin one new sibling-publish target and its parent."""
     if not isinstance(supplied, str) or not supplied:
         die("checkpoint export requires --out <new-directory>")
     try:
@@ -8213,6 +8245,10 @@ def _checkpoint_destination(base_dir: str, supplied: str) -> tuple[str, str]:
     parent = os.path.dirname(destination)
     if not os.path.basename(destination) or os.path.realpath(parent) != parent:
         die("checkpoint output parent must be one existing non-symlink directory")
+    source = os.path.realpath(state_root(base_dir))
+    if contained_in(source, destination):
+        die("checkpoint output destination cannot enter controller state")
+    parent_descriptor = None
     try:
         parent_stat = os.lstat(parent)
         parent_descriptor = os.open(
@@ -8222,17 +8258,36 @@ def _checkpoint_destination(base_dir: str, supplied: str) -> tuple[str, str]:
             | getattr(os, "O_DIRECTORY", 0)
             | getattr(os, "O_NOFOLLOW", 0),
         )
-        os.close(parent_descriptor)
+        opened = os.fstat(parent_descriptor)
+        if (
+            not stat.S_ISDIR(parent_stat.st_mode)
+            or not stat.S_ISDIR(opened.st_mode)
+            or (parent_stat.st_dev, parent_stat.st_ino)
+            != (opened.st_dev, opened.st_ino)
+            or not _checkpoint_directory_still_at_path(parent, parent_descriptor)
+        ):
+            raise OSError("checkpoint parent identity changed")
     except OSError:
+        if parent_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(parent_descriptor)
         die("checkpoint output parent must be one existing non-symlink directory")
-    if not stat.S_ISDIR(parent_stat.st_mode):
-        die("checkpoint output parent must be one existing non-symlink directory")
-    if os.path.lexists(destination):
+
+    try:
+        os.stat(
+            os.path.basename(destination),
+            dir_fd=parent_descriptor,
+            follow_symlinks=False,
+        )
+    except FileNotFoundError:
+        pass
+    except OSError:
+        os.close(parent_descriptor)
+        die("checkpoint output destination could not be inspected")
+    else:
+        os.close(parent_descriptor)
         die("checkpoint output destination is occupied")
-    source = os.path.realpath(state_root(base_dir))
-    if contained_in(source, destination):
-        die("checkpoint output destination cannot enter controller state")
-    return destination, parent
+    return destination, parent, parent_descriptor
 
 
 def _checkpoint_manifest(
@@ -8376,73 +8431,111 @@ def _checkpoint_atomic_publish(stage: str, destination: str) -> None:
 
 def cmd_checkpoint_export(args) -> None:
     """Export one deterministic controller capsule without changing the run."""
-    verify_run(args.dir)
-    state = load_state(args.dir)
-    ledger = ledger_entries(args.dir)
+    base_dir = os.path.abspath(args.dir)
+    verify_run(base_dir)
+    state = load_state(base_dir)
+    ledger = ledger_entries(base_dir)
     boundary, directive = _checkpoint_boundary(state, ledger)
-    if os.path.lexists(state_path(args.dir) + ".tmp"):
+    if os.path.lexists(state_path(base_dir) + ".tmp"):
         die("checkpoint export refuses a pending controller transaction")
-    destination, parent = _checkpoint_destination(args.dir, args.out)
-    refs = _checkpoint_refs(args.dir, state)
-    state_before = _checkpoint_read_staged(state_path(args.dir), CHECKPOINT_FILE_BYTES_MAX)
-    ledger_before = _checkpoint_read_staged(ledger_path(args.dir), CHECKPOINT_FILE_BYTES_MAX)
-
-    prefix = f".{os.path.basename(destination)}.stage-"
+    destination, parent, parent_descriptor = _checkpoint_destination(
+        base_dir, args.out
+    )
+    working_descriptor = None
     try:
-        stage = tempfile.mkdtemp(prefix=prefix, dir=parent)
-        os.chmod(stage, 0o700)
-    except OSError:
-        die("checkpoint private stage could not be created")
-    published = False
-    try:
-        controller_stage = os.path.join(stage, CHECKPOINT_CONTROLLER_DIR)
-        try:
-            os.mkdir(controller_stage, 0o700)
-        except OSError:
-            die("checkpoint private stage changed before capture")
-        inventory = _checkpoint_snapshot(state_root(args.dir), controller_stage)
-        if _checkpoint_snapshot(controller_stage, None) != inventory:
-            die("checkpoint private stage changed during capture")
-        manifest, manifest_bytes, manifest_digest = _checkpoint_manifest(
-            stage, state, boundary, directive, refs, inventory
+        refs = _checkpoint_refs(base_dir, state)
+        state_before = _checkpoint_read_staged(
+            state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
         )
-        if _checkpoint_snapshot(state_root(args.dir), None) != inventory:
-            die("checkpoint source changed before publication")
-        if (
-            _checkpoint_read_staged(state_path(args.dir), CHECKPOINT_FILE_BYTES_MAX)
-            != state_before
-            or _checkpoint_read_staged(ledger_path(args.dir), CHECKPOINT_FILE_BYTES_MAX)
-            != ledger_before
-            or _checkpoint_refs(args.dir, state) != refs
-        ):
-            die("checkpoint source changed before publication")
-        _checkpoint_write_manifest(stage, manifest_bytes)
-        if _checkpoint_read_staged(
-            os.path.join(stage, CHECKPOINT_MANIFEST_FILE),
-            CHECKPOINT_MANIFEST_BYTES_MAX,
-        ) != manifest_bytes:
-            die("checkpoint manifest changed before publication")
-        _checkpoint_fsync_directories(stage)
-        _checkpoint_atomic_publish(stage, destination)
-        published = True
+        ledger_before = _checkpoint_read_staged(
+            ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+
         try:
-            parent_descriptor = os.open(
-                parent,
+            working_descriptor = os.open(
+                ".",
                 os.O_RDONLY
                 | getattr(os, "O_CLOEXEC", 0)
-                | getattr(os, "O_DIRECTORY", 0)
-                | getattr(os, "O_NOFOLLOW", 0),
+                | getattr(os, "O_DIRECTORY", 0),
             )
+            os.fchdir(parent_descriptor)
+        except OSError:
+            die("checkpoint output parent could not be pinned")
+        if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
+            die("checkpoint output parent changed before staging")
+
+        prefix = f".{os.path.basename(destination)}.stage-"
+        try:
+            stage = tempfile.mkdtemp(prefix=prefix, dir=".")
+            os.chmod(stage, 0o700)
+        except OSError:
+            die("checkpoint private stage could not be created")
+        published = False
+        try:
+            controller_stage = os.path.join(stage, CHECKPOINT_CONTROLLER_DIR)
+            try:
+                os.mkdir(controller_stage, 0o700)
+            except OSError:
+                die("checkpoint private stage changed before capture")
+            inventory = _checkpoint_snapshot(state_root(base_dir), controller_stage)
+            if _checkpoint_snapshot(controller_stage, None) != inventory:
+                die("checkpoint private stage changed during capture")
+            manifest, manifest_bytes, manifest_digest = _checkpoint_manifest(
+                stage, state, boundary, directive, refs, inventory
+            )
+            if _checkpoint_snapshot(state_root(base_dir), None) != inventory:
+                die("checkpoint source changed before publication")
+            if (
+                _checkpoint_read_staged(
+                    state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+                )
+                != state_before
+                or _checkpoint_read_staged(
+                    ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+                )
+                != ledger_before
+                or _checkpoint_refs(base_dir, state) != refs
+            ):
+                die("checkpoint source changed before publication")
+            _checkpoint_write_manifest(stage, manifest_bytes)
+            if _checkpoint_read_staged(
+                os.path.join(stage, CHECKPOINT_MANIFEST_FILE),
+                CHECKPOINT_MANIFEST_BYTES_MAX,
+            ) != manifest_bytes:
+                die("checkpoint manifest changed before publication")
+            _checkpoint_fsync_directories(stage)
+            if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
+                die("checkpoint output parent changed before publication")
+            destination_name = os.path.basename(destination)
+            _checkpoint_atomic_publish(stage, destination_name)
+            if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
+                try:
+                    shutil.rmtree(destination_name, dir_fd=parent_descriptor)
+                    os.fsync(parent_descriptor)
+                except OSError:
+                    die(
+                        "checkpoint output parent changed and publication "
+                        "could not be removed",
+                        1,
+                    )
+                die("checkpoint output parent changed during publication")
+            published = True
             try:
                 os.fsync(parent_descriptor)
-            finally:
-                os.close(parent_descriptor)
-        except OSError:
-            die("checkpoint publication could not be made durable", 1)
+            except OSError:
+                die("checkpoint publication could not be made durable", 1)
+        finally:
+            if not published and os.path.isdir(stage) and not os.path.islink(stage):
+                with contextlib.suppress(OSError):
+                    shutil.rmtree(stage)
     finally:
-        if not published and os.path.isdir(stage) and not os.path.islink(stage):
+        if working_descriptor is not None:
             with contextlib.suppress(OSError):
-                shutil.rmtree(stage)
+                os.fchdir(working_descriptor)
+            with contextlib.suppress(OSError):
+                os.close(working_descriptor)
+        with contextlib.suppress(OSError):
+            os.close(parent_descriptor)
 
     source = manifest["source"]
     print(
