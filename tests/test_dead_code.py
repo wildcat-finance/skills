@@ -135,6 +135,51 @@ class UniverseDiscoveryTests(TemporaryRepositoryTestCase):
         self.assertEqual(len(universe.commit), 40)
         self.assertEqual(len(universe.tree), 40)
 
+    def test_transient_boundary_edit_cannot_change_the_commit_universe(self):
+        build_repository(
+            self.root,
+            files={
+                "a.py": "a = 1" + NL,
+                "generated.txt": "generated" + NL,
+            },
+            entries=[horos_entry("generated.txt")],
+        )
+        boundary = self.root / ".horos" / "boundary.json"
+        committed = boundary.read_text(encoding="utf-8")
+        replacement = json.dumps(
+            boundary_document([horos_entry("a.py")]),
+            sort_keys=True,
+        ) + NL
+        real_require_clean_tree = dead_code.require_clean_tree
+        real_load_boundary = dead_code.load_boundary
+
+        def edit_after_clean_check(root, *args, **kwargs):
+            real_require_clean_tree(root, *args, **kwargs)
+            boundary.write_text(replacement, encoding="utf-8")
+
+        def load_then_restore(*args, **kwargs):
+            try:
+                return real_load_boundary(*args, **kwargs)
+            finally:
+                boundary.write_text(committed, encoding="utf-8")
+
+        with (
+            mock.patch.object(
+                dead_code,
+                "require_clean_tree",
+                side_effect=edit_after_clean_check,
+            ),
+            mock.patch.object(
+                dead_code,
+                "load_boundary",
+                side_effect=load_then_restore,
+            ),
+        ):
+            universe = dead_code.discover(self.root)
+
+        self.assertIn("a.py", universe.analysed)
+        self.assertNotIn("generated.txt", universe.analysed)
+
     def test_universe_paths_are_sorted_and_identity_is_recomputed(self):
         build_repository(
             self.root,
@@ -342,6 +387,8 @@ class BoundaryRefusalTests(TemporaryRepositoryTestCase):
         target = self.root / ".horos" / "boundary.json"
         target.unlink()
         target.symlink_to(outside)
+        git(self.root, "add", "-A")
+        git(self.root, "commit", "--quiet", "-m", "symlink boundary")
         with self.assertRaisesRegex(dead_code.Refusal, "not a regular file"):
             dead_code.load_boundary(self.root)
 
@@ -894,6 +941,53 @@ class CommandLineTests(TemporaryRepositoryTestCase):
             json.loads(report_path.read_text(encoding="utf-8"))["schema"],
             "dead-code-report/v1",
         )
+
+    def test_repository_substitution_before_discovery_keeps_the_opened_tree(self):
+        original_commit = git(self.root, "rev-parse", "HEAD").strip()
+        outside_temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_temporary.cleanup)
+        outside = Path(outside_temporary.name).resolve()
+        build_repository(
+            outside,
+            files={"outside.py": "outside = True" + NL},
+        )
+        self.assertNotEqual(
+            original_commit,
+            git(outside, "rev-parse", "HEAD").strip(),
+        )
+        held = self.root.parent / (self.root.name + "-opened-repository")
+        real_build_report = dead_code.build_report
+
+        def substitute_repository(root, *args, **kwargs):
+            self.root.rename(held)
+            self.root.symlink_to(outside, target_is_directory=True)
+            return real_build_report(root, *args, **kwargs)
+
+        arguments = dead_code.argparse.Namespace(
+            directory=str(self.root),
+            json=True,
+            output=".dead-code/report.json",
+        )
+        try:
+            with mock.patch.object(
+                dead_code,
+                "build_report",
+                side_effect=substitute_repository,
+            ):
+                result = dead_code.command_report(arguments)
+            report = json.loads(
+                (held / ".dead-code" / "report.json").read_text(encoding="utf-8")
+            )
+        finally:
+            if self.root.is_symlink():
+                self.root.unlink()
+            if held.exists():
+                held.rename(self.root)
+
+        self.assertEqual(result, 0)
+        self.assertEqual(report["tree"]["commit"], original_commit)
+        self.assertIn("a.py", report["universe"]["analysed"])
+        self.assertNotIn("outside.py", report["universe"]["analysed"])
 
     def test_unsafe_output_path_exits_two(self):
         completed = self._run("report", "--output", "../escape.json")
