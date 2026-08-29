@@ -114,3 +114,20 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the round re-ran the union end to end against an index built from Alexandria's demonstration, and the repaired note now reads, for maple, "api.maple.finance responds but disables introspection, so the query shape could not be established. Undercollateralised, so worth the work. Not reached by this run: no adapter ships for it; venue was not harvested into the selected Alexandria index." All five gates pass on that dossier. The three bundled lints exited 0, the Probitas suite reported 315 of 315, Alexandria 298, the repository suite 466, and the portable, Horos and whitespace checks each exited 0 with the working tree clean. The two items recorded under round 1 and the three under step 2 all still stand. Nothing else is open.
+
+## Step 4, round 1 -- 2026-08-29T09:16:45Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-row-collapse=reviewed; unrequested-network=reviewed; schema-refusal=not-applicable; release-id-figures=reviewed; overlap-attribution=reviewed; gap-double-count=reviewed; demo-receipt-drift=reviewed; markdown-injection=not-applicable
+
+Not checked: `schema-refusal` and `markdown-injection` were settled in step 2 and this step changes neither the schema number nor anything that reaches a table cell. The Pashov pair did not run; the `security_suite` receipt waives it because nothing in scope is Solidity. The three bundled lints ran over the two changed test modules and the six changed documents and each exited 0. The round read the diff, resolved the two generated-file conflicts from the step 3 merge by regenerating rather than by keeping a side, and induced the missing-demonstration condition by hand.
+
+Elenchus verdict: passed
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S4-R1-01 | medium | plugins/probitas/tests/test_union.py | The union test skipped its whole class whenever Alexandria's demonstration could not be imported. Probitas installed on its own is a real deployment where the union cannot be shown and a skip is right, but Alexandria present with its demonstration missing is a defect, and skipping on it turned the only end-to-end proof of this run's capability into a silence that reads as a pass. Reproduced by moving `demo.py` aside: the suite reported a clean skip. The two cases are now told apart and a guard asserts the demonstration is there whenever Alexandria is. | fixed in e2a70493 |
+| S4-R1-02 | low | plugins/probitas/skills/probitas/SKILL.md | The `probitas-evidence-collection` promise claimed one coverage row per venue and route the run asked for. A venue no route reached gets one row rather than one per route, so the declaration overstated the cardinality of the thing it governs. | fixed in e2a70493 |
+
+Leads not pursued: the verdict is `passed` rather than `guarded`. The runner named by step 4's contract reports 324 of 324 against the fixes commit, and the new guard passes against the unfixed parent too, because the parent's defect only appears when the demonstration is absent. That condition was induced by hand instead: with `demo.py` moved aside the unfixed tree reported a clean skip and the fixed tree reported an error and a failing guard. Calling that `guarded` would claim a comparison the runner did not make. One thing is recorded rather than fixed: the Alexandria ledger row cites only the issue where the Probitas row also cites the committed study, which is a thinner pointer than its sibling for a change the study explains. The items recorded under steps 2 and 3 all still stand.
