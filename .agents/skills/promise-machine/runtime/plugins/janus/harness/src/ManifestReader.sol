@@ -49,10 +49,14 @@ struct ResolvedThreshold {
 ///      A dot is an ordinary character in an account name, so `USDC.e` as a
 ///      call target or an external slot would bind the permit to `USDC` --
 ///      the same substitution, on the paths that split. The reader cannot
-///      tell a suffix from a dotted name by looking, so where the adapter
-///      knows the whole written string as well, the manifest is ambiguous and
-///      the reader refuses rather than choosing a prefix the author may not
-///      have meant. A real suffix is not a name an adapter holds, so
+///      tell a suffix from a dotted name by looking, so it asks the adapter
+///      about every other reading the string has -- one per dot after the
+///      grammar's own, and the whole string last. If the adapter knows any of
+///      them the manifest is ambiguous and the reader refuses rather than
+///      choosing a prefix the author may not have meant. Asking only about
+///      the whole string is not enough: `USDC.e.transfer` is a dotted account
+///      carrying an ordinary function suffix, and its live reading is the
+///      intermediate one. A real suffix is not a name an adapter holds, so
 ///      `roleProvider.getCredential` is unaffected.
 ///
 ///      Staticcall reading: a `staticcall` kind entry never admits a
@@ -285,6 +289,20 @@ contract ManifestReader {
   ///      for `USDC.e`, the value path refused the manifest and these two
   ///      paths bound the permit to 0xC0 -- one string, one resolver, two
   ///      different accounts, which is the defect the guard was added for.
+  ///
+  ///      The third detail is which names are asked about, and it is where the
+  ///      question was drawn too narrowly again. A written name does not have
+  ///      two readings; it has one per dot, plus the whole string. Asking only
+  ///      about the whole string closes the guard on a name the adapter is
+  ///      unlikely to hold and leaves it open on the shape this manifest
+  ///      actually writes: every dotted target here is `account.function`, so
+  ///      a dotted *account* written with its function suffix is
+  ///      `account.part.function`, and the reading the author meant is the
+  ///      intermediate one. With `USDC` at 0xC0 and `USDC.e` at 0xCE,
+  ///      `USDC.e` refused and `USDC.e.transfer` bound the permit to 0xC0 --
+  ///      the bridged token the manifest named unpermitted, and one it never
+  ///      named permitted instead. So every dot boundary beyond the grammar's
+  ///      own is asked about, and the whole string is simply the last of them.
   function _resolveDotted(
     string memory written,
     AccountResolver resolver
@@ -299,9 +317,35 @@ contract ManifestReader {
     // whole suite. The ordering is what keeps the adapter from being asked
     // about a blank symbol; the duplicate only looked like it did.
     addr = _resolveSymbol(symbol, resolver);
-    if (!_eq(symbol, written)) {
-      (bool whole, ) = resolver.resolveAccount(written);
-      if (whole) revert AmbiguousAccountSymbol(written);
+    _refuseASecondReading(written, bytes(symbol).length, resolver);
+  }
+
+  /// @dev Refuse a written name that has more than one reading. The grammar's
+  ///      own reading is the text before the first dot, and it has already
+  ///      been resolved; every other reading ends at a later dot, or is the
+  ///      whole string. If the adapter answers `ok` for any of them the
+  ///      manifest is ambiguous and the reader refuses rather than choosing.
+  ///
+  ///      `head` is the grammar's prefix length rather than the prefix itself,
+  ///      so a dot-free name is the single comparison `head == b.length` and
+  ///      needs no string equality. That case returns before any candidate is
+  ///      built, which is what keeps `hook`, `host` and a bracketed slot
+  ///      expression from ever reaching the adapter twice.
+  function _refuseASecondReading(
+    string memory written,
+    uint256 head,
+    AccountResolver resolver
+  ) private view {
+    bytes memory b = bytes(written);
+    if (head == b.length) return; // no dot: the grammar has the only reading
+    for (uint256 i = head + 1; i <= b.length; i++) {
+      if (i != b.length && b[i] != ".") continue;
+      bytes memory candidate = new bytes(i);
+      for (uint256 j = 0; j < i; j++) {
+        candidate[j] = b[j];
+      }
+      (bool known, ) = resolver.resolveAccount(string(candidate));
+      if (known) revert AmbiguousAccountSymbol(written);
     }
   }
 

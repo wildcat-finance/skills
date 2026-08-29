@@ -666,6 +666,144 @@ contract ManifestReaderTest is JanusBase {
       zero
     );
   }
+
+  // -- Guards added by the step 2 round 5 audit ----------------------------
+
+  /// @dev S2-R5-01. The round 4 guard asked the adapter about exactly one
+  ///      competing reading, the whole written string, which is only the last
+  ///      of them. A name carrying two dots has an intermediate reading as
+  ///      well, and it is the one the shipped manifest's own shape produces:
+  ///      every dotted target here is `account.function`, so a dotted *account*
+  ///      written with its function suffix is `account.part.function`. With an
+  ///      adapter holding `USDC` at 0xC0 and `USDC.e` at 0xCE, the guard fired
+  ///      on `USDC.e` and was silent on `USDC.e.transfer`, which bound the
+  ///      permit to canonical 0xC0 -- the bridged token the manifest named was
+  ///      not permitted and a token it never named was. That is the whole of
+  ///      S2-R3-01 surviving one dot further out.
+  function test_a_multi_dot_call_target_known_at_an_inner_prefix_is_ambiguous() external {
+    StubResolver bridged = new StubResolver();
+    bridged.set("USDC", address(0xC0));
+    bridged.set("USDC.e", address(0xCE));
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.AmbiguousAccountSymbol.selector, "USDC.e.transfer")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"USDC.e.transfer","kind":"call"}]}]}',
+      "deposit",
+      bridged
+    );
+  }
+
+  /// @dev S2-R5-01, the external-slot path, which splits at the same dot for
+  ///      the same reason and carried the same silence.
+  function test_a_multi_dot_external_slot_known_at_an_inner_prefix_is_ambiguous() external {
+    StubResolver bridged = new StubResolver();
+    bridged.set("USDC", address(0xC0));
+    bridged.set("USDC.e", address(0xCE));
+    vm.expectRevert(
+      abi.encodeWithSelector(
+        ManifestReader.AmbiguousAccountSymbol.selector,
+        "USDC.e.balances[lender]"
+      )
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedCalls":[],"permittedValueMovements":[],'
+      '"permittedStorageWrites":[{"scope":"external","slot":"USDC.e.balances[lender]"}]}]}',
+      "deposit",
+      bridged
+    );
+  }
+
+  /// @dev S2-R5-01 composed with S2-R4-01: the intermediate reading is one the
+  ///      adapter answers for at the zero address. `ok` alone is still the
+  ///      question, at every dot rather than only at the last, so this refuses
+  ///      for the same reason the single-dot form does.
+  function test_a_multi_dot_target_known_at_an_inner_prefix_at_zero_is_ambiguous() external {
+    KnowsTheWholeNameAsZero r = new KnowsTheWholeNameAsZero();
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.AmbiguousAccountSymbol.selector, "USDC.e.transfer")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"USDC.e.transfer","kind":"call"}]}]}',
+      "deposit",
+      r
+    );
+  }
+
+  /// @dev The false-fail direction, which the widened guard must not cross: a
+  ///      multi-dot name with only one live reading keeps it. Neither
+  ///      `roleProvider.v2` nor the whole string is a name this adapter holds,
+  ///      so the grammar's prefix stands exactly as it does for a single dot.
+  function test_a_multi_dot_name_with_one_reading_still_resolves_to_its_prefix() external view {
+    ResolvedThreshold memory t = reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"roleProvider.v2.validateCredential","kind":"call"}]}]}',
+      "deposit",
+      stub
+    );
+    assertEq(t.allowedCallTargets.length, 1, "one reading, so the name resolves");
+    assertEq(t.allowedCallTargets[0], PROVIDER, "and it is the grammar's own prefix");
+  }
+
+  /// @dev And the shipped manifest is untouched by the widening: its dotted
+  ///      targets are `account.function` against an adapter holding neither the
+  ///      whole string nor any inner prefix.
+  function test_the_shipped_manifest_still_resolves_under_the_widened_guard() external view {
+    ResolvedThreshold memory t = reader.resolveFile(MANIFEST, "deposit", stub);
+    assertEq(t.allowedCallTargets.length, 1, "roleProvider.validateCredential still resolves");
+    assertEq(t.allowedCallTargets[0], PROVIDER, "and still to the prefix account");
+  }
+
+  /// @dev S2-R5-02, the round 4 lead decided rather than left open. Where the
+  ///      adapter knows the whole dotted name and *not* the grammar's prefix,
+  ///      the reader reports `UnresolvableSymbol(prefix)` and does not fall
+  ///      back to the reading the adapter does hold. That refusal is the
+  ///      reader's own and is deliberate: a fallback would make which string
+  ///      the grammar reads as the account depend on what the adapter happens
+  ///      to contain, which is the same delegation of the reader's grammar to
+  ///      the adapter that the blank guard exists to prevent. Fail-closed and
+  ///      the adapter never gets to widen the reading; the cost, stated rather
+  ///      than hidden, is that the named symbol is one the author did not
+  ///      write.
+  function test_a_name_known_only_whole_still_refuses_at_its_prefix() external {
+    StubResolver onlyWhole = new StubResolver();
+    onlyWhole.set("USDC.e", address(0xCE));
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.UnresolvableSymbol.selector, "USDC")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"USDC.e","kind":"call"}]}]}',
+      "deposit",
+      onlyWhole
+    );
+  }
+
+  /// @dev The same decision on the value path, from the other side: there the
+  ///      whole string *is* the name, so the identical adapter resolves it.
+  ///      The two paths disagree about the outcome kind and that is the design;
+  ///      what they never do is bind the name to two different addresses, which
+  ///      is what the property below states in general.
+  function test_a_name_known_only_whole_resolves_on_the_value_path() external {
+    StubResolver onlyWhole = new StubResolver();
+    onlyWhole.set("USDC.e", address(0xCE));
+    onlyWhole.set("hook", HOOK);
+    ResolvedThreshold memory t = reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedCalls":[],'
+      '"permittedValueMovements":[{"asset":"USDC.e","recipient":"hook"}]}]}',
+      "deposit",
+      onlyWhole
+    );
+    assertEq(t.valueAssets[0], address(0xCE), "the value path reads the whole name");
+  }
 }
 
 /// @dev The invariant fuzz suite in `adapters/ManifestFuzz.sol` is written for
@@ -701,6 +839,7 @@ contract ManifestFuzzGhostProbe is ManifestFuzz {
   function forceDuplicateActionAccepted() external { sawDuplicateActionAccepted = true; }
   function forceWrongAddress() external { sawWrongAddress = true; }
   function forceAmbiguousAccepted() external { sawAmbiguousAccepted = true; }
+  function forcePathDisagreement() external { sawPathDisagreement = true; }
 }
 
 /// @dev Each of GL01 to GL09 is shown to report its own ghost and no other:
@@ -725,6 +864,7 @@ contract ManifestFuzzPropertyTest is JanusBase {
     if (!fuzz.echidna_GL08_duplicate_action_fails_closed()) bits |= 1 << 8;
     if (!fuzz.echidna_GL09_every_entry_resolved_to_its_own_name()) bits |= 1 << 9;
     if (!fuzz.echidna_GL10_ambiguous_name_fails_closed()) bits |= 1 << 10;
+    if (!fuzz.echidna_GL11_paths_agree_on_one_name()) bits |= 1 << 11;
   }
 
   function test_every_property_holds_before_any_ghost_is_set() external view {
@@ -781,6 +921,11 @@ contract ManifestFuzzPropertyTest is JanusBase {
     fuzz.forceAmbiguousAccepted();
     assertEq(_live(), 1 << 10, "only GL10");
   }
+
+  function test_gl11_reports_a_path_disagreement_and_nothing_else() external {
+    fuzz.forcePathDisagreement();
+    assertEq(_live(), 1 << 11, "only GL11");
+  }
 }
 
 contract ManifestFuzzInvariantTest is JanusBase {
@@ -819,6 +964,7 @@ contract ManifestFuzzInvariantTest is JanusBase {
     assertTrue(fuzz.echidna_GL08_duplicate_action_fails_closed(), "GL08: a manifest naming one action twice never resolves");
     assertTrue(fuzz.echidna_GL09_every_entry_resolved_to_its_own_name(), "GL09: every entry resolved to the address its own name holds");
     assertTrue(fuzz.echidna_GL10_ambiguous_name_fails_closed(), "GL10: a manifest carrying a name with two readings never resolves");
+    assertTrue(fuzz.echidna_GL11_paths_agree_on_one_name(), "GL11: no one name bound to two different accounts across the three paths");
   }
 
   /// @dev And the getters behind them, so a property function that ignored its
@@ -834,6 +980,7 @@ contract ManifestFuzzInvariantTest is JanusBase {
     assertEq(fuzz.echidna_GL08_duplicate_action_fails_closed(), !fuzz.sawDuplicateActionAccepted(), "GL08 reads its own ghost");
     assertEq(fuzz.echidna_GL09_every_entry_resolved_to_its_own_name(), !fuzz.sawWrongAddress(), "GL09 reads its own ghost");
     assertEq(fuzz.echidna_GL10_ambiguous_name_fails_closed(), !fuzz.sawAmbiguousAccepted(), "GL10 reads its own ghost");
+    assertEq(fuzz.echidna_GL11_paths_agree_on_one_name(), !fuzz.sawPathDisagreement(), "GL11 reads its own ghost");
   }
 
   /// @dev The anti-vacuity guard, deterministic rather than sampled: the nine
@@ -883,5 +1030,30 @@ contract ManifestFuzzInvariantTest is JanusBase {
       );
     }
     assertTrue(fuzz.echidna_GL00_the_reader_was_actually_reached(), "and holds after the reader was reached");
+  }
+
+  /// @dev GL11's coverage claim, made deterministically here rather than as a
+  ///      counter threshold on the property itself. GL11 compares the three
+  ///      paths against each other, so it is silent unless a draw binds a name
+  ///      on at least two of them; a table where nothing binds twice would let
+  ///      it hold for the same reason an unreached reader lets GL01 hold.
+  ///
+  ///      Every name in `_pathName` is driven once. Two of the eight bind on
+  ///      more than one path -- `asset`, dot-free and identical everywhere,
+  ///      and `roleProvider.getCredential`, whose suffix is documentation the
+  ///      call and slot paths both discard -- and `asset.e` binds on the value
+  ///      path alone, which is the S2-R5-01 shape GL10 rather than GL11 is
+  ///      responsible for. The assertion is on the two-path count, because
+  ///      that is the number GL11's comparisons actually require.
+  function test_gl11_draws_actually_bind_on_more_than_one_path() external {
+    uint256 boundOnTwo;
+    for (uint8 k = 0; k < 8; k++) {
+      uint256 before = fuzz.agreementBinds();
+      fuzz.fuzzPathAgreement(k);
+      if (fuzz.agreementBinds() > before) boundOnTwo++;
+    }
+    assertEq(fuzz.agreementDraws(), 8, "every name in the table was drawn");
+    assertTrue(boundOnTwo >= 2, "at least two names bound, so GL11's comparisons ran");
+    assertTrue(fuzz.echidna_GL11_paths_agree_on_one_name(), "and the reader agreed with itself on all of them");
   }
 }
