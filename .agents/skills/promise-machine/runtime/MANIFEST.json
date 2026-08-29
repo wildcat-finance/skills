@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 938,
-  "total_bytes": 20356274,
+  "total_bytes": 20356926,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3523,9 +3523,9 @@
       "source": "plugins/janus/harness/src/wildcat/MockRoleProvider.sol"
     },
     {
-      "bytes": 5358,
+      "bytes": 6010,
       "path": "plugins/janus/harness/src/wildcat/WildcatHostAdapter.sol",
-      "sha256": "031d5a5ea15dbc6fe5a4dfae177039ee432fc6cfac817302016afab59164d514",
+      "sha256": "5072ca4fe77a5026fcf4a052be2093e95594439a20e29fd84bfd4b22dec653a4",
       "source": "plugins/janus/harness/src/wildcat/WildcatHostAdapter.sol"
     },
     {
