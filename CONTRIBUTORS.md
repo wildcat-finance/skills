@@ -11,7 +11,7 @@ daily from both repositories' public history.
 
 | # | Contributor | Skills commits | Merged PRs across both repos |
 | --- | --- | --- | --- |
-| 1 | [@kethcode](https://github.com/kethcode) | 229 | 46 |
+| 1 | [@kethcode](https://github.com/kethcode) | 296 | 60 |
 | 2 | [@radup1337](https://github.com/radup1337) | 21 | 2 |
 | 3 | [@MunamWasi](https://github.com/MunamWasi) | 1 | 1 |
 | 4 | [@clawdina](https://github.com/clawdina) | 0 | 1 |
