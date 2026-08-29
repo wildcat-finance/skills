@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import {HostAdapter} from "../HostAdapter.sol";
+import {AccountResolver} from "../ManifestReader.sol";
 import {WildcatHostModel, MockAsset} from "./WildcatHostModel.sol";
 
 /// @dev The Wildcat host adapter. It drives the v2.5 market model's actions,
@@ -9,7 +10,7 @@ import {WildcatHostModel, MockAsset} from "./WildcatHostModel.sol";
 ///      can tell a call to a role provider from a call back into the host.
 ///      Every result is scoped to this adapter; passing its suite says nothing
 ///      about another host's callback model (gate 7).
-contract WildcatHostAdapter is HostAdapter {
+contract WildcatHostAdapter is HostAdapter, AccountResolver {
   enum Category {
     Hook,
     Host,
@@ -73,9 +74,17 @@ contract WildcatHostAdapter is HostAdapter {
   ///      An unknown name answers `(false, address(0))`. Nothing is guessed
   ///      from the string and no prefix or suffix is stripped here: the reader
   ///      owns the symbol grammar and hands this table a finished symbol.
+  ///
+  ///      The contract declares `AccountResolver` rather than merely happening
+  ///      to match it. Without the declaration this adapter satisfied the
+  ///      interface by convention and the compiler had nothing to check, which
+  ///      put the protection exactly the wrong way round: every stub resolver
+  ///      in the tests declares the interface and would fail to compile on a
+  ///      signature drift, while the one resolver that ships would compile
+  ///      through it and revert at run time on every call the reader made.
   function resolveAccount(
     string calldata name
-  ) external view override returns (bool ok, address addr) {
+  ) external view override(HostAdapter, AccountResolver) returns (bool ok, address addr) {
     bytes32 tag = keccak256(bytes(name));
     if (tag == keccak256("hook")) return (true, model.hook());
     if (tag == keccak256("host")) return (true, address(model));

@@ -860,6 +860,9 @@ contract ManifestFuzzGhostProbe is ManifestFuzz {
   function forceWrongAddress() external { sawWrongAddress = true; }
   function forceAmbiguousAccepted() external { sawAmbiguousAccepted = true; }
   function forcePathDisagreement() external { sawPathDisagreement = true; }
+  function forceAdapterAnsweredUnknown() external { sawAdapterAnsweredUnknown = true; }
+  function forceAdapterCrossBound() external { sawAdapterCrossBound = true; }
+  function forceAdapterDroppedHeldName() external { sawAdapterDroppedHeldName = true; }
 }
 
 /// @dev Each of GL01 to GL09 is shown to report its own ghost and no other:
@@ -885,6 +888,9 @@ contract ManifestFuzzPropertyTest is JanusBase {
     if (!fuzz.echidna_GL09_every_entry_resolved_to_its_own_name()) bits |= 1 << 9;
     if (!fuzz.echidna_GL10_ambiguous_name_fails_closed()) bits |= 1 << 10;
     if (!fuzz.echidna_GL11_paths_agree_on_one_name()) bits |= 1 << 11;
+    if (!fuzz.echidna_GL12_adapter_never_answers_an_unheld_name()) bits |= 1 << 12;
+    if (!fuzz.echidna_GL13_adapter_names_keep_their_own_addresses()) bits |= 1 << 13;
+    if (!fuzz.echidna_GL14_adapter_keeps_answering_for_held_names()) bits |= 1 << 14;
   }
 
   function test_every_property_holds_before_any_ghost_is_set() external view {
@@ -946,6 +952,21 @@ contract ManifestFuzzPropertyTest is JanusBase {
     fuzz.forcePathDisagreement();
     assertEq(_live(), 1 << 11, "only GL11");
   }
+
+  function test_gl12_reports_an_unheld_name_answered_and_nothing_else() external {
+    fuzz.forceAdapterAnsweredUnknown();
+    assertEq(_live(), 1 << 12, "only GL12");
+  }
+
+  function test_gl13_reports_a_cross_bound_name_and_nothing_else() external {
+    fuzz.forceAdapterCrossBound();
+    assertEq(_live(), 1 << 13, "only GL13");
+  }
+
+  function test_gl14_reports_a_dropped_held_name_and_nothing_else() external {
+    fuzz.forceAdapterDroppedHeldName();
+    assertEq(_live(), 1 << 14, "only GL14");
+  }
 }
 
 contract ManifestFuzzInvariantTest is JanusBase {
@@ -985,6 +1006,9 @@ contract ManifestFuzzInvariantTest is JanusBase {
     assertTrue(fuzz.echidna_GL09_every_entry_resolved_to_its_own_name(), "GL09: every entry resolved to the address its own name holds");
     assertTrue(fuzz.echidna_GL10_ambiguous_name_fails_closed(), "GL10: a manifest carrying a name with two readings never resolves");
     assertTrue(fuzz.echidna_GL11_paths_agree_on_one_name(), "GL11: no one name bound to two different accounts across the three paths");
+    assertTrue(fuzz.echidna_GL12_adapter_never_answers_an_unheld_name(), "GL12: the shipped adapter answered only for names it holds");
+    assertTrue(fuzz.echidna_GL13_adapter_names_keep_their_own_addresses(), "GL13: each held name kept its own address");
+    assertTrue(fuzz.echidna_GL14_adapter_keeps_answering_for_held_names(), "GL14: every held name still answered");
   }
 
   /// @dev And the getters behind them, so a property function that ignored its
@@ -1001,6 +1025,9 @@ contract ManifestFuzzInvariantTest is JanusBase {
     assertEq(fuzz.echidna_GL09_every_entry_resolved_to_its_own_name(), !fuzz.sawWrongAddress(), "GL09 reads its own ghost");
     assertEq(fuzz.echidna_GL10_ambiguous_name_fails_closed(), !fuzz.sawAmbiguousAccepted(), "GL10 reads its own ghost");
     assertEq(fuzz.echidna_GL11_paths_agree_on_one_name(), !fuzz.sawPathDisagreement(), "GL11 reads its own ghost");
+    assertEq(fuzz.echidna_GL12_adapter_never_answers_an_unheld_name(), !fuzz.sawAdapterAnsweredUnknown(), "GL12 reads its own ghost");
+    assertEq(fuzz.echidna_GL13_adapter_names_keep_their_own_addresses(), !fuzz.sawAdapterCrossBound(), "GL13 reads its own ghost");
+    assertEq(fuzz.echidna_GL14_adapter_keeps_answering_for_held_names(), !fuzz.sawAdapterDroppedHeldName(), "GL14 reads its own ghost");
   }
 
   /// @dev The anti-vacuity guard, deterministic rather than sampled: the nine
@@ -1050,6 +1077,22 @@ contract ManifestFuzzInvariantTest is JanusBase {
       );
     }
     assertTrue(fuzz.echidna_GL00_the_reader_was_actually_reached(), "and holds after the reader was reached");
+  }
+
+  /// @dev GL12 and GL13's coverage claim, deterministic for the same reason
+  ///      GL11's is: both are negated ghosts, so a generator that never
+  ///      reached the adapter would satisfy them by never asking. Every name
+  ///      in `_adapterName` is drawn once; four are held and must resolve, six
+  ///      are not and must be refused.
+  function test_gl12_and_gl13_draws_actually_reach_the_adapter() external {
+    for (uint8 k = 0; k < 10; k++) {
+      fuzz.fuzzAdapterTable(k);
+    }
+    assertEq(fuzz.adapterDraws(), 10, "every name in the table was drawn");
+    assertEq(fuzz.adapterResolved(), 4, "the four held names resolved and the six others did not");
+    assertTrue(fuzz.echidna_GL12_adapter_never_answers_an_unheld_name(), "GL12 holds on the shipped table");
+    assertTrue(fuzz.echidna_GL13_adapter_names_keep_their_own_addresses(), "GL13 holds on the shipped table");
+    assertTrue(fuzz.echidna_GL14_adapter_keeps_answering_for_held_names(), "GL14 holds on the shipped table");
   }
 
   /// @dev GL11's coverage claim, made deterministically here rather than as a
