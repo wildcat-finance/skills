@@ -1,0 +1,15 @@
+## Step 1, round 1 -- 2026-08-29T08:07:24Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: decision-placement=reviewed; predecessor-reuse=reviewed; boundary-selection=not-applicable; capsule-input=not-applicable; path-traversal=not-applicable; file-kind=not-applicable; resource-exhaustion=not-applicable; concurrent-mutation=not-applicable; partial-export=not-applicable; partial-restore=not-applicable; ledger-continuity=not-applicable; path-relocation=not-applicable; ref-substitution=not-applicable; replay-clobber=not-applicable; secret-output=not-applicable; directive-overreach=not-applicable
+
+Not checked: waived: non-Solidity Python controller-state portability work; bundled Solidity audit suite does not apply. Runtime checkpoint behaviour, hostile-input execution, interruption injection, clone-loss recovery, Git ref restoration, GitHub/Drive publication, and PDF/UA conformance belong to later steps or the outer transport.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the reviewed range is `66da3817761415f31bd467140ac1510f77b91b62..902c9cf90eef6384295e0d22bc082dd2f6fe445c`, and it changes only ADR-028, the two byte-identical receipted run artefacts, and the focused decision-record test; no predecessor commit or audit receipt enters the range. The implementation commit has a valid Dave Coleman `<dave@wildcat.finance>` SSH signature and exactly one copy of each required provenance trailer. The focused module passed 4 of 4, root passed 470 of 470 with 3 skips, and Protasis, Horos, `git diff --check`, Phylax, Ephoros, Hypomnema, and Imprimatur exited zero. An initial Hexaemeron run inherited Node v22.22.3 and failed its declared-v26.6.0 fixture; rerunning the same suite with installed Node v26.6.0 passed 1836/1836 tests with 5 fixture-blocked cases, including 2 skips, so no product change followed. The Sapheneia item-by-item comparison retained all 16 risk classifications, negative space, null verdict, no-finding table, and unpursued leads; Vulgate changed no bytes, and Imprimatur exited zero before and after that surface pass. Brevitas B010 reports the required single record heading in the source and synopsis, and B011 reports the required one-row five-column no-finding table in the source; these are mandatory host shape and not removable connective prose. The source-bound controller state SHA-256 was `150a4ea10be7f1b2410f9ebbd1f4569471dfb29085a84c62380dff693057d1cd`.
