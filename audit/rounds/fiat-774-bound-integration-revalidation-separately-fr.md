@@ -29,3 +29,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the three carried from round 1 stay open and out of scope, unchanged: the shared duplicate-or-oversized diagnostic in `_checkpoint_ref_names`, issue 710's fixture naming sync commit `f0a84ca3` which is not an ancestor of `main`, and the two pre-existing Hexaemeron failures against the macOS 1,024-character path limit and CPython 3.14's handling of 50,000-deep JSON. This round audited the tree with round 1's fix applied: the three lints returned clean over all fifteen changed paths, the Horos boundary still matches the tree, and the portable runtime, Promise Machine law, coverage classification, audit synopsis and `git diff --check` all exit 0. The full suite last ran against this exact tree at 1,897 tests with one failure and one error, both of them the pre-existing environmental cases named above.
+
+## Step 2, round 1 -- 2026-08-29T18:18:24Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: version-propagation=reviewed; shared-constant-widening=not-applicable; integration-site-scope=not-applicable; byte-ceiling-bypass=not-applicable; upper-bound-absent=not-applicable; v2-aggregate-regression=not-applicable; v1-compatibility=not-applicable; refusal-order=not-applicable; generated-copy-drift=reviewed; boundary-currency=reviewed; base-advance-sync=not-applicable
+
+Not checked: the Pashov pair and any fuzz campaign, unchanged from step 1 under the recorded suite waiver. No controller behaviour changed in this step, so the seven bound concerns are the previous step's evidence and were not re-exercised here. `base-advance-sync` is still measured at integrate; `main` stood at `43f9ea57` when this round ran.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: `tests/test_python_contract.py` walks the whole tree for prose making a bare Python version claim, and its exclusion list does not cover `.hexaemeron/`. This run's own pull-request draft at `.hexaemeron/steps/1/pr.md` therefore failed the root suite for naming CPython 3.14, and any Fiat run whose draft mentions an interpreter version will do the same. The draft was reworded and the published body brought back into agreement with it; widening the scanner's exclusion list is not this run's work. The three leads carried from step 1 stay open and out of scope, unchanged. Version propagation was reviewed by checking that no tracked file outside the generated mirror still names `1.6.10` or `5.35.1`, that both marketplace edits landed on the hexaemeron entry rather than a neighbouring plugin, that the ledger row keeps frontier revision `state-shape-validation` and digest `e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa` byte for byte with the held issue 363 job untouched, and that `fiat-v5.36.1`, hexaemeron `1.6.11` and `ADR-049` are each unclaimed on `origin/main` and on every remote ref. The root suite runs 472 green against a 456-with-one-error baseline, because this step clears the primer failure the study recorded in its section 3.
