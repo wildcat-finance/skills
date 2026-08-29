@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 936,
-  "total_bytes": 20335360,
+  "total_bytes": 20335351,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -2567,7 +2567,7 @@
     {
       "bytes": 47978,
       "path": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",
-      "sha256": "e9a9c314469b5e35321fb0ccc1b340d1498c73d34e5d78d3e417b28f7c8fd087",
+      "sha256": "4b8f788fad86eae0b614539715ae393955bdf6c868f78bb709f693fad4836280",
       "source": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md"
     },
     {
@@ -2589,9 +2589,9 @@
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/canonical.py"
     },
     {
-      "bytes": 28094,
+      "bytes": 28085,
       "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py",
-      "sha256": "c33fe70cd167ff97fbbd8d74ad5dd4f01b52440cfe0e8a2f769cab70ef1ea824",
+      "sha256": "bd62875fbecff133b4c95d1237c7f5239094011053a20e0fb70b04955868a273",
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py"
     },
     {
@@ -2927,7 +2927,7 @@
     {
       "bytes": 1442,
       "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json",
-      "sha256": "fdc8431259ea43d430e95e7251bc448961f9eff2bdab56f5867fbcca51824514",
+      "sha256": "26712dbf4fd379d4ec902b331dda6dd3360b4583f5e740ea91999a6bb05004f6",
       "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json"
     },
     {

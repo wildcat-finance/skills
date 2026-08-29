@@ -3,7 +3,7 @@
   "accepted_job": "accepted-job.json",
   "jobspec_sha256": "524a4f49bd13077b331e1477dc3c11fffcea0efd446dac735918b377a1c96b79",
   "policy_sha256": "807f6425499696cd4aedd68152b20b11f5c4558d0cfb10e71ac363d88033dd84",
-  "manifest_sha256": "6bf6a6d541e73e2f0b08b7bade672d71fba8bce25c17f2df68f900decfefcc8b",
+  "manifest_sha256": "da408cf8e5931575f145b6c885520ba40171dd63235572f4bee9934b50dda9cb",
   "rows": [
     {
       "id": "positive",
@@ -27,7 +27,7 @@
     },
     {
       "id": "unsupported-method",
-      "expected_outcome": "MP211"
+      "expected_outcome": "MP207"
     },
     {
       "id": "unsupported-model",

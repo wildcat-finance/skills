@@ -60,7 +60,7 @@ EXPECTED_ROWS = (
     ("dns-rebinding", "MP303", "not-read"),
     ("redirect", "MP307", "provider-only"),
     ("credential-header", "MP207", "not-read"),
-    ("unsupported-method", "MP211", "not-read"),
+    ("unsupported-method", "MP207", "not-read"),
     ("unsupported-model", "MP207", "not-read"),
     ("oversized", "MP201", "not-read"),
     ("nested", "MP104", "not-read"),
@@ -620,9 +620,9 @@ def _execute_case(identifier: str, policy: CompiledPolicy) -> ConformanceRowResu
     if identifier == "unsupported-method":
         return _framing_refusal(
             identifier,
-            "MP211",
+            "MP207",
             policy,
-            _request_frame(input_text, operation="unsupported.generate"),
+            _request_frame(input_text, extra={"method": "GET"}),
         )
     if identifier == "unsupported-model":
         return _framing_refusal(

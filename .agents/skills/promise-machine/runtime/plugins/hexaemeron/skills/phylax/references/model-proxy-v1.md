@@ -495,7 +495,7 @@ outcomes are fixed in code:
 | `dns-rebinding` | `MP303` | `not-read` |
 | `redirect` | `MP307` | `provider-only` |
 | `credential-header` | `MP207` | `not-read` |
-| `unsupported-method` | `MP211` | `not-read` |
+| `unsupported-method` | `MP207` | `not-read` |
 | `unsupported-model` | `MP207` | `not-read` |
 | `oversized` | `MP201` | `not-read` |
 | `nested` | `MP104` | `not-read` |

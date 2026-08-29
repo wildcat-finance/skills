@@ -5200,6 +5200,16 @@ class ConformanceTests(unittest.TestCase):
             with self.assertRaisesRegex(PolicyError, "MP500"):
                 check_conformance_manifest(path)
 
+    def _check_valid_manifest(self, path):
+        try:
+            result = check_conformance_manifest(path)
+            code = None
+        except PolicyError as error:
+            result = None
+            code = error.code
+        self.assertIsNone(code)  # Keep parent replay assertion-only.
+        return result
+
     def test_manifest_digest_order_and_complete_row_contract_are_exact(self):
         self.assertEqual(CONFORMANCE_MANIFEST_SCHEMA, self.manifest["schema"])
         self.assertEqual(
@@ -5319,8 +5329,12 @@ class ConformanceTests(unittest.TestCase):
         for value in (unexecuted, None):
             with self.subTest(result=value):
                 with mock.patch.object(conformance, "_execute_case", return_value=value):
-                    with self.assertRaisesRegex(PolicyError, "MP501"):
+                    try:
                         check_conformance_manifest(self.manifest_path)
+                        code = None
+                    except PolicyError as error:
+                        code = error.code
+                    self.assertEqual("MP501", code)
 
     def test_every_hostile_case_executes_independently_with_its_fixed_outcome(self):
         for identifier, outcome, disclosure_state in EXPECTED_ROWS[1:]:
@@ -5335,6 +5349,25 @@ class ConformanceTests(unittest.TestCase):
                     self.assertEqual(1, result.requests)
                     self.assertEqual(1, result.request_bytes)
                     self.assertEqual("not-read", result.disclosure_state)
+
+    def test_unsupported_method_row_attempts_http_method_authority(self):
+        sentinel = object()
+        with mock.patch.object(
+            conformance, "_framing_refusal", return_value=sentinel
+        ) as framing_refusal:
+            self.assertIs(
+                sentinel,
+                conformance._execute_case("unsupported-method", self.policy),
+            )
+        identifier, outcome, policy, frame = framing_refusal.call_args.args
+        declared = struct.unpack(">I", frame[:4])[0]
+        request = json.loads(frame[4:])
+        self.assertEqual("unsupported-method", identifier)
+        self.assertEqual("MP207", outcome)
+        self.assertIs(self.policy, policy)
+        self.assertEqual(declared, len(frame) - 4)
+        self.assertEqual(TEXT_OPERATION, request["operation"])
+        self.assertEqual("GET", request["method"])
 
     def test_positive_surface_inventory_is_closed_and_each_scan_fails_shut(self):
         credential = b"credential-canary"
@@ -5390,7 +5423,7 @@ class ConformanceTests(unittest.TestCase):
             )
 
     def test_positive_row_proves_component_path_and_keeps_dependencies_open(self):
-        result = check_conformance_manifest(self.manifest_path)
+        result = self._check_valid_manifest(self.manifest_path)
         document = result.document()
         self.assertEqual(
             {
@@ -5424,7 +5457,7 @@ class ConformanceTests(unittest.TestCase):
             DEPENDENCY_BOUNDARIES["live_provider"] = "established"
 
     def test_cli_summary_is_exact_safe_and_content_free(self):
-        result = check_conformance_manifest(self.manifest_path)
+        result = self._check_valid_manifest(self.manifest_path)
         expected = result.document()
         completed = subprocess.run(  # phylax: allow subprocess: fixed local Python argv
             [
