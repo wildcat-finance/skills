@@ -2,21 +2,38 @@
 
 import json
 import pathlib
+import re
+import sys
 import unittest
 
 PLUGIN_ROOT = pathlib.Path(__file__).resolve().parents[1]
 REPO_ROOT = PLUGIN_ROOT.parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+from repo_contract import assert_version_agreement, assert_marketplace_source_path
 
 CLAUDE_MANIFEST = PLUGIN_ROOT / ".claude-plugin" / "plugin.json"
 CODEX_MANIFEST = PLUGIN_ROOT / ".codex-plugin" / "plugin.json"
-CLAUDE_MARKETPLACE = REPO_ROOT / ".claude-plugin" / "marketplace.json"
-CODEX_MARKETPLACE = REPO_ROOT / ".agents" / "plugins" / "marketplace.json"
 
 SKILL = PLUGIN_ROOT / "skills" / "probitas" / "SKILL.md"
+LEDGER = PLUGIN_ROOT / "skills" / "probitas" / "EVOLUTION.md"
 
 
 def load(path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def ledger_version():
+    """The skill version the evolution ledger currently holds.
+
+    Read rather than pinned. The inverse invariant below is that the package
+    version does not track the skill version, and a literal here turns every
+    legitimate generation bump into a failure of a test that was never about
+    the number.
+    """
+    match = re.search(r"(?m)^- Current version: `probitas-v(\d+\.\d+\.\d+)`$",
+                      LEDGER.read_text(encoding="utf-8"))
+    assert match is not None, "the ledger states no current version"
+    return match.group(1)
 
 
 def skill_frontmatter():
@@ -59,10 +76,12 @@ class TestManifests(unittest.TestCase):
         self.assertEqual(codex["name"], "probitas")
 
     def test_package_versions_agree_without_moving_the_skill(self):
-        claude, codex = load(CLAUDE_MANIFEST), load(CODEX_MANIFEST)
-        self.assertEqual(claude["version"], codex["version"])
-        self.assertEqual(claude["version"], "0.1.1")
-        self.assertEqual(skill_frontmatter()["metadata"]["version"], "0.1.0")
+        # Three-manifest agreement + pin is the repo-wide contract.
+        assert_version_agreement(self, "probitas")
+        # Deliberate inverse-invariant: the package version must NOT track the
+        # skill version. Keep local; do not fold into the shared contract helper.
+        claude = load(CLAUDE_MANIFEST)
+        self.assertEqual(skill_frontmatter()["metadata"]["version"], ledger_version())
         self.assertNotEqual(
             skill_frontmatter()["metadata"]["version"], claude["version"]
         )
@@ -88,17 +107,7 @@ class TestManifests(unittest.TestCase):
             )
 
     def test_marketplace_entries_point_at_the_plugin(self):
-        entry = self.marketplace_entry(CLAUDE_MARKETPLACE)
-        self.assertTrue((REPO_ROOT / entry["source"]).is_dir())
-        self.assertEqual(entry["version"], load(CLAUDE_MANIFEST)["version"])
-
-        entry = self.marketplace_entry(CODEX_MARKETPLACE)
-        self.assertTrue((REPO_ROOT / entry["source"]["path"]).is_dir())
-
-    def marketplace_entry(self, path):
-        entries = [p for p in load(path)["plugins"] if p["name"] == "probitas"]
-        self.assertEqual(len(entries), 1, f"{path} has no probitas entry")
-        return entries[0]
+        assert_marketplace_source_path(self, "probitas")
 
     def test_skill_description_states_when_to_trigger(self):
         fields = skill_frontmatter()

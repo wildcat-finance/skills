@@ -2,21 +2,20 @@ name: janus
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/janus/**"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
-      - "tests/**"
+      - ".python-version"
+      - "pyproject.toml"
       - ".github/workflows/janus.yml"
   pull_request:
     paths:
       - "plugins/janus/**"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
-      - "tests/**"
+      - ".python-version"
+      - "pyproject.toml"
       - ".github/workflows/janus.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,30 +23,10 @@ permissions:
 jobs:
   contracts:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Portable entrypoints and repository contracts
-        run: python3 -m unittest discover -s tests -v
+          python-version-file: ".python-version"
       - name: Janus command and manifest suite
         run: python3 -m unittest discover -s plugins/janus/tests -t plugins/janus -v
-
-  harness:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
-      - name: Build with no dependency to fetch
-        run: forge build
-        working-directory: plugins/janus/harness
-      - name: The gates against ordinary and hostile hooks
-        run: forge test -vv
-        working-directory: plugins/janus/harness

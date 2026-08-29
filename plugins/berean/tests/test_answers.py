@@ -7,7 +7,7 @@ import unittest
 
 from tests.support import SCRIPTS, SCHEMAS  # noqa: F401
 
-from berean_lib import answers, citations, corpus, digests, reads
+from berean_lib import answers, citations, corpus, digests, jsonio, reads
 from tests.test_corpus import make_tree, failures
 from tests.test_reads import record, write_reads
 
@@ -100,17 +100,24 @@ class GateOneTests(AnswerFixture):
         bad["sentences"][0]["evidence"] = []
         self.assertEqual(failures(self.check(bad)), ["answer-shape"])
 
-    def test_a_user_supplied_fact_carries_no_evidence(self):
-        good = self.answer()
-        good["sentences"].append(
-            {"text": "You said the lender is fund A.", "source_class": "user_supplied", "evidence": []}
-        )
-        self.assertEqual(failures(self.check(good)), [])
-        bad = self.answer()
-        bad["sentences"].append(
-            {"text": "You said the lender is fund A.", "source_class": "user_supplied", "evidence": ["c1"]}
-        )
-        self.assertEqual(failures(self.check(bad)), ["answer-shape"])
+    def test_a_user_supplied_fact_names_the_question_spans_it_rests_on(self):
+        # "Is the pause flag set?" is 22 bytes; "pause flag set" is bytes 7 to 21.
+        for evidence in (["question:7-21"], ["question:7-12", "question:13-21"], ["question:0-22"]):
+            with self.subTest(evidence=evidence):
+                good = self.answer()
+                good["sentences"].append(
+                    {"text": "You said the lender is fund A.", "source_class": "user_supplied", "evidence": evidence}
+                )
+                self.assertEqual(failures(self.check(good)), [])
+        for evidence in (["c1"], ["r1"], ["question:7-21", "c1"]):
+            with self.subTest(evidence=evidence):
+                bad = self.answer()
+                bad["sentences"].append(
+                    {"text": "You said the lender is fund A.", "source_class": "user_supplied", "evidence": evidence}
+                )
+                checks = self.check(bad)
+                self.assertEqual(failures(checks), ["answer-shape"])
+                self.assertIn("no artefact behind it", checks[0].detail)
 
     def test_a_calculation_derives_from_known_evidence(self):
         good = self.answer()
@@ -118,6 +125,123 @@ class GateOneTests(AnswerFixture):
             {"text": "So one of one flag is set.", "source_class": "calculation", "evidence": ["c1", "r1"]}
         )
         self.assertEqual(failures(self.check(good)), [])
+
+
+class QuestionSpanTests(AnswerFixture):
+    """A user_supplied sentence rests on real, whole, non-blank bytes of the question."""
+
+    def supplied(self, evidence, question=None):
+        document = self.answer()
+        if question is not None:
+            document["question"] = question
+        document["sentences"].append(
+            {"text": "You said the lender is fund A.", "source_class": "user_supplied", "evidence": evidence}
+        )
+        return document
+
+    def refused(self, evidence, question=None):
+        """The answer-shape detail, proved free of the question's words."""
+        document = self.supplied(evidence, question)
+        checks = self.check(document)
+        self.assertEqual(failures(checks), ["answer-shape"])
+        detail = checks[0].detail
+        self.assertNotIn(document["question"], detail)
+        self.assertNotIn("pause flag", detail)
+        return detail
+
+    def test_an_empty_span_list_fails_the_shape(self):
+        self.assertIn("names no span", self.refused([]))
+
+    def test_a_misspelled_span_reference_fails_the_shape(self):
+        details = set()
+        for reference in (
+            "question",
+            "question:",
+            "question:7",
+            "question:7-",
+            "question:07-21",
+            "question:+7-21",
+            "question:7-21-3",
+            "Question:7-21",
+            " question:7-21",
+            "question:7-21 ",
+            "question:7-21\n",
+            "question:12345678-12345679",
+        ):
+            with self.subTest(reference=reference):
+                detail = self.refused([reference])
+                self.assertIn("question:<start>-<end>", detail)
+                details.add(detail)
+        # One detail for every misspelling: a reference that did not parse is never echoed.
+        self.assertEqual(len(details), 1)
+
+    def test_a_non_string_span_reference_fails_the_shape(self):
+        for reference in (7, None, ["question:7-21"]):
+            with self.subTest(reference=reference):
+                self.assertIn("is not a string", self.refused([reference]))
+
+    def test_an_inverted_or_empty_span_fails_the_shape(self):
+        for reference, offsets in (("question:21-7", "21..7"), ("question:7-7", "7..7")):
+            with self.subTest(reference=reference):
+                detail = self.refused([reference])
+                self.assertIn("empty or inverted", detail)
+                self.assertIn(offsets, detail)
+
+    def test_a_span_past_the_question_fails_the_shape(self):
+        for reference in ("question:7-23", "question:22-30"):
+            with self.subTest(reference=reference):
+                self.assertIn("leaves the 22 byte question", self.refused([reference]))
+
+    def test_a_span_splitting_a_character_fails_the_shape(self):
+        question = "Is the pause flag set \u2014 today?"  # the em dash is bytes 22 to 25
+        whole = self.supplied(["question:22-25"], question)
+        self.assertEqual(failures(self.check(whole)), [])
+        detail = self.refused(["question:7-24"], question)
+        self.assertIn("splits a character", detail)
+        self.assertIn("7..24", detail)
+
+    def test_a_blank_span_fails_the_shape(self):
+        self.assertIn("is blank", self.refused(["question:2-3"]))
+
+    def test_an_artefact_id_with_the_reserved_prefix_fails_at_collection(self):
+        bad = self.answer()
+        bad["citations"][0]["id"] = "question:7-21"
+        bad["sentences"][0]["evidence"] = ["question:7-21"]
+        checks = self.check(bad)
+        self.assertEqual(failures(checks), ["answer-shape"])
+        self.assertIn("reserved prefix", checks[0].detail)
+        self.assertNotIn("7-21", checks[0].detail)
+        bad = self.answer()
+        bad["reads"][0]["id"] = "question:x"
+        bad["sentences"][1]["evidence"] = ["question:x"]
+        checks = self.check(bad)
+        self.assertEqual(failures(checks), ["answer-shape"])
+        self.assertIn("reserved prefix", checks[0].detail)
+
+    def test_an_unencodable_question_fails_the_shape_by_name(self):
+        # json turns the escape "\udc80" into a lone surrogate, a str with no UTF-8
+        # encoding. It passes jsonio on the way in, so the checker has to refuse it
+        # by name rather than crash at the slice.
+        question = jsonio.loads('"Is the pause flag set?\\udc80"')
+        self.assertEqual(question, "Is the pause flag set?\udc80")
+        refusal = self.answer(
+            question=question,
+            kind="refusal",
+            refusal={"boundary": "outside the corpus", "detail": "no pinned document covers it"},
+            sentences=[],
+            citations=[],
+            reads=[],
+            discrepancies=[],
+        )
+        for document in (self.supplied(["question:7-21"], question), refusal):
+            with self.subTest(kind=document["kind"]):
+                try:
+                    checks = self.check(document)
+                except UnicodeEncodeError:
+                    self.fail("the checker crashed on an unencodable question instead of refusing it")
+                self.assertEqual(failures(checks), ["answer-shape"])
+                self.assertIn("not encodable as UTF-8 at character 22", checks[0].detail)
+                self.assertNotIn("pause flag", checks[0].detail)
 
 
 class GateTwoTests(AnswerFixture):

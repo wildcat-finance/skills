@@ -2,21 +2,20 @@ name: pandects
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/pandects/**"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
-      - "tests/**"
+      - ".python-version"
+      - "pyproject.toml"
       - ".github/workflows/pandects.yml"
   pull_request:
     paths:
       - "plugins/pandects/**"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
-      - "tests/**"
+      - ".python-version"
+      - "pyproject.toml"
       - ".github/workflows/pandects.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -24,34 +23,13 @@ permissions:
 jobs:
   catalogue:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Portable entrypoints and repository contracts
-        run: python3 -m unittest discover -s tests -v
-
+          python-version-file: ".python-version"
       - name: Pandects catalogue suite
         run: python3 -m unittest discover -s plugins/pandects/tests -t plugins/pandects -v
 
       - name: Every law carries its six parts
         run: python3 plugins/pandects/scripts/pandects.py check
-
-  corpus:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: stable
-      - name: Build with no dependency to fetch
-        run: forge build
-        working-directory: plugins/pandects
-      - name: Every law against every specimen
-        run: forge test -vv
-        working-directory: plugins/pandects

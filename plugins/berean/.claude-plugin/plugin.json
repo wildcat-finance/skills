@@ -1,7 +1,7 @@
 {
   "name": "berean",
   "displayName": "Berean",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Digest-pinned agent releases with byte-exact citations, block-bound reads and evaluated refusals.",
   "author": {
     "name": "Wildcat Labs",

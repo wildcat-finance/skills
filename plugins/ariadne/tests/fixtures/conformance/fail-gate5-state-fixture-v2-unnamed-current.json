@@ -1,0 +1,69 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "header.json",
+      "digest": {
+        "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+      }
+    }
+  ],
+  "predicateType": "https://ariadne.wildcat.finance/state-fixture/v2",
+  "predicate": {
+    "chain": {
+      "chain_id": 1,
+      "block_number": 13097494,
+      "block_hash": "0x41119192a8acdaae5ab06ca8f1d5943fd7ca2fb0a14323642dd6daf74eed2cfc"
+    },
+    "capture": {
+      "tool": "lazarus",
+      "tool_version": "0.1.0",
+      "command": ["lazarus", "verify", "fixture"],
+      "parameters_digest": {
+        "sha256": "aea2887ffb155876be3314e148886893f0ba91365758f9797cc38a3a7403a733"
+      }
+    },
+    "fixture_subjects": [
+      {
+        "name": "header.json",
+        "path": "header.json",
+        "digest": {
+          "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+        },
+        "bytes": 17204
+      }
+    ],
+    "evidence": {
+      "proof_backed": 0,
+      "header_bound": 1,
+      "recorded_rpc": 0,
+      "receipt_trie_proved": 0
+    },
+    "replay": {
+      "reaches_network": false,
+      "canonical_chain_claim": false,
+      "provider_independence_claim": false
+    },
+    "deltas": {
+      "baseline": null,
+      "current": {
+        "name": "",
+        "digest": {
+          "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+        }
+      },
+      "reason": "first capture"
+    },
+    "claims": [
+      {
+        "name": "no proof claimed",
+        "subject": {
+          "sha256": "16a3720dea5844b5c3bba456053906d388a26674d6cae7f14b5b4e454262eab9"
+        },
+        "disposition": "skipped",
+        "reason": "this vector isolates the unnamed current side"
+      }
+    ],
+    "commands": []
+  }
+}

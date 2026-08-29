@@ -5,6 +5,11 @@ import json
 import re
 import unittest
 
+from repo_contract import (
+    assert_host_descriptions_agree,
+    assert_marketplace_source_path,
+)
+
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
@@ -22,6 +27,7 @@ PLUGINS = (
     "pandects",
     "probitas",
     "sapheneia",
+    "synkrisis",
     "tabularium",
 )
 CANONICAL_SKILLS = {
@@ -38,14 +44,17 @@ CANONICAL_SKILLS = {
     "pandects": ROOT / "plugins" / "pandects" / "skills" / "pandects" / "SKILL.md",
     "probitas": ROOT / "plugins" / "probitas" / "skills" / "probitas" / "SKILL.md",
     "sapheneia": ROOT / "plugins" / "sapheneia" / "skills" / "sapheneia" / "SKILL.md",
+    "synkrisis": ROOT / "plugins" / "synkrisis" / "skills" / "synkrisis" / "SKILL.md",
     "tabularium": ROOT / "plugins" / "tabularium" / "skills" / "tabularium" / "SKILL.md",
 }
-NEXT_JOB_PREFIX = "**Next Fiat job.** Use /hexaemeron:fiat to "
+NEXT_JOB_LABEL = "**Next Fiat job.**"
+NEXT_JOB_PREFIX = NEXT_JOB_LABEL + " Use /hexaemeron:fiat to "
 NEXT_JOB_SUFFIX = (
     "Before the run finishes, cold-read and reconcile all mutable first-party "
     "marketplace prose. Change a skill's Next Fiat job only when that exact "
     "frontier job completed; otherwise leave it unchanged."
 )
+MATURE_NEXT_JOB = NEXT_JOB_LABEL + " None -- mature."
 MARKETPLACE_CONTEXT_START = "<!-- marketplace-context:start -->"
 MARKETPLACE_CONTEXT_END = "<!-- marketplace-context:end -->"
 IMMUTABLE_CONTEXT_PREFIXES = (
@@ -67,6 +76,17 @@ def plugin_landing_readmes():
         for path in (ROOT / "plugins").glob("*/README.md")
         if re.search(r"(?m)^## In one line$", path.read_text(encoding="utf-8"))
     }
+
+
+def frontier_status(name):
+    ledger = CANONICAL_SKILLS[name].parent / "EVOLUTION.md"
+    match = re.search(
+        r"(?m)^- Frontier status: `(open|mature)`$",
+        ledger.read_text(encoding="utf-8"),
+    )
+    if match is None:
+        raise AssertionError(f"skill ledger has no recognised frontier status: {ledger}")
+    return match.group(1)
 
 
 def marketplace_frontiers(path):
@@ -112,6 +132,7 @@ def mutable_marketplace_surface(plugin_root, path):
 # clone. Listing names is what let that happen, so nested checkouts are now
 # detected rather than enumerated, and the names below are only the fast path.
 NESTED_CHECKOUT_NAMES = {".git", ".hexaemeron", ".claude", "tmp"}
+PORTABLE_RUNTIME = (".agents", "skills", "promise-machine", "runtime")
 
 
 def _inside_nested_checkout(relative, root):
@@ -128,7 +149,10 @@ def _inside_nested_checkout(relative, root):
 def repository_markdown(root):
     """Every shipped Markdown file, skipping checkouts of this repository."""
     for path in sorted(root.rglob("*.md")):
-        if not _inside_nested_checkout(path.relative_to(root), root):
+        relative = path.relative_to(root)
+        if relative.parts[: len(PORTABLE_RUNTIME)] == PORTABLE_RUNTIME:
+            continue
+        if not _inside_nested_checkout(relative, root):
             yield path
 
 
@@ -142,7 +166,7 @@ class MarketplaceProseTests(unittest.TestCase):
         )
         self.assertIn("## What Is It?", readme)
         self.assertIn("## The Promise Machine", readme)
-        self.assertIn("24 members: 15 domain agents and\n9 phase agents", readme)
+        self.assertIn("25 members: 16 domain agents and\n9 phase agents", readme)
 
         marketplace = json.loads(MARKETPLACE.read_text(encoding="utf-8"))
         self.assertIn("Wildcat Labs Skills", marketplace["description"])
@@ -159,29 +183,14 @@ class MarketplaceProseTests(unittest.TestCase):
         self.assertEqual(set(marketplace_entries()), set(PLUGINS))
 
     def test_short_descriptions_agree_across_hosts(self):
-        entries = marketplace_entries()
         for name in PLUGINS:
-            expected = entries[name]["description"]
-            plugin = ROOT / "plugins" / name
-            for host in (".claude-plugin", ".codex-plugin"):
-                manifest = json.loads(
-                    (plugin / host / "plugin.json").read_text(encoding="utf-8")
-                )
-                with self.subTest(plugin=name, host=host):
-                    self.assertEqual(manifest["description"], expected)
-            codex = json.loads(
-                (plugin / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
-            )
-            self.assertEqual(codex["interface"]["shortDescription"], expected)
+            with self.subTest(plugin=name):
+                assert_host_descriptions_agree(self, name)
 
-            agent = plugin / "skills" / name / "agents" / "openai.yaml"
-            if agent.is_file():
-                match = re.search(
-                    r'(?m)^  short_description: ["\']?([^"\'\n]+)',
-                    agent.read_text(encoding="utf-8"),
-                )
-                self.assertIsNotNone(match, agent)
-                self.assertEqual(match.group(1), expected)
+    def test_marketplace_entries_use_the_local_source_path(self):
+        for name in PLUGINS:
+            with self.subTest(plugin=name):
+                assert_marketplace_source_path(self, name)
 
     def test_fiat_public_prose_names_the_state_container_gate(self):
         plugin = ROOT / "plugins" / "hexaemeron"
@@ -270,7 +279,7 @@ class MarketplaceProseTests(unittest.TestCase):
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
         )
-        self.assertEqual(len(governed), 23)
+        self.assertEqual(len(governed), 24)
         for skill in governed:
             plugin = skill.parents[2]
             target = skill.parent if plugin.name == "hexaemeron" else plugin
@@ -345,17 +354,15 @@ class MarketplaceProseTests(unittest.TestCase):
     def test_plugin_landing_readmes_publish_unique_rolling_fiat_jobs(self):
         landings = plugin_landing_readmes()
         self.assertEqual(set(landings), set(PLUGINS))
-        self.assertEqual(len(landings), 14)
+        self.assertEqual(len(landings), 15)
 
         topics = {}
         for name, path in landings.items():
             text = path.read_text(encoding="utf-8")
-            lines = [line for line in text.splitlines() if line.startswith(NEXT_JOB_PREFIX)]
+            lines = [line for line in text.splitlines() if line.startswith(NEXT_JOB_LABEL)]
             with self.subTest(plugin=name):
-                self.assertEqual(text.count(NEXT_JOB_PREFIX), 1, path)
+                self.assertEqual(text.count(NEXT_JOB_LABEL), 1, path)
                 self.assertEqual(len(lines), 1, path)
-                self.assertTrue(lines[0].startswith(NEXT_JOB_PREFIX), path)
-                self.assertTrue(lines[0].endswith(NEXT_JOB_SUFFIX), path)
                 context = re.search(
                     re.escape(MARKETPLACE_CONTEXT_START)
                     + r"(.*?)"
@@ -365,12 +372,29 @@ class MarketplaceProseTests(unittest.TestCase):
                 )
                 self.assertIsNotNone(context, path)
                 self.assertIn(lines[0], context.group(1), path)
+                if frontier_status(name) == "mature":
+                    self.assertEqual(lines[0], MATURE_NEXT_JOB, path)
+                    self.assertNotIn("/hexaemeron:fiat", context.group(1), path)
+                    continue
+
+                self.assertTrue(lines[0].startswith(NEXT_JOB_PREFIX), path)
+                self.assertTrue(lines[0].endswith(NEXT_JOB_SUFFIX), path)
                 topic = lines[0][len(NEXT_JOB_PREFIX) : -len(NEXT_JOB_SUFFIX)].strip()
                 self.assertTrue(topic, path)
                 self.assertTrue(topic.endswith("."), path)
                 topics[name] = topic
 
-        self.assertEqual(len(set(topics.values())), len(PLUGINS))
+        self.assertEqual(len(set(topics.values())), len(topics))
+
+    def test_ariadne_grounded_agent_guides_carry_marketplace_context(self):
+        docs = ROOT / "plugins" / "ariadne" / "docs"
+        for name in ("grounded-agent.md", "capturing-a-grounded-agent.md"):
+            path = docs / name
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(guide=name):
+                self.assertEqual(text.count(MARKETPLACE_CONTEXT_START), 1, path)
+                self.assertEqual(text.count(MARKETPLACE_CONTEXT_END), 1, path)
+                self.assertEqual(len(marketplace_frontiers(path)), 1, path)
 
     def test_rolling_fiat_jobs_exist_only_in_plugin_landing_readmes(self):
         allowed = set(plugin_landing_readmes().values())
@@ -451,47 +475,12 @@ class MarketplaceProseTests(unittest.TestCase):
                     "canonical skills must not carry shadow README.md mirrors",
                 )
 
-    def test_pandects_prose_counts_the_laws_the_catalogue_holds(self):
-        """Two documents state the corpus size in prose and neither derives it.
-
-        The rendered catalogue derives both of its counts and the adapters are held
-        to theirs by the plugin's own suite. These two are hand-written sentences in
-        browsing prose, and a frontier run that adds a law has to remember them. The
-        withdrawal-batch-fee run corrected five such counts and missed a sixth, which
-        is the argument for anchoring them here.
-        """
-        words = [
-            "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven",
-            "Eight", "Nine", "Ten", "Eleven", "Twelve",
-        ]
-        catalogue = json.loads(
-            (ROOT / "plugins" / "pandects" / "catalogue" / "pandects.json").read_text(
-                encoding="utf-8"
-            )
-        )
-        laws = catalogue["laws"]
-        total = words[len(laws)].lower()
-        exact = words[len([law for law in laws if law["bounds"] == "exact"])]
-        families = words[len({law["family"] for law in laws})].lower()
-
-        landing = (ROOT / "plugins" / "pandects" / "README.md").read_text(encoding="utf-8")
-        for claim in (
-            "%s laws in %s families." % (words[len(laws)], families),
-            "%s of the %s laws are exact." % (exact, total),
-            "`laws` prints %s laws with their applicability." % total,
-        ):
-            with self.subTest(document="plugins/pandects/README.md", claim=claim):
-                self.assertIn(claim, landing)
-
-    def test_lazarus_release_readme_remains_digest_bound(self):
-        manifest = json.loads(
-            (ROOT / "plugins" / "lazarus" / "examples" / "goldfinch-v0" / "manifest.json").read_text(encoding="utf-8")
-        )
-        files = {entry["path"]: entry["sha256"] for entry in manifest["components"]}
-        readme = ROOT / "plugins" / "lazarus" / "examples" / "goldfinch-v0" / "README.md"
-        import hashlib
-
-        self.assertEqual(hashlib.sha256(readme.read_bytes()).hexdigest(), files["README.md"])
+    # test_pandects_prose_counts_the_laws_the_catalogue_holds moved to
+    # plugins/pandects/tests/test_prose_counts.py and
+    # test_lazarus_release_readme_remains_digest_bound moved to
+    # plugins/lazarus/tests/test_example_readme_digest.py by the test-scoping
+    # de-duplication: a plugin-specific check runs in that plugin's suite, not on
+    # every unrelated gated change.
 
 
 if __name__ == "__main__":

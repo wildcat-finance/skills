@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -23,16 +24,27 @@ class FakeRpc:
         *,
         reverse_batches: bool = False,
         raw_response: bytes | None = None,
+        redirect_to: str | None = None,
+        reverse_fields: bool = False,
+        declared_length: str | None = None,
     ) -> None:
         self.dispatch = dispatch
         self.reverse_batches = reverse_batches
         self.raw_response = raw_response
+        self.redirect_to = redirect_to
+        self.reverse_fields = reverse_fields
+        self.declared_length = declared_length
         self.requests: list[dict[str, Any]] = []
         self.headers: list[dict[str, str]] = []
         owner = self
 
         class Handler(BaseHTTPRequestHandler):
             def do_POST(self) -> None:
+                if owner.redirect_to is not None:
+                    self.send_response(307)
+                    self.send_header("Location", owner.redirect_to)
+                    self.end_headers()
+                    return
                 length = int(self.headers.get("Content-Length", "0"))
                 payload = json.loads(self.rfile.read(length))
                 owner.headers.append(dict(self.headers.items()))
@@ -47,7 +59,12 @@ class FakeRpc:
                     raw = json.dumps(body, separators=(",", ":")).encode("utf-8")
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
-                self.send_header("Content-Length", str(len(raw)))
+                self.send_header(
+                    "Content-Length",
+                    owner.declared_length
+                    if owner.declared_length is not None
+                    else str(len(raw)),
+                )
                 self.end_headers()
                 self.wfile.write(raw)
 
@@ -65,6 +82,8 @@ class FakeRpc:
     def _answer(self, request: dict[str, Any]) -> dict[str, Any]:
         self.requests.append(request)
         outcome = self.dispatch(request["method"], request.get("params", []), self)
+        if self.reverse_fields and not isinstance(outcome, RpcError):
+            outcome = _reverse_fields(outcome)
         response = {"jsonrpc": "2.0", "id": request["id"]}
         if isinstance(outcome, RpcError):
             error = {"code": outcome.code, "message": outcome.message}
@@ -113,3 +132,33 @@ def material_dispatch(material: dict[str, Any], *, reject_hash_selectors: bool =
         return {"method": method, "params": params}
 
     return dispatch
+
+
+def receipt_material_dispatch(material: dict[str, Any]):
+    """Serve the fixed recorded calls, plus the capture-only state calls."""
+
+    fallback = material_dispatch(material)
+
+    def dispatch(method: str, params: Any, server: FakeRpc) -> Any:
+        for record in material["rpc_records"]:
+            if record["method"] != method or record["params"] != params:
+                continue
+            outcome = record["outcome"]
+            if "error" in outcome:
+                error = outcome["error"]
+                return RpcError(error["code"], error["message"])
+            return copy.deepcopy(outcome["result"])
+        return fallback(method, params, server)
+
+    return dispatch
+
+
+def _reverse_fields(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: _reverse_fields(item)
+            for key, item in reversed(tuple(value.items()))
+        }
+    if isinstance(value, list):
+        return [_reverse_fields(item) for item in value]
+    return value

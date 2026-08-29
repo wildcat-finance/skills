@@ -212,6 +212,33 @@ class AllowlistWalkTests(unittest.TestCase):
             )
 
 
+class QuestionSpanTests(unittest.TestCase):
+    def test_a_blanked_span_list_fails_release_answers_by_shape(self):
+        with tempfile.TemporaryDirectory() as holder:
+            directory = os.path.join(holder, "release")
+            shutil.copytree(PASS_RELEASE, directory)
+            answer_path = os.path.join(directory, "answers", "a1.json")
+            with open(answer_path, encoding="utf-8") as handle:
+                answer = json.loads(handle.read())
+            supplied = [s for s in answer["sentences"] if s["source_class"] == "user_supplied"]
+            self.assertEqual([s["evidence"] for s in supplied], [["question:7-21"]])
+            supplied[0]["evidence"] = []
+            with open(answer_path, "w", encoding="utf-8") as handle:
+                handle.write(canonical.dumps(answer) + "\n")
+            document_path = os.path.join(directory, "release.json")
+            with open(document_path, encoding="utf-8") as handle:
+                document = json.loads(handle.read())
+            self.assertEqual(document["answers"][0]["path"], "answers/a1.json")
+            document["answers"][0]["sha256"] = release.digests.of_file(answer_path)
+            document["release_digest"] = release.release_digest(document)
+            with open(document_path, "w", encoding="utf-8") as handle:
+                handle.write(canonical.dumps(document) + "\n")
+            checks = release.verify(directory)
+            self.assertEqual(failures(checks), ["release-answers"])
+            detail = [check for check in checks if check.name == "release-answers"][0].detail
+            self.assertIn("answers/a1.json: answer-shape", detail)
+
+
 class SchemaAgreementTests(unittest.TestCase):
     def test_the_shipped_schema_matches_the_module(self):
         with open(SCHEMAS / "release-v1.json", encoding="utf-8") as handle:

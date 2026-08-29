@@ -1,0 +1,6574 @@
+{
+ "files": {
+  "libevmasm/AbstractAssemblyStack.h": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "libevmasm/Assembly.cpp": {
+   "extra": 0,
+   "matched": 37,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 37,
+   "ours": 37,
+   "regions": 0
+  },
+  "libevmasm/Assembly.h": {
+   "oracle_unparsed": true
+  },
+  "libevmasm/AssemblyItem.cpp": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "libevmasm/AssemblyItem.h": {
+   "extra": 0,
+   "matched": 37,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 37,
+   "ours": 37,
+   "regions": 0
+  },
+  "libevmasm/BlockDeduplicator.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libevmasm/BlockDeduplicator.h": {
+   "oracle_unparsed": true
+  },
+  "libevmasm/CommonSubexpressionEliminator.cpp": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "libevmasm/CommonSubexpressionEliminator.h": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libevmasm/ConstantOptimiser.cpp": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libevmasm/ConstantOptimiser.h": {
+   "extra": 0,
+   "matched": 18,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 18,
+   "ours": 18,
+   "regions": 0
+  },
+  "libevmasm/ControlFlowGraph.cpp": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libevmasm/ControlFlowGraph.h": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "libevmasm/Disassemble.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libevmasm/Disassemble.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libevmasm/EVMAssemblyStack.cpp": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "libevmasm/EVMAssemblyStack.h": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "libevmasm/Ethdebug.cpp": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libevmasm/Ethdebug.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libevmasm/EthdebugSchema.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libevmasm/EthdebugSchema.h": {
+   "extra": 0,
+   "matched": 19,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 19,
+   "ours": 19,
+   "regions": 0
+  },
+  "libevmasm/Exceptions.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libevmasm/ExpressionClasses.cpp": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libevmasm/ExpressionClasses.h": {
+   "oracle_unparsed": true
+  },
+  "libevmasm/GasMeter.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libevmasm/GasMeter.h": {
+   "extra": 0,
+   "matched": 24,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 24,
+   "ours": 24,
+   "regions": 0
+  },
+  "libevmasm/Inliner.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libevmasm/Inliner.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libevmasm/Instruction.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libevmasm/Instruction.h": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "libevmasm/JumpdestRemover.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libevmasm/JumpdestRemover.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libevmasm/KnownState.cpp": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "libevmasm/KnownState.h": {
+   "oracle_unparsed": true
+  },
+  "libevmasm/LinkerObject.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libevmasm/LinkerObject.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libevmasm/PathGasMeter.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libevmasm/PathGasMeter.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libevmasm/PeepholeOptimiser.cpp": {
+   "extra": 0,
+   "matched": 30,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 30,
+   "ours": 30,
+   "regions": 0
+  },
+  "libevmasm/PeepholeOptimiser.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libevmasm/RuleList.h": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "libevmasm/SemanticInformation.cpp": {
+   "extra": 0,
+   "matched": 21,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 21,
+   "ours": 21,
+   "regions": 0
+  },
+  "libevmasm/SemanticInformation.h": {
+   "extra": 0,
+   "matched": 26,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 26,
+   "ours": 26,
+   "regions": 0
+  },
+  "libevmasm/SimplificationRule.h": {
+   "oracle_unparsed": true
+  },
+  "libevmasm/SimplificationRules.cpp": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "libevmasm/SimplificationRules.h": {
+   "oracle_unparsed": true
+  },
+  "libevmasm/SubAssemblyID.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "liblangutil/CharStream.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "liblangutil/CharStream.h": {
+   "extra": 0,
+   "matched": 20,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 20,
+   "ours": 20,
+   "regions": 0
+  },
+  "liblangutil/CharStreamProvider.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "liblangutil/Common.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "liblangutil/DebugData.h": {
+   "oracle_unparsed": true
+  },
+  "liblangutil/DebugInfoSelection.cpp": {
+   "oracle_unparsed": true
+  },
+  "liblangutil/DebugInfoSelection.h": {
+   "oracle_unparsed": true
+  },
+  "liblangutil/EVMVersion.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "liblangutil/EVMVersion.h": {
+   "extra": 0,
+   "matched": 43,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 43,
+   "ours": 43,
+   "regions": 0
+  },
+  "liblangutil/ErrorReporter.cpp": {
+   "extra": 0,
+   "matched": 19,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 19,
+   "ours": 19,
+   "regions": 0
+  },
+  "liblangutil/ErrorReporter.h": {
+   "extra": 0,
+   "matched": 28,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 28,
+   "ours": 28,
+   "regions": 0
+  },
+  "liblangutil/Exceptions.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "liblangutil/Exceptions.h": {
+   "extra": 0,
+   "matched": 29,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 29,
+   "ours": 29,
+   "regions": 0
+  },
+  "liblangutil/ParserBase.cpp": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "liblangutil/ParserBase.h": {
+   "extra": 0,
+   "matched": 18,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 18,
+   "ours": 18,
+   "regions": 0
+  },
+  "liblangutil/Scanner.cpp": {
+   "extra": 0,
+   "matched": 30,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 30,
+   "ours": 30,
+   "regions": 0
+  },
+  "liblangutil/Scanner.h": {
+   "extra": 0,
+   "matched": 56,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 56,
+   "ours": 56,
+   "regions": 0
+  },
+  "liblangutil/SemVerHandler.cpp": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "liblangutil/SemVerHandler.h": {
+   "extra": 0,
+   "matched": 21,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 21,
+   "ours": 21,
+   "regions": 0
+  },
+  "liblangutil/SourceLocation.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "liblangutil/SourceLocation.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "liblangutil/SourceReferenceExtractor.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "liblangutil/SourceReferenceExtractor.h": {
+   "oracle_unparsed": true
+  },
+  "liblangutil/SourceReferenceFormatter.cpp": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "liblangutil/SourceReferenceFormatter.h": {
+   "extra": 0,
+   "matched": 19,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 19,
+   "ours": 19,
+   "regions": 0
+  },
+  "liblangutil/Token.cpp": {
+   "oracle_unparsed": true
+  },
+  "liblangutil/Token.h": {
+   "oracle_unparsed": true
+  },
+  "liblangutil/UniqueErrorReporter.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsmtutil/BMCSolverInterface.h": {
+   "oracle_unparsed": true
+  },
+  "libsmtutil/CHCSmtLib2Interface.cpp": {
+   "extra": 0,
+   "matched": 28,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 28,
+   "ours": 28,
+   "regions": 0
+  },
+  "libsmtutil/CHCSmtLib2Interface.h": {
+   "oracle_unparsed": true
+  },
+  "libsmtutil/CHCSolverInterface.h": {
+   "oracle_unparsed": true
+  },
+  "libsmtutil/Exceptions.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsmtutil/Helpers.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsmtutil/SMTLib2Context.cpp": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "libsmtutil/SMTLib2Context.h": {
+   "extra": 0,
+   "matched": 20,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 20,
+   "ours": 20,
+   "regions": 0
+  },
+  "libsmtutil/SMTLib2Interface.cpp": {
+   "extra": 0,
+   "matched": 20,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 20,
+   "ours": 20,
+   "regions": 0
+  },
+  "libsmtutil/SMTLib2Interface.h": {
+   "oracle_unparsed": true
+  },
+  "libsmtutil/SMTLib2Parser.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsmtutil/SMTLib2Parser.h": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "libsmtutil/SMTPortfolio.cpp": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libsmtutil/SMTPortfolio.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libsmtutil/SolverInterface.h": {
+   "extra": 0,
+   "matched": 31,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 31,
+   "ours": 31,
+   "regions": 0
+  },
+  "libsmtutil/Sorts.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsmtutil/Sorts.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libsolc/libsolc.cpp": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libsolc/libsolc.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/analysis/ConstantEvaluator.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolidity/analysis/ConstantEvaluator.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolidity/analysis/ContractLevelChecker.cpp": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libsolidity/analysis/ContractLevelChecker.h": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libsolidity/analysis/ControlFlowAnalyzer.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/analysis/ControlFlowAnalyzer.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/analysis/ControlFlowBuilder.cpp": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libsolidity/analysis/ControlFlowBuilder.h": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "libsolidity/analysis/ControlFlowGraph.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/analysis/ControlFlowGraph.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/analysis/ControlFlowRevertPruner.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/analysis/ControlFlowRevertPruner.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolidity/analysis/DeclarationContainer.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolidity/analysis/DeclarationContainer.h": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libsolidity/analysis/DeclarationTypeChecker.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsolidity/analysis/DeclarationTypeChecker.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolidity/analysis/DocStringAnalyser.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolidity/analysis/DocStringAnalyser.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libsolidity/analysis/DocStringTagParser.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libsolidity/analysis/DocStringTagParser.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolidity/analysis/FunctionCallGraph.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolidity/analysis/FunctionCallGraph.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolidity/analysis/GlobalContext.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolidity/analysis/GlobalContext.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolidity/analysis/ImmutableValidator.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/analysis/ImmutableValidator.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolidity/analysis/NameAndTypeResolver.cpp": {
+   "extra": 0,
+   "matched": 25,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 25,
+   "ours": 25,
+   "regions": 0
+  },
+  "libsolidity/analysis/NameAndTypeResolver.h": {
+   "extra": 0,
+   "matched": 27,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 27,
+   "ours": 27,
+   "regions": 0
+  },
+  "libsolidity/analysis/OverrideChecker.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/analysis/OverrideChecker.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/analysis/PostTypeChecker.cpp": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libsolidity/analysis/PostTypeChecker.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libsolidity/analysis/PostTypeContractLevelChecker.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/analysis/PostTypeContractLevelChecker.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolidity/analysis/ReferencesResolver.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/analysis/ReferencesResolver.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolidity/analysis/Scoper.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolidity/analysis/Scoper.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libsolidity/analysis/StaticAnalyzer.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolidity/analysis/StaticAnalyzer.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolidity/analysis/SyntaxChecker.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/analysis/SyntaxChecker.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libsolidity/analysis/TypeChecker.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/analysis/TypeChecker.h": {
+   "extra": 0,
+   "matched": 30,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 30,
+   "ours": 30,
+   "regions": 0
+  },
+  "libsolidity/analysis/ViewPureChecker.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolidity/analysis/ViewPureChecker.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/ast/AST.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/ast/AST.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/ast/ASTAnnotations.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTAnnotations.h": {
+   "extra": 0,
+   "matched": 39,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 39,
+   "ours": 39,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTEnums.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTForward.h": {
+   "extra": 0,
+   "matched": 65,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 65,
+   "ours": 65,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTJsonExporter.cpp": {
+   "extra": 0,
+   "matched": 20,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 20,
+   "ours": 20,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTJsonExporter.h": {
+   "extra": 0,
+   "matched": 25,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 25,
+   "ours": 25,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTJsonImporter.cpp": {
+   "extra": 0,
+   "matched": 76,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 76,
+   "ours": 76,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTJsonImporter.h": {
+   "extra": 0,
+   "matched": 77,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 77,
+   "ours": 77,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTUtils.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTUtils.h": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "libsolidity/ast/ASTVisitor.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolidity/ast/AST_accept.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolidity/ast/CallGraph.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libsolidity/ast/CallGraph.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsolidity/ast/ExperimentalFeatures.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolidity/ast/TypeProvider.cpp": {
+   "extra": 0,
+   "matched": 29,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 29,
+   "ours": 29,
+   "regions": 0
+  },
+  "libsolidity/ast/TypeProvider.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/ast/Types.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/ast/Types.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/ast/UserDefinableOperators.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libsolidity/codegen/ABIFunctions.cpp": {
+   "extra": 0,
+   "matched": 28,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 28,
+   "ours": 28,
+   "regions": 0
+  },
+  "libsolidity/codegen/ABIFunctions.h": {
+   "extra": 0,
+   "matched": 36,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 36,
+   "ours": 36,
+   "regions": 0
+  },
+  "libsolidity/codegen/ArrayUtils.cpp": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libsolidity/codegen/ArrayUtils.h": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libsolidity/codegen/Compiler.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolidity/codegen/Compiler.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolidity/codegen/CompilerContext.cpp": {
+   "extra": 0,
+   "matched": 39,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 39,
+   "ours": 39,
+   "regions": 0
+  },
+  "libsolidity/codegen/CompilerContext.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/codegen/CompilerUtils.cpp": {
+   "extra": 0,
+   "matched": 44,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 44,
+   "ours": 44,
+   "regions": 0
+  },
+  "libsolidity/codegen/CompilerUtils.h": {
+   "extra": 0,
+   "matched": 48,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 48,
+   "ours": 48,
+   "regions": 0
+  },
+  "libsolidity/codegen/ContractCompiler.cpp": {
+   "extra": 0,
+   "matched": 28,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 28,
+   "ours": 28,
+   "regions": 0
+  },
+  "libsolidity/codegen/ContractCompiler.h": {
+   "extra": 0,
+   "matched": 26,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 26,
+   "ours": 26,
+   "regions": 0
+  },
+  "libsolidity/codegen/ExpressionCompiler.cpp": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "libsolidity/codegen/ExpressionCompiler.h": {
+   "extra": 0,
+   "matched": 29,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 29,
+   "ours": 29,
+   "regions": 0
+  },
+  "libsolidity/codegen/LValue.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/codegen/LValue.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/codegen/MultiUseYulFunctionCollector.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolidity/codegen/MultiUseYulFunctionCollector.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/codegen/ReturnInfo.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolidity/codegen/ReturnInfo.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolidity/codegen/YulUtilFunctions.cpp": {
+   "extra": 0,
+   "matched": 126,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 126,
+   "ours": 126,
+   "regions": 0
+  },
+  "libsolidity/codegen/YulUtilFunctions.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/codegen/ir/Common.cpp": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "libsolidity/codegen/ir/Common.h": {
+   "extra": 0,
+   "matched": 19,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 19,
+   "ours": 19,
+   "regions": 0
+  },
+  "libsolidity/codegen/ir/IRGenerationContext.cpp": {
+   "extra": 0,
+   "matched": 19,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 19,
+   "ours": 19,
+   "regions": 0
+  },
+  "libsolidity/codegen/ir/IRGenerationContext.h": {
+   "extra": 0,
+   "matched": 46,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 46,
+   "ours": 46,
+   "regions": 0
+  },
+  "libsolidity/codegen/ir/IRGenerator.cpp": {
+   "extra": 0,
+   "matched": 21,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 21,
+   "ours": 21,
+   "regions": 0
+  },
+  "libsolidity/codegen/ir/IRGenerator.h": {
+   "extra": 0,
+   "matched": 21,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 21,
+   "ours": 21,
+   "regions": 0
+  },
+  "libsolidity/codegen/ir/IRGeneratorForStatements.cpp": {
+   "extra": 0,
+   "matched": 39,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 39,
+   "ours": 39,
+   "regions": 0
+  },
+  "libsolidity/codegen/ir/IRGeneratorForStatements.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/codegen/ir/IRLValue.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libsolidity/codegen/ir/IRVariable.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolidity/codegen/ir/IRVariable.h": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "libsolidity/formal/ArraySlicePredicate.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolidity/formal/ArraySlicePredicate.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/formal/BMC.cpp": {
+   "extra": 0,
+   "matched": 29,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 29,
+   "ours": 29,
+   "regions": 0
+  },
+  "libsolidity/formal/BMC.h": {
+   "extra": 0,
+   "matched": 37,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 37,
+   "ours": 37,
+   "regions": 0
+  },
+  "libsolidity/formal/CHC.cpp": {
+   "extra": 0,
+   "matched": 71,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 71,
+   "ours": 71,
+   "regions": 0
+  },
+  "libsolidity/formal/CHC.h": {
+   "extra": 0,
+   "matched": 78,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 78,
+   "ours": 78,
+   "regions": 0
+  },
+  "libsolidity/formal/Cvc5SMTLib2Interface.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolidity/formal/Cvc5SMTLib2Interface.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/formal/EldaricaCHCSmtLib2Interface.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolidity/formal/EldaricaCHCSmtLib2Interface.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolidity/formal/EncodingContext.cpp": {
+   "extra": 0,
+   "matched": 23,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 23,
+   "ours": 23,
+   "regions": 0
+  },
+  "libsolidity/formal/EncodingContext.h": {
+   "extra": 0,
+   "matched": 32,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 32,
+   "ours": 32,
+   "regions": 0
+  },
+  "libsolidity/formal/ExpressionFormatter.cpp": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libsolidity/formal/ExpressionFormatter.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/formal/ModelChecker.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/formal/ModelChecker.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolidity/formal/ModelCheckerSettings.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolidity/formal/ModelCheckerSettings.h": {
+   "extra": 0,
+   "matched": 20,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 20,
+   "ours": 20,
+   "regions": 0
+  },
+  "libsolidity/formal/Predicate.cpp": {
+   "extra": 0,
+   "matched": 29,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 29,
+   "ours": 29,
+   "regions": 0
+  },
+  "libsolidity/formal/Predicate.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/formal/PredicateInstance.cpp": {
+   "extra": 0,
+   "matched": 21,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 21,
+   "ours": 21,
+   "regions": 0
+  },
+  "libsolidity/formal/PredicateInstance.h": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "libsolidity/formal/PredicateSort.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolidity/formal/PredicateSort.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolidity/formal/SMTEncoder.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/formal/SMTEncoder.h": {
+   "extra": 0,
+   "matched": 123,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 123,
+   "ours": 123,
+   "regions": 0
+  },
+  "libsolidity/formal/SSAVariable.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsolidity/formal/SSAVariable.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/formal/SymbolicState.cpp": {
+   "extra": 0,
+   "matched": 33,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 33,
+   "ours": 33,
+   "regions": 0
+  },
+  "libsolidity/formal/SymbolicState.h": {
+   "extra": 0,
+   "matched": 61,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 61,
+   "ours": 61,
+   "regions": 0
+  },
+  "libsolidity/formal/SymbolicTypes.cpp": {
+   "extra": 0,
+   "matched": 36,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 36,
+   "ours": 36,
+   "regions": 0
+  },
+  "libsolidity/formal/SymbolicTypes.h": {
+   "extra": 0,
+   "matched": 36,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 36,
+   "ours": 36,
+   "regions": 0
+  },
+  "libsolidity/formal/SymbolicVariables.cpp": {
+   "extra": 0,
+   "matched": 28,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 28,
+   "ours": 28,
+   "regions": 0
+  },
+  "libsolidity/formal/SymbolicVariables.h": {
+   "extra": 0,
+   "matched": 35,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 35,
+   "ours": 35,
+   "regions": 0
+  },
+  "libsolidity/formal/Z3CHCSmtLib2Interface.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolidity/formal/Z3CHCSmtLib2Interface.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolidity/formal/Z3SMTLib2Interface.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsolidity/formal/Z3SMTLib2Interface.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/interface/ABI.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/interface/ABI.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolidity/interface/CompilerStack.cpp": {
+   "extra": 0,
+   "matched": 94,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 94,
+   "ours": 94,
+   "regions": 0
+  },
+  "libsolidity/interface/CompilerStack.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/interface/DebugSettings.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsolidity/interface/FileReader.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/interface/FileReader.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/interface/GasEstimator.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolidity/interface/GasEstimator.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolidity/interface/ImportRemapper.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/interface/ImportRemapper.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolidity/interface/Natspec.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libsolidity/interface/Natspec.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolidity/interface/OptimiserSettings.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolidity/interface/ReadFile.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/interface/SMTSolverCommand.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/interface/SMTSolverCommand.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libsolidity/interface/StandardCompiler.cpp": {
+   "extra": 0,
+   "matched": 38,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 38,
+   "ours": 38,
+   "regions": 0
+  },
+  "libsolidity/interface/StandardCompiler.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/interface/StorageLayout.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolidity/interface/StorageLayout.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsolidity/interface/UniversalCallback.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolidity/interface/Version.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libsolidity/interface/Version.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libsolidity/parsing/DocStringParser.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolidity/parsing/DocStringParser.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolidity/parsing/Parser.cpp": {
+   "extra": 0,
+   "matched": 77,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 77,
+   "ours": 77,
+   "regions": 0
+  },
+  "libsolidity/parsing/Parser.h": {
+   "oracle_unparsed": true
+  },
+  "libsolidity/parsing/Token.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libsolutil/Algorithms.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolutil/AnsiColorized.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolutil/Assertions.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolutil/Common.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolutil/CommonData.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolutil/CommonData.h": {
+   "oracle_unparsed": true
+  },
+  "libsolutil/CommonIO.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolutil/CommonIO.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolutil/DisjointSet.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolutil/DisjointSet.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolutil/DominatorFinder.h": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libsolutil/ErrorCodes.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolutil/Exceptions.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolutil/Exceptions.h": {
+   "oracle_unparsed": true
+  },
+  "libsolutil/FixedHash.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolutil/FunctionSelector.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsolutil/IpfsHash.cpp": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libsolutil/IpfsHash.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolutil/JSON.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolutil/JSON.h": {
+   "oracle_unparsed": true
+  },
+  "libsolutil/Keccak256.cpp": {
+   "oracle_unparsed": true
+  },
+  "libsolutil/Keccak256.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolutil/LEB128.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolutil/LazyInit.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsolutil/Numeric.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolutil/Numeric.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libsolutil/Profiler.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libsolutil/Profiler.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolutil/Result.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libsolutil/SetOnce.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolutil/StackTooDeepString.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libsolutil/StringUtils.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libsolutil/StringUtils.h": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "libsolutil/SwarmHash.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libsolutil/SwarmHash.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolutil/TarjanSCC.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libsolutil/TemporaryDirectory.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolutil/TemporaryDirectory.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libsolutil/UTF8.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libsolutil/UTF8.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libsolutil/UnorderedContainers.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libsolutil/Views.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libsolutil/Visitor.h": {
+   "oracle_unparsed": true
+  },
+  "libsolutil/Whiskers.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolutil/Whiskers.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libsolutil/picosha2.h": {
+   "oracle_unparsed": true
+  },
+  "libsolutil/vector_ref.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/AST.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/AST.h": {
+   "extra": 0,
+   "matched": 31,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 31,
+   "ours": 31,
+   "regions": 0
+  },
+  "libyul/ASTForward.h": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "libyul/ASTLabelRegistry.cpp": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libyul/ASTLabelRegistry.h": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libyul/AsmAnalysis.cpp": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/AsmAnalysis.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/AsmAnalysisInfo.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/AsmJsonConverter.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/AsmJsonConverter.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/AsmJsonImporter.cpp": {
+   "extra": 0,
+   "matched": 24,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 24,
+   "ours": 24,
+   "regions": 0
+  },
+  "libyul/AsmJsonImporter.h": {
+   "extra": 0,
+   "matched": 26,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 26,
+   "ours": 26,
+   "regions": 0
+  },
+  "libyul/AsmParser.cpp": {
+   "extra": 0,
+   "matched": 23,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 23,
+   "ours": 23,
+   "regions": 0
+  },
+  "libyul/AsmParser.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/AsmPrinter.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/AsmPrinter.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/Builtins.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/CompilabilityChecker.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/CompilabilityChecker.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/ControlFlowSideEffects.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/ControlFlowSideEffectsCollector.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libyul/ControlFlowSideEffectsCollector.h": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "libyul/Dialect.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/Dialect.h": {
+   "extra": 0,
+   "matched": 18,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 18,
+   "ours": 18,
+   "regions": 0
+  },
+  "libyul/Exceptions.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/FunctionReferenceResolver.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/FunctionReferenceResolver.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/Object.cpp": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libyul/Object.h": {
+   "extra": 0,
+   "matched": 23,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 23,
+   "ours": 23,
+   "regions": 0
+  },
+  "libyul/ObjectOptimizer.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/ObjectOptimizer.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/ObjectParser.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/ObjectParser.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/Scope.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/Scope.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libyul/ScopeFiller.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/ScopeFiller.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libyul/SideEffects.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/Utilities.cpp": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "libyul/Utilities.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/YulName.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libyul/YulStack.cpp": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "libyul/YulStack.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/YulString.h": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "libyul/backends/evm/AbstractAssembly.h": {
+   "extra": 0,
+   "matched": 31,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 31,
+   "ours": 31,
+   "regions": 0
+  },
+  "libyul/backends/evm/AsmCodeGen.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/AsmCodeGen.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/backends/evm/ConstantOptimiser.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libyul/backends/evm/ConstantOptimiser.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/backends/evm/ControlFlowGraph.h": {
+   "extra": 0,
+   "matched": 20,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 20,
+   "ours": 20,
+   "regions": 0
+  },
+  "libyul/backends/evm/ControlFlowGraphBuilder.cpp": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "libyul/backends/evm/ControlFlowGraphBuilder.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/backends/evm/EVMBuiltins.cpp": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libyul/backends/evm/EVMBuiltins.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libyul/backends/evm/EVMCodeTransform.cpp": {
+   "extra": 0,
+   "matched": 19,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 19,
+   "ours": 19,
+   "regions": 0
+  },
+  "libyul/backends/evm/EVMCodeTransform.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/backends/evm/EVMDialect.cpp": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libyul/backends/evm/EVMDialect.h": {
+   "extra": 0,
+   "matched": 26,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 26,
+   "ours": 26,
+   "regions": 0
+  },
+  "libyul/backends/evm/EVMMetrics.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/backends/evm/EVMMetrics.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/backends/evm/EVMObjectCompiler.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/EVMObjectCompiler.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/backends/evm/EthAssemblyAdapter.cpp": {
+   "extra": 0,
+   "matched": 27,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 27,
+   "ours": 27,
+   "regions": 0
+  },
+  "libyul/backends/evm/EthAssemblyAdapter.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/backends/evm/NoOutputAssembly.cpp": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "libyul/backends/evm/NoOutputAssembly.h": {
+   "extra": 0,
+   "matched": 29,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 29,
+   "ours": 29,
+   "regions": 0
+  },
+  "libyul/backends/evm/OptimizedEVMCodeTransform.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/backends/evm/OptimizedEVMCodeTransform.h": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libyul/backends/evm/StackHelpers.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/backends/evm/StackLayoutGenerator.cpp": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "libyul/backends/evm/StackLayoutGenerator.h": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "libyul/backends/evm/VariableReferenceCounter.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/VariableReferenceCounter.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/BridgeFinder.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/CallGraph.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/CallGraph.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/CodeTransform.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/CodeTransform.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/ControlFlowGraphs.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/ControlFlowGraphs.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/InstructionStore.h": {
+   "extra": 0,
+   "matched": 48,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 48,
+   "ours": 48,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/JunkAdmittingBlocksFinder.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/JunkAdmittingBlocksFinder.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/LivenessAnalysis.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/LivenessAnalysis.h": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/PhiInverse.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/PhiInverse.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/SSACFG.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/SSACFG.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/backends/evm/ssa/SSACFGBuilder.cpp": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/SSACFGBuilder.h": {
+   "extra": 0,
+   "matched": 24,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 24,
+   "ours": 24,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/SSACFGDebugInfo.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/SSACFGLoopNestingForest.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/SSACFGLoopNestingForest.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/SSACFGTypes.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/SSACFGTypes.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/ShuffleTrace.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/ShuffleTrace.h": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/Stack.h": {
+   "extra": 0,
+   "matched": 19,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 19,
+   "ours": 19,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackLayout.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackLayoutGenerator.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackLayoutGenerator.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackShuffler.cpp": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackShuffler.h": {
+   "extra": 0,
+   "matched": 49,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 49,
+   "ours": 49,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackSlot.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackSlot.h": {
+   "extra": 0,
+   "matched": 25,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 25,
+   "ours": 25,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackSlotLiveness.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackUtils.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/StackUtils.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/io/DotExporterBase.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/io/DotExporterBase.h": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/io/JSONExporter.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/io/JSONExporter.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/io/Printer.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/io/Printer.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/spill/Emitter.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/spill/MemoryAddressing.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/spill/MemoryAddressing.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/spill/SpillSet.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/spill/SpillSet.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/ConstantConditionFolder.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/ConstantConditionFolder.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/IdentityAndNopRemover.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/IdentityAndNopRemover.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/JumpThreader.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/JumpThreader.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/OptimizationPipeline.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/OptimizationPipeline.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/Outliner.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/Outliner.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/TrivialPhiEliminator.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/TrivialPhiEliminator.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/UnreachableBlockCleaner.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/UnreachableBlockCleaner.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/UseCounts.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/transform/UseCounts.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/traversal/ForwardTopologicalSort.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/traversal/ForwardTopologicalSort.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/util/TLSFFreeList.h": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libyul/backends/evm/ssa/util/UseCountSet.h": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "libyul/optimiser/ASTCopier.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/ASTCopier.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libyul/optimiser/ASTWalker.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/ASTWalker.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/optimiser/BlockFlattener.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/BlockFlattener.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/BlockHasher.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/BlockHasher.h": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "libyul/optimiser/CallGraphGenerator.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libyul/optimiser/CallGraphGenerator.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/optimiser/CircularReferencesPruner.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/CircularReferencesPruner.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/CommonSubexpressionEliminator.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/CommonSubexpressionEliminator.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/optimiser/ConditionalSimplifier.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/ConditionalSimplifier.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/ConditionalUnsimplifier.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/ConditionalUnsimplifier.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/ControlFlowSimplifier.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/optimiser/ControlFlowSimplifier.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/optimiser/DataFlowAnalyzer.cpp": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "libyul/optimiser/DataFlowAnalyzer.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/DeadCodeEliminator.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/DeadCodeEliminator.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/Disambiguator.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libyul/optimiser/Disambiguator.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/EqualStoreEliminator.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/EqualStoreEliminator.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/EquivalentFunctionCombiner.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/EquivalentFunctionCombiner.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/EquivalentFunctionDetector.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libyul/optimiser/EquivalentFunctionDetector.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/ExpressionInliner.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/ExpressionInliner.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/ExpressionJoiner.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/optimiser/ExpressionJoiner.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/optimiser/ExpressionSimplifier.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/ExpressionSimplifier.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/optimiser/ExpressionSplitter.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/ExpressionSplitter.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/ForLoopConditionIntoBody.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/ForLoopConditionIntoBody.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/ForLoopConditionOutOfBody.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/ForLoopConditionOutOfBody.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/ForLoopInitRewriter.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libyul/optimiser/ForLoopInitRewriter.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/FullInliner.cpp": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "libyul/optimiser/FullInliner.h": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "libyul/optimiser/FunctionCallFinder.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/FunctionCallFinder.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/FunctionGrouper.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/FunctionGrouper.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/FunctionHoister.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/FunctionHoister.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/FunctionSpecializer.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/FunctionSpecializer.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/InlinableExpressionFunctionFinder.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/InlinableExpressionFunctionFinder.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/KnowledgeBase.cpp": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/optimiser/KnowledgeBase.h": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "libyul/optimiser/LabelIDDispenser.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libyul/optimiser/LabelIDDispenser.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/LoadResolver.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/LoadResolver.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/LoopInvariantCodeMotion.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/LoopInvariantCodeMotion.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/Metrics.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libyul/optimiser/Metrics.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/NameCollector.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/NameCollector.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/optimiser/NameDispenser.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/NameDispenser.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/NameDisplacer.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/NameDisplacer.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/NameSimplifier.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/NameSimplifier.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/optimiser/OptimiserStep.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/OptimizerUtilities.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/OptimizerUtilities.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/optimiser/Rematerialiser.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/Rematerialiser.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/SSAReverser.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/SSAReverser.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/SSATransform.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/SSATransform.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/SSAValueTracker.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/SSAValueTracker.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/Semantics.cpp": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/Semantics.h": {
+   "extra": 0,
+   "matched": 23,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 23,
+   "ours": 23,
+   "regions": 0
+  },
+  "libyul/optimiser/SimplificationRules.cpp": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "libyul/optimiser/SimplificationRules.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/StackCompressor.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/optimiser/StackCompressor.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/StackLimitEvader.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/StackLimitEvader.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/StackToMemoryMover.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/StackToMemoryMover.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/StructuralSimplifier.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/optimiser/StructuralSimplifier.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "libyul/optimiser/Substitution.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/Substitution.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/Suite.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "libyul/optimiser/Suite.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/SyntacticalEquality.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "libyul/optimiser/SyntacticalEquality.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/UnusedAssignEliminator.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/UnusedAssignEliminator.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "libyul/optimiser/UnusedFunctionParameterPruner.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/UnusedFunctionParameterPruner.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/UnusedFunctionsCommon.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "libyul/optimiser/UnusedFunctionsCommon.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/UnusedPruner.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "libyul/optimiser/UnusedPruner.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/UnusedStoreBase.cpp": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/UnusedStoreBase.h": {
+   "oracle_unparsed": true
+  },
+  "libyul/optimiser/UnusedStoreEliminator.cpp": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "libyul/optimiser/UnusedStoreEliminator.h": {
+   "extra": 0,
+   "matched": 18,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 18,
+   "ours": 18,
+   "regions": 0
+  },
+  "libyul/optimiser/VarDeclInitializer.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "libyul/optimiser/VarDeclInitializer.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "libyul/optimiser/VarNameCleaner.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "libyul/optimiser/VarNameCleaner.h": {
+   "oracle_unparsed": true
+  },
+  "solc/CommandLineInterface.cpp": {
+   "extra": 0,
+   "matched": 41,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 41,
+   "ours": 41,
+   "regions": 0
+  },
+  "solc/CommandLineInterface.h": {
+   "extra": 0,
+   "matched": 43,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 43,
+   "ours": 43,
+   "regions": 0
+  },
+  "solc/CommandLineParser.cpp": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "solc/CommandLineParser.h": {
+   "oracle_unparsed": true
+  },
+  "solc/Exceptions.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "solc/main.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "test/Common.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/Common.h": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "test/CommonSyntaxTest.cpp": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "test/CommonSyntaxTest.h": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "test/EVMHost.cpp": {
+   "extra": 0,
+   "matched": 30,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 30,
+   "ours": 30,
+   "regions": 0
+  },
+  "test/EVMHost.h": {
+   "oracle_unparsed": true
+  },
+  "test/ExecutionFramework.cpp": {
+   "extra": 0,
+   "matched": 23,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 23,
+   "ours": 23,
+   "regions": 0
+  },
+  "test/ExecutionFramework.h": {
+   "oracle_unparsed": true
+  },
+  "test/FilesystemUtils.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/FilesystemUtils.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/InteractiveTests.h": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "test/Metadata.cpp": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "test/Metadata.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/TestCase.cpp": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "test/TestCase.h": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "test/TestCaseReader.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/TestCaseReader.h": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "test/contracts/AuctionRegistrar.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/contracts/ContractInterface.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "test/contracts/Wallet.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/evmc/bytes.hpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/evmc/evmc.h": {
+   "oracle_unparsed": true
+  },
+  "test/evmc/evmc.hpp": {
+   "oracle_unparsed": true
+  },
+  "test/evmc/filter_iterator.hpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/evmc/helpers.h": {
+   "oracle_unparsed": true
+  },
+  "test/evmc/hex.hpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/evmc/loader.h": {
+   "oracle_unparsed": true
+  },
+  "test/evmc/mocked_host.hpp": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "test/evmc/utils.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/fuzztest/libevmasm/BlockDeduplicatorPropertyTest.cpp": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "test/fuzztest/libyul/TarjanSCCPropertyTest.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libevmasm/Assembler.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libevmasm/EVMAssemblyTest.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libevmasm/EVMAssemblyTest.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/libevmasm/Optimiser.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libevmasm/PlainAssemblyParser.cpp": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "test/libevmasm/PlainAssemblyParser.h": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "test/liblangutil/CharStream.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/liblangutil/Scanner.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/liblangutil/SourceLocation.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/ABIDecoderTests.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/ABIEncoderTests.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/ABIJsonTest.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libsolidity/ABIJsonTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libsolidity/ABITestsCommon.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/libsolidity/ASTJSONTest.cpp": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "test/libsolidity/ASTJSONTest.h": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "test/libsolidity/ASTPropertyTest.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/libsolidity/ASTPropertyTest.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/libsolidity/AnalysisFramework.cpp": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "test/libsolidity/AnalysisFramework.h": {
+   "extra": 0,
+   "matched": 21,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 21,
+   "ours": 21,
+   "regions": 0
+  },
+  "test/libsolidity/Assembly.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/ErrorCheck.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libsolidity/ErrorCheck.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libsolidity/EthdebugTest.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/libsolidity/EthdebugTest.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/libsolidity/GasCosts.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/GasMeter.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/GasTest.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/libsolidity/GasTest.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/libsolidity/Imports.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/InlineAssembly.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/JSONExpectationTest.cpp": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "test/libsolidity/JSONExpectationTest.h": {
+   "extra": 0,
+   "matched": 18,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 18,
+   "ours": 18,
+   "regions": 0
+  },
+  "test/libsolidity/LibSolc.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/MemoryGuardTest.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libsolidity/MemoryGuardTest.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/libsolidity/Metadata.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/NatspecJSONTest.cpp": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "test/libsolidity/NatspecJSONTest.h": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "test/libsolidity/OptimizedIRCachingTest.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libsolidity/OptimizedIRCachingTest.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/libsolidity/SMTCheckerTest.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/libsolidity/SMTCheckerTest.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/libsolidity/SemVerMatcher.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SemanticTest.cpp": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "test/libsolidity/SemanticTest.h": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SolidityCompiler.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SolidityEndToEndTest.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SolidityExecutionFramework.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libsolidity/SolidityExecutionFramework.h": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SolidityExpressionCompiler.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SolidityNameAndTypeResolution.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SolidityOptimizer.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SolidityParser.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SolidityTypes.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/StandardCompiler.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/SyntaxTest.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/libsolidity/SyntaxTest.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/libsolidity/ViewPureChecker.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/analysis/FunctionCallGraph.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/interface/FileReader.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/util/BytesUtils.cpp": {
+   "extra": 0,
+   "matched": 19,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 19,
+   "ours": 19,
+   "regions": 0
+  },
+  "test/libsolidity/util/BytesUtils.h": {
+   "extra": 0,
+   "matched": 20,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 20,
+   "ours": 20,
+   "regions": 0
+  },
+  "test/libsolidity/util/BytesUtilsTests.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/util/Common.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libsolidity/util/Common.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libsolidity/util/ContractABIUtils.cpp": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "test/libsolidity/util/ContractABIUtils.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/libsolidity/util/SoltestErrors.h": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/libsolidity/util/SoltestTypes.h": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/util/TestFileParser.cpp": {
+   "extra": 0,
+   "matched": 26,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 26,
+   "ours": 26,
+   "regions": 0
+  },
+  "test/libsolidity/util/TestFileParser.h": {
+   "extra": 0,
+   "matched": 33,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 33,
+   "ours": 33,
+   "regions": 0
+  },
+  "test/libsolidity/util/TestFileParserTests.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolidity/util/TestFunctionCall.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "test/libsolidity/util/TestFunctionCall.h": {
+   "extra": 0,
+   "matched": 17,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 17,
+   "ours": 17,
+   "regions": 0
+  },
+  "test/libsolidity/util/TestFunctionCallTests.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/Checksum.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/CommonData.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/CommonIO.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/DisjointSet.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/DominatorFinderTest.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/FixedHash.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/FunctionSelector.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/IpfsHash.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/IterateReplacing.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/JSON.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/Keccak256.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/LEB128.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/LazyInit.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/StringUtils.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/SwarmHash.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/TarjanSCC.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/TemporaryDirectoryTest.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/UTF8.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libsolutil/Whiskers.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libyul/CallGraphTest.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/libyul/CallGraphTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/Common.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/libyul/Common.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "test/libyul/CompilabilityChecker.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libyul/ControlFlowGraphTest.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/libyul/ControlFlowGraphTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ControlFlowSideEffectsTest.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ControlFlowSideEffectsTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/EVMCodeTransformTest.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libyul/EVMCodeTransformTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/EVMDialectCompatibility.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libyul/FunctionSideEffects.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/FunctionSideEffects.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/Inliner.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libyul/KnowledgeBaseTest.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libyul/Metrics.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libyul/ObjectCompilerTest.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libyul/ObjectCompilerTest.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/libyul/ObjectParser.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libyul/Parser.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/libyul/StackLayoutGeneratorTest.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/libyul/StackLayoutGeneratorTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/StackShufflingTest.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/libyul/StackShufflingTest.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/libyul/SyntaxTest.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/libyul/SyntaxTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/YulInterpreterTest.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/YulInterpreterTest.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/libyul/YulOptimizerTest.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/YulOptimizerTest.h": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/libyul/YulOptimizerTestCommon.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/libyul/YulOptimizerTestCommon.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "test/libyul/ssa/CallGraphTest.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ssa/CallGraphTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ssa/ControlFlowGraphTest.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ssa/ControlFlowGraphTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ssa/PrinterTest.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ssa/PrinterTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ssa/SpillTest.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/libyul/ssa/SpillTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ssa/StackLayoutGeneratorTest.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/libyul/ssa/StackLayoutGeneratorTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/libyul/ssa/StackShufflerTest.cpp": {
+   "extra": 0,
+   "matched": 22,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 22,
+   "ours": 22,
+   "regions": 0
+  },
+  "test/libyul/ssa/StackShufflerTest.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/solc/CommandLineInterface.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/solc/CommandLineInterfaceAllowPaths.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/solc/CommandLineParser.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/solc/Common.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/solc/Common.h": {
+   "oracle_unparsed": true
+  },
+  "test/soltest.cpp": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "test/tools/IsolTestOptions.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/tools/IsolTestOptions.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/tools/afl_fuzzer.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "test/tools/fuzzer_common.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/tools/fuzzer_common.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "test/tools/isoltest.cpp": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/AbiV2IsabelleFuzzer.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/Generators.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/SolidityCustomMutatorInterface.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/SolidityCustomMutatorInterface.h": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/SolidityEvmoneInterface.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/SolidityEvmoneInterface.h": {
+   "oracle_unparsed": true
+  },
+  "test/tools/ossfuzz/SolidityGenerator.cpp": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/SolidityGenerator.h": {
+   "oracle_unparsed": true
+  },
+  "test/tools/ossfuzz/StackReuseCodegenFuzzer.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/YulEvmoneInterface.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/YulEvmoneInterface.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/abiV2ProtoFuzzer.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/const_opt_ossfuzz.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/protoToAbiV2.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/tools/ossfuzz/protoToAbiV2.h": {
+   "extra": 0,
+   "matched": 87,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 87,
+   "ours": 87,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/protoToSol.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/tools/ossfuzz/protoToSol.h": {
+   "extra": 0,
+   "matched": 14,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 14,
+   "ours": 14,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/protoToYul.cpp": {
+   "extra": 0,
+   "matched": 29,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 29,
+   "ours": 29,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/protoToYul.h": {
+   "extra": 0,
+   "matched": 37,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 37,
+   "ours": 37,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/protomutators/YulProtoMutator.cpp": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/protomutators/YulProtoMutator.h": {
+   "extra": 0,
+   "matched": 19,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 19,
+   "ours": 19,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/solProtoFuzzer.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/solc_ossfuzz.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/strictasm_assembly_ossfuzz.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/strictasm_diff_ossfuzz.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/strictasm_opt_ossfuzz.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/yulFuzzerCommon.cpp": {
+   "extra": 0,
+   "matched": 2,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 2,
+   "ours": 2,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/yulFuzzerCommon.h": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/yulOptimizerFuzzDictionary.h": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/yulProtoFuzzer.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/tools/ossfuzz/yulProto_diff_ossfuzz.cpp": {
+   "extra": 0,
+   "matched": 0,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 0,
+   "ours": 0,
+   "regions": 0
+  },
+  "test/tools/yulInterpreter/EVMInstructionInterpreter.cpp": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "test/tools/yulInterpreter/EVMInstructionInterpreter.h": {
+   "oracle_unparsed": true
+  },
+  "test/tools/yulInterpreter/Inspector.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "test/tools/yulInterpreter/Inspector.h": {
+   "oracle_unparsed": true
+  },
+  "test/tools/yulInterpreter/Interpreter.cpp": {
+   "extra": 0,
+   "matched": 13,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 13,
+   "ours": 13,
+   "regions": 0
+  },
+  "test/tools/yulInterpreter/Interpreter.h": {
+   "oracle_unparsed": true
+  },
+  "test/tools/yulopti.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "test/tools/yulrun.cpp": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "test/yulPhaser/AlgorithmRunner.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/Chromosome.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/Common.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/FitnessMetrics.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/GeneticAlgorithms.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/Mutations.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/PairSelections.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/Phaser.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/Population.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/Program.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/ProgramCache.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/Selections.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/SimulationRNG.cpp": {
+   "oracle_unparsed": true
+  },
+  "test/yulPhaser/TestHelpers.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "test/yulPhaser/TestHelpers.h": {
+   "extra": 0,
+   "matched": 11,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 11,
+   "ours": 11,
+   "regions": 0
+  },
+  "test/yulPhaser/TestHelpersTest.cpp": {
+   "oracle_unparsed": true
+  },
+  "tools/yulPhaser/AlgorithmRunner.cpp": {
+   "extra": 0,
+   "matched": 8,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 8,
+   "ours": 8,
+   "regions": 0
+  },
+  "tools/yulPhaser/AlgorithmRunner.h": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "tools/yulPhaser/Chromosome.cpp": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "tools/yulPhaser/Chromosome.h": {
+   "extra": 0,
+   "matched": 10,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 10,
+   "ours": 10,
+   "regions": 0
+  },
+  "tools/yulPhaser/Common.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "tools/yulPhaser/Common.h": {
+   "extra": 0,
+   "matched": 3,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 3,
+   "ours": 3,
+   "regions": 0
+  },
+  "tools/yulPhaser/Exceptions.h": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "tools/yulPhaser/FitnessMetrics.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "tools/yulPhaser/FitnessMetrics.h": {
+   "extra": 0,
+   "matched": 18,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 18,
+   "ours": 18,
+   "regions": 0
+  },
+  "tools/yulPhaser/GeneticAlgorithms.cpp": {
+   "extra": 0,
+   "matched": 4,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 4,
+   "ours": 4,
+   "regions": 0
+  },
+  "tools/yulPhaser/GeneticAlgorithms.h": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "tools/yulPhaser/Mutations.cpp": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "tools/yulPhaser/Mutations.h": {
+   "extra": 0,
+   "matched": 12,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 12,
+   "ours": 12,
+   "regions": 0
+  },
+  "tools/yulPhaser/PairSelections.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "tools/yulPhaser/PairSelections.h": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "tools/yulPhaser/Phaser.cpp": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "tools/yulPhaser/Phaser.h": {
+   "extra": 0,
+   "matched": 35,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 35,
+   "ours": 35,
+   "regions": 0
+  },
+  "tools/yulPhaser/Population.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "tools/yulPhaser/Population.h": {
+   "oracle_unparsed": true
+  },
+  "tools/yulPhaser/Program.cpp": {
+   "extra": 0,
+   "matched": 9,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 9,
+   "ours": 9,
+   "regions": 0
+  },
+  "tools/yulPhaser/Program.h": {
+   "extra": 0,
+   "matched": 16,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 16,
+   "ours": 16,
+   "regions": 0
+  },
+  "tools/yulPhaser/ProgramCache.cpp": {
+   "extra": 0,
+   "matched": 7,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 7,
+   "ours": 7,
+   "regions": 0
+  },
+  "tools/yulPhaser/ProgramCache.h": {
+   "extra": 0,
+   "matched": 15,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 15,
+   "ours": 15,
+   "regions": 0
+  },
+  "tools/yulPhaser/Selections.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  },
+  "tools/yulPhaser/Selections.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "tools/yulPhaser/SimulationRNG.cpp": {
+   "extra": 0,
+   "matched": 5,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 5,
+   "ours": 5,
+   "regions": 0
+  },
+  "tools/yulPhaser/SimulationRNG.h": {
+   "extra": 0,
+   "matched": 6,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 6,
+   "ours": 6,
+   "regions": 0
+  },
+  "tools/yulPhaser/main.cpp": {
+   "extra": 0,
+   "matched": 1,
+   "missed": 0,
+   "missed_confessed": 0,
+   "oracle": 1,
+   "ours": 1,
+   "regions": 0
+  }
+ },
+ "totals": {
+  "crashes": 0,
+  "extra": 0,
+  "files": 842,
+  "files_with_regions": 0,
+  "matched": 7013,
+  "missed": 0,
+  "missed_confessed": 0,
+  "oracle": 7013,
+  "oracle_unparsed": 170,
+  "ours": 7013
+ }
+}

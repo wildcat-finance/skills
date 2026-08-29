@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/tabularium/compound-v3-witness-manifest-v1.json",
+  "title": "Tabularium Compound v3 Phase 0 witness manifest",
+  "type": "object", "additionalProperties": false,
+  "required": ["format", "alexandria_release_id", "registry_commit", "transaction_hash", "scope", "row_count", "facts_bytes", "facts_sha256", "component_digests", "alexandria_method_receipt"],
+  "properties": {
+    "format": {"const": "tabularium-compound-v3-witness/v1"},
+    "alexandria_release_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "registry_commit": {"const": "f766f51583c23acc33b2a7824654ef2029a96804"},
+    "transaction_hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+    "scope": {"const": "one Ethereum USDC transaction; method proof, not market history"},
+    "row_count": {"type": "integer", "minimum": 1},
+    "facts_bytes": {"type": "integer", "minimum": 1},
+    "facts_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "component_digests": {
+      "type": "object", "additionalProperties": false,
+      "required": ["registry", "response-recent-call-trace", "response-recent-opcode-trace", "response-recent-prestate-trace", "response-recent-implementation-slot", "response-recent-implementation-code", "upstream-configuration-json", "upstream-deploy-ts", "upstream-relations-ts", "upstream-roots-json"],
+      "properties": {
+        "registry": {"$ref": "#/$defs/releaseDigest"}, "response-recent-call-trace": {"$ref": "#/$defs/releaseDigest"},
+        "response-recent-opcode-trace": {"$ref": "#/$defs/releaseDigest"}, "response-recent-prestate-trace": {"$ref": "#/$defs/releaseDigest"},
+        "response-recent-implementation-slot": {"$ref": "#/$defs/releaseDigest"}, "response-recent-implementation-code": {"$ref": "#/$defs/releaseDigest"},
+        "upstream-configuration-json": {"$ref": "#/$defs/releaseDigest"}, "upstream-deploy-ts": {"$ref": "#/$defs/releaseDigest"},
+        "upstream-relations-ts": {"$ref": "#/$defs/releaseDigest"}, "upstream-roots-json": {"$ref": "#/$defs/releaseDigest"}
+      }
+    },
+    "alexandria_method_receipt": {"type": "object"}
+  },
+  "$defs": {"releaseDigest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}
+}

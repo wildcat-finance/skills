@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "promise-machine-run-observation-capture/v1",
+  "title": "Promise Machine pre-persistence run observation capture v1",
+  "description": "An accepted event contains only directly allowed descriptors and explicit redactions.",
+  "type": "object",
+  "required": ["schema_id", "outcome", "code"],
+  "properties": {
+    "schema_id": {"const": "promise-machine-run-observation-capture/v1"},
+    "outcome": {"enum": ["accepted", "gap", "refused"]},
+    "code": {"enum": ["accepted", "forbidden_content", "ineligible_fingerprint", "invalid_path", "over_limit", "unknown_field", "unsafe_shape"]},
+    "event": {
+      "type": "object",
+      "required": ["schema_id", "descriptors"],
+      "properties": {
+        "schema_id": {"const": "promise-machine-run-observation-capture/v1"},
+        "descriptors": {
+          "type": "object",
+          "minProperties": 1,
+          "properties": {
+            "run_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+            "event_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"},
+            "event_type": {"type": "string", "maxLength": 256},
+            "time": {"type": "string", "maxLength": 256},
+            "status": {"type": "string", "maxLength": 256},
+            "name": {"type": "string", "maxLength": 256},
+            "format": {"type": "string", "maxLength": 256},
+            "selector": {"type": "string", "maxLength": 256},
+            "reference": {"type": "string", "maxLength": 256},
+            "count": {"type": "integer", "minimum": 0, "maximum": 1000000},
+            "size": {"type": "integer", "minimum": 0, "maximum": 1000000},
+            "length": {"type": "integer", "minimum": 0, "maximum": 1000000},
+            "repository_path": {"type": "string", "maxLength": 4096},
+            "correlation": {
+              "type": "object",
+              "required": ["algorithm", "scope", "fingerprint"],
+              "properties": {
+                "algorithm": {"const": "sha256"},
+                "scope": {"type": "string", "maxLength": 256},
+                "fingerprint": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "redactions": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/redaction"}}
+      },
+      "additionalProperties": false
+    },
+    "redactions": {"type": "array", "maxItems": 16, "items": {"$ref": "#/$defs/redaction"}}
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {"properties": {"outcome": {"const": "accepted"}}},
+      "then": {"required": ["event"]}
+    },
+    {
+      "if": {"properties": {"outcome": {"enum": ["gap", "refused"]}}},
+      "then": {"not": {"required": ["event"]}}
+    }
+  ],
+  "$defs": {
+    "redaction": {
+      "type": "object",
+      "required": ["field_class", "reason_code", "method"],
+      "properties": {
+        "field_class": {"enum": ["content", "credential", "environment", "execution", "path", "trace", "unknown"]},
+        "reason_code": {"enum": ["forbidden_content", "ineligible_fingerprint", "invalid_path", "over_limit", "unknown_field", "unsafe_shape"]},
+        "method": {"enum": ["omitted", "fingerprinted", "path_dehosted"]}
+      },
+      "additionalProperties": false
+    }
+  }
+}

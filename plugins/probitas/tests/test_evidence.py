@@ -1,10 +1,12 @@
 """The evidence file has to refuse what the gates would otherwise have to catch."""
 
+import os
 import unittest
 
 from . import support  # noqa: F401
 
 from probitas_lib.evidence import (  # noqa: E402
+    EVIDENCE_SCHEMA,
     Coverage,
     Evidence,
     EvidenceError,
@@ -12,6 +14,8 @@ from probitas_lib.evidence import (  # noqa: E402
     Record,
     classify_source,
 )
+from probitas_lib.adapters import run_adapter  # noqa: E402
+from probitas_lib.adapters.morpho_midnight import adapter as midnight_adapter  # noqa: E402
 
 ADDRESS = "0x00000000000000000000000000000000000000a1"
 TX = "0x" + "ab" * 32
@@ -214,8 +218,8 @@ class TestEvidenceFile(unittest.TestCase):
                 evidence.add_record(
                     a_record(claim=f"claim_{n}", source="0x" + f"{n:02x}" * 32)
                 )
-            evidence.add_coverage(Coverage("wildcat", "checked"))
-            evidence.add_coverage(Coverage("maple", "unimplemented"))
+            evidence.add_coverage(Coverage("wildcat", "checked", source="live"))
+            evidence.add_coverage(Coverage("maple", "unimplemented", source="none"))
             evidence.add_gap(Gap("maple history", "no adapter"))
         self.assertEqual(first.to_json(), second.to_json())
 
@@ -223,9 +227,100 @@ class TestEvidenceFile(unittest.TestCase):
         with self.assertRaises(EvidenceError):
             Coverage("wildcat", "fine")
 
+    def test_coverage_source_must_be_known(self):
+        with self.assertRaises(EvidenceError):
+            Coverage("wildcat", "checked", source="somewhere")
+
+    def test_a_row_with_no_source_cannot_enter_the_evidence_file(self):
+        """A row that does not say how a venue was checked reads as checked."""
+        evidence = self.evidence()
+        with self.assertRaises(EvidenceError) as caught:
+            evidence.add_coverage(Coverage("wildcat", "checked"))
+        self.assertIn("names no source", str(caught.exception))
+
+    def test_only_an_archive_row_may_name_releases(self):
+        with self.assertRaises(EvidenceError):
+            Coverage("wildcat", "checked", source="live", releases=["sha256:aa"])
+
+    def test_releases_are_sorted_and_deduplicated(self):
+        row = Coverage(
+            "clearpool",
+            "checked",
+            source="archive",
+            releases=["sha256:bb", "sha256:aa", "sha256:bb"],
+        )
+        self.assertEqual(row.releases, "sha256:aa,sha256:bb")
+
+    def test_a_release_that_would_break_a_table_cell_is_refused(self):
+        """The same shape as finding S2-R1-01, arriving from another plugin."""
+        with self.assertRaises(EvidenceError):
+            Coverage(
+                "clearpool", "checked", source="archive", releases=["a](https://evil/"]
+            )
+
+    def test_releases_refuse_anything_that_is_not_a_string_or_a_sequence(self):
+        """`list()` took a mapping's keys and turned an integer into a crash."""
+        for value in (5, {"sha256:aa": 1}, b"sha256:aa"):
+            with self.subTest(value=value):
+                with self.assertRaises(EvidenceError):
+                    Coverage("clearpool", "checked", source="archive", releases=value)
+
+    def test_the_wire_carries_schema_two_and_names_every_source(self):
+        evidence = self.evidence()
+        evidence.add_coverage(Coverage("wildcat", "checked", source="fixtures"))
+        payload = evidence.to_dict()
+        self.assertEqual(payload["schema"], 2)
+        for row in payload["coverage"]:
+            self.assertIn("source", row)
+            self.assertIn("releases", row)
+
+    def test_two_rows_for_one_venue_sort_by_source(self):
+        """Determinism has to survive a venue two routes both answered."""
+        evidence = self.evidence()
+        evidence.add_coverage(
+            Coverage("wildcat", "checked", source="live", block_range="1-2")
+        )
+        evidence.add_coverage(
+            Coverage(
+                "wildcat",
+                "checked",
+                source="archive",
+                block_range="1-2",
+                releases=["sha256:aa"],
+            )
+        )
+        sources = [row["source"] for row in evidence.to_dict()["coverage"]]
+        self.assertEqual(sources, ["archive", "live"])
+
     def test_a_gap_needs_a_reason(self):
         with self.assertRaises(EvidenceError):
             Gap("maple history", "")
+
+    def test_midnight_outcome_values_survive_serialisation(self):
+        subject = "0x535690cb1330232dd4f2ac5b724040751bdf4c91"
+        fixture = os.path.join(
+            support.PLUGIN_ROOT, "tests", "fixtures", "midnight-late"
+        )
+        records, coverage = run_adapter(
+            "morpho-midnight", midnight_adapter, {subject: "declared"}, {"fixtures": fixture}
+        )
+        evidence = Evidence(entity="Midnight Borrower", addresses=[(subject, "declared")])
+        for record in records:
+            evidence.add_record(record)
+        evidence.add_coverage(coverage)
+
+        payload = evidence.to_dict()
+        outcome = next(
+            record
+            for record in payload["records"]
+            if record["claim"] == "maturity_outcome"
+        )
+        self.assertEqual(payload["schema"], EVIDENCE_SCHEMA)
+        self.assertEqual(outcome["values"]["obligation_state"], "outstanding_at_maturity")
+        self.assertEqual(outcome["values"]["observation_state"], "settled_late")
+        self.assertEqual(outcome["values"]["settlement_mode"], "liquidation")
+        self.assertEqual(outcome["values"]["debt_units_at_maturity"], "136075232067")
+        self.assertEqual(outcome["values"]["debt_units_at_observation"], "0")
 
 
 if __name__ == "__main__":

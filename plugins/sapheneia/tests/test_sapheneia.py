@@ -1,11 +1,15 @@
 from pathlib import Path
 import json
 import re
+import sys
 import unittest
 
 
 PLUGIN = Path(__file__).resolve().parents[1]
 ROOT = PLUGIN.parents[1]
+sys.path.insert(0, str(ROOT))
+from repo_contract import assert_host_descriptions_agree, assert_router_reaches
+
 SKILL = PLUGIN / "skills" / "sapheneia" / "SKILL.md"
 
 
@@ -23,28 +27,21 @@ class SapheneiaContractTests(unittest.TestCase):
         self.assertIn("The reader's stated preference outranks this default.", text)
 
     def test_host_descriptions_remain_identical(self):
-        claude = json.loads(
-            (PLUGIN / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
-        )
+        # Cross-host parity is the repo-wide contract; length is sapheneia's own bound.
+        assert_host_descriptions_agree(self, "sapheneia")
         codex = json.loads(
             (PLUGIN / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
-        )
-        self.assertEqual(claude["description"], codex["description"])
-        self.assertEqual(
-            codex["description"], codex["interface"]["shortDescription"]
         )
         self.assertGreaterEqual(len(codex["description"]), 25)
         self.assertLessEqual(len(codex["description"]), 64)
 
     def test_promise_machine_router_reaches_the_runtime_contract(self):
-        portable = ROOT / ".agents" / "skills" / "promise-machine" / "SKILL.md"
-        text = portable.read_text(encoding="utf-8")
-        links = re.findall(r"\[[^]]+\]\(([^)]+)\)", text)
-        self.assertIn("../../../plugins/sapheneia/AGENTS.md", links)
+        assert_router_reaches(self, "sapheneia")
+        text = (ROOT / ".agents" / "skills" / "promise-machine" / "SKILL.md").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("durable agent-authored audit records", text)
         self.assertIn("GitHub issue titles, bodies and comments", text)
-        contract = (PLUGIN / "AGENTS.md").read_text(encoding="utf-8")
-        self.assertIn("`skills/sapheneia/SKILL.md`", contract)
 
     def test_durable_record_contract_is_bounded_and_preserves_evidence(self):
         text = SKILL.read_text(encoding="utf-8")

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://berean.wildcat.finance/promotion/v1/schema.json",
+  "title": "Berean promotion record v1",
+  "description": "One record in a berean-promotion/v1 chain: a promotion resting on a named evaluation report, or a rollback naming the restored release and the reason. The chain replays in sequence order; the verifier enforces the ordering, the digest agreements and the threshold a schema cannot express across records.",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "sequence", "action", "release_digest", "note", "evals"],
+      "properties": {
+        "format": { "const": "berean-promotion/v1" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "action": { "const": "promote" },
+        "release_digest": { "$ref": "#/$defs/sha256" },
+        "note": { "$ref": "#/$defs/stated" },
+        "evals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["report_sha256", "cases_sha256", "thresholds", "cases", "passed", "failed"],
+          "properties": {
+            "report_sha256": { "$ref": "#/$defs/sha256" },
+            "cases_sha256": { "$ref": "#/$defs/sha256" },
+            "thresholds": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["failures_allowed"],
+              "properties": { "failures_allowed": { "type": "integer", "minimum": 0 } }
+            },
+            "cases": { "type": "integer", "minimum": 1 },
+            "passed": { "type": "integer", "minimum": 0 },
+            "failed": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "sequence", "action", "release_digest", "note", "restored_digest", "reason"],
+      "properties": {
+        "format": { "const": "berean-promotion/v1" },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "action": { "const": "rollback" },
+        "release_digest": { "$ref": "#/$defs/sha256" },
+        "note": { "$ref": "#/$defs/stated" },
+        "restored_digest": { "$ref": "#/$defs/sha256" },
+        "reason": { "$ref": "#/$defs/stated" }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "stated": { "type": "string", "pattern": "\\S" }
+  }
+}

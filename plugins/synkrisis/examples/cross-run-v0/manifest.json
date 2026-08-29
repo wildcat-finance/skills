@@ -1,0 +1,108 @@
+{
+  "producer_contract": "promise-machine-run-observation/v1",
+  "runs": [
+    {
+      "binding": {
+        "bound_bytes": 2760,
+        "bound_events": 6,
+        "receipt": "demo-receipt-run-alpha",
+        "sha256": "e2bae4a17e94808743809a3099a88807d08b5139d86d0da8890ed1c6757af928",
+        "status": "bound"
+      },
+      "bytes": 2760,
+      "record": "plugins/synkrisis/examples/cross-run-v0/records/run-alpha.jsonl",
+      "redaction": {
+        "profile": "promise-machine-run-observation-capture/v1",
+        "status": "accepted"
+      },
+      "run_id": "run-alpha",
+      "sha256": "e2bae4a17e94808743809a3099a88807d08b5139d86d0da8890ed1c6757af928",
+      "validation": {
+        "status": "accepted",
+        "tool": "scripts/run_observation.py"
+      }
+    },
+    {
+      "binding": {
+        "bound_bytes": 3510,
+        "bound_events": 8,
+        "receipt": "demo-receipt-run-beta",
+        "sha256": "747c4d9fee02c37e9b800f33614b36986a9eee466fed3edeed18665050718dda",
+        "status": "bound"
+      },
+      "bytes": 3510,
+      "record": "plugins/synkrisis/examples/cross-run-v0/records/run-beta.jsonl",
+      "redaction": {
+        "profile": "promise-machine-run-observation-capture/v1",
+        "status": "accepted"
+      },
+      "run_id": "run-beta",
+      "sha256": "747c4d9fee02c37e9b800f33614b36986a9eee466fed3edeed18665050718dda",
+      "validation": {
+        "status": "accepted",
+        "tool": "scripts/run_observation.py"
+      }
+    },
+    {
+      "binding": {
+        "bound_bytes": 4896,
+        "bound_events": 11,
+        "receipt": "demo-receipt-run-gamma",
+        "sha256": "36646fa544fb3e575e68261ce1b4ada6387b7209a0a69e87c22a346328cdd796",
+        "status": "bound"
+      },
+      "bytes": 4896,
+      "record": "plugins/synkrisis/examples/cross-run-v0/records/run-gamma.jsonl",
+      "redaction": {
+        "profile": "promise-machine-run-observation-capture/v1",
+        "status": "accepted"
+      },
+      "run_id": "run-gamma",
+      "sha256": "36646fa544fb3e575e68261ce1b4ada6387b7209a0a69e87c22a346328cdd796",
+      "validation": {
+        "status": "accepted",
+        "tool": "scripts/run_observation.py"
+      }
+    },
+    {
+      "binding": {
+        "bound_bytes": 1907,
+        "bound_events": 4,
+        "receipt": "demo-receipt-run-delta",
+        "sha256": "648c0422f595bccdab4df04a9dab27581d20c48f4df712ef67d4f6349cf0dbe3",
+        "status": "bound"
+      },
+      "bytes": 1907,
+      "record": "plugins/synkrisis/examples/cross-run-v0/records/run-delta.jsonl",
+      "redaction": {
+        "profile": "promise-machine-run-observation-capture/v1",
+        "status": "accepted"
+      },
+      "run_id": "run-delta",
+      "sha256": "648c0422f595bccdab4df04a9dab27581d20c48f4df712ef67d4f6349cf0dbe3",
+      "validation": {
+        "status": "accepted",
+        "tool": "scripts/run_observation.py"
+      }
+    },
+    {
+      "binding": {
+        "reason": "capture ran without a selected fiat receipt",
+        "status": "unavailable"
+      },
+      "bytes": 1932,
+      "record": "plugins/synkrisis/examples/cross-run-v0/records/run-epsilon.jsonl",
+      "redaction": {
+        "profile": "promise-machine-run-observation-capture/v1",
+        "status": "accepted"
+      },
+      "run_id": "run-epsilon",
+      "sha256": "801e27e1daa5c5f39c684e5c72fea8ff1b910638b971476852c3d1a25cef78b8",
+      "validation": {
+        "status": "accepted",
+        "tool": "scripts/run_observation.py"
+      }
+    }
+  ],
+  "schema": "synkrisis-manifest/v1"
+}

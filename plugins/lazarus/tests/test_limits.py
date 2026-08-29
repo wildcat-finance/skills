@@ -49,6 +49,33 @@ class LimitTests(unittest.TestCase):
         with self.assertRaisesRegex(ResourceLimitError, "seconds"):
             limits.after_response(1)
 
+    def test_one_budget_is_shared_across_provider_clients(self):
+        limits = CaptureLimits(self.values(max_requests=4, max_total_bytes=20))
+        primary = limits
+        anchor = limits
+        primary.before_request(2)
+        primary.after_response(8)
+        anchor.before_request(2)
+        anchor.after_response(7)
+        with self.assertRaisesRegex(ResourceLimitError, "RPC requests"):
+            primary.before_request()
+        with self.assertRaisesRegex(ResourceLimitError, "response bytes"):
+            anchor.after_response(6)
+
+    def test_derived_collection_and_output_sizes_are_checked_before_use(self):
+        limits = CaptureLimits(self.values(max_total_bytes=20))
+        limits.check_allocation(2, maximum=2, label="receipt count")
+        with self.assertRaisesRegex(ResourceLimitError, "receipt count"):
+            limits.check_allocation(3, maximum=2, label="receipt count")
+        with self.assertRaisesRegex(ResourceLimitError, "valid count"):
+            limits.check_allocation(True, maximum=2, label="receipt count")
+        limits.check_component_bytes(10, label="receipt-witness.json")
+        with self.assertRaisesRegex(ResourceLimitError, "receipt-witness.json"):
+            limits.check_component_bytes(11, label="receipt-witness.json")
+        limits.check_fixture_bytes(20)
+        with self.assertRaisesRegex(ResourceLimitError, "fixture"):
+            limits.check_fixture_bytes(21)
+
 
 if __name__ == "__main__":
     unittest.main()

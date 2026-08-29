@@ -12,6 +12,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
@@ -25,6 +26,7 @@ GOLDFINCH = os.path.join(
         os.path.abspath(__file__))))),
     "plugins", "lazarus", "examples", "goldfinch-v0",
 )
+RECEIPT_FIXTURE = support.LAZARUS_RECEIPT_FIXTURE
 
 COMMAND = ["python3", "scripts/lazarus.py", "verify", "examples/goldfinch-v0"]
 REASON = "first capture of this block; nothing earlier to compare against"
@@ -56,6 +58,335 @@ class SkipUnlessGoldfinch(unittest.TestCase):
     def setUp(self):
         if not os.path.isdir(GOLDFINCH):
             self.skipTest("Lazarus is not beside this plugin in this checkout")
+
+
+class SkipUnlessReceiptFixture(unittest.TestCase):
+    def setUp(self):
+        if not os.path.isdir(RECEIPT_FIXTURE):
+            self.skipTest("the Lazarus receipt fixture is not beside Ariadne")
+
+
+class ReceiptFixtureTests(SkipUnlessReceiptFixture):
+    def test_manifest_v2_emits_and_verifies_state_fixture_v2(self):
+        statement = taken(RECEIPT_FIXTURE)
+        manifest = read_json(os.path.join(RECEIPT_FIXTURE, "manifest.json"))
+        report = report_for(statement)
+
+        self.assertTrue(report.ok, "\n".join(g.line() for g in report.gates))
+        self.assertEqual(statement["predicateType"], predicate.V2.TYPE)
+        self.assertEqual(
+            statement["predicate"]["chain"]["receipts_root"],
+            manifest["receipts_root"],
+        )
+        self.assertEqual(
+            statement["predicate"]["evidence"], manifest["evidence_counts"]
+        )
+        self.assertEqual(
+            statement["predicate"]["replay"],
+            {
+                "reaches_network": False,
+                "canonical_chain_claim": False,
+                "provider_independence_claim": False,
+            },
+        )
+        self.assertEqual(statement["predicate"]["commands"], [])
+
+    def test_capture_claims_no_chain_provider_or_transaction_hash_authority(self):
+        claims = taken(RECEIPT_FIXTURE)["predicate"]["claims"]
+        names = (
+            "canonical",
+            "independent providers",
+            "transaction hash attributed",
+        )
+        for phrase in names:
+            matching = [claim for claim in claims if phrase in claim["name"]]
+            with self.subTest(phrase=phrase):
+                self.assertTrue(matching)
+                self.assertTrue(
+                    all(claim["disposition"] == "skipped" for claim in matching)
+                )
+
+    def test_a_source_mutation_after_capture_does_not_rewrite_the_statement(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = os.path.join(directory, "receipt-fixture")
+            shutil.copytree(RECEIPT_FIXTURE, fixture)
+            statement = taken(fixture)
+            before = json.dumps(statement, sort_keys=True)
+            witness = os.path.join(fixture, "receipt-witness.json")
+            with open(witness, "ab") as handle:
+                handle.write(b" ")
+            self.assertEqual(json.dumps(statement, sort_keys=True), before)
+            self.assertTrue(report_for(statement).ok)
+            with self.assertRaises(capture.CaptureError):
+                taken(fixture)
+
+    def test_an_unlisted_consensus_witness_is_refused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = os.path.join(directory, "receipt-fixture")
+            shutil.copytree(RECEIPT_FIXTURE, fixture)
+            path = os.path.join(fixture, "manifest.json")
+            manifest = read_json(path)
+            manifest["components"] = [
+                component
+                for component in manifest["components"]
+                if component["path"] != "receipt-witness.json"
+            ]
+            with open(path, "w") as handle:
+                json.dump(manifest, handle)
+            with self.assertRaisesRegex(capture.CaptureError, "receipt-witness.json"):
+                taken(fixture)
+
+    def test_cross_version_baselines_are_refused(self):
+        with self.assertRaisesRegex(capture.CaptureError, "cross-version"):
+            taken(
+                RECEIPT_FIXTURE,
+                previous=GOLDFINCH,
+                previous_name="goldfinch-v0",
+                first_capture_reason=None,
+            )
+
+    def test_manifest_v2_component_count_is_bounded_before_file_reads(self):
+        maximum = 1024
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = os.path.join(directory, "receipt-fixture")
+            shutil.copytree(RECEIPT_FIXTURE, fixture)
+            path = os.path.join(fixture, "manifest.json")
+            manifest = read_json(path)
+            manifest["components"] = [
+                copy.deepcopy(manifest["components"][0])
+                for _ in range(maximum + 1)
+            ]
+            with open(path, "w") as handle:
+                json.dump(manifest, handle)
+            with mock.patch.object(
+                capture,
+                "components_of",
+                side_effect=AssertionError("components were read before the cap"),
+            ):
+                with self.assertRaisesRegex(
+                    capture.CaptureError,
+                    "records at most %d" % maximum,
+                ):
+                    taken(fixture)
+
+    def test_manifest_v2_total_bytes_are_bounded_before_file_reads(self):
+        manifest = read_json(os.path.join(RECEIPT_FIXTURE, "manifest.json"))
+        for entry in manifest["components"][:5]:
+            entry["bytes"] = predicate.MAX_BYTES
+        by_path = {entry["path"]: entry for entry in manifest["components"]}
+        present = [
+            (relative, os.path.join(RECEIPT_FIXTURE, relative))
+            for relative in by_path
+        ] + [
+            (
+                capture.MANIFEST,
+                os.path.join(RECEIPT_FIXTURE, capture.MANIFEST),
+            )
+        ]
+
+        def pretend_read(root, relative, what, max_bytes, keep_bytes=False):
+            entry = by_path[relative]
+            return (
+                {"sha256": entry["sha256"]},
+                entry["bytes"],
+                b"{}" if keep_bytes else None,
+            )
+
+        maximum_bytes = 2 * 1024 * 1024 * 1024
+        with mock.patch.object(
+            capture.tree, "files", return_value=present
+        ) as walked, mock.patch.object(
+            capture, "read_component", side_effect=pretend_read
+        ) as reader:
+            with self.assertRaisesRegex(capture.CaptureError, str(maximum_bytes)):
+                capture.components_of(RECEIPT_FIXTURE, manifest)
+        walked.assert_not_called()
+        reader.assert_not_called()
+
+    def test_manifest_v2_refuses_a_component_segment_that_names_nothing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = os.path.join(directory, "receipt-fixture")
+            shutil.copytree(RECEIPT_FIXTURE, fixture)
+            source = os.path.join(fixture, "plan.json")
+            os.mkdir(os.path.join(fixture, "a"))
+            os.rename(source, os.path.join(fixture, "a", " "))
+            path = os.path.join(fixture, "manifest.json")
+            manifest = read_json(path)
+            for component in manifest["components"]:
+                if component["path"] == "plan.json":
+                    component["path"] = "a/ "
+            with open(path, "w") as handle:
+                json.dump(manifest, handle)
+            with self.assertRaisesRegex(capture.CaptureError, "fixture-relative"):
+                taken(fixture)
+
+    def test_manifest_v2_refuses_an_invisible_component_segment(self):
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = os.path.join(directory, "receipt-fixture")
+            shutil.copytree(RECEIPT_FIXTURE, fixture)
+            source = os.path.join(fixture, "plan.json")
+            os.mkdir(os.path.join(fixture, "a"))
+            invisible = "\u200b"
+            os.rename(source, os.path.join(fixture, "a", invisible))
+            path = os.path.join(fixture, "manifest.json")
+            manifest = read_json(path)
+            for component in manifest["components"]:
+                if component["path"] == "plan.json":
+                    component["path"] = "a/" + invisible
+            with open(path, "w") as handle:
+                json.dump(manifest, handle)
+            with self.assertRaisesRegex(capture.CaptureError, "fixture-relative"):
+                taken(fixture)
+
+    def test_manifest_v2_refuses_release_invisible_capture_identifiers(self):
+        invisible = ("\u200b", "\x00", "\ue000", "\u2060")
+        for value in invisible:
+            for field, overrides in (
+                ("capture tool", {"capture_tool": value}),
+                ("capture command", {"capture_command": [value]}),
+                ("fixture name", {"name": value}),
+            ):
+                with self.subTest(field=field, value=repr(value)):
+                    with self.assertRaisesRegex(
+                        capture.CaptureError, "portable graphic"
+                    ):
+                        taken(RECEIPT_FIXTURE, **overrides)
+
+    def test_manifest_v2_refuses_a_current_name_colliding_with_a_component(self):
+        with self.assertRaisesRegex(capture.CaptureError, "subject names"):
+            taken(RECEIPT_FIXTURE, name="header.json")
+
+    def test_each_component_read_is_bounded_by_its_declared_size(self):
+        manifest = read_json(os.path.join(RECEIPT_FIXTURE, "manifest.json"))
+        by_path = {entry["path"]: entry for entry in manifest["components"]}
+        present = [
+            (relative, os.path.join(RECEIPT_FIXTURE, relative))
+            for relative in by_path
+        ] + [
+            (
+                capture.MANIFEST,
+                os.path.join(RECEIPT_FIXTURE, capture.MANIFEST),
+            )
+        ]
+        observed = {}
+
+        def pretend_read(root, relative, what, max_bytes, keep_bytes=False):
+            observed[relative] = max_bytes
+            entry = by_path[relative]
+            return (
+                {"sha256": entry["sha256"]},
+                entry["bytes"],
+                b"{}" if keep_bytes else None,
+            )
+
+        with mock.patch.object(
+            capture.tree, "files", return_value=present
+        ), mock.patch.object(
+            capture, "read_component", side_effect=pretend_read
+        ):
+            capture.components_of(RECEIPT_FIXTURE, manifest)
+
+        for path, entry in by_path.items():
+            expected = entry["bytes"]
+            if path == capture.HEADER:
+                expected = min(expected, capture.MAX_MANIFEST_BYTES)
+            with self.subTest(path=path):
+                self.assertEqual(observed[path], expected)
+
+    def test_manifest_shape_is_settled_before_component_reads(self):
+        def invalid_chain_id(manifest):
+            manifest["chain_id"] = "one"
+
+        def invalid_block_number(manifest):
+            manifest["block"]["number"] = "0x01"
+
+        def invalid_block_hash(manifest):
+            manifest["block"]["hash"] = "0xnot-a-block-hash"
+
+        def invalid_evidence_count(manifest):
+            manifest["evidence_counts"]["proof_backed"] = True
+
+        def invalid_component_digest(manifest):
+            manifest["components"][0]["sha256"] = "not-a-digest"
+
+        for label, mutate in (
+            ("chain id", invalid_chain_id),
+            ("block number", invalid_block_number),
+            ("block hash", invalid_block_hash),
+            ("evidence count", invalid_evidence_count),
+            ("component digest", invalid_component_digest),
+        ):
+            with self.subTest(field=label), tempfile.TemporaryDirectory() as directory:
+                fixture = os.path.join(directory, "receipt-fixture")
+                shutil.copytree(RECEIPT_FIXTURE, fixture)
+                path = os.path.join(fixture, "manifest.json")
+                manifest = read_json(path)
+                mutate(manifest)
+                with open(path, "w") as handle:
+                    json.dump(manifest, handle)
+
+                original = capture.read_component
+                component_reads = []
+
+                def observe(root, relative, what, max_bytes, keep_bytes=False):
+                    if relative != capture.MANIFEST:
+                        component_reads.append(relative)
+                    return original(root, relative, what, max_bytes, keep_bytes)
+
+                with mock.patch.object(
+                    capture, "read_component", side_effect=observe
+                ):
+                    with self.assertRaises(capture.CaptureError):
+                        taken(fixture)
+                self.assertEqual(component_reads, [])
+
+    def test_empty_directories_count_against_the_capture_tree_bound(self):
+        class EmptyDirectory:
+            def __init__(self, root, index):
+                self.name = "empty-%04d" % index
+                self.path = os.path.join(root, self.name)
+
+            def is_dir(self, follow_symlinks=True):
+                return True
+
+            def is_symlink(self):
+                return False
+
+            def stat(self, follow_symlinks=True):
+                return os.stat_result((0o040755, 0, 0, 1, 0, 0, 0, 0, 0, 0))
+
+        class WideScan:
+            def __init__(self, root):
+                self.entries = iter(
+                    EmptyDirectory(root, index)
+                    for index in range(capture.tree.MAX_FILES + 1)
+                )
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                return next(self.entries)
+
+            def close(self):
+                pass
+
+        with mock.patch.object(
+            capture.tree.os,
+            "scandir",
+            return_value=WideScan(RECEIPT_FIXTURE),
+        ):
+            with self.assertRaisesRegex(
+                capture.CaptureError,
+                "more than %d entries" % capture.tree.MAX_FILES,
+            ):
+                capture.tree.files(RECEIPT_FIXTURE, "fixture")
 
 
 class TheShippedFixtureTests(SkipUnlessGoldfinch):
@@ -167,6 +498,32 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
             handle.write("{not json")
         self.assertIn("is not JSON", self.refused())
 
+    def test_a_manifest_naming_one_key_twice_is_refused(self):
+        path = os.path.join(self.fixture, "manifest.json")
+        with open(path, "rb") as handle:
+            raw = handle.read()
+        with open(path, "wb") as handle:
+            handle.write(b'{"schema_version": 1,' + raw.lstrip()[1:])
+        self.assertIn("duplicate key", self.refused())
+
+    def test_a_parse_refusal_retains_none_of_the_hostile_document(self):
+        marker = "PRIVATE_PROVIDER_VALUE_"
+        path = os.path.join(self.fixture, "manifest.json")
+        with open(path, "w") as handle:
+            handle.write('{"%s%s": ' % (marker, "x" * 100000))
+        with self.assertRaises(capture.CaptureError) as caught:
+            taken(self.fixture)
+        error = caught.exception
+        self.assertNotIn(marker, str(error))
+        self.assertIsNone(error.__cause__)
+        self.assertIsNone(error.__context__)
+
+    def test_a_symlinked_manifest_is_refused_before_its_target_is_read(self):
+        target = os.path.join(self.root, "manifest.json")
+        shutil.move(os.path.join(self.fixture, "manifest.json"), target)
+        os.symlink(target, os.path.join(self.fixture, "manifest.json"))
+        self.assertIn("manifest.json is a symlink", self.refused())
+
     def test_a_manifest_that_is_a_list_is_refused(self):
         with open(os.path.join(self.fixture, "manifest.json"), "w") as handle:
             handle.write("[]")
@@ -192,9 +549,9 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
 
     def test_a_later_schema_version_is_refused(self):
         manifest = self.manifest()
-        manifest["schema_version"] = 2
+        manifest["schema_version"] = 3
         self.rewrite(manifest)
-        self.assertIn("this capture reads 1", self.refused())
+        self.assertIn("reads only 1 or 2", self.refused())
 
     def test_a_boolean_schema_version_is_refused(self):
         """`True == 1` in Python, so a plain inequality let `true` through the one
@@ -211,7 +568,7 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
         call a document a Lazarus manifest on the strength of a key holding
         `{"a": 1}`."""
         for value in (None, "", "   ", 0, True, [], {}, {"a": 1}, "beef",
-                      "F" * 64, "0x" + "a" * 64):
+                      "F" * 64, "0x" + "a" * 64, "a" * 64 + "\n"):
             manifest = self.manifest()
             manifest["fixture_digest"] = value
             self.rewrite(manifest)
@@ -340,6 +697,70 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
         self.rewrite(manifest)
         self.assertIn("is not JSON", self.refused())
 
+    def test_a_symlinked_header_is_refused_before_its_target_is_read(self):
+        target = os.path.join(self.root, "header.json")
+        shutil.move(os.path.join(self.fixture, "header.json"), target)
+        os.symlink(target, os.path.join(self.fixture, "header.json"))
+        self.assertIn("header.json is a symlink", self.refused())
+
+    def test_the_state_root_comes_from_the_header_bytes_that_were_digested(self):
+        before = self.header()["state_root"].lower()
+        original = capture.components_of
+
+        def mutate_after_components(*arguments, **keywords):
+            result = original(*arguments, **keywords)
+            header = self.header()
+            header["state_root"] = "0x" + "77" * 32
+            with open(os.path.join(self.fixture, "header.json"), "w") as handle:
+                json.dump(header, handle)
+            return result
+
+        with mock.patch.object(
+            capture, "components_of", side_effect=mutate_after_components
+        ):
+            statement = taken(self.fixture)
+        self.assertEqual(statement["predicate"]["chain"]["state_root"], before)
+
+    def test_a_component_swap_to_a_symlink_after_the_check_is_refused(self):
+        target = os.path.join(self.fixture, "plan.json")
+        outside = os.path.join(self.root, "outside-plan.json")
+        with open(target, "rb") as handle:
+            replacement = handle.read() + b" "
+        with open(outside, "wb") as handle:
+            handle.write(replacement)
+        manifest = self.manifest()
+        for entry in manifest["components"]:
+            if entry["path"] == "plan.json":
+                entry["sha256"] = hashlib.sha256(replacement).hexdigest()
+                entry["bytes"] = len(replacement)
+        self.rewrite(manifest)
+
+        original_is_file = os.path.isfile
+        calls = {"target": 0}
+
+        def swap_after_check(path):
+            result = original_is_file(path)
+            if path == target:
+                calls["target"] += 1
+                if calls["target"] == 2 and result:
+                    os.unlink(target)
+                    os.symlink(outside, target)
+            return result
+
+        with mock.patch.object(os.path, "isfile", side_effect=swap_after_check):
+            self.assertIn("digests to", self.refused())
+
+    def test_an_over_limit_declared_component_is_refused_before_digesting(self):
+        manifest = self.manifest()
+        manifest["components"][0]["bytes"] = predicate.MAX_BYTES + 1
+        self.rewrite(manifest)
+        with mock.patch.object(
+            capture.digests,
+            "of_file",
+            side_effect=AssertionError("component bytes were read before the cap"),
+        ):
+            self.assertIn(str(predicate.MAX_BYTES), self.refused())
+
     def test_a_component_the_directory_lacks_is_refused(self):
         os.unlink(os.path.join(self.fixture, "plan.json"))
         self.assertIn("which the fixture does not hold", self.refused())
@@ -352,8 +773,12 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
         self.assertIn("does not declare", message)
 
     def test_a_digest_that_disagrees_is_refused(self):
-        with open(os.path.join(self.fixture, "plan.json"), "ab") as handle:
-            handle.write(b"\n")
+        path = os.path.join(self.fixture, "plan.json")
+        with open(path, "rb") as handle:
+            changed = bytearray(handle.read())
+        changed[-1] ^= 1
+        with open(path, "wb") as handle:
+            handle.write(changed)
         self.assertIn("and it digests to", self.refused())
 
     def test_a_byte_count_that_disagrees_is_refused(self):
@@ -481,7 +906,14 @@ class ArgumentTests(SkipUnlessGoldfinch):
                 self.assertIn("does not name the tool", str(caught.exception))
 
     def test_the_command_is_required_as_an_argv(self):
-        for value in (None, [], ["forge", ""], ["forge", "  "], [1]):
+        for value in (
+            None,
+            [],
+            "lazarus verify fixture",
+            ["forge", ""],
+            ["forge", "  "],
+            [1],
+        ):
             with self.subTest(command=value):
                 with self.assertRaises(capture.CaptureError):
                     taken(GOLDFINCH, capture_command=value)
@@ -500,9 +932,20 @@ class ArgumentTests(SkipUnlessGoldfinch):
                 self.assertIn("--first-capture-reason", str(caught.exception))
 
     def test_a_previous_needs_its_name(self):
-        with self.assertRaises(capture.CaptureError) as caught:
-            taken(GOLDFINCH, previous=GOLDFINCH, previous_name=None)
-        self.assertIn("--previous-name", str(caught.exception))
+        for value in (None, "", "   "):
+            with self.subTest(previous_name=value):
+                with self.assertRaises(capture.CaptureError) as caught:
+                    taken(GOLDFINCH, previous=GOLDFINCH, previous_name=value)
+                self.assertIn("--previous-name", str(caught.exception))
+
+    def test_v1_retains_its_historical_nonblank_identifier_contract(self):
+        statement = taken(
+            GOLDFINCH,
+            name="\u200b",
+            capture_tool="\u200b",
+            capture_command=["\u200b"],
+        )
+        self.assertTrue(report_for(statement).ok)
 
     def test_a_fixture_that_is_not_a_directory_is_refused(self):
         with self.assertRaises(capture.CaptureError):
@@ -541,6 +984,21 @@ class WriteTests(unittest.TestCase):
             self.assertEqual(json.load(handle), {"second": True})
         leftovers = [n for n in os.listdir(directory) if n.startswith(".ariadne-")]
         self.assertEqual(leftovers, [])
+
+    def test_writer_pins_utf8_and_literal_lf(self):
+        directory = tempfile.mkdtemp(prefix="ariadne-write-")
+        self.addCleanup(shutil.rmtree, directory, True)
+        path = os.path.join(directory, "unicode.json")
+        with mock.patch.object(
+            capture.tempfile,
+            "NamedTemporaryFile",
+            wraps=tempfile.NamedTemporaryFile,
+        ) as temporary:
+            capture.write(path, '{"label": "caf\u00e9"}\n')
+        self.assertEqual(temporary.call_args.kwargs["encoding"], "utf-8")
+        self.assertEqual(temporary.call_args.kwargs["newline"], "\n")
+        with open(path, "rb") as handle:
+            self.assertEqual(handle.read(), b'{"label": "caf\xc3\xa9"}\n')
 
     def test_a_failed_write_leaves_no_temporary_file(self):
         directory = tempfile.mkdtemp(prefix="ariadne-write-")

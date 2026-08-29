@@ -7,6 +7,7 @@ finds out here rather than from a reader.
 """
 
 import argparse
+import json
 import os
 import re
 import unittest
@@ -38,6 +39,28 @@ WORDS = {
     15: "fifteen",
 }
 
+# README fixture counts describe the corpus exercised through the shipped
+# aggregate collector.  Focused adapter specimens can live beside it before an
+# adapter is registered, so classify by a file consumed by a shipped adapter
+# rather than by every top-level directory.
+AGGREGATE_FIXTURE_ANCHORS = frozenset(
+    {
+        "wildcat.json",
+        "morpho.json",
+        "euler-v1.json",
+        "euler-events.json",
+        "euler-liquidations.json",
+        "euler-vaults.json",
+    }
+)
+
+# Step 4 publishes the Midnight adapter in the package version and the
+# marketplace prose, so it crosses this release boundary and joins the counts
+# the public documents are allowed to claim.
+PUBLISHED_ADAPTER_IDS = frozenset(
+    {"wildcat", "morpho-blue", "euler-v1", "euler", "morpho-midnight"}
+)
+
 
 def read(path):
     with open(path, encoding="utf-8") as handle:
@@ -46,11 +69,11 @@ def read(path):
 
 def counts():
     venues = registry.all_venues()
-    gaps = [v for v in venues if not v.implemented]
+    gaps = [v for v in venues if v.id not in PUBLISHED_ADAPTER_IDS]
     # Keyless is not the same as buildable. Maple answers without a key and
     # publishes no schema, so it needs something nobody here can supply.
     adapter_only = [v for v in gaps if v.auth == "none" and v.id != "maple"]
-    return len(venues), len(venues) - len(gaps), len(gaps), len(adapter_only)
+    return len(venues), len(PUBLISHED_ADAPTER_IDS), len(gaps), len(adapter_only)
 
 
 class TestTheDocumentsCountCorrectly(unittest.TestCase):
@@ -87,11 +110,52 @@ class TestTheDocumentsCountCorrectly(unittest.TestCase):
         self.assertIn(f"{WORDS[self.built]} of the {WORDS[self.total]}", text)
         self.assertIn(f"other {WORDS[self.gaps]}", text)
 
+    def test_the_three_reader_surfaces_state_the_midnight_limits(self):
+        """The limits are the point of shipping a fail-closed venue.
+
+        A reader who learns Midnight ships and not what its coverage excludes
+        has been told the useful half. Each claim below is a boundary the
+        adapter actually enforces, so prose that drops one is overclaiming.
+        """
+        surfaces = {
+            "README.md": read(README),
+            "SKILL.md": read(os.path.join(os.path.dirname(REFERENCES), "SKILL.md")),
+            "venues.md": read(os.path.join(REFERENCES, "venues.md")),
+        }
+        claims = {
+            "Base-scoped": ("Base chain id 8453",),
+            "API-scoped, not archive-complete": ("API-scoped",),
+            "unpublished lower bound": ("lower bound is unpublished", "unpublished\nhistory lower bound", "unpublished history lower bound"),
+            "no partial answer": ("no records and a\nnamed gap", "no records and a named gap", "no records and a named gap instead"),
+            "secondary close refused": ("secondary-market borrow exit is refused",),
+            "late settlement is not repayment": ("never as voluntary repayment",),
+        }
+        for name, text in surfaces.items():
+            flat = " ".join(text.split())
+            for claim, variants in claims.items():
+                with self.subTest(surface=name, claim=claim):
+                    self.assertTrue(
+                        any(" ".join(v.split()) in flat for v in variants),
+                        f"{name} does not state the {claim} limit",
+                    )
+
     def test_every_venue_in_the_registry_is_named_somewhere_a_reader_looks(self):
         text = read(README) + read(os.path.join(REFERENCES, "venues.md"))
         for venue in registry.all_venues():
             with self.subTest(venue=venue.id):
                 self.assertIn(venue.name, text)
+
+    def test_the_publication_pass_left_no_adapter_unpublished(self):
+        """Both directions, so neither set can drift from the other.
+
+        Midnight was the one adapter this boundary held back while Step 3
+        shipped its runtime. Step 4 published it, so the sets now agree: a
+        registered adapter the documents do not count, or a counted adapter
+        with no runtime, is a defect either way.
+        """
+        runtime = {venue.id for venue in registry.implemented()}
+        self.assertEqual(runtime - PUBLISHED_ADAPTER_IDS, set())
+        self.assertEqual(PUBLISHED_ADAPTER_IDS - runtime, set())
 
 
 class TestTheQuickstartIsTheOneThatWasRun(unittest.TestCase):
@@ -123,8 +187,29 @@ class TestTheQuickstartIsTheOneThatWasRun(unittest.TestCase):
                 "euler-events.json",
                 "euler-liquidations.json",
                 "euler-vaults.json",
+                "morpho-midnight.json",
             },
         )
+
+    def test_every_aggregate_fixture_carries_a_midnight_response(self):
+        directory = os.path.join(support.PLUGIN_ROOT, "tests", "fixtures")
+        aggregate = [
+            name
+            for name in os.listdir(directory)
+            if os.path.isdir(os.path.join(directory, name))
+            and AGGREGATE_FIXTURE_ANCHORS.intersection(
+                os.listdir(os.path.join(directory, name))
+            )
+        ]
+        self.assertEqual(len(aggregate), 11)
+        for name in aggregate:
+            with self.subTest(name=name):
+                fixture = os.path.join(directory, name, "morpho-midnight.json")
+                self.assertTrue(os.path.isfile(fixture))
+                with open(fixture, encoding="utf-8") as handle:
+                    source = json.load(handle)["source"]
+                self.assertEqual(source["date"], "2026-08-28")
+                self.assertEqual(source["origin"], "https://api.morpho.org")
 
 
 class TestTheReadmeDescribesTheToolThatExists(unittest.TestCase):
@@ -167,6 +252,9 @@ class TestTheReadmeDescribesTheToolThatExists(unittest.TestCase):
             name
             for name in os.listdir(directory)
             if os.path.isdir(os.path.join(directory, name))
+            and AGGREGATE_FIXTURE_ANCHORS.intersection(
+                os.listdir(os.path.join(directory, name))
+            )
         ]
         self.assertIn(
             f"{WORDS[len(shipped)].capitalize()} of them",

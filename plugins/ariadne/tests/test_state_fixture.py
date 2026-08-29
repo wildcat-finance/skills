@@ -5,6 +5,7 @@ rule no other predicate has: a count of proved records is refused when there was
 nothing to prove them against.
 """
 
+import copy
 import hashlib
 import json
 import os
@@ -22,6 +23,7 @@ ELSEWHERE = {"sha256": hashlib.sha256(b"some other fixture").hexdigest()}
 PARAMETERS = {"sha256": hashlib.sha256(b"parameters").hexdigest()}
 BLOCK_HASH = "0x" + hashlib.sha256(b"block").hexdigest()
 STATE_ROOT = "0x" + hashlib.sha256(b"root").hexdigest()
+RECEIPTS_ROOT = "0x" + hashlib.sha256(b"receipts").hexdigest()
 
 LAZARUS_MANIFEST_SCHEMA = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
@@ -90,6 +92,45 @@ def built(body, subject=None):
             "predicate": body,
         }
     )
+
+
+def predicate_v2(**overrides):
+    out = copy.deepcopy(predicate())
+    out["chain"]["receipts_root"] = RECEIPTS_ROOT
+    out["evidence"]["receipt_trie_proved"] = 2
+    out["replay"]["provider_independence_claim"] = False
+    out["deltas"]["current"] = {"name": "fixture-v2", "digest": HEADER}
+    out.update(overrides)
+    return out
+
+
+def built_v2(body, subject=None):
+    return statement.Statement.from_dict(
+        {
+            "_type": statement.STATEMENT_TYPE,
+            "subject": subject
+            or [
+                {"name": "header.json", "digest": HEADER},
+                {"name": "proofs.jsonl", "digest": PROOFS},
+            ],
+            "predicateType": fixture.V2.TYPE,
+            "predicate": body,
+        }
+    )
+
+
+def gate_v2(number, body, subject=None):
+    for found in fixture.V2.check(built_v2(body, subject)):
+        if found.number == number:
+            return found
+    raise AssertionError("no gate %r" % number)
+
+
+def named_v2(name, body, subject=None):
+    for found in fixture.V2.check(built_v2(body, subject)):
+        if found.name == name:
+            return found
+    raise AssertionError("no check named %r" % name)
 
 
 def gate(number, body, subject=None):
@@ -172,6 +213,25 @@ class GateTwoTests(unittest.TestCase):
         body["chain"]["block_hash"] = "0xdeadbeef"
         found = gate(2, body)
         self.assertFalse(found.passed)
+
+    def test_hash_fields_with_a_terminal_line_feed_fail(self):
+        for field, value in (
+            ("block_hash", BLOCK_HASH),
+            ("state_root", STATE_ROOT),
+        ):
+            body = predicate()
+            body["chain"][field] = value + "\n"
+            found = gate(2, body)
+            with self.subTest(field=field):
+                self.assertFalse(found.passed)
+                self.assertIn(field, found.detail)
+
+    def test_an_all_zero_hash_cannot_evade_the_sentinel_with_a_line_feed(self):
+        body = predicate()
+        body["chain"]["block_hash"] = fixture.ZERO_HASH + "\n"
+        found = gate(2, body)
+        self.assertFalse(found.passed)
+        self.assertIn("block_hash", found.detail)
 
     def test_a_state_root_that_is_present_and_malformed_fails(self):
         body = predicate()
@@ -670,6 +730,11 @@ class SchemaAgreementTests(unittest.TestCase):
             "properties"
         ]["path"]
         self.assertIn("pattern", path_shape)
+        chain = schema["properties"]["chain"]["properties"]
+        for field in ("block_hash", "state_root"):
+            with self.subTest(field=field):
+                self.assertEqual(chain[field].get("minLength"), 66)
+                self.assertEqual(chain[field].get("maxLength"), 66)
 
     INEXPRESSIBLE = {
         # A schema describes the predicate body. Whether a component digest also
@@ -820,6 +885,356 @@ class LazarusAgreementTests(unittest.TestCase):
         for name in fixture.EVIDENCE_CLASSES:
             with self.subTest(evidence_class=name):
                 self.assertEqual(counts[name]["maximum"], fixture.MAX_COUNT)
+
+
+class VersionTwoTests(unittest.TestCase):
+    def assertSafePass(self, found, name):
+        self.assertTrue(found.passed)
+        self.assertEqual(
+            found.detail,
+            "state-fixture/v2 %s check passed" % name,
+        )
+
+    def assertSafeFailure(self, found, name):
+        self.assertFalse(found.passed)
+        self.assertEqual(
+            found.detail,
+            "state-fixture/v2 %s check failed" % name,
+        )
+
+    def test_the_complete_v2_predicate_passes_its_checks(self):
+        failed = [
+            gate
+            for gate in fixture.V2.check(built_v2(predicate_v2()))
+            if not gate.passed
+        ]
+        self.assertEqual(failed, [], [gate.line() for gate in failed])
+
+    def test_v2_hashes_with_a_terminal_line_feed_fail(self):
+        for field, value in (
+            ("block_hash", BLOCK_HASH),
+            ("state_root", STATE_ROOT),
+            ("receipts_root", RECEIPTS_ROOT),
+        ):
+            body = predicate_v2()
+            body["chain"][field] = value + "\n"
+            found = gate_v2(2, body)
+            with self.subTest(field=field):
+                self.assertSafeFailure(found, "environment")
+
+    def test_v2_schema_carries_an_exact_hash_width(self):
+        path = os.path.join(
+            support.PLUGIN_ROOT, "schemas", "state-fixture-v2.json"
+        )
+        with open(path, "rb") as handle:
+            schema = json.loads(handle.read().decode("utf-8"))
+        shape = schema["$defs"]["hash32"]
+        self.assertEqual(shape.get("minLength"), 66)
+        self.assertEqual(shape.get("maxLength"), 66)
+
+    def test_v2_requires_both_delta_endpoints_even_on_a_first_capture(self):
+        for side in ("baseline", "current"):
+            body = predicate_v2()
+            del body["deltas"][side]
+            found = gate_v2(5, body)
+            with self.subTest(side=side):
+                self.assertSafeFailure(found, "deltas")
+
+    def test_v2_refuses_even_an_empty_delta_section_against_a_null_baseline(self):
+        body = predicate_v2()
+        body["deltas"]["components"] = {}
+        found = gate_v2(5, body)
+        self.assertSafeFailure(found, "deltas")
+
+    def test_v2_component_paths_match_the_published_portable_shape(self):
+        for path in (
+            "a\\b",
+            ".",
+            "./header.json",
+            "a/./header.json",
+            "a/ ",
+            "header.json/",
+            "C:header.json",
+            "1:header.json",
+            "\u96ea:header.json",
+            "header\x00.json",
+            "x" * 1025,
+        ):
+            body = predicate_v2()
+            body["fixture_subjects"][0]["path"] = path
+            found = gate_v2(2, body)
+            with self.subTest(path=path[:40]):
+                self.assertSafeFailure(found, "environment")
+
+    def test_v2_identifiers_and_path_segments_need_a_portable_graphic(self):
+        self.assertTrue(
+            hasattr(fixture, "portable_name_v2"),
+            "state-fixture/v2 exposes its published portable-name predicate",
+        )
+        if not hasattr(fixture, "portable_name_v2"):
+            return
+        invisible = ("\u200b", "\x00", "\ue000", "\u2060")
+        for value in invisible:
+            cases = []
+
+            capture_tool = predicate_v2()
+            capture_tool["capture"]["tool"] = value
+            cases.append(("capture tool", 2, capture_tool, "environment"))
+
+            command = predicate_v2()
+            command["capture"]["command"][0] = value
+            cases.append(("capture command", 2, command, "environment"))
+
+            component_name = predicate_v2()
+            component_name["fixture_subjects"][0]["name"] = value
+            cases.append(("component name", 2, component_name, "environment"))
+
+            component_path = predicate_v2()
+            component_path["fixture_subjects"][0]["path"] = "a/" + value
+            cases.append(("component path", 2, component_path, "environment"))
+
+            current_name = predicate_v2()
+            current_name["deltas"]["current"]["name"] = value
+            cases.append(("current name", 5, current_name, "deltas"))
+
+            claim_name = predicate_v2()
+            claim_name["claims"] = [
+                {
+                    "name": value,
+                    "subject": HEADER,
+                    "disposition": "passed",
+                }
+            ]
+            cases.append(
+                ("claim name", None, claim_name, "predicate-fields")
+            )
+
+            for field, number, body, check in cases:
+                with self.subTest(value=repr(value), field=field):
+                    found = (
+                        gate_v2(number, body)
+                        if number is not None
+                        else named_v2(check, body)
+                    )
+                    self.assertSafeFailure(found, check)
+
+        for value in ("fixture", "\u96ea.json", "\u96ea fixture"):
+            with self.subTest(visible=value):
+                self.assertTrue(fixture.portable_name_v2(value))
+
+    def test_v2_failed_predicate_checks_do_not_echo_hostile_values(self):
+        marker = "PRIVATE_PROVIDER_VALUE_" + "x" * 200000
+        cases = []
+
+        environment = predicate_v2()
+        environment["chain"][marker] = 1
+        cases.append((2, "environment", environment))
+
+        deltas = predicate_v2()
+        deltas["deltas"]["current"][marker] = "unchecked"
+        cases.append((5, "deltas", deltas))
+
+        fields = predicate_v2(**{marker: "unchecked"})
+        cases.append((None, "predicate-fields", fields))
+
+        evidence = predicate_v2()
+        evidence["evidence"][marker] = 1
+        cases.append((None, "evidence", evidence))
+
+        replay = predicate_v2()
+        replay["replay"][marker] = False
+        cases.append((None, "replay", replay))
+
+        for number, name, body in cases:
+            with self.subTest(check=name):
+                found = (
+                    gate_v2(number, body)
+                    if number is not None
+                    else named_v2(name, body)
+                )
+                self.assertSafeFailure(found, name)
+                self.assertNotIn(marker, found.line())
+                self.assertLessEqual(len(found.line()), 128)
+
+    def test_v2_passing_predicate_checks_do_not_echo_hostile_values(self):
+        marker = "PRIVATE_PROVIDER_VALUE_" + "x" * 200000
+        body = predicate_v2()
+        body["capture"]["tool"] = marker
+        found = gate_v2(2, body)
+        self.assertSafePass(found, "environment")
+        self.assertNotIn(marker, found.line())
+        self.assertLessEqual(len(found.line()), 128)
+
+    def test_v2_subject_names_match_release_normalisation(self):
+        for location in ("fixture", "statement"):
+            body = predicate_v2()
+            subjects = None
+            if location == "fixture":
+                body["fixture_subjects"][0]["name"] = "pl\u00e1n.json"
+                body["fixture_subjects"][1]["name"] = "pla\u0301n.json"
+            else:
+                subjects = [
+                    {"name": "pl\u00e1n.json", "digest": HEADER},
+                    {"name": "pla\u0301n.json", "digest": PROOFS},
+                ]
+            with self.subTest(location=location):
+                self.assertSafeFailure(
+                    named_v2("subject-names", body, subjects), "subject-names"
+                )
+
+        body = predicate_v2()
+        subjects = [
+            {"name": "header.json", "digest": HEADER},
+            {"name": "proofs.jsonl", "digest": PROOFS},
+            {"name": "header.json", "digest": ELSEWHERE},
+        ]
+        self.assertSafeFailure(
+            named_v2("subject-names", body, subjects), "subject-names"
+        )
+
+    def test_v2_refuses_more_components_than_its_schema_publishes(self):
+        maximum = 1024
+        body = predicate_v2()
+        body["fixture_subjects"] = [
+            copy.deepcopy(body["fixture_subjects"][0])
+            for _ in range(maximum + 1)
+        ]
+        found = gate_v2(2, body)
+        self.assertSafeFailure(found, "environment")
+
+    def test_v2_closes_the_nested_shapes_its_schema_closes(self):
+        cases = []
+
+        capture_extra = predicate_v2()
+        capture_extra["capture"]["extra_note"] = "unchecked"
+        cases.append((2, capture_extra, "extra_note"))
+
+        subject_extra = predicate_v2()
+        subject_extra["fixture_subjects"][0]["extra_note"] = "unchecked"
+        cases.append((2, subject_extra, "extra_note"))
+
+        delta_extra = predicate_v2()
+        delta_extra["deltas"]["current"]["extra_note"] = "unchecked"
+        cases.append((5, delta_extra, "extra_note"))
+
+        changed_extra = predicate_v2()
+        changed_extra["deltas"] = {
+            "baseline": {"name": "old", "digest": HEADER},
+            "current": {"name": "fixture-v2", "digest": HEADER},
+            "components": {
+                "changed": [
+                    {
+                        "baseline": "old-header.json",
+                        "current": "header.json",
+                        "extra_note": "unchecked",
+                    }
+                ]
+            },
+        }
+        cases.append((5, changed_extra, "extra_note"))
+
+        reason_type = predicate_v2()
+        reason_type["deltas"]["reason"] = 17
+        cases.append((5, reason_type, "reason must be a string"))
+
+        for number, body, detail in cases:
+            with self.subTest(gate=number, detail=detail):
+                found = gate_v2(number, body)
+                self.assertSafeFailure(
+                    found, "environment" if number == 2 else "deltas"
+                )
+
+    def test_v2_claim_shape_matches_the_published_schema(self):
+        for edit, detail in (
+            (lambda claim: claim.pop("name"), "name"),
+            (lambda claim: claim.update(detail="not an object"), "detail"),
+            (lambda claim: claim.update(reason=17), "reason"),
+        ):
+            body = predicate_v2()
+            body["claims"] = [
+                {
+                    "name": "component checked",
+                    "subject": HEADER,
+                    "disposition": "passed",
+                }
+            ]
+            edit(body["claims"][0])
+            found = named_v2("predicate-fields", body)
+            with self.subTest(detail=detail):
+                self.assertSafeFailure(found, "predicate-fields")
+
+    def test_state_and_receipt_authority_are_independent(self):
+        state_only = predicate_v2()
+        state_only["evidence"]["receipt_trie_proved"] = 0
+        del state_only["chain"]["receipts_root"]
+        self.assertTrue(named_v2("evidence", state_only).passed)
+
+        receipts_only = predicate_v2()
+        receipts_only["evidence"]["proof_backed"] = 0
+        del receipts_only["chain"]["state_root"]
+        self.assertTrue(named_v2("evidence", receipts_only).passed)
+
+    def test_each_positive_count_needs_its_own_root(self):
+        for evidence_class, root in (
+            ("proof_backed", "state_root"),
+            ("receipt_trie_proved", "receipts_root"),
+        ):
+            body = predicate_v2()
+            del body["chain"][root]
+            found = named_v2("evidence", body)
+            with self.subTest(evidence=evidence_class, root=root):
+                self.assertSafeFailure(found, "evidence")
+
+    def test_zero_counts_need_neither_root(self):
+        body = predicate_v2()
+        body["evidence"]["proof_backed"] = 0
+        body["evidence"]["receipt_trie_proved"] = 0
+        del body["chain"]["state_root"]
+        del body["chain"]["receipts_root"]
+        self.assertTrue(gate_v2(2, body).passed)
+        self.assertTrue(named_v2("evidence", body).passed)
+
+    def test_boolean_or_missing_receipt_counts_are_refused(self):
+        for value in (None, True):
+            body = predicate_v2()
+            if value is None:
+                del body["evidence"]["receipt_trie_proved"]
+            else:
+                body["evidence"]["receipt_trie_proved"] = value
+            with self.subTest(value=value):
+                self.assertFalse(named_v2("evidence", body).passed)
+
+    def test_malformed_or_zero_roots_are_refused_when_present(self):
+        for root in ("state_root", "receipts_root"):
+            for value in ("0x1234", "0x" + "0" * 64):
+                body = predicate_v2()
+                body["chain"][root] = value
+                with self.subTest(root=root, value=value):
+                    self.assertFalse(gate_v2(2, body).passed)
+
+    def test_v2_records_no_network_chain_or_provider_claim(self):
+        for field in fixture.V2.REPLAY_REQUIRED:
+            body = predicate_v2()
+            body["replay"][field] = True
+            with self.subTest(field=field):
+                self.assertFalse(named_v2("replay", body).passed)
+
+    def test_v2_replay_carries_no_executable_command(self):
+        body = predicate_v2()
+        body["commands"] = [
+            {
+                "name": "network",
+                "argv": ["curl", "https://example.invalid"],
+                "determinism": "exact",
+            }
+        ]
+        found = named_v2("replay", body)
+        self.assertSafeFailure(found, "replay")
+
+    def test_transaction_hashes_are_outside_the_v2_predicate_shape(self):
+        body = predicate_v2(transaction_hash="0x" + "99" * 32)
+        found = named_v2("predicate-fields", body)
+        self.assertSafeFailure(found, "predicate-fields")
 
 
 if __name__ == "__main__":

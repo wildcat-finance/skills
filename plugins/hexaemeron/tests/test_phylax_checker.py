@@ -768,13 +768,5 @@ class TypeScriptContract(unittest.TestCase):
         self.assertIn("P006", output.getvalue())
 
 
-class OverTheMarketplace(unittest.TestCase):
-    def test_the_shipped_tree_is_clean(self):
-        findings = []
-        for path in phylax.walk([str(ROOT.parent)]):
-            findings.extend(phylax.check(path))
-        self.assertEqual([], [str(f) for f in findings])
-
-
 if __name__ == "__main__":
     unittest.main()

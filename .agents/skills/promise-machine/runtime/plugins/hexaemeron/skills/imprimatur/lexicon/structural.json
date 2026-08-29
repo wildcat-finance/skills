@@ -1,0 +1,89 @@
+{
+  "_comment": "Structural formulae. Not string-matchable as vocabulary; caught by pattern. These survive every vocabulary ban, which is why a wordlist alone does not work.",
+  "patterns": {
+    "negation_correction": {
+      "note": "The single most reliable machine-prose tell. Sets up a strawman to knock down. 'X isn't just Y, it's Z.'",
+      "severity": "high",
+      "regex": "\\b(?:is|are|was|were|isn't|aren't|wasn't|weren't|it's|this is|that's|they're)\\s*(?:n't\\s+|not\\s+)?(?:just|only|merely|simply)\\b[^.!?]{0,120}?[,;]\\s*(?:it'?s|they'?re|but|it is|rather|that's)\\b"
+    },
+    "not_x_but_y": {
+      "note": "Bare form of the same move.",
+      "severity": "high",
+      "regex": "\\bnot\\s+(?:because|that)\\b[^.!?]{0,90}?\\bbut\\s+(?:because|that)\\b"
+    },
+    "less_x_than_y": {
+      "note": "Comparative variant. 'Less a protocol than a promise.'",
+      "severity": "medium",
+      "regex": "\\bless\\s+(?:a|an|of a)\\b[^.!?]{0,60}?\\bthan\\s+(?:a|an|of a)\\b"
+    },
+    "it_is_not_that": {
+      "note": "'It's not that X; it's that Y.'",
+      "severity": "high",
+      "regex": "\\bit'?s not that\\b[^.!?]{0,120}?\\bit'?s that\\b"
+    },
+    "whether_or": {
+      "note": "False-choice scaffolding. Absorbed from slopbeth STRUCTURE_PATTERNS. Signal only: fires on genuine enumerations.",
+      "severity": "low",
+      "regex": "\\bwhether\\b[^.!?]{0,90}?\\bor\\b",
+      "signal_only": true
+    },
+    "from_x_to_y_sweep": {
+      "note": "Fake-range gesture. 'From governance to settlement.' Absorbed from slopbeth. Signal only: fires on genuine enumerations.",
+      "severity": "medium",
+      "regex": "\\bfrom\\s+\\w+(?:\\s+\\w+)?\\s+to\\s+\\w+(?:\\s+\\w+)?\\s*[,.]",
+      "signal_only": true
+    },
+    "rule_of_three": {
+      "note": "Tidy triad. One or two is prose; a habit of three is a formula. Signal only: fires on genuine enumerations.",
+      "severity": "low",
+      "regex": "\\b[\\w'-]+,\\s+[\\w'-]+,\\s+(?:and|or)\\s+[\\w'-]+\\b",
+      "signal_only": true
+    },
+    "em_dash": {
+      "note": "Per the author's own slopbeth rule. Use a comma, colon, semicolon, or bracket.",
+      "severity": "high",
+      "regex": "[\\u2014\\u2013]"
+    },
+    "bold_lead_bullet": {
+      "note": "'**Thing**: explanation' bullet. Skill-checklist shape leaking into prose.",
+      "severity": "medium",
+      "regex": "^\\s*[-*+]\\s+\\*\\*[^*\\n]{2,60}\\*\\*\\s*[:\\u2014-]"
+    },
+    "title_case_heading": {
+      "note": "Headings In Title Case Like This.",
+      "severity": "medium",
+      "regex": "^#{1,6}\\s+(?:[A-Z][a-z']+\\s+){2,}[A-Z][a-z']+\\s*$",
+      "case_sensitive": true,
+      "allow_exact": [
+        "# Wildcat Labs Skills",
+        "## The Promise Machine"
+      ]
+    },
+    "unrequested_tldr": {
+      "note": "Only permitted when the user asked for one.",
+      "severity": "medium",
+      "regex": "^\\s*(?:\\*\\*)?(?:TL;?DR|Summary|Key Points|Overview)(?:\\*\\*)?\\s*:?\\s*$"
+    },
+    "apology_theatre": {
+      "note": "Absorbed from slopgent. Apology in place of a cause and a fix.",
+      "severity": "high",
+      "regex": "\\b(?:i (?:sincerely |do |must )?apologi[sz]e|my apologies|sorry (?:about|for) (?:the|that|any)|uh oh|oops)\\b"
+    },
+    "unearned_we": {
+      "note": "Agent adopting the user's first person plural on work the agent did not do.",
+      "severity": "low",
+      "regex": "\\bwe (?:have )?(?:successfully|now) (?:built|shipped|fixed|resolved|completed|implemented)\\b"
+    },
+    "emoji": {
+      "note": "No.",
+      "severity": "high",
+      "regex": "[\\u2705\\u274c\\u2728\\u26a0\\U0001f300-\\U0001faff]"
+    }
+  },
+  "cadence": {
+    "note": "Rhythm tells. Reported as signals, not defects: judgement required.",
+    "repeated_opener_threshold": 2,
+    "sentence_length_variance_floor": 25.0,
+    "max_consecutive_similar_length": 4
+  }
+}

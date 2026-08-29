@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/demo-summary-v1.schema.json",
+  "title": "Alexandria offline demonstration summary v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["format", "raw_release_id", "derived_release_id", "index_logical_digest", "artifacts", "query", "probitas", "release_truth"],
+  "properties": {
+    "format": {"const": "alexandria-credit-history-demo/v1"},
+    "raw_release_id": {"$ref": "archive-manifest-v1.schema.json#/$defs/digest"},
+    "derived_release_id": {"$ref": "archive-manifest-v1.schema.json#/$defs/digest"},
+    "index_logical_digest": {"$ref": "archive-manifest-v1.schema.json#/$defs/digest"},
+    "artifacts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["dossier_sha256", "evidence_sha256", "query_sha256"],
+      "properties": {
+        "dossier_sha256": {"$ref": "archive-manifest-v1.schema.json#/$defs/digest"},
+        "evidence_sha256": {"$ref": "archive-manifest-v1.schema.json#/$defs/digest"},
+        "query_sha256": {"$ref": "archive-manifest-v1.schema.json#/$defs/digest"}
+      }
+    },
+    "query": {
+      "type": "object", "additionalProperties": false,
+      "required": ["coverage", "events", "observations"],
+      "properties": {
+        "coverage": {"$ref": "#/$defs/string_map"},
+        "events": {"$ref": "#/$defs/count_map"},
+        "observations": {"$ref": "#/$defs/count_map"}
+      }
+    },
+    "probitas": {
+      "type": "object", "additionalProperties": false,
+      "required": ["coverage", "gate_lines", "records"],
+      "properties": {
+        "coverage": {"$ref": "#/$defs/count_map"},
+        "gate_lines": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"type": "string", "minLength": 1}},
+        "records": {"type": "integer", "minimum": 0}
+      }
+    },
+    "release_truth": {
+      "type": "object", "additionalProperties": false,
+      "required": ["raw-release", "derived-release"],
+      "properties": {
+        "raw-release": {"$ref": "#/$defs/digest_map"},
+        "derived-release": {"$ref": "#/$defs/digest_map"}
+      }
+    }
+  },
+  "$defs": {
+    "count_map": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}},
+    "string_map": {"type": "object", "additionalProperties": {"type": "string", "minLength": 1}},
+    "digest_map": {"type": "object", "additionalProperties": {"$ref": "archive-manifest-v1.schema.json#/$defs/digest"}}
+  }
+}

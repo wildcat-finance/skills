@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/coverage-v1.schema.json",
+  "title": "Alexandria capture coverage v1",
+  "type": "object", "additionalProperties": false,
+  "required": ["status", "record_count", "collections", "unsupported_collections", "gaps"],
+  "properties": {
+    "status": {"enum": ["complete", "partial", "failed", "unsupported"]},
+    "record_count": {"type": "integer", "minimum": 0},
+    "collections": {
+      "type": "array", "maxItems": 256,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["name", "selector", "record_count"],
+        "properties": {
+          "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+          "selector": {"type": "string", "maxLength": 1024, "pattern": "^/"}, "record_count": {"type": "integer", "minimum": 0}
+        }
+      }
+    },
+    "unsupported_collections": {"type": "array", "maxItems": 256, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"}},
+    "gaps": {"type": "array", "maxItems": 256, "items": {"type": "string", "minLength": 1, "maxLength": 1000}}
+  }
+}

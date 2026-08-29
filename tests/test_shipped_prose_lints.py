@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LINT = ROOT / "plugins" / "hexaemeron" / "skills" / "imprimatur" / "scripts" / "imprimatur.py"
 
 VENDORED = ("x-ray", "solidity-auditor", "fizz", "fizz-convert", "fizz-sync")
+PORTABLE_RUNTIME = (".agents", "skills", "promise-machine", "runtime")
 
 
 def imprimatur():
@@ -60,6 +61,8 @@ def shipped_markdown():
         if not (ROOT / name).is_file():
             continue
         parts = Path(name).parts
+        if parts[: len(PORTABLE_RUNTIME)] == PORTABLE_RUNTIME:
+            continue
         if parts[0] in ("audit", "docs"):
             continue
         if "docs" in parts or "evals" in parts:

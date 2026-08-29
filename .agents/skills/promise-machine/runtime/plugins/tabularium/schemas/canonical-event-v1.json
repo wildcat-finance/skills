@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/tabularium/canonical-event-v1.json",
+  "title": "Tabularium canonical credit event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "event_family",
+    "action",
+    "venue",
+    "chain",
+    "transaction",
+    "parties",
+    "instrument",
+    "asset",
+    "amount",
+    "provenance",
+    "native_record"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {"type": "string", "minLength": 1},
+    "event_family": {"enum": ["borrowing", "repayment"]},
+    "action": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+\\.[a-z0-9._-]+$"
+    },
+    "venue": {"type": "string", "minLength": 1},
+    "chain": {"type": "string", "minLength": 1},
+    "transaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hash", "log_index", "timestamp"],
+      "properties": {
+        "hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+        "log_index": {"type": "integer", "minimum": 0, "maximum": 9007199254740991},
+        "timestamp": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"}
+      }
+    },
+    "parties": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "address"],
+        "properties": {
+          "role": {"type": "string", "minLength": 1},
+          "address": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"}
+        }
+      }
+    },
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"type": "string", "minLength": 1},
+        "id": {"type": "string", "minLength": 1}
+      }
+    },
+    "asset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["symbol", "decimals"],
+      "properties": {
+        "symbol": {"type": "string", "minLength": 1},
+        "decimals": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}
+      }
+    },
+    "amount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_units"],
+      "properties": {
+        "base_units": {"type": "string", "pattern": "^(0|[1-9][0-9]*)$"}
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_kind",
+        "source_contract",
+        "source_entity",
+        "source_id",
+        "source_selector",
+        "mapping_rule",
+        "adapter",
+        "adapter_version"
+      ],
+      "properties": {
+        "source_kind": {"const": "the-graph-entity"},
+        "source_contract": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
+        "source_entity": {"enum": ["borrows", "repays"]},
+        "source_id": {"type": "string", "minLength": 1},
+        "source_selector": {"type": "string", "minLength": 1},
+        "mapping_rule": {"enum": ["goldfinch.borrow.v1", "goldfinch.repay.v1"]},
+        "adapter": {"const": "goldfinch"},
+        "adapter_version": {"const": "1.0.0"}
+      }
+    },
+    "native_record": {"type": "object"}
+  }
+}

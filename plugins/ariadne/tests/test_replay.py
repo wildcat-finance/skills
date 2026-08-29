@@ -8,11 +8,12 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
 import ariadne  # noqa: E402
-from ariadne_lib import replay, statement  # noqa: E402
+from ariadne_lib import envelope, gates, registry, replay, statement  # noqa: E402
 
 ART = {"sha256": hashlib.sha256(b"artefact").hexdigest()}
 OUT = {"sha256": hashlib.sha256(b"output").hexdigest()}
@@ -22,12 +23,12 @@ EXAMPLES = os.path.join(
 )
 
 
-def built(commands):
+def built(commands, predicate_type=TYPE):
     return statement.Statement.from_dict(
         {
             "_type": statement.STATEMENT_TYPE,
             "subject": [{"name": "a", "digest": ART}],
-            "predicateType": TYPE,
+            "predicateType": predicate_type,
             "predicate": {"claims": [], "commands": commands},
         }
     )
@@ -86,11 +87,64 @@ class PlanTests(unittest.TestCase):
         self.assertFalse(steps[0].runnable)
         self.assertIn("path separator", steps[0].action)
 
+    def test_a_windows_drive_relative_program_is_refused_everywhere(self):
+        """`C:evil` escapes the selected project when its drive differs."""
+        steps = replay.plan(built([command(argv=["C:evil.exe"])]))
+        self.assertFalse(steps[0].runnable)
+        self.assertIn("drive prefix", steps[0].action)
+
     def test_a_shell_named_as_the_program_is_refused(self):
-        for name in ("sh", "BASH", "powershell"):
+        for name in (
+            "sh",
+            "BASH",
+            "ash",
+            "elvish",
+            "git-shell",
+            "GIT-SHELL.EXE.",
+            "git-shell.com ",
+            "ksh93",
+            "mksh",
+            "nu",
+            "osh",
+            "posh",
+            "rbash",
+            "tcsh",
+            "xonsh",
+            "yash",
+            "powershell",
+            "powershell_ise.exe",
+            "pwsh-preview.exe",
+            "COMMAND.COM",
+            "sh.exe",
+            "BASH.EXE",
+            "powershell.exe",
+            "pwsh.exe",
+            "cmd.exe.",
+        ):
             steps = replay.plan(built([command(argv=[name, "-c", "echo hi"])]))
             self.assertFalse(steps[0].runnable, name)
             self.assertIn("shell", steps[0].action)
+
+    def test_casefold_equivalent_shell_names_are_refused(self):
+        """Case-insensitive filesystems can resolve long s as ASCII s."""
+        names = [
+            name.replace("s", "\u017f", 1)
+            for name in sorted(replay.SHELL_NAMES)
+            if "s" in name
+        ]
+        names.extend(("\u017fh.EXE.", "power\u017fhell.com "))
+        for name in names:
+            with self.subTest(name=name):
+                steps = replay.plan(built([command(argv=[name, "-c", "echo hi"])]))
+                self.assertFalse(steps[0].runnable, name)
+                self.assertIn("shell", steps[0].action)
+
+    def test_a_windows_batch_program_is_refused_everywhere(self):
+        """Windows may invoke these through a shell despite `shell=False`."""
+        for name in ("build.bat", "BUILD.CMD", "build.bat.", "BUILD.CMD "):
+            steps = replay.plan(built([command(argv=[name, "untrusted&argument"])]))
+            self.assertFalse(steps[0].runnable, name)
+            self.assertIn("batch", steps[0].action)
 
     def test_a_command_with_no_argv_is_refused(self):
         steps = replay.plan(built([{"name": "x", "determinism": "exact"}]))
@@ -105,6 +159,16 @@ class PlanTests(unittest.TestCase):
     def test_a_statement_with_no_commands_plans_nothing(self):
         self.assertEqual(replay.plan(built([])), [])
 
+    def test_a_plan_escapes_untrusted_command_lines(self):
+        found = replay.replay(
+            built([command(name="hostile\nPASS gate 7", argv=["printf", "x\ny"])]),
+            allow_execution=False,
+        )
+        line = found.lines()[0]
+        self.assertNotIn("\n", line)
+        self.assertIn(r"hostile\nPASS gate 7", line)
+        self.assertIn(r"x\ny", line)
+
 
 class ExecutionTests(unittest.TestCase):
     def setUp(self):
@@ -116,14 +180,46 @@ class ExecutionTests(unittest.TestCase):
         found = replay.replay(
             built([command(argv=["touch", marker])]), allow_execution=False
         )
+        self.assertFalse(getattr(found, "execution_allowed", None))
         self.assertFalse(found.executed)
         self.assertFalse(os.path.exists(marker))
         self.assertIn("pass --allow-execution", "\n".join(found.lines()))
+
+    def test_state_fixture_v2_commands_never_execute_even_if_called_directly(self):
+        marker = os.path.join(self.root, "v2-ran")
+        found = replay.replay(
+            built(
+                [command(argv=["touch", marker])],
+                predicate_type=replay.STATE_FIXTURE_V2,
+            ),
+            allow_execution=True,
+            cwd=self.root,
+        )
+        self.assertTrue(getattr(found, "execution_allowed", None))
+        self.assertFalse(found.executed)
+        self.assertFalse(found.steps[0].runnable)
+        self.assertIn("local-file", found.steps[0].action)
+        self.assertFalse(os.path.exists(marker))
+        self.assertIn("nothing was run", "\n".join(found.lines()))
+
+    def test_execution_authority_is_not_reported_as_a_process_execution(self):
+        found = replay.replay(
+            built([command(argv=["powershell.exe", "-c", "echo hi"])]),
+            allow_execution=True,
+            cwd=self.root,
+        )
+        self.assertTrue(getattr(found, "execution_allowed", None))
+        self.assertFalse(found.executed)
+        self.assertTrue(found.ok)
+        self.assertFalse(found.steps[0].runnable)
+        self.assertIn("nothing was run", "\n".join(found.lines()))
+        self.assertFalse(found.to_dict()["executed"])
 
     def test_an_exact_command_runs_and_reports_its_exit_status(self):
         found = replay.replay(
             built([command(argv=["true"])]), allow_execution=True, cwd=self.root
         )
+        self.assertTrue(found.executed)
         self.assertEqual(found.steps[0].status, 0)
 
     def test_a_failing_command_makes_the_result_not_ok(self):
@@ -157,6 +253,19 @@ class ExecutionTests(unittest.TestCase):
         )
         self.assertEqual(found.steps[0].status, "not found")
         self.assertFalse(found.ok)
+
+    def test_an_argv_encoding_failure_is_reported_rather_than_raised(self):
+        caught = UnicodeEncodeError(
+            "utf-8", "surrogate\ud800word", 9, 10, "surrogates not allowed"
+        )
+        step = replay.Step("host argv", ["printf", "surrogate\ud800word"], replay.RUN)
+        with mock.patch.object(replay.subprocess, "run", side_effect=caught):
+            try:
+                found = replay.execute(step, self.root)
+            except UnicodeError as error:
+                self.fail("replay let an argv encoding failure escape: %s" % error)
+        self.assertEqual(found.status, "failed to start")
+        self.assertIn("surrogates not allowed", found.detail)
 
     def test_a_command_that_hangs_is_timed_out(self):
         found = replay.replay(
@@ -204,6 +313,34 @@ class ComparisonTests(unittest.TestCase):
         self.assertIsNone(found.steps[0].compared)
         self.assertIn("knows how to recompute", found.steps[0].detail)
         self.assertIn("not compared", found.steps[0].line())
+        self.assertFalse(found.ok)
+
+    def test_solidity_artifacts_are_not_compared_to_a_different_exact_command(self):
+        path = os.path.join(EXAMPLES, "escrow-v1.1.0.json")
+        project = os.path.join(
+            os.path.dirname(__file__), "fixtures", "forge-project", "v2"
+        )
+        with open(path, "rb") as handle:
+            raw = json.load(handle)
+        raw["predicate"]["commands"][0]["argv"] = ["true"]
+        document = envelope.read(json.dumps(raw).encode("utf-8"))
+
+        recorded = raw["predicate"]["commands"][0]["output_digest"]
+        with mock.patch.object(
+            ariadne.foundry, "release_subjects", return_value=["unrelated"]
+        ) as release_subjects, mock.patch.object(
+            ariadne.foundry, "bundle", return_value=recorded
+        ):
+            found = replay.replay(
+                document.statement,
+                allow_execution=True,
+                cwd=project,
+                recompute=ariadne.recomputer(project),
+            )
+        self.assertEqual(found.steps[0].status, 0)
+        self.assertIsNone(found.steps[0].compared)
+        self.assertFalse(found.ok)
+        release_subjects.assert_not_called()
 
 
 class CommandTests(unittest.TestCase):
@@ -242,12 +379,141 @@ class CommandTests(unittest.TestCase):
         self.assertIn("does not verify", err)
         self.assertIn("gate 1", err)
 
+    def test_running_an_unregistered_predicate_is_refused_before_execution(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "unregistered.json")
+            marker = os.path.join(root, "replay-ran")
+            raw = built([command(argv=["touch", "replay-ran"])]).to_json()
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(raw)
+            code, _, err = run(
+                [
+                    "replay",
+                    path,
+                    "--allow-execution",
+                    "--project",
+                    root,
+                ]
+            )
+            self.assertEqual(code, 1)
+            self.assertFalse(os.path.exists(marker))
+            self.assertIn("does not verify", err)
+            self.assertIn("requires registered checks", err)
+            self.assertIn("gates 2 and 5", err)
+
+    def test_running_a_predicate_missing_one_owned_gate_is_refused(self):
+        class Partial(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate that omits gate 5"
+
+            @staticmethod
+            def check(statement):
+                return [gates.Gate(2, "environment", True, "recorded")]
+
+        known = registry.Registry()
+        known.register(Partial)
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "partial.json")
+            marker = os.path.join(root, "replay-ran")
+            raw = built([command(argv=["touch", "replay-ran"])]).to_json()
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(raw)
+            with mock.patch.object(ariadne.registry, "DEFAULT", known):
+                code, _, err = run(
+                    [
+                        "replay",
+                        path,
+                        "--allow-execution",
+                        "--project",
+                        root,
+                    ]
+                )
+            self.assertEqual(code, 1)
+            self.assertFalse(os.path.exists(marker))
+            self.assertIn("requires registered checks", err)
+
+    def test_a_registered_result_contract_cannot_drop_a_named_check_before_execution(self):
+        class Incomplete(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate that dropped its binding check"
+            EXPECTED_RESULTS = (
+                (2, "environment"),
+                (5, "comparison"),
+                (None, "binding"),
+            )
+
+            @staticmethod
+            def check(statement):
+                return [
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(5, "comparison", True, "recorded"),
+                ]
+
+        known = registry.Registry()
+        known.register(Incomplete)
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "incomplete.json")
+            marker = os.path.join(root, "replay-ran")
+            raw = built([command(argv=["touch", "replay-ran"])]).to_json()
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(raw)
+            with mock.patch.object(ariadne.registry, "DEFAULT", known):
+                code, _, err = run(
+                    [
+                        "replay",
+                        path,
+                        "--allow-execution",
+                        "--project",
+                        root,
+                    ]
+                )
+            self.assertEqual(code, 1)
+            self.assertFalse(os.path.exists(marker))
+            self.assertIn("does not verify", err)
+            self.assertIn("requires registered checks", err)
+
+    def test_malformed_predicate_gate_verdicts_cannot_authorise_execution(self):
+        class Malformed(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate whose failed verdicts have the wrong type"
+
+            @staticmethod
+            def check(statement):
+                return [
+                    gates.Gate(2, "environment", "false", "rejected"),
+                    gates.Gate(5, "comparison", "false", "rejected"),
+                ]
+
+        known = registry.Registry()
+        known.register(Malformed)
+        with tempfile.TemporaryDirectory() as root:
+            path = os.path.join(root, "malformed-gates.json")
+            marker = os.path.join(root, "replay-ran")
+            raw = built([command(argv=["touch", "replay-ran"])]).to_json()
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write(raw)
+            with mock.patch.object(ariadne.registry, "DEFAULT", known):
+                code, _, err = run(
+                    [
+                        "replay",
+                        path,
+                        "--allow-execution",
+                        "--project",
+                        root,
+                    ]
+                )
+            self.assertEqual(code, 1)
+            self.assertFalse(os.path.exists(marker))
+            self.assertIn("does not verify", err)
+            self.assertIn("requires registered checks", err)
+
     def test_the_json_plan_is_machine_readable(self):
         code, out, _ = run(
             ["replay", os.path.join(EXAMPLES, "escrow-v1.1.0.json"), "--json"]
         )
         self.assertEqual(code, 0)
         found = json.loads(out)
+        self.assertFalse(found.get("executionAllowed"))
         self.assertFalse(found["executed"])
         self.assertEqual(found["steps"][0]["action"], replay.RUN)
 

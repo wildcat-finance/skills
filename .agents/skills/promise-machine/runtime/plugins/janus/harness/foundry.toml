@@ -1,0 +1,26 @@
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+libs = []
+solc = "0.8.25"
+evm_version = "cancun"
+optimizer = true
+optimizer_runs = 200
+bytecode_hash = "none"
+
+# The harness reads manifests and writes findings only under its own tree.
+# No absolute paths, no ffi, no network.
+fs_permissions = [
+  { access = "read", path = "./manifests" },
+  { access = "read", path = "./examples" },
+  { access = "read-write", path = "./out" },
+]
+
+[fuzz]
+runs = 256
+
+[invariant]
+runs = 64
+depth = 32
+fail_on_revert = false

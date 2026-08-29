@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ariadne"
+  short_description: "Release evidence statements binding artefact digests to the record behind them."
+  default_prompt: "Use Ariadne to capture or verify a release evidence statement, keeping skipped work and unchecked signatures explicit."

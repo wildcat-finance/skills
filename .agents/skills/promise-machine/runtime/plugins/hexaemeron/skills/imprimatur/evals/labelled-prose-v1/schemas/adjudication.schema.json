@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adjudicator_reason": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "disagreement_count": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "labels": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "decision": {
+            "enum": [
+              "actionable",
+              "licensed",
+              "signal_only"
+            ]
+          },
+          "end_byte": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "evidence_end_byte": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "evidence_start_byte": {
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "family": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "reason": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "start_byte": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "tier": {
+            "enum": [
+              "hard",
+              "gated",
+              "structural"
+            ]
+          }
+        },
+        "required": [
+          "tier",
+          "family",
+          "start_byte",
+          "end_byte",
+          "decision",
+          "severity",
+          "reason"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "sample_id": {
+      "pattern": "^B-(?:00[1-9]|0[1-5][0-9]|06[0-4])$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sample_id",
+    "labels",
+    "disagreement_count",
+    "adjudicator_reason"
+  ],
+  "title": "Imprimatur adjudication row",
+  "type": "object"
+}

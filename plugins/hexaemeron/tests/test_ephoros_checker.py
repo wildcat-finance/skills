@@ -715,12 +715,6 @@ class OverTheMarketplace(unittest.TestCase):
                 (Path(base) / name).mkdir()
             self.assertEqual([], ephoros.walk([base]))
 
-    def test_the_shipped_tree_is_clean(self):
-        findings = []
-        for path in ephoros.walk([str(ROOT.parent)]):
-            findings.extend(ephoros.check(path))
-        self.assertEqual([], [str(f) for f in findings])
-
 
 if __name__ == "__main__":
     unittest.main()

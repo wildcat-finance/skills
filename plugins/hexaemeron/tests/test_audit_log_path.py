@@ -12,6 +12,13 @@ import shutil
 import tempfile
 import unittest
 
+import sys
+
+# `run_tests.py` discovers from this directory and puts it on the path; a reader
+# running this module on its own does not get that, and the shared harness lives
+# next door rather than in a package.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from test_hexctl import HexctlCase, LINTS_CLEAN, hexctl_module
 
 
@@ -258,23 +265,20 @@ class AuditLogPathTests(HexctlCase):
         self.run_ctl("config", "set", "audit.log_path", '"audit/AUDIT.md"', expect=2)
         self.assertEqual(self.state_bytes(), before)
 
-    def test_replacing_the_whole_audit_section_meets_the_same_check(self):
-        """Round 1 finding. The section write reaches the same field."""
+    def test_replacing_the_whole_audit_section_is_immutable(self):
         self.init()
         section = json.loads(self.run_ctl("config", "get", "audit").stdout)
-        section["log_path"] = "audit/AUDIT.md"
+        section["log_path"] = "plugins/hexaemeron/audit/rounds/" + self.derived_name()
         proc = self.run_ctl(
             "config", "set", "audit", json.dumps(section), expect=2
         )
-        self.assertIn("must end in", proc.stderr)
+        self.assertIn("config path is immutable", proc.stderr)
         self.assertEqual(self.log_path(), "audit/rounds/" + self.derived_name())
 
-    def test_replacing_the_section_with_an_allowed_path_still_works(self):
+    def test_only_the_log_path_leaf_may_move_the_record(self):
         self.init()
-        section = json.loads(self.run_ctl("config", "get", "audit").stdout)
         moved = "plugins/hexaemeron/audit/rounds/" + self.derived_name()
-        section["log_path"] = moved
-        self.run_ctl("config", "set", "audit", json.dumps(section))
+        self.run_ctl("config", "set", "audit.log_path", json.dumps(moved))
         self.assertEqual(self.log_path(), moved)
 
     def test_a_branch_stored_as_the_wrong_type_answers_rather_than_raising(self):

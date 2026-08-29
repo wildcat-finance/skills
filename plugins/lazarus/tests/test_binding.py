@@ -6,9 +6,12 @@ while saying something the records do not support.
 """
 
 import copy
+import traceback
 import unicodedata
 import unittest
+from unittest import mock
 
+from lazarus_lib import binding as binding_module
 from lazarus_lib.binding import (
     CHECKS,
     EVIDENCE_CLASSES,
@@ -17,6 +20,7 @@ from lazarus_lib.binding import (
     MAX_SUBJECTS,
     REPLAY_CLAIMS,
     STATE_FIXTURE_TYPE,
+    STATE_FIXTURE_TYPE_V2,
     bind,
 )
 from lazarus_lib.errors import (
@@ -28,11 +32,13 @@ from lazarus_lib.errors import (
 BLOCK_HASH = "0x" + "41" * 32
 BLOCK_NUMBER = 13097494
 STATE_ROOT = "0x" + "0f" * 32
+RECEIPTS_ROOT = "0x" + "22" * 32
 CHAIN_ID = 1
 
 
 def sample_manifest():
     return {
+        "schema_version": 1,
         "chain_id": hex(CHAIN_ID),
         "block": {"number": hex(BLOCK_NUMBER), "hash": BLOCK_HASH},
         "components": [
@@ -109,6 +115,75 @@ def sample_statement():
     }
 
 
+def sample_manifest_v2():
+    manifest = copy.deepcopy(sample_manifest())
+    manifest["schema_version"] = 2
+    manifest["receipts_root"] = RECEIPTS_ROOT
+    manifest["components"].append(
+        {
+            "path": "receipt-witness.json",
+            "bytes": 4096,
+            "sha256": "e" * 64,
+        }
+    )
+    return manifest
+
+
+def sample_report_v2():
+    report = copy.deepcopy(sample_report())
+    report["receipts_root"] = RECEIPTS_ROOT
+    report["evidence_counts"]["receipt_trie_proved"] = 2
+    report["receipt_trie_proved"] = {
+        "relations": 2,
+        "transaction_hash_attribution": "recorded_rpc",
+    }
+    report["chain_anchors"] = {
+        "records": 0,
+        "canonical_chain_claim": False,
+        "provider_independence_claim": False,
+    }
+    return report
+
+
+def sample_statement_v2():
+    document = copy.deepcopy(sample_statement())
+    document["predicateType"] = STATE_FIXTURE_TYPE_V2
+    document["predicate"]["chain"]["receipts_root"] = RECEIPTS_ROOT
+    document["predicate"]["evidence"]["receipt_trie_proved"] = 2
+    document["predicate"]["replay"]["provider_independence_claim"] = False
+    component = {
+        "name": "receipt-witness.json",
+        "path": "receipt-witness.json",
+        "digest": {"sha256": "e" * 64},
+        "bytes": 4096,
+    }
+    document["predicate"]["fixture_subjects"].append(component)
+    document["subject"].append(
+        {"name": component["name"], "digest": component["digest"]}
+    )
+    document["predicate"].update(
+        {
+            "capture": {
+                "tool": "lazarus",
+                "tool_version": "0.1.0",
+                "command": ["lazarus", "capture", "fixture-v2"],
+                "parameters_digest": {"sha256": "f" * 64},
+            },
+            "deltas": {
+                "baseline": None,
+                "current": {
+                    "name": "fixture-v2",
+                    "digest": {"sha256": "d" * 64},
+                },
+                "reason": "first receipt-aware fixture",
+            },
+            "claims": [],
+            "commands": [],
+        }
+    )
+    return document
+
+
 def bound(statement=None, manifest=None, report=None):
     return bind(
         statement if statement is not None else sample_statement(),
@@ -117,9 +192,24 @@ def bound(statement=None, manifest=None, report=None):
     )
 
 
+def bound_v2(statement=None, manifest=None, report=None):
+    return bind(
+        statement if statement is not None else sample_statement_v2(),
+        manifest if manifest is not None else sample_manifest_v2(),
+        report if report is not None else sample_report_v2(),
+    )
+
+
 class CleanBindingTests(unittest.TestCase):
     def test_a_statement_over_this_fixture_binds(self):
         self.assertEqual(bound(), list(CHECKS))
+
+    def test_a_v2_statement_binds_only_to_a_v2_fixture(self):
+        self.assertEqual(bound_v2(), list(CHECKS))
+        with self.assertRaisesRegex(IntegrityError, "v1"):
+            bound(statement=sample_statement_v2())
+        with self.assertRaisesRegex(IntegrityError, "v2"):
+            bound_v2(statement=sample_statement())
 
     def test_the_checks_it_returns_are_the_ones_it_names(self):
         """The names go into the release document, so a reader learns which
@@ -129,6 +219,37 @@ class CleanBindingTests(unittest.TestCase):
         self.assertEqual(len(set(made)), len(made))
         for name in made:
             self.assertTrue(name and name.strip())
+
+    def test_anchor_inventory_binds_without_changing_the_ariadne_contract(self):
+        manifest = sample_manifest()
+        report = sample_report()
+        statement = sample_statement()
+        anchor = {
+            "path": "anchors.jsonl",
+            "bytes": 512,
+            "sha256": "e" * 64,
+        }
+        manifest["components"].append(anchor)
+        report["chain_anchors"] = {
+            "records": 2,
+            "canonical_chain_claim": False,
+            "provider_independence_claim": False,
+        }
+        statement["predicate"]["fixture_subjects"].append(
+            {
+                "name": anchor["path"],
+                "path": anchor["path"],
+                "digest": {"sha256": anchor["sha256"]},
+                "bytes": anchor["bytes"],
+            }
+        )
+        statement["subject"].append(
+            {"name": anchor["path"], "digest": {"sha256": anchor["sha256"]}}
+        )
+        original_evidence = copy.deepcopy(statement["predicate"]["evidence"])
+        self.assertEqual(bound(statement, manifest, report), list(CHECKS))
+        self.assertEqual(statement["predicate"]["evidence"], original_evidence)
+        self.assertNotIn("chain_anchors", statement["predicate"])
 
     def test_a_block_hash_in_the_other_case_still_binds(self):
         """Two spellings of one value. Lazarus writes lowercase and a producer
@@ -142,6 +263,36 @@ class CleanBindingTests(unittest.TestCase):
 
 class EvidenceTests(unittest.TestCase):
     """The rule this module exists for."""
+
+    def test_state_fixture_v1_refuses_the_new_receipt_evidence_class(self):
+        report = sample_report()
+        report["evidence_counts"]["receipt_trie_proved"] = 2
+        report["receipt_trie_proved"] = {
+            "relations": 2,
+            "transaction_hash_attribution": "recorded_rpc",
+        }
+        with self.assertRaisesRegex(
+            IntegrityError, "outside its vocabulary"
+        ):
+            bound(report=report)
+
+    def test_v2_receipt_count_is_the_scoped_relation_count(self):
+        for value in (None, True, 0, 3):
+            statement = sample_statement_v2()
+            if value is None:
+                del statement["predicate"]["evidence"]["receipt_trie_proved"]
+            else:
+                statement["predicate"]["evidence"]["receipt_trie_proved"] = value
+            with self.subTest(value=value), self.assertRaises(
+                (FormatError, IntegrityError)
+            ):
+                bound_v2(statement=statement)
+
+    def test_v2_report_relation_count_must_match_its_evidence_count(self):
+        report = sample_report_v2()
+        report["receipt_trie_proved"]["relations"] = 3
+        with self.assertRaisesRegex(IntegrityError, "relation count"):
+            bound_v2(report=report)
 
     def test_a_statement_claiming_more_proved_records_is_refused(self):
         """The study's case, and the one the held job names. Four recorded RPC
@@ -246,6 +397,12 @@ class PredicateTypeTests(unittest.TestCase):
             bound(statement)
         self.assertIn("has not read", str(caught.exception))
 
+    def test_versions_are_not_implicitly_upgraded(self):
+        with self.assertRaises(IntegrityError):
+            bound(statement=sample_statement_v2())
+        with self.assertRaises(IntegrityError):
+            bound_v2(statement=sample_statement())
+
     def test_a_type_that_names_nothing_is_refused(self):
         for value in (None, "", "   ", 12345, [], "​"):
             statement = sample_statement()
@@ -313,6 +470,17 @@ class ReplayClaimTests(unittest.TestCase):
         del statement["predicate"]["replay"]
         with self.assertRaises(FormatError):
             bound(statement)
+
+    def test_v2_refuses_provider_independence_on_either_side(self):
+        statement = sample_statement_v2()
+        statement["predicate"]["replay"]["provider_independence_claim"] = True
+        with self.assertRaisesRegex(IntegrityError, "provider_independence"):
+            bound_v2(statement=statement)
+
+        report = sample_report_v2()
+        report["chain_anchors"]["provider_independence_claim"] = True
+        with self.assertRaisesRegex(IntegrityError, "provider independence"):
+            bound_v2(report=report)
 
 
 class ComponentTests(unittest.TestCase):
@@ -441,6 +609,264 @@ class ShapeTests(unittest.TestCase):
         self.assertIn("different capture", str(caught.exception))
 
 
+class VersionTwoVocabularyTests(unittest.TestCase):
+    def test_v2_release_uses_ariadnes_portable_identifier_contract(self):
+        invisible = ("\u200b", "\x00", "\ue000", "\u2060", "\u96ea")
+        for value in invisible:
+            cases = []
+
+            capture = sample_statement_v2()
+            capture["predicate"]["capture"]["tool"] = value
+            cases.append(("capture tool", capture))
+
+            command = sample_statement_v2()
+            command["predicate"]["capture"]["command"][0] = value
+            cases.append(("capture command", command))
+
+            component = sample_statement_v2()
+            component["predicate"]["fixture_subjects"][0]["name"] = value
+            cases.append(("component name", component))
+
+            current = sample_statement_v2()
+            current["predicate"]["deltas"]["current"]["name"] = value
+            cases.append(("current name", current))
+
+            subject = sample_statement_v2()
+            subject["subject"][0]["name"] = value
+            cases.append(("statement subject", subject))
+
+            claim = sample_statement_v2()
+            claim["predicate"]["claims"] = [
+                {
+                    "name": value,
+                    "subject": {"sha256": "a" * 64},
+                    "disposition": "passed",
+                }
+            ]
+            cases.append(("claim name", claim))
+
+            for field, statement in cases:
+                with self.subTest(field=field, value=repr(value)), self.assertRaises(
+                    (FormatError, IntegrityError)
+                ):
+                    bound_v2(statement=statement)
+
+        for path in (
+            "a/\u200b",
+            "a/\x00",
+            "a/\ue000",
+            "a/\u2060",
+            "a/\u96ea",
+            "1:header.json",
+            "\u96ea:header.json",
+        ):
+            statement = sample_statement_v2()
+            manifest = sample_manifest_v2()
+            statement["predicate"]["fixture_subjects"][0]["path"] = path
+            manifest["components"][0]["path"] = path
+            with self.subTest(path=repr(path)), self.assertRaises(
+                (FormatError, IntegrityError)
+            ):
+                bound_v2(statement=statement, manifest=manifest)
+
+    def test_a_structured_transaction_hash_proof_claim_is_refused(self):
+        statement = sample_statement_v2()
+        statement["predicate"]["transaction_hash_proved"] = True
+        with self.assertRaisesRegex(IntegrityError, "outside its vocabulary"):
+            bound_v2(statement=statement)
+
+    def test_each_required_v2_block_must_be_present(self):
+        for field in ("capture", "deltas", "claims", "commands"):
+            statement = sample_statement_v2()
+            del statement["predicate"][field]
+            with self.subTest(field=field), self.assertRaises(FormatError):
+                bound_v2(statement=statement)
+
+    def test_v2_subject_references_use_ariadnes_digest_identity(self):
+        def uncover_current(document):
+            document["predicate"]["deltas"]["current"]["digest"] = {
+                "sha256": "9" * 64
+            }
+
+        def uncover_claim(document):
+            document["predicate"]["claims"] = [
+                {
+                    "name": "receipt membership",
+                    "subject": {"sha256": "9" * 64},
+                    "disposition": "passed",
+                }
+            ]
+
+        def disagree_on_a_shared_algorithm(document):
+            document["predicate"]["fixture_subjects"][0]["digest"]["sha512"] = (
+                "1" * 128
+            )
+            document["subject"][0]["digest"]["sha512"] = "2" * 128
+
+        for name, mutate in (
+            ("current delta", uncover_current),
+            ("claim", uncover_claim),
+            ("fixture subject", disagree_on_a_shared_algorithm),
+        ):
+            statement = sample_statement_v2()
+            mutate(statement)
+            with self.subTest(reference=name), self.assertRaisesRegex(
+                IntegrityError, "subject"
+            ):
+                bound_v2(statement=statement)
+
+    def test_v2_capture_delta_claim_and_command_shapes_are_closed(self):
+        mutations = (
+            lambda document: document.__setitem__("unchecked", True),
+            lambda document: document["subject"][0].__setitem__(
+                "unchecked", True
+            ),
+            lambda document: document["predicate"]["capture"].__setitem__(
+                "unchecked", True
+            ),
+            lambda document: document["predicate"]["fixture_subjects"][0].__setitem__(
+                "unchecked", True
+            ),
+            lambda document: document["predicate"]["deltas"]["current"].__setitem__(
+                "unchecked", True
+            ),
+            lambda document: document["predicate"]["deltas"].__setitem__(
+                "unchecked", True
+            ),
+            lambda document: document["predicate"].__setitem__(
+                "claims",
+                [
+                    {
+                        "name": "unchecked",
+                        "subject": {"sha256": "d" * 64},
+                        "disposition": "passed",
+                        "unchecked": True,
+                    }
+                ],
+            ),
+            lambda document: document["predicate"].__setitem__(
+                "claims",
+                [
+                    {
+                        "name": "unchecked",
+                        "subject": {"sha256": "d" * 64},
+                        "disposition": {"unexpected": True},
+                    }
+                ],
+            ),
+            lambda document: document["predicate"].__setitem__(
+                "commands",
+                [
+                    {
+                        "name": "network",
+                        "argv": ["curl", "https://example.invalid"],
+                        "determinism": "exact",
+                    }
+                ],
+            ),
+        )
+        for mutate in mutations:
+            statement = sample_statement_v2()
+            mutate(statement)
+            with self.subTest(mutate=mutate), self.assertRaises(
+                (FormatError, IntegrityError)
+            ):
+                bound_v2(statement=statement)
+
+    def test_unknown_v2_fields_do_not_cross_exception_surfaces(self):
+        prefix = "PRIVATE_PROVIDER_VALUE_"
+        keys = (prefix + "SECRET", prefix + "x" * 200_000)
+        locations = (
+            lambda body, key: body.__setitem__(key, True),
+            lambda body, key: body["chain"].__setitem__(key, True),
+            lambda body, key: body["evidence"].__setitem__(key, True),
+            lambda body, key: body["replay"].__setitem__(key, True),
+        )
+        for key in keys:
+            for locate in locations:
+                statement = sample_statement_v2()
+                locate(statement["predicate"], key)
+                with self.subTest(key_bytes=len(key), locate=locate):
+                    with self.assertRaises(IntegrityError) as raised:
+                        bound_v2(statement=statement)
+                    error = raised.exception
+                    surfaces = {
+                        "message": str(error),
+                        "args": repr(error.args),
+                        "repr": repr(error),
+                        "cause": repr(error.__cause__),
+                        "context": repr(error.__context__),
+                        "traceback": "".join(
+                            traceback.format_exception(
+                                type(error), error, error.__traceback__
+                            )
+                        ),
+                    }
+                    self.assertIsNone(error.__cause__)
+                    self.assertIsNone(error.__context__)
+                    for name, rendered in surfaces.items():
+                        with self.subTest(surface=name):
+                            self.assertNotIn(prefix, rendered)
+                            self.assertLessEqual(len(rendered.encode("utf-8")), 4096)
+
+    def test_rejected_v2_values_do_not_cross_exception_surfaces(self):
+        prefix = "PRIVATE_PROVIDER_VALUE_"
+        values = (prefix + "SECRET", prefix + "x" * 200_000)
+
+        def duplicate_fixture_name(document, value):
+            document["predicate"]["fixture_subjects"][0]["name"] = value
+            document["predicate"]["fixture_subjects"][1]["name"] = value
+
+        def duplicate_subject_name(document, value):
+            document["subject"][0]["name"] = value
+            document["subject"][1]["name"] = value
+
+        locations = (
+            lambda document, value: document.__setitem__("_type", value),
+            lambda document, value: document.__setitem__("predicateType", value),
+            lambda document, value: document["predicate"]["chain"].__setitem__(
+                "state_root", value
+            ),
+            lambda document, value: document["predicate"]["evidence"].__setitem__(
+                "proof_backed", value
+            ),
+            lambda document, value: document["predicate"]["replay"].__setitem__(
+                "reaches_network", value
+            ),
+            lambda document, value: document["predicate"]["fixture_subjects"][
+                0
+            ].__setitem__("path", value),
+            duplicate_fixture_name,
+            duplicate_subject_name,
+        )
+        for value in values:
+            for locate in locations:
+                statement = sample_statement_v2()
+                locate(statement, value)
+                with self.subTest(value_bytes=len(value), locate=locate):
+                    with self.assertRaises(IntegrityError) as raised:
+                        bound_v2(statement=statement)
+                    error = raised.exception
+                    surfaces = {
+                        "message": str(error),
+                        "args": repr(error.args),
+                        "repr": repr(error),
+                        "cause": repr(error.__cause__),
+                        "context": repr(error.__context__),
+                        "traceback": "".join(
+                            traceback.format_exception(
+                                type(error), error, error.__traceback__
+                            )
+                        ),
+                    }
+                    self.assertIsNone(error.__cause__)
+                    self.assertIsNone(error.__context__)
+                    for name, rendered in surfaces.items():
+                        with self.subTest(surface=name):
+                            self.assertNotIn(prefix, rendered)
+                            self.assertLessEqual(len(rendered.encode("utf-8")), 4096)
+
+
 
 
 class StatementTypeTests(unittest.TestCase):
@@ -507,6 +933,44 @@ class ChainTests(unittest.TestCase):
         with self.assertRaises(IntegrityError) as caught:
             bound(statement)
         self.assertIn("state root", str(caught.exception))
+
+    def test_v2_receipts_root_is_independent_of_the_state_root(self):
+        statement = sample_statement_v2()
+        del statement["predicate"]["chain"]["receipts_root"]
+        with self.assertRaises(FormatError):
+            bound_v2(statement=statement)
+
+        statement = sample_statement_v2()
+        statement["predicate"]["chain"]["receipts_root"] = STATE_ROOT
+        with self.assertRaisesRegex(IntegrityError, "receipts root"):
+            bound_v2(statement=statement)
+
+    def test_v2_chain_hashes_use_the_canonical_lowercase_spelling(self):
+        fields = ("block_hash", "state_root", "receipts_root")
+        for field in fields:
+            statement = sample_statement_v2()
+            manifest = sample_manifest_v2()
+            report = sample_report_v2()
+            canonical = "0x" + "ab" * 32
+            statement["predicate"]["chain"][field] = canonical.upper().replace(
+                "0X", "0x"
+            )
+            if field == "block_hash":
+                report["block_hash"] = canonical
+                manifest["block"]["hash"] = canonical
+            elif field == "state_root":
+                report["state_root"] = canonical
+            else:
+                report["receipts_root"] = canonical
+                manifest["receipts_root"] = canonical
+            with self.subTest(field=field), self.assertRaises(IntegrityError):
+                bound_v2(statement=statement, manifest=manifest, report=report)
+
+    def test_v2_chain_has_no_transaction_hash_authority(self):
+        statement = sample_statement_v2()
+        statement["predicate"]["chain"]["transaction_hash"] = "0x" + "99" * 32
+        with self.assertRaisesRegex(IntegrityError, "outside its vocabulary"):
+            bound_v2(statement=statement)
 
     def test_a_state_root_in_the_other_case_still_binds(self):
         statement = sample_statement()
@@ -860,6 +1324,44 @@ class LimitTests(unittest.TestCase):
         with self.assertRaises(ResourceLimitError) as caught:
             bound(statement)
         self.assertIn(str(MAX_SUBJECTS), str(caught.exception))
+
+    def test_v2_component_cap_precedes_digest_and_coverage_work(self):
+        statement = sample_statement_v2()
+        components = self.components(MAX_FIXTURE_SUBJECTS + 1)
+        statement["predicate"]["fixture_subjects"] = components
+        statement["subject"] = [
+            {"name": entry["name"], "digest": entry["digest"]}
+            for entry in components
+        ] + [
+            {"name": "fixture-v2", "digest": {"sha256": "d" * 64}}
+        ]
+        with mock.patch.object(
+            binding_module,
+            "_digest_set",
+            wraps=binding_module._digest_set,
+        ) as digest_check:
+            with self.assertRaises(ResourceLimitError):
+                bound_v2(statement=statement)
+        self.assertEqual(digest_check.call_count, 0)
+
+    def test_v2_subject_cap_precedes_digest_and_coverage_work(self):
+        statement = sample_statement_v2()
+        while len(statement["subject"]) <= MAX_SUBJECTS:
+            index = len(statement["subject"])
+            statement["subject"].append(
+                {
+                    "name": "s%d" % index,
+                    "digest": {"sha256": "%064x" % index},
+                }
+            )
+        with mock.patch.object(
+            binding_module,
+            "_digest_set",
+            wraps=binding_module._digest_set,
+        ) as digest_check:
+            with self.assertRaises(ResourceLimitError):
+                bound_v2(statement=statement)
+        self.assertEqual(digest_check.call_count, 0)
 
     def test_a_refusal_counts_the_names_it_does_not_spell_out(self):
         statement = sample_statement()

@@ -10,6 +10,13 @@ import unittest
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = PLUGIN_ROOT.parents[1]
+sys.path.insert(0, str(REPO_ROOT))
+from repo_contract import (
+    assert_version_agreement,
+    assert_host_descriptions_agree,
+    assert_marketplace_source_path,
+)
+
 COMMAND = PLUGIN_ROOT / "scripts" / "tabularium.py"
 SKILL = PLUGIN_ROOT / "skills" / "tabularium" / "SKILL.md"
 
@@ -44,29 +51,14 @@ class TabulariumPackagingTests(unittest.TestCase):
         self.assertFalse((SKILL.parent / "README.md").exists())
 
     def test_package_metadata_agrees_and_points_at_the_skill(self):
-        manifests = []
-        for host in (".claude-plugin", ".codex-plugin"):
-            path = PLUGIN_ROOT / host / "plugin.json"
-            manifests.append(json.loads(path.read_text(encoding="utf-8")))
-        marketplace = json.loads(
-            (REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(
-                encoding="utf-8"
-            )
-        )
-        package = next(
-            item["version"]
-            for item in marketplace["plugins"]
-            if item["name"] == "tabularium"
-        )
+        assert_version_agreement(self, "tabularium")
+        assert_host_descriptions_agree(self, "tabularium")
+        manifests = [
+            json.loads((PLUGIN_ROOT / host / "plugin.json").read_text(encoding="utf-8"))
+            for host in (".claude-plugin", ".codex-plugin")
+        ]
         self.assertEqual([item["name"] for item in manifests], ["tabularium"] * 2)
-        self.assertEqual([item["version"] for item in manifests], [package] * 2)
-        self.assertEqual(package, "0.3.1")
         self.assertEqual([item["skills"] for item in manifests], ["./skills/"] * 2)
-        self.assertEqual(manifests[0]["description"], manifests[1]["description"])
-        self.assertEqual(
-            [item["repository"] for item in manifests],
-            ["https://github.com/wildcat-finance/skills"] * 2,
-        )
         self.assertTrue(SKILL.is_file())
 
     def test_public_documents_and_audit_log_are_present(self):
@@ -100,22 +92,7 @@ class TabulariumPackagingTests(unittest.TestCase):
                     self.assertTrue(target.exists())
 
     def test_marketplace_entries_use_the_local_plugin_path(self):
-        claude = json.loads(
-            (REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text()
-        )
-        codex = json.loads(
-            (REPO_ROOT / ".agents" / "plugins" / "marketplace.json").read_text()
-        )
-        claude_entry = next(p for p in claude["plugins"] if p["name"] == "tabularium")
-        codex_entry = next(p for p in codex["plugins"] if p["name"] == "tabularium")
-        self.assertEqual(claude_entry["source"], "./plugins/tabularium")
-        self.assertEqual(codex_entry["source"]["path"], "./plugins/tabularium")
-        self.assertEqual(
-            claude_entry["description"],
-            json.loads(
-                (PLUGIN_ROOT / ".codex-plugin" / "plugin.json").read_text()
-            )["interface"]["shortDescription"],
-        )
+        assert_marketplace_source_path(self, "tabularium")
 
     def test_compound_spec_fails_closed_and_keeps_collection_offline(self):
         spec = " ".join(
