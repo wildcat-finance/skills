@@ -643,3 +643,76 @@ the two brevitas runs check the same bytes the single run intended to.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5:
 entry holds; exit holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: The guard is committed and green,
+and its negative control proves the hostile configuration is genuinely hostile
+and genuinely reached. All of the following exit 0:
+
+```bash
+/Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-2.json
+/Users/kethcode/.local/bin/python3.14 -m unittest tests.test_disposable_fixture_signing -v
+/Users/kethcode/.local/bin/python3.14 -m unittest tests.test_disposable_fixture_signing.NegativeControl -v
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+```
+
+The committed generator produces a usable harness. All of these exit 0:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+```bash
+test -s "$HOSTILE_DIR/hostile.gitconfig"
+test -x "$HOSTILE_DIR/hostile-signer"
+test ! -s "$HOSTILE_DIR/sentinel.log"
+```
+
+The fourth command above is the non-vacuity proof. `NegativeControl` builds a
+disposable repository that declares no local signing policy, and asserts both
+that its commit failed and that the sentinel recorded an invocation. It can
+only pass when the hostile configuration was genuinely hostile and genuinely
+reached, so its exit 0 is the evidence. Also required, and recorded in the
+step's prose rather than as a command because it mutates the tree: neutering
+the harness must make `NegativeControl` fail, and removing the local
+declaration from the fixture builder must make the positive case fail. Both
+mutations are reverted byte-identical before the step commits.
+
+Complete replacement Files: Created:
+`tests/test_disposable_fixture_signing.py` and
+`tests/hostile_signing_harness.py`. Changed:
+`docs/disposable-fixture-signing/runbook.md`, refreshed so the shipped copy
+stays byte-identical to the receipted artefact after this amendment. No fixture
+under test is changed in this step; the guard exercises repositories it
+constructs itself, so both ends are green.
+
+`tests/hostile_signing_harness.py` holds the harness the guard uses in-process
+and a `--emit <dir>` entry point that writes `hostile.gitconfig` and the
+executable `hostile-signer` into the named directory and truncates
+`sentinel.log` beside them. The three filenames are fixed so a caller can name
+them without parsing output. The guard imports the module rather than
+duplicating the recipe, so the configuration every later step runs is the same
+one the guard proves hostile. The emitted signer resolves its sentinel from its
+own directory rather than from an environment variable, so a hostile directory
+nested inside another records into its own file and the guard's deliberate
+invocations cannot contaminate an outer sentinel that a later step asserts on.
+
+**Why.** The replaced exit contained a refusal check that could not fail. It
+ran the negative control, and on success chained through `&&` to an explicit
+non-zero exit, while on failure `unittest` itself exited non-zero; both
+outcomes therefore satisfied "exits non-zero", so the command proved nothing
+about vacuity while appearing to. It was measured exiting 1 against a guard
+that is demonstrably not vacuous. The replacement asserts the property
+directly, since the negative control's own assertions are exactly the
+non-vacuity claim. The files field gains the refreshed shipped copy, which this
+amendment itself makes necessary.
+
+**Steps touched.** Step 2's exit and files.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
