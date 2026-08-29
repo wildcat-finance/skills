@@ -265,19 +265,44 @@ contract ManifestReader {
   ///      manifest is ambiguous and the reader refuses instead of choosing.
   ///      A suffix that is genuinely documentation -- `roleProvider.getCredential`
   ///      -- is not a name any adapter holds, so nothing changes for it.
+  ///
+  ///      Two details of that question decide whether it can be answered
+  ///      wrongly, and both are ordering.
+  ///
+  ///      The prefix is resolved first. `_resolveSymbol` is where a name the
+  ///      adapter refuses, or answers for at the zero address, becomes the
+  ///      reader's own named refusal; asking the ambiguity question ahead of
+  ///      it would let `AmbiguousAccountSymbol` stand in for
+  ///      `UnresolvableSymbol` and `SymbolResolvesToZero` and report the
+  ///      second reading of a name whose first reading was already broken.
+  ///
+  ///      And the question is `ok` alone, not `ok` with a non-zero address.
+  ///      A known name resolving to zero is a refusal this reader raises --
+  ///      `SymbolResolvesToZero` exists for exactly that answer -- not an
+  ///      absence it may read as "no second reading". Treating it as an
+  ///      absence left the whole of S2-R3-01 alive in that corner: with an
+  ///      adapter holding `USDC` at 0xC0 and answering `(true, address(0))`
+  ///      for `USDC.e`, the value path refused the manifest and these two
+  ///      paths bound the permit to 0xC0 -- one string, one resolver, two
+  ///      different accounts, which is the defect the guard was added for.
   function _resolveDotted(
     string memory written,
     AccountResolver resolver
   ) private view returns (address addr) {
     string memory symbol = _symbolOf(written);
-    // Blankness first, so a malformed `.getCredential` is still the reader's
-    // own refusal and the adapter is never asked about it.
-    if (_isBlank(symbol)) revert EmptyAccountSymbol(symbol);
+    // No blank guard of its own. This function used to carry one, because it
+    // asked the adapter about `written` before resolving the prefix and a
+    // malformed `.getCredential` had to be the reader's refusal rather than
+    // the adapter's. Resolving the prefix first moves that guarantee into
+    // `_resolveSymbol`, whose first act is the same blank check, so a copy
+    // here is a line no mutant can kill -- deleting it changed nothing in the
+    // whole suite. The ordering is what keeps the adapter from being asked
+    // about a blank symbol; the duplicate only looked like it did.
+    addr = _resolveSymbol(symbol, resolver);
     if (!_eq(symbol, written)) {
-      (bool whole, address wholeAddr) = resolver.resolveAccount(written);
-      if (whole && wholeAddr != address(0)) revert AmbiguousAccountSymbol(written);
+      (bool whole, ) = resolver.resolveAccount(written);
+      if (whole) revert AmbiguousAccountSymbol(written);
     }
-    return _resolveSymbol(symbol, resolver);
   }
 
   function _resolveSymbol(
