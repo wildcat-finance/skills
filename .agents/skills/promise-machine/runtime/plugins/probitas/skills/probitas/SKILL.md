@@ -213,7 +213,7 @@ dossier pass.
 
 ### probitas-evidence-collection
 
-- Promise: A successful `collect` writes evidence only for declared entity addresses and separately labelled inferred addresses, with one source reference per record, one coverage row per venue and route the run asked for, every row naming its source class, and explicit coverage or gap for every registered venue.
+- Promise: A successful `collect` writes evidence only for declared entity addresses and separately labelled inferred addresses, with one source reference per record, one coverage row for each venue and route that answered, one row for each venue no route reached, every row naming its source class, and explicit coverage or gap for every registered venue.
 - Evidence: The exact entity and address inputs, the routes the invocation selected, the venue registry, adapter responses and any verified Alexandria index with the release identities behind each archive row, the evidence schema, source references and emitted `evidence.json`.
 - Evidence classes: recorded, checked
 - Boundary: Collection does not establish human identity, source completeness, default, full repayment, current balance, creditworthiness or a Wildcat decision, and a source class names the route that answered rather than vouching for what it returned.

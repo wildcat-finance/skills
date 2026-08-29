@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 929,
-  "total_bytes": 20341500,
+  "total_bytes": 20341542,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4963,9 +4963,9 @@
       "source": "plugins/probitas/skills/probitas/EVOLUTION.md"
     },
     {
-      "bytes": 13469,
+      "bytes": 13511,
       "path": "plugins/probitas/skills/probitas/SKILL.md",
-      "sha256": "6ce914e6f89d60c0ddf23150c3f2390035c6b754eff6d6ad50f92ae3b18cd3e4",
+      "sha256": "bc1c9063269ab4aa0e6aa48d8c38c2dd908d46ad8b457ec7ab82c9bfe49430a0",
       "source": "plugins/probitas/skills/probitas/SKILL.md"
     },
     {
