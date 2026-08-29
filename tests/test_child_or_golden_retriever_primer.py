@@ -380,6 +380,14 @@ class ChildOrGoldenRetrieverPrimerTests(unittest.TestCase):
             primer,
         )
 
+    def test_fiat_routes_a_checkpoint_arrival_before_fresh_initialization(self) -> None:
+        fiat = FIAT_SKILL.read_text(encoding="utf-8")
+        checkpoint = fiat.index("checkpoint zip")
+        active_state = fiat.index("If `.hexaemeron/state.json` exists")
+        fresh_init = fiat.index("Otherwise: say exactly `Let there be light.`")
+        self.assertLess(checkpoint, active_state)
+        self.assertLess(active_state, fresh_init)
+
     def test_contributor_guide_and_pdf_state_the_verified_transfer_boundary(self) -> None:
         expected = (
             "after a completed step, another machine may resume from the portable "
