@@ -24,9 +24,8 @@ from . import support
 
 PROBITAS = os.path.join(support.SCRIPTS, "probitas.py")
 REPO_ROOT = os.path.dirname(os.path.dirname(support.PLUGIN_ROOT))
-DEMO = os.path.join(
-    REPO_ROOT, "plugins", "alexandria", "examples", "credit-history-v0", "demo.py"
-)
+ALEXANDRIA = os.path.join(REPO_ROOT, "plugins", "alexandria")
+DEMO = os.path.join(ALEXANDRIA, "examples", "credit-history-v0", "demo.py")
 FIXTURES = os.path.join(support.PLUGIN_ROOT, "tests", "fixtures", "demo")
 
 ENTITY = "Acme Trading Ltd"
@@ -34,9 +33,21 @@ FIXTURE_ADDRESS = "0x" + "a1" * 20
 
 
 def load_demo():
-    """Import Alexandria's demonstration, or say why the union cannot be shown."""
-    if not os.path.isfile(DEMO):
+    """Import Alexandria's demonstration, or say why the union cannot be shown.
+
+    Absent Alexandria is a real deployment: Probitas ships on its own and the
+    union simply cannot be demonstrated there, so the class skips. Alexandria
+    present with its demonstration missing is a defect, and skipping on it
+    would turn the only end-to-end proof of this run's capability into a
+    silence that reads as a pass.
+    """
+    if not os.path.isdir(ALEXANDRIA):
         return None
+    if not os.path.isfile(DEMO):
+        raise AssertionError(
+            f"{DEMO} is missing while Alexandria sits beside Probitas; the "
+            "union has no end-to-end proof and this would otherwise skip"
+        )
     spec = importlib.util.spec_from_file_location("alexandria_demo", DEMO)
     module = importlib.util.module_from_spec(spec)
     sys.modules["alexandria_demo"] = module
@@ -48,6 +59,15 @@ def run(*args):
     return subprocess.run(
         [sys.executable, PROBITAS, *args], capture_output=True, text=True, check=False
     )
+
+
+class TestTheDemonstrationIsReachable(unittest.TestCase):
+    """A skip must not stand in for the proof this run exists to give."""
+
+    def test_alexandria_beside_probitas_means_the_demonstration_is_there(self):
+        if not os.path.isdir(ALEXANDRIA):
+            self.skipTest("Probitas is installed standalone")
+        self.assertTrue(os.path.isfile(DEMO), DEMO)
 
 
 class TestTheUnion(unittest.TestCase):
