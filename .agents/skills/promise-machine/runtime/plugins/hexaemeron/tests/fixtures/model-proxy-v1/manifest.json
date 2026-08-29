@@ -3,7 +3,7 @@
   "accepted_job": "accepted-job.json",
   "jobspec_sha256": "524a4f49bd13077b331e1477dc3c11fffcea0efd446dac735918b377a1c96b79",
   "policy_sha256": "807f6425499696cd4aedd68152b20b11f5c4558d0cfb10e71ac363d88033dd84",
-  "manifest_sha256": "da408cf8e5931575f145b6c885520ba40171dd63235572f4bee9934b50dda9cb",
+  "manifest_sha256": "600b5aa8e2e3aea5e3a79451a81b3058b407326af71a814a53f4eff4053cff86",
   "rows": [
     {
       "id": "positive",
@@ -15,7 +15,7 @@
     },
     {
       "id": "dns-rebinding",
-      "expected_outcome": "MP303"
+      "expected_outcome": "MP304"
     },
     {
       "id": "redirect",

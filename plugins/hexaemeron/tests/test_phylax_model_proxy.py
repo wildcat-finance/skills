@@ -5373,6 +5373,27 @@ class ConformanceTests(unittest.TestCase):
         self.assertEqual(TEXT_OPERATION, request["operation"])
         self.assertEqual("GET", request["method"])
 
+    def test_dns_rebinding_row_attempts_pinned_peer_substitution(self):
+        sentinel = object()
+        with mock.patch.object(
+            conformance, "_provider_refusal", return_value=sentinel
+        ) as provider_refusal:
+            self.assertIs(
+                sentinel,
+                conformance._execute_case("dns-rebinding", self.policy),
+            )
+        self.assertEqual(
+            ("dns-rebinding", "MP304", self.policy),
+            provider_refusal.call_args.args,
+        )
+        self.assertEqual(
+            ("8.8.8.8",),
+            provider_refusal.call_args.kwargs["resolver"]("hostname", 443),
+        )
+        response = provider_refusal.call_args.kwargs["response"]
+        self.assertIsInstance(response, conformance._Response)
+        self.assertEqual("1.1.1.1", response.peer_address)
+
     def test_response_flood_row_streams_one_sentinel_beyond_the_cap(self):
         maximum = self.policy.document["limits"]["max_response_bytes"]
         responses = []
@@ -5523,10 +5544,10 @@ class ConformanceTests(unittest.TestCase):
             expected["counts"],
         )
         self.assertEqual(
-            {"request_bytes": 313, "response_bytes": 32902, "guest_bytes": 90},
+            {"request_bytes": 415, "response_bytes": 32902, "guest_bytes": 90},
             expected["sizes"],
         )
-        self.assertEqual({"duration_ns": "3000000"}, expected["timings"])
+        self.assertEqual({"duration_ns": "4000000"}, expected["timings"])
         self.assertEqual("complete", expected["cleanup_state"])
         self.assertEqual(
             [(identifier, outcome) for identifier, outcome, _state in EXPECTED_ROWS],

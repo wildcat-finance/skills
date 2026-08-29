@@ -492,7 +492,7 @@ outcomes are fixed in code:
 | --- | --- | --- |
 | `positive` | `MP000` | `provider-only` |
 | `arbitrary-url` | `MP207` | `not-read` |
-| `dns-rebinding` | `MP303` | `not-read` |
+| `dns-rebinding` | `MP304` | `provider-only` |
 | `redirect` | `MP307` | `provider-only` |
 | `credential-header` | `MP207` | `not-read` |
 | `unsupported-method` | `MP207` | `not-read` |

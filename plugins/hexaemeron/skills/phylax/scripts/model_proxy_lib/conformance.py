@@ -62,7 +62,7 @@ _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 EXPECTED_ROWS = (
     ("positive", "MP000", "provider-only"),
     ("arbitrary-url", "MP207", "not-read"),
-    ("dns-rebinding", "MP303", "not-read"),
+    ("dns-rebinding", "MP304", "provider-only"),
     ("redirect", "MP307", "provider-only"),
     ("credential-header", "MP207", "not-read"),
     ("unsupported-method", "MP207", "not-read"),
@@ -601,10 +601,10 @@ def _execute_case(identifier: str, policy: CompiledPolicy) -> ConformanceRowResu
     if identifier == "dns-rebinding":
         return _provider_refusal(
             identifier,
-            "MP303",
+            "MP304",
             policy,
-            resolver=lambda _hostname, _port: ("8.8.8.8", "1.1.1.1"),
-            response=None,
+            resolver=lambda _hostname, _port: ("8.8.8.8",),
+            response=_Response(b"", peer_address="1.1.1.1"),
         )
     if identifier == "redirect":
         return _provider_refusal(
