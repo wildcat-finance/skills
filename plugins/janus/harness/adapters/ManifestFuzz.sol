@@ -73,6 +73,10 @@ contract ManifestFuzz {
   bool public sawBlankSymbolAccepted;
   bool public sawWrongAddress;
   bool public sawAmbiguousAccepted;
+  bool public sawPathDisagreement;
+
+  uint256 public agreementDraws;
+  uint256 public agreementBinds;
 
   uint256 internal _expectedCalls;
   uint256 internal _expectedDelegates;
@@ -143,10 +147,25 @@ contract ManifestFuzz {
   ///      is S2-R4-01. Both split to a live prefix -- 0xA3 and 0xA2 -- and
   ///      that prefix is what the generator's own expectation holds, so a
   ///      reader that splits them agrees with GL09 and only GL10 sees it.
-  function _ambiguousName(uint8 i) internal pure returns (string memory) {
+  ///
+  ///      And each in two depths, because the guard has a third way to be
+  ///      wrong that neither bare name can show: asking about the whole
+  ///      written string only, rather than about every dot boundary. That is
+  ///      S2-R5-01, and it needs a name whose *intermediate* reading is the
+  ///      live one -- `asset.e.someFunction`, where the adapter holds
+  ///      `asset.e` and not the whole string. Both deep forms split to the
+  ///      same live prefix as their bare forms, 0xA3 and 0xA2, so a reader
+  ///      that binds the prefix still agrees with the generator's own
+  ///      expectation and GL09 stays green on exactly this mutant too. Before
+  ///      this, every target the generator could emit carried at most one dot,
+  ///      so the corner where the guard was actually open was unreachable from
+  ///      the campaign and deleting the prefix scan left all eleven properties
+  ///      green -- the same structural blindness this function's bare forms
+  ///      were added to end one round earlier.
+  function _ambiguousName(uint8 i, bool deep) internal pure returns (string memory) {
     uint8 k = i % 10;
-    if (k == 1) return "host.shadow";
-    if (k == 2) return "asset.e";
+    if (k == 1) return deep ? "host.shadow.someFunction" : "host.shadow";
+    if (k == 2) return deep ? "asset.e.someFunction" : "asset.e";
     return "";
   }
 
@@ -198,7 +217,8 @@ contract ManifestFuzz {
       // because a valid draw is one the reader is obliged to resolve and
       // GL00 counts on that staying true.
       string memory target;
-      string memory ambiguous = _ambiguousName(s);
+      bool deep = (uint256(keccak256(abi.encode(symSeed, i, "deep"))) & 1) == 1;
+      string memory ambiguous = _ambiguousName(s, deep);
       if (!dots) target = _sym(s);
       else if (!valid && bytes(ambiguous).length != 0) { target = ambiguous; _anyAmbiguous = true; }
       else target = string.concat(_sym(s), ".someFunction");
@@ -223,7 +243,8 @@ contract ManifestFuzz {
       // The external-slot path splits at the dot exactly as a call target
       // does, so it carries the same ambiguous name for the same reason.
       string memory slot;
-      string memory ambiguous = _ambiguousName(s);
+      bool deep = (uint256(keccak256(abi.encode(symSeed, i, "deep"))) & 1) == 1;
+      string memory ambiguous = _ambiguousName(s, deep);
       if (!dots) slot = _sym(s);
       else if (!valid && bytes(ambiguous).length != 0 && (sc % 4) == 2) {
         slot = ambiguous;
@@ -396,6 +417,127 @@ contract ManifestFuzz {
     }
   }
 
+  // ------------------------------------------------------------------- //
+  //          One name, one resolver, at most one account (GL11)          //
+  // ------------------------------------------------------------------- //
+
+  /// @dev The names this draw runs through all three resolution paths. It is
+  ///      a small fixed table rather than a generated string because the
+  ///      property is about the paths disagreeing with each other, not about
+  ///      the alphabet: what it needs is names that reach the interesting
+  ///      corners -- dot-free, one dot the adapter holds whole, one dot it
+  ///      holds whole at zero, two dots whose inner reading it holds, an
+  ///      ordinary function suffix, and the three refusal shapes.
+  function _pathName(uint8 i) internal pure returns (string memory) {
+    uint8 k = i % 8;
+    if (k == 0) return "asset";
+    if (k == 1) return "asset.e";
+    if (k == 2) return "host.shadow";
+    if (k == 3) return "asset.e.someFunction";
+    if (k == 4) return "roleProvider.getCredential";
+    if (k == 5) return "unknown";
+    if (k == 6) return "ghost";
+    return "phantom";
+  }
+
+  function _bindCall(string memory name) internal view returns (bool, address) {
+    try
+      reader.resolveJson(
+        string.concat(
+          '{"thresholds":[{"action":"deposit","gasBudget":1,'
+          '"permittedStorageWrites":[],"permittedValueMovements":[],'
+          '"permittedCalls":[{"target":"',
+          name,
+          '","kind":"call"}]}]}'
+        ),
+        "deposit",
+        resolver
+      )
+    returns (ResolvedThreshold memory t) {
+      if (t.allowedCallTargets.length == 0) return (false, address(0));
+      return (true, t.allowedCallTargets[0]);
+    } catch {
+      return (false, address(0));
+    }
+  }
+
+  function _bindSlot(string memory name) internal view returns (bool, address) {
+    try
+      reader.resolveJson(
+        string.concat(
+          '{"thresholds":[{"action":"deposit","gasBudget":1,'
+          '"permittedCalls":[],"permittedValueMovements":[],'
+          '"permittedStorageWrites":[{"scope":"external","slot":"',
+          name,
+          '"}]}]}'
+        ),
+        "deposit",
+        resolver
+      )
+    returns (ResolvedThreshold memory t) {
+      if (t.allowedWriteAccounts.length == 0) return (false, address(0));
+      return (true, t.allowedWriteAccounts[0]);
+    } catch {
+      return (false, address(0));
+    }
+  }
+
+  function _bindValue(string memory name) internal view returns (bool, address) {
+    try
+      reader.resolveJson(
+        string.concat(
+          '{"thresholds":[{"action":"deposit","gasBudget":1,'
+          '"permittedCalls":[],"permittedStorageWrites":[],'
+          '"permittedValueMovements":[{"asset":"',
+          name,
+          '","recipient":"',
+          name,
+          '"}]}]}'
+        ),
+        "deposit",
+        resolver
+      )
+    returns (ResolvedThreshold memory t) {
+      if (t.valueAssets.length == 0) return (false, address(0));
+      return (true, t.valueAssets[0]);
+    } catch {
+      return (false, address(0));
+    }
+  }
+
+  /// @dev Draw one name and carry it down all three paths the reader has --
+  ///      a call target, an external storage slot, and a value movement --
+  ///      against the one resolver, then require that no two of them bound it
+  ///      to different accounts.
+  ///
+  ///      This is the general form of
+  ///      `test_one_string_one_resolver_never_yields_two_accounts`, which
+  ///      pinned exactly one name against exactly one resolver. It is not a
+  ///      restatement of GL10 and the difference is the reason it is here:
+  ///      GL10 fires from `_anyAmbiguous`, a flag the *generator* sets because
+  ///      it knows in advance which names it considers ambiguous, so GL10 goes
+  ///      blind exactly when the generator's idea of ambiguity drifts from the
+  ///      reader's -- which is the blind spot S2-R5-01 was found in. GL11
+  ///      needs no such oracle: it compares the reader against itself, so it
+  ///      still fires on a name nobody remembered to declare.
+  ///
+  ///      Its reach is stated rather than assumed. It sees only the case where
+  ///      two paths both bind, so it kills the guard-deleted mutant and does
+  ///      not kill S2-R5-01, whose call path binds while the value path
+  ///      refuses. GL10 is what covers that direction, and neither property
+  ///      stands in for the other.
+  function fuzzPathAgreement(uint8 nameSeed) public {
+    string memory name = _pathName(nameSeed);
+    agreementDraws++;
+    (bool callBound, address callAddr) = _bindCall(name);
+    (bool slotBound, address slotAddr) = _bindSlot(name);
+    (bool valueBound, address valueAddr) = _bindValue(name);
+    if (callBound || slotBound || valueBound) agreementBinds++;
+    if (callBound && slotBound && callAddr != slotAddr) sawPathDisagreement = true;
+    if (callBound && valueBound && callAddr != valueAddr) sawPathDisagreement = true;
+    if (slotBound && valueBound && slotAddr != valueAddr) sawPathDisagreement = true;
+  }
+
   /// @dev GL00 is the anti-vacuity guard, and it is the property to read
   ///      first. Every other property here is the negation of a ghost flag
   ///      that `_check` sets, and `_check` runs only when `resolveJson`
@@ -435,4 +577,20 @@ contract ManifestFuzz {
   ///      symbol choice, so the two agree and GL09 stays green on exactly the
   ///      mutant this property exists to kill.
   function echidna_GL10_ambiguous_name_fails_closed() public view returns (bool) { return !sawAmbiguousAccepted; }
+
+  /// @dev GL11, the engine-facing surface of `fuzzPathAgreement`. It was
+  ///      written without one, which made it the exact failure its own comment
+  ///      warns about: the ghost was set on every draw and read by nothing, so
+  ///      the property that exists to need no oracle could not fire under any
+  ///      engine, and deleting its whole body changed no result. A ghost with
+  ///      no property is not a weaker property; it is not a property.
+  ///
+  ///      `agreementBinds` is not read here. The vacuity this property is
+  ///      exposed to is GL00's -- an engine that reaches no reader binds
+  ///      nothing and agrees trivially -- and GL00 already reports that state
+  ///      for the whole suite. A second copy of the same signal would fail
+  ///      beside it under Echidna and Medusa and say nothing GL00 did not.
+  ///      The coverage claim is made where it can be made deterministically
+  ///      instead, by `test_gl11_draws_actually_bind_on_more_than_one_path`.
+  function echidna_GL11_paths_agree_on_one_name() public view returns (bool) { return !sawPathDisagreement; }
 }
