@@ -241,6 +241,19 @@ class FramingCore:
 
         return self._input_finished
 
+    @property
+    def cleanup_complete(self) -> bool:
+        """Report whether terminal cleanup dropped every request reference."""
+
+        return (
+            self._failed
+            and self._input_finished
+            and self._expected_length is None
+            and not self._prefix
+            and not self._payload
+            and not self._issued
+        )
+
     def _record(self, stage: str, outcome: str, code: str) -> None:
         if len(self._events) < (self._limits.max_requests * 2) + 2:
             self._events.append(FrameEvent(stage=stage, outcome=outcome, code=code))

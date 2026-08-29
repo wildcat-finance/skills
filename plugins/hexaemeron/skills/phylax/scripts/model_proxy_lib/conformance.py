@@ -112,8 +112,8 @@ class ConformanceRowResult:
     guest_bytes: int
     receipts: int
     duration_ns: int
+    cleanup_state: str
     executed: bool = True
-    cleanup_state: str = "complete"
 
     def document(self) -> dict[str, object]:
         return {
@@ -174,7 +174,12 @@ class ConformanceManifestResult:
                 "operator_disclosure": "established",
                 "canary_content_absence": "established",
             },
-            "cleanup_state": "complete",
+            "cleanup_state": (
+                "complete"
+                if self.rows
+                and all(row.executed and row.cleanup_state == "complete" for row in self.rows)
+                else "incomplete"
+            ),
             "dependencies": dict(DEPENDENCY_BOUNDARIES),
             "rows": [row.document() for row in self.rows],
         }
@@ -273,6 +278,14 @@ def _ensure_absent(surface: bytes, forbidden: tuple[bytes, ...]) -> None:
         refuse("MP501", "conformance.content_absence")
 
 
+def _complete_cleanup(established: bool) -> str:
+    """Return the safe claim only after a state predicate establishes it."""
+
+    if established is not True:
+        refuse("MP501", "conformance.row.cleanup")
+    return "complete"
+
+
 def _scan_positive_surfaces(
     surfaces: dict[str, bytes],
     *,
@@ -335,6 +348,11 @@ def _positive(policy: CompiledPolicy) -> ConformanceRowResult:
     )
     response = _Response(response_body)
     observed: list[HTTPSRequest] = []
+    io_closed = False
+
+    def close_io() -> None:
+        nonlocal io_closed
+        io_closed = True
 
     def exchange(
         request: HTTPSRequest, _context, _timeout: float
@@ -376,6 +394,7 @@ def _positive(policy: CompiledPolicy) -> ConformanceRowResult:
             credential_source=lambda name: environment_fixture[name],
             monotonic_clock=_MutableClock(1_000_000_000),
             wall_clock=_MutableClock(_fixed_wall_ns()),
+            io_closer=close_io,
         )
         admitted = runtime.feed(_request_frame(input_text))
         runtime.finish_input()
@@ -456,6 +475,7 @@ def _positive(policy: CompiledPolicy) -> ConformanceRowResult:
         guest_bytes=len(guest),
         receipts=len(lines),
         duration_ns=event.duration_ns,
+        cleanup_state=_complete_cleanup(runtime.cleanup_complete and io_closed),
     )
 
 
@@ -480,6 +500,7 @@ def _framing_refusal(
     if not events or events[-1].code != expected:
         refuse("MP501", "conformance.row.events")
     core.close()
+    cleanup_state = _complete_cleanup(core.cleanup_complete)
     return ConformanceRowResult(
         identifier=identifier,
         outcome=expected,
@@ -490,6 +511,7 @@ def _framing_refusal(
         guest_bytes=0,
         receipts=0,
         duration_ns=0,
+        cleanup_state=cleanup_state,
     )
 
 
@@ -539,6 +561,7 @@ def _provider_refusal(
     session.close()
     if response is not None and not response.closed:
         refuse("MP501", "conformance.row.cleanup")
+    cleanup_state = _complete_cleanup(session.cleanup_complete)
     _ensure_absent(_event_bytes(events), (credential.encode("ascii"), input_text.encode("ascii")))
     return ConformanceRowResult(
         identifier=identifier,
@@ -550,6 +573,7 @@ def _provider_refusal(
         guest_bytes=0,
         receipts=0,
         duration_ns=event.duration_ns,
+        cleanup_state=cleanup_state,
     )
 
 
@@ -574,6 +598,7 @@ def _controller_refusal(
     terminal = controller.terminal
     if terminal is None or terminal.code != expected:
         refuse("MP501", "conformance.row.terminal")
+    cleanup_state = _complete_cleanup(controller.cleanup_complete)
     return ConformanceRowResult(
         identifier=identifier,
         outcome=expected,
@@ -584,6 +609,7 @@ def _controller_refusal(
         guest_bytes=0,
         receipts=0,
         duration_ns=terminal.duration_ns,
+        cleanup_state=cleanup_state,
     )
 
 
@@ -730,6 +756,7 @@ def _execute_case(identifier: str, policy: CompiledPolicy) -> ConformanceRowResu
         winner = controller.fail(first, "MP404")
         if winner is not terminal:
             refuse("MP501", "conformance.row.cleanup")
+        cleanup_state = _complete_cleanup(controller.cleanup_complete)
         return ConformanceRowResult(
             identifier=identifier,
             outcome="MP404",
@@ -740,6 +767,7 @@ def _execute_case(identifier: str, policy: CompiledPolicy) -> ConformanceRowResu
             guest_bytes=0,
             receipts=0,
             duration_ns=terminal.duration_ns,
+            cleanup_state=cleanup_state,
         )
     if identifier == "call-after-cancellation":
         def cancelled(controller: LifecycleController) -> None:

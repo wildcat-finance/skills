@@ -5328,6 +5328,7 @@ class ConformanceTests(unittest.TestCase):
             guest_bytes=0,
             receipts=0,
             duration_ns=0,
+            cleanup_state="incomplete",
             executed=False,
         )
         for value in (unexecuted, None):
@@ -5353,6 +5354,22 @@ class ConformanceTests(unittest.TestCase):
                     self.assertEqual(1, result.requests)
                     self.assertEqual(1, result.request_bytes)
                     self.assertEqual("not-read", result.disclosure_state)
+
+    def test_cleanup_claim_requires_observed_cleanup(self):
+        for owner, identifier in (
+            (conformance.FramingCore, "nested"),
+            (conformance.ProviderSession, "dns-rebinding"),
+        ):
+            with self.subTest(owner=owner.__name__):
+                with mock.patch.object(
+                    owner,
+                    "close",
+                    autospec=True,
+                    return_value=None,
+                ) as close:
+                    with self.assertRaisesRegex(PolicyError, "MP501"):
+                        conformance._execute_case(identifier, self.policy)
+                close.assert_called_once()
 
     def test_unsupported_method_row_attempts_http_method_authority(self):
         sentinel = object()

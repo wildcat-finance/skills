@@ -248,6 +248,13 @@ class ReceiptSink:
         with self._lock:
             return self._records
 
+    @property
+    def closed(self) -> bool:
+        """Report whether both receipt descriptors have been released."""
+
+        with self._lock:
+            return self._descriptor is None and self._parent_descriptor is None
+
     def _same_target(self) -> bool:
         descriptor = self._descriptor
         parent = self._parent_descriptor
