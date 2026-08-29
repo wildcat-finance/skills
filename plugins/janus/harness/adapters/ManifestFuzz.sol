@@ -9,7 +9,9 @@ import {AccountResolver, ManifestReader, ResolvedThreshold} from "../src/Manifes
 ///      Five ordinary names, one it does not know, and three it answers to on
 ///      purpose even though the reader must refuse them first: the empty name,
 ///      a whitespace-only name, and `ghost`, which it claims to know while
-///      resolving it to the zero address.
+///      resolving it to the zero address. A tenth, `phantom`, is refused while
+///      still carrying an address, which is the one combination the table
+///      could not otherwise produce.
 ///
 ///      Each of those three exists because a property that only the adapter
 ///      enforces is not a property of the reader. GL07 held with the reader's
@@ -36,6 +38,13 @@ contract FuzzResolver is AccountResolver {
     // A name known to resolve to nothing. Without it `ok` and "non-zero" are
     // the same predicate and the reader's zero-address refusal is untestable.
     if (keccak256(bytes(n)) == keccak256("ghost")) return (true, address(0));
+    // And the other direction, which the table alone cannot produce: a name
+    // refused while still carrying an address. Without it, `!ok` and
+    // `addr == 0` coincide, so deleting `UnresolvableSymbol` from the reader
+    // simply falls through to `SymbolResolvesToZero` and the campaign sees no
+    // difference -- GL06 would test the zero-address guard twice and the
+    // unresolvable-name guard never.
+    if (keccak256(bytes(n)) == keccak256("phantom")) return (false, address(0xA9));
     address a = t[keccak256(bytes(n))];
     return (a != address(0), a);
   }
@@ -80,11 +89,12 @@ contract ManifestFuzz {
     resolver = new FuzzResolver();
   }
 
-  /// @dev Nine symbol choices: five the resolver knows, one it does not, two
-  ///      the reader's grammar must refuse before the resolver is asked, and
-  ///      one the resolver claims to know while resolving it to zero.
+  /// @dev Ten symbol choices: five the resolver knows, one it does not, two
+  ///      the reader's grammar must refuse before the resolver is asked, one
+  ///      the resolver claims to know while resolving it to zero, and one it
+  ///      refuses while still handing back an address.
   function _sym(uint8 i) internal pure returns (string memory) {
-    uint8 k = i % 9;
+    uint8 k = i % 10;
     if (k == 0) return "hook";
     if (k == 1) return "host";
     if (k == 2) return "asset";
@@ -93,14 +103,15 @@ contract ManifestFuzz {
     if (k == 5) return "unknown";
     if (k == 6) return "";
     if (k == 7) return " ";
-    return "ghost";
+    if (k == 8) return "ghost";
+    return "phantom";
   }
 
   /// @dev The address the resolver holds for a symbol the reader will accept.
   ///      Zero for every choice that must refuse, which cannot appear in a
   ///      comparison because a refusal never reaches `_check`.
   function _addrOf(uint8 i) internal pure returns (address) {
-    uint8 k = i % 9;
+    uint8 k = i % 10;
     if (k == 0) return address(0xA1);
     if (k == 1) return address(0xA2);
     if (k == 2) return address(0xA3);
@@ -109,9 +120,9 @@ contract ManifestFuzz {
     return address(0);
   }
 
-  function _symKnown(uint8 i) internal pure returns (bool) { return (i % 9) < 5; }
-  function _symBlank(uint8 i) internal pure returns (bool) { uint8 k = i % 9; return k == 6 || k == 7; }
-  function _symZero(uint8 i) internal pure returns (bool) { return (i % 9) == 8; }
+  function _symKnown(uint8 i) internal pure returns (bool) { return (i % 10) < 5; }
+  function _symBlank(uint8 i) internal pure returns (bool) { uint8 k = i % 10; return k == 6 || k == 7; }
+  function _symZero(uint8 i) internal pure returns (bool) { return (i % 10) == 8; }
 
   function _kind(uint8 i) internal pure returns (string memory) {
     uint8 k = i % 4;
@@ -248,13 +259,25 @@ contract ManifestFuzz {
       ',"permittedStorageWrites":', _buildWrites(nw, symSeed, scopeSeed, dots, valid),
       ',"permittedValueMovements":', _buildMoves(nm, symSeed, dots, valid), '}'
     );
-    // A second threshold naming the same action. Selection is by name, so a
+    // A decoy threshold, always first, naming a different action. Without it
+    // every manifest the campaign generates holds exactly one action name, so
+    // `.thresholds[0]` and the by-name prefix are the same string and no
+    // property can tell selection-by-name from selection-by-position: a reader
+    // that ignored its `action` argument entirely passed all ten. Its budget
+    // is 0, which no draw can produce, so a positional reader trips GL05; its
+    // one call entry is resolvable, so a positional reader gets far enough to
+    // trip GL04 and GL09 as well rather than merely reverting.
+    string memory decoy =
+      '{"action":"queueWithdrawal","gasBudget":0,'
+      '"permittedCalls":[{"target":"host","kind":"call"}],'
+      '"permittedStorageWrites":[],"permittedValueMovements":[]}';
+    // A second copy of the deposit threshold. Selection is by name, so a
     // manifest that states one action twice has no single answer and must
-    // refuse; without this the campaign only ever sees one threshold and the
-    // whole of `_thresholdByAction` past its first match goes unexercised.
+    // refuse; without this the whole of `_thresholdByAction` past its first
+    // match goes unexercised.
     string memory json = duplicate
-      ? string.concat('{"thresholds":[', threshold, ',', threshold, ']}')
-      : string.concat('{"thresholds":[', threshold, ']}');
+      ? string.concat('{"thresholds":[', decoy, ',', threshold, ',', threshold, ']}')
+      : string.concat('{"thresholds":[', decoy, ',', threshold, ']}');
 
     resolveAttempts++;
     try reader.resolveJson(json, "deposit", resolver) returns (ResolvedThreshold memory t) {
@@ -285,10 +308,24 @@ contract ManifestFuzz {
     if (t.allowedCallTargets.length != _expectedCalls) sawKindConfusion = true;
     if (t.allowedDelegateTargets.length != _expectedDelegates) sawKindConfusion = true;
     if (t.allowedWriteAccounts.length != _expWrite.length) sawWidenedSet = true;
+    // The value arm needs the same exact test the other three have. With only
+    // the `> nm` bound above, a reader that returned fewer pairs than the
+    // manifest wrote satisfied every property: the address loops below are
+    // min-bounded, so at a shorter length they simply compare fewer entries.
+    // That is the shrunken set the reader's own header says it never returns.
+    if (t.valueAssets.length != _expAsset.length) sawWidenedSet = true;
 
     if (t.gasBudget != budget) sawBudgetDrift = true;
 
-    if (sawPairMismatch || sawKindConfusion) return; // lengths already disagree
+    // Per-draw, not campaign-wide. These flags are sticky by design, so
+    // reading them here made the first GL03 or GL04 failure switch the
+    // address comparisons off for every later draw, and a reader that both
+    // confused kinds and returned wrong addresses reported only the first.
+    bool lengthsDisagree =
+      t.valueAssets.length != t.valueRecipients.length ||
+      t.allowedCallTargets.length != _expectedCalls ||
+      t.allowedDelegateTargets.length != _expectedDelegates;
+    if (lengthsDisagree) return;
 
     for (uint256 i = 0; i < t.allowedCallTargets.length; i++) {
       if (t.allowedCallTargets[i] == address(0)) sawZeroAddress = true;
