@@ -78,6 +78,7 @@ interface Vm {
   function exists(string calldata path) external view returns (bool);
 
   // JSON parsing, for reading a manifest.
+  function keyExistsJson(string calldata json, string calldata key) external view returns (bool);
   function parseJson(string calldata json) external pure returns (bytes memory abiEncoded);
   function parseJson(
     string calldata json,

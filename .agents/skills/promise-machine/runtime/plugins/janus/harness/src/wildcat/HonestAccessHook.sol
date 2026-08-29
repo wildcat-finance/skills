@@ -2,6 +2,7 @@
 pragma solidity 0.8.25;
 
 import {IWildcatHook} from "./IWildcatHook.sol";
+import {IRoleProviderCalls} from "./IRoleProvider.sol";
 
 /// @dev An honest access-control hook shaped like the Wildcat OpenTermHooks
 ///      template. It gates deposits, queued withdrawals and transfers on a
@@ -15,12 +16,31 @@ contract HonestAccessHook is IWildcatHook {
 
   address public immutable admin;
 
+  /// @dev Optional. When set, `onDeposit` makes the `validateCredential` call
+  ///      the manifest declares, so the honest example exercises a non-empty
+  ///      resolved permit set rather than passing gate 1 by calling nothing.
+  ///      A hook that calls nothing satisfies any permitted-call set, including
+  ///      a wrong one, so the empty case cannot tell a correct set from a
+  ///      broken one.
+  ///
+  ///      Left unset the hook behaves exactly as before, which is what keeps
+  ///      the hostile suite and the gate 3 liveness path unchanged: neither
+  ///      needs a provider and neither should grow a dependency on one.
+  IRoleProviderCalls public roleProvider;
+
   mapping(address => bool) public approved;
   mapping(address => uint256) public credentialExpiry;
   mapping(address => bool) public knownLender;
 
   constructor() {
     admin = msg.sender;
+  }
+
+  /// @dev Point the hook at a role provider. Set once and only forward, so a
+  ///      test cannot silently swap the account a resolved permit names.
+  function setRoleProvider(IRoleProviderCalls provider) external {
+    require(address(roleProvider) == address(0), "provider set");
+    roleProvider = provider;
   }
 
   /// @dev Stand-in for a role provider granting a credential.
@@ -48,6 +68,14 @@ contract HonestAccessHook is IWildcatHook {
   ) external override {
     if (!knownLender[lender] && !_hasCredential(lender)) revert NotApprovedLender();
     knownLender[lender] = true;
+    // The manifest permits this call on deposit; making it is what gives the
+    // honest path a non-empty resolved set to be checked against. The return
+    // value is deliberately unused: this hook's own credential decision is
+    // already made above, and consuming the provider's answer here would make
+    // the hook's behaviour depend on a contract the gates treat as external.
+    if (address(roleProvider) != address(0)) {
+      roleProvider.validateCredential(lender, "");
+    }
   }
 
   function onQueueWithdrawal(
