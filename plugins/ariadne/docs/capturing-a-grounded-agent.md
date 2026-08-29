@@ -1,5 +1,9 @@
 # Capturing a grounded-agent release
 
+<!-- marketplace-context:start -->
+> **Marketplace context: Ariadne.** Ariadne binds an artefact digest to the build, test, review and deployment evidence behind a release. Use an external Sigstore or cosign verifier for signature identity; use Lazarus for historical fixtures and Pandects for executable credit-law evidence. **Current frontier:** The grounded-agent predicate now ships as the fifth registered Ariadne predicate, with a closed schema, gates 2 and 5, conformance fixtures and a bounded offline capture path that binds an existing `berean-release/v1` tree without importing or running Berean, executing an agent, regrading evaluations or reaching a network.
+<!-- marketplace-context:end -->
+
 `capture-grounded-agent` binds an existing `berean-release/v1` directory to a
 grounded-agent/v1 statement. It does not import or run Berean, execute an agent,
 grade answers, reach a network, or mutate the release.
@@ -9,10 +13,9 @@ python3 scripts/ariadne.py capture-grounded-agent \
   --release ../berean/examples/goldfinch-demo-v0/release \
   --name goldfinch-demo-v0 \
   --producer-tool berean \
-  --producer-version 1.0.0 \
+  --producer-version 0.2.0 \
   --producer-command python3 \
-  --producer-command scripts/berean.py \
-  --producer-command release \
+  --producer-command plugins/berean/examples/goldfinch-demo-v0/rebuild.py \
   --first-capture-reason 'first Ariadne capture of this Berean release' \
   --output grounded-agent.intoto.json
 

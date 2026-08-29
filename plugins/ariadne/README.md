@@ -5,9 +5,9 @@
 
 Ariadne writes and checks the evidence statement that joins a released artefact digest to the work actually recorded behind it.
 
-**Current frontier.** The grounded-agent predicate remains unimplemented; the state-fixture predicate now ships with its schema, gates, conformance fixtures and a capture path that reads a Lazarus fixture's evidence counts rather than recomputing them.
+**Current frontier.** The grounded-agent predicate now ships as the fifth registered Ariadne predicate, with a closed schema, gates 2 and 5, conformance fixtures and a bounded offline capture path that binds an existing `berean-release/v1` tree without importing or running Berean, executing an agent, regrading evaluations or reaching a network.
 
-**Next Fiat job.** Use /hexaemeron:fiat to implement the grounded-agent predicate with its schema, gates, conformance fixtures and capture path, so a statement about what an agent was given and what it produced carries the same evidence a release does. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** None -- mature.
 <!-- marketplace-context:end -->
 
 ## Place in the collective
@@ -64,12 +64,15 @@ Five of those belong to an artefact-neutral core and run for any predicate, incl
 
 - the executable [`ariadne.py`](./scripts/ariadne.py) capture, verifier and replay, standard library only;
 - the [Solidity release predicate](./docs/solidity-release.md) and [its published schema](./schemas/solidity-release-v1.json), tied together by a test so the two cannot drift;
-- dataset and state-fixture predicates, including state-fixture/v2 receipt-root
-  and receipt-trie evidence fields;
-- capture from a Foundry build that reads the compiler's own output, refuses to decide whether your tests passed, and scrubs a build command before recording it;
+- dataset, state-fixture and grounded-agent predicates, including
+  state-fixture/v2 receipt-root and receipt-trie evidence fields and a closed
+  grounded-agent schema;
+- four offline capture paths over local Foundry builds, dataset releases,
+  Lazarus fixtures and Berean releases; none runs its producer or reaches a
+  network;
 - conformance fixtures with a passing statement and one breach per core gate, for anyone writing another producer or verifier;
-- two example attestations, one of them carrying a fuzz campaign that timed out
-  and an audit covering an earlier revision; and
+- four example attestations spanning Solidity releases, a state fixture and a
+  grounded-agent release; and
 - a drift-checked offline test suite and an audit log
   ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round.
 
@@ -96,10 +99,10 @@ confirmed them against a chain. Its published schema sits in
 [`schemas/`](./schemas), and a test ties the schema to the validator so the two
 cannot drift.
 
-**Capture.** A Foundry project's build output read into a release statement that
-verifies unedited. It does not decide whether your tests passed, does not
-confirm a deployment against a chain, and scrubs a build command before
-recording it.
+**Capture.** A local Foundry build, dataset release, Lazarus fixture or Berean
+release read into a statement that verifies unedited. Capture does not run a
+producer, execute an agent, regrade evaluations, confirm a deployment against
+a chain or reach a network.
 
 **Replay.** The commands a statement marks `exact`, re-run and compared against
 the recorded artefact digest. Never through a shell, never without being asked,
@@ -107,10 +110,10 @@ and everything marked `nondeterministic` listed as deliberately not run.
 
 **Fixtures and examples.** `tests/fixtures/conformance/` holds a passing
 statement and, for each core gate, one that breaches it, for another
-implementation to check itself against. [`examples/`](./examples) holds two
-attestations over a real build: a clean release, and one carrying a fuzz
-campaign that timed out and an audit covering an earlier revision. Both verify.
-A tampered copy of each ships beside them and does not.
+implementation to check itself against. [`examples/`](./examples) holds four
+attestations: two over a real build, one over a fixed Lazarus fixture and one
+over a fixed Berean release. All four verify. A tampered copy of each ships
+beside them and does not.
 
 ## The path, end to end
 
@@ -158,6 +161,15 @@ python3 scripts/ariadne.py capture-state-fixture --fixture <dir> --name <fixture
   --capture-tool lazarus --capture-command <argv0> \
   --first-capture-reason <why there is nothing earlier> --out fixture.json
 
+python3 scripts/ariadne.py capture-grounded-agent \
+  --release ../berean/examples/goldfinch-demo-v0/release \
+  --name goldfinch-demo-v0 \
+  --producer-tool berean --producer-version 0.2.0 \
+  --producer-command python3 \
+  --producer-command plugins/berean/examples/goldfinch-demo-v0/rebuild.py \
+  --first-capture-reason 'first Ariadne capture of this Berean release' \
+  --output grounded-agent.intoto.json
+
 python3 scripts/ariadne.py inspect <statement-or-envelope.json>
 python3 scripts/ariadne.py verify <statement-or-envelope.json>
 python3 scripts/ariadne.py capture solidity-release --project <dir> \
@@ -182,10 +194,10 @@ recorded-RPC class.
 
 ## Where it stops
 
-The registry holds four predicates: Solidity release, dataset, and versions 1 and
-2 of state fixture. The grounded-agent predicate is specified and not implemented
-here, so a statement of that type verifies its core gates and is told which gates
-went unchecked.
+The registry holds five predicates, reached through four local capture paths.
+Grounded-agent capture binds a bounded local `berean-release/v1` tree; it does
+not import or run Berean, execute an agent, regrade evaluation or promotion
+evidence, or reach a network.
 
 Nothing confirms a deployment against a chain, nothing signs, and nothing runs
 as a GitHub Action. Each is a deliberate boundary: the first needs a node, the

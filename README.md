@@ -255,8 +255,10 @@ The common credit path is Alexandria to Tabularium to Probitas: preserve,
 interpret, then assemble a bounded dossier. Lemma prepares source-linked
 material for a system such as Berean to evaluate. Lazarus preserves a test's
 historical chain boundary, and Ariadne can bind the resulting release to that
-evidence. Pandects supplies economic laws, Janus checks hook effects against a
-host boundary, and Hermes handles measured gas changes.
+evidence. Berean produces grounded-agent releases; Ariadne binds them without
+rerunning the agent or regrading its evaluation. Pandects supplies economic
+laws, Janus checks hook effects against a host boundary, and Hermes handles
+measured gas changes.
 
 For delivery, Protasis shapes the study and runbook before Mason builds a step.
 Phylax, Ephoros, and Metron govern its off-chain boundary, observable behaviour,

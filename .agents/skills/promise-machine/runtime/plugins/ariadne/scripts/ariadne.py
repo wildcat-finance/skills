@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """ariadne -- signed evidence another person can check.
 
-Seven subcommands:
+Eight subcommands:
 
     predicates  list the predicate types this build understands
     capture     read a build on disk into a statement
