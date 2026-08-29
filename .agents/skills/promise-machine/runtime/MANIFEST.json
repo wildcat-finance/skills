@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 939,
-  "total_bytes": 20373709,
+  "file_count": 942,
+  "total_bytes": 20391967,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "09b656b047f267e52e2be28de6d6e0051cbb3c4894731a775de7f4a003bf973b",
+      "sha256": "509ec5150b8bbfbe65d48b3cb7990e494d78963a1075564f568ece5ccac4d056",
       "source": null
     },
     {
@@ -3451,6 +3451,18 @@
       "source": "plugins/janus/harness/foundry.toml"
     },
     {
+      "bytes": 3494,
+      "path": "plugins/janus/harness/manifests/fixtures/wildcat-open-term-omitted-call.json",
+      "sha256": "ba84298aeacae9ace6e75f822affc893a726ca07a172a62effe1fccc15abb30b",
+      "source": "plugins/janus/harness/manifests/fixtures/wildcat-open-term-omitted-call.json"
+    },
+    {
+      "bytes": 3476,
+      "path": "plugins/janus/harness/manifests/fixtures/wildcat-open-term-unknown-symbol.json",
+      "sha256": "e1afb1a9b9ec8a3e9e84acf6d547845fb7b280c0824ad6d16af0fbb00e36411b",
+      "source": "plugins/janus/harness/manifests/fixtures/wildcat-open-term-unknown-symbol.json"
+    },
+    {
       "bytes": 3171,
       "path": "plugins/janus/harness/manifests/wildcat-open-term.json",
       "sha256": "d42812c773c50fe61b0ff505a918e8feec491bde6cf85e6a49dc8daac087970b",
@@ -3545,6 +3557,12 @@
       "path": "plugins/janus/harness/test/HostileHooks.t.sol",
       "sha256": "a10811e40aa13ad0a15cc2eef7966614052e1af00fc0c5bbff381ee79e2f2993",
       "source": "plugins/janus/harness/test/HostileHooks.t.sol"
+    },
+    {
+      "bytes": 11288,
+      "path": "plugins/janus/harness/test/ManifestDisagreement.t.sol",
+      "sha256": "0d0fbce1f5fc7d5079f4beee745396d20b3db1cd0012174eb763ad33865657f6",
+      "source": "plugins/janus/harness/test/ManifestDisagreement.t.sol"
     },
     {
       "bytes": 54577,
