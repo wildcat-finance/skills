@@ -1030,3 +1030,109 @@ generated diff as an unexplained edit.
 
 **Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
 holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: Both remaining suites pass, and no
+fixture construction in either reaches the signer. All of the following exit 0:
+
+```bash
+npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py'
+/Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+/Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-4.json
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+```
+
+And, under a hostile configuration this step generates for itself:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1\)' "$HOSTILE_DIR/hexaemeron.log"
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+The Hermes suite exits 0 with nothing of its own in the sentinel. The Hexaemeron
+suite does not, and cannot: `plugins/hexaemeron/tests/test_issue_429_recovery.py:154`
+runs `git verify-commit` against this repository's own history, and the commit it
+names carries a real signature header, so git consults the hostile `gpg.program`
+to verify it and that program refuses by design. The four assertions state what
+the rule actually claims: the one error is exactly that test and no other, the
+sentinel records a verification, and it records no `-bsau`, which is the argument
+form git uses under this harness's openpgp arm when it asks a program to sign.
+
+Two bounds on that last assertion, stated so nobody reads it as wider than it is.
+`-bsau` discriminates signing from verification under the openpgp arm, which is
+the arm `--emit` writes and the only one these commands run; every signing form
+measured under it, including `git tag -s`, `git merge -S`, and a commit with an
+empty signing key, carries `-bsau`, and verification never does. It is not the
+discriminator under the ssh arm, where signing appears as `-Y sign`; that arm is
+not reachable from these commands, and the emptiness criterion this replaces had
+the identical bound.
+
+Complete replacement Tests: No new test module.
+`tests/test_disposable_fixture_signing.py` gains one enumeration entry per suite.
+Each representative must be a test that commits fixture history, never one that
+verifies a signature. Step 2's third audit round measured
+`plugins/hexaemeron/tests/test_issue_429_recovery.py` reaching the hostile signer
+through `git verify-commit`, which the enumeration's contract of exit 0 with an
+empty sentinel cannot distinguish from a fixture signing itself, so a verifying
+representative can never pass however correctly its fixtures declare the rule.
+Confirm the chosen representative records a signing invocation rather than a
+verifying one when its declaration is removed.
+
+The signature-verification legs must be shown untouched: the Hexaemeron suite
+reports the same test count as at step 3's exit plus nothing, and `git diff` over
+`plugins/hexaemeron/tests/test_issue_429_recovery.py` is empty.
+
+```text
+test command: /Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report {report}
+report format: unittest-json-v1
+expected report schema: elenchus.unittest.v1
+report file: .elenchus/fiat-621-step-4.json
+```
+
+Expected exact Elenchus result: `guarded`. This step is not a test-only change.
+Its files field requires four regenerated artefacts alongside the six hand
+edits, and the classifier copies only a commit's changed *test* files onto the
+parent, so `MANIFEST.json` and the two `.horos` files stay at their parent
+state and the currency guards that watch them fail there: the committed-boundary
+check and three `SkillsShPackageTests` cases. That is a real red-to-green guard,
+which is what `guarded` names. It is not the signing guard, and the record should
+say so rather than implying the fixture rule was proved by it.
+
+**Why.** Two defects in the amendments this step already carries, both mine, both
+found by its first audit round.
+
+The error-count assertion was written `FAILED \(errors=1` with no closing paren,
+so it accepts `errors=1`, `errors=10`, `errors=13` and `errors=100`. That band is
+reachable rather than theoretical: dropping both kronos declarations makes that
+module alone report fifteen errors with fifteen signing invocations, which the
+pattern would have accepted. The fourth assertion still catches the signing
+claim, so nothing false could have been recorded about the rule, but the "and no
+other error" half was not being checked. The closing paren restores it.
+
+The expected verdict said `passed` on the reasoning that a test-only change
+carries its own fix. That reasoning was sound and its premise was not: the eighth
+amendment had already established this step regenerates four non-test artefacts,
+which is precisely what makes the classifier's copy incomplete and the parent
+fail. The measured value is `guarded`, and it is the better outcome — but a
+prediction that contradicts its own step's files field should never have been
+written.
+
+**Steps touched.** Step 4's exit and tests.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
