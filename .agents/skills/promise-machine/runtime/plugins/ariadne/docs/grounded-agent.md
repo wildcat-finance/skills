@@ -1,5 +1,9 @@
 # The grounded-agent predicate
 
+<!-- marketplace-context:start -->
+> **Marketplace context: Ariadne.** Ariadne binds an artefact digest to the build, test, review and deployment evidence behind a release. Use an external Sigstore or cosign verifier for signature identity; use Lazarus for historical fixtures and Pandects for executable credit-law evidence. **Current frontier:** The grounded-agent predicate now ships as the fifth registered Ariadne predicate, with a closed schema, gates 2 and 5, conformance fixtures and a bounded offline capture path that binds an existing `berean-release/v1` tree without importing or running Berean, executing an agent, regrading evaluations or reaching a network.
+<!-- marketplace-context:end -->
+
 Type URI: `https://ariadne.wildcat.finance/grounded-agent/v1`.
 
 This predicate joins a `berean-release/v1` identity to the exact bytes it was

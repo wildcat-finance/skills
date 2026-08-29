@@ -9,7 +9,7 @@ description: >
   new kind of artefact needs a predicate of its own. Ariadne neither signs nor
   verifies signatures; those operations belong to cosign.
 metadata:
-  version: "2.2.0"
+  version: "3.2.0"
 ---
 
 # Ariadne
@@ -26,7 +26,7 @@ another frontier pass after that ledger becomes mature.
 
 Ariadne writes and checks the evidence statement that joins a released artefact digest to the work actually recorded behind it.
 
-**Current frontier.** The grounded-agent predicate remains unimplemented; the state-fixture predicate now ships with its schema, gates, conformance fixtures and a capture path that reads a Lazarus fixture's evidence counts rather than recomputing them.
+**Current frontier.** The grounded-agent predicate now ships as the fifth registered Ariadne predicate, with a closed schema, gates 2 and 5, conformance fixtures and a bounded offline capture path that binds an existing `berean-release/v1` tree without importing or running Berean, executing an agent, regrading evaluations or reaching a network.
 <!-- marketplace-context:end -->
 
 A release publishes a claim. The evidence behind it sits somewhere else, joined
@@ -84,6 +84,15 @@ python3 scripts/ariadne.py capture-state-fixture \
   --first-capture-reason '<why there is no earlier capture of this block>' \
   --out fixture.json
 
+python3 scripts/ariadne.py capture-grounded-agent \
+  --release ../berean/examples/goldfinch-demo-v0/release \
+  --name goldfinch-demo-v0 \
+  --producer-tool berean --producer-version 0.2.0 \
+  --producer-command python3 \
+  --producer-command plugins/berean/examples/goldfinch-demo-v0/rebuild.py \
+  --first-capture-reason '<why there is no earlier capture>' \
+  --output grounded-agent.intoto.json
+
 python3 scripts/ariadne.py inspect <statement-or-envelope.json>
 
 python3 scripts/ariadne.py verify <statement-or-envelope.json>
@@ -130,6 +139,13 @@ written false and are not flags, because Ariadne reaches no network and neither 
 re-derives a chain, so offering a flag would imply otherwise.
 [`docs/capturing-a-state-fixture.md`](../../docs/capturing-a-state-fixture.md) has
 the flags.
+
+`capture-grounded-agent` reads an existing `berean-release/v1` tree into a
+grounded-agent statement. It independently checks the release identity and
+component bytes, but does not import or run Berean, execute an agent, regrade
+evaluations or promotion evidence, or reach a network.
+[`docs/capturing-a-grounded-agent.md`](../../docs/capturing-a-grounded-agent.md)
+has the flags.
 
 `inspect` reads either a bare in-toto statement or a DSSE envelope wrapping
 one, and reports the predicate type, whether that type is registered here, the
@@ -302,13 +318,15 @@ inputs under `given` and outputs under `produced`. Optional reads, evaluations
 and promotion evidence are objects or explicit `null` with a paired absence
 reason; promotion projects only non-conclusion identity metadata.
 [`docs/grounded-agent.md`](../../docs/grounded-agent.md)
-publishes the field and gate contract. Capture remains outside this step.
+publishes the field and gate contract. The bounded local capture path is in
+[`docs/capturing-a-grounded-agent.md`](../../docs/capturing-a-grounded-agent.md).
 
 ## Examples
 
-[`examples/`](../../examples) holds two attestations over the fixture project:
-a clean release, and one carrying a fuzz campaign that timed out and an audit
-covering an earlier revision. Both verify. The second is the more useful one to
+[`examples/`](../../examples) holds four attestations: two over the fixture
+project, one over a fixed Lazarus fixture and one over a fixed Berean release.
+All four verify. The Solidity statement carrying a fuzz campaign that timed
+out and an audit covering an earlier revision is still the more useful one to
 read: a format whose only examples are clean releases teaches producers to make
 their releases look clean.
 
@@ -319,8 +337,10 @@ fails a named gate.
 
 Named so the edge is visible rather than implied.
 
-The registry holds five predicates. The grounded-agent predicate is registered
-and checked, but Ariadne does not yet capture one from a local Berean release.
+The registry holds five predicates, reached through four local capture paths.
+Grounded-agent capture binds a bounded local `berean-release/v1` tree; it does
+not import or run Berean, execute an agent, regrade evaluation or promotion
+evidence, or reach a network.
 
 Nothing confirms a deployment against a chain, nothing signs, and nothing runs
 as a GitHub Action. Each of those is a deliberate boundary rather than an
