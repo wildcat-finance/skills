@@ -30,3 +30,21 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the round re-ran the three lints over the fixed tree and each exited 0 again, the Probitas suite reported 276 of 276, the root suite passed, and `portable_promise_machine.py check` and `git diff --check` both exited 0. It also read the two committed documents and the runner for an absolute local path or a checkout name, because this run is hosted in a clone outside the repository and its own paths would be worthless to a reader; none appears. S1-R1-01 and S1-R1-02 are fixed and stay fixed. The unguarded-verdict note under round 1 still stands.
+
+## Step 2, round 1 -- 2026-08-29T08:08:18Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-row-collapse=reviewed; unrequested-network=not-applicable; schema-refusal=reviewed; release-id-figures=reviewed; overlap-attribution=reviewed; gap-double-count=not-applicable; demo-receipt-drift=reviewed; markdown-injection=reviewed
+
+Not checked: `unrequested-network` and `gap-double-count` belong to step 3, which is where the routes start combining; this step leaves both untouched and neither was exercised. The Pashov pair did not run; the `security_suite` receipt waives it because nothing in scope is Solidity. The three bundled lints ran over the six changed Python files and the three changed documents, and each exited 0. The round read the diff for the register's concerns the lints cannot see and probed the two new fields by hand for values a hostile or careless evidence file could carry.
+
+Elenchus verdict: passed
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | medium | plugins/probitas/scripts/probitas_lib/gates.py | Gate 2 sorted the venue set it had collected, so a coverage row whose venue was not a string raised `TypeError: '<' not supported between instances of 'str' and 'NoneType'` and `verify` returned a traceback instead of a breached gate. Reproduced by appending a row with a null venue to an otherwise complete evidence file. `verify` is the command pointed at a document somebody else produced, so a malformed file is its ordinary input rather than an edge case. The venue-keyed dictionary this rewrite replaced had the same fault. | fixed in b094ff2e |
+| S2-R1-02 | low | plugins/probitas/scripts/probitas_lib/evidence.py | `_releases` passed anything that was not a string to `list()`, which accepts any iterable. `{"sha256:aa": 1}` was accepted as the release `sha256:aa`, taking a mapping's keys as provenance, and `5` raised a bare `TypeError` where every other refusal in the module raises `EvidenceError`. | fixed in b094ff2e |
+| S2-R1-03 | info | plugins/probitas/tests/test_gates.py | The new rule that an archive row must name a release was proved only for a `checked` row. An `empty` archive row is the answer a reader is most likely to over-trust, and nothing exercised it. Behaviour was already correct; the coverage was not there. | fixed in b094ff2e |
+
+Leads not pursued: the fixes commit b094ff2e changed tests as well as code, and the runner named by step 2's contract reports 301 of 301 passing against it, so the verdict is `passed`. Against the unfixed parent the three guards fail, two by the `TypeError` above and one by assertion, which is the guard evidence; that mixed shape is why the verdict recorded here is not `guarded`. Two bounded things are recorded rather than fixed. A coverage row's fields carry no length ceiling, so a venue with many releases makes a wide table cell; the note beside it already carries the same identities unbounded, so this adds no new exposure and a ceiling belongs with one for every coverage field rather than this one alone. And `gate_2_coverage` still trusts `payload["coverage"]` to be a list of mappings, because `render.load` checks that before any gate runs. Nothing else is open.
