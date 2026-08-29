@@ -1,4 +1,9 @@
-"""Systematic issue-434 carryover inoculation for the run-observation validator."""
+"""Systematic carryover inoculation for the run-observation validator.
+
+The cases are driven by the carryover record in
+``tests/fixtures/run-observation/434-carryover-v1.json``, which is evidence
+about that carryover and keeps its own identifiers.
+"""
 
 import copy
 import importlib
