@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 14762659,
+    "bytes_blob": 14774417,
     "bytes_generated": 98
   },
   "entries": [
@@ -98,7 +98,7 @@
       "path": "audit/rounds/fiat-510-reuse-source-bound-x-ray-analysis-across-fia.synopsis.md"
     },
     {
-      "bytes": 41236,
+      "bytes": 52994,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

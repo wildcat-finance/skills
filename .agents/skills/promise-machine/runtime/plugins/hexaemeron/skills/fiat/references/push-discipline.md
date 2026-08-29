@@ -316,7 +316,7 @@ gone. The range a later `merge-step` would receipt is no longer the range that
 was pushed, and the controller refuses it.
 
 So: **do not bring a natively stacked chain down through GitHub's stack merges.**
-[ADR-021](../../../../../docs/decisions/ADR-021-land-a-rewritten-stack-from-the-original-commits.md)
+[ADR-021](https://github.com/wildcat-finance/skills/blob/main/docs/decisions/ADR-021-land-a-rewritten-stack-from-the-original-commits.md)
 records the decision. Land the run from a branch holding the original unrebased
 commits instead, and open one pull request from it into the base; the final
 step's pushed head already carries the whole stack as one linear Shoggoth-signed
