@@ -356,6 +356,72 @@ contract ManifestReaderTest is JanusBase {
     );
   }
 
+  /// @dev S2-R2-05. Enumerating four whitespace bytes was not enough: a
+  ///      vertical tab, a form feed and a NUL are all writable into a manifest
+  ///      as JSON escapes, none is a name, and each reached the adapter under
+  ///      the narrower test. The guard now refuses every byte at or below
+  ///      ASCII space.
+  function test_control_byte_only_symbols_revert() external {
+    OmniResolver omni = new OmniResolver();
+    string[3] memory targets = [
+      "\\u000b.getCredential",
+      "\\u000c.getCredential",
+      "\\u0000.getCredential"
+    ];
+    for (uint256 i = 0; i < targets.length; i++) {
+      vm.expectRevert();
+      reader.resolveJson(
+        string.concat(
+          '{"thresholds":[{"action":"deposit","gasBudget":7,'
+          '"permittedStorageWrites":[],"permittedValueMovements":[],'
+          '"permittedCalls":[{"target":"',
+          targets[i],
+          '","kind":"call"}]}]}'
+        ),
+        "deposit",
+        omni
+      );
+    }
+  }
+
+  /// @dev S2-R2-06. A value movement's asset name carries no suffix in the
+  ///      schema, so a dot in it is part of the name. Splitting at it bound
+  ///      the permit to a different asset than the manifest wrote: with an
+  ///      adapter holding both, "USDC.e" resolved to canonical USDC.
+  function test_a_dotted_asset_name_is_not_split() external {
+    StubResolver both = new StubResolver();
+    both.set("USDC", address(0xC0));
+    both.set("USDC.e", address(0xCE));
+    both.set("hook", HOOK);
+    ResolvedThreshold memory t = reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedCalls":[],'
+      '"permittedValueMovements":[{"asset":"USDC.e","recipient":"hook"}]}]}',
+      "deposit",
+      both
+    );
+    assertEq(t.valueAssets[0], address(0xCE), "the bridged asset, not the canonical one");
+    assertEq(t.valueRecipients[0], HOOK, "and the recipient is unchanged");
+  }
+
+  /// @dev S2-R2-06, the refusal direction: an adapter that does not hold the
+  ///      dotted name refuses it rather than falling back to the prefix.
+  function test_a_dotted_asset_name_has_no_prefix_fallback() external {
+    StubResolver only = new StubResolver();
+    only.set("USDC", address(0xC0));
+    only.set("hook", HOOK);
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.UnresolvableSymbol.selector, "USDC.e")
+    );
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedCalls":[],'
+      '"permittedValueMovements":[{"asset":"USDC.e","recipient":"hook"}]}]}',
+      "deposit",
+      only
+    );
+  }
+
   /// @dev The boundary the blank guard must not cross: a symbol that merely
   ///      contains whitespace is still a name, and stays the adapter's call.
   function test_a_name_containing_a_space_is_still_a_name() external {
@@ -378,7 +444,7 @@ contract ManifestReaderTest is JanusBase {
 ///      reverts with empty return data before the reader resolves anything, so
 ///      all seven GL properties hold without being tested. Foundry's invariant
 ///      engine does carry those cheatcodes, so this contract drives the same
-///      generator and asserts the same seven properties where they can fail.
+///      generator and asserts the same properties where they can fail.
 ///
 ///      Importing the suite here has a second effect worth stating: the suite
 ///      lives outside `src` and `test`, so `forge test` did not compile it and
@@ -401,7 +467,7 @@ contract ManifestFuzzInvariantTest is JanusBase {
   function invariant_manifest_resolution_holds() external view {
     assertTrue(
       fuzz.echidna_GL00_the_reader_was_actually_reached(),
-      "GL00: the generator reached the reader, so the seven ghosts below were actually tested"
+      "GL00: the generator reached the reader, so the eight ghosts below were actually tested"
     );
     assertTrue(!fuzz.sawWidenedSet(), "GL01: no resolved set is wider than the manifest entries behind it");
     assertTrue(!fuzz.sawZeroAddress(), "GL02: no resolved set carries the zero address");
@@ -411,6 +477,7 @@ contract ManifestFuzzInvariantTest is JanusBase {
     assertTrue(!fuzz.sawUnresolvableAccepted(), "GL06: an unresolvable symbol or unknown kind or scope never resolves");
     assertTrue(!fuzz.sawBlankSymbolAccepted(), "GL07: a manifest carrying a blank account symbol never resolves");
     assertTrue(!fuzz.sawDuplicateActionAccepted(), "GL08: a manifest naming one action twice never resolves");
+    assertTrue(!fuzz.sawWrongAddress(), "GL09: every entry resolved to the address its own name holds");
   }
 
   /// @dev The anti-vacuity guard, deterministic rather than sampled: the seven
