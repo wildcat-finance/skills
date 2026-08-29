@@ -1287,6 +1287,30 @@ class CoverageAggregationTests(unittest.TestCase):
             self._aggregate([second, first]),
         )
 
+    def test_public_coverage_does_not_retain_process_argv(self):
+        root_process = self._process(pid=10)
+        first_child = self._process(
+            pid=11,
+            argv=["python3", "child.py", "--token=first-secret"],
+        )
+        second_child = self._process(
+            pid=11,
+            argv=["python3", "child.py", "--token=second-secret"],
+        )
+
+        first = self._aggregate([root_process, first_child])
+        second = self._aggregate([root_process, second_child])
+
+        self.assertTrue(all("argv" not in process for process in first["processes"]))
+        first_child_id = next(
+            process["id"] for process in first["processes"] if process["pid"] == 11
+        )
+        second_child_id = next(
+            process["id"] for process in second["processes"] if process["pid"] == 11
+        )
+        self.assertEqual(first_child_id, second_child_id)
+        self.assertNotIn("first-secret", json.dumps(first))
+
     def test_failed_check_degrades_coverage(self):
         run = {
             **self.run,

@@ -1555,7 +1555,6 @@ def aggregate_coverage(
                 "group": group_id,
                 "pid": process.get("pid"),
                 "parent_pid": process.get("parent_pid"),
-                "argv": process.get("argv"),
                 "lines": lines,
                 "branches": branches,
             }
@@ -1567,7 +1566,6 @@ def aggregate_coverage(
                 "check": check_id,
                 "pid": process.get("pid"),
                 "parent_pid": process.get("parent_pid"),
-                "argv": process.get("argv"),
                 "status": status,
                 "bytes": size,
                 "lines": lines,
