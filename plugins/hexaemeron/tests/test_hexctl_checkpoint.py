@@ -334,7 +334,7 @@ class HexctlCheckpointTests(HexctlCase):
             "--commit",
             "abc2",
         )
-        self.run_ctl("config", "set", "audit.max_rounds", "1")
+        self.record_legacy_config("audit.max_rounds", 1)
         self.run_ctl("audit-round", "--findings", "1", *LINTS_CLEAN)
         self.assertEqual("audit-verdict", self.next_json()["do"])
         before = self.state_ledger_bytes()
