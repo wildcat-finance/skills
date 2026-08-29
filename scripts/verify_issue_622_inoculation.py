@@ -113,7 +113,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b"
     ),
     SIGNING_GUARD_PATH: (
-        "a99e726b0ca3cda5a0a7487fb00243b66075a4352e1e6eea781adaf09d3cf7e0"
+        "58bc0c80f64c8bac6bda0c539af89721837a44ee22eaac04fac56ce5f5ca4c78"
     ),
     "plugins/hexaemeron/tests/test_elenchus_checker.py": (
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
@@ -165,7 +165,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "3c83bfaa7f067f00f304eeac64867f4710846caa913d6ce14e6eca7024b5d63f"
     ),
     SIGNING_GUARD_PATH: (
-        "a99e726b0ca3cda5a0a7487fb00243b66075a4352e1e6eea781adaf09d3cf7e0"
+        "58bc0c80f64c8bac6bda0c539af89721837a44ee22eaac04fac56ce5f5ca4c78"
     ),
     "plugins/hexaemeron/tests/test_elenchus_checker.py": (
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
