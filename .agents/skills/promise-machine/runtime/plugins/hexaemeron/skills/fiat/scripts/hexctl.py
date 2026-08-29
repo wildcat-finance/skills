@@ -993,11 +993,13 @@ def init_starting_commit(base_dir: str, starting_ref: str) -> str:
     if not isinstance(starting_ref, str) or not starting_ref:
         die("--base must name a branch or one full commit SHA")
     if COMMIT_RE.fullmatch(starting_ref):
-        bounded_git(
+        object_type = bounded_git(
             base_dir,
-            ["cat-file", "-e", f"{starting_ref}^{{commit}}"],
-            "starting base does not resolve to a commit",
+            ["cat-file", "-t", starting_ref],
+            "starting base does not resolve to an object",
         )
+        if tool_text(object_type, "starting base object type").strip() != "commit":
+            die("starting base SHA does not name a commit object")
         return starting_ref
     check_branch_name(starting_ref)
     expected_ref = f"refs/heads/{starting_ref}"

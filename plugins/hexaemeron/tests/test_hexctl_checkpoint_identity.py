@@ -235,6 +235,29 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
                 self.assertIn("starting base" if starting_ref == "missing" else "branch", result.stderr)
                 self.assert_no_partial_run()
 
+    def test_full_tag_object_sha_refuses_before_recording(self):
+        git(
+            self.repo,
+            "-c",
+            "tag.gpgSign=false",
+            "tag",
+            "-a",
+            "pinned",
+            "-m",
+            "pinned",
+        )
+        tag_object = git(self.repo, "rev-parse", "refs/tags/pinned")
+        result = self.run_ctl(
+            "init",
+            "--topic",
+            "immutable anchor",
+            "--base",
+            tag_object,
+            expected=2,
+        )
+        self.assertIn("commit object", result.stderr)
+        self.assert_no_partial_run()
+
     def test_task_repository_substitution_refuses_before_recording(self):
         self.add_origin("wildcat-finance/skills")
         result = self.run_ctl(
