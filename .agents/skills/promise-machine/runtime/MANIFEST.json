@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 982,
-  "total_bytes": 21393970,
+  "total_bytes": 21394505,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -2733,9 +2733,9 @@
       "source": "plugins/hexaemeron/skills/protasis/agents/openai.yaml"
     },
     {
-      "bytes": 32127,
+      "bytes": 32662,
       "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
-      "sha256": "9e7f90f52abd2626f260665635f8653a30478f7c25a40e2b371a5c637aeaad4d",
+      "sha256": "d7e6e2da41afe0de391fc720833c1acfa5327371cd1ea0071b3de3d966b6dd2c",
       "source": "plugins/hexaemeron/skills/protasis/scripts/protasis.py"
     },
     {
