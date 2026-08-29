@@ -1,3 +1,5 @@
+![Berean](./assets/characters/berean.png)
+
 # Berean
 
 <!-- marketplace-context:start -->
@@ -17,6 +19,10 @@ the historical chain evidence a test or recorded answer needs. Berean owns
 neither job: it binds the corpus and reads used by an agent, grades recorded
 answers against a held evaluation set, and records promotion or rollback.
 Ariadne can then bind the finished Berean release to its supporting evidence.
+
+Synkrisis compares validated observations from several runs, and it does not
+grade recorded answers or judge a model. Two of its four operations are
+delivered; the report and the whole-path verification refuse.
 
 A protocol agent can answer from documentation, contract state and its own
 synthesis in one paragraph. Unless those sources stay separate, the reader

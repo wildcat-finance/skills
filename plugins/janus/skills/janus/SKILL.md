@@ -13,6 +13,10 @@ metadata:
   version: "0.1.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/janus.png" width="1200">
+</p>
+
 # Janus
 
 ## Frontier
@@ -34,6 +38,10 @@ Pandects supplies economic laws when the host transition needs them. Hermes
 measures gas changes, and the Pashov suite audits the contracts. Janus
 alone owns the declared hook-effect boundary. Conformance to one manifest is
 not a whole-protocol security verdict.
+
+Synkrisis is specified to compare validated agent-run observations, not to
+aggregate Janus conformance results into a safety claim. Its current scaffold
+refuses every operation and cannot authorise a hook change.
 
 Janus is named for the Roman god of gates and passages, shown looking in both
 directions. A hook sits on exactly that boundary and inspects or alters an

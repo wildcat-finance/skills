@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 855,
-  "total_bytes": 11230118,
+  "file_count": 968,
+  "total_bytes": 21065087,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -19,7 +19,21 @@
     },
     {
       "pattern": "plugins/*/tests/**",
-      "reason": "development suites remain in the full source checkout"
+      "exceptions": [
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/invalid-unicode.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/jobspec.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
+      ],
+      "reason": "development suites and other fixtures remain in the full source checkout; the listed closed model-proxy-v1 fixture set closes the portable commands and vectors advertised by the copied reference"
     },
     {
       "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
@@ -36,28 +50,28 @@
   ],
   "files": [
     {
-      "bytes": 5364,
+      "bytes": 6738,
       "path": ".agents/skills/promise-machine/SKILL.md",
-      "sha256": "05e4a523b363878695ebfc0d2aeb25327ef8a7630a864fc5ddd34149d6d7f57c",
+      "sha256": "72a09f7377969b6bfa051793b56ee29976e2981e0c2ed475f2b89b1b1829349f",
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
-      "bytes": 3198,
+      "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "0fd9944161af66649a501aa1dc72d43c85228ed5dd6fc0e41fd20a066ed0f87f",
+      "sha256": "dbfba8ab99cf9a4482e514b50c28a38c040bd560cc7fff4d20e7a355a0ba124f",
       "source": null
     },
     {
-      "bytes": 8,
+      "bytes": 7,
       "path": ".python-version",
-      "sha256": "861b3dd8083d28f336ef70f6755bc399538ddad627b1d095820ca34cb953cf14",
+      "sha256": "3a55324cbeddc91df012407d051dad08c88624c95a82fbdb856728729fbd14ab",
       "source": ".python-version"
     },
     {
-      "bytes": 11496,
+      "bytes": 12923,
       "path": "AGENTS.md",
-      "sha256": "7d6e9d840205e5181d3e9ca1a1be90228635a853413081500d60f9de1494cc4c",
+      "sha256": "3cd8527bbc8b8a76c18d1bcf4e0a96f365fb10385a6c2042b36615ce3e10b090",
       "source": "AGENTS.md"
     },
     {
@@ -67,16 +81,22 @@
       "source": "LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3417,
+      "bytes": 3523,
       "path": "SHOGGOTH.md",
-      "sha256": "67a9f77593bbbcb39d9bd66e639ebdc14612fbe207f2530b41615c594518470e",
+      "sha256": "e983c7e7cc170190bc04b2dcf5de207f8e27051c9dba99480f6ab0c559607fce",
       "source": "SHOGGOTH.md"
+    },
+    {
+      "bytes": 242387,
+      "path": "assets/characters/promise-machine.png",
+      "sha256": "a735d9284150171401bf22bc4c13e5fffba222b8ae755c36396ccf3e3055beae",
+      "source": "assets/characters/promise-machine.png"
     },
     {
       "bytes": 5015,
@@ -97,6 +117,12 @@
       "source": "docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md"
     },
     {
+      "bytes": 3229,
+      "path": "docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md",
+      "sha256": "ced2f1d349a2adb63bd5dfed98343233b1220d827ee6ab4a2573506b484ecb54",
+      "source": "docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md"
+    },
+    {
       "bytes": 3247,
       "path": "docs/fiat-run-observation-binding-v1.md",
       "sha256": "eb6b6f9431e0b1f12d9d6d30f572b8b08689a730ca4c2df3a68263de8c936e4f",
@@ -115,16 +141,22 @@
       "source": "plugins/alexandria/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/alexandria/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/alexandria/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 11774,
+      "bytes": 12080,
       "path": "plugins/alexandria/README.md",
-      "sha256": "3551246f54704bb6e4f5eb93aa58b349f99748b8caef10bc97458578efc568a2",
+      "sha256": "c22d9db2a53319405711a38016a8ef2c7e22ee1e12dc475762debee547876847",
       "source": "plugins/alexandria/README.md"
+    },
+    {
+      "bytes": 236207,
+      "path": "plugins/alexandria/assets/characters/alexandria.png",
+      "sha256": "79409b4703250acc93fda499c9c46082e66dfe8fd32169ba8535f8a76c852b2c",
+      "source": "plugins/alexandria/assets/characters/alexandria.png"
     },
     {
       "bytes": 4401,
@@ -223,9 +255,9 @@
       "source": "plugins/alexandria/examples/credit-history-v0/demo.py"
     },
     {
-      "bytes": 711,
+      "bytes": 832,
       "path": "plugins/alexandria/examples/credit-history-v0/expected-probitas.json",
-      "sha256": "a5d36f0eb9a4e160e1652df98271f7b1424efa833f8851dff57258165026aa5c",
+      "sha256": "2d47e3592e26bdd5b2cf1c31a739ec8c13c653362acd0f4d9de95932e342e1f9",
       "source": "plugins/alexandria/examples/credit-history-v0/expected-probitas.json"
     },
     {
@@ -403,9 +435,9 @@
       "source": "plugins/alexandria/scripts/alexandria_lib/paths.py"
     },
     {
-      "bytes": 6072,
+      "bytes": 6337,
       "path": "plugins/alexandria/scripts/alexandria_lib/probitas.py",
-      "sha256": "f86051a9b774b5fec6cf8b18c1f970735720d00b1d516f8dc7e5488c62be1141",
+      "sha256": "a6e30248736eaad939910cf4bfd3aaab99a5e7e7584d0759066ad22b3ee8673c",
       "source": "plugins/alexandria/scripts/alexandria_lib/probitas.py"
     },
     {
@@ -439,15 +471,15 @@
       "source": "plugins/alexandria/scripts/compound_v3_phase0.py"
     },
     {
-      "bytes": 1581,
+      "bytes": 2368,
       "path": "plugins/alexandria/skills/alexandria/EVOLUTION.md",
-      "sha256": "bd432c55e3f9e81746f5c2d587a8318c84d64ac729a771fa10d3d4608665e45c",
+      "sha256": "14b2f468db0fe680d6a8e2531c123736cbcbf58a3c87f94464042a6e3917b038",
       "source": "plugins/alexandria/skills/alexandria/EVOLUTION.md"
     },
     {
-      "bytes": 15855,
+      "bytes": 16183,
       "path": "plugins/alexandria/skills/alexandria/SKILL.md",
-      "sha256": "7953ce8f7e917651e848167a0083f7a418c968b2a059d60c12a797d222bc8dde",
+      "sha256": "d1665f1b48fbe08656621e394285b509a45ae3e1aea664b06e775af1a992d78a",
       "source": "plugins/alexandria/skills/alexandria/SKILL.md"
     },
     {
@@ -469,16 +501,22 @@
       "source": "plugins/ariadne/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/ariadne/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/ariadne/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 12136,
+      "bytes": 12416,
       "path": "plugins/ariadne/README.md",
-      "sha256": "58ef3df99c35b5573e56d1616df8b64380fed6d46f8275011a7d43ce5d5ab00f",
+      "sha256": "e7fb6d1c3858bc5b64b34e4f2c6a9c9adc8ece42b35272e0c67b5711cbb0241e",
       "source": "plugins/ariadne/README.md"
+    },
+    {
+      "bytes": 314982,
+      "path": "plugins/ariadne/assets/characters/ariadne.png",
+      "sha256": "d121e09507820113c0bf846b725a5d873891933991f2c4854fddcf0b01d6f2b8",
+      "source": "plugins/ariadne/assets/characters/ariadne.png"
     },
     {
       "bytes": 6549,
@@ -607,9 +645,9 @@
       "source": "plugins/ariadne/schemas/dataset-v1.json"
     },
     {
-      "bytes": 39448,
+      "bytes": 40048,
       "path": "plugins/ariadne/schemas/grounded-agent-v1.json",
-      "sha256": "946c691ab9d457061e933a2858f4b5ef38cd5c42829cf226c84d1e022249a0d4",
+      "sha256": "b8bd9aa4b06ce6afaa3cf5ee98ff9dc3ac54f11e3eb4c8c76f060327673097bf",
       "source": "plugins/ariadne/schemas/grounded-agent-v1.json"
     },
     {
@@ -781,9 +819,9 @@
       "source": "plugins/ariadne/skills/ariadne/EVOLUTION.md"
     },
     {
-      "bytes": 22469,
+      "bytes": 22799,
       "path": "plugins/ariadne/skills/ariadne/SKILL.md",
-      "sha256": "4cfd419b547e0051a87c642c40c42898e9918dfdcad1bf4ff9fbcab082f477b3",
+      "sha256": "0bc6357a768dd6469bcfad4615dc03934b13e6d513e2d7dd4de50934ae635f38",
       "source": "plugins/ariadne/skills/ariadne/SKILL.md"
     },
     {
@@ -805,16 +843,22 @@
       "source": "plugins/berean/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/berean/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/berean/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 6737,
+      "bytes": 6992,
       "path": "plugins/berean/README.md",
-      "sha256": "383a19917ba1ad089781da513e78aba29aff9367a8b639c350e02c0249b63c52",
+      "sha256": "7ad41590e3e145033a598bd7613efdf25088851acf8d8b57b559c53b58adbfc3",
       "source": "plugins/berean/README.md"
+    },
+    {
+      "bytes": 227051,
+      "path": "plugins/berean/assets/characters/berean.png",
+      "sha256": "fbe20c815fff0bc98b835fac2bc378e4afc050c5de24fab2d84b51f7d458f06f",
+      "source": "plugins/berean/assets/characters/berean.png"
     },
     {
       "bytes": 4021,
@@ -1063,9 +1107,9 @@
       "source": "plugins/berean/skills/berean/EVOLUTION.md"
     },
     {
-      "bytes": 11497,
+      "bytes": 11804,
       "path": "plugins/berean/skills/berean/SKILL.md",
-      "sha256": "4d98f289906cd4f94de36ff573ab7f9681838065851ffa6e1bbdb8f4c4f0603f",
+      "sha256": "390756bc1bc9ebeced40fb30e4890466d489e6b5975f40fec1d76b9663884755",
       "source": "plugins/berean/skills/berean/SKILL.md"
     },
     {
@@ -1087,33 +1131,39 @@
       "source": "plugins/brevitas/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/brevitas/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/brevitas/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 4270,
+      "bytes": 4586,
       "path": "plugins/brevitas/README.md",
-      "sha256": "a45f936aac7efc5446068efc85ca7222991061ff3dc09063a36373efe37d465d",
+      "sha256": "0f2b9b3bd972c62bfe4ba9577e96b54e3c6aeebece8cc2cc802375b9b6406803",
       "source": "plugins/brevitas/README.md"
     },
     {
-      "bytes": 1748,
+      "bytes": 252746,
+      "path": "plugins/brevitas/assets/characters/brevitas.png",
+      "sha256": "f0b7f99c3af45a5f64b85f53892af418a488b492ece17afc20ecfad6ec2c546b",
+      "source": "plugins/brevitas/assets/characters/brevitas.png"
+    },
+    {
+      "bytes": 2947,
       "path": "plugins/brevitas/skills/brevitas/EVOLUTION.md",
-      "sha256": "a0877121a03d245a6e2169228bf82917192831aa37ad9285269b15e30e4a4923",
+      "sha256": "fd3101e081161dd160d04764dbf7c455f91b9015b80f9296847fd1fad660f445",
       "source": "plugins/brevitas/skills/brevitas/EVOLUTION.md"
     },
     {
-      "bytes": 420,
+      "bytes": 527,
       "path": "plugins/brevitas/skills/brevitas/Makefile",
-      "sha256": "daf1a128663f73d0905e30b2d27698c29247352b237605d80d695d0a0008c119",
+      "sha256": "68d21d0f8142d909639e7e0172725cf7608f02cc0d3f8e4216d6c682afece38f",
       "source": "plugins/brevitas/skills/brevitas/Makefile"
     },
     {
-      "bytes": 7063,
+      "bytes": 7425,
       "path": "plugins/brevitas/skills/brevitas/SKILL.md",
-      "sha256": "4831915e862c0522849892b8d609a75bc060e2bf09431d79e53dfa15305b720d",
+      "sha256": "e651ef3027cb76f40c0de5d89f9ffdef2925d86f3a9508c275ea87df38483120",
       "source": "plugins/brevitas/skills/brevitas/SKILL.md"
     },
     {
@@ -1121,6 +1171,132 @@
       "path": "plugins/brevitas/skills/brevitas/agents/openai.yaml",
       "sha256": "65f9c3831046c4652690da4bc669cfe8ffe4cbe57837122d800156c70990e131",
       "source": "plugins/brevitas/skills/brevitas/agents/openai.yaml"
+    },
+    {
+      "bytes": 5247,
+      "path": "plugins/brevitas/skills/brevitas/evals/README.md",
+      "sha256": "d96841846327bd7230302d9c230bc062e6ffa639b7aaf49c35e4d0ce34fcafd2",
+      "source": "plugins/brevitas/skills/brevitas/evals/README.md"
+    },
+    {
+      "bytes": 1848,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/output-gpt-5.6-sol.md",
+      "sha256": "208bd97e5bd99bffe84ae1722346c4682df3039c0d85e134a2db994c31b00b82",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/output-gpt-5.6-sol.md"
+    },
+    {
+      "bytes": 1310,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/output-gpt-5.6-terra.md",
+      "sha256": "0f6e4dfbf1ebd9fa74d45d06f0732e2c192d870c71024f2c9e9b9efdb5fd6ae2",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/output-gpt-5.6-terra.md"
+    },
+    {
+      "bytes": 724,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/prompt.md",
+      "sha256": "c1de50a294c6968d4c550a697f71f244c4918a2e10c9676c30620d0a651ff7ac",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/prompt.md"
+    },
+    {
+      "bytes": 2680,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/source.md",
+      "sha256": "4c4cb2d17c7cc841091a18eff6fb34f2adbec37d79508732265abe98b8dce7af",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-diff-review/source.md"
+    },
+    {
+      "bytes": 3542,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/output-gpt-5.6-sol.md",
+      "sha256": "57fe3259bb50ebed4700dfb011bf972bdcaa58bdd98e1289b40b0cc516bf473d",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/output-gpt-5.6-sol.md"
+    },
+    {
+      "bytes": 3935,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/output-gpt-5.6-terra.md",
+      "sha256": "1af1dc51a117f401b20c64a817c738a45941a941efe020641f6ba13a8e4b02cf",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/output-gpt-5.6-terra.md"
+    },
+    {
+      "bytes": 786,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/prompt.md",
+      "sha256": "623f06d8e962bb476354ccd7476cdd9cee1c62bdf62244ed7900df8a4ca1d367",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/prompt.md"
+    },
+    {
+      "bytes": 3220,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/source.md",
+      "sha256": "fd2da6de2e7a0412f2683b65b101eb3a09d475c013b7ad162c550b74678eda3d",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-gas/source.md"
+    },
+    {
+      "bytes": 2608,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/output-gpt-5.6-sol.md",
+      "sha256": "5695824d97d89d133a0163f522e474c2157dea5fbd1e71d49e2124550fb39a06",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/output-gpt-5.6-sol.md"
+    },
+    {
+      "bytes": 2264,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/output-gpt-5.6-terra.md",
+      "sha256": "0b4b4fee99d19554330047e5a887a9450426a05473a861e3fa0956e26339a082",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/output-gpt-5.6-terra.md"
+    },
+    {
+      "bytes": 720,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/prompt.md",
+      "sha256": "9befc842268fa856aaddd9d9075c66b52c0ae695b9918b29e30d59b1c5bbbc49",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/prompt.md"
+    },
+    {
+      "bytes": 3091,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/source.md",
+      "sha256": "bb559f90b310638524f6fdd87d5d1e36744b4373edd8e057288b49c0b87f1d11",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-invariant/source.md"
+    },
+    {
+      "bytes": 2071,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/output-gpt-5.6-sol.md",
+      "sha256": "cd0b0f1a4ec3cdfbf06d9b068666658fc95443c588c5ee3f68a1671f70d80f3e",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/output-gpt-5.6-sol.md"
+    },
+    {
+      "bytes": 1602,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/output-gpt-5.6-terra.md",
+      "sha256": "8cfe0bb891d0216f6044b20cc4c740f41a3b2e962af1ac886e46c9f2ee69ff1a",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/output-gpt-5.6-terra.md"
+    },
+    {
+      "bytes": 761,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/prompt.md",
+      "sha256": "56a4b340ed1cccf649425ed32fb0545f7894a16fb3798c568734cafe7e569942",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/prompt.md"
+    },
+    {
+      "bytes": 2237,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/source.md",
+      "sha256": "7e27b44cb2346573a6ef7b34330eab5bffb9feb1c0aebc9749e42c5ea4be8cac",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-solidity-auditor/source.md"
+    },
+    {
+      "bytes": 4084,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/output-gpt-5.6-sol.md",
+      "sha256": "cfc021b8ecbf773330c77bbf562545bb0cc8a4d7bc54cdfcf894131f8f8a8f1f",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/output-gpt-5.6-sol.md"
+    },
+    {
+      "bytes": 3815,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/output-gpt-5.6-terra.md",
+      "sha256": "265a0801b00cf88c99b49f99e3867cafb20743ce8e9cf3debc2008ccd9a903b8",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/output-gpt-5.6-terra.md"
+    },
+    {
+      "bytes": 808,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/prompt.md",
+      "sha256": "c590229e7a5637589a8b2514d0bcf51bd3e459e8902f88a1b22aacbb4ea2188d",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/prompt.md"
+    },
+    {
+      "bytes": 5036,
+      "path": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/source.md",
+      "sha256": "03485343c2a33b65ac53e6ce7458f6167de6f85cd2cd779fca24e461ace8f88f",
+      "source": "plugins/brevitas/skills/brevitas/evals/cases/fixtures/held-x-ray/source.md"
     },
     {
       "bytes": 280,
@@ -1177,15 +1353,27 @@
       "source": "plugins/brevitas/skills/brevitas/evals/cases/xray-replay-authority/target.md"
     },
     {
+      "bytes": 56411,
+      "path": "plugins/brevitas/skills/brevitas/evals/corpus.json",
+      "sha256": "ca152210fa7c4ffa12d15e31eb89da5b749cbb60c2a9f0a10e5b9eb64fac05e1",
+      "source": "plugins/brevitas/skills/brevitas/evals/corpus.json"
+    },
+    {
       "bytes": 16709,
       "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
       "sha256": "f3e7bff6570a379b0c06e19de00eaef7a359ec8a9caf18d69132baf382cc7249",
       "source": "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
     },
     {
-      "bytes": 2223,
+      "bytes": 35445,
+      "path": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py",
+      "sha256": "1346e2c4bee3d5dab5a7a903b0af4023e7214b2c03a05fb1d30527213f3cb3d0",
+      "source": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py"
+    },
+    {
+      "bytes": 3048,
       "path": "plugins/brevitas/skills/brevitas/scripts/run_evals.py",
-      "sha256": "7d6acd4f1642763c75c9ac8aba0ff663b00edde288f73be6fda9ccaa4d7b1185",
+      "sha256": "e3076e31ae852f5b6e690a8c5e331a5b0bc16dabb7a751664fe37748cb45ab99",
       "source": "plugins/brevitas/skills/brevitas/scripts/run_evals.py"
     },
     {
@@ -1201,16 +1389,22 @@
       "source": "plugins/hermes/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/hermes/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/hermes/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3500,
+      "bytes": 3761,
       "path": "plugins/hermes/README.md",
-      "sha256": "c2166b25a3893ff94b412dea447cdce0809ae506d699934945984895767e2838",
+      "sha256": "7fda6142c45fb1dfa785ebe3d525b0e0f006cee687fc7be392742c57278c1006",
       "source": "plugins/hermes/README.md"
+    },
+    {
+      "bytes": 257751,
+      "path": "plugins/hermes/assets/characters/hermes.png",
+      "sha256": "4cd680f884bedbdac1fbf7aea4b60e89c531ca4f19dad0bc30912d6a8d482fc6",
+      "source": "plugins/hermes/assets/characters/hermes.png"
     },
     {
       "bytes": 1955,
@@ -1219,9 +1413,9 @@
       "source": "plugins/hermes/skills/hermes/EVOLUTION.md"
     },
     {
-      "bytes": 19209,
+      "bytes": 19527,
       "path": "plugins/hermes/skills/hermes/SKILL.md",
-      "sha256": "4c4923db70c4fa214cd578f086087bfa5facc9d6231ec9fcbd76f6e83c58c756",
+      "sha256": "90ee8281ba7bc8c7cbb77e13cfb9308275b3a351251184dd8dce7d140163348e",
       "source": "plugins/hermes/skills/hermes/SKILL.md"
     },
     {
@@ -1255,15 +1449,15 @@
       "source": "plugins/hermes/skills/hermes/scripts/hermes.py"
     },
     {
-      "bytes": 50788,
+      "bytes": 51169,
       "path": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
-      "sha256": "e8182c4748ec5d3b2bac6dd910ba53d79f4d71793cfc317582762190363250b6",
+      "sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b",
       "source": "plugins/hermes/skills/hermes/scripts/test_hermes.py"
     },
     {
-      "bytes": 8324,
+      "bytes": 8550,
       "path": "plugins/hexaemeron/AGENTS.md",
-      "sha256": "e1f2b2a7c16edeae2e9dd4a7bfed22d5677cbd8c9865cbdf4c53fd310b2601f5",
+      "sha256": "0c1210df274680e61239eb09e5022fd789da3de4ffc2b46743a3fdef7fab8046",
       "source": "plugins/hexaemeron/AGENTS.md"
     },
     {
@@ -1279,40 +1473,136 @@
       "source": "plugins/hexaemeron/PROMISES.md"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/hexaemeron/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/hexaemeron/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 19931,
+      "bytes": 20977,
       "path": "plugins/hexaemeron/README.md",
-      "sha256": "d0c604a209fde04fc37a238701f0b0efc7a827c96843efb532f53c055f65dc8e",
+      "sha256": "ac2d695a31c2d158ffab0f522e96c4063b6bb0a00b53302d072b39b33cb84409",
       "source": "plugins/hexaemeron/README.md"
     },
     {
-      "bytes": 3628,
+      "bytes": 3800,
       "path": "plugins/hexaemeron/agents/mason.md",
-      "sha256": "879dad2f79398a35c09f0c8c92c8040370055ce7f2b4cd1f31be065ed4f784ee",
+      "sha256": "05ba988c3c14f764f03b57aaaf9b5df5ea7cbe028725b340ce2ddf297492efb9",
       "source": "plugins/hexaemeron/agents/mason.md"
     },
     {
-      "bytes": 3794,
+      "bytes": 3968,
       "path": "plugins/hexaemeron/agents/scribe.md",
-      "sha256": "c5f15697c5d674b12bd4ffc0627f9f319203d7f3c3fc614893b06a8bc66ed5ad",
+      "sha256": "0df9f769c2ff20af004e4368c608cdbdf04c9ae7a56e4fd71972a9a0c7c58c54",
       "source": "plugins/hexaemeron/agents/scribe.md"
     },
     {
-      "bytes": 3750,
+      "bytes": 3928,
       "path": "plugins/hexaemeron/agents/surveyor.md",
-      "sha256": "c5ac38284aa1e92346b3a32b6e635a55f193eea8b20f4cf82b7be33a3748f840",
+      "sha256": "359bb6256b5c25b7ce41a222e55ce582f4fea3cbd386a581a6cbb0d887c1ed55",
       "source": "plugins/hexaemeron/agents/surveyor.md"
     },
     {
-      "bytes": 7052,
+      "bytes": 7226,
       "path": "plugins/hexaemeron/agents/warden.md",
-      "sha256": "8a2da591d1cb9667a5d27affd783f6780e9dc64bc389d680c2b7b8af2ff06883",
+      "sha256": "0d18ebd79fff1e26a1fb5d62686f5ee05a417e4c177097127ccf4fbfdfa94b9c",
       "source": "plugins/hexaemeron/agents/warden.md"
+    },
+    {
+      "bytes": 286235,
+      "path": "plugins/hexaemeron/assets/characters/elenchus.png",
+      "sha256": "147c5c3c35f2867a0789b944898b89ae12b0a0ea1adcaf2ae2ef27aaa7e41f12",
+      "source": "plugins/hexaemeron/assets/characters/elenchus.png"
+    },
+    {
+      "bytes": 299075,
+      "path": "plugins/hexaemeron/assets/characters/ephoros.png",
+      "sha256": "4e3b7dd3f68f6fedf8746db41fab3861020fb352b79c12047b285fecffb1d5ed",
+      "source": "plugins/hexaemeron/assets/characters/ephoros.png"
+    },
+    {
+      "bytes": 331406,
+      "path": "plugins/hexaemeron/assets/characters/fiat.png",
+      "sha256": "5d9883cb3f6cab89dc9f1d321a10a97260beea975753e54877fddd357c1b2e70",
+      "source": "plugins/hexaemeron/assets/characters/fiat.png"
+    },
+    {
+      "bytes": 426737,
+      "path": "plugins/hexaemeron/assets/characters/hexaemeron-overseer.png",
+      "sha256": "4e09434cccbb7458019712627f26cb209381e293cefdc223903d247b77473e5e",
+      "source": "plugins/hexaemeron/assets/characters/hexaemeron-overseer.png"
+    },
+    {
+      "bytes": 298992,
+      "path": "plugins/hexaemeron/assets/characters/hexaemeron.png",
+      "sha256": "35541601873dd94d31e5c7fbc556433fcf7a955d57625cf0b61e0f946674da6c",
+      "source": "plugins/hexaemeron/assets/characters/hexaemeron.png"
+    },
+    {
+      "bytes": 302132,
+      "path": "plugins/hexaemeron/assets/characters/hypomnema.png",
+      "sha256": "81b56b03451733c26e3a3e76eed7906e6394c6e918a0a9725f93ee0fce189863",
+      "source": "plugins/hexaemeron/assets/characters/hypomnema.png"
+    },
+    {
+      "bytes": 264254,
+      "path": "plugins/hexaemeron/assets/characters/imprimatur.png",
+      "sha256": "33a164386b6a8f60cd78fc6f1d69c53b2ccab7bd40585f3fd960e6950d5ad128",
+      "source": "plugins/hexaemeron/assets/characters/imprimatur.png"
+    },
+    {
+      "bytes": 312978,
+      "path": "plugins/hexaemeron/assets/characters/kronos.png",
+      "sha256": "d35fdc6c9412182bf8874f7cddcd71d6bfc331aa605dc7c41ef85e4bbf7b558b",
+      "source": "plugins/hexaemeron/assets/characters/kronos.png"
+    },
+    {
+      "bytes": 252057,
+      "path": "plugins/hexaemeron/assets/characters/mason.png",
+      "sha256": "802866d2c0df4fc59932bf9b81a65f837357eeaa0ba2c5409e45339f7e11e8f3",
+      "source": "plugins/hexaemeron/assets/characters/mason.png"
+    },
+    {
+      "bytes": 226555,
+      "path": "plugins/hexaemeron/assets/characters/metron.png",
+      "sha256": "aa6d3c0bf7e5069af89e782b8da43400f9b5f913cf3cc254a9842cede47441a8",
+      "source": "plugins/hexaemeron/assets/characters/metron.png"
+    },
+    {
+      "bytes": 269181,
+      "path": "plugins/hexaemeron/assets/characters/phylax.png",
+      "sha256": "e09f2ad9c2aac55af983124adfa18727af55157fe4c143700519e41fbc28eefe",
+      "source": "plugins/hexaemeron/assets/characters/phylax.png"
+    },
+    {
+      "bytes": 256887,
+      "path": "plugins/hexaemeron/assets/characters/protasis.png",
+      "sha256": "35d673ef0db0d8214cf8911d2b70a16d57614b12244d5248ce6040286bfa5b98",
+      "source": "plugins/hexaemeron/assets/characters/protasis.png"
+    },
+    {
+      "bytes": 294228,
+      "path": "plugins/hexaemeron/assets/characters/scribe.png",
+      "sha256": "392e74e166a56893d801b65b6270286877dd30456da6faaa82eef26d336777f9",
+      "source": "plugins/hexaemeron/assets/characters/scribe.png"
+    },
+    {
+      "bytes": 317607,
+      "path": "plugins/hexaemeron/assets/characters/surveyor.png",
+      "sha256": "21e76db29385539ed15ae79704d0eb90f8af016fbb847c303b829ef16a4aa731",
+      "source": "plugins/hexaemeron/assets/characters/surveyor.png"
+    },
+    {
+      "bytes": 243626,
+      "path": "plugins/hexaemeron/assets/characters/vulgate.png",
+      "sha256": "b4f02eb3eb13e67f402577281ebff937322cdeb526985d3fa00106efcd816964",
+      "source": "plugins/hexaemeron/assets/characters/vulgate.png"
+    },
+    {
+      "bytes": 325678,
+      "path": "plugins/hexaemeron/assets/characters/warden.png",
+      "sha256": "d3ca8a4d12ec19daf6b0b8c6e07fa342242f4f9397bc7a1e68944f6478a96c4b",
+      "source": "plugins/hexaemeron/assets/characters/warden.png"
     },
     {
       "bytes": 8842,
@@ -1561,9 +1851,9 @@
       "source": "plugins/hexaemeron/skills/elenchus/EVOLUTION.md"
     },
     {
-      "bytes": 18499,
+      "bytes": 18855,
       "path": "plugins/hexaemeron/skills/elenchus/SKILL.md",
-      "sha256": "0f9cdd28b014e7a1c21856c0f2ff399649e7c792b3eddc161b7012df82b1c899",
+      "sha256": "33f93bd43eb63027de420e21fb312eddae46904fcdd8aefe3766b607d8f1cc2c",
       "source": "plugins/hexaemeron/skills/elenchus/SKILL.md"
     },
     {
@@ -1585,9 +1875,9 @@
       "source": "plugins/hexaemeron/skills/ephoros/EVOLUTION.md"
     },
     {
-      "bytes": 15195,
+      "bytes": 15492,
       "path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-      "sha256": "d33af653a1ee0083fd7fa9d19d8292a04585ed137d68ca18a6a1b9d69d786d4f",
+      "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407",
       "source": "plugins/hexaemeron/skills/ephoros/SKILL.md"
     },
     {
@@ -1603,15 +1893,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 38323,
+      "bytes": 44345,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "ca0ee8fac15189802d1ff5459db62a3951de55bd60c34a697e7ab02442db6594",
+      "sha256": "3eb9da1d443d26eda8e7cf24ae1ca3889749a00f74b8de3c418a0a945017ccc9",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 47348,
+      "bytes": 55143,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "f3ad9270b983b605d91899c1036471584505b13d9bc3660852ba4d0aa5c20f5c",
+      "sha256": "4bc6256ba35ac5b72d90e69ca0b6af1a9ffc58056b7bc0926ec6814f4135767b",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1621,10 +1911,16 @@
       "source": "plugins/hexaemeron/skills/fiat/agents/openai.yaml"
     },
     {
-      "bytes": 11197,
+      "bytes": 11330,
       "path": "plugins/hexaemeron/skills/fiat/references/audit-loop.md",
-      "sha256": "3eab6f076609d51aaa76c49677373c5db9c0f212b4dad51737356c9c44af6b10",
+      "sha256": "e94cb523dbee5cd8b10ab30d86752d27be104e6d319546d5c6e044fded608978",
       "source": "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
+    },
+    {
+      "bytes": 10583,
+      "path": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md",
+      "sha256": "31911c2f6939e036c83c4dc05c7e10915fd173e4c03bbc170d0265d02f18ba35",
+      "source": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md"
     },
     {
       "bytes": 12619,
@@ -1639,9 +1935,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/prose-pass.md"
     },
     {
-      "bytes": 26287,
+      "bytes": 29099,
       "path": "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
-      "sha256": "5297ea8dc7f07df3cff321edbca400f2dfcdf08169bec4e2ba56d91238f375cd",
+      "sha256": "817e5872e54110d9e645480600b2da0c6deaaeb6f377cec5ab4063c7ea0895de",
       "source": "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
     },
     {
@@ -1669,9 +1965,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 297268,
+      "bytes": 410476,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "4ac36284ce936e8909a2cfab36a3de542bcb57b72f074c3a0992f2977d31925d",
+      "sha256": "cfac116a7694479a11390591358ec88ec1433f1ef16153f55fe62abe87c62781",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
@@ -2005,15 +2301,15 @@
       "source": "plugins/hexaemeron/skills/fizz/templates/utils/StringUtils.sol"
     },
     {
-      "bytes": 10844,
+      "bytes": 11633,
       "path": "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md",
-      "sha256": "437a5fd2056a05143e2e4b52e9decfb17ea9a8325090ace3ad5951d631bcfb6a",
+      "sha256": "f06b3c19c05dc58b28a73892a61148d12255555e0c7aec4dcbadab1a17100026",
       "source": "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md"
     },
     {
-      "bytes": 14630,
+      "bytes": 15325,
       "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-      "sha256": "9d328f4a07f627ecf6a3f3bcaad65e1ef179f7114a5246bc19836391e06c653c",
+      "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     {
@@ -2023,9 +2319,9 @@
       "source": "plugins/hexaemeron/skills/hypomnema/agents/openai.yaml"
     },
     {
-      "bytes": 24685,
+      "bytes": 24987,
       "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
-      "sha256": "75cac8ea63ee7c7029167b944b82c853b00950bfc582ccd2ee9e057148784085",
+      "sha256": "15e86a563cf51bb532cc187ec1f6e3804bcbaabaf8236867823bda04c3842728",
       "source": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
     },
     {
@@ -2041,9 +2337,9 @@
       "source": "plugins/hexaemeron/skills/imprimatur/NOTICE.md"
     },
     {
-      "bytes": 11504,
+      "bytes": 11774,
       "path": "plugins/hexaemeron/skills/imprimatur/SKILL.md",
-      "sha256": "e158c97012853e83e53a12ab26527bba88444367773738219c9c63f35dc48360",
+      "sha256": "0c5185a240b9461a4b1222e367bc82a9f42b3e33d1bfcca58d06a197ea728bab",
       "source": "plugins/hexaemeron/skills/imprimatur/SKILL.md"
     },
     {
@@ -2257,9 +2553,9 @@
       "source": "plugins/hexaemeron/skills/kronos/EVOLUTION.md"
     },
     {
-      "bytes": 18999,
+      "bytes": 19341,
       "path": "plugins/hexaemeron/skills/kronos/SKILL.md",
-      "sha256": "cd780af7ec630e3c127ae43a72950abbfa4b96b0c12928ecd7f007f21dfdb75d",
+      "sha256": "3f72304d47813d19b5f4d19f47d8021400837af19fcced3442dd3f83e0fb4c11",
       "source": "plugins/hexaemeron/skills/kronos/SKILL.md"
     },
     {
@@ -2281,9 +2577,9 @@
       "source": "plugins/hexaemeron/skills/metron/EVOLUTION.md"
     },
     {
-      "bytes": 11442,
+      "bytes": 11774,
       "path": "plugins/hexaemeron/skills/metron/SKILL.md",
-      "sha256": "1f801631647bc1550956e03a7f236a1c68f6d299369470cc3a2a538c76fe5333",
+      "sha256": "27ba8a8d3608d16264d8cacdeb4f7d46793d5ebc78a4488c763d3cb16a6c0d57",
       "source": "plugins/hexaemeron/skills/metron/SKILL.md"
     },
     {
@@ -2305,22 +2601,106 @@
       "source": "plugins/hexaemeron/skills/metron/scripts/metron.py"
     },
     {
-      "bytes": 2293,
+      "bytes": 2983,
       "path": "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
-      "sha256": "3c147ed8933d0a326be0d5b8bb21364ac7fb626e9f12f920d12bf388faa3675b",
+      "sha256": "0ebd24ade9b2db09fa5992370e3cb60b2c2193154181dd36c54ea2c4c0cad67a",
       "source": "plugins/hexaemeron/skills/phylax/EVOLUTION.md"
     },
     {
-      "bytes": 21300,
+      "bytes": 23458,
       "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-      "sha256": "d450380b6f0a58468a8574ea7002af8be966204d4b7ba0dff79be43472c5349d",
+      "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d",
       "source": "plugins/hexaemeron/skills/phylax/SKILL.md"
     },
     {
-      "bytes": 234,
+      "bytes": 237,
       "path": "plugins/hexaemeron/skills/phylax/agents/openai.yaml",
-      "sha256": "8bfd144dc3f1d5870e4c65aee2c2bda783b8efedc6d42748de66de337f58f444",
+      "sha256": "a88295a6901193f54f2cad610a260cc188e1509d4155c2e16e2bf32ab5bc4446",
       "source": "plugins/hexaemeron/skills/phylax/agents/openai.yaml"
+    },
+    {
+      "bytes": 47983,
+      "path": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",
+      "sha256": "dea4cc8ab57bab766513a30165391c14298a8d4b7ecae1bd9f6ad4a0259d8271",
+      "source": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md"
+    },
+    {
+      "bytes": 5938,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy.py",
+      "sha256": "ce03c290ebbc5c6a00568fc98ff8d0dbb6f9e45aa73b970736bbcae041a825dc",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy.py"
+    },
+    {
+      "bytes": 2304,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/__init__.py",
+      "sha256": "b9738aef76e53aa31e8867aea062fc12a9c3dec10bc9e2a4bacb99f008b7820d",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/__init__.py"
+    },
+    {
+      "bytes": 7396,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/canonical.py",
+      "sha256": "37ee0b33389a9fe3809e643dc005baf9875214140d224becd78dbf6198477d71",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/canonical.py"
+    },
+    {
+      "bytes": 29643,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py",
+      "sha256": "fc53680017d329615aa9b1b60983e86d0ca6d00bd358de0d1d1913eee5024185",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py"
+    },
+    {
+      "bytes": 780,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/errors.py",
+      "sha256": "d8e540417bebf62d9127751b0d831def185ecaa146fc632e5d5db8749ac68c07",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/errors.py"
+    },
+    {
+      "bytes": 18529,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py",
+      "sha256": "b5d41725dc835ca248635974fe530e1a47d1731a7be8da0bb0f98945c995f150",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py"
+    },
+    {
+      "bytes": 48845,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py",
+      "sha256": "c797c2e6b1e9c610e5576b63f4397ace6a095addb4ec46291498f5cf47c8ff77",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py"
+    },
+    {
+      "bytes": 2457,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/operator.py",
+      "sha256": "de864323104ed0ad7ad954d98fbefe3a427d833ea0c78a9cb0c4e211b0dcea7c",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/operator.py"
+    },
+    {
+      "bytes": 11129,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py",
+      "sha256": "97adc9dd19bef010367a130b43dfd5dc1553d29e706dcec6d7bfdf0f7538491a",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py"
+    },
+    {
+      "bytes": 3759,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/profiles.py",
+      "sha256": "984c1a66e4ecd776faec34391730f70c7a54db4d110cf2992b0e102127a7dde6",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/profiles.py"
+    },
+    {
+      "bytes": 25219,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py",
+      "sha256": "3efb8d5e24e3675fe082233c612f4d31f6fd0875cedf02a8b33dcfd4f7742f29",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py"
+    },
+    {
+      "bytes": 20046,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/receipts.py",
+      "sha256": "7a12638f16e13c26e38d73861aa789de02bd48fdfd12f817ab8264c0a5b61733",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/receipts.py"
+    },
+    {
+      "bytes": 19190,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py",
+      "sha256": "f6269ea5e83005b753b12a7f8086a5072a88255dcccf03f1af0756dbdd980f59",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py"
     },
     {
       "bytes": 31593,
@@ -2335,9 +2715,9 @@
       "source": "plugins/hexaemeron/skills/protasis/EVOLUTION.md"
     },
     {
-      "bytes": 24698,
+      "bytes": 25040,
       "path": "plugins/hexaemeron/skills/protasis/SKILL.md",
-      "sha256": "5084478723a550fcb2b2f16ab1898552f50873d0496094f994909e1081821ea7",
+      "sha256": "95a5fa7f10d56d18c40939414ac8006bfc0de18ef075ee7231754aab7025dde2",
       "source": "plugins/hexaemeron/skills/protasis/SKILL.md"
     },
     {
@@ -2485,9 +2865,9 @@
       "source": "plugins/hexaemeron/skills/vulgate/EVOLUTION.md"
     },
     {
-      "bytes": 7021,
+      "bytes": 7330,
       "path": "plugins/hexaemeron/skills/vulgate/SKILL.md",
-      "sha256": "96592ba6c86c6150e4c2ba12da967d77358cc5ca459f7617aad81a1db5be068c",
+      "sha256": "9761fcbfa6bb4d2da49146b8064774355001cdec31e2b6d10d2fae58fbc74ece",
       "source": "plugins/hexaemeron/skills/vulgate/SKILL.md"
     },
     {
@@ -2557,6 +2937,78 @@
       "source": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py"
     },
     {
+      "bytes": 1683,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
+      "sha256": "cf162795508aa83a5d4cc082b89378d4df366d4274f1b18daf89967a499f8ee7",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json"
+    },
+    {
+      "bytes": 56,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
+      "sha256": "ac45a26f08fced2d70748de952af377108c2f44403d6522ec5a3ad3ba2371b9f",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json"
+    },
+    {
+      "bytes": 31,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
+      "sha256": "9d15b752932c676ef99048b18cadb228b38913a5f01c25b66de53998cbc74610",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json"
+    },
+    {
+      "bytes": 1944,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json",
+      "sha256": "503cfb2a9e3f0790fc775c5f2cd387f98b8abd808b1ecfa413a2b6e50199fac1",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json"
+    },
+    {
+      "bytes": 150,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/invalid-unicode.json",
+      "sha256": "c743092d600af5101252b5b354724522e02f530c51ad3e99f33e5f1e9177e714",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/invalid-unicode.json"
+    },
+    {
+      "bytes": 1016,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/jobspec.json",
+      "sha256": "524a4f49bd13077b331e1477dc3c11fffcea0efd446dac735918b377a1c96b79",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/jobspec.json"
+    },
+    {
+      "bytes": 467,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json",
+      "sha256": "bf952cf7a81cec1ca98150661d993d47c6993e68f519271ebd80e8ea3d5e73af",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json"
+    },
+    {
+      "bytes": 1442,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json",
+      "sha256": "313e772d049b5f1adf06e041c0008e79943aa52661f01259a12ad64425698f12",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json"
+    },
+    {
+      "bytes": 1393,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json",
+      "sha256": "4cc6fa96d735b11750545d89b1fe52bce0be3c0b31b87136e34c87af1564fbc8",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json"
+    },
+    {
+      "bytes": 65,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256",
+      "sha256": "724f7fd9ea4d01e257ade2952c9f1699a024daa3bcda37171614c6140582337c",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256"
+    },
+    {
+      "bytes": 1628,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
+      "sha256": "a5b82c671b38df9101f84cfdeffb9752aa043c573bd9d33671d7261c4b64aaa0",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json"
+    },
+    {
+      "bytes": 1187,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
+      "sha256": "a96f4f0e19052b173450895466005ad3bc5c530058792063289d4601c6e5c553",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
+    },
+    {
       "bytes": 2719,
       "path": "plugins/horos/AGENTS.md",
       "sha256": "11ea60355ea9bd32c96666e2b71855e8e1fc8f1281b51d3ca8a949b6f5e7323d",
@@ -2569,16 +3021,22 @@
       "source": "plugins/horos/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/horos/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/horos/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 5356,
+      "bytes": 5601,
       "path": "plugins/horos/README.md",
-      "sha256": "2542bda10a1c5684e6b796734b1323f7787a901e974e6b2722ad342b534a09f8",
+      "sha256": "dd005dce1086dd652e7f1b0bc471dc1c05cd66ec2e3218d3873db3a4579f6936",
       "source": "plugins/horos/README.md"
+    },
+    {
+      "bytes": 313921,
+      "path": "plugins/horos/assets/characters/horos.png",
+      "sha256": "80c4c84ecb5427ab71b2e2da192a5417ec5fdaef9e3501182a680381aee1c308",
+      "source": "plugins/horos/assets/characters/horos.png"
     },
     {
       "bytes": 5998,
@@ -3085,9 +3543,9 @@
       "source": "plugins/horos/skills/horos/EVOLUTION.md"
     },
     {
-      "bytes": 13740,
+      "bytes": 14053,
       "path": "plugins/horos/skills/horos/SKILL.md",
-      "sha256": "6c0f7fe9ddaa0e2bb4331ff2818027cb9226dcd6bd93d9a65e1c2aa93367471a",
+      "sha256": "9624ace530aaf71ab5e8245253baabf7091c5a59cf3800325437b637f9911bd9",
       "source": "plugins/horos/skills/horos/SKILL.md"
     },
     {
@@ -3175,16 +3633,22 @@
       "source": "plugins/janus/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/janus/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/janus/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 5310,
+      "bytes": 5547,
       "path": "plugins/janus/README.md",
-      "sha256": "bb7d5a33c0d5a4f85de31e4c575cdbda3d93a72ec1ef1176e6553cc934dbfaca",
+      "sha256": "f879ef6ea7e66986263bbf9f98067e154ee9a14d526d86c1d41746ca879aace1",
       "source": "plugins/janus/README.md"
+    },
+    {
+      "bytes": 349681,
+      "path": "plugins/janus/assets/characters/janus.png",
+      "sha256": "8965d9451ac2d44a859bd76c26afb39f1076a49359b3fade05ef5341e0759791",
+      "source": "plugins/janus/assets/characters/janus.png"
     },
     {
       "bytes": 987,
@@ -3307,9 +3771,9 @@
       "source": "plugins/janus/skills/janus/EVOLUTION.md"
     },
     {
-      "bytes": 9350,
+      "bytes": 9650,
       "path": "plugins/janus/skills/janus/SKILL.md",
-      "sha256": "5616fc8ae133ba3f677dbe2343b675ae63502a3b61fafe8bd179910ae0ffe4b9",
+      "sha256": "d3eaaca78a499dc6fc47dbc28e20831def7e0a5f3a46c13bffb5a80c5bb0b678",
       "source": "plugins/janus/skills/janus/SKILL.md"
     },
     {
@@ -3325,16 +3789,22 @@
       "source": "plugins/lazarus/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/lazarus/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/lazarus/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 9535,
+      "bytes": 9790,
       "path": "plugins/lazarus/README.md",
-      "sha256": "8b24fa2f5d5cb306a22bf2dde2e5f930926866c028b4cf86f4c57332fcddbb0c",
+      "sha256": "531a987180c1f6c790cdd6aa36b4d976c318f4fb35c5e606d338c98bcd58c0bc",
       "source": "plugins/lazarus/README.md"
+    },
+    {
+      "bytes": 282087,
+      "path": "plugins/lazarus/assets/characters/lazarus.png",
+      "sha256": "50a52bbfcece8d1c9a3a4d718943febeffb038643fc53db401a0d1c7e65d8c27",
+      "source": "plugins/lazarus/assets/characters/lazarus.png"
     },
     {
       "bytes": 4079,
@@ -3529,9 +3999,9 @@
       "source": "plugins/lazarus/examples/goldfinch-v1-release/fixture/anchors.jsonl"
     },
     {
-      "bytes": 36956,
+      "bytes": 36994,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py",
-      "sha256": "64f4f9447b511cc792592501249a295cce00ef52043c4613d2cceb7a24b988a2",
+      "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py"
     },
     {
@@ -3543,7 +4013,7 @@
     {
       "bytes": 1262,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/manifest.json",
-      "sha256": "5c1ffc35c816a93dd4b95ceb891c883bf5b455ed7435bea08fe08159653ac211",
+      "sha256": "28f083f48a8b63387f64666651aaf975ebda642e67d3278ed411837139f4b4e6",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/fixture/manifest.json"
     },
     {
@@ -3573,13 +4043,13 @@
     {
       "bytes": 909,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/release.json",
-      "sha256": "dee99fcd27079f6c4636279f293d35607338f117e79c04642e49fda220e086fb",
+      "sha256": "62977ab2efea04b8192d63dd11ef1fcdadc8c5670220dcad78619b67f4741074",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/release.json"
     },
     {
       "bytes": 8818,
       "path": "plugins/lazarus/examples/goldfinch-v1-release/statement.json",
-      "sha256": "67bf286eeebb03a3731f22f46bf35d6dcbc3d28bc8dcb060a3f0443080e515fd",
+      "sha256": "8c1571c67953e0b2df7808e506c1eee0b3f63bfdcc9290877c3d1c7eb67d0bc1",
       "source": "plugins/lazarus/examples/goldfinch-v1-release/statement.json"
     },
     {
@@ -3589,9 +4059,9 @@
       "source": "plugins/lazarus/examples/goldfinch-v1/anchors.jsonl"
     },
     {
-      "bytes": 36956,
+      "bytes": 36994,
       "path": "plugins/lazarus/examples/goldfinch-v1/demo.py",
-      "sha256": "64f4f9447b511cc792592501249a295cce00ef52043c4613d2cceb7a24b988a2",
+      "sha256": "f71b2fa9c54264ef62860ca3f80ad02decb5673d268b248c9c726483198761b2",
       "source": "plugins/lazarus/examples/goldfinch-v1/demo.py"
     },
     {
@@ -3603,7 +4073,7 @@
     {
       "bytes": 1262,
       "path": "plugins/lazarus/examples/goldfinch-v1/manifest.json",
-      "sha256": "5c1ffc35c816a93dd4b95ceb891c883bf5b455ed7435bea08fe08159653ac211",
+      "sha256": "28f083f48a8b63387f64666651aaf975ebda642e67d3278ed411837139f4b4e6",
       "source": "plugins/lazarus/examples/goldfinch-v1/manifest.json"
     },
     {
@@ -3913,9 +4383,9 @@
       "source": "plugins/lazarus/skills/lazarus/EVOLUTION.md"
     },
     {
-      "bytes": 16255,
+      "bytes": 16563,
       "path": "plugins/lazarus/skills/lazarus/SKILL.md",
-      "sha256": "30bdca90ca14ec3e0c9edd49b4245f55bccb6de409555075fedd98b7f6544a94",
+      "sha256": "bbb195d61057d968c79ffcdefcb4c630f3ff2ee02ebba71b1c4c933c55d6e828",
       "source": "plugins/lazarus/skills/lazarus/SKILL.md"
     },
     {
@@ -3925,15 +4395,15 @@
       "source": "plugins/lazarus/skills/lazarus/agents/openai.yaml"
     },
     {
-      "bytes": 2420,
+      "bytes": 2910,
       "path": "plugins/lemma/AGENTS.md",
-      "sha256": "2baea4461a763fb45da9e3e610e1143d7faadf432c7f7844a9255f83a5613f18",
+      "sha256": "f2bc1f012dea49178f23f66df920ac89cb683b34a8d8a9de4338a979d0884684",
       "source": "plugins/lemma/AGENTS.md"
     },
     {
-      "bytes": 12974,
+      "bytes": 14936,
       "path": "plugins/lemma/INVARIANTS.md",
-      "sha256": "66fb3b50e28135668b1e2f5fd4dbfa8b2cf0e54451b8688b6091a8fe303e5a03",
+      "sha256": "f5af307f17b1e627dfd09acc49be676468ae77c80ddb01f8935e4c178125be68",
       "source": "plugins/lemma/INVARIANTS.md"
     },
     {
@@ -3949,16 +4419,22 @@
       "source": "plugins/lemma/NOTICE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/lemma/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/lemma/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 4213,
+      "bytes": 9323,
       "path": "plugins/lemma/README.md",
-      "sha256": "9f7b96ba2e752f1162edf99fa04c5c6aaa1003c8cd03d145b186f15206fd7200",
+      "sha256": "603a7ecf51971d11adba9fbed2c51ba04d9cd800b5a1915492959f0d2b555244",
       "source": "plugins/lemma/README.md"
+    },
+    {
+      "bytes": 225829,
+      "path": "plugins/lemma/assets/characters/lemma.png",
+      "sha256": "31e5cae757270abb0482cc2d5bf4f72f2fa1586c2b94c3a90e4c4f5d3350095a",
+      "source": "plugins/lemma/assets/characters/lemma.png"
     },
     {
       "bytes": 3259,
@@ -4027,9 +4503,9 @@
       "source": "plugins/lemma/baseline/docs/user-guide/troubleshooting.md"
     },
     {
-      "bytes": 1671,
+      "bytes": 2498,
       "path": "plugins/lemma/baseline/regenerate",
-      "sha256": "25d0c3168488bb7da62e0a4a35dfa8336ffef8e15046314b3b58162341169e83",
+      "sha256": "15338b04aca5a9b51c95e79637c19bfb6e89b5666c9b30742c6187af4755957f",
       "source": "plugins/lemma/baseline/regenerate"
     },
     {
@@ -4063,33 +4539,33 @@
       "source": "plugins/lemma/baseline/standard_input.py"
     },
     {
-      "bytes": 50772,
+      "bytes": 67023,
       "path": "plugins/lemma/chunkers/markdown.py",
-      "sha256": "23da00bcabea1dcd0882ef0da66589cd23340277ec96823a967134fbda84d7a0",
+      "sha256": "5ec9dbc21a0c3c2ca2826143104d603c3d999ef089daae00a2bc68c1c9898b2b",
       "source": "plugins/lemma/chunkers/markdown.py"
     },
     {
-      "bytes": 47677,
+      "bytes": 65142,
       "path": "plugins/lemma/chunkers/solidity.py",
-      "sha256": "53e3b3c9a01d3d081066198c69e62d3c4a0b95d3901f719583a7fe1b13130978",
+      "sha256": "8d2a7ee2b84b9171bcd62b1b0a1854972b01a306b305d6cc57c3727f5a40a250",
       "source": "plugins/lemma/chunkers/solidity.py"
     },
     {
-      "bytes": 9839,
+      "bytes": 28912,
       "path": "plugins/lemma/schema.py",
-      "sha256": "5ee159d592fdf6baf5cba4de558fdf475915b439d998fb7ce975d01860276984",
+      "sha256": "4a288964a8412af0dee5c700cfbdad945e1ed1cd0ca821aac6b27778d4a1198e",
       "source": "plugins/lemma/schema.py"
     },
     {
-      "bytes": 1354,
+      "bytes": 1723,
       "path": "plugins/lemma/skills/lemma/EVOLUTION.md",
-      "sha256": "362da33dc1de98e27ea009b5cfb93ee9c53f26267d77f66e656519b533fdcdee",
+      "sha256": "3e36153ac9da3a7dc00975e5bd021f6227e7af39ffa4e760889492515100995b",
       "source": "plugins/lemma/skills/lemma/EVOLUTION.md"
     },
     {
-      "bytes": 7119,
+      "bytes": 10541,
       "path": "plugins/lemma/skills/lemma/SKILL.md",
-      "sha256": "dd6ea8acda920a74350f2f014e426944724acd4e34d97363e1badd48fca7c090",
+      "sha256": "b4587fffb07642dd6f09a1bb9a82b4c07bd1b518ad202d198fa0c43118227d12",
       "source": "plugins/lemma/skills/lemma/SKILL.md"
     },
     {
@@ -4117,15 +4593,15 @@
       "source": "plugins/pandects/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/pandects/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/pandects/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 17024,
+      "bytes": 17261,
       "path": "plugins/pandects/README.md",
-      "sha256": "c7d59c453a2d278933e76306dc1ad5880d1bcf7a066a4b68cc7b3c3200c5a28d",
+      "sha256": "17dbe6d328039ee236646fcd261a4f08d20055821f893230f10d7b5c41fd38d9",
       "source": "plugins/pandects/README.md"
     },
     {
@@ -4175,6 +4651,12 @@
       "path": "plugins/pandects/adapters/medusa/medusa.json",
       "sha256": "79f5b9006e88a04fb8e88802fc07e214ec3743b6e1cd8be4b647394a39daca8c",
       "source": "plugins/pandects/adapters/medusa/medusa.json"
+    },
+    {
+      "bytes": 278892,
+      "path": "plugins/pandects/assets/characters/pandects.png",
+      "sha256": "3a9c0996c2f1bf7804de9f88371fa8a3cc3cd65e02f1b00ba6394ca0629a0af1",
+      "source": "plugins/pandects/assets/characters/pandects.png"
     },
     {
       "bytes": 11518,
@@ -4291,9 +4773,9 @@
       "source": "plugins/pandects/skills/pandects/EVOLUTION.md"
     },
     {
-      "bytes": 16199,
+      "bytes": 16484,
       "path": "plugins/pandects/skills/pandects/SKILL.md",
-      "sha256": "ce518cc5f202bb0bd10c88d8241aadb05681d4bcea5ed43e76106c39be0289c1",
+      "sha256": "79e415fc05ba32bd957006d29cfc1f5f515d1e45d81f57c45233d54f27e9ca0e",
       "source": "plugins/pandects/skills/pandects/SKILL.md"
     },
     {
@@ -4537,9 +5019,9 @@
       "source": "plugins/pandects/test/counterexamples/Conservation.t.sol"
     },
     {
-      "bytes": 4473,
+      "bytes": 4976,
       "path": "plugins/probitas/AGENTS.md",
-      "sha256": "95ff8bb163d6ca97cc9a1cdfeb028ea27d416bc03f508011b436d5fe2a59ebe3",
+      "sha256": "cfac87710d12fb934542eadf6295588a3df738a71d90987e4e7cbfe069f9a71b",
       "source": "plugins/probitas/AGENTS.md"
     },
     {
@@ -4549,27 +5031,33 @@
       "source": "plugins/probitas/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/probitas/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/probitas/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 14504,
+      "bytes": 17676,
       "path": "plugins/probitas/README.md",
-      "sha256": "cd77f8e6890d96c23e34d9bd1c5a7494bb868dc83977df5e7a5ee42e4472568c",
+      "sha256": "9db27a1e4afe1d473dbd6353a2a32cfc96d2419f24e1c6cc05af9e96c860a3cd",
       "source": "plugins/probitas/README.md"
     },
     {
-      "bytes": 1786,
+      "bytes": 263217,
+      "path": "plugins/probitas/assets/characters/probitas.png",
+      "sha256": "86fdb442170e4477fc99fe42a70904a53f4924c5205ab93f04e28b2a489beceb",
+      "source": "plugins/probitas/assets/characters/probitas.png"
+    },
+    {
+      "bytes": 1861,
       "path": "plugins/probitas/assets/dossier-template.md",
-      "sha256": "c62061545abf11f71c27518d40b56683ca7d845e3038ab1ad203fea1ac2b9d9d",
+      "sha256": "f04d1e112f1914b9946233dd6fcf817a46b06bc28c8365992633b0d3223440f7",
       "source": "plugins/probitas/assets/dossier-template.md"
     },
     {
-      "bytes": 16809,
+      "bytes": 17029,
       "path": "plugins/probitas/docs/adding-a-venue.md",
-      "sha256": "cd594de9e6decbd101f3db2fcbce83d6d00d26ce01ca9a34abf08b84d8f2bca3",
+      "sha256": "ec0e31d749301b617264d8d61f88b9777043bf9cea88c73598df37c2ccd41c8b",
       "source": "plugins/probitas/docs/adding-a-venue.md"
     },
     {
@@ -4603,15 +5091,27 @@
       "source": "plugins/probitas/docs/euler-v2-goldsky-schema.graphql"
     },
     {
-      "bytes": 9496,
+      "bytes": 10826,
       "path": "plugins/probitas/docs/example-dossier.md",
-      "sha256": "d7cfd65f74d9568a22ac81ce54e5e662f97dbcb343c538cf321221787cbeadc3",
+      "sha256": "692d8ec7822370882a4c3f0a6a253b1bc051488627a6356f7f8b2d529416ee9c",
       "source": "plugins/probitas/docs/example-dossier.md"
     },
     {
-      "bytes": 9557,
+      "bytes": 45044,
+      "path": "plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md",
+      "sha256": "599ce40ccd0fa94b54bcb7bb5dc13202182f1aa2603f2c0134d0b6578ec1c659",
+      "source": "plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md"
+    },
+    {
+      "bytes": 45749,
+      "path": "plugins/probitas/docs/morpho-midnight-fixed-maturity-study.md",
+      "sha256": "9ee74ea33ab98f7120bff01880e772b92384c9da9489f3addb4c74e4f5b524b1",
+      "source": "plugins/probitas/docs/morpho-midnight-fixed-maturity-study.md"
+    },
+    {
+      "bytes": 12643,
       "path": "plugins/probitas/scripts/probitas.py",
-      "sha256": "82679d551c7150e2dc2dd8bbc007662d6fc7f2dcc9a537cd3d359bd8aa53d41c",
+      "sha256": "b865685b342b4e853a5084242b17945478e2d5069533cc79933f5970eab361c6",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     {
@@ -4621,9 +5121,9 @@
       "source": "plugins/probitas/scripts/probitas_lib/__init__.py"
     },
     {
-      "bytes": 1950,
+      "bytes": 4150,
       "path": "plugins/probitas/scripts/probitas_lib/adapters/__init__.py",
-      "sha256": "1d8e11d7f43cbca146f4b1accbdba3b8e7368fecba871171eb8bfa3d6a2ba105",
+      "sha256": "9b105a69e70cb584d034916943b3b8927d796f9f6e84b99471ae7e6e9092cd8d",
       "source": "plugins/probitas/scripts/probitas_lib/adapters/__init__.py"
     },
     {
@@ -4645,21 +5145,27 @@
       "source": "plugins/probitas/scripts/probitas_lib/adapters/morpho.py"
     },
     {
+      "bytes": 45452,
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py",
+      "sha256": "7985fcb7d5b74eab91f705575ab4c14905540138ba8a4aeca690201af629f01b",
+      "source": "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py"
+    },
+    {
       "bytes": 17949,
       "path": "plugins/probitas/scripts/probitas_lib/adapters/wildcat.py",
       "sha256": "6e4a947253a5bc3903f7dab77569439892d5d1765d8d730b3e44854a56c8cc79",
       "source": "plugins/probitas/scripts/probitas_lib/adapters/wildcat.py"
     },
     {
-      "bytes": 3088,
+      "bytes": 3100,
       "path": "plugins/probitas/scripts/probitas_lib/endpoints.py",
-      "sha256": "14efdd14d6c175d8571abb8e2f81f011c4a933041e175676d2ca6367a8497c7b",
+      "sha256": "fa41d04d2a34d5dbb266d2760ca6683f782d124e6dd7eb6f47b9942e38ab929c",
       "source": "plugins/probitas/scripts/probitas_lib/endpoints.py"
     },
     {
-      "bytes": 13642,
+      "bytes": 17481,
       "path": "plugins/probitas/scripts/probitas_lib/evidence.py",
-      "sha256": "43968b73372035906b3f63dae92073ca400f31dfdcd2acb664a646ba4d6cf430",
+      "sha256": "819cd1769e1b3d696d11168d76f787fe2aba01fe10b7018fab72de7c5aecd792",
       "source": "plugins/probitas/scripts/probitas_lib/evidence.py"
     },
     {
@@ -4669,9 +5175,9 @@
       "source": "plugins/probitas/scripts/probitas_lib/formatting.py"
     },
     {
-      "bytes": 13342,
+      "bytes": 15590,
       "path": "plugins/probitas/scripts/probitas_lib/gates.py",
-      "sha256": "cf062fbded39d12254bc05bfbb03f103c0bfc7357002629acf9b70cc540a41ba",
+      "sha256": "da6d4d56da1af2cd72d47ad14e85feed118162d937d7a0e08c76b221068a75f1",
       "source": "plugins/probitas/scripts/probitas_lib/gates.py"
     },
     {
@@ -4681,15 +5187,15 @@
       "source": "plugins/probitas/scripts/probitas_lib/graphql.py"
     },
     {
-      "bytes": 6729,
+      "bytes": 6790,
       "path": "plugins/probitas/scripts/probitas_lib/registry.py",
-      "sha256": "1acfc8759ffb453353565356799df621374d06668dbe71ad8ec3c6d1616f85d7",
+      "sha256": "e3376fc5f356292064976974afa6d7379e7b7a45791021fb0508874ca1b50c08",
       "source": "plugins/probitas/scripts/probitas_lib/registry.py"
     },
     {
-      "bytes": 10365,
+      "bytes": 19892,
       "path": "plugins/probitas/scripts/probitas_lib/render.py",
-      "sha256": "66ebd4846e20808fd5bcfa684c65c4e25555f39300134cedd0fc32ce53d78dbf",
+      "sha256": "3c7b0e7106b34e884dda14a26e2d5fb8dd3961b84aecc4258d8916779d876f09",
       "source": "plugins/probitas/scripts/probitas_lib/render.py"
     },
     {
@@ -4699,15 +5205,15 @@
       "source": "plugins/probitas/scripts/probitas_lib/sanitise.py"
     },
     {
-      "bytes": 991,
+      "bytes": 2595,
       "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
-      "sha256": "713a6db4ed6d35332cd585e4e3afbac904d55284e8ae10229e099938932a9c97",
+      "sha256": "8174569051082a4770162b4f2eee91a2638fb8e97560bffc2c7fe9bdf73f5b47",
       "source": "plugins/probitas/skills/probitas/EVOLUTION.md"
     },
     {
-      "bytes": 11488,
+      "bytes": 14243,
       "path": "plugins/probitas/skills/probitas/SKILL.md",
-      "sha256": "f4c3e1c2b58e829d2f0fd6db0ffb766c5a32d84d2246f19f03a633dc1684957a",
+      "sha256": "0f6496002fdcbb4040b26655c58dd2f154a805175a099ea8eac421784af1f6c0",
       "source": "plugins/probitas/skills/probitas/SKILL.md"
     },
     {
@@ -4717,15 +5223,15 @@
       "source": "plugins/probitas/skills/probitas/agents/openai.yaml"
     },
     {
-      "bytes": 6012,
+      "bytes": 7358,
       "path": "plugins/probitas/skills/probitas/references/gates.md",
-      "sha256": "8f1986e6033205712e3730bc3a37fecefa66bdaaec3b4815bc62dca7995cf4d9",
+      "sha256": "0ecfe1c62ef322117b0b5be58b37a76326ed7da093170ca12d95a8009389b48e",
       "source": "plugins/probitas/skills/probitas/references/gates.md"
     },
     {
-      "bytes": 7558,
+      "bytes": 8859,
       "path": "plugins/probitas/skills/probitas/references/venues.md",
-      "sha256": "ba0e6e850b895d75d907238d17e460d841f26f64af48ab0e81bd1842448d0162",
+      "sha256": "e0e501d5fe7ae4841a7d20f09cb1572ce96eb6128b722c7c82fd7b8d68e13125",
       "source": "plugins/probitas/skills/probitas/references/venues.md"
     },
     {
@@ -4741,16 +5247,22 @@
       "source": "plugins/sapheneia/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/sapheneia/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/sapheneia/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3824,
+      "bytes": 4163,
       "path": "plugins/sapheneia/README.md",
-      "sha256": "1dd9fe4e86ea1039c94b0a4155f9663f661164d9d89c6390e79c1019686f6cfe",
+      "sha256": "281a55ebb3109966676d03ca08f46cce1d7dcc5316c251f46b2e1a21edb2298e",
       "source": "plugins/sapheneia/README.md"
+    },
+    {
+      "bytes": 229220,
+      "path": "plugins/sapheneia/assets/characters/sapheneia.png",
+      "sha256": "7ea04d29f2e4139385607383dd92b3ef1748265a34f3c5125c4979cc77451aae",
+      "source": "plugins/sapheneia/assets/characters/sapheneia.png"
     },
     {
       "bytes": 1404,
@@ -4759,9 +5271,9 @@
       "source": "plugins/sapheneia/skills/sapheneia/EVOLUTION.md"
     },
     {
-      "bytes": 12828,
+      "bytes": 13206,
       "path": "plugins/sapheneia/skills/sapheneia/SKILL.md",
-      "sha256": "30b16d89417f764d64c458c9fcfe944c870a5147baa705a82d7d90b46c9c4794",
+      "sha256": "fc834d7696900dda97b99fb9eea7e718f6cb70c1f24d741d196dc4b94caf036e",
       "source": "plugins/sapheneia/skills/sapheneia/SKILL.md"
     },
     {
@@ -4769,6 +5281,180 @@
       "path": "plugins/sapheneia/skills/sapheneia/agents/openai.yaml",
       "sha256": "7dc44aaf0a94bdac8a92a86a9113a516f508b29ed0e22d98279a40f6a812504e",
       "source": "plugins/sapheneia/skills/sapheneia/agents/openai.yaml"
+    },
+    {
+      "bytes": 5019,
+      "path": "plugins/synkrisis/AGENTS.md",
+      "sha256": "054c8712fd54fe5a24d7a80eec42d07ef0afe1c3e7d4653e32af1100127c3eff",
+      "source": "plugins/synkrisis/AGENTS.md"
+    },
+    {
+      "bytes": 11342,
+      "path": "plugins/synkrisis/LICENSE",
+      "sha256": "624ddb0910d0925eafa5ac16a65a1360417e3d7c72aff6df0f3eab475695b68d",
+      "source": "plugins/synkrisis/LICENSE"
+    },
+    {
+      "bytes": 23568,
+      "path": "plugins/synkrisis/PROMISE_MACHINE.md",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
+      "source": "plugins/synkrisis/PROMISE_MACHINE.md"
+    },
+    {
+      "bytes": 5023,
+      "path": "plugins/synkrisis/README.md",
+      "sha256": "6448576f0a0cf8b678629cb33f709adc1718975a12947b5c095d5b8c1292ffe2",
+      "source": "plugins/synkrisis/README.md"
+    },
+    {
+      "bytes": 303545,
+      "path": "plugins/synkrisis/assets/characters/synkrisis.png",
+      "sha256": "0a0326e5c02b7849e093c046e0ba9aa81e0d2661c025b01d64ee16cc5cf27a6c",
+      "source": "plugins/synkrisis/assets/characters/synkrisis.png"
+    },
+    {
+      "bytes": 2028,
+      "path": "plugins/synkrisis/docs/decisions/ADR-001-keep-cross-run-diagnosis-separate.md",
+      "sha256": "2caab7792e5d32b6b83866836052bb2386c6e86db4b2fc7c51972ae3c4d61fdc",
+      "source": "plugins/synkrisis/docs/decisions/ADR-001-keep-cross-run-diagnosis-separate.md"
+    },
+    {
+      "bytes": 1760,
+      "path": "plugins/synkrisis/docs/decisions/ADR-002-declare-cohort-comparability.md",
+      "sha256": "6778d85f6db5acc77b3f94ae3010d04a3edaced5f74d2305a99ba100f98de8bf",
+      "source": "plugins/synkrisis/docs/decisions/ADR-002-declare-cohort-comparability.md"
+    },
+    {
+      "bytes": 1675,
+      "path": "plugins/synkrisis/docs/decisions/ADR-003-use-checked-diagnostic-rules.md",
+      "sha256": "b2c35d925829f6872a589f55c5da7e7441c34230b6d0e9d9ffb035fb7d588e90",
+      "source": "plugins/synkrisis/docs/decisions/ADR-003-use-checked-diagnostic-rules.md"
+    },
+    {
+      "bytes": 1427,
+      "path": "plugins/synkrisis/docs/decisions/ADR-004-separate-run-and-reachability-evidence.md",
+      "sha256": "9199d1604a69ff7c92646c5086112a4487020c0342521171654813156a9621fe",
+      "source": "plugins/synkrisis/docs/decisions/ADR-004-separate-run-and-reachability-evidence.md"
+    },
+    {
+      "bytes": 1978,
+      "path": "plugins/synkrisis/docs/schema-compatibility.md",
+      "sha256": "e3feb571730074fe52ce5c04223aa9a78757a35efb0ca9e089d681bb5bc09e1a",
+      "source": "plugins/synkrisis/docs/schema-compatibility.md"
+    },
+    {
+      "bytes": 2127,
+      "path": "plugins/synkrisis/examples/cross-run-v0/expected/cohort.json",
+      "sha256": "9f05c47fd586e76265b492048b434bc270ce0a84662cbf483bb45887ba771a92",
+      "source": "plugins/synkrisis/examples/cross-run-v0/expected/cohort.json"
+    },
+    {
+      "bytes": 2155,
+      "path": "plugins/synkrisis/examples/cross-run-v0/expected/findings.json",
+      "sha256": "7b3314222bfabc6a91828a79c659c2f57866feb33d5b6e10ce27a9c378f4300a",
+      "source": "plugins/synkrisis/examples/cross-run-v0/expected/findings.json"
+    },
+    {
+      "bytes": 2245,
+      "path": "plugins/synkrisis/examples/cross-run-v0/expected/report.md",
+      "sha256": "86cc39f243c174ced5f4c699906606b2f6e7fbc97b50037bdec21dba50080bef",
+      "source": "plugins/synkrisis/examples/cross-run-v0/expected/report.md"
+    },
+    {
+      "bytes": 3503,
+      "path": "plugins/synkrisis/examples/cross-run-v0/manifest.json",
+      "sha256": "51d84e839c8a8cade05cc65cf625392287a8d5f6d43971b61e49529f1d9949a7",
+      "source": "plugins/synkrisis/examples/cross-run-v0/manifest.json"
+    },
+    {
+      "bytes": 458,
+      "path": "plugins/synkrisis/examples/cross-run-v0/policy.json",
+      "sha256": "8d939fc0376f61e6410e757f8bdfb34e53dc2d8d298448fac58111bc35b94186",
+      "source": "plugins/synkrisis/examples/cross-run-v0/policy.json"
+    },
+    {
+      "bytes": 2760,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-alpha.jsonl",
+      "sha256": "e2bae4a17e94808743809a3099a88807d08b5139d86d0da8890ed1c6757af928",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-alpha.jsonl"
+    },
+    {
+      "bytes": 3510,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-beta.jsonl",
+      "sha256": "747c4d9fee02c37e9b800f33614b36986a9eee466fed3edeed18665050718dda",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-beta.jsonl"
+    },
+    {
+      "bytes": 1907,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-delta.jsonl",
+      "sha256": "648c0422f595bccdab4df04a9dab27581d20c48f4df712ef67d4f6349cf0dbe3",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-delta.jsonl"
+    },
+    {
+      "bytes": 1932,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-epsilon.jsonl",
+      "sha256": "801e27e1daa5c5f39c684e5c72fea8ff1b910638b971476852c3d1a25cef78b8",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-epsilon.jsonl"
+    },
+    {
+      "bytes": 4896,
+      "path": "plugins/synkrisis/examples/cross-run-v0/records/run-gamma.jsonl",
+      "sha256": "36646fa544fb3e575e68261ce1b4ada6387b7209a0a69e87c22a346328cdd796",
+      "source": "plugins/synkrisis/examples/cross-run-v0/records/run-gamma.jsonl"
+    },
+    {
+      "bytes": 3204,
+      "path": "plugins/synkrisis/references/cohort-v1.schema.json",
+      "sha256": "5e71420816444af4582e0380b9d6e7ff845e4b3686126233c24a9d1ab5335b0d",
+      "source": "plugins/synkrisis/references/cohort-v1.schema.json"
+    },
+    {
+      "bytes": 4152,
+      "path": "plugins/synkrisis/references/findings-v1.schema.json",
+      "sha256": "52cf6589e57a93fa82eef75520be44f10636d2469eafe2dae9c91e1d457627c8",
+      "source": "plugins/synkrisis/references/findings-v1.schema.json"
+    },
+    {
+      "bytes": 1982,
+      "path": "plugins/synkrisis/references/policy-v1.schema.json",
+      "sha256": "04d440bdbd96fcff165d4b0badc029a79634bf17b1a7ac380baee85630c873bb",
+      "source": "plugins/synkrisis/references/policy-v1.schema.json"
+    },
+    {
+      "bytes": 3087,
+      "path": "plugins/synkrisis/references/rule-v1.schema.json",
+      "sha256": "c8b45c1b6e2b9de010d7ce17109a6f7d49a4797d5a79b07186eabdfa1ed44698",
+      "source": "plugins/synkrisis/references/rule-v1.schema.json"
+    },
+    {
+      "bytes": 2361,
+      "path": "plugins/synkrisis/references/rules-v1.json",
+      "sha256": "e754bb72235103290ec4ea58b2c71b851782573c3e27eb16a08fe762c3f3a4af",
+      "source": "plugins/synkrisis/references/rules-v1.json"
+    },
+    {
+      "bytes": 8766,
+      "path": "plugins/synkrisis/scripts/bench_synkrisis.py",
+      "sha256": "36654fe2369fda03188c1e8be18d91c5a576377966da7f48264518ecf45de518",
+      "source": "plugins/synkrisis/scripts/bench_synkrisis.py"
+    },
+    {
+      "bytes": 70533,
+      "path": "plugins/synkrisis/scripts/synkrisis.py",
+      "sha256": "b61cbe4d1133f94a8c6667898edced652c8924baf938d92fb776b74b90b2c99c",
+      "source": "plugins/synkrisis/scripts/synkrisis.py"
+    },
+    {
+      "bytes": 6096,
+      "path": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md",
+      "sha256": "e0a66fb126a60cbc2ba86eb9eda4366150a80ecfcbbd4607ef8174786be71013",
+      "source": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md"
+    },
+    {
+      "bytes": 13283,
+      "path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
+      "sha256": "c7554b77521df9fefeb63f2cc13443bb7924edd9cd5d2107722f94114c932398",
+      "source": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {
       "bytes": 4570,
@@ -4783,16 +5469,22 @@
       "source": "plugins/tabularium/LICENSE"
     },
     {
-      "bytes": 16453,
+      "bytes": 23568,
       "path": "plugins/tabularium/PROMISE_MACHINE.md",
-      "sha256": "dae19b7409f7ee83a74b166c16fbc0cd117131031bff6e969a9b190205c4ab77",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
       "source": "plugins/tabularium/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 12304,
+      "bytes": 12586,
       "path": "plugins/tabularium/README.md",
-      "sha256": "207f56bcbfa45a3aa5b9961e6e7a8ccc60b59dbe155606c5195ae98fedc46038",
+      "sha256": "5a21d66dc59508694e9011aa4551db93c9516833d8d9c9f5e04e2f98b634005c",
       "source": "plugins/tabularium/README.md"
+    },
+    {
+      "bytes": 244910,
+      "path": "plugins/tabularium/assets/characters/tabularium.png",
+      "sha256": "138f2c5732d5a12d542975d72430338de8605a53c671de956814ceb5b7756187",
+      "source": "plugins/tabularium/assets/characters/tabularium.png"
     },
     {
       "bytes": 2728,
@@ -5113,9 +5805,9 @@
       "source": "plugins/tabularium/skills/tabularium/EVOLUTION.md"
     },
     {
-      "bytes": 12778,
+      "bytes": 13100,
       "path": "plugins/tabularium/skills/tabularium/SKILL.md",
-      "sha256": "f32c894635919fe437f9994b93b222abe8e5093e472145c65a2d165ebc3909fe",
+      "sha256": "273b2eca2c7d837142b02d42faddc2e309868d99ade4e4eb85ab70fb1a8c8a35",
       "source": "plugins/tabularium/skills/tabularium/SKILL.md"
     },
     {
@@ -5127,7 +5819,7 @@
     {
       "bytes": 77,
       "path": "pyproject.toml",
-      "sha256": "be2ea2c7fe99fe291cf79870fe1432ba3ef392a13828c60db3d575635ee9b728",
+      "sha256": "df6e37928788ae5651f2161700351aeb94c6cecda342f28f70bd37f88a48d518",
       "source": "pyproject.toml"
     },
     {

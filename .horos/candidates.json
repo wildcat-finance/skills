@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 14225347,
+    "bytes_blob": 15463567,
     "bytes_generated": 98
   },
   "entries": [
@@ -12,6 +12,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/AUDIT_SYNOPSIS.md"
+    },
+    {
+      "bytes": 55818,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-374-forward-test-brevitas-across-a-held-engineer.synopsis.md"
     },
     {
       "bytes": 23182,
@@ -35,18 +42,53 @@
       "path": "audit/rounds/fiat-383-prove-receipts-against-the-captured-header-s.synopsis.md"
     },
     {
-      "bytes": 275317,
+      "bytes": 50402,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 137658",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-390-add-fail-closed-morpho-midnight-fixed-maturi.synopsis.md"
+    },
+    {
+      "bytes": 23478,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-390-restore-fail-closed-morpho-midnight-fixed-ma.synopsis.md"
+    },
+    {
+      "bytes": 18752,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-391-unified-live-and-archive-collection.synopsis.md"
+    },
+    {
+      "bytes": 297271,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 148635 of 297271 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-402-implement-the-grounded-agent-predicate.md"
     },
     {
-      "bytes": 277208,
+      "bytes": 299247,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-402-implement-the-grounded-agent-predicate.synopsis.md"
+    },
+    {
+      "bytes": 89662,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 44831",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-409-chunk-corpora-carry-dataset-provenance.md"
+    },
+    {
+      "bytes": 90390,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-409-chunk-corpora-carry-dataset-provenance.synopsis.md"
     },
     {
       "bytes": 79134,
@@ -63,6 +105,20 @@
       "path": "audit/rounds/fiat-429-audit-record-schema-timestamp-synopsis.synopsis.md"
     },
     {
+      "bytes": 70765,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 68717",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-499-grade-router-selection-not-just-resolution.md"
+    },
+    {
+      "bytes": 71447,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-499-grade-router-selection-not-just-resolution.synopsis.md"
+    },
+    {
       "bytes": 23166,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -77,11 +133,74 @@
       "path": "audit/rounds/fiat-510-reuse-source-bound-x-ray-analysis-across-fia.synopsis.md"
     },
     {
+      "bytes": 52994,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-557-portable-run-state-recovery-r2.synopsis.md"
+    },
+    {
       "bytes": 31859,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-617-runtime-host-reinstates-the-byline-the-ident.synopsis.md"
+    },
+    {
+      "bytes": 65312,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-2-implementation-continuation.synopsis.md"
+    },
+    {
+      "bytes": 132367,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 130319",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-3-implementation-continuation.md"
+    },
+    {
+      "bytes": 133422,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-3-implementation-continuation.synopsis.md"
+    },
+    {
+      "bytes": 42672,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-inoculate-affected-scope-runner.synopsis.md"
+    },
+    {
+      "bytes": 28413,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.synopsis.md"
+    },
+    {
+      "bytes": 119875,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 117827",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-700-proxy-model-traffic-without-giving-the-worke.md"
+    },
+    {
+      "bytes": 121312,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-700-proxy-model-traffic-without-giving-the-worke.synopsis.md"
+    },
+    {
+      "bytes": 27146,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
     },
     {
       "bytes": 59394,

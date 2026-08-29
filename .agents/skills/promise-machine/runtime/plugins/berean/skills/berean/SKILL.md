@@ -13,6 +13,10 @@ metadata:
   version: "0.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/berean.png" width="1200">
+</p>
+
 # Berean
 
 In Acts, the Bereans receive a claim and check it against the scriptures each
@@ -33,6 +37,10 @@ preserve historical chain evidence. Berean owns neither operation: it checks
 the release assembled from those inputs, grades its recorded answers, and keeps
 promotion and rollback as records. Ariadne may bind the resulting release to
 its evidence after Berean has finished.
+
+Synkrisis is specified to compare validated observations from several agent
+runs, not to grade recorded answers or infer model quality. Its current
+scaffold refuses all four declared operations and produces no finding.
 
 ## Frontier
 

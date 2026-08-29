@@ -3,6 +3,10 @@ name: promise-machine
 description: Route a Wildcat Labs request to the one canonical first-party or vendored skill that owns it, preserving the Promise Machine evidence boundary and every named sibling hand-off.
 ---
 
+<p align="center">
+  <img src="../../../assets/characters/promise-machine.png" width="1200">
+</p>
+
 # Promise Machine router
 
 This is the suite's only host-neutral discovery entry. It is a switchboard, not
@@ -11,7 +15,7 @@ work, and owns no domain promise.
 
 Choose the runtime before routing. In a full source checkout,
 `../../../PROMISE_MACHINE.md` identifies `promise-machine/v1` and
-`../../../plugins/` holds all fourteen plugin contracts; read the [root runtime
+`../../../plugins/` holds all fifteen plugin contracts; read the [root runtime
 contract](../../../AGENTS.md) first. Otherwise this is an isolated Agent Skills
 install: read `PORTABLE.md`, verify its local runtime, and use the installed-path
 substitution it defines. A target repository's unrelated `AGENTS.md` never
@@ -19,11 +23,12 @@ counts as the suite contract. Do not select a canonical skill until one of
 these two runtime paths has loaded the same law and the selected plugin
 contract.
 
-The router sees the complete collective. Thirteen first-party specialists live
-in their own plugins. Hexaemeron contains Fiat, Kronos, six phase disciplines,
-two prose masks, four Fiat worker briefs, and the untouched Pashov security
-suite. The worker briefs are packets Fiat may delegate; they are not canonical
-skills a user selects through this router.
+The router sees the complete collective. Fourteen first-party specialists live
+in their own plugins; Synkrisis is one of them, although its command surface
+refuses every operation whose runbook step has not landed. Hexaemeron contains Fiat, Kronos, six phase
+disciplines, two prose masks, four Fiat worker briefs, and the untouched Pashov
+security suite. The worker briefs are packets Fiat may delegate; they are not
+canonical skills a user selects through this router.
 
 ## Select one runtime contract
 
@@ -45,6 +50,7 @@ canonical skill only when the selected workflow requires a named handoff.
 | Apply executable credit laws | [Pandects](../../../plugins/pandects/AGENTS.md) | `pandects` |
 | Build a declared-address counterparty dossier | [Probitas](../../../plugins/probitas/AGENTS.md) | `probitas` |
 | Shape the agent's own replies for an AuDHD reader, or shape durable agent-authored audit records and GitHub issue titles, bodies and comments | [Sapheneia](../../../plugins/sapheneia/AGENTS.md) | `sapheneia` |
+| Compare validated run observations across runs, or inspect the cross-run comparison boundary | [Synkrisis](../../../plugins/synkrisis/AGENTS.md) | `synkrisis` |
 | Build a venue-qualified credit-event release | [Tabularium](../../../plugins/tabularium/AGENTS.md) | `tabularium` |
 
 Hexaemeron is one plugin with several distinct owners. Use the same runtime
@@ -69,6 +75,12 @@ implementation step, Warden for one audit round, or Scribe for one prose pass.
 They return evidence to Fiat; they never select themselves or receipt their own
 work.
 
+Synkrisis is outside Fiat's controller loop. Its delivered surface reads and
+compares declared observations and stops there: it cannot file an issue,
+mutate a repository, or dispatch a Fiat run, and any operation whose runbook
+step has not landed refuses by name. A comparison result still requires a
+person to choose any next owner and action.
+
 ## Preserve the selected promise
 
 The canonical skill and its runtime contract are authoritative. Invocation
@@ -80,3 +92,13 @@ If no row matches, stop at inspection and explain the uncovered boundary. Do
 not improvise a new suite capability, collapse two siblings into a generalist,
 or treat this router as permission to run Fiat, Kronos, a worker, or any
 external action.
+
+If two rows both match, name both rows and the boundary sentence that separates
+them before selecting either. Select one row only when its boundary sentence
+excludes what the other row claims. When neither sentence excludes the other,
+stop at inspection and report which two rows matched and which sentence you
+read. Never select both rows, widen one row until it covers the request, or
+fall back to a third row that covers neither. A boundary sentence is one
+sentence of the marketplace boundaries in the root runtime contract, or one
+Request predicate from a table above. Two adjacent table rows are not one
+sentence, and neither are two list items.

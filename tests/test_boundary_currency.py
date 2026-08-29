@@ -94,7 +94,7 @@ def git_env(base=None):
 
 def git(root, *args):
     subprocess.run(  # phylax: allow subprocess: fixed argv git in a test tempdir, no shell
-        ["git", "-C", root, *args],
+        ["git", "-c", "commit.gpgsign=false", "-C", root, *args],
         capture_output=True,
         check=True,
         env=git_env(),
@@ -164,6 +164,9 @@ class GuardMutationTests(unittest.TestCase):
         self.root = self._tmp.name
         self.addCleanup(self._tmp.cleanup)
         git(self.root, "init", "-q")
+        # Fixture history is not signing evidence, so inherited signing must
+        # not decide whether this disposable repository can be constructed.
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
         write(self.root, "src/app.py", "value = 1\n")
         write(self.root, "yarn.lock", "# lockfile\n")
         git(self.root, "add", ".")

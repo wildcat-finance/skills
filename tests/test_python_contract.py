@@ -27,16 +27,52 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 README = ROOT / "README.md"
 LAZARUS = ROOT / "plugins" / "lazarus"
 
-REQUIRED_MINOR = "==3.13.*"
-EXACT_VERSION = "3.13.15"
+REQUIRED_MINOR = "==3.14.*"
+EXACT_VERSION = "3.14.6"
 PYTHON_WORKFLOWS = {
     "contributors.yml",
     "janus.yml",
     "lazarus.yml",
     "pandects.yml",
     "repo.yml",
+    "synkrisis.yml",
 }
 PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml"}
+BRANCH_CI_WORKFLOWS = PULL_REQUEST_WORKFLOWS | {
+    "janus-forge.yml",
+    "pandects-forge.yml",
+}
+PLUGIN_WORKFLOW_PATHS = {
+    "janus.yml": {
+        "plugins/janus/**",
+        ".python-version",
+        "pyproject.toml",
+        ".github/workflows/janus.yml",
+    },
+    "lazarus.yml": {
+        "plugins/lazarus/**",
+        "docs/lazarus-multi-provider-chain-anchor/**",
+        "docs/lazarus-receipt-inclusion-proofs/**",
+        "docs/decisions/ADR-037-prove-receipts-with-a-full-ordered-witness.md",
+        ".python-version",
+        "pyproject.toml",
+        ".github/workflows/lazarus.yml",
+    },
+    "pandects.yml": {
+        "plugins/pandects/**",
+        ".python-version",
+        "pyproject.toml",
+        ".github/workflows/pandects.yml",
+    },
+    "synkrisis.yml": {
+        "plugins/synkrisis/**",
+        "docs/synkrisis/**",
+        "scripts/run_observation.py",
+        ".python-version",
+        "pyproject.toml",
+        ".github/workflows/synkrisis.yml",
+    },
+}
 DEPENDENCY_FILES = {
     "plugins/lazarus/requirements.lock",
     "plugins/lazarus/requirements.txt",
@@ -45,6 +81,7 @@ PIN_REFERENCING_PROSE = {
     "AGENTS.md",
     "README.md",
     "docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md",
+    "docs/decisions/ADR-042-advance-the-python-suite-to-3-14.md",
     "plugins/ariadne/docs/design.md",
     "plugins/berean/README.md",
     "plugins/berean/skills/berean/SKILL.md",
@@ -103,6 +140,44 @@ def dependency_drift(direct_text, lock_text):
     }
 
 
+def workflow_event_body(source, event):
+    """Return one event mapping without parsing GitHub's YAML extensions."""
+    match = re.search(
+        rf"(?ms)^  {re.escape(event)}:\n(?P<body>.*?)(?=^  [a-z_]+:|\Z)",
+        source,
+    )
+    if match is None:
+        raise ValueError(f"workflow has no {event} event")
+    return match["body"]
+
+
+def workflow_event_paths(source, event):
+    """Return the quoted path filters from one workflow event."""
+    body = workflow_event_body(source, event)
+    match = re.search(
+        r"(?m)^    paths:\n(?P<paths>(?:      - .+\n)+)",
+        body,
+    )
+    if match is None:
+        raise ValueError(f"workflow {event} event has no paths")
+    return set(re.findall(r'^      - "([^"]+)"$', match["paths"], re.M))
+
+
+def workflow_event_branches(source, event):
+    """Return the quoted or plain branch filters from one workflow event."""
+    body = workflow_event_body(source, event)
+    match = re.search(
+        r"(?m)^    branches:\n(?P<branches>(?:      - .+\n)+)",
+        body,
+    )
+    if match is None:
+        return set()
+    return set(
+        value.strip('"')
+        for value in re.findall(r"^      - (.+)$", match["branches"], re.M)
+    )
+
+
 def is_current_runtime_prose(path):
     """Exclude immutable evidence, receipted records, fixtures, and vendored skills."""
     relative = path.relative_to(ROOT)
@@ -116,9 +191,9 @@ def is_current_runtime_prose(path):
         return False
     if name in {"evolution.md", "promise_machine.md"}:
         return False
-    if name in {"study.md", "runbook.md", "proof.md"}:
+    if name in {"study.md", "runbook.md", "proof.md", "benchmark.md"}:
         return False
-    if name.endswith(("-study.md", "-runbook.md", "-proof.md")):
+    if name.endswith(("-study.md", "-runbook.md", "-proof.md", "-benchmark.md")):
         return False
     if parts[:3] == ("docs", "promise-machine", "evidence"):
         return False
@@ -198,6 +273,23 @@ class PythonRuntimeContractTests(unittest.TestCase):
                 self.assertEqual(text.count('- ".python-version"'), 2)
                 self.assertEqual(text.count('- "pyproject.toml"'), 2)
 
+    def test_feature_pushes_do_not_duplicate_pull_request_runs(self):
+        for name in sorted(BRANCH_CI_WORKFLOWS):
+            text = (WORKFLOWS / name).read_text(encoding="utf-8")
+            with self.subTest(workflow=name):
+                self.assertEqual(workflow_event_branches(text, "push"), {"main"})
+                self.assertNotIn(
+                    "    branches:", workflow_event_body(text, "pull_request")
+                )
+                self.assertIn("  workflow_dispatch:\n", text)
+
+    def test_plugin_workflows_follow_only_their_owned_inputs(self):
+        for name, expected in sorted(PLUGIN_WORKFLOW_PATHS.items()):
+            text = (WORKFLOWS / name).read_text(encoding="utf-8")
+            for event in ("push", "pull_request"):
+                with self.subTest(workflow=name, event=event):
+                    self.assertEqual(workflow_event_paths(text, event), expected)
+
     def test_root_gate_runs_when_any_workflow_changes(self):
         text = (WORKFLOWS / "repo.yml").read_text(encoding="utf-8")
         self.assertEqual(text.count('- ".github/workflows/*.yml"'), 2)
@@ -207,6 +299,7 @@ class PythonRuntimeContractTests(unittest.TestCase):
         self.assertIn("[`pyproject.toml`](./pyproject.toml)", text)
         self.assertIn("[`.python-version`](./.python-version)", text)
         self.assertIn("[ADR-038]", text)
+        self.assertIn("[ADR-042]", text)
 
     def test_current_runtime_prose_points_to_the_pin(self):
         for relative in sorted(PIN_REFERENCING_PROSE):

@@ -1,0 +1,36 @@
+name: synkrisis
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "plugins/synkrisis/**"
+      - "docs/synkrisis/**"
+      - "scripts/run_observation.py"
+      - ".python-version"
+      - "pyproject.toml"
+      - ".github/workflows/synkrisis.yml"
+  pull_request:
+    paths:
+      - "plugins/synkrisis/**"
+      - "docs/synkrisis/**"
+      - "scripts/run_observation.py"
+      - ".python-version"
+      - "pyproject.toml"
+      - ".github/workflows/synkrisis.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+      - name: Synkrisis scaffold suite
+        run: python3 -m unittest discover -s plugins/synkrisis/tests -t plugins/synkrisis -v

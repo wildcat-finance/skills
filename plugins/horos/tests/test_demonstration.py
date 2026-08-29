@@ -35,7 +35,7 @@ APPENDED = "example.com/other v0.1.0 h1:2222222222222222222222222222222222222222
 
 def git(root, *args):
     subprocess.run(  # phylax: allow subprocess: fixed argv git in a test tempdir, no shell
-        ["git", "-C", root, *args],
+        ["git", "-c", "commit.gpgsign=false", "-C", root, *args],
         capture_output=True,
         check=True,
         env={**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
@@ -51,6 +51,7 @@ class DemonstrationTests(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         shutil.copytree(EXAMPLE, self.root)
         git(self.root, "init", "-q")
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
         git(self.root, "add", "-A")
         git(self.root, "commit", "-qm", "example")
 

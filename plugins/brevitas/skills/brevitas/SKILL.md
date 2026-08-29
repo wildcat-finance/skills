@@ -5,6 +5,10 @@ metadata:
   version: "0.2.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/brevitas.png" width="1200">
+</p>
+
 # Brevitas
 
 ## Frontier
@@ -27,6 +31,11 @@ the register. Sapheneia may separately shape the surrounding interaction or a
 bounded durable record. Brevitas changes volume, structure, and connective
 prose only; it does not alter word choice, voice, AuDHD presentation, or the
 facts another skill established.
+
+Synkrisis renders a comparison report from fixed templates, and this skill may
+constrain its engineering-prose structure without validating the finding.
+Rendering refuses a finding carrying causal language, so neither skill can
+introduce a claim the findings do not hold.
 
 ## Precedence
 

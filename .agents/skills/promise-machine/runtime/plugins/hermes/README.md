@@ -1,3 +1,5 @@
+![Hermes](./assets/characters/hermes.png)
+
 # Hermes
 
 <!-- marketplace-context:start -->
@@ -18,6 +20,10 @@ preserve, Janus checks hook effects against their host boundary, and the Pashov
 suite can review the resulting Solidity. None of those siblings can replace
 Hermes's sealed before-and-after measurement or accept a candidate on its
 behalf.
+
+A Synkrisis comparison may point a person towards a repeated run pattern, but
+it cannot replace Hermes's controlled gas evidence. A Synkrisis finding is an
+inferred relation between named events, never a measurement.
 
 The canonical workflow and complete gate contract live in
 [`skills/hermes/SKILL.md`](skills/hermes/SKILL.md).

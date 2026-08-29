@@ -11,6 +11,10 @@ metadata:
   version: "0.7.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/kronos.png" width="1200">
+</p>
+
 # Kronos
 
 ## Where this sits
@@ -20,6 +24,11 @@ scores eligible held jobs, selects the highest unparked candidate, and either
 reports the ranking or dispatches that exact job to Fiat. Fiat owns every
 delivery transition after dispatch; Kronos never studies, implements, audits,
 rewrites, pushes, or merges the target itself.
+
+Synkrisis is not a candidate source or an alternate dispatcher. Its current
+scaffold refuses every comparison operation; a future finding still cannot
+enter this ranking or start Fiat unless a person separately authorises the
+ordinary governed frontier.
 
 Read [EVOLUTION.md](EVOLUTION.md). Kronos is mature and terminal by design;
 that status blocks work intended to improve Kronos itself, not an explicitly

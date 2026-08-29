@@ -15,6 +15,10 @@ metadata:
   version: "4.8.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/protasis.png" width="1200">
+</p>
+
 # Protasis
 
 From *protasis*, the proposition laid down before the argument runs. Nothing is
@@ -32,6 +36,11 @@ runbook step. Phylax, Ephoros, Metron, Elenchus, and Hypomnema answer the five
 discipline questions Protasis requires; Protasis cites their contracts rather
 than copying them. A decision made after the study belongs to Hypomnema's
 recording rules.
+
+Synkrisis is specified to suggest a next owner from repeated validated run
+observations, but its current scaffold produces no finding. A future suggestion
+will still need a scoped proposition before it can become a study, runbook, or
+framework change.
 
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).

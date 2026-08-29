@@ -2,23 +2,26 @@ name: lazarus
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/lazarus/**"
+      - "docs/lazarus-multi-provider-chain-anchor/**"
+      - "docs/lazarus-receipt-inclusion-proofs/**"
+      - "docs/decisions/ADR-037-prove-receipts-with-a-full-ordered-witness.md"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
       - ".github/workflows/lazarus.yml"
   pull_request:
     paths:
       - "plugins/lazarus/**"
+      - "docs/lazarus-multi-provider-chain-anchor/**"
+      - "docs/lazarus-receipt-inclusion-proofs/**"
+      - "docs/decisions/ADR-037-prove-receipts-with-a-full-ordered-witness.md"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
       - ".github/workflows/lazarus.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

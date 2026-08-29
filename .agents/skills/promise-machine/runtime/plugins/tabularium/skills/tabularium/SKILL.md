@@ -13,6 +13,10 @@ metadata:
   version: "0.3.0"
 ---
 
+<p align="center">
+  <img src="../../assets/characters/tabularium.png" width="1200">
+</p>
+
 # Tabularium
 
 ## Frontier
@@ -38,6 +42,11 @@ verified Tabularium release in a counterparty dossier, and Ariadne may bind its
 digest to evidence. Those downstream uses do not authorise Tabularium to
 collect live data, flatten venue meaning, rate a borrower, or hide unsupported
 coverage.
+
+Synkrisis is not a release comparator for these datasets. Its input is
+validated agent-run observations, it builds a checked cohort and infers
+bounded findings over one, and it cannot promote repeated records into a
+credit claim.
 
 `$SKILL_DIR` is the directory holding this file. The tool lives at
 `$SKILL_DIR/../../scripts/tabularium.py`; resolve it from where you loaded this

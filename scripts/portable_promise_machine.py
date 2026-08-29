@@ -27,6 +27,7 @@ ROOT_FILES = (
     Path("LICENSE"),
     Path("PROMISE_MACHINE.md"),
     Path("SHOGGOTH.md"),
+    Path("assets/characters/promise-machine.png"),
     Path("pyproject.toml"),
     Path("repo_contract.py"),
     Path("schemas/promise-machine-run-observation-capture-v1.schema.json"),
@@ -37,7 +38,39 @@ ROOT_FILES = (
     Path("docs/decisions/ADR-009-four-issue-queues-and-their-titles.md"),
     Path("docs/decisions/ADR-010-split-address-telemetry-from-boundary-control.md"),
     Path("docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md"),
+    Path("docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md"),
     Path("docs/fiat-run-observation-binding-v1.md"),
+)
+
+PORTABLE_TEST_FILES = (
+    Path(
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json"
+    ),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json"
+    ),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json"
+    ),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json"
+    ),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/invalid-unicode.json"
+    ),
+    Path("plugins/hexaemeron/tests/fixtures/model-proxy-v1/jobspec.json"),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json"
+    ),
+    Path("plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json"),
+    Path("plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json"),
+    Path("plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256"),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json"
+    ),
+    Path(
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
+    ),
 )
 
 OMISSIONS = (
@@ -55,7 +88,12 @@ OMISSIONS = (
     },
     {
         "pattern": "plugins/*/tests/**",
-        "reason": "development suites remain in the full source checkout",
+        "exceptions": [path.as_posix() for path in PORTABLE_TEST_FILES],
+        "reason": (
+            "development suites and other fixtures remain in the full source "
+            "checkout; the listed closed model-proxy-v1 fixture set closes the "
+            "portable commands and vectors advertised by the copied reference"
+        ),
     },
     {
         "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
@@ -124,6 +162,7 @@ def _omitted(relative: Path) -> bool:
 def source_files(root: Path) -> list[Path]:
     """Return the exact canonical files copied into the portable runtime."""
     selected = set(ROOT_FILES)
+    selected.update(PORTABLE_TEST_FILES)
     selected.update(path for path in _tracked_plugin_files(root) if not _omitted(path))
     ordered = sorted(selected, key=lambda path: path.as_posix())
     for relative in ordered:

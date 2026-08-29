@@ -6,7 +6,8 @@ Ask the Atlas for a number. Pick your harness. Finish what you start.
 
 You do not need to understand the whole skills suite or choose a Wave. You need
 one job from the Atlas, a local coding harness that can work in this repository,
-and enough uninterrupted time to finish one Fiat run.
+and enough uninterrupted time to reach either completion or a completed-step
+checkpoint before moving the run.
 
 ## The thirty-second version
 
@@ -19,11 +20,11 @@ and enough uninterrupted time to finish one Fiat run.
 
 ## Aye, here you go - #123
 
-> [!WARNING]
-> Fiat does not yet support checkpointing. Work is actively ongoing to complete
-> it. Once Fiat starts, complete the entire run locally. Closing the harness,
-> abandoning the run or moving an unfinished run to another session can lose
-> the work. Do not assume that another contributor or session can resume it.
+> [!IMPORTANT]
+> After a completed step, another machine may resume from the portable
+> checkpoint, but it must verify that checkpoint before doing anything else.
+> Arbitrary mid-step state is not portable: keep the harness open until Fiat
+> reaches an accepted boundary and the checkpoint is exported and uploaded.
 
 You are the contributor, not Shoggoth. Keep your own Git author, valid signing
 identity and GitHub account. Fiat adds the required Shoggoth provenance without
@@ -69,7 +70,7 @@ can produce two different jobs.
 The ChatGPT and Claude routes are covered by the Atlas launcher tests. Each one
 asks the Atlas for one job and opens a new web chat with the exact prompt filled
 in. That is a bootstrap hand-off. It is not evidence that the browser chat can
-complete a local Fiat run or that another session can take over later. Before
+complete a local Fiat run or restore a verified checkpoint. Before
 `hexctl init`, the prompt asks the chat to confirm that it can work in the
 repository, use your signing identity and publish through your GitHub account.
 If it cannot, move the same prompt to a suitable local coding harness before
@@ -88,10 +89,11 @@ the run starts.
 
 Instruction compatibility and a known-good launcher are different claims.
 Codex and Claude Code have repository-native package routes. The two web
-bootstraps have checked Atlas redirects. The other named harnesses use the
-manual path until an Atlas hand-off is built and tested for them. Cline and Roo
-Code are not presented as launch options because this repository has no checked
-Atlas hand-off for either one.
+bootstraps have checked Atlas redirects. A later hand-off is supported only
+from a verified completed-step checkpoint, not from browser chat history. The
+other named harnesses use the manual path until an Atlas hand-off is built and
+tested for them. Cline and Roo Code are not presented as launch options because
+this repository has no checked Atlas hand-off for either one.
 
 Before Fiat starts, confirm that the selected issue is still open and does not
 already have an active owner, issue-number branch or pull request. If it does,
@@ -141,15 +143,18 @@ allocating it until a maintainer closed it by hand.
 - If the work on your issue has already merged, ask the Atlas for another allocation and say so on the issue. An open issue is not proof the work is outstanding.
 - If installation or access is missing, state exactly what is missing and ask before changing the repository.
 - If a check fails, keep the repository state and failure output, follow the named recovery, and rerun the same check.
-- If you must interrupt the run, preserve only what Fiat says is safe to commit or push and mark the run incomplete. That is damage control, not a supported hand-off.
+- If you must interrupt mid-step, preserve only what Fiat says is safe to commit or push and mark the run incomplete. That is damage control, not a supported hand-off.
+- If a completed-step checkpoint was exported and uploaded, a fresh machine may continue only after verifying its archive, Git boundary, signatures and controller capsule.
 
 ## Why the workflow works this way
 
 Random allocation spreads contributors across the dependency-clear pool. The
 issue number keeps the work bounded. Fiat leaves a visible sequence of study,
-implementation and review evidence for a maintainer. The local-completion rule
-keeps an unfinished controller state from being mistaken for a portable hand-off
-before checkpointing exists.
+implementation and review evidence for a maintainer. The accepted-boundary rule
+keeps unfinished or moving controller state from being mistaken for a portable
+hand-off. Checkpoint restore carries the same verified ledger forward; it does
+not start a replacement run or remove the outer bundle, signature and archive
+checks.
 
 The contributor supplies time, judgement, their own signing identity and their
 own harness and GitHub accounts. The repository receives an ordinary
@@ -171,7 +176,7 @@ tested one-click launcher, and it does not change the checkpoint rule.
 ## Being credited
 
 The README says that a completed job merged with your authorship intact puts you
-in this repository's contributor history, and that a weekly job names you in
+in this repository's contributor history, and that a daily job names you in
 `CONTRIBUTORS.md`. Fiat checks the first half of that and records what it found,
 so you do not have to take it on trust.
 
@@ -184,19 +189,22 @@ names you as author or in a `Co-authored-by` trailer. A merge commit keeps your
 commits; a squash or rebase merge does not, and then the merge itself has to
 carry your name.
 
-From that record, a weekly job builds the list.
-[CONTRIBUTORS.md](../CONTRIBUTORS.md) ranks contributors by merged commits with
-merged pull requests as the tie-break, and the thanks at the foot of the root
-README name the same people by handle and nothing else. Both are regenerated by
-`.github/workflows/contributors.yml` from the repository's own history. Nobody
-has to remember to add you and there is nothing to ask for.
+From that record, a daily job builds the list.
+[CONTRIBUTORS.md](../CONTRIBUTORS.md) ranks contributors by resolved Skills
+commits with merged pull requests across Wildcat Skills and Shoggoth Wave Atlas
+as the tie-break. A human who authors a merged pull request in
+`wildcat-finance/shoggoth-wave-atlas` enters even with no Skills commit. The
+thanks at the foot of the root README name the same people by handle and nothing
+else. Both are regenerated by `.github/workflows/contributors.yml` from the two
+repositories' public history. Nobody has to remember to add you and there is
+nothing to ask for.
 
 What that list establishes is narrow, and worth knowing before it disappoints
-anyone. It carries commit and merged-pull-request counts as GitHub resolves
-them, with one entry per account even where you have committed under several
-email addresses. It says nothing about how much judgement a commit carried, who
-wrote which line, or anything about you beyond the account you chose to commit
-under. It is a record of merged work, not a ranking of people.
+anyone. Its commit count covers Wildcat Skills only; its pull-request count
+covers both repositories. It says nothing about how much judgement a commit
+carried, who wrote which line, or who else worked on an Atlas pull request. A PR
+author is the account that opened it, not every commit author, reviewer or
+collaborator. It is a record of merged work, not a ranking of people.
 
 Running a Fiat delivery does not keep you off it. Agent provenance trailers are
 not part of the decision, because the humans who have contributed here all ran
@@ -213,7 +221,7 @@ Otherwise the account cannot be resolved, and Fiat records that plainly rather
 than guessing. So check the address on your commits before you push, and put it
 on your GitHub account if it is missing. A commit whose author email is linked
 to no account leaves nothing for either list to find, and neither this
-repository nor the weekly job can detect or correct that after the fact.
+repository nor the daily job can detect or correct that after the fact.
 
 GitHub's own contributor history is GitHub's. It computes and publishes it on
 its own schedule, nothing here can make an entry appear, and no receipt in the

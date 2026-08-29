@@ -1,3 +1,5 @@
+![Sapheneia](./assets/characters/sapheneia.png)
+
 # Sapheneia
 
 <!-- marketplace-context:start -->
@@ -18,6 +20,11 @@ comment. Warden uses the durable-record operation before a Fiat audit receipt.
 Imprimatur and Vulgate govern wording, while Brevitas governs engineering-prose
 structure. Sapheneia changes none of their facts or gates and does not activate
 session mode merely because it shaped one record.
+
+A Synkrisis report may pass through these prose layers, but Sapheneia will not
+change its evidence or conclusion. Synkrisis renders that report from fixed
+templates and verifies that it recomputes from the original inputs, so any
+reshaping happens after the verification, never inside it.
 
 Sapheneia is the interaction contract for agents working with AuDHD engineers.
 It keeps the next action, task boundary, done condition, current state, evidence

@@ -1,0 +1,6 @@
+{
+  "schema": "synkrisis-scale-fixture/v1",
+  "runs": 100,
+  "events_per_run": 1000,
+  "seed": 449
+}

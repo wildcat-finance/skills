@@ -1,3 +1,5 @@
+![Pandects](./assets/characters/pandects.png)
+
 # Pandects
 
 <!-- marketplace-context:start -->
@@ -17,6 +19,10 @@ another fuzz engine can search those properties, Janus can apply relevant laws
 around a hook transition, and Hermes must preserve them when changing gas.
 Pandects does not discover every protocol property, audit the whole system, or
 turn a successful bounded campaign into security sign-off.
+
+Synkrisis compares validated run observations. It cannot promote repeated
+campaign outcomes into a law or a security verdict, and its findings stay
+inferred relations between named events.
 
 Executable laws for credit contracts.
 
