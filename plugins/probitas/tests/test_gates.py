@@ -198,6 +198,28 @@ class TestGateTwoCoverage(unittest.TestCase):
         self.assertTrue(result.passed, result.detail)
         self.assertIn("15 venue(s) accounted for over 16 row(s)", result.detail)
 
+    def test_a_row_whose_venue_is_not_a_name_fails_rather_than_crashing(self):
+        """`verify` is pointed at files it did not write, so it may not raise."""
+        payload = copy.deepcopy(evidence())
+        stray = copy.deepcopy(payload["coverage"][0])
+        stray["venue"] = None
+        payload["coverage"].append(stray)
+        document = dossier(evidence())
+        breached = failures(document, payload)
+        self.assertEqual(breached[0].number, 2)
+        self.assertIn("names no venue", breached[0].detail)
+
+    def test_an_empty_archive_row_needs_a_release_too(self):
+        """Empty is the answer a reader is most likely to over-trust."""
+        payload = copy.deepcopy(evidence())
+        wildcat = next(c for c in payload["coverage"] if c["venue"] == "wildcat")
+        wildcat["source"] = "archive"
+        wildcat["status"] = "empty"
+        wildcat["releases"] = None
+        breached = failures(dossier(payload), payload)
+        self.assertEqual(breached[0].number, 2)
+        self.assertIn("names no release", breached[0].detail)
+
     def test_a_release_identity_is_a_permitted_figure(self):
         """Gate 3 rebuilds its allowed set from the fields, this one included."""
         payload = copy.deepcopy(evidence())
