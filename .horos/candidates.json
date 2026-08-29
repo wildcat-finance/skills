@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 14776871,
+    "bytes_blob": 14789959,
     "bytes_generated": 98
   },
   "entries": [
@@ -42,7 +42,7 @@
       "path": "audit/rounds/fiat-383-prove-receipts-against-the-captured-header-s.synopsis.md"
     },
     {
-      "bytes": 37314,
+      "bytes": 50402,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
