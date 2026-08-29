@@ -1,4 +1,4 @@
-"""Public library surface for the Phylax model proxy policy compiler."""
+"""Public library surface for the Phylax model proxy component."""
 
 from .canonical import (
     MAX_ACCEPTED_JOB_BYTES,
@@ -9,6 +9,17 @@ from .canonical import (
     sha256_bytes,
 )
 from .errors import DIAGNOSTIC_SCHEMA, PolicyError
+from .conformance import (
+    CONFORMANCE_MANIFEST_SCHEMA,
+    CONFORMANCE_RESULT_SCHEMA,
+    DEPENDENCY_BOUNDARIES,
+    EXPECTED_ROWS,
+    POSITIVE_SURFACES,
+    ConformanceManifestResult,
+    ConformanceRowResult,
+    check_conformance_manifest,
+    conformance_manifest_digest,
+)
 from .policy import (
     ACCEPTED_JOB_SCHEMA,
     JOBSPEC_SCHEMA,
@@ -37,8 +48,14 @@ from .receipts import MAX_RECEIPT_BYTES, RECEIPT_SCHEMA, ReceiptSink
 __all__ = (
     "ACCEPTED_JOB_SCHEMA",
     "CompiledPolicy",
+    "CONFORMANCE_MANIFEST_SCHEMA",
+    "CONFORMANCE_RESULT_SCHEMA",
+    "ConformanceManifestResult",
+    "ConformanceRowResult",
+    "DEPENDENCY_BOUNDARIES",
     "DIAGNOSTIC_SCHEMA",
     "FEATURE_NAMES",
+    "EXPECTED_ROWS",
     "JOBSPEC_SCHEMA",
     "LIMIT_FIELDS",
     "LIFECYCLE_MANIFEST_SCHEMA",
@@ -52,6 +69,7 @@ __all__ = (
     "ModelProxyRuntime",
     "POLICY_COMPILER",
     "POLICY_SCHEMA",
+    "POSITIVE_SURFACES",
     "PolicyError",
     "ProviderProfile",
     "RECEIPT_SCHEMA",
@@ -59,9 +77,11 @@ __all__ = (
     "Reservation",
     "TerminalSnapshot",
     "canonical_json",
+    "check_conformance_manifest",
     "check_lifecycle_manifest",
     "compile_policy",
     "compile_policy_file",
+    "conformance_manifest_digest",
     "parse_json_bytes",
     "read_bounded_file",
     "resolve_profile",

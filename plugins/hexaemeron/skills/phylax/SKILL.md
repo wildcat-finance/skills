@@ -5,12 +5,12 @@ description: >-
   releases, the commands it shells out to, the URLs it fetches, the secrets it
   holds, the dependencies it pulls, and the model output it acts on. Use when a
   step accepts data from outside the process, runs a subprocess, fetches a URL,
-  reads a credential, adds a dependency, or feeds an agent. Do not use it to
-  review Solidity, which belongs to solidity-auditor and x-ray, and do not use
-  it to diagnose a failure that has already happened, which belongs to
-  elenchus.
+  reads a credential, adds a dependency, or feeds an agent. It also owns the
+  bounded job-scoped model proxy component proof. Do not use it to review
+  Solidity, which belongs to solidity-auditor and x-ray, and do not use it to
+  diagnose a failure that has already happened, which belongs to elenchus.
 metadata:
-  version: "1.3.0"
+  version: "1.4.0"
 ---
 
 <p align="center">
@@ -43,6 +43,11 @@ Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
 **Current state.** Phylax mechanically checks its established Python boundaries and source-local TypeScript controls for raw HTML ordering, persisted session credentials and runtime-selected absolute fetch hosts. This frontier is mature.
+
+It also ships a synthetic job-scoped model proxy component: closed policy,
+framing, provider, lifecycle, receipt, operator-disclosure, and hostile-
+conformance boundaries. That component is a generation change on the same
+mature frontier, not evidence of a live provider or end-to-end launch.
 
 ## Name the boundaries before choosing controls
 
@@ -188,6 +193,30 @@ Scope an agent's tools to the job and require confirmation before anything
 irreversible. Bound what a crafted input can spend by capping tokens, requests
 and recursion depth. Keep credentials and unrelated data out of the context in
 the first place, because anything in there can come back out.
+
+## Prove the job-scoped model proxy boundary
+
+The version-1 model proxy gives a disposable guest one closed text operation
+without giving it a provider URL, header, credential, model selector, lifecycle
+action, or general network path. Its normative contract is
+[model-proxy-v1.md](references/model-proxy-v1.md), and
+[ADR-042](../../../../docs/decisions/ADR-042-use-a-job-scoped-model-proxy.md)
+holds the design and rejected alternatives.
+
+Run its final component proof from the repository root:
+
+```bash
+mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py conformance --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json
+```
+
+The digest-bound manifest pins the accepted JobSpec and policy, with one
+positive row and thirteen fixed hostile rows. A missing, duplicate, reordered,
+unknown, stale, mismatched, or unexecuted row refuses. The positive row uses
+injected loopback components and checks credential injection after admission,
+normalised response, bounded receipts, operator disclosure, cleanup, and
+absence across its closed surface inventory. A zero exit does not establish
+the #698 acceptance receipt, #699 launch receipt, a live provider, a public
+pilot, or the #702 Fiat integration/end-to-end digest join.
 
 ## The application and the service
 
@@ -377,6 +406,9 @@ Report the count, then name every item that failed.
 - [ ] Each route checks what the authenticated address may do, not just that it connected.
 - [ ] A signer in a long-running process is dry-run first and idempotent on retry.
 - [ ] The malformed-input test for each new ingestion path exists and passes.
+- [ ] A model-proxy conformance claim names its synthetic boundary and keeps
+      #698 acceptance, #699 launch, live-provider, pilot, and #702 end-to-end
+      integration dependencies visibly open.
 
 ## Hand back
 

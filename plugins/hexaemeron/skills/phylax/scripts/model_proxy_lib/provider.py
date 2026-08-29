@@ -242,6 +242,20 @@ class ProviderSession:
         with self._state_lock:
             return self._framing.events
 
+    @property
+    def cleanup_complete(self) -> bool:
+        """Report whether close erased provider authority and request state."""
+
+        with self._state_lock:
+            return (
+                self._failed
+                and not self._admitted
+                and self._inflight is None
+                and self._credential_source is None
+                and self._connector is None
+                and self._framing.cleanup_complete
+            )
+
     def _record_locked(
         self,
         code: str,

@@ -231,6 +231,18 @@ class LifecycleController:
         with self._lock:
             return self._terminal
 
+    @property
+    def cleanup_complete(self) -> bool:
+        """Report whether terminal state owns no live reservation budget."""
+
+        with self._lock:
+            return (
+                self._terminal is not None
+                and not self._active
+                and self._reserved_response_bytes == 0
+                and self._reserved_output_tokens == 0
+            )
+
     def activate(self) -> None:
         """Make a second activation an explicit refusal."""
 
@@ -744,6 +756,24 @@ class ModelProxyRuntime:
     @property
     def receipt_count(self) -> int:
         return self._sink.records
+
+    @property
+    def cleanup_complete(self) -> bool:
+        """Report whether terminal cleanup closed every owned runtime surface."""
+
+        with self._terminal_lock:
+            terminal_complete = (
+                self._terminal_finalized and not self._terminal_receipt_failed
+            )
+        with self._provider_turn_condition:
+            no_pending_provider_turns = not self._pending_provider_turns
+        return (
+            terminal_complete
+            and no_pending_provider_turns
+            and self._controller.cleanup_complete
+            and self._provider.cleanup_complete
+            and self._sink.closed
+        )
 
     def activate(self) -> None:
         with self._publication_lock:

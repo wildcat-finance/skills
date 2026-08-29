@@ -7,8 +7,8 @@ accepted-job adapter, and the provider-independent version-1 guest framing
 grammar. It also fixes the synthetic provider mapping and the standard-library
 HTTPS connector used to test that mapping without a live provider. It defines
 the job-scoped runtime, atomic quota ledger, cancellation and expiry rules,
-content-free receipt file, and operator disclosure. The final hostile-
-conformance manifest is a later boundary.
+content-free receipt file, operator disclosure, and the final closed hostile-
+conformance manifest.
 
 The implementation is the standard-library CLI at `../scripts/model_proxy.py`
 and the library under `../scripts/model_proxy_lib/`. Golden and refusing
@@ -473,6 +473,64 @@ and every compiled limit. It also states the boundary directly: restricting
 the destination and withholding the credential from the guest does not prove
 that the provider will not retain or exfiltrate disclosed model content.
 
+## Closed hostile-conformance manifest
+
+`model-proxy-conformance-manifest/v1` is the final component proof for this
+version. Its root contains exactly `schema`, `accepted_job`,
+`jobspec_sha256`, `policy_sha256`, `manifest_sha256`, and `rows`.
+`accepted_job` is exactly `accepted-job.json`. The JobSpec and policy digests
+must equal the values compiled from that sibling before any row executes. The
+manifest digest is lowercase SHA-256 over canonical JSON containing exactly
+`schema`, `accepted_job`, `jobspec_sha256`, `policy_sha256`, and `rows`; it
+therefore binds the accepted component identity and every row while excluding
+only its own digest field.
+
+Each row contains exactly `id` and `expected_outcome`. The complete order and
+outcomes are fixed in code:
+
+| Row | Expected outcome | Provider disclosure |
+| --- | --- | --- |
+| `positive` | `MP000` | `provider-only` |
+| `arbitrary-url` | `MP207` | `not-read` |
+| `dns-rebinding` | `MP304` | `provider-only` |
+| `redirect` | `MP307` | `provider-only` |
+| `credential-header` | `MP207` | `not-read` |
+| `unsupported-method` | `MP207` | `not-read` |
+| `unsupported-model` | `MP207` | `not-read` |
+| `oversized` | `MP201` | `not-read` |
+| `nested` | `MP104` | `not-read` |
+| `request-flood` | `MP217` | `not-read` |
+| `response-flood` | `MP310` | `provider-only` |
+| `cross-job` | `MP401` | `not-read` |
+| `replay-after-expiry` | `MP404` | `not-read` |
+| `call-after-cancellation` | `MP406` | `not-read` |
+
+An omitted, duplicate, reordered, unknown, unexpected-outcome, stale-digest,
+accepted-job substitution, policy mismatch, or unexecuted row refuses. Row ids
+select only code-owned functions; manifest text cannot name an import, host,
+path, command, or adapter.
+
+The positive row runs the complete loopback runtime with an injected resolver,
+in-process exchange, fresh credential, fixed clocks, and exclusive temporary
+receipt. It checks the exact policy and JobSpec digest join, the registered
+origin, path, method and model, post-admission bearer injection, normalised
+guest response, three bounded receipt records, exact operator disclosure, and
+terminal cleanup. It scans seven closed surfaces: guest frames, receipts,
+events, diagnostics, argument fixture, environment fixture, and the produced
+temporary tree. The credential canary and input do not enter the guest frame;
+the credential, input, and output do not enter retained surfaces. The
+environment fixture is the credential's one authorised source and contains no
+model content.
+
+`model-proxy-conformance-result/v1` reports only the manifest, JobSpec and
+policy digests; bounded counts, byte sizes and nanosecond timings; the fixed
+outcome and disclosure state for every row; proof states; and cleanup state.
+Counts and elapsed time show that all rows ran. They are not a speed claim.
+The result always keeps the #698 JobSpec-acceptance receipt, #699 launch
+receipt, live provider, public pilot, and #702 Fiat integration/end-to-end
+digest join at `not-established`. Synthetic component evidence cannot change
+those states.
+
 ## Policy vocabulary
 
 The policy root has exactly `schema`, `compiler`, `job`, `provider`,
@@ -591,6 +649,14 @@ record bounds, scans retained bytes for the credential and model content, and
 checks the operator disclosure. The command makes no network call and claims
 no provider retention behaviour.
 
+Successful `conformance` emits one canonical
+`model-proxy-conformance-result/v1` line. It contains all fourteen fixed row
+outcomes, bounded counts, sizes and deterministic component timings, three
+digests, six component proof states, cleanup state, and the five explicit
+dependency gaps. It contains no credential, model input, model output, URL,
+header, provider request id, raw error, path, or exception text. The command
+uses only injected component adapters and makes no network call.
+
 Refusal diagnostics have exactly `schema`, `outcome=refused`, `code`, and
 `field`. `field` is a code-owned schema location, never an input value. CLI
 argument errors use the same value-free shape and accept no abbreviated option
@@ -675,6 +741,8 @@ JobSpec bytes, job id, or exception text.
 | `MP408` | Receipt limit, closed shape, or byte ceiling refuses | Receipt schema |
 | `MP409` | Token counter or provider usage disagrees with the reservation | Lifecycle accounting |
 | `MP410` | Lifecycle manifest path, shape, execution, or expected result disagrees | Manifest check |
+| `MP500` | Conformance manifest path, shape, digest, inventory, order, or expected result disagrees | Manifest check |
+| `MP501` | A conformance row was unexecuted, unsafe, incomplete, or produced another result | Conformance execution |
 
 ## Golden command
 
@@ -735,3 +803,15 @@ provider-usage disagreement, receipt schema and filesystem failures including
 ancestor replacement and parent-directory synchronisation, content absence,
 constructor cleanup, response-close and terminal publication failure,
 truncated terminal input, unserved admission refusal, and operator-text parity.
+
+Run the complete positive and hostile component proof with:
+
+```bash
+mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py conformance --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json
+```
+
+The command requires all fourteen rows and refuses a missing, duplicate,
+reordered, unknown, stale, mismatched, or unexecuted row. Its zero exit proves
+only this synthetic component execution. It does not establish the #698
+acceptance receipt, #699 launch receipt, a live provider, a public pilot, or an
+#702 Fiat integration/end-to-end digest join.
