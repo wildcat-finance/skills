@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 929,
-  "total_bytes": 20321270,
+  "file_count": 956,
+  "total_bytes": 20581577,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -19,7 +19,21 @@
     },
     {
       "pattern": "plugins/*/tests/**",
-      "reason": "development suites remain in the full source checkout"
+      "exceptions": [
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/invalid-unicode.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/jobspec.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
+        "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
+      ],
+      "reason": "development suites and other fixtures remain in the full source checkout; the listed closed model-proxy-v1 fixture set closes the portable commands and vectors advertised by the copied reference"
     },
     {
       "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
@@ -45,7 +59,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "5b661db752923946489b704877cdc13f78d4a9360cf022e9e05f83a8770bbb4e",
+      "sha256": "19eeb478f6ed3ccaf9df1ff56268019b30649f502e80731f8a804e46b039fcef",
       "source": null
     },
     {
@@ -101,6 +115,12 @@
       "path": "docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md",
       "sha256": "6b2423a835da1b0b2f5773d32fd5cb23fadb1c648768b8ee4e0c075634164db4",
       "source": "docs/decisions/ADR-023-store-kronos-working-state-on-a-dedicated-git-ref.md"
+    },
+    {
+      "bytes": 3229,
+      "path": "docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md",
+      "sha256": "ced2f1d349a2adb63bd5dfed98343233b1220d827ee6ab4a2573506b484ecb54",
+      "source": "docs/decisions/ADR-046-use-a-job-scoped-model-proxy.md"
     },
     {
       "bytes": 3247,
@@ -1411,9 +1431,9 @@
       "source": "plugins/hexaemeron/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 20231,
+      "bytes": 20496,
       "path": "plugins/hexaemeron/README.md",
-      "sha256": "740abe47279d4cd9aada913bb71014297a4c7554babc912a811b92b0cc5c8b5e",
+      "sha256": "32d779fff204834d9c03bded3d4a62f021c5670fbac8f67d39f60c7b65d4d5e8",
       "source": "plugins/hexaemeron/README.md"
     },
     {
@@ -2527,22 +2547,106 @@
       "source": "plugins/hexaemeron/skills/metron/scripts/metron.py"
     },
     {
-      "bytes": 2293,
+      "bytes": 2983,
       "path": "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
-      "sha256": "3c147ed8933d0a326be0d5b8bb21364ac7fb626e9f12f920d12bf388faa3675b",
+      "sha256": "0ebd24ade9b2db09fa5992370e3cb60b2c2193154181dd36c54ea2c4c0cad67a",
       "source": "plugins/hexaemeron/skills/phylax/EVOLUTION.md"
     },
     {
-      "bytes": 21618,
+      "bytes": 23458,
       "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-      "sha256": "b8943913d56225bdf983f56cec226946168219a401516fcd795a17760f29087f",
+      "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d",
       "source": "plugins/hexaemeron/skills/phylax/SKILL.md"
     },
     {
-      "bytes": 234,
+      "bytes": 237,
       "path": "plugins/hexaemeron/skills/phylax/agents/openai.yaml",
-      "sha256": "8bfd144dc3f1d5870e4c65aee2c2bda783b8efedc6d42748de66de337f58f444",
+      "sha256": "a88295a6901193f54f2cad610a260cc188e1509d4155c2e16e2bf32ab5bc4446",
       "source": "plugins/hexaemeron/skills/phylax/agents/openai.yaml"
+    },
+    {
+      "bytes": 47983,
+      "path": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md",
+      "sha256": "dea4cc8ab57bab766513a30165391c14298a8d4b7ecae1bd9f6ad4a0259d8271",
+      "source": "plugins/hexaemeron/skills/phylax/references/model-proxy-v1.md"
+    },
+    {
+      "bytes": 5938,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy.py",
+      "sha256": "ce03c290ebbc5c6a00568fc98ff8d0dbb6f9e45aa73b970736bbcae041a825dc",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy.py"
+    },
+    {
+      "bytes": 2304,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/__init__.py",
+      "sha256": "b9738aef76e53aa31e8867aea062fc12a9c3dec10bc9e2a4bacb99f008b7820d",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/__init__.py"
+    },
+    {
+      "bytes": 7396,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/canonical.py",
+      "sha256": "37ee0b33389a9fe3809e643dc005baf9875214140d224becd78dbf6198477d71",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/canonical.py"
+    },
+    {
+      "bytes": 29643,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py",
+      "sha256": "fc53680017d329615aa9b1b60983e86d0ca6d00bd358de0d1d1913eee5024185",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py"
+    },
+    {
+      "bytes": 780,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/errors.py",
+      "sha256": "d8e540417bebf62d9127751b0d831def185ecaa146fc632e5d5db8749ac68c07",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/errors.py"
+    },
+    {
+      "bytes": 18529,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py",
+      "sha256": "b5d41725dc835ca248635974fe530e1a47d1731a7be8da0bb0f98945c995f150",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py"
+    },
+    {
+      "bytes": 48845,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py",
+      "sha256": "c797c2e6b1e9c610e5576b63f4397ace6a095addb4ec46291498f5cf47c8ff77",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py"
+    },
+    {
+      "bytes": 2457,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/operator.py",
+      "sha256": "de864323104ed0ad7ad954d98fbefe3a427d833ea0c78a9cb0c4e211b0dcea7c",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/operator.py"
+    },
+    {
+      "bytes": 11129,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py",
+      "sha256": "97adc9dd19bef010367a130b43dfd5dc1553d29e706dcec6d7bfdf0f7538491a",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py"
+    },
+    {
+      "bytes": 3759,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/profiles.py",
+      "sha256": "984c1a66e4ecd776faec34391730f70c7a54db4d110cf2992b0e102127a7dde6",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/profiles.py"
+    },
+    {
+      "bytes": 25219,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py",
+      "sha256": "3efb8d5e24e3675fe082233c612f4d31f6fd0875cedf02a8b33dcfd4f7742f29",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py"
+    },
+    {
+      "bytes": 20046,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/receipts.py",
+      "sha256": "7a12638f16e13c26e38d73861aa789de02bd48fdfd12f817ab8264c0a5b61733",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/receipts.py"
+    },
+    {
+      "bytes": 19190,
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py",
+      "sha256": "f6269ea5e83005b753b12a7f8086a5072a88255dcccf03f1af0756dbdd980f59",
+      "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py"
     },
     {
       "bytes": 31593,
@@ -2777,6 +2881,78 @@
       "path": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
       "sha256": "cc0a596763856c2a71ea8e51f61b892cc29f42c6c1a2e0ca4cc33e206c2ca71e",
       "source": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py"
+    },
+    {
+      "bytes": 1683,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
+      "sha256": "cf162795508aa83a5d4cc082b89378d4df366d4274f1b18daf89967a499f8ee7",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json"
+    },
+    {
+      "bytes": 56,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
+      "sha256": "ac45a26f08fced2d70748de952af377108c2f44403d6522ec5a3ad3ba2371b9f",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json"
+    },
+    {
+      "bytes": 31,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
+      "sha256": "9d15b752932c676ef99048b18cadb228b38913a5f01c25b66de53998cbc74610",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json"
+    },
+    {
+      "bytes": 1944,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json",
+      "sha256": "503cfb2a9e3f0790fc775c5f2cd387f98b8abd808b1ecfa413a2b6e50199fac1",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json"
+    },
+    {
+      "bytes": 150,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/invalid-unicode.json",
+      "sha256": "c743092d600af5101252b5b354724522e02f530c51ad3e99f33e5f1e9177e714",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/invalid-unicode.json"
+    },
+    {
+      "bytes": 1016,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/jobspec.json",
+      "sha256": "524a4f49bd13077b331e1477dc3c11fffcea0efd446dac735918b377a1c96b79",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/jobspec.json"
+    },
+    {
+      "bytes": 467,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json",
+      "sha256": "bf952cf7a81cec1ca98150661d993d47c6993e68f519271ebd80e8ea3d5e73af",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json"
+    },
+    {
+      "bytes": 1442,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json",
+      "sha256": "313e772d049b5f1adf06e041c0008e79943aa52661f01259a12ad64425698f12",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json"
+    },
+    {
+      "bytes": 1393,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json",
+      "sha256": "4cc6fa96d735b11750545d89b1fe52bce0be3c0b31b87136e34c87af1564fbc8",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json"
+    },
+    {
+      "bytes": 65,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256",
+      "sha256": "724f7fd9ea4d01e257ade2952c9f1699a024daa3bcda37171614c6140582337c",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256"
+    },
+    {
+      "bytes": 1628,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
+      "sha256": "a5b82c671b38df9101f84cfdeffb9752aa043c573bd9d33671d7261c4b64aaa0",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json"
+    },
+    {
+      "bytes": 1187,
+      "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
+      "sha256": "a96f4f0e19052b173450895466005ad3bc5c530058792063289d4601c6e5c553",
+      "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
     },
     {
       "bytes": 2719,

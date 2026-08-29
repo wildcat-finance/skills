@@ -83,6 +83,8 @@ GUARD_PATH_BY_OWNER = {
 # - tests/promise_machine_coverage.json is the sole current-main path overlap;
 #   the current map and rows are retained and only the reviewed reporter
 #   digest for the reconstructed runner is refreshed.
+# - The later #700 composition retains that map and adds the reviewed Phylax
+#   model-proxy promise digest without changing the archived source bytes.
 # - The live scheduling decision is physically renamed from the packet's
 #   ADR-037 path to the then-free number 038 because current main introduced
 #   an unrelated ADR-037 decision after the patch preimage; the logical
@@ -132,7 +134,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
     ),
     "tests/promise_machine_coverage.json": (
-        "e749f49acd9e2d042159f3e8daa5dd794fba9be61c241802963cb08f21fe20ee"
+        "ec5ca761c91910f116e99da8077c15a4a715aabef146d407a16fe6a255c934d8"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
@@ -193,7 +195,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "7b5b9bc7049cecf2de268a163f7429f0a4e14ff2203cdb32907379414d59f591"
     ),
     "tests/promise_machine_coverage.json": (
-        "e749f49acd9e2d042159f3e8daa5dd794fba9be61c241802963cb08f21fe20ee"
+        "ec5ca761c91910f116e99da8077c15a4a715aabef146d407a16fe6a255c934d8"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
@@ -998,6 +1000,22 @@ def bounded_fd_bytes(file_descriptor, maximum, label):
     if before.st_size > maximum:
         raise InoculationError(f"{label} exceeds {maximum} bytes")
 
+    first_pass = bytearray()
+    try:
+        while len(first_pass) <= maximum:
+            chunk = os.pread(
+                file_descriptor,
+                min(65_536, maximum + 1 - len(first_pass)),
+                len(first_pass),
+            )
+            if not chunk:
+                break
+            first_pass.extend(chunk)
+    except OSError as error:
+        raise InoculationError(f"{label} read failed: {error}") from None
+    if len(first_pass) > maximum:
+        raise InoculationError(f"{label} exceeds {maximum} bytes")
+
     payload = bytearray()
     try:
         while len(payload) <= maximum:
@@ -1027,7 +1045,11 @@ def bounded_fd_bytes(file_descriptor, maximum, label):
         after.st_mtime_ns,
         after.st_ctime_ns,
     )
-    if before_identity != after_identity or len(payload) != after.st_size:
+    if (
+        before_identity != after_identity
+        or len(payload) != after.st_size
+        or payload != first_pass
+    ):
         raise InoculationError(f"{label} changed while it was read")
     return bytes(payload)
 
