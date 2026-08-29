@@ -370,12 +370,14 @@ class TestControllerCurrency(HexctlCase):
             state = json.load(handle)
         self.assertIn("controller_currency", state["receipts"])
         del state["receipts"]["controller_currency"]
+        del state["receipts"]["run_anchor"]
         with open(state_path, "w", encoding="utf-8") as handle:
             json.dump(state, handle)
         ledger_path = os.path.join(self.target, ".hexaemeron", "ledger.jsonl")
         with open(ledger_path, encoding="utf-8") as handle:
             entries = [json.loads(line) for line in handle if line.strip()]
         del entries[0]["data"]["controller_currency"]
+        del entries[0]["data"]["run_anchor_sha256"]
         entries[0]["state"] = module.state_fingerprint(state)
         entries[0]["hash"] = hashlib.sha256(
             module.canonical(

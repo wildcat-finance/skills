@@ -271,6 +271,11 @@ CHECKPOINT_MANIFEST_BYTES_MAX = 1024 * 1024
 CHECKPOINT_PATH_BYTES_MAX = 1024
 CHECKPOINT_IO_CHUNK = 64 * 1024
 
+RUN_ANCHOR_SCHEMA = "fiat-run-anchor/v1"
+RUN_ANCHOR_RECEIPT = "run_anchor"
+RUN_ANCHOR_REPOSITORY_UNBOUND = {"status": "unbound"}
+RUN_ANCHOR_TASK_NONE = {"kind": "none"}
+
 
 def scoped_path(base_dir: str, supplied: str, label: str) -> str:
     """Resolve one path and refuse anything outside the target directory."""
@@ -983,6 +988,48 @@ def run_branch_of(state: dict):
     return state.get("run_branch")
 
 
+def init_starting_commit(base_dir: str, starting_ref: str) -> str:
+    """Resolve one validated init ref before the command may write anything."""
+    if not isinstance(starting_ref, str) or not starting_ref:
+        die("--base must name a branch or one full commit SHA")
+    if COMMIT_RE.fullmatch(starting_ref):
+        bounded_git(
+            base_dir,
+            ["cat-file", "-e", f"{starting_ref}^{{commit}}"],
+            "starting base does not resolve to a commit",
+        )
+        return starting_ref
+    check_branch_name(starting_ref)
+    expected_ref = f"refs/heads/{starting_ref}"
+    data = bounded_git(
+        base_dir,
+        ["show-ref", "--verify", "--hash", expected_ref],
+        "starting base does not resolve to a local branch",
+    )
+    lines = [
+        line.strip()
+        for line in tool_text(data, "starting base").splitlines()
+        if line.strip()
+    ]
+    if len(lines) != 1 or not COMMIT_RE.fullmatch(lines[0]):
+        die("starting base did not resolve to one full commit SHA")
+    return lines[0]
+
+
+def init_controller_identity() -> dict:
+    """The controller identity an init-owned anchor records."""
+    version = ledger_version(
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            os.pardir,
+            "EVOLUTION.md",
+        )
+    )
+    if version is None:
+        die("init cannot resolve the controller version")
+    return {"name": "hexctl", "state_version": 1, "version": version}
+
+
 def integration_base_of(state: dict) -> str:
     """The named branch a completed run integrates into.
 
@@ -1691,19 +1738,8 @@ def parse_value(raw: str):
 
 # ------------------------------------------------------------------ commands
 
-def cmd_init(args) -> None:
-    origin_root = os.path.realpath(args.dir)
-    root = state_root(args.dir)
-    if os.path.exists(state_path(args.dir)):
-        die(f"state already exists at {root}; resume with `hexctl next`")
-    waiver = None
-    if args.controller_currency_waiver is not None:
-        waiver = args.controller_currency_waiver.strip()
-        if not waiver:
-            die(
-                "--controller-currency-waiver needs a reason; an empty one "
-                "records nothing"
-            )
+def init_preflight(args) -> dict:
+    """Resolve every immutable anchor input before init takes its write lock."""
     prefix = DEFAULT_CONFIG["git"]["run_branch_prefix"]
     issue_number = (
         task_issue_number(args.task_issue) if args.task_issue is not None else None
@@ -1723,8 +1759,60 @@ def cmd_init(args) -> None:
                 f"--run-branch for task issue {issue_number} must start with "
                 f"'{required_prefix}'"
             )
-    if run_branch == args.base:
-        die("--run-branch must differ from --base; the run needs its own branch")
+    integration_branch = (
+        DEFAULT_CONFIG["git"]["base"]
+        if COMMIT_RE.fullmatch(args.base)
+        else args.base
+    )
+    check_branch_name(integration_branch)
+    if run_branch == integration_branch:
+        die(
+            "--run-branch must differ from --base (the integration branch); "
+            "the run needs its own branch"
+        )
+    repo_root = repository_root(args.dir)
+    starting_commit = init_starting_commit(args.dir, args.base)
+    controller = init_controller_identity()
+    repository = target_repository_binding(args.dir)
+    task = run_anchor_task(args.task_issue, repository)
+    candidate = os.path.join(
+        repo_root, *WORKTREE_HOME, flattened_run_branch(run_branch)
+    )
+    if os.path.exists(state_path(candidate)):
+        die(
+            f"this run already has a worktree at {candidate}; "
+            f"resume with `hexctl --dir {candidate} next`"
+        )
+    worktree = check_worktree_path(repo_root, candidate)
+    refuse_checked_out_branch(args.dir, run_branch)
+    return {
+        "controller": controller,
+        "integration_branch": integration_branch,
+        "repository": repository,
+        "run_branch": run_branch,
+        "starting_commit": starting_commit,
+        "task": task,
+        "worktree": worktree,
+    }
+
+
+def cmd_init(args) -> None:
+    plan = getattr(args, "_init_preflight", None) or init_preflight(args)
+    origin_root = os.path.realpath(args.dir)
+    root = state_root(args.dir)
+    if os.path.exists(state_path(args.dir)):
+        die(f"state already exists at {root}; resume with `hexctl next`")
+    waiver = None
+    if args.controller_currency_waiver is not None:
+        waiver = args.controller_currency_waiver.strip()
+        if not waiver:
+            die(
+                "--controller-currency-waiver needs a reason; an empty one "
+                "records nothing"
+            )
+    run_branch = plan["run_branch"]
+    starting_commit = plan["starting_commit"]
+    integration_branch = plan["integration_branch"]
     frontier = None
     if args.frontier:
         ledger = args.frontier if os.path.isabs(args.frontier) else \
@@ -1749,7 +1837,7 @@ def cmd_init(args) -> None:
     # refusal still costs nothing: no worktree, no state, no ledger, no
     # breadcrumb.
     repo_root = repository_root(args.dir)
-    candidate = run_worktree_path(args.dir, run_branch)
+    candidate = plan["worktree"]
     if os.path.exists(state_path(candidate)):
         die(
             f"this run already has a worktree at {candidate}; "
@@ -1782,6 +1870,8 @@ def cmd_init(args) -> None:
             file=sys.stderr,
         )
     provenance = {**currency, "waiver": waiver}
+    if provenance.get("ledger_version") != plan["controller"]["version"]:
+        die("controller version changed during init; retry from a stable controller")
 
     home = os.path.dirname(worktree)
     os.makedirs(home, exist_ok=True)
@@ -1797,10 +1887,10 @@ def cmd_init(args) -> None:
             fh.write("*\n")
     bounded_git(
         args.dir,
-        ["worktree", "add", "-b", run_branch, worktree, args.base],
+        ["worktree", "add", "-b", run_branch, worktree, starting_commit],
         refusal=(
             f"could not create the run worktree at {worktree} "
-            f"for '{run_branch}' off '{args.base}'"
+            f"for '{run_branch}' off '{starting_commit}'"
         ),
     )
 
@@ -1826,7 +1916,7 @@ def cmd_init(args) -> None:
         "version": 1,
         "controller": "hexctl",
         "topic": args.topic,
-        "base": args.base,
+        "base": starting_commit,
         "run_branch": run_branch,
         "created_at": now(),
         "phase": "study",
@@ -1838,13 +1928,23 @@ def cmd_init(args) -> None:
         "frontier": frontier,
     }
     state["config"]["audit"]["log_path"] = run_audit_log_path(run_branch)
+    state["config"]["git"]["base"] = integration_branch
     state["config"]["git"]["worktree"] = worktree
     state["config"]["git"]["origin"] = origin_root
+    run_anchor = build_run_anchor(state, plan["repository"], plan["controller"])
+    if run_anchor["task"] != plan["task"]:
+        die("init task identity changed while constructing the run anchor", 1)
+    state["receipts"][RUN_ANCHOR_RECEIPT] = run_anchor
+    run_anchor_sha256 = hashlib.sha256(
+        canonical(run_anchor).encode("utf-8")
+    ).hexdigest()
     init_data = {
         "topic": args.topic,
-        "base": args.base,
+        "base": starting_commit,
+        "integration_branch": integration_branch,
         "run_branch": run_branch,
         "controller_currency": provenance,
+        "run_anchor_sha256": run_anchor_sha256,
     }
     if args.task_issue is not None:
         init_data["task_issue"] = args.task_issue
@@ -1856,7 +1956,7 @@ def cmd_init(args) -> None:
         die(f"could not record the run at {root}")
     print(
         f"initialised {root} (topic: {args.topic}); "
-        f"run branch {run_branch} off {args.base}"
+        f"run branch {run_branch} off {starting_commit}"
     )
     print(f"run worktree {worktree}")
     print(f"work in it: hexctl --dir {worktree} next")
@@ -2591,7 +2691,12 @@ def cmd_currency(args) -> None:
         sys.exit(3)
 
 
-RESERVED_RECEIPTS = {"study", "runbook", "run_observations"}
+RESERVED_RECEIPTS = {
+    "study",
+    "runbook",
+    "run_observations",
+    RUN_ANCHOR_RECEIPT,
+}
 
 
 def cmd_record(args) -> None:
@@ -3009,6 +3114,12 @@ def cmd_config(args) -> None:
     value = parse_value(args.value)
     if args.path == "audit.log_path":
         value = check_audit_log_path(args.dir, state, value)
+    anchor = state["receipts"].get(RUN_ANCHOR_RECEIPT)
+    if anchor is not None and args.path == "git.base":
+        die("config git.base is fixed by the init-owned run anchor")
+    if anchor is not None and args.path == "git":
+        if not isinstance(value, dict) or value.get("base") != node[leaf].get("base"):
+            die("config git.base is fixed by the init-owned run anchor")
     node[leaf] = value
     commit(args.dir, state, "config-set", {"path": args.path, "value": node[leaf]})
     print(f"set {args.path}")
@@ -7280,6 +7391,178 @@ def require_full_sha(value: object, label: str) -> str:
     return value
 
 
+def target_repository_binding(base_dir: str):
+    """Return one credential-free GitHub identity or an explicit unbound value.
+
+    A missing or non-GitHub origin is not silently promoted into a repository
+    identity.  Successful but ambiguous Git output is malformed and refuses.
+    """
+    status, data = bounded_run(
+        base_dir, "git", ["config", "--get-all", "remote.origin.url"]
+    )
+    if status == 1:
+        return dict(RUN_ANCHOR_REPOSITORY_UNBOUND)
+    if status != 0:
+        die("target origin could not be resolved")
+    try:
+        lines = [line.strip() for line in data.decode("utf-8").splitlines() if line.strip()]
+    except UnicodeDecodeError:
+        die("target origin is not UTF-8")
+    if len(lines) != 1:
+        die("target origin does not name one repository")
+    match = GITHUB_HTTPS_RE.fullmatch(lines[0]) or GITHUB_SSH_RE.fullmatch(lines[0])
+    if match is None:
+        return dict(RUN_ANCHOR_REPOSITORY_UNBOUND)
+    repository = match.group("repo").lower()
+    if (
+        not REPOSITORY_RE.fullmatch(repository)
+        or any(segment in (".", "..") for segment in repository.split("/"))
+    ):
+        die("target origin does not name one GitHub repository")
+    return repository
+
+
+def run_anchor_task(task_issue, repository, *, exit_code: int = 2):
+    """Project one init task into the anchor's closed task vocabulary."""
+    if task_issue is None:
+        return dict(RUN_ANCHOR_TASK_NONE)
+    if not isinstance(task_issue, str):
+        die("run anchor task receipt is malformed", exit_code)
+    match = GITHUB_ISSUE_RE.fullmatch(task_issue)
+    if match is None or not isinstance(repository, str):
+        return {
+            "kind": "external",
+            "sha256": hashlib.sha256(task_issue.encode("utf-8")).hexdigest(),
+        }
+    issue_repository = match.group("repo")
+    if isinstance(repository, str) and issue_repository.casefold() != repository.casefold():
+        die("task issue repository does not match target origin", exit_code)
+    return {"kind": "github-issue", "number": int(match.group("number"))}
+
+
+def build_run_anchor(
+    state: dict, repository, controller: dict, *, exit_code: int = 2
+) -> dict:
+    """Build the init-owned closed anchor from controller state."""
+    return {
+        "schema": RUN_ANCHOR_SCHEMA,
+        "controller": controller,
+        "initial_base_sha": state["base"],
+        "integration_branch": state["config"]["git"]["base"],
+        "repository": repository,
+        "run_branch": state["run_branch"],
+        "run_id": controller_run_id(state),
+        "task": run_anchor_task(
+            state["receipts"].get("task_issue"),
+            repository,
+            exit_code=exit_code,
+        ),
+    }
+
+
+def validate_run_anchor_shape(anchor) -> dict:
+    """Accept only the closed version-1 anchor language."""
+    fields = {
+        "schema",
+        "controller",
+        "initial_base_sha",
+        "integration_branch",
+        "repository",
+        "run_branch",
+        "run_id",
+        "task",
+    }
+    if not isinstance(anchor, dict) or set(anchor) != fields:
+        die("run anchor has an unsupported shape", 1)
+    controller = anchor.get("controller")
+    if (
+        not isinstance(controller, dict)
+        or set(controller) != {"name", "state_version", "version"}
+        or controller.get("name") != "hexctl"
+        or controller.get("state_version") != 1
+        or isinstance(controller.get("state_version"), bool)
+        or not isinstance(controller.get("version"), str)
+        or re.fullmatch(r"fiat-v[0-9]+\.[0-9]+\.[0-9]+", controller["version"])
+        is None
+    ):
+        die("run anchor controller identity is malformed", 1)
+    repository = anchor.get("repository")
+    if not (
+        (
+            isinstance(repository, str)
+            and REPOSITORY_RE.fullmatch(repository) is not None
+            and repository == repository.lower()
+        )
+        or repository == RUN_ANCHOR_REPOSITORY_UNBOUND
+    ):
+        die("run anchor repository identity is malformed", 1)
+    task = anchor.get("task")
+    task_valid = False
+    if isinstance(task, dict):
+        if task == RUN_ANCHOR_TASK_NONE:
+            task_valid = True
+        elif set(task) == {"kind", "number"}:
+            number = task.get("number")
+            task_valid = (
+                task.get("kind") == "github-issue"
+                and isinstance(number, int)
+                and not isinstance(number, bool)
+                and number > 0
+            )
+        elif set(task) == {"kind", "sha256"}:
+            task_valid = (
+                task.get("kind") == "external"
+                and isinstance(task.get("sha256"), str)
+                and re.fullmatch(r"[0-9a-f]{64}", task["sha256"]) is not None
+            )
+    if not task_valid:
+        die("run anchor task identity is malformed", 1)
+    if (
+        anchor.get("schema") != RUN_ANCHOR_SCHEMA
+        or not isinstance(anchor.get("initial_base_sha"), str)
+        or COMMIT_RE.fullmatch(anchor["initial_base_sha"]) is None
+        or not isinstance(anchor.get("integration_branch"), str)
+        or not branch_name_ok(anchor["integration_branch"])
+        or not isinstance(anchor.get("run_branch"), str)
+        or not branch_name_ok(anchor["run_branch"])
+        or anchor["run_branch"] == anchor["integration_branch"]
+        or not isinstance(anchor.get("run_id"), str)
+        or re.fullmatch(r"fiat-[0-9a-f]{64}", anchor["run_id"]) is None
+    ):
+        die("run anchor has malformed semantic fields", 1)
+    return anchor
+
+
+def verify_run_anchor(base_dir: str, state: dict, initial_entry: dict | None) -> None:
+    """Verify every init join when a version-1 run anchor is present."""
+    receipts = state["receipts"]
+    initial_data = as_dict(as_dict(initial_entry).get("data"))
+    if RUN_ANCHOR_RECEIPT not in receipts:
+        if "run_anchor_sha256" in initial_data:
+            die("run anchor is missing from an anchored initial ledger event", 1)
+        return
+    anchor = validate_run_anchor_shape(receipts[RUN_ANCHOR_RECEIPT])
+    controller_currency = as_dict(receipts.get("controller_currency"))
+    controller = {
+        "name": state.get("controller"),
+        "state_version": state.get("version"),
+        "version": controller_currency.get("ledger_version"),
+    }
+    origin = configured_git_path(state, "origin")
+    if not isinstance(origin, str) or not origin:
+        die("run anchor cannot verify the target origin", 1)
+    repository = target_repository_binding(origin)
+    expected = build_run_anchor(state, repository, controller, exit_code=1)
+    if anchor != expected:
+        die("run anchor does not match controller state, origin, or task", 1)
+    digest = hashlib.sha256(canonical(anchor).encode("utf-8")).hexdigest()
+    if (
+        as_dict(initial_entry).get("event") != "init"
+        or initial_data.get("run_anchor_sha256") != digest
+    ):
+        die("run anchor does not match the initial ledger event", 1)
+
+
 def target_repository(base_dir: str) -> str:
     data = bounded_git(
         base_dir,
@@ -7482,13 +7765,13 @@ def inspect_pull_request(
     head, base = payload.get("head"), payload.get("base")
     head_ref = head.get("ref") if isinstance(head, dict) else None
     base_ref = base.get("ref") if isinstance(base, dict) else None
-    if head_ref != expected_head or base_ref != expected_base:
-        die("pull request topology does not match the expected head and base")
-    returned_head = head.get("sha")
+    returned_head = head.get("sha") if isinstance(head, dict) else None
     if not isinstance(returned_head, str) or not COMMIT_RE.fullmatch(returned_head):
         die("pull request topology has no full head SHA")
     if head_sha is not None and returned_head != head_sha:
         die(f"pull request head does not match the {expected_head_label}")
+    if head_ref != expected_head or base_ref != expected_base:
+        die("pull request topology does not match the expected head and base")
     merged = payload.get("merged")
     if not isinstance(merged, bool):
         die("pull request topology is missing its merged state")
@@ -7789,7 +8072,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         packet["brief"] = {
             "topic": state["topic"],
             "target_dir": root,
-            "base_ref": state["base"],
+            "base_ref": integration_base_of(state),
             "output_path": scoped_path(
                 root, os.path.join(STATE_DIR_NAME, "study.md"), "study output"
             ),
@@ -10046,6 +10329,7 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
     prev = "genesis"
     count = 0
     last_state = None
+    initial_entry = None
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh, 1):
             if not line.strip():
@@ -10070,12 +10354,15 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
                 die(f"ledger chain broken at line {i}", 1)
             prev = entry["hash"]
             last_state = entry["state"]
+            if initial_entry is None:
+                initial_entry = entry
             count += 1
     if last_state is not None and state_fingerprint(state) != last_state:
         die(
             "state file does not match the last ledger entry; "
             "state.json was edited outside hexctl", 1
         )
+    verify_run_anchor(base_dir, state, initial_entry)
     study_receipt = as_dict(as_dict(state.get("receipts")).get("study"))
     if study_receipt.get("sha256") is not None:
         receipted_source(base_dir, state, "study")
@@ -10353,6 +10640,8 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = build_parser().parse_args()
     if args.fn.__name__ in MUTATING:
+        if args.fn.__name__ == "cmd_init":
+            args._init_preflight = init_preflight(args)
         with held_lock(args.dir, args.fn.__name__):
             args.fn(args)
         return

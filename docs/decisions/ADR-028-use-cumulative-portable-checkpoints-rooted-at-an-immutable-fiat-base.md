@@ -14,6 +14,10 @@ Amended, 2026-08-29: Fiat owns a checked controller-state capsule and
 same-ledger relocation. The standing outer transport and semantic identity
 remain separate concerns.
 
+Amended, 2026-08-29: future Fiat runs resolve one immutable starting commit
+at initialization and bind it through an init-owned run anchor. Semantic
+checkpoint identity is separate from exact capsule and archive bytes.
+
 ## Context
 
 Fiat's controller state and receipt ledger live under the run worktree's
@@ -132,6 +136,39 @@ ref boundary and restore rule in the issue note. Fiat's native commands neither
 build nor publish those objects. This retained manual procedure is the accepted
 trade for closing the path-relocation gap without combining controller state,
 credentials, archive parsing and network writes in one operation.
+
+## Amendment: Immutable run anchors and checkpoint identity (2026-08-29)
+
+For a new run, Fiat resolves the operator's starting branch or full commit to
+one full commit before initialization writes anything. The worktree starts
+from that commit and `state.base` retains it. The named branch that receives
+the completed delivery remains separate in `config.git.base`.
+
+Initialization owns a closed `fiat-run-anchor/v1` receipt. It joins the
+repository and task identity, run id, run branch, integration branch,
+controller identity and immutable starting commit. The initial ledger event
+binds the receipt digest. A later command cannot replace the receipt or change
+the integration branch it names. Verification accepts an absent receipt only
+for a legacy ledger that never claimed one; when a receipt is present, every
+join must still agree.
+
+Checkpoint meaning and transport bytes have different identities. The
+semantic identity is derived from the verified run anchor, accepted checkpoint
+boundary and controller evidence. The native manifest digest continues to
+name its exact manifest bytes and inventory. A future outer archive digest
+will name exact packed bytes. Repacking a carrier can therefore change its
+byte digest without changing checkpoint meaning.
+
+A legacy state whose base is a symbolic ref cannot mint a semantic checkpoint
+identity. The controller did not record which commit that ref named at
+initialization, so it refuses instead of rebuilding an anchor after the fact.
+
+Three alternatives remain rejected. Reusing the native manifest digest would
+confuse exact controller-capsule bytes with checkpoint meaning. Letting the
+outer archive define identity would bind the meaning to one transport and
+leave inspection unable to separate repacking from a changed checkpoint. The
+retired service, authority and lineage schemas would restore infrastructure
+and authority claims that same-ledger local continuation does not need.
 
 ## Alternatives
 
