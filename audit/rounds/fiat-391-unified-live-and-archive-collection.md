@@ -98,3 +98,19 @@ Elenchus verdict: guarded
 | S3-R1-03 | low | plugins/probitas/scripts/probitas.py | `cmd_collect` tested `routes[0]` for the adapter route. Correct only because of the order `routes_for` happens to build its tuple, and silently wrong the day that order changes. | fixed in ff45fbf4 |
 
 Leads not pursued: the fix commit ff45fbf4 changed tests as well as code. Both new guards fail against the unfixed parent by assertion with no infrastructure error and pass on the fixed tree, which is why this round's verdict is `guarded` where the step 2 rounds recorded `passed`. Two bounded things are recorded rather than fixed. The archive-only route's unreached note has always been the terse "venue was not harvested into the selected Alexandria index" and loses the venue description in the same way S3-R1-01 did; correcting it would change the digests Alexandria's checked-in demonstration pins, so it belongs to a change that owns those receipts rather than to this one. And `_collect_alexandria` still drops a coverage row for a venue the index holds but the registry does not know, silently, exactly as it did before this step; `translate` supports only Goldfinch and Clearpool and both are registered, so nothing reaches it today. The three items recorded under step 2 still stand.
+
+## Step 3, round 2 -- 2026-08-29T09:05:58Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-row-collapse=reviewed; unrequested-network=reviewed; schema-refusal=not-applicable; release-id-figures=not-applicable; overlap-attribution=reviewed; gap-double-count=reviewed; demo-receipt-drift=reviewed; markdown-injection=reviewed
+
+Not checked: nothing new. The same two step 2 concerns remain settled and the Pashov pair remains waived by the `security_suite` receipt.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the round re-ran the union end to end against an index built from Alexandria's demonstration, and the repaired note now reads, for maple, "api.maple.finance responds but disables introspection, so the query shape could not be established. Undercollateralised, so worth the work. Not reached by this run: no adapter ships for it; venue was not harvested into the selected Alexandria index." All five gates pass on that dossier. The three bundled lints exited 0, the Probitas suite reported 315 of 315, Alexandria 298, the repository suite 466, and the portable, Horos and whitespace checks each exited 0 with the working tree clean. The two items recorded under round 1 and the three under step 2 all still stand. Nothing else is open.
