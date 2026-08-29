@@ -1,0 +1,31 @@
+{
+  "name": "homologia",
+  "version": "0.1.0",
+  "description": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
+  "author": {
+    "name": "Wildcat Labs",
+    "url": "https://wildcat.finance"
+  },
+  "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/homologia",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "keywords": [
+    "solidity",
+    "python",
+    "typescript",
+    "differential-testing",
+    "fixed-point",
+    "rounding",
+    "wildcat"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Homologia",
+    "shortDescription": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
+    "longDescription": "A protocol's arithmetic gets written twice: once in Solidity, where it runs in unsigned 256-bit integers with an explicit rounding direction and a ray or wad scale, and again off-chain in a TypeScript SDK or a Python analytics job, where it runs in doubles, BigInt or Decimal with the token decimals applied by hand. Nothing in an ordinary test suite compares the two. A fuzzing campaign asks whether the contract agrees with itself; a lint asks whether a signing prompt is readable, not whether its number is right. Homologia takes one pinned pair, a contract computation and one off-chain mirror, and a declared vector set whose expected answers carry a provenance class, then reports whether the pair agrees integer for integer and preserves every divergence as a specimen. Exact equality is the default and a tolerance has to be declared and is echoed in the verdict it weakens. A verdict says the pair agrees; it never says either side is correct, because two implementations of the same misunderstanding agree perfectly.",
+    "developerName": "Wildcat Labs",
+    "category": "Developer Tools",
+    "capabilities": [],
+    "defaultPrompt": "Use $homologia to check whether this contract computation and its off-chain mirror agree over declared vectors."
+  },
+  "license": "Apache-2.0"
+}

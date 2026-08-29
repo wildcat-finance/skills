@@ -740,6 +740,31 @@
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
     },
+    "homologia-scaffold-m": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_a_drifted_installed_root_law_copy_is_detected",
+      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially."
+    },
+    "homologia-scaffold-o": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_no_verb_prints_a_verdict_on_standard_output",
+      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version."
+    },
+    "homologia-scaffold-p": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace",
+      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value."
+    },
+    "homologia-scaffold-r": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from",
+      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go."
+    },
+    "homologia-scaffold-s": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_the_canonical_skill_states_the_declared_version",
+      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
+    },
     "horos-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/horos/tests/test_boundary.py",
@@ -1366,15 +1391,15 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "10bc0dd2e2a25df8d56e140aba1d16d29b6c784e96c07361822800b2eec6fe18"
+        "sha256": "927862aa8985965145d75c717d509cc55bb43779cb0c14ccdd8e6b0cfda72f50"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
-        "sha256": "ca60f7d10a3749c164440cfdf9b6e9be59e3517a063758f5811d1dde2dcafcbf"
+        "sha256": "6c8a5eba777ca961b5cebc58fbb0990d5c0b6d0620f69efa768da66e110c873e"
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "b5ab4aeed353f9ca3f461bc579ef87738ea684d4d3426caa7f81d353adf4d078"
+        "sha256": "9589a112393ff93dc396a670c7403987cec0866309edff22ab37db7b3fa94f96"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
@@ -2832,6 +2857,22 @@
       "group": "vendored",
       "promise_id": "hexaemeron-x-ray-preaudit",
       "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
+    },
+    {
+      "promise_id": "homologia-scaffold-identity",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "homologia-scaffold-p",
+        "M": "homologia-scaffold-m",
+        "S": "homologia-scaffold-s",
+        "O": "homologia-scaffold-o",
+        "R": "homologia-scaffold-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
     }
   ],
   "run_observation": {
