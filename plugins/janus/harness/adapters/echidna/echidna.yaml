@@ -1,0 +1,32 @@
+# Echidna, over the manifest reader's property suite.
+#
+# The target is the suite file rather than the project, because the Janus
+# harness keeps its fuzz adapter outside `src` and `test`: crytic-compile
+# skips `./test/**` on the Foundry platform, so a suite under `test/` is
+# invisible to a project-level target.
+#
+#   echidna adapters/ManifestFuzz.sol --contract ManifestFuzz \
+#     --config adapters/echidna/echidna.yaml --format text
+#
+# testMode is `property`, so Echidna reads functions prefixed `echidna_` and
+# nothing else. GL01 to GL07 carry that prefix for this reason.
+testMode: property
+
+# One hundred thousand transactions. The suite drives manifest *structure* --
+# entry counts, symbol choices, call kinds, storage scopes -- and assembles the
+# JSON deterministically, so the search space is combinatorial rather than
+# textual and this limit covers it many times over.
+testLimit: 100000
+
+# Twenty calls per sequence. The reader is stateless, so depth buys little
+# here; the ghosts that record a violation are the only state that persists
+# across a sequence.
+seqLen: 20
+
+# A manifest that names an unresolvable symbol, an unknown call kind or an
+# unknown storage scope is *meant* to revert. Roughly half of all generated
+# manifests refuse by design, so a revert is not a property failing.
+shrinkLimit: 5000
+
+# Generated, never committed. Matches .gitignore's `**/corpus/`.
+corpusDir: adapters/echidna/corpus
