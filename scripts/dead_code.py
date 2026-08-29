@@ -10,17 +10,20 @@ deletes source and a finding count is never an exit gate.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import os
+import re
 import selectors
 import stat
 import subprocess
 import sys
 import time
+import uuid
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Callable
+from typing import Callable, Iterable
 
 SCHEMA_ID = "dead-code-report/v1"
 TOOL_ID = "dead-code"
@@ -39,8 +42,27 @@ MAX_BOUNDARY_BYTES = 4 * 1024 * 1024
 MAX_REPORT_BYTES = 32 * 1024 * 1024
 MAX_TRACKED_PATHS = 100_000
 MAX_PATH_BYTES = 4096
+MAX_PYTHON_FILE_BYTES = 4 * 1024 * 1024
+MAX_PYTHON_TOTAL_BYTES = 96 * 1024 * 1024
+MAX_COVERAGE_BYTES = 32 * 1024 * 1024
+MAX_COVERAGE_PROCESS_BYTES = 16 * 1024 * 1024
+MAX_COVERAGE_PROCESSES = 4096
+MAX_RUNNER_OUTPUT_BYTES = 32 * 1024 * 1024
+RUNNER_TIMEOUT_SECONDS = 3600
+CHECK_RUNNER = Path("scripts") / "run_checks.py"
+MONITOR_DIRECTORY = Path("scripts") / "dead_code_monitoring"
+COVERAGE_SCHEMA_ID = "dead-code-coverage/v1"
+COVERAGE_ACTIVE_ENV = "WILDCAT_DEAD_CODE_COVERAGE_ACTIVE"
+COVERAGE_OUTPUT_ENV = "WILDCAT_DEAD_CODE_COVERAGE_OUTPUT"
+CHECK_CONTAINMENT_ENV = "WILDCAT_CHECK_CONTAINMENT"
+PYTHON_ANALYSER_VERSION = "1"
+COVERAGE_ANALYSER_VERSION = "sys.monitoring/3.14"
 ANALYSER_STATES = frozenset({"ran", "not-available", "degraded", "failed"})
 CONFIDENCE_LEVELS = frozenset({"high", "medium", "low"})
+ANALYSER_RECORD_KINDS = frozenset({"file", "check"})
+ANALYSER_RECORD_STATES = frozenset(
+    {"parsed", "parse-error", "skipped", "passed", "failed", "unavailable"}
+)
 
 Analyser = Callable[
     [Path, "Universe"],
@@ -124,11 +146,30 @@ class Universe:
 
 
 @dataclass(frozen=True)
+class AnalyserRecord:
+    record_id: str
+    kind: str
+    state: str
+    detail: str
+    bytes_count: int
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "id": self.record_id,
+            "kind": self.kind,
+            "state": self.state,
+            "detail": self.detail,
+            "bytes": self.bytes_count,
+        }
+
+
+@dataclass(frozen=True)
 class AnalyserStatus:
     analyser_id: str
     state: str
     version: str | None
     detail: str
+    records: tuple[AnalyserRecord, ...] = ()
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -136,6 +177,7 @@ class AnalyserStatus:
             "state": self.state,
             "version": self.version,
             "detail": self.detail,
+            "records": [record.as_dict() for record in self.records],
         }
 
 
@@ -237,6 +279,7 @@ def run_process(
     timeout_seconds: int,
     output_limit: int,
     cwd_fd: int | None = None,
+    env: dict[str, str] | None = None,
 ) -> tuple[bytes, bytes, int]:
     """Run fixed argv while bounding time and combined captured output."""
     process_cwd: Path | None = cwd
@@ -261,6 +304,7 @@ def run_process(
             shell=False,
             pass_fds=pass_fds,
             preexec_fn=preexec_fn,
+            env=env,
         )
     except FileNotFoundError as error:
         raise Refusal(f"{argv[0]} is not available on PATH") from error
@@ -680,14 +724,1100 @@ def discover(root: Path, *, root_fd: int | None = None) -> Universe:
     )
 
 
+@dataclass(frozen=True)
+class ParsedPython:
+    path: str
+    module: str | None
+    tree: ast.Module
+    bytes_count: int
+    dynamic_boundaries: tuple[str, ...]
+    retained_names: frozenset[str]
+    imports: tuple[tuple[str, int], ...]
+
+
+@dataclass(frozen=True)
+class PythonSnapshot:
+    files: tuple[ParsedPython, ...]
+    records: tuple[AnalyserRecord, ...]
+    module_paths: dict[str, str]
+    reachable_paths: frozenset[str]
+    entry_paths: frozenset[str]
+    degraded: bool
+
+
+def python_module_name(path: str) -> str | None:
+    if not path.endswith(".py"):
+        return None
+    parts = list(PurePosixPath(path).parts)
+    if parts[-1] == "__init__.py":
+        parts.pop()
+    else:
+        parts[-1] = parts[-1][:-3]
+    if not parts or any(not part.isidentifier() for part in parts):
+        return None
+    return ".".join(parts)
+
+
+def _main_guard(node: ast.AST) -> bool:
+    if not isinstance(node, ast.If):
+        return False
+    test = node.test
+    if not isinstance(test, ast.Compare) or len(test.ops) != 1:
+        return False
+    if not isinstance(test.ops[0], (ast.Eq, ast.NotEq)) or len(test.comparators) != 1:
+        return False
+    sides = (test.left, test.comparators[0])
+    return any(
+        isinstance(left, ast.Name)
+        and left.id == "__name__"
+        and isinstance(right, ast.Constant)
+        and right.value == "__main__"
+        for left, right in (sides, tuple(reversed(sides)))
+    )
+
+
+def _call_name(node: ast.Call) -> str:
+    target = node.func
+    if isinstance(target, ast.Name):
+        return target.id
+    if isinstance(target, ast.Attribute):
+        return target.attr
+    return ""
+
+
+def _literal_exports(tree: ast.Module) -> set[str]:
+    exports: set[str] = set()
+    for node in tree.body:
+        if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+            continue
+        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+        if not any(isinstance(target, ast.Name) and target.id == "__all__" for target in targets):
+            continue
+        value = node.value
+        if not isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+            continue
+        exports.update(
+            item.value
+            for item in value.elts
+            if isinstance(item, ast.Constant) and isinstance(item.value, str)
+        )
+    return exports
+
+
+def _python_dynamic_boundaries(tree: ast.Module) -> tuple[str, ...]:
+    boundaries: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if node.decorator_list:
+                boundaries.add("decorator-registration")
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_name(node)
+        lowered = name.lower()
+        if any(token in lowered for token in ("register", "callback", "fixture", "route")):
+            boundaries.add("dynamic-registration")
+        if name in {"__import__", "import_module"}:
+            if not node.args or not (
+                isinstance(node.args[0], ast.Constant)
+                and isinstance(node.args[0].value, str)
+            ):
+                boundaries.add("computed-import")
+        if name == "getattr" and (
+            len(node.args) < 2
+            or not (
+                isinstance(node.args[1], ast.Constant)
+                and isinstance(node.args[1].value, str)
+            )
+        ):
+            boundaries.add("computed-getattr")
+    if _literal_exports(tree):
+        boundaries.add("literal-__all__")
+    return tuple(sorted(boundaries))
+
+
+def _retained_names(path: str, tree: ast.Module) -> frozenset[str]:
+    retained = _literal_exports(tree)
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if node.decorator_list or node.name.startswith("test_"):
+                retained.add(node.name)
+        if isinstance(node, ast.Call):
+            lowered = _call_name(node).lower()
+            if any(token in lowered for token in ("register", "callback", "fixture", "route")):
+                retained.update(
+                    argument.id for argument in node.args if isinstance(argument, ast.Name)
+                )
+        if _main_guard(node):
+            retained.update(
+                child.id
+                for child in ast.walk(node)
+                if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Load)
+            )
+    if path.startswith("tests/") or "/fixtures/" in f"/{path}":
+        retained.update(
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+        )
+    return frozenset(retained)
+
+
+def _import_targets(
+    module: str | None,
+    tree: ast.Module,
+    *,
+    package_module: bool,
+) -> tuple[tuple[str, int], ...]:
+    targets: set[tuple[str, int]] = set()
+    package = [] if module is None else module.split(".")
+    if not package_module:
+        package = package[:-1]
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            targets.update((alias.name, node.lineno) for alias in node.names)
+            continue
+        if not isinstance(node, ast.ImportFrom):
+            continue
+        if node.level:
+            remove = node.level - 1
+            base = package[: max(0, len(package) - remove)]
+        else:
+            base = []
+        if node.module:
+            base.extend(node.module.split("."))
+        if base:
+            targets.add((".".join(base), node.lineno))
+        for alias in node.names:
+            if alias.name != "*" and base:
+                targets.add((".".join([*base, alias.name]), node.lineno))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or _call_name(node) not in {"__import__", "import_module"}:
+            continue
+        if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):
+            targets.add((node.args[0].value, node.lineno))
+    return tuple(sorted(targets))
+
+
+def _check_map_entry_paths(
+    root: Path,
+    universe: Universe,
+    module_paths: dict[str, str],
+    *,
+    root_fd: int,
+) -> set[str]:
+    path = "tests/check-map-v1.json"
+    if path not in universe.analysed:
+        return set()
+    try:
+        raw = read_commit_regular(
+            root,
+            universe.commit,
+            path,
+            limit=MAX_BOUNDARY_BYTES,
+            label=path,
+            root_fd=root_fd,
+        )
+        document = json.loads(raw, object_pairs_hook=reject_duplicate_keys)
+    except (Refusal, DuplicateKey, json.JSONDecodeError):
+        return set()
+    checks = document.get("checks") if isinstance(document, dict) else None
+    if not isinstance(checks, dict):
+        return set()
+    seeds: set[str] = set()
+    for body in checks.values():
+        if not isinstance(body, dict):
+            continue
+        script = body.get("script")
+        if isinstance(script, str) and script.endswith(".py"):
+            seeds.add(script)
+        argv = body.get("argv")
+        if not isinstance(argv, list) or not argv or not all(isinstance(item, str) for item in argv):
+            continue
+        for item in argv[1:]:
+            if item.endswith(".py"):
+                seeds.add(item)
+            elif item in module_paths:
+                seeds.add(module_paths[item])
+    return seeds
+
+
+def parse_python_snapshot(root: Path, universe: Universe) -> PythonSnapshot:
+    parsed: list[ParsedPython] = []
+    records: list[AnalyserRecord] = []
+    total = 0
+    degraded = False
+    root_fd = open_repository_directory(root)
+    try:
+        for path in (item for item in universe.analysed if item.endswith(".py")):
+            if total >= MAX_PYTHON_TOTAL_BYTES:
+                degraded = True
+                records.append(
+                    AnalyserRecord(path, "file", "skipped", "aggregate Python byte limit reached", 0)
+                )
+                continue
+            try:
+                source = read_commit_regular(
+                    root,
+                    universe.commit,
+                    path,
+                    limit=MAX_PYTHON_FILE_BYTES,
+                    label=path,
+                    root_fd=root_fd,
+                )
+            except Refusal as error:
+                degraded = True
+                records.append(AnalyserRecord(path, "file", "parse-error", str(error), 0))
+                continue
+            size = len(source.encode("utf-8"))
+            total += size
+            if total > MAX_PYTHON_TOTAL_BYTES:
+                degraded = True
+                records.append(
+                    AnalyserRecord(path, "file", "skipped", "aggregate Python byte limit exceeded", size)
+                )
+                continue
+            try:
+                tree = ast.parse(source, filename=path, type_comments=True)
+            except (SyntaxError, ValueError, MemoryError) as error:
+                degraded = True
+                line = getattr(error, "lineno", None)
+                suffix = f" at line {line}" if isinstance(line, int) else ""
+                records.append(
+                    AnalyserRecord(path, "file", "parse-error", f"{type(error).__name__}{suffix}", size)
+                )
+                continue
+            dynamic = _python_dynamic_boundaries(tree)
+            detail = "parsed"
+            if dynamic:
+                detail += "; dynamic boundaries: " + ", ".join(dynamic)
+            records.append(AnalyserRecord(path, "file", "parsed", detail, size))
+            module = python_module_name(path)
+            parsed.append(
+                ParsedPython(
+                    path=path,
+                    module=module,
+                    tree=tree,
+                    bytes_count=size,
+                    dynamic_boundaries=dynamic,
+                    retained_names=_retained_names(path, tree),
+                    imports=_import_targets(
+                        module,
+                        tree,
+                        package_module=path.endswith("/__init__.py") or path == "__init__.py",
+                    ),
+                )
+            )
+
+        module_paths = {
+            item.module: item.path
+            for item in parsed
+            if item.module is not None
+        }
+        seeds = {
+            item.path
+            for item in parsed
+            if item.path.startswith("tests/")
+            or item.path.endswith("/__main__.py")
+            or any(_main_guard(node) for node in item.tree.body)
+        }
+        seeds.update(_check_map_entry_paths(root, universe, module_paths, root_fd=root_fd))
+    finally:
+        os.close(root_fd)
+
+    edges: dict[str, set[str]] = {item.path: set() for item in parsed}
+    for item in parsed:
+        for target, _line in item.imports:
+            probe = target
+            while probe:
+                destination = module_paths.get(probe)
+                if destination is not None:
+                    edges[item.path].add(destination)
+                    break
+                probe = probe.rpartition(".")[0]
+    reachable = set(path for path in seeds if path in edges)
+    pending = list(reachable)
+    while pending:
+        source = pending.pop()
+        for destination in edges[source]:
+            if destination not in reachable:
+                reachable.add(destination)
+                pending.append(destination)
+    return PythonSnapshot(
+        files=tuple(parsed),
+        records=tuple(sorted(records, key=lambda item: item.record_id)),
+        module_paths=module_paths,
+        reachable_paths=frozenset(reachable),
+        entry_paths=frozenset(path for path in seeds if path in edges),
+        degraded=degraded,
+    )
+
+
+def _candidate(
+    path: str,
+    symbol: str,
+    evidence: str,
+    confidence: str,
+    boundary: str,
+    *,
+    analyser_id: str = "python",
+) -> Finding:
+    return Finding(analyser_id, path, symbol, evidence, confidence, boundary)
+
+
+def _unused_bindings(item: ParsedPython) -> Iterable[Finding]:
+    loads = {
+        node.id
+        for node in ast.walk(item.tree)
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+    } | set(_literal_exports(item.tree))
+    confidence = "low" if item.dynamic_boundaries else "high"
+    boundary = (
+        "computed references or registration may consume this binding"
+        if item.dynamic_boundaries
+        else "scope-insensitive name loading can retain a shadowed binding"
+    )
+    seen_imports: set[tuple[str, int]] = set()
+    for node in ast.walk(item.tree):
+        if isinstance(node, ast.Import):
+            aliases = node.names
+        elif isinstance(node, ast.ImportFrom):
+            aliases = node.names
+        else:
+            continue
+        for alias in aliases:
+            if alias.name == "*":
+                continue
+            binding = alias.asname or alias.name.split(".")[0]
+            identity = (binding, node.lineno)
+            if binding in loads or binding.startswith("_") or identity in seen_imports:
+                continue
+            seen_imports.add(identity)
+            yield _candidate(
+                item.path,
+                f"{binding}@{node.lineno}",
+                f"import binding {binding} has no Name load in the parsed file",
+                confidence,
+                boundary,
+            )
+
+    for function in (
+        node
+        for node in ast.walk(item.tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    ):
+        function_loads = {
+            node.id
+            for node in ast.walk(function)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        assignments: dict[str, int] = {}
+        for node in ast.walk(function):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                assignments.setdefault(node.id, node.lineno)
+        for name, line in sorted(assignments.items()):
+            if name in function_loads or name.startswith("_"):
+                continue
+            yield _candidate(
+                item.path,
+                f"{function.name}.{name}@{line}",
+                f"local binding {name} is stored but has no Name load in {function.name}",
+                confidence,
+                "a nested dynamic lookup or scope-insensitive shadow may consume the binding",
+            )
+
+
+def _block_findings(item: ParsedPython) -> Iterable[Finding]:
+    confidence = "low" if item.dynamic_boundaries else "high"
+
+    def inspect(block: list[ast.stmt]) -> Iterable[Finding]:
+        terminator_line: int | None = None
+        for statement in block:
+            if terminator_line is not None:
+                yield _candidate(
+                    item.path,
+                    f"line:{statement.lineno}:unreachable",
+                    f"statement follows an unconditional terminator at line {terminator_line}",
+                    confidence,
+                    "exception handling, generated bytecode or parser limitations may alter control flow",
+                )
+            for field in ("body", "orelse", "finalbody"):
+                child = getattr(statement, field, None)
+                if isinstance(child, list):
+                    yield from inspect(child)
+            if isinstance(statement, ast.Try):
+                for handler in statement.handlers:
+                    yield from inspect(handler.body)
+            if isinstance(statement, (ast.Return, ast.Raise, ast.Break, ast.Continue)):
+                terminator_line = statement.lineno
+
+    yield from inspect(item.tree.body)
+    for node in ast.walk(item.tree):
+        if not isinstance(node, (ast.If, ast.While)):
+            continue
+        truth: bool | None = None
+        if isinstance(node.test, ast.Constant) and isinstance(node.test.value, (bool, type(None))):
+            truth = bool(node.test.value)
+        if truth is None:
+            continue
+        direction = "true" if truth else "false"
+        yield _candidate(
+            item.path,
+            f"line:{node.lineno}:constant-{direction}",
+            f"branch condition is the literal constant {node.test.value!r}",
+            confidence,
+            "the syntax may be an intentional feature flag or type-checking guard",
+        )
+
+
+def analyse_python(root: Path, universe: Universe) -> tuple[AnalyserStatus, tuple[Finding, ...]]:
+    snapshot = parse_python_snapshot(root, universe)
+    findings: list[Finding] = []
+    for item in snapshot.files:
+        findings.extend(_unused_bindings(item))
+        findings.extend(_block_findings(item))
+        if (
+            item.module is not None
+            and snapshot.entry_paths
+            and item.path not in snapshot.reachable_paths
+            and not item.path.endswith("/__init__.py")
+        ):
+            findings.append(
+                _candidate(
+                    item.path,
+                    "<module>",
+                    "no path from a declared check, test or __main__ seed reaches this module over static imports",
+                    "low",
+                    "computed imports, plugin manifests and prose entry points are outside the static import graph",
+                )
+            )
+    state = "degraded" if snapshot.degraded else "ran"
+    parsed_count = sum(record.state == "parsed" for record in snapshot.records)
+    detail = (
+        f"parsed {parsed_count}/{len(snapshot.records)} bounded Python files; "
+        f"{len(snapshot.entry_paths)} entry seed(s)"
+    )
+    if snapshot.degraded:
+        detail += "; one or more files did not parse"
+    return (
+        AnalyserStatus("python", state, PYTHON_ANALYSER_VERSION, detail, snapshot.records),
+        tuple(findings),
+    )
+
+
+def _json_document(payload: bytes | str, label: str) -> dict[str, object]:
+    try:
+        document = json.loads(payload, object_pairs_hook=reject_duplicate_keys)
+    except DuplicateKey as error:
+        raise Refusal(f"{label} repeats JSON key {error.args[0]}") from error
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        raise Refusal(f"{label} is not valid UTF-8 JSON: {error}") from error
+    if not isinstance(document, dict):
+        raise Refusal(f"{label} is not a JSON object")
+    return document
+
+
+def _python_argv(argv: object) -> bool:
+    if not isinstance(argv, list) or not argv or not all(isinstance(item, str) and item for item in argv):
+        return False
+    executable = PurePosixPath(argv[0]).name
+    return re.fullmatch(r"python(?:3(?:\.14)?)?", executable) is not None
+
+
+def _coverage_recurses(argv: list[str]) -> bool:
+    normalised = [item.replace(chr(92), "/") for item in argv]
+    return any(item.endswith("scripts/dead_code.py") for item in normalised) and "coverage" in argv
+
+
+def _runner_plan(root: Path, scopes: tuple[str, ...]) -> dict[str, object]:
+    argv = [sys.executable, CHECK_RUNNER.as_posix()]
+    for scope in scopes:
+        argv.extend(["--scope", scope])
+    argv.extend(["--plan", "--format", "json"])
+    stdout, stderr, returncode = run_process(
+        argv,
+        cwd=root,
+        timeout_seconds=GIT_TIMEOUT_SECONDS,
+        output_limit=MAX_RUNNER_OUTPUT_BYTES,
+    )
+    if returncode != 0:
+        detail = decode_output(stderr, "check-plan stderr").strip() or f"exit {returncode}"
+        raise Refusal(f"checked runner plan failed: {detail}")
+    plan = _json_document(stdout, "checked runner plan")
+    if plan.get("schema") != "wildcat.check-plan.v1":
+        raise Refusal("checked runner returned an unknown plan schema")
+    if plan.get("requested_scopes") != list(scopes):
+        raise Refusal("checked runner plan is not bound to the requested scopes")
+    selected = plan.get("selected_checks")
+    if not isinstance(selected, list) or not selected:
+        raise Refusal("checked runner selected no checks for coverage")
+    identifiers: set[str] = set()
+    for index, check in enumerate(selected):
+        if not isinstance(check, dict):
+            raise Refusal(f"checked runner plan check {index} is not an object")
+        identifier = check.get("id")
+        argv_value = check.get("argv")
+        if not isinstance(identifier, str) or not identifier or identifier in identifiers:
+            raise Refusal("checked runner plan has empty or repeated check identities")
+        identifiers.add(identifier)
+        if not _python_argv(argv_value):
+            raise Refusal(
+                f"coverage scope includes non-Python check {identifier}; select a Python-only scope"
+            )
+        assert isinstance(argv_value, list)
+        if _coverage_recurses(argv_value):
+            raise Refusal(f"coverage check {identifier} recursively invokes dead_code.py coverage")
+    return plan
+
+
+def _create_process_directory(root: Path, root_fd: int, run_id: str) -> tuple[Path, int]:
+    relative = f"{OWNED_OUTPUT_DIRECTORY}/coverage-processes-{run_id}/record.json"
+    target = confine(root, relative)
+    parts = output_parts(root, target)
+    directory_fd = open_output_directory(root_fd, parts)
+    return target.parent, directory_fd
+
+
+def _read_process_documents(
+    directory: Path,
+    directory_fd: int,
+    run_id: str,
+) -> list[tuple[dict[str, object], int]]:
+    try:
+        names = sorted(os.listdir(directory_fd))
+    except OSError as error:
+        raise Refusal(f"coverage process directory cannot be listed: {error}") from error
+    if len(names) > MAX_COVERAGE_PROCESSES:
+        raise Refusal(f"coverage emitted more than {MAX_COVERAGE_PROCESSES} process records")
+    documents: list[tuple[dict[str, object], int]] = []
+    total_bytes = 0
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_CLOEXEC", 0)
+    for name in names:
+        if re.fullmatch(r"process-[0-9]+-[0-9a-f]{32}\.json", name) is None:
+            raise Refusal(f"coverage process directory contains foreign entry {name}")
+        try:
+            fd = os.open(name, flags, dir_fd=directory_fd)
+            info = os.fstat(fd)
+            if not stat.S_ISREG(info.st_mode):
+                raise Refusal(f"coverage process record {name} is not regular")
+            if info.st_size > MAX_COVERAGE_PROCESS_BYTES:
+                raise Refusal(f"coverage process record {name} exceeds its byte limit")
+            with os.fdopen(fd, "rb") as handle:
+                payload = handle.read(MAX_COVERAGE_PROCESS_BYTES + 1)
+        except Refusal:
+            raise
+        except OSError as error:
+            raise Refusal(f"coverage process record {name} cannot be read: {error}") from error
+        if len(payload) > MAX_COVERAGE_PROCESS_BYTES or len(payload) != info.st_size:
+            raise Refusal(f"coverage process record {name} changed or exceeded its byte limit")
+        total_bytes += len(payload)
+        if total_bytes > MAX_COVERAGE_BYTES:
+            raise Refusal(f"coverage process records exceed {MAX_COVERAGE_BYTES} aggregate bytes")
+        document = _json_document(payload, f"coverage process record {name}")
+        if document.get("schema") != "dead-code-process-coverage/v1" or document.get("run") != run_id:
+            raise Refusal(f"coverage process record {name} has the wrong identity")
+        documents.append((document, len(payload)))
+    return documents
+
+
+def _remove_process_directory(directory_fd: int, root_fd: int, name: str) -> None:
+    try:
+        for entry in os.listdir(directory_fd):
+            if re.fullmatch(r"process-[0-9]+-[0-9a-f]{32}\.json", entry):
+                try:
+                    os.unlink(entry, dir_fd=directory_fd)
+                except OSError:
+                    pass
+    finally:
+        os.close(directory_fd)
+    try:
+        dead_code_fd = os.open(
+            OWNED_OUTPUT_DIRECTORY,
+            os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=root_fd,
+        )
+    except OSError:
+        return
+    try:
+        os.rmdir(name, dir_fd=dead_code_fd)
+    except OSError:
+        pass
+    finally:
+        os.close(dead_code_fd)
+
+
+def _argv_matches(process_argv: object, planned_argv: object) -> bool:
+    if not _python_argv(process_argv) or not _python_argv(planned_argv):
+        return False
+    assert isinstance(process_argv, list)
+    assert isinstance(planned_argv, list)
+    return process_argv[1:] == planned_argv[1:]
+
+
+def _normalise_coverage_events(
+    lines: list[object],
+    branches: list[object],
+    analysed: set[str],
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    normal_lines: set[tuple[str, str, int]] = set()
+    normal_branches: set[tuple[str, str, int, int, str]] = set()
+    for item in lines:
+        if not isinstance(item, dict):
+            raise Refusal("coverage line event is not an object")
+        path = item.get("path")
+        function = item.get("function")
+        line = item.get("line")
+        if not isinstance(path, str) or not isinstance(function, str) or not isinstance(line, int) or line < 1:
+            raise Refusal("coverage line event has an invalid identity")
+        validate_repository_path(path, "coverage line path")
+        if path in analysed:
+            normal_lines.add((path, function, line))
+    for item in branches:
+        if not isinstance(item, dict):
+            raise Refusal("coverage branch event is not an object")
+        path = item.get("path")
+        function = item.get("function")
+        source = item.get("from_line")
+        target = item.get("to_line")
+        direction = item.get("direction")
+        if (
+            not isinstance(path, str)
+            or not isinstance(function, str)
+            or not isinstance(source, int)
+            or source < 1
+            or not isinstance(target, int)
+            or target < 1
+            or direction not in {"left", "right"}
+        ):
+            raise Refusal("coverage branch event has an invalid identity")
+        validate_repository_path(path, "coverage branch path")
+        if path in analysed:
+            normal_branches.add((path, function, source, target, direction))
+    return (
+        [
+            {"path": path, "function": function, "line": line}
+            for path, function, line in sorted(normal_lines)
+        ],
+        [
+            {
+                "path": path,
+                "function": function,
+                "from_line": source,
+                "to_line": target,
+                "direction": direction,
+            }
+            for path, function, source, target, direction in sorted(normal_branches)
+        ],
+    )
+
+
+def aggregate_coverage(
+    plan: dict[str, object],
+    run: dict[str, object],
+    process_documents: list[tuple[dict[str, object], int]],
+    universe: Universe,
+) -> dict[str, object]:
+    selected = plan.get("selected_checks")
+    results = run.get("checks")
+    if not isinstance(selected, list) or not isinstance(results, list):
+        raise Refusal("checked runner record omits selected checks or results")
+    planned: dict[str, dict[str, object]] = {}
+    for item in selected:
+        if not isinstance(item, dict) or not isinstance(item.get("id"), str):
+            raise Refusal("checked runner selected-check record is malformed")
+        planned[item["id"]] = item
+    terminal: dict[str, dict[str, object]] = {}
+    for item in results:
+        if not isinstance(item, dict) or not isinstance(item.get("check"), str):
+            raise Refusal("checked runner terminal record is malformed")
+        terminal[item["check"]] = item
+    if set(terminal) != set(planned):
+        raise Refusal("checked runner terminal records do not match its plan")
+
+    marker_to_check: dict[str, str] = {}
+    degraded_reasons: set[str] = set()
+    for document, _size in process_documents:
+        process = document.get("process")
+        if not isinstance(process, dict):
+            raise Refusal("coverage process record omits process identity")
+        marker = process.get("containment")
+        argv = process.get("argv")
+        if not isinstance(marker, str) or not marker:
+            raise Refusal("coverage process record omits containment identity")
+        matches = [
+            check_id
+            for check_id, check in planned.items()
+            if _argv_matches(argv, check.get("argv"))
+        ]
+        if len(matches) == 1:
+            prior = marker_to_check.get(marker)
+            if prior is not None and prior != matches[0]:
+                degraded_reasons.add("one process group matched multiple checks")
+            marker_to_check[marker] = matches[0]
+
+    public_processes: list[dict[str, object]] = []
+    bytes_by_check = {check_id: 0 for check_id in planned}
+    process_count_by_check = {check_id: 0 for check_id in planned}
+    for document, size in process_documents:
+        process = document["process"]
+        assert isinstance(process, dict)
+        marker = process["containment"]
+        assert isinstance(marker, str)
+        check_id = marker_to_check.get(marker)
+        if check_id is None:
+            degraded_reasons.add("one monitored process group could not be attributed")
+            continue
+        status = document.get("status")
+        lines = document.get("lines")
+        branches = document.get("branches")
+        if not isinstance(status, dict) or not isinstance(lines, list) or not isinstance(branches, list):
+            raise Refusal("coverage process record omits status, lines or branches")
+        lines, branches = _normalise_coverage_events(
+            lines,
+            branches,
+            set(universe.analysed),
+        )
+        if status.get("state") != "ran":
+            degraded_reasons.add(f"check {check_id} emitted a degraded process record")
+        bytes_by_check[check_id] += size
+        process_count_by_check[check_id] += 1
+        group_id = digest_json({"run": document.get("run"), "containment": marker})
+        process_id = digest_json(
+            {
+                "group": group_id,
+                "pid": process.get("pid"),
+                "parent_pid": process.get("parent_pid"),
+                "argv": process.get("argv"),
+                "lines": lines,
+                "branches": branches,
+            }
+        )
+        public_processes.append(
+            {
+                "id": process_id,
+                "group": group_id,
+                "check": check_id,
+                "pid": process.get("pid"),
+                "parent_pid": process.get("parent_pid"),
+                "argv": process.get("argv"),
+                "status": status,
+                "bytes": size,
+                "lines": lines,
+                "branches": branches,
+            }
+        )
+
+    check_records: list[dict[str, object]] = []
+    for check_id in sorted(planned):
+        result = terminal[check_id]
+        state = result.get("status")
+        if state != "passed":
+            degraded_reasons.add(f"check {check_id} ended {state}")
+        if process_count_by_check[check_id] == 0:
+            degraded_reasons.add(f"check {check_id} emitted no process record")
+        check_records.append(
+            {
+                "id": check_id,
+                "state": state,
+                "duration_seconds": result.get("duration_seconds"),
+                "processes": process_count_by_check[check_id],
+                "bytes": bytes_by_check[check_id],
+            }
+        )
+    if run.get("schema") != "wildcat.check-run.v1" or run.get("outcome") != "green":
+        degraded_reasons.add(f"checked runner outcome was {run.get('outcome')}")
+    public_processes.sort(key=lambda item: (str(item["check"]), str(item["id"])))
+    state = "degraded" if degraded_reasons else "ran"
+    return {
+        "schema": COVERAGE_SCHEMA_ID,
+        "tool": {"id": "sys.monitoring", "python": sys.version.split()[0]},
+        "tree": {"commit": universe.commit, "git_tree": universe.tree, "universe": universe.identity},
+        "plan": {
+            "schema": plan.get("schema"),
+            "map_digest": plan.get("map_digest"),
+            "requested_scopes": plan.get("requested_scopes"),
+            "selected_checks": sorted(planned),
+        },
+        "status": {
+            "state": state,
+            "detail": (
+                "every selected Python check completed with process coverage"
+                if not degraded_reasons
+                else "; ".join(sorted(degraded_reasons))
+            ),
+        },
+        "checks": check_records,
+        "processes": public_processes,
+    }
+
+
+def _coverage_environment(root: Path, process_directory: Path, run_id: str) -> dict[str, str]:
+    environment = dict(os.environ)
+    monitoring_path = str(root / MONITOR_DIRECTORY)
+    inherited_python_path = environment.get("PYTHONPATH")
+    environment["PYTHONPATH"] = monitoring_path + (
+        os.pathsep + inherited_python_path if inherited_python_path else ""
+    )
+    runtime_directory = str(Path(sys.executable).parent)
+    inherited_path = environment.get("PATH")
+    environment["PATH"] = runtime_directory + (
+        os.pathsep + inherited_path if inherited_path else ""
+    )
+    environment[COVERAGE_ACTIVE_ENV] = run_id
+    environment[COVERAGE_OUTPUT_ENV] = str(process_directory)
+    return environment
+
+
+def command_coverage(arguments: argparse.Namespace) -> int:
+    if os.environ.get(COVERAGE_ACTIVE_ENV):
+        raise Refusal("coverage wrapper recursion is active in this process")
+    if sys.version_info[:2] != (3, 14) or not hasattr(sys, "monitoring"):
+        raise Refusal("coverage requires the repository Python 3.14 sys.monitoring runtime")
+    scopes = tuple(arguments.scope)
+    if not scopes or len(scopes) != len(set(scopes)):
+        raise Refusal("coverage requires one or more unique --scope values")
+    root = repository_root(Path(arguments.directory).resolve())
+    root_fd = open_repository_directory(root)
+    process_fd: int | None = None
+    process_name = ""
+    try:
+        target = confine(root, arguments.output)
+        universe = discover(root, root_fd=root_fd)
+        plan = _runner_plan(root, scopes)
+        run_id = uuid.uuid4().hex
+        process_directory, process_fd = _create_process_directory(root, root_fd, run_id)
+        process_name = process_directory.name
+        environment = _coverage_environment(root, process_directory, run_id)
+        runner_report = f"{OWNED_OUTPUT_DIRECTORY}/checks.json"
+        argv = [sys.executable, CHECK_RUNNER.as_posix()]
+        for scope in scopes:
+            argv.extend(["--scope", scope])
+        argv.extend(["--report", runner_report])
+        _stdout, _stderr, _returncode = run_process(
+            argv,
+            cwd=root,
+            timeout_seconds=RUNNER_TIMEOUT_SECONDS,
+            output_limit=MAX_RUNNER_OUTPUT_BYTES,
+            env=environment,
+        )
+        run_raw = read_bounded_regular(
+            root / runner_report,
+            limit=MAX_COVERAGE_BYTES,
+            label=runner_report,
+        )
+        run = _json_document(run_raw, runner_report)
+        documents = _read_process_documents(process_directory, process_fd, run_id)
+        coverage = aggregate_coverage(plan, run, documents, universe)
+        atomic_write(root, target, json.dumps(coverage, indent=2, sort_keys=True) + chr(10), root_fd=root_fd)
+        return 0
+    finally:
+        if process_fd is not None:
+            _remove_process_directory(process_fd, root_fd, process_name)
+        os.close(root_fd)
+
+
+def _coverage_file(
+    root: Path,
+    universe: Universe,
+    coverage_path: str | None,
+) -> dict[str, object]:
+    if coverage_path is None:
+        raise Refusal("coverage analyser requires --coverage")
+    target = confine(root, coverage_path)
+    raw = read_bounded_regular(target, limit=MAX_COVERAGE_BYTES, label=coverage_path)
+    document = _json_document(raw, coverage_path)
+    if document.get("schema") != COVERAGE_SCHEMA_ID:
+        raise Refusal(f"{coverage_path} does not declare {COVERAGE_SCHEMA_ID}")
+    tree = document.get("tree")
+    if not isinstance(tree, dict):
+        raise Refusal(f"{coverage_path} omits tree identity")
+    if (
+        tree.get("commit") != universe.commit
+        or tree.get("git_tree") != universe.tree
+        or tree.get("universe") != universe.identity
+    ):
+        return {
+            **document,
+            "status": {
+                "state": "degraded",
+                "detail": "coverage identity does not match the report universe",
+            },
+        }
+    return document
+
+
+def _function_targets(item: ParsedPython) -> Iterable[tuple[str, int]]:
+    for node in ast.walk(item.tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or not node.body:
+            continue
+        if node.name in item.retained_names:
+            continue
+        yield node.name, node.body[0].lineno
+
+
+def _branch_targets(item: ParsedPython) -> Iterable[tuple[int, int, str]]:
+    for node in ast.walk(item.tree):
+        if not isinstance(node, ast.If) or not node.body or not node.orelse:
+            continue
+        if isinstance(node.test, ast.Constant):
+            continue
+        yield node.lineno, node.body[0].lineno, "body"
+        yield node.lineno, node.orelse[0].lineno, "else"
+
+
+def analyse_coverage(
+    root: Path,
+    universe: Universe,
+    coverage_path: str | None,
+) -> tuple[AnalyserStatus, tuple[Finding, ...]]:
+    document = _coverage_file(root, universe, coverage_path)
+    status = document.get("status")
+    checks = document.get("checks")
+    processes = document.get("processes")
+    if not isinstance(status, dict) or not isinstance(checks, list) or not isinstance(processes, list):
+        raise Refusal("coverage record omits status, checks or processes")
+    records: list[AnalyserRecord] = []
+    for item in checks:
+        if not isinstance(item, dict) or not isinstance(item.get("id"), str):
+            raise Refusal("coverage check record is malformed")
+        state = item.get("state")
+        mapped = "passed" if state == "passed" else "unavailable" if state == "unavailable" else "failed"
+        size = item.get("bytes")
+        records.append(
+            AnalyserRecord(
+                item["id"],
+                "check",
+                mapped,
+                f"runner state {state}; {item.get('processes')} process record(s)",
+                size if isinstance(size, int) and size >= 0 else 0,
+            )
+        )
+    records.sort(key=lambda item: item.record_id)
+    if status.get("state") != "ran":
+        return (
+            AnalyserStatus(
+                "coverage",
+                "degraded",
+                COVERAGE_ANALYSER_VERSION,
+                str(status.get("detail") or "coverage did not complete"),
+                tuple(records),
+            ),
+            (),
+        )
+    if not records or any(record.state != "passed" for record in records):
+        return (
+            AnalyserStatus(
+                "coverage",
+                "degraded",
+                COVERAGE_ANALYSER_VERSION,
+                "coverage claimed completion but one or more check records were not passed",
+                tuple(records),
+            ),
+            (),
+        )
+
+    observed_lines: set[tuple[str, int]] = set()
+    observed_branches: set[tuple[str, int, int]] = set()
+    for process in processes:
+        if not isinstance(process, dict):
+            raise Refusal("coverage process aggregate is malformed")
+        lines = process.get("lines")
+        branches = process.get("branches")
+        if not isinstance(lines, list) or not isinstance(branches, list):
+            raise Refusal("coverage process aggregate omits lines or branches")
+        process_status = process.get("status")
+        if not isinstance(process_status, dict) or process_status.get("state") != "ran":
+            return (
+                AnalyserStatus(
+                    "coverage",
+                    "degraded",
+                    COVERAGE_ANALYSER_VERSION,
+                    "coverage claimed completion but one process record was degraded",
+                    tuple(records),
+                ),
+                (),
+            )
+        for line in lines:
+            if isinstance(line, dict) and isinstance(line.get("path"), str) and isinstance(line.get("line"), int):
+                observed_lines.add((line["path"], line["line"]))
+        for branch in branches:
+            if (
+                isinstance(branch, dict)
+                and isinstance(branch.get("path"), str)
+                and isinstance(branch.get("from_line"), int)
+                and isinstance(branch.get("to_line"), int)
+            ):
+                observed_branches.add((branch["path"], branch["from_line"], branch["to_line"]))
+
+    snapshot = parse_python_snapshot(root, universe)
+    if snapshot.degraded:
+        return (
+            AnalyserStatus(
+                "coverage",
+                "degraded",
+                COVERAGE_ANALYSER_VERSION,
+                "coverage completed but the bounded Python source inventory was incomplete",
+                tuple(records),
+            ),
+            (),
+        )
+    findings: list[Finding] = []
+    for item in snapshot.files:
+        for name, line in _function_targets(item):
+            if (item.path, line) not in observed_lines:
+                findings.append(
+                    _candidate(
+                        item.path,
+                        f"{name}@{line}",
+                        f"no body line for {name} was observed in the completed named checks",
+                        "low",
+                        "coverage names only the selected checks and cannot prove other entry points absent",
+                        analyser_id="coverage",
+                    )
+                )
+        for source, target, direction in _branch_targets(item):
+            if (item.path, source, target) not in observed_branches:
+                findings.append(
+                    _candidate(
+                        item.path,
+                        f"branch:{source}->{target}:{direction}",
+                        f"the {direction} branch from line {source} to line {target} was not observed",
+                        "low",
+                        "sys.monitoring observed only the completed named checks",
+                        analyser_id="coverage",
+                    )
+                )
+    return (
+        AnalyserStatus(
+            "coverage",
+            "ran",
+            COVERAGE_ANALYSER_VERSION,
+            f"consumed {len(processes)} process record(s) from {len(checks)} completed check(s)",
+            tuple(records),
+        ),
+        tuple(findings),
+    )
+
+
+ANALYSERS["python"] = analyse_python
+
+
 def collect(
     root: Path,
     universe: Universe,
+    analyser_ids: tuple[str, ...] | None = None,
+    coverage_path: str | None = None,
 ) -> tuple[tuple[AnalyserStatus, ...], tuple[Finding, ...]]:
     statuses: list[AnalyserStatus] = []
     findings: list[Finding] = []
-    for analyser_id in sorted(ANALYSERS):
-        status, produced = ANALYSERS[analyser_id](root, universe)
+    selected = tuple(sorted(ANALYSERS)) if analyser_ids is None else tuple(sorted(analyser_ids))
+    for analyser_id in selected:
+        if analyser_id == "coverage":
+            status, produced = analyse_coverage(root, universe, coverage_path)
+        else:
+            analyser = ANALYSERS.get(analyser_id)
+            if analyser is None:
+                raise Refusal(f"unknown analyser {analyser_id}")
+            status, produced = analyser(root, universe)
         if status.analyser_id != analyser_id:
             raise Refusal(
                 f"analyser {analyser_id} returned status for {status.analyser_id}"
@@ -739,6 +1869,20 @@ def validate_report(report: Report) -> None:
             )
         if not item.detail:
             raise Refusal(f"analyser {item.analyser_id} has no detail")
+        record_ids: set[tuple[str, str]] = set()
+        for record in item.records:
+            identity = (record.kind, record.record_id)
+            if not record.record_id or identity in record_ids:
+                raise Refusal(f"analyser {item.analyser_id} has empty or repeated records")
+            if record.kind not in ANALYSER_RECORD_KINDS:
+                raise Refusal(f"analyser {item.analyser_id} has unknown record kind {record.kind}")
+            if record.state not in ANALYSER_RECORD_STATES:
+                raise Refusal(f"analyser {item.analyser_id} has unknown record state {record.state}")
+            if not record.detail or record.bytes_count < 0:
+                raise Refusal(f"analyser {item.analyser_id} has an invalid record")
+            record_ids.add(identity)
+        if item.records != tuple(sorted(item.records, key=lambda record: (record.kind, record.record_id))):
+            raise Refusal(f"analyser {item.analyser_id} records are not sorted")
         status_ids.add(item.analyser_id)
     if tuple(item.analyser_id for item in report.statuses) != tuple(sorted(status_ids)):
         raise Refusal("analyser statuses are not sorted by identity")
@@ -778,9 +1922,15 @@ def validate_report(report: Report) -> None:
         raise Refusal("findings are not sorted by stable report identity")
 
 
-def build_report(root: Path, *, root_fd: int | None = None) -> Report:
+def build_report(
+    root: Path,
+    *,
+    root_fd: int | None = None,
+    analyser_ids: tuple[str, ...] = (),
+    coverage_path: str | None = None,
+) -> Report:
     universe = discover(root, root_fd=root_fd)
-    statuses, findings = collect(root, universe)
+    statuses, findings = collect(root, universe, analyser_ids, coverage_path)
     report = Report(universe=universe, statuses=statuses, findings=findings)
     validate_report(report)
     return report
@@ -827,6 +1977,11 @@ def render_text(report: Report) -> str:
             f"  {analyser['id']}{version}  {analyser['state']}  "
             f"{analyser['detail']}"
         )
+        for record in analyser["records"]:
+            lines.append(
+                f"    {record['kind']} {record['id']}  {record['state']}  "
+                f"{record['bytes']} byte(s)  {record['detail']}"
+            )
 
     findings = document["findings"]
     lines.extend(["", f"findings  {len(findings)} candidate(s); report-only"])
@@ -1032,9 +2187,16 @@ def command_report(arguments: argparse.Namespace) -> int:
     root_fd = open_repository_directory(root)
     target: Path | None = None
     try:
+        analyser_ids = parse_analyser_ids(getattr(arguments, "analyser", None))
+        coverage_path = getattr(arguments, "coverage", None)
         if arguments.output is not None:
             target = confine(root, arguments.output)
-        report = build_report(root, root_fd=root_fd)
+        report = build_report(
+            root,
+            root_fd=root_fd,
+            analyser_ids=analyser_ids,
+            coverage_path=coverage_path,
+        )
         rendered = render_json(report) if arguments.json else render_text(report)
         if arguments.output is None:
             sys.stdout.write(rendered)
@@ -1045,6 +2207,21 @@ def command_report(arguments: argparse.Namespace) -> int:
     finally:
         if root_fd is not None:
             os.close(root_fd)
+
+
+def parse_analyser_ids(value: str | None) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    identifiers = tuple(value.split(","))
+    if not identifiers or any(not item for item in identifiers):
+        raise Refusal("--analyser must be a comma-separated list of identities")
+    if len(identifiers) != len(set(identifiers)):
+        raise Refusal("--analyser repeats an identity")
+    supported = {*ANALYSERS, "coverage"}
+    unknown = sorted(set(identifiers) - supported)
+    if unknown:
+        raise Refusal("unknown analyser(s): " + ", ".join(unknown))
+    return identifiers
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -1058,6 +2235,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="a path inside the repository to analyse",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
+    coverage = subparsers.add_parser(
+        "coverage",
+        help="run a Python-only checked scope under sys.monitoring",
+    )
+    coverage.add_argument(
+        "--scope",
+        action="append",
+        default=[],
+        help="a checked-runner scope; repeatable",
+    )
+    coverage.add_argument(
+        "--output",
+        required=True,
+        help="write the coverage record inside the owned .dead-code sink",
+    )
+    coverage.set_defaults(handler=command_coverage)
     report = subparsers.add_parser(
         "report",
         help="report the universe and its candidates",
@@ -1070,6 +2263,14 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument(
         "--output",
         help="write inside the repository instead of stdout",
+    )
+    report.add_argument(
+        "--analyser",
+        help="comma-separated analyser identities to run",
+    )
+    report.add_argument(
+        "--coverage",
+        help="coverage record below the owned .dead-code sink",
     )
     report.set_defaults(handler=command_report)
     return parser
