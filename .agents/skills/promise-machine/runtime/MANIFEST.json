@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11141525,
+  "total_bytes": 11145303,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -499,9 +499,9 @@
       "source": "plugins/ariadne/docs/capturing-a-state-fixture.md"
     },
     {
-      "bytes": 16267,
+      "bytes": 20045,
       "path": "plugins/ariadne/docs/conformance.md",
-      "sha256": "fbd4284e304599f7edbae01630d7c7aa231fb2f6f3f091032ddddea7a78bf924",
+      "sha256": "09d6927f48624aa7ec55501a08a9fe9a0127b151e9aaf9e1d1ee93d94d0d1c54",
       "source": "plugins/ariadne/docs/conformance.md"
     },
     {

@@ -22,11 +22,68 @@ FIXTURES = os.path.join(
 )
 BREACH = re.compile(r"^fail-gate(\d+)-")
 CHECK_BREACH = "fail-check-"
-PENDING_CONFORMANCE = {grounded_agent.TYPE}
-"""Registered contracts whose conformance corpus lands in the next step.
+GROUNDED_AGENT_PASSING = (
+    "pass-grounded-agent-complete.json",
+    "pass-grounded-agent-null-evidence.json",
+)
+GROUNDED_AGENT_BREACHES = {
+    "fail-gate2-grounded-agent-adapter-digest.json": (
+        "pass-grounded-agent-complete.json",
+        ((2, "environment"),),
+        ("predicate.adapter.parameters_digest.sha256",),
+    ),
+    "fail-gate5-grounded-agent-first-capture-without-reason.json": (
+        "pass-grounded-agent-complete.json",
+        ((5, "comparison"),),
+        ("predicate.comparison.first_capture_reason",),
+    ),
+    "fail-gate4-grounded-agent-promotion-verdict.json": (
+        "pass-grounded-agent-complete.json",
+        ((4, "no-conclusions"),),
+        ("subject[9].annotations.verdict",),
+    ),
+    "fail-check-predicate-fields-grounded-agent-unknown-field.json": (
+        "pass-grounded-agent-complete.json",
+        ((2, "environment"), (None, "predicate-fields")),
+        ("predicate.undeclared",),
+    ),
+    "fail-check-components-grounded-agent-component-not-a-subject.json": (
+        "pass-grounded-agent-complete.json",
+        ((2, "environment"), (None, "components")),
+        ("predicate.given.corpus.components[0].sha256",),
+    ),
+    "fail-check-components-grounded-agent-unsafe-path.json": (
+        "pass-grounded-agent-complete.json",
+        ((2, "environment"), (None, "components")),
+        ("predicate.given.corpus.components[0].path",),
+    ),
+    "fail-check-release-digest-grounded-agent-stale-semantic-digest.json": (
+        "pass-grounded-agent-complete.json",
+        ((None, "release-digest"),),
+        ("predicate.policy.refusal_conditions[0]",),
+    ),
+    "fail-check-optional-evidence-grounded-agent-null-reads-without-reason.json": (
+        "pass-grounded-agent-null-evidence.json",
+        ((2, "environment"), (None, "optional-evidence")),
+        ("predicate.given.reads_absence_reason",),
+    ),
+    "fail-check-subject-names-grounded-agent-nonportable-name.json": (
+        "pass-grounded-agent-complete.json",
+        ((None, "subject-names"),),
+        ("subject[0].name",),
+    ),
+    "fail-check-evidence-boundary-grounded-agent-promotion-result.json": (
+        "pass-grounded-agent-complete.json",
+        ((None, "evidence-boundary"),),
+        ("subject[9].annotations.passed",),
+    ),
+}
+"""The exact parent, ordered failures and changed leaves for each new vector.
 
-Keep this exact rather than weakening the completeness assertion: Step 2 removes
-the sole entry when its passing and breaching fixtures ship.
+Gate 2 deliberately reuses field-shape, component and optional-evidence
+validation.  Those counterexamples therefore have two honest failures; this
+table keeps that observable without weakening the singleton contract for the
+older fixtures.
 """
 """A check with no gate number gets a fixture too.
 
@@ -114,6 +171,19 @@ class FixtureTests(unittest.TestCase):
             match = BREACH.match(name)
             if not match:
                 continue
+            if name in GROUNDED_AGENT_BREACHES:
+                expected = GROUNDED_AGENT_BREACHES[name][1]
+                report = report_for(name)
+                failed = tuple(
+                    (gate.number, gate.name)
+                    for gate in report.gates
+                    if not gate.passed
+                )
+                with self.subTest(fixture=name):
+                    self.assertEqual(failed, expected)
+                    self.assertFalse(report.ok)
+                found += 1
+                continue
             expected = int(match.group(1))
             with self.subTest(fixture=name):
                 report = report_for(name)
@@ -159,6 +229,20 @@ class FixtureTests(unittest.TestCase):
             expected = check_name_of(name)
             if expected is None:
                 continue
+            if name in GROUNDED_AGENT_BREACHES:
+                declared = GROUNDED_AGENT_BREACHES[name][1]
+                report = report_for(name)
+                failed = tuple(
+                    (gate.number, gate.name)
+                    for gate in report.gates
+                    if not gate.passed
+                )
+                with self.subTest(fixture=name):
+                    self.assertEqual(failed, declared)
+                    self.assertIn((None, expected), failed)
+                    self.assertFalse(report.ok)
+                found += 1
+                continue
             with self.subTest(fixture=name):
                 report = report_for(name)
                 failed = [gate.name for gate in report.gates if not gate.passed]
@@ -174,8 +258,7 @@ class FixtureTests(unittest.TestCase):
 
     def test_every_registered_predicate_has_a_passing_fixture(self):
         registered = {type_uri for type_uri, _ in registry.DEFAULT.entries()}
-        self.assertEqual(registered - set(passing_by_type()), PENDING_CONFORMANCE)
-        self.assertEqual(PENDING_CONFORMANCE, {grounded_agent.TYPE})
+        self.assertEqual(registered - set(passing_by_type()), set())
 
     def test_every_predicate_gate_has_a_breaching_fixture_of_its_own_type(self):
         """Gates 2 and 5 mean different things per predicate, so one type's
@@ -335,6 +418,99 @@ class MinimalityTests(unittest.TestCase):
                 self.assertEqual(
                     len(self.distance(passing, statement_of(name).predicate)), 1
                 )
+
+
+class GroundedAgentFixtureTests(unittest.TestCase):
+    def distance(self, left, right):
+        one = MinimalityTests.leaves(left)
+        two = MinimalityTests.leaves(right)
+        changed = sorted(key for key in set(one) & set(two) if one[key] != two[key])
+        return sorted(set(one) ^ set(two)) + changed
+
+    def test_the_grounded_agent_inventory_is_complete(self):
+        passing = {
+            name
+            for name in fixtures()
+            if name.startswith("pass-")
+            and statement_of(name).predicate_type == grounded_agent.TYPE
+        }
+        breaching = {
+            name
+            for name in fixtures()
+            if name.startswith("fail-")
+            and statement_of(name).predicate_type == grounded_agent.TYPE
+        }
+        self.assertEqual(passing, set(GROUNDED_AGENT_PASSING))
+        self.assertEqual(breaching, set(GROUNDED_AGENT_BREACHES))
+
+    def test_the_complete_and_null_evidence_examples_cover_both_branches(self):
+        complete = statement_of("pass-grounded-agent-complete.json").predicate
+        self.assertIsInstance(complete["given"]["reads"], dict)
+        self.assertIsInstance(complete["produced"]["evaluations"], dict)
+        self.assertIsInstance(complete["produced"]["promotion"], dict)
+        self.assertTrue(complete["given"]["corpus"]["components"])
+        self.assertTrue(complete["produced"]["answers"])
+        self.assertTrue(complete["policy"]["question_families"])
+        self.assertIsNone(complete["comparison"]["baseline"])
+        self.assertTrue(complete["comparison"]["first_capture_reason"].strip())
+
+        absent = statement_of("pass-grounded-agent-null-evidence.json").predicate
+        for block, reason in (
+            (absent["given"]["reads"], absent["given"]["reads_absence_reason"]),
+            (
+                absent["produced"]["evaluations"],
+                absent["produced"]["evaluations_absence_reason"],
+            ),
+            (
+                absent["produced"]["promotion"],
+                absent["produced"]["promotion_absence_reason"],
+            ),
+        ):
+            with self.subTest(reason=reason):
+                self.assertIsNone(block)
+                self.assertTrue(reason.strip())
+
+    def test_each_breach_has_its_exact_ordered_failure_vector(self):
+        for name, (_, expected, _) in GROUNDED_AGENT_BREACHES.items():
+            failed = tuple(
+                (gate.number, gate.name)
+                for gate in report_for(name).gates
+                if not gate.passed
+            )
+            with self.subTest(fixture=name):
+                self.assertEqual(failed, expected)
+
+    def test_each_breach_differs_from_its_clean_parent_only_at_named_leaves(self):
+        for name, (parent, _, changed) in GROUNDED_AGENT_BREACHES.items():
+            parent_statement = statement_of(parent)
+            with self.subTest(fixture=name, parent=parent):
+                self.assertTrue(report_for(parent).ok)
+                self.assertEqual(
+                    self.distance(
+                        parent_statement.to_dict(), statement_of(name).to_dict()
+                    ),
+                    list(changed),
+                )
+
+    def test_passing_bodies_carry_no_gate_four_conclusion_keys(self):
+        def conclusion_paths(value, path="predicate"):
+            found = []
+            if isinstance(value, dict):
+                for key, child in value.items():
+                    here = "%s.%s" % (path, key)
+                    if gates.conclusion_key(key):
+                        found.append(here)
+                    found.extend(conclusion_paths(child, here))
+            elif isinstance(value, list):
+                for index, child in enumerate(value):
+                    found.extend(
+                        conclusion_paths(child, "%s[%d]" % (path, index))
+                    )
+            return found
+
+        for name in GROUNDED_AGENT_PASSING:
+            with self.subTest(fixture=name):
+                self.assertEqual(conclusion_paths(statement_of(name).predicate), [])
 
 
 if __name__ == "__main__":

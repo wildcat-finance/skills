@@ -47,6 +47,21 @@ ACCEPTED_BY_THE_SCHEMA = {
     "fail-check-subject-names-state-fixture-v2-duplicate-name.json": (
         "the predicate schema cannot see or compare outer subject names"
     ),
+    "fail-check-components-grounded-agent-component-not-a-subject.json": (
+        "the predicate schema cannot join a component digest to outer subjects"
+    ),
+    "fail-check-subject-names-grounded-agent-nonportable-name.json": (
+        "the predicate schema cannot inspect an outer subject name"
+    ),
+    "fail-gate4-grounded-agent-promotion-verdict.json": (
+        "core gate 4 scans outer descriptor annotations beyond the predicate schema"
+    ),
+    "fail-check-evidence-boundary-grounded-agent-promotion-result.json": (
+        "the evidence-boundary check scans outer descriptor annotations"
+    ),
+    "fail-check-release-digest-grounded-agent-stale-semantic-digest.json": (
+        "JSON Schema cannot recompute the canonical Berean semantic digest"
+    ),
     # Expressible and not yet expressed. `anyOf` over an input item would say
     # that a digest or a disposition has to be there.
     "fail-check-inputs-dataset-locator-only.json": (
