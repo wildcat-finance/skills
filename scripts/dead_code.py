@@ -236,20 +236,35 @@ def run_process(
     cwd: Path,
     timeout_seconds: int,
     output_limit: int,
+    cwd_fd: int | None = None,
 ) -> tuple[bytes, bytes, int]:
     """Run fixed argv while bounding time and combined captured output."""
+    process_cwd: Path | None = cwd
+    pass_fds: tuple[int, ...] = ()
+    preexec_fn: Callable[[], None] | None = None
+    if cwd_fd is not None:
+        process_cwd = None
+        pass_fds = (cwd_fd,)
+
+        def enter_opened_directory() -> None:
+            os.fchdir(cwd_fd)
+            os.close(cwd_fd)
+
+        preexec_fn = enter_opened_directory
     try:
         process = subprocess.Popen(
             argv,
-            cwd=cwd,
+            cwd=process_cwd,
             stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=False,
+            pass_fds=pass_fds,
+            preexec_fn=preexec_fn,
         )
     except FileNotFoundError as error:
         raise Refusal(f"{argv[0]} is not available on PATH") from error
-    except OSError as error:
+    except (OSError, subprocess.SubprocessError) as error:
         raise Refusal(f"{argv[0]} could not start: {error}") from error
 
     assert process.stdout is not None
@@ -301,12 +316,16 @@ def decode_output(payload: bytes, label: str) -> str:
         raise Refusal(f"{label} output is not UTF-8") from error
 
 
-def run_git(root: Path, *arguments: str) -> str:
+def run_git(root: Path, *arguments: str, root_fd: int | None = None) -> str:
+    argv = ["git", "-C", str(root), *arguments]
+    if root_fd is not None:
+        argv = ["git", *arguments]
     stdout, stderr, returncode = run_process(
-        ["git", "-C", str(root), *arguments],
+        argv,
         cwd=root,
         timeout_seconds=GIT_TIMEOUT_SECONDS,
         output_limit=MAX_GIT_OUTPUT_BYTES,
+        cwd_fd=root_fd,
     )
     if returncode != 0:
         detail = decode_output(stderr, "git stderr").strip()
@@ -332,24 +351,33 @@ def _require_oid(value: str, label: str) -> str:
     return value
 
 
-def resolve_commit(root: Path) -> str:
-    return _require_oid(run_git(root, "rev-parse", "HEAD").strip(), "HEAD")
-
-
-def resolve_tree(root: Path, commit: str) -> str:
+def resolve_commit(root: Path, *, root_fd: int | None = None) -> str:
     return _require_oid(
-        run_git(root, "rev-parse", f"{commit}^{{tree}}").strip(),
+        run_git(root, "rev-parse", "HEAD", root_fd=root_fd).strip(),
+        "HEAD",
+    )
+
+
+def resolve_tree(root: Path, commit: str, *, root_fd: int | None = None) -> str:
+    return _require_oid(
+        run_git(
+            root,
+            "rev-parse",
+            f"{commit}^{{tree}}",
+            root_fd=root_fd,
+        ).strip(),
         "HEAD tree",
     )
 
 
-def require_clean_tree(root: Path) -> None:
+def require_clean_tree(root: Path, *, root_fd: int | None = None) -> None:
     porcelain = run_git(
         root,
         "status",
         "--porcelain=v1",
         "-z",
         "--untracked-files=no",
+        root_fd=root_fd,
     )
     changed = [entry for entry in porcelain.split(chr(0)) if entry]
     if changed:
@@ -378,8 +406,21 @@ def validate_repository_path(value: str, label: str) -> str:
     return value
 
 
-def tracked_paths(root: Path, commit: str) -> tuple[str, ...]:
-    listing = run_git(root, "ls-tree", "-r", "--name-only", "-z", commit)
+def tracked_paths(
+    root: Path,
+    commit: str,
+    *,
+    root_fd: int | None = None,
+) -> tuple[str, ...]:
+    listing = run_git(
+        root,
+        "ls-tree",
+        "-r",
+        "--name-only",
+        "-z",
+        commit,
+        root_fd=root_fd,
+    )
     paths = tuple(
         sorted(
             validate_repository_path(entry, "tracked path")
@@ -443,6 +484,69 @@ def read_bounded_regular(path: Path, *, limit: int, label: str) -> str:
         raise Refusal(f"{label} is not UTF-8") from error
 
 
+def read_commit_regular(
+    root: Path,
+    commit: str,
+    repository_path: str,
+    *,
+    limit: int,
+    label: str,
+    root_fd: int | None = None,
+) -> str:
+    """Read one bounded regular blob from the recorded Git tree."""
+    listing = run_git(
+        root,
+        "ls-tree",
+        "-z",
+        commit,
+        "--",
+        repository_path,
+        root_fd=root_fd,
+    )
+    records = [record for record in listing.split(chr(0)) if record]
+    if not records:
+        raise Refusal(f"{label} is absent from commit {commit}")
+    if len(records) != 1 or chr(9) not in records[0]:
+        raise Refusal(f"{label} has an ambiguous Git tree record")
+    metadata, listed_path = records[0].split(chr(9), 1)
+    fields = metadata.split()
+    if len(fields) != 3 or listed_path != repository_path:
+        raise Refusal(f"{label} has a malformed Git tree record")
+    mode, object_type, object_id = fields
+    if mode not in {"100644", "100755"} or object_type != "blob":
+        raise Refusal(f"{label} is not a regular file in commit {commit}")
+    _require_oid(object_id, f"{label} blob")
+    size_text = run_git(
+        root,
+        "cat-file",
+        "-s",
+        object_id,
+        root_fd=root_fd,
+    ).strip()
+    if not size_text.isdecimal():
+        raise Refusal(f"{label} blob size is not an integer")
+    size = int(size_text)
+    if size > limit:
+        raise Refusal(f"{label} exceeds {limit} bytes")
+    stdout, stderr, returncode = run_process(
+        ["git", "cat-file", "blob", object_id]
+        if root_fd is not None
+        else ["git", "-C", str(root), "cat-file", "blob", object_id],
+        cwd=root,
+        timeout_seconds=GIT_TIMEOUT_SECONDS,
+        output_limit=limit,
+        cwd_fd=root_fd,
+    )
+    if returncode != 0:
+        detail = decode_output(stderr, "git stderr").strip()
+        if not detail:
+            detail = f"exit {returncode}"
+        raise Refusal(f"{label} blob cannot be read: {detail}")
+    if len(stdout) != size:
+        raise Refusal(f"{label} blob size changed while it was read")
+    return decode_output(stdout, label)
+
+
 def reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
     document: dict[str, object] = {}
     for key, value in pairs:
@@ -452,13 +556,31 @@ def reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
     return document
 
 
-def load_boundary(root: Path) -> Classification:
+def load_boundary(
+    root: Path,
+    *,
+    commit: str | None = None,
+    root_fd: int | None = None,
+) -> Classification:
     label = BOUNDARY_PATH.as_posix()
-    raw = read_bounded_regular(
-        root / BOUNDARY_PATH,
-        limit=MAX_BOUNDARY_BYTES,
-        label=label,
-    )
+    owns_root_fd = root_fd is None
+    if root_fd is None:
+        root_fd = open_repository_directory(root)
+    try:
+        recorded_commit = (
+            resolve_commit(root, root_fd=root_fd) if commit is None else commit
+        )
+        raw = read_commit_regular(
+            root,
+            recorded_commit,
+            label,
+            limit=MAX_BOUNDARY_BYTES,
+            label=label,
+            root_fd=root_fd,
+        )
+    finally:
+        if owns_root_fd:
+            os.close(root_fd)
     try:
         document = json.loads(raw, object_pairs_hook=reject_duplicate_keys)
     except DuplicateKey as error:
@@ -517,26 +639,35 @@ def universe_identity(
     )
 
 
-def discover(root: Path) -> Universe:
-    require_clean_tree(root)
-    commit = resolve_commit(root)
-    tree = resolve_tree(root, commit)
-    tracked = tracked_paths(root, commit)
-    classified = load_boundary(root)
+def discover(root: Path, *, root_fd: int | None = None) -> Universe:
+    owns_root_fd = root_fd is None
+    if root_fd is None:
+        root_fd = open_repository_directory(root)
+    try:
+        require_clean_tree(root, root_fd=root_fd)
+        commit = resolve_commit(root, root_fd=root_fd)
+        tree = resolve_tree(root, commit, root_fd=root_fd)
+        tracked = tracked_paths(root, commit, root_fd=root_fd)
+        classified = load_boundary(root, commit=commit, root_fd=root_fd)
 
-    analysed: list[str] = []
-    excluded: list[ClassifiedPath] = []
-    for path in tracked:
-        match = classified.match(path)
-        if match is None:
-            analysed.append(path)
-        else:
-            excluded.append(match)
-    if len(analysed) < UNIVERSE_FLOOR:
-        raise Refusal(
-            f"discovery returned {len(analysed)} analysable paths from "
-            f"{len(tracked)} tracked; this is a collapsed walk"
-        )
+        analysed: list[str] = []
+        excluded: list[ClassifiedPath] = []
+        for path in tracked:
+            match = classified.match(path)
+            if match is None:
+                analysed.append(path)
+            else:
+                excluded.append(match)
+        if len(analysed) < UNIVERSE_FLOOR:
+            raise Refusal(
+                f"discovery returned {len(analysed)} analysable paths from "
+                f"{len(tracked)} tracked; this is a collapsed walk"
+            )
+        require_clean_tree(root, root_fd=root_fd)
+    finally:
+        if owns_root_fd:
+            os.close(root_fd)
+
     analysed_tuple = tuple(analysed)
     excluded_tuple = tuple(excluded)
     return Universe(
@@ -647,8 +778,8 @@ def validate_report(report: Report) -> None:
         raise Refusal("findings are not sorted by stable report identity")
 
 
-def build_report(root: Path) -> Report:
-    universe = discover(root)
+def build_report(root: Path, *, root_fd: int | None = None) -> Report:
+    universe = discover(root, root_fd=root_fd)
     statuses, findings = collect(root, universe)
     report = Report(universe=universe, statuses=statuses, findings=findings)
     validate_report(report)
@@ -898,18 +1029,16 @@ def atomic_write(
 
 def command_report(arguments: argparse.Namespace) -> int:
     root = repository_root(Path(arguments.directory).resolve())
-    root_fd: int | None = None
+    root_fd = open_repository_directory(root)
     target: Path | None = None
     try:
         if arguments.output is not None:
-            root_fd = open_repository_directory(root)
             target = confine(root, arguments.output)
-        report = build_report(root)
+        report = build_report(root, root_fd=root_fd)
         rendered = render_json(report) if arguments.json else render_text(report)
         if arguments.output is None:
             sys.stdout.write(rendered)
             return 0
-        assert root_fd is not None
         assert target is not None
         atomic_write(root, target, rendered, root_fd=root_fd)
         return 0
