@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.35.1"
+  version: "5.36.1"
 ---
 
 <p align="center">
@@ -541,11 +541,11 @@ and receipt it with `done sync-run`; never rebase or rewrite the signed stack.
 Base advancement does not invalidate the signed implementation or completed
 audit. The sync receipt keeps their exact-tree digests and adds a bounded
 integration-revalidation record over the computed upstream, product and overlap
-path sets. Version 1 keeps its exact individual-path form and 500-path limit.
+path sets. Version 1 keeps its exact individual-path form under a 4,096-path limit.
 Version 2 may cover a larger required set only through a source-registered
 generator prefix: the controller proves the complete final manifest and Git
 tree, while every path outside that prefix remains individually listed and
-checked under the same 500-path limit. Reopen only evidence whose declared dependency changed or whose
+checked under the same 4,096-path limit. Reopen only evidence whose declared dependency changed or whose
 revalidation failed. A base advance by itself does not authorise a carryover,
 another study, or another product audit. If a pushed sync exposes a failed
 composition check, repair only that surface, reconstruct the two-parent merge

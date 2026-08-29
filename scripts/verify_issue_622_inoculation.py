@@ -114,7 +114,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b"
     ),
     SIGNING_GUARD_PATH: (
-        "a99e726b0ca3cda5a0a7487fb00243b66075a4352e1e6eea781adaf09d3cf7e0"
+        "58bc0c80f64c8bac6bda0c539af89721837a44ee22eaac04fac56ce5f5ca4c78"
     ),
     "plugins/hexaemeron/tests/test_elenchus_checker.py": (
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
@@ -135,7 +135,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "7cbfcacc8b3f989dd6204669da8479460c5f945e489a2066c6659ef2f39e0fda"
     ),
     "tests/promise_machine_coverage.json": (
-        "1a22d4dcded5df725b5c3629fabf0329e2eb62d70e8687c7b045e229f491636e"
+        "947c01fd254b3c8389aaa0f36c772de31ffe49ed5a297699bcd99f7fb38b8c81"
     ),
     "tests/test_boundary_currency.py": (
         "7a24d9d3433d2c87ff8bb5570de7b7a79fb285f0f85fe43747a1224b0d092c69"
@@ -166,7 +166,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "3c83bfaa7f067f00f304eeac64867f4710846caa913d6ce14e6eca7024b5d63f"
     ),
     SIGNING_GUARD_PATH: (
-        "a99e726b0ca3cda5a0a7487fb00243b66075a4352e1e6eea781adaf09d3cf7e0"
+        "58bc0c80f64c8bac6bda0c539af89721837a44ee22eaac04fac56ce5f5ca4c78"
     ),
     "plugins/hexaemeron/tests/test_elenchus_checker.py": (
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
@@ -193,10 +193,10 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "9eb430d168659e96a813f45c0fb0636b985cec703ef93edcdb3e0a754649f53d"
     ),
     RECORD_PATH: (
-        "4f08c1af2b81d1dd9399e7c586062dc44bbfc00d5780d58e4168cb179df62bdd"
+        "4481c2ab368897137563d12ad18c06287f1015eda3ee97e1794e560ff8181acd"
     ),
     "tests/promise_machine_coverage.json": (
-        "1a22d4dcded5df725b5c3629fabf0329e2eb62d70e8687c7b045e229f491636e"
+        "947c01fd254b3c8389aaa0f36c772de31ffe49ed5a297699bcd99f7fb38b8c81"
     ),
     "tests/test_boundary_currency.py": (
         "7a24d9d3433d2c87ff8bb5570de7b7a79fb285f0f85fe43747a1224b0d092c69"
