@@ -1255,3 +1255,93 @@ criterion stopped passing, and the audit had to refresh it twice in one round.
 
 **Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
 holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: Both remaining suites pass, and no
+fixture construction in either reaches the signer. All of the following exit 0:
+
+```bash
+npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py'
+/Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+/Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-4.json
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+```
+
+And, under a hostile configuration this step generates for itself and removes
+when it is done:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+trap 'rm -rf "$HOSTILE_DIR"' EXIT
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1[,)]' "$HOSTILE_DIR/hexaemeron.log"
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+The `trap` is set immediately after the directory is made and before anything is
+written into it, so the emitted signer is removed whether the assertions pass,
+fail, or the shell exits early. A reader running these blocks by hand in one
+shell session gets the same guarantee; a reader who runs them in separate
+sessions must remove the directory themselves, because a trap does not outlive
+the shell that set it.
+
+The Hermes suite exits 0 with nothing of its own in the sentinel. The Hexaemeron
+suite does not, and cannot: `plugins/hexaemeron/tests/test_issue_429_recovery.py:154`
+runs `git verify-commit` against this repository's own history, and the commit it
+names carries a real signature header, so git consults the hostile `gpg.program`
+to verify it and that program refuses by design. The four assertions state what
+the rule actually claims: the one error is exactly that test and no other, the
+sentinel records a verification, and it records no `-bsau`, which is the argument
+form git uses under this harness's openpgp arm when it asks a program to sign.
+
+The error-count pattern ends `[,)]` rather than `\)` because the suite carries
+one skip, so unittest prints `FAILED (errors=1, skipped=1)` and the closing paren
+does not follow the digit. The character class anchors the digit boundary: it
+matches that line and the skip-free `FAILED (errors=1)`, and rejects `errors=10`,
+`errors=13` and `errors=100`.
+
+Two bounds on the `-bsau` assertion. It discriminates signing from verification
+under the openpgp arm, which is the only arm these commands can produce, because
+`--emit` takes no arm argument, the emitted configuration contains no occurrence
+of `ssh`, and no fixture in any covered suite sets `gpg.format`,
+`gpg.ssh.program` or `gpg.program`. Every signing form measured under it carries
+`-bsau`, including `git tag -s`, `git merge -S`, and a commit with an empty
+signing key. It is not the discriminator under the ssh arm, where signing appears
+as `-Y sign`; a fixture that declared ssh signing for itself would reach the real
+`ssh-keygen` rather than the sentinel and fail at 128 with the sentinel empty,
+which is a bound the emptiness criterion this replaces shared rather than one
+introduced here.
+
+**Why.** The hostile blocks created a temporary directory and never removed it.
+Across the preamble and steps 2 through 5 the runbook has nine such sites and no
+cleanup of any kind, so every invocation leaves behind a complete working hostile
+configuration: a mode-0700 signing program beside a config naming it by absolute
+path. The register entry `sentinel-leak` claims both files are removed with the
+temporary directory that holds them, which is true of the Python guard, measured,
+and false of these shell blocks, which write the same two files through the same
+entry point. The signer is inert on its own and owner-readable only, so the
+severity is low, but a runbook that ships a claim its own commands contradict is
+the defect regardless of blast radius.
+
+Only this step's exit and step 5's can be repaired. Steps 2 and 3 are complete,
+and the preamble is not a step field, so their blocks keep the leak; that
+limitation belongs in the run's carried-forward list rather than in a silent
+partial fix.
+
+**Steps touched.** Step 4's exit.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
