@@ -146,8 +146,12 @@ checks the schema and closed object shapes, canonical manifest encoding,
 resource declarations, sorted inventory, every file digest, state identity,
 the exact ledger prefix and tail, controller version, accepted boundary,
 semantic next directive and local Git refs. Capsule reads use the export
-ceilings and no-follow, stable-file rules. A study or runbook receipt must name
-a relative artefact under the ordinary 2 MiB source cap.
+ceilings and no-follow, stable-file rules. The controller inventory is closed:
+an excluded live `lock` appearing in a capsule is an extra entry and refuses.
+A study or runbook receipt must name a relative path with no empty, dot,
+parent or backslash segment. A `.hexaemeron/` source is verified from its
+capsule copy before the worktree exists; other sources are verified from the
+fresh Git tree. Both use the ordinary 2 MiB source cap.
 
 ## Relocation transaction
 
@@ -163,15 +167,24 @@ The private stage receives the verified controller tree. All files other than
 `checkpoint:restore` entry to the exact imported ledger prefix. That entry
 binds the manifest, source state and ledger digests, prior tail, full ref map
 and relocated state fingerprint. The completed controller directory is
-published with an atomic no-replace rename.
+published with an atomic no-replace rename. The relocated state remains under
+the controller-source cap and the appended ledger remains under the capsule
+file cap. The closed inventory and every opaque file digest are rechecked from
+the active tree around finalization. Local refs are checked before publication,
+after the rename and again after the internal checks and breadcrumb write.
 
 A retry after an interruption never guesses ownership. A marker with no owned
 path may resume. A marker whose private stage or incomplete worktree remains
 refuses and preserves both for inspection. If active state was published
 before the breadcrumb and marker retirement, a retry verifies the single
-restore entry, completes those two final operations and does not append a
-second entry. Once the marker is retired, another restore is a replay and the
-occupied derived worktree refuses it.
+restore entry, the exact relocated state bytes, the imported prefix and the
+full bound receipt, then completes those two final operations without
+appending a second entry. The breadcrumb is created without following or
+replacing another entry; a retry accepts only its exact, stable single-link
+bytes. Marker retirement likewise rechecks the marker's stable single-link
+identity and exact transaction bytes before unlinking it. Once the marker is
+retired, another restore is a replay and the occupied derived worktree refuses
+it.
 
 On success Fiat recreates the origin breadcrumb, runs its internal ledger
 verification and status reader, recomputes the semantic next directive and
