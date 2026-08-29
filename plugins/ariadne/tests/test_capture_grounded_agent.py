@@ -196,6 +196,30 @@ class CaptureTests(unittest.TestCase):
         document = envelope.read(json.dumps(statement).encode("utf-8"))
         return verify.report(document, registry.DEFAULT)
 
+    def run_cli(self, producer_command=None):
+        out = io.StringIO()
+        err = io.StringIO()
+        argv = [
+            "capture-grounded-agent",
+            "--release",
+            self.release,
+            "--name",
+            "test-v1",
+            "--producer-tool",
+            "berean",
+            "--producer-version",
+            "1.0.0",
+            "--producer-command",
+            *(producer_command or ["python3"]),
+            "--first-capture-reason",
+            "first capture",
+            "--output",
+            self.output,
+        ]
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = ariadne.main(argv)
+        return code, out.getvalue(), err.getvalue()
+
     def test_capture_is_deterministic_and_projects_only_byte_backed_evidence(self):
         first = self.taken()
         second = self.taken()
@@ -382,6 +406,34 @@ class CaptureTests(unittest.TestCase):
         with self.assertRaisesRegex(capture.CaptureError, "undeclared file"):
             self.taken()
 
+    def test_every_file_beneath_the_corpus_path_is_manifest_listed(self):
+        cases = (
+            ("corpus-manifest.json", "corpus/manifest.json", ("corpus", "manifest")),
+            ("reads.jsonl", "corpus/reads.jsonl", ("reads", "path")),
+            ("answers/answer.json", "corpus/answer.json", ("answers", 0, "path")),
+            ("evals/report.json", "corpus/report.json", ("evals", "report")),
+        )
+        for source, target, locator in cases:
+            with self.subTest(role=source):
+                self.build_release(promotion=False)
+                os.makedirs(
+                    os.path.dirname(os.path.join(self.release, target)),
+                    exist_ok=True,
+                )
+                os.replace(
+                    os.path.join(self.release, source),
+                    os.path.join(self.release, target),
+                )
+                document = read_json(os.path.join(self.release, "release.json"))
+                current = document
+                for part in locator[:-1]:
+                    current = current[part]
+                current[locator[-1]] = target
+                document["release_digest"] = semantic_digest(document)
+                write_json(os.path.join(self.release, "release.json"), document)
+                with self.assertRaisesRegex(capture.CaptureError, "corpus subtree"):
+                    self.taken()
+
     def test_symlink_and_fifo_components_are_refused_without_opening(self):
         target = os.path.join(self.root, "outside")
         write_bytes(target, b"outside")
@@ -483,32 +535,51 @@ class CaptureTests(unittest.TestCase):
 
     def test_cli_errors_are_one_line_without_a_traceback(self):
         write_bytes(os.path.join(self.release, "undeclared"), b"x")
-        out = io.StringIO()
-        err = io.StringIO()
-        argv = [
-            "capture-grounded-agent",
-            "--release",
-            self.release,
-            "--name",
-            "test-v1",
-            "--producer-tool",
-            "berean",
-            "--producer-version",
-            "1.0.0",
-            "--producer-command",
-            "python3",
-            "--first-capture-reason",
-            "first capture",
-            "--output",
-            self.output,
-        ]
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
-            code = ariadne.main(argv)
+        code, out, err = self.run_cli()
         self.assertEqual(code, 2)
-        self.assertIn("capture failed:", err.getvalue())
-        self.assertNotIn("Traceback", err.getvalue())
-        self.assertEqual(len(err.getvalue().splitlines()), 1)
+        self.assertEqual(out, "")
+        self.assertIn("capture failed:", err)
+        self.assertNotIn("Traceback", err)
+        self.assertEqual(len(err.splitlines()), 1)
         self.assertFalse(os.path.exists(self.output))
+
+    def test_unknown_field_diagnostics_are_small_and_do_not_dump_the_key(self):
+        document = read_json(os.path.join(self.release, "release.json"))
+        oversized = "x" * (1024 * 1024)
+        document[oversized] = None
+        write_json(os.path.join(self.release, "release.json"), document)
+        code, out, err = self.run_cli()
+        self.assertEqual(code, 2)
+        self.assertEqual(out, "")
+        self.assertLessEqual(len(err.encode("utf-8")), 1024)
+        self.assertNotIn(oversized, err)
+        self.assertEqual(len(err.splitlines()), 1)
+        self.assertFalse(os.path.exists(self.output))
+
+    def test_non_unicode_scalar_strings_are_controlled_cli_refusals(self):
+        identity = b"bounded test questions"
+        provenance = b"preserved test RPC bytes; no stronger evidence claimed"
+        cases = (
+            (identity, b"\\ud800", None),
+            (provenance, b"\\ud800", None),
+            (None, None, ["\ud800"]),
+        )
+        for old, new, command in cases:
+            with self.subTest(surface="argv" if command else old.decode("ascii")):
+                self.build_release()
+                if old is not None:
+                    path = os.path.join(self.release, "release.json")
+                    with open(path, "rb") as handle:
+                        raw = handle.read()
+                    self.assertIn(old, raw)
+                    write_bytes(path, raw.replace(old, new, 1))
+                code, out, err = self.run_cli(producer_command=command)
+                self.assertEqual(code, 2)
+                self.assertEqual(out, "")
+                self.assertLessEqual(len(err.encode("utf-8")), 1024)
+                self.assertNotIn("Traceback", err)
+                self.assertEqual(len(err.splitlines()), 1)
+                self.assertFalse(os.path.exists(self.output))
 
     def test_capture_source_has_no_berean_runtime_or_execution_boundary(self):
         with open(capture.__file__, encoding="utf-8") as handle:

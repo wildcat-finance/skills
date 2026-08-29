@@ -25,6 +25,8 @@ MAX_COMPONENT_BYTES = 4 * 1024 * 1024
 MAX_TOTAL_BYTES = 2 * 1024 * 1024 * 1024
 MAX_PREVIOUS_BYTES = 16 * 1024 * 1024
 MAX_RELEASE_FILES = predicate.MAX_SUBJECTS
+MAX_DIAGNOSTIC_FIELDS = 4
+MAX_DIAGNOSTIC_FIELD_CHARS = 96
 
 CORPUS_FORMAT = "berean-corpus/v1"
 CORPUS_FIELDS = ("format", "corpus_version", "files", "corpus_digest")
@@ -114,8 +116,15 @@ def _closed(value, fields, what):
     if missing:
         raise CaptureError("%s is missing %s" % (what, ", ".join(missing)))
     if unknown:
+        preview = ", ".join(
+            _display(field, MAX_DIAGNOSTIC_FIELD_CHARS)
+            for field in unknown[:MAX_DIAGNOSTIC_FIELDS]
+        )
+        if len(unknown) > MAX_DIAGNOSTIC_FIELDS:
+            preview += ", ..."
         raise CaptureError(
-            "%s carries undeclared fields: %s" % (what, ", ".join(unknown))
+            "%s carries %d undeclared field(s): %s"
+            % (what, len(unknown), preview)
         )
     return value
 
@@ -147,6 +156,8 @@ def _digest(value, what):
 
 def _stated(value, what, portable=False):
     valid = predicate.portable_name(value) if portable else predicate.stated(value)
+    if valid and any(0xD800 <= ord(char) <= 0xDFFF for char in value):
+        valid = False
     if not valid:
         adjective = "portable bounded" if portable else "bounded stated"
         raise CaptureError("%s is not a %s string" % (what, adjective))
@@ -174,19 +185,28 @@ def _listing_digest(entries):
 
 
 def _canonical_digest(value):
-    raw = json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    ).encode("utf-8")
+    try:
+        raw = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    except UnicodeEncodeError:
+        raise CaptureError(
+            "canonical JSON contains a non-Unicode-scalar string"
+        ) from None
     return hashlib.sha256(raw).hexdigest()
 
 
-def _display(value):
+def _display(value, limit=300):
     """Bound one attacker-chosen path before it reaches a one-line diagnostic."""
-    shown = ascii(value)
-    return shown if len(shown) <= 300 else shown[:297] + "..."
+    cropped = isinstance(value, str) and len(value) > limit
+    sample = value[:limit] if cropped else value
+    shown = ascii(sample)
+    if cropped or len(shown) > limit:
+        return shown[: limit - 3] + "..."
+    return shown
 
 
 def _metadata(path):
@@ -462,6 +482,29 @@ def _corpus(reader, document, paths):
     return manifest_component, components
 
 
+def _close_corpus_subtree(corpus_path, components, inventory):
+    """Require the manifest to own every file beneath ``corpus.path``."""
+    prefix = unicodedata.normalize("NFC", corpus_path) + "/"
+    expected = {
+        unicodedata.normalize("NFC", component["path"])
+        for component in components
+    }
+    actual = {path for path in inventory if path.startswith(prefix)}
+    if actual == expected:
+        return
+    extra = sorted(actual - expected)
+    if extra:
+        raise CaptureError(
+            "corpus subtree holds file(s) absent from its manifest: %s"
+            % ", ".join(_display(path) for path in extra[:8])
+        )
+    missing = sorted(expected - actual)
+    raise CaptureError(
+        "corpus subtree is missing manifest file(s): %s"
+        % ", ".join(_display(path) for path in missing[:8])
+    )
+
+
 def _promotion_record(record, line, document):
     if record.get("format") != predicate.BEREAN_PROMOTION_FORMAT:
         raise CaptureError("promotion record %d has another format" % line)
@@ -608,7 +651,14 @@ def _comparison(name, release_digest, previous, first_capture_reason):
 
 
 def _self_verify(statement):
-    raw = (json.dumps(statement, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    try:
+        raw = (json.dumps(statement, indent=2, ensure_ascii=False) + "\n").encode(
+            "utf-8"
+        )
+    except UnicodeEncodeError:
+        raise CaptureError(
+            "constructed statement contains a non-Unicode-scalar string"
+        ) from None
     try:
         document = envelope.read(raw, safejson.loader(len(raw) + 1, MAX_JSON_DEPTH))
         report = verify.report(document, registry.DEFAULT)
@@ -645,12 +695,13 @@ def capture(
         not isinstance(producer_command, (list, tuple))
         or not producer_command
         or len(producer_command) > predicate.MAX_COMMAND_WORDS
-        or not all(predicate.stated(word) for word in producer_command)
     ):
         raise CaptureError(
             "--producer-command needs 1 to %d bounded argv words"
             % predicate.MAX_COMMAND_WORDS
         )
+    for index, word in enumerate(producer_command):
+        _stated(word, "--producer-command word %d" % (index + 1))
 
     root = _release_root(release)
     before = _inventory(root)
@@ -666,6 +717,7 @@ def capture(
     )
     question_families, refusal_conditions = _release_shape(document, declared)
     manifest_component, corpus_components = _corpus(reader, document, declared)
+    _close_corpus_subtree(document["corpus"]["path"], corpus_components, before)
 
     reads_component = None
     if document["reads"] is not None:
