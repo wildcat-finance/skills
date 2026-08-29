@@ -81,7 +81,11 @@ from model_proxy_lib.provider import (  # noqa: E402
     check_provider_manifest,
 )
 from model_proxy_lib.receipts import RECEIPT_SCHEMA, ReceiptSink  # noqa: E402
-from model_proxy_lib.transport import HTTPSConnector, HTTPSRequest  # noqa: E402
+from model_proxy_lib.transport import (  # noqa: E402
+    READ_CHUNK_BYTES,
+    HTTPSConnector,
+    HTTPSRequest,
+)
 
 
 def accepted_document() -> dict[str, object]:
@@ -5369,6 +5373,39 @@ class ConformanceTests(unittest.TestCase):
         self.assertEqual(TEXT_OPERATION, request["operation"])
         self.assertEqual("GET", request["method"])
 
+    def test_response_flood_row_streams_one_sentinel_beyond_the_cap(self):
+        maximum = self.policy.document["limits"]["max_response_bytes"]
+        responses = []
+
+        def response(body, **kwargs):
+            value = BufferedHTTPSResponse(body, **kwargs)
+            responses.append(value)
+            return value
+
+        with mock.patch.object(conformance, "_Response", side_effect=response):
+            result = conformance._execute_case("response-flood", self.policy)
+        self.assertEqual("MP310", result.outcome)
+        self.assertEqual("provider-only", result.disclosure_state)
+        self.assertEqual(1, len(responses))
+        self.assertEqual(maximum + 1, len(responses[0].body))
+        self.assertEqual(
+            (
+                ("Content-Type", "application/json"),
+                ("Transfer-Encoding", "chunked"),
+            ),
+            responses[0].headers,
+        )
+        remaining = maximum + 1
+        expected_reads = []
+        while remaining:
+            size = min(READ_CHUNK_BYTES, remaining)
+            expected_reads.append(size)
+            remaining -= size
+        self.assertEqual(expected_reads, responses[0].read_sizes)
+        self.assertEqual(maximum + 1, sum(responses[0].read_sizes))
+        self.assertEqual(maximum + 1, responses[0].position)
+        self.assertTrue(responses[0].closed)
+
     def test_positive_surface_inventory_is_closed_and_each_scan_fails_shut(self):
         credential = b"credential-canary"
         input_content = b"input-content-canary"
@@ -5486,7 +5523,7 @@ class ConformanceTests(unittest.TestCase):
             expected["counts"],
         )
         self.assertEqual(
-            {"request_bytes": 313, "response_bytes": 133, "guest_bytes": 90},
+            {"request_bytes": 313, "response_bytes": 32902, "guest_bytes": 90},
             expected["sizes"],
         )
         self.assertEqual({"duration_ns": "3000000"}, expected["timings"])

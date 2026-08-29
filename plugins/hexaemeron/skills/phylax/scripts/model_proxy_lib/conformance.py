@@ -25,7 +25,12 @@ from .operator import render_operator_text
 from .policy import CompiledPolicy, compile_policy_file
 from .profiles import ProviderProfile, resolve_profile
 from .provider import ProviderEvent, ProviderSession
-from .transport import HTTPSConnector, HTTPSRequest, HTTPSResponse
+from .transport import (
+    READ_CHUNK_BYTES,
+    HTTPSConnector,
+    HTTPSRequest,
+    HTTPSResponse,
+)
 
 
 CONFORMANCE_MANIFEST_SCHEMA = "model-proxy-conformance-manifest/v1"
@@ -219,9 +224,11 @@ class _Response:
         self.peer_address = peer_address
         self._body = body
         self._position = 0
+        self.read_sizes: list[int] = []
         self.closed = False
 
     def read(self, size: int) -> bytes:
+        self.read_sizes.append(size)
         chunk = self._body[self._position : self._position + size]
         self._position += len(chunk)
         return chunk
@@ -652,19 +659,29 @@ def _execute_case(identifier: str, policy: CompiledPolicy) -> ConformanceRowResu
         return _framing_refusal(identifier, "MP217", policy, data)
     if identifier == "response-flood":
         maximum = policy.document["limits"]["max_response_bytes"]
-        return _provider_refusal(
+        response = _Response(
+            b"x" * (maximum + 1),
+            headers=(
+                ("Content-Type", "application/json"),
+                ("Transfer-Encoding", "chunked"),
+            ),
+        )
+        result = _provider_refusal(
             identifier,
             "MP310",
             policy,
             resolver=lambda _hostname, _port: ("8.8.8.8",),
-            response=_Response(
-                b"",
-                headers=(
-                    ("Content-Length", str(maximum + 1)),
-                    ("Content-Type", "application/json"),
-                ),
-            ),
+            response=response,
         )
+        remaining = maximum + 1
+        expected_reads: list[int] = []
+        while remaining:
+            size = min(READ_CHUNK_BYTES, remaining)
+            expected_reads.append(size)
+            remaining -= size
+        if response.read_sizes != expected_reads:
+            refuse("MP501", "conformance.row.response_flood")
+        return result
     if identifier == "cross-job":
         return _controller_refusal(
             identifier,
