@@ -3404,7 +3404,7 @@
         "transition": "five passing gates and zero exit joined to the canonical Authorises field",
         "unknowns": "unchecked venues, unsupported claims and explicit gaps"
       },
-      "sha256": "82679d551c7150e2dc2dd8bbc007662d6fc7f2dcc9a537cd3d359bd8aa53d41c",
+      "sha256": "10d9c0589c50f286d27fe5f5e293b30efe3ae1da5770c4a797b6895e2b2480f0",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     "tabularium-release-build": {
