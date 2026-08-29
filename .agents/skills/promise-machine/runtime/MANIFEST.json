@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 959,
-  "total_bytes": 20721615,
+  "total_bytes": 20721770,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -5055,9 +5055,9 @@
       "source": "plugins/probitas/docs/morpho-midnight-fixed-maturity-study.md"
     },
     {
-      "bytes": 9647,
+      "bytes": 9802,
       "path": "plugins/probitas/scripts/probitas.py",
-      "sha256": "10d9c0589c50f286d27fe5f5e293b30efe3ae1da5770c4a797b6895e2b2480f0",
+      "sha256": "76fa231a2910da086bbcbd65305e4f3199944edf4819274477d945fc67f4910d",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     {
