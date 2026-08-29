@@ -1066,6 +1066,29 @@ def _candidate(
     return Finding(analyser_id, path, symbol, evidence, confidence, boundary)
 
 
+def _function_scope_nodes(
+    function: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> Iterable[ast.AST]:
+    """Walk stores in one function scope without entering child scopes."""
+    boundaries = (
+        ast.FunctionDef,
+        ast.AsyncFunctionDef,
+        ast.Lambda,
+        ast.ClassDef,
+        ast.ListComp,
+        ast.SetComp,
+        ast.DictComp,
+        ast.GeneratorExp,
+    )
+    pending = list(reversed(function.body))
+    while pending:
+        node = pending.pop()
+        yield node
+        if isinstance(node, boundaries):
+            continue
+        pending.extend(reversed(list(ast.iter_child_nodes(node))))
+
+
 def _unused_bindings(item: ParsedPython) -> Iterable[Finding]:
     loads = {
         node.id
@@ -1112,14 +1135,15 @@ def _unused_bindings(item: ParsedPython) -> Iterable[Finding]:
             for node in ast.walk(function)
             if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
         }
+        scope_nodes = tuple(_function_scope_nodes(function))
         assignments: dict[str, int] = {}
         external_bindings = {
             name
-            for declaration in ast.walk(function)
+            for declaration in scope_nodes
             if isinstance(declaration, (ast.Global, ast.Nonlocal))
             for name in declaration.names
         }
-        for node in ast.walk(function):
+        for node in scope_nodes:
             if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
                 assignments.setdefault(node.id, node.lineno)
         for name, line in sorted(assignments.items()):
@@ -1374,7 +1398,13 @@ def _normalise_coverage_events(
         path = item.get("path")
         function = item.get("function")
         line = item.get("line")
-        if not isinstance(path, str) or not isinstance(function, str) or not isinstance(line, int) or line < 1:
+        if (
+            not isinstance(path, str)
+            or not isinstance(function, str)
+            or not isinstance(line, int)
+            or isinstance(line, bool)
+            or line < 1
+        ):
             raise Refusal("coverage line event has an invalid identity")
         validate_repository_path(path, "coverage line path")
         if path in analysed:
@@ -1391,9 +1421,12 @@ def _normalise_coverage_events(
             not isinstance(path, str)
             or not isinstance(function, str)
             or not isinstance(source, int)
+            or isinstance(source, bool)
             or source < 1
             or not isinstance(target, int)
+            or isinstance(target, bool)
             or target < 1
+            or not isinstance(direction, str)
             or direction not in {"left", "right"}
         ):
             raise Refusal("coverage branch event has an invalid identity")
@@ -1418,6 +1451,23 @@ def _normalise_coverage_events(
     )
 
 
+def _coverage_process_complete(status: object) -> bool:
+    if not isinstance(status, dict):
+        raise Refusal("coverage process status is not an object")
+    state = status.get("state")
+    truncated = status.get("truncated")
+    errors = status.get("errors")
+    if (
+        not isinstance(state, str)
+        or state not in {"ran", "degraded"}
+        or not isinstance(truncated, bool)
+        or not isinstance(errors, list)
+        or not all(isinstance(error, str) and error for error in errors)
+    ):
+        raise Refusal("coverage process status is malformed")
+    return state == "ran" and not truncated and not errors
+
+
 def aggregate_coverage(
     plan: dict[str, object],
     run: dict[str, object],
@@ -1437,12 +1487,18 @@ def aggregate_coverage(
     for item in selected:
         if not isinstance(item, dict) or not isinstance(item.get("id"), str):
             raise Refusal("checked runner selected-check record is malformed")
-        planned[item["id"]] = item
+        identifier = item["id"]
+        if not identifier or identifier in planned:
+            raise Refusal("checked runner plan has an empty or repeated check identity")
+        planned[identifier] = item
     terminal: dict[str, dict[str, object]] = {}
     for item in results:
         if not isinstance(item, dict) or not isinstance(item.get("check"), str):
             raise Refusal("checked runner terminal record is malformed")
-        terminal[item["check"]] = item
+        identifier = item["check"]
+        if not identifier or identifier in terminal:
+            raise Refusal("checked runner terminal record has an empty or repeated check identity")
+        terminal[identifier] = item
     if set(terminal) != set(planned):
         raise Refusal("checked runner terminal records do not match its plan")
 
@@ -1489,7 +1545,7 @@ def aggregate_coverage(
             branches,
             set(universe.analysed),
         )
-        if status.get("state") != "ran":
+        if not _coverage_process_complete(status):
             degraded_reasons.add(f"check {check_id} emitted a degraded process record")
         bytes_by_check[check_id] += size
         process_count_by_check[check_id] += 1
@@ -1679,6 +1735,12 @@ def command_coverage(arguments: argparse.Namespace) -> int:
             label=runner_report,
         )
         run = _json_document(run_raw, runner_report)
+        outcome = run.get("outcome")
+        expected_returncode = 0 if outcome == "green" else 1 if outcome == "red" else None
+        if expected_returncode is None or _returncode != expected_returncode:
+            raise Refusal(
+                f"checked runner exit {_returncode} does not match {outcome} outcome"
+            )
         documents = _read_process_documents(process_directory, process_fd, run_id)
         coverage = aggregate_coverage(plan, run, documents, universe)
         atomic_write(root, target, json.dumps(coverage, indent=2, sort_keys=True) + chr(10), root_fd=root_fd)
@@ -1824,7 +1886,7 @@ def analyse_coverage(
             raise Refusal("coverage process events are not canonical for the report universe")
         actual_counts[check_id][0] += 1
         actual_counts[check_id][1] += size
-        if process_status.get("state") != "ran":
+        if not _coverage_process_complete(process_status):
             incomplete.add(f"process for {check_id} was degraded")
         observed_lines.update(
             (line["path"], line["line"])
