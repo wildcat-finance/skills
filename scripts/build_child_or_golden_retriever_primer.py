@@ -80,8 +80,8 @@ EXPECTED_LIFECYCLE = (
 EXPECTED_KIT_DIGEST = (
     "e09eb107921ab52e467bae54e3e605f2e01fa258df7c12529be44fc486d71218"
 )
-EXPECTED_HEX_VERSION = "1.6.8"
-EXPECTED_FIAT_VERSION = "5.33.1"
+EXPECTED_HEX_VERSION = "1.6.10"
+EXPECTED_FIAT_VERSION = "5.35.1"
 STALE_CHECKPOINT_CLAIMS = (
     "does not yet support checkpointing",
     "before checkpointing exists",

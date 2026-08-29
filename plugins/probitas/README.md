@@ -65,11 +65,11 @@ Gate 3 is the one that does the work. It rebuilds, from the evidence alone, ever
 ## What it ships
 
 - the executable [`probitas.py`](./scripts/probitas.py) collector, renderer and gate checker, standard library only;
-- adapters for [Wildcat](https://wildcat.finance), Morpho Blue, Euler v1, Euler v2 and Morpho Midnight, and ten further venues carried as named gaps rather than silence;
+- adapters for [Wildcat](https://wildcat.finance), Morpho Blue, Euler v1, Euler v2 and Morpho Midnight, an archive route over verified Alexandria releases for Goldfinch and Clearpool, and ten further venues carried as named gaps rather than silence;
 - eleven synthetic borrower fixtures, including the cured delinquency that a hand-assembled writeup usually reads as a default;
 - a [committed example dossier](./docs/example-dossier.md) that the tests regenerate and compare, so it cannot drift;
 - [a guide to closing a coverage gap](./docs/adding-a-venue.md) that assumes no knowledge of Wildcat; and
-- 387 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
+- 437 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
 
 ## Day to day
 
@@ -105,33 +105,65 @@ can't drift from what the tool actually does.
 Drop `--fixtures` to run against the live venues instead of a synthetic
 borrower.
 
-To use a verified Alexandria address index instead of live or fixture adapters:
+### Two routes, and how to ask for them
+
+`collect` gathers from two routes. The adapter route queries the venues that
+ship an adapter, backed either by the network or by a fixture directory. The
+archive route reads verified Alexandria releases through a disposable index,
+which is where Goldfinch and Clearpool history lives. A real diligence run
+usually wants both, so they combine:
 
 ```bash
 python3 scripts/probitas.py collect --entity "Acme Trading Ltd" \
-  --address 0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1 \
-  --alexandria-index alexandria.sqlite --out evidence.json
+  --address 0xa1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1 \
+  --live --alexandria-index alexandria.sqlite --out evidence.json
 ```
 
-This route keeps the original Goldfinch or Clearpool venue and the Alexandria
-release, capture, component and row identities on every record. Every registry
-venue absent from the index remains a named gap. The normal live and fixture
-routes do not change unless this option is passed.
+| Flags | Adapter route | Archive route |
+| --- | --- | --- |
+| none | live network | not run |
+| `--fixtures DIR` | fixture directory | not run |
+| `--alexandria-index X` | not run | archive |
+| `--fixtures DIR --alexandria-index X` | fixture directory | archive |
+| `--live --alexandria-index X` | live network | archive |
+| `--live` | live network | not run |
+| `--live --fixtures DIR` | refused, exit 2 | refused, exit 2 |
+
+An offline end-to-end run of both routes lives in
+[`tests/test_union.py`](./tests/test_union.py). It builds a disposable
+Alexandria index from that plugin's checked-in demonstration, collects over the
+fixture and archive routes together, renders, and puts the result through all
+five gates without reaching the network.
+
+`--live` exists because an index on its own still suppresses the adapter route,
+exactly as it always has. Making the index additive by default would have
+started sending requests from every command that already passes one, and a tool
+whose whole claim is provenance should not widen what it reaches to save a
+flag. `--fixtures` and `--live` both name what backs the adapter route, so they
+contradict each other and the run says so.
+
+Every coverage row names the route that produced it, and an archive row names
+the Alexandria releases behind it. A venue some route answered for is not
+reported as a gap because another route had nothing to say about it; a route
+that failed still leaves one. The archive route keeps the original Goldfinch or
+Clearpool venue and the Alexandria release, capture, component and row
+identities on every record.
 
 ### Options
 
 - `--entity`: The counterparty's name. Required.
 - `--address`: An address they declared. Repeatable and required.
 - `--inferred`: An address suspected but neither declared nor provably linked. Kept in its own section; gate 1 fails the dossier if a finding against one appears anywhere else.
-- `--fixtures`: Read venue responses from a directory instead of the network.
-- `--alexandria-index`: Read verified archive-backed evidence instead of live or fixture adapters.
+- `--fixtures`: Read venue responses from a directory instead of the network. Contradicts `--live`.
+- `--live`: Run the adapters against the network. Needed beside `--alexandria-index`, and the default when no index is given.
+- `--alexandria-index`: Also read verified archive-backed evidence from this index. On its own it suppresses the adapter route and reaches no network.
 - `--run-id`: A label for the run, printed in the dossier.
 - `--timeout`: Seconds per request, default 30.
 - `--out`: Where to write, or `-` for stdout.
 
 ### The fixtures
 
-Eleven of them, covering all four shipped venues and the cases worth being sure
+Eleven of them, covering all five shipped venues and the cases worth being sure
 about.
 
 For Wildcat: a clean record, a delinquency cured inside the grace period, a

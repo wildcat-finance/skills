@@ -25,23 +25,23 @@ What was checked, and what was not. A venue with no row here would be an
 omission; a venue with a row saying nobody checked is a gap, and a gap is not
 a clean record.
 
-| Venue | Status | Range | Records | Note |
-| --- | --- | --- | --- | --- |
-| Aave v3 | unimplemented | -- | 0 | Reachable without a key after all, at api.aave.com/graphql. The \`activities\` query filtered by user returns borrows, repayments and liquidations, each with a txHash and an exact on-chain integer. Introspection is off; the schema is published in the aave-v4-sdk repository. The Graph gateway route needs a paid key; this does not. |
-| Aave v4 | unimplemented | -- | 0 | Live on Ethereum mainnet since March 2026, hub and spoke rather than one pool, keyless at api.v4.aave.com/graphql. A borrower on v3 and a borrower on v4 are the same counterparty and the dossier should say so. |
-| Centrifuge | unimplemented | -- | 0 | Keyless GraphQL at api.centrifuge.io, introspects cleanly, 24 pools on mainnet. Carries pools, holdings, investor transactions and debt changes. The most build-ready of the unbuilt venues. |
-| Clearpool | unimplemented | -- | 0 | Live, and the API sits behind a bot challenge that returns 403 to a plain request. Working around that is not something this tool should do; an agreement with them is the way in. |
-| Compound v3 | unimplemented | -- | 0 | No first-party API found. The Graph gateway rejects unauthenticated requests and the old hosted service is gone. |
-| Euler v2 | empty | fixture | 0 | ethereum mainnet V3 event ledger; complete indexed coverage; no borrowing activity found for any subject EVC owner |
-| Euler v1 | empty | fixture | 0 | ethereum mainnet canonical Euler v1 proxy log; Borrow, Repay and Liquidation events checked through finalized block 18000000; no borrowing activity found for any subject address |
-| Goldfinch | unimplemented | -- | 0 | The protocol wound down in June 2026 after roughly 100 million dollars originated, with depositors reporting far heavier losses than the dashboard showed. The record stays on chain and is worth more to a dossier than most live venues, since it is a list of who did not repay. |
-| Maple Finance | unimplemented | -- | 0 | api.maple.finance responds but disables introspection, so the query shape could not be established. Undercollateralised, so worth the work. |
-| MetaMorpho vaults | unimplemented | -- | 0 | 450 vaults on mainnet, on the same keyless API. A counterparty can appear here as a curator rather than a borrower, and a curator who allocated into a market that took bad debt made a call that cost lenders money. Not collected yet. |
-| Morpho Blue | checked | fixture | 3 | ethereum mainnet only; 3 record(s) across 1 address(es) |
-| Morpho Midnight | checked | unpublished-50551562 | 6 | Base chain id 8453; all 1 user transaction cursor walk(s) exhausted across 1 page(s); observed\_at=1785374000; returned index through block 50551562; API history lower bound unpublished; API-scoped history only, not archive-chain completeness; 6 record(s) |
-| Morpho Vaults V2 | unimplemented | -- | 0 | 474 vaults on mainnet, same API, separate surface from MetaMorpho with its own allocation transactions. Not collected yet. |
-| TrueFi | unimplemented | -- | 0 | Restructured through 2025 and into a token migration completing May 2026. No public API endpoint answered. Historical undercollateralised loans are still the interesting part. |
-| Wildcat | checked | fixture | 6 | mainnet only; 1 market(s) across 1 address(es) |
+| Venue | Status | Source | Range | Records | Note |
+| --- | --- | --- | --- | --- | --- |
+| Aave v3 | unimplemented | none | -- | 0 | Reachable without a key after all, at api.aave.com/graphql. The \`activities\` query filtered by user returns borrows, repayments and liquidations, each with a txHash and an exact on-chain integer. Introspection is off; the schema is published in the aave-v4-sdk repository. The Graph gateway route needs a paid key; this does not. |
+| Aave v4 | unimplemented | none | -- | 0 | Live on Ethereum mainnet since March 2026, hub and spoke rather than one pool, keyless at api.v4.aave.com/graphql. A borrower on v3 and a borrower on v4 are the same counterparty and the dossier should say so. |
+| Centrifuge | unimplemented | none | -- | 0 | Keyless GraphQL at api.centrifuge.io, introspects cleanly, 24 pools on mainnet. Carries pools, holdings, investor transactions and debt changes. The most build-ready of the unbuilt venues. |
+| Clearpool | unimplemented | none | -- | 0 | Live, and the API sits behind a bot challenge that returns 403 to a plain request. Working around that is not something this tool should do; an agreement with them is the way in. |
+| Compound v3 | unimplemented | none | -- | 0 | No first-party API found. The Graph gateway rejects unauthenticated requests and the old hosted service is gone. |
+| Euler v2 | empty | fixtures | fixture | 0 | ethereum mainnet V3 event ledger; complete indexed coverage; no borrowing activity found for any subject EVC owner |
+| Euler v1 | empty | fixtures | fixture | 0 | ethereum mainnet canonical Euler v1 proxy log; Borrow, Repay and Liquidation events checked through finalized block 18000000; no borrowing activity found for any subject address |
+| Goldfinch | unimplemented | none | -- | 0 | The protocol wound down in June 2026 after roughly 100 million dollars originated, with depositors reporting far heavier losses than the dashboard showed. The record stays on chain and is worth more to a dossier than most live venues, since it is a list of who did not repay. |
+| Maple Finance | unimplemented | none | -- | 0 | api.maple.finance responds but disables introspection, so the query shape could not be established. Undercollateralised, so worth the work. |
+| MetaMorpho vaults | unimplemented | none | -- | 0 | 450 vaults on mainnet, on the same keyless API. A counterparty can appear here as a curator rather than a borrower, and a curator who allocated into a market that took bad debt made a call that cost lenders money. Not collected yet. |
+| Morpho Blue | checked | fixtures | fixture | 3 | ethereum mainnet only; 3 record(s) across 1 address(es) |
+| Morpho Midnight | checked | fixtures | unpublished-50551562 | 6 | Base chain id 8453; all 1 user transaction cursor walk(s) exhausted across 1 page(s); observed\_at=1785374000; returned index through block 50551562; API history lower bound unpublished; API-scoped history only, not archive-chain completeness; 6 record(s) |
+| Morpho Vaults V2 | unimplemented | none | -- | 0 | 474 vaults on mainnet, same API, separate surface from MetaMorpho with its own allocation transactions. Not collected yet. |
+| TrueFi | unimplemented | none | -- | 0 | Restructured through 2025 and into a token migration completing May 2026. No public API endpoint answered. Historical undercollateralised loans are still the interesting part. |
+| Wildcat | checked | fixtures | fixture | 6 | mainnet only; 1 market(s) across 1 address(es) |
 
 ## What could not be established
 

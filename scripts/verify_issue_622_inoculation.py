@@ -119,7 +119,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
     ),
     "plugins/hexaemeron/tests/test_hexctl.py": (
-        "3e0fc237f94f3b5c246f074fbf928ccfd28d0dfd6642858f3236e63989c67f15"
+        "a5d22f2d488856dfbefbd7c9bde899aeeeade4570d01bc0104a277cbe13abd7f"
     ),
     "plugins/hexaemeron/tests/test_kronos_scoreboard.py": (
         "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
@@ -134,7 +134,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
     ),
     "tests/promise_machine_coverage.json": (
-        "b8b7cf8e83cd34f702bb65e2ba64e6a3358dae427c4108639b76f5294636744a"
+        "1cbd633bf9bdb80040a3b49a1200502236fb6fdfdf287b56dcce5802e3e78b7c"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
@@ -171,7 +171,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "377d40130cd0f64b66872fd27374e23874d0f9903d71f03e5454eea987c7ad44"
     ),
     "plugins/hexaemeron/tests/test_hexctl.py": (
-        "3e0fc237f94f3b5c246f074fbf928ccfd28d0dfd6642858f3236e63989c67f15"
+        "a5d22f2d488856dfbefbd7c9bde899aeeeade4570d01bc0104a277cbe13abd7f"
     ),
     "plugins/hexaemeron/tests/test_kronos_scoreboard.py": (
         "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
@@ -192,10 +192,10 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "46085b12fdac754fd73a50d972c273d82e83395af142b0fe69055f907e486a3f"
     ),
     RECORD_PATH: (
-        "7b5b9bc7049cecf2de268a163f7429f0a4e14ff2203cdb32907379414d59f591"
+        "6c456d9dea4ac6e276f30b8db93465e92ea565e4fc337ac96d072099042c5af9"
     ),
     "tests/promise_machine_coverage.json": (
-        "b8b7cf8e83cd34f702bb65e2ba64e6a3358dae427c4108639b76f5294636744a"
+        "1cbd633bf9bdb80040a3b49a1200502236fb6fdfdf287b56dcce5802e3e78b7c"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"

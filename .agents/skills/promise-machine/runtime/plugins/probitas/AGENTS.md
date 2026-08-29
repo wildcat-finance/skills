@@ -51,7 +51,9 @@ run as clean when it exited 1.
 ## Network and side effects
 
 Without `--fixtures` or `--alexandria-index`, `collect` makes outbound requests
-to public venue APIs.
+to public venue APIs. So does `--live`, which is how a run asks for the network
+beside an archive index; `--live` and `--fixtures` contradict each other and the
+run is refused with exit 2.
 It sends the addresses it was given and nothing else, and it needs no
 credential for either shipped venue. Ask for whatever approval the runtime or
 the target repository requires before running it against a live counterparty,
@@ -59,8 +61,11 @@ and prefer a fixture directory when demonstrating rather than investigating.
 
 `--alexandria-index` reads a disposable Alexandria SQLite index and its
 referenced verified releases without reaching the network. It keeps the
-original venue and archive provenance on every record and reports every
-unharvested registry venue as a gap.
+original venue and archive provenance on every record. On its own it still
+suppresses the adapter route, so passing an index never widens what a run
+reaches. Combined with `--fixtures` or `--live` it adds the archive route
+beside the adapter route, and every coverage row then names which of the two
+produced it. A venue no requested route reached is reported as a gap.
 
 `collect`, `render` and `verify` write only where `--out` points. Nothing else
 in the plugin writes outside its own directory.

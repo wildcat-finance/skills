@@ -2,6 +2,7 @@
 
 import json
 import pathlib
+import re
 import sys
 import unittest
 
@@ -14,10 +15,25 @@ CLAUDE_MANIFEST = PLUGIN_ROOT / ".claude-plugin" / "plugin.json"
 CODEX_MANIFEST = PLUGIN_ROOT / ".codex-plugin" / "plugin.json"
 
 SKILL = PLUGIN_ROOT / "skills" / "probitas" / "SKILL.md"
+LEDGER = PLUGIN_ROOT / "skills" / "probitas" / "EVOLUTION.md"
 
 
 def load(path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def ledger_version():
+    """The skill version the evolution ledger currently holds.
+
+    Read rather than pinned. The inverse invariant below is that the package
+    version does not track the skill version, and a literal here turns every
+    legitimate generation bump into a failure of a test that was never about
+    the number.
+    """
+    match = re.search(r"(?m)^- Current version: `probitas-v(\d+\.\d+\.\d+)`$",
+                      LEDGER.read_text(encoding="utf-8"))
+    assert match is not None, "the ledger states no current version"
+    return match.group(1)
 
 
 def skill_frontmatter():
@@ -65,7 +81,7 @@ class TestManifests(unittest.TestCase):
         # Deliberate inverse-invariant: the package version must NOT track the
         # skill version. Keep local; do not fold into the shared contract helper.
         claude = load(CLAUDE_MANIFEST)
-        self.assertEqual(skill_frontmatter()["metadata"]["version"], "1.1.0")
+        self.assertEqual(skill_frontmatter()["metadata"]["version"], ledger_version())
         self.assertNotEqual(
             skill_frontmatter()["metadata"]["version"], claude["version"]
         )

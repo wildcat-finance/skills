@@ -9,7 +9,12 @@ SUPPORTED_VENUES = {"clearpool", "goldfinch"}
 
 
 def translate(index_path, addresses):
-    """Return neutral constructor arguments for Probitas Record and Coverage."""
+    """Return neutral constructor arguments for Probitas Record and Coverage.
+
+    Each coverage row names its releases as a field as well as inside its
+    note. The note is prose, and a Probitas gate that wanted to require an
+    archive row to name its provenance would otherwise have to parse it.
+    """
     result = query(index_path, addresses)
     records = []
     for item in result["events"]:
@@ -58,6 +63,7 @@ def translate(index_path, addresses):
         coverage.append({
             "block_range": _block_range(captures),
             "endpoint": "Alexandria index",
+            "releases": release_ids,
             "note": (
                 f"archive-backed coverage {chain_status}; evidence "
                 f"{','.join(evidence) if evidence else 'none'}; releases "

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 14789959,
+    "bytes_blob": 14867049,
     "bytes_generated": 98
   },
   "entries": [
@@ -49,11 +49,18 @@
       "path": "audit/rounds/fiat-390-add-fail-closed-morpho-midnight-fixed-maturi.synopsis.md"
     },
     {
-      "bytes": 18134,
+      "bytes": 23478,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-390-restore-fail-closed-morpho-midnight-fixed-ma.synopsis.md"
+    },
+    {
+      "bytes": 18752,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-391-unified-live-and-archive-collection.synopsis.md"
     },
     {
       "bytes": 89662,
@@ -110,6 +117,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-510-reuse-source-bound-x-ray-analysis-across-fia.synopsis.md"
+    },
+    {
+      "bytes": 52994,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-557-portable-run-state-recovery-r2.synopsis.md"
     },
     {
       "bytes": 31859,

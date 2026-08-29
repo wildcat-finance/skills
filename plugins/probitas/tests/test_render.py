@@ -8,6 +8,7 @@ import unittest
 from . import support
 
 from probitas_lib import formatting, registry, render  # noqa: E402
+from probitas_lib.adapters import run_adapter  # noqa: E402
 from probitas_lib.adapters.wildcat import adapter  # noqa: E402
 from probitas_lib.adapters.morpho_midnight import adapter as midnight_adapter  # noqa: E402
 from probitas_lib.evidence import Coverage, Evidence, Gap  # noqa: E402
@@ -23,15 +24,16 @@ def evidence(case="defaulted", inferred=False):
     if inferred:
         addresses.append((INFERRED, "inferred"))
     subject = Evidence(entity="Acme Trading Ltd", addresses=addresses, run_id="test")
-    records, coverage = adapter(
-        dict(subject.addresses), {"fixtures": os.path.join(FIXTURES, case)}
+    records, coverage = run_adapter(
+        "wildcat", adapter, dict(subject.addresses),
+        {"fixtures": os.path.join(FIXTURES, case)},
     )
     for record in records:
         subject.add_record(record)
     subject.add_coverage(coverage)
     for venue in registry.all_venues():
         if venue.id != "wildcat":
-            subject.add_coverage(Coverage(venue.id, "unimplemented", note=venue.note))
+            subject.add_coverage(Coverage(venue.id, "unimplemented", note=venue.note, source="none"))
             subject.add_gap(Gap(f"{venue.id} borrowing history", venue.note))
     return subject.to_dict()
 
@@ -42,8 +44,13 @@ def midnight_evidence(case):
         addresses=[(MIDNIGHT_DECLARED, "declared")],
         run_id="midnight-render",
     )
-    records, coverage = midnight_adapter(
-        dict(subject.addresses), {"fixtures": os.path.join(FIXTURES, case)}
+    # Through the route rather than the adapter: the route is what stamps the
+    # coverage source, and a row without one cannot enter an evidence file.
+    records, coverage = run_adapter(
+        "morpho-midnight",
+        midnight_adapter,
+        dict(subject.addresses),
+        {"fixtures": os.path.join(FIXTURES, case)},
     )
     for record in records:
         subject.add_record(record)
@@ -98,6 +105,55 @@ class TestContent(unittest.TestCase):
         for venue in registry.all_venues():
             with self.subTest(venue=venue.id):
                 self.assertIn(venue.name, document)
+
+    def test_the_coverage_table_names_the_source_of_every_row(self):
+        document = render.render(evidence())
+        self.assertIn("| Venue | Status | Source | Range | Records | Note |", document)
+        start = document.index("## Coverage")
+        end = document.index("## What could not be established")
+        table = document[start:end]
+        rows = [
+            line for line in table.splitlines()
+            if line.startswith("| ") and "---" not in line
+        ][1:]
+        self.assertEqual(len(rows), len(registry.all_venues()))
+        for line in rows:
+            with self.subTest(row=line[:40]):
+                self.assertIn(line.split("|")[3].strip(), ("fixtures", "none"))
+
+    def test_the_venue_stays_in_the_first_cell(self):
+        """Gate 2 reads that cell to check the table against the evidence."""
+        document = render.render(evidence())
+        start = document.index("## Coverage")
+        end = document.index("## What could not be established")
+        first_cells = {
+            line.split("|")[1].strip()
+            for line in document[start:end].splitlines()
+            if line.startswith("| ") and "---" not in line
+        }
+        for venue in registry.all_venues():
+            with self.subTest(venue=venue.id):
+                self.assertIn(venue.name, first_cells)
+
+    def test_two_routes_over_one_venue_render_as_two_rows(self):
+        payload = copy.deepcopy(evidence())
+        wildcat = next(c for c in payload["coverage"] if c["venue"] == "wildcat")
+        archive = copy.deepcopy(wildcat)
+        archive["source"] = "archive"
+        archive["releases"] = "sha256:" + "ab" * 32
+        payload["coverage"].append(archive)
+        document = render.render(payload)
+        start = document.index("## Coverage")
+        end = document.index("## What could not be established")
+        wildcat_rows = [
+            line for line in document[start:end].splitlines()
+            if line.startswith("| Wildcat |")
+        ]
+        self.assertEqual(len(wildcat_rows), 2)
+        self.assertEqual(
+            {line.split("|")[3].strip() for line in wildcat_rows},
+            {"fixtures", "archive"},
+        )
 
     def test_wildcat_findings_sit_under_the_wildcat_heading(self):
         document = render.render(evidence())
@@ -332,7 +388,7 @@ class TestUntrustedText(unittest.TestCase):
         document = render.render(payload)
 
         self.assertEqual(
-            document.count("| Venue | Status | Range | Records | Note |"), 1
+            document.count("| Venue | Status | Source | Range | Records | Note |"), 1
         )
         self.assertEqual(document.count("**Entity.**"), 1)
         self.assertEqual(document.count("Written by whoever runs this"), 1)
@@ -359,6 +415,25 @@ class TestLoad(unittest.TestCase):
                 json.dump({"hello": "world"}, handle)
             with self.assertRaises(render.RenderError):
                 render.load(path)
+
+    def test_a_schema_one_file_is_refused_by_name(self):
+        """It cannot satisfy gate 2, so the refusal says so rather than the gate."""
+        import json
+        import tempfile
+
+        payload = evidence()
+        payload["schema"] = 1
+        for row in payload["coverage"]:
+            row.pop("source", None)
+            row.pop("releases", None)
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "x.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle)
+            with self.assertRaises(render.RenderError) as caught:
+                render.load(path)
+        self.assertIn("schema 1", str(caught.exception))
+        self.assertIn("collect again", str(caught.exception))
 
     def test_a_missing_block_is_refused(self):
         import json

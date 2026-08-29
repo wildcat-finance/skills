@@ -14,7 +14,7 @@ import os
 import re
 
 from . import formatting, registry, sanitise
-from .evidence import classify_source
+from .evidence import EVIDENCE_SCHEMA, classify_source
 
 TEMPLATE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
@@ -69,7 +69,17 @@ class RenderError(ValueError):
 def load(path):
     with open(path, encoding="utf-8") as handle:
         payload = json.load(handle)
-    if not isinstance(payload, dict) or payload.get("schema") != 1:
+    schema = payload.get("schema") if isinstance(payload, dict) else None
+    if schema == 1:
+        # Named here rather than left to gate 2. A schema-1 row carries no
+        # source class, so the gate would fail it for a missing field and the
+        # message would read like a defect in the dossier rather than an
+        # evidence file the tool has outgrown.
+        raise RenderError(
+            f"{path} is a schema 1 evidence file, written before coverage rows "
+            "named their source; collect again to produce a schema 2 file"
+        )
+    if schema != EVIDENCE_SCHEMA:
         raise RenderError(f"{path} is not a probitas evidence file")
     for key in ("subject", "records", "coverage", "gaps"):
         if key not in payload:
@@ -391,17 +401,25 @@ def _subject(payload, entity):
 
 
 def _coverage(payload):
+    """The coverage table, one row per venue and source.
+
+    Source sits beside status because a run may consult more than one route,
+    and a reader deciding what a row is worth needs to know whether an adapter
+    answered or an archive release did. The venue stays in the first cell: gate
+    2 reads that cell to check the printed table against the evidence.
+    """
     known = {v.id: v.name for v in registry.all_venues()}
     lines = [
-        "| Venue | Status | Range | Records | Note |",
-        "| --- | --- | --- | --- | --- |",
+        "| Venue | Status | Source | Range | Records | Note |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for row in payload["coverage"]:
         venue = known.get(row["venue"], row["venue"])
         lines.append(
-            "| {} | {} | {} | {} | {} |".format(
+            "| {} | {} | {} | {} | {} | {} |".format(
                 sanitise.clean(venue),
                 sanitise.clean(row["status"]),
+                sanitise.clean(row.get("source") or "--"),
                 sanitise.clean(row.get("block_range") or "--"),
                 sanitise.clean(row.get("records", 0)),
                 sanitise.clean(row.get("note") or "--", max_length=400),

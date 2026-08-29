@@ -5667,7 +5667,7 @@ class ConformanceTests(unittest.TestCase):
             for entry in agents_marketplace["plugins"]
             if entry["name"] == "hexaemeron"
         )
-        self.assertEqual({"1.6.8"}, set(package_versions.values()))
+        self.assertEqual({"1.6.10"}, set(package_versions.values()))
         self.assertNotEqual("1.4.0", package_versions["claude_manifest"])
 
         coverage = json.loads(

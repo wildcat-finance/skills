@@ -9,7 +9,7 @@ description: >
   for questions about a single market's own numbers, and never to work out
   which individual controls an address.
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 <p align="center">
@@ -91,22 +91,44 @@ python3 scripts/probitas.py verify dossier.md evidence.json
 evidence file. A record cannot enter that file without a transaction hash, a
 URL or a document reference, because the schema will not represent one.
 
-To use verified Alexandria releases instead of live or fixture adapters, pass
-an explicit disposable index:
+`collect` gathers from two routes. The adapter route queries the venues that
+ship an adapter, backed by the network or by a fixture directory. The archive
+route reads verified Alexandria releases through an explicit disposable index.
+Ask for both in one run:
 
 ```bash
 python3 scripts/probitas.py collect \
   --entity "<name>" --address 0x... \
-  --alexandria-index alexandria.sqlite --out evidence.json
+  --live --alexandria-index alexandria.sqlite --out evidence.json
 ```
 
-This path keeps Goldfinch and Clearpool as venue IDs and records Alexandria's
-release, component, capture, row and evidence identities. It combines
-per-chain coverage conservatively and leaves every unharvested registry venue
-visible as a gap. A zero-row venue is empty only when complete archive coverage
-includes every requested address, venue, chain and time boundary and the
-mapping has no unsupported records. It does not infer a person, default, full
-repayment or current balance.
+| Flags | Adapter route | Archive route |
+| --- | --- | --- |
+| none | live network | not run |
+| `--fixtures DIR` | fixture directory | not run |
+| `--alexandria-index X` | not run | archive |
+| `--fixtures DIR --alexandria-index X` | fixture directory | archive |
+| `--live --alexandria-index X` | live network | archive |
+| `--live` | live network | not run |
+| `--live --fixtures DIR` | refused, exit 2 | refused, exit 2 |
+
+An index on its own still suppresses the adapter route and reaches no network,
+so no invocation that worked before starts making requests. `--live` is how a
+run asks for the network beside an index, and it contradicts `--fixtures`.
+
+Every coverage row names the route that produced it: `live`, `fixtures`,
+`archive`, or `none` for a venue nobody reached. An archive row also names the
+Alexandria releases behind it. A venue some route answered for is not reported
+as a gap because another route had nothing to say about it; a route that failed
+still leaves one.
+
+The archive route keeps Goldfinch and Clearpool as venue IDs and records
+Alexandria's release, component, capture, row and evidence identities. It
+combines per-chain coverage conservatively and leaves every unharvested
+registry venue visible as a gap. A zero-row venue is empty only when complete
+archive coverage includes every requested address, venue, chain and time
+boundary and the mapping has no unsupported records. It does not infer a
+person, default, full repayment or current balance.
 
 The checked-in Alexandria `credit-history-v0` example exercises this explicit
 index path offline and checks the resulting evidence and dossier against fixed
@@ -201,14 +223,14 @@ dossier pass.
 
 ### probitas-evidence-collection
 
-- Promise: A successful `collect` writes evidence only for declared entity addresses and separately labelled inferred addresses, with one source reference per record and explicit coverage or gap for every registered venue.
-- Evidence: The exact entity and address inputs, venue registry, adapter responses or verified Alexandria index, evidence schema, source references and emitted `evidence.json`.
+- Promise: A successful `collect` writes evidence only for declared entity addresses and separately labelled inferred addresses, with one source reference per record, one coverage row for each venue and route that answered, one row for each venue no route reached, every row naming its source class, and explicit coverage or gap for every registered venue.
+- Evidence: The exact entity and address inputs, the routes the invocation selected, the venue registry, adapter responses and any verified Alexandria index with the release identities behind each archive row, the evidence schema, source references and emitted `evidence.json`.
 - Evidence classes: recorded, checked
-- Boundary: Collection does not establish human identity, source completeness, default, full repayment, current balance, creditworthiness or a Wildcat decision.
-- Authorises: Rendering a dossier from the collected evidence while keeping address provenance, venue scope and gaps separate.
+- Boundary: Collection does not establish human identity, source completeness, default, full repayment, current balance, creditworthiness or a Wildcat decision, and a source class names the route that answered rather than vouching for what it returned.
+- Authorises: Rendering a dossier from the collected evidence while keeping address provenance, route provenance, venue scope and gaps separate.
 - Consequence: 1
-- Refuses: Feeding inferred addresses into conclusions, omitting an unqueried venue, admitting an unsourced record or treating an archive gap as clean history.
-- Recovery: Correct the declared inputs or source adapter, collect again and retain any unresolved venue or interval as an explicit gap.
+- Refuses: Feeding inferred addresses into conclusions, omitting an unqueried venue, admitting an unsourced record, admitting a coverage row that does not name its source, naming a release on a row no archive produced, treating an archive gap as clean history, or reaching the network because an archive index was supplied.
+- Recovery: Correct the declared inputs, the selected routes or the source adapter, collect again and retain any unresolved venue or interval as an explicit gap.
 - Exceptions: none
 
 ### probitas-dossier-rendering

@@ -928,17 +928,16 @@ class TestRestBoundary(unittest.TestCase):
 
 
 class TestNoPartialRecords(MutationCase):
-    def test_falsey_non_mapping_config_uses_shared_error_coverage(self):
-        records, coverage = run_adapter(
-            midnight.VENUE,
-            adapter,
-            SUBJECTS,
-            [],
-        )
-        self.assertEqual(records, [])
-        self.assertEqual(coverage.status, "error")
-        self.assertIn("adapter config is not a mapping", coverage.note)
-        self.assertIn("cursor_walks_exhausted=0/1", coverage.note)
+    def test_falsey_non_mapping_config_is_refused_with_shared_error_text(self):
+        # The route stamps the coverage source before it calls an adapter, so a
+        # non-mapping config no longer reaches the adapter through run_adapter.
+        # The refusal itself is the adapter's, and it still carries the shared
+        # error-coverage sentence a caller would have seen in the row.
+        with self.assertRaises(MidnightShapeError) as caught:
+            adapter(SUBJECTS, [])
+        message = str(caught.exception)
+        self.assertIn("adapter config is not a mapping", message)
+        self.assertIn("cursor_walks_exhausted=0/1", message)
 
     def test_invalid_fixture_source_and_provenance_do_not_echo_raw_values(self):
         cases = (
