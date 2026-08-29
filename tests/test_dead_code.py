@@ -724,6 +724,51 @@ class WriteBoundaryTests(TemporaryRepositoryTestCase):
             "payload" + NL,
         )
 
+    def test_repository_substitution_cannot_redirect_directory_traversal(self):
+        target = dead_code.confine(self.root, ".dead-code/report.json")
+        outside = self.root.parent / (self.root.name + "-outside-directory")
+        held = self.root.parent / (self.root.name + "-opened-repository")
+        outside.mkdir()
+
+        def restore_repository():
+            outside_report = outside / ".dead-code" / "report.json"
+            outside_report.unlink(missing_ok=True)
+            try:
+                outside_report.parent.rmdir()
+            except FileNotFoundError:
+                pass
+            if self.root.is_symlink():
+                self.root.unlink()
+            if held.exists():
+                held.rename(self.root)
+            outside.rmdir()
+
+        self.addCleanup(restore_repository)
+        real_output_parts = dead_code.output_parts
+
+        def substitute_repository(root, output):
+            parts = real_output_parts(root, output)
+            self.root.rename(held)
+            self.root.symlink_to(outside, target_is_directory=True)
+            return parts
+
+        refusal = None
+        try:
+            with mock.patch.object(
+                dead_code,
+                "output_parts",
+                side_effect=substitute_repository,
+            ):
+                dead_code.atomic_write(self.root, target, "payload" + NL)
+        except dead_code.Refusal as error:
+            refusal = str(error)
+        self.assertIsNone(refusal, refusal)
+        self.assertFalse((outside / ".dead-code" / "report.json").exists())
+        self.assertEqual(
+            (held / ".dead-code" / "report.json").read_text(encoding="utf-8"),
+            "payload" + NL,
+        )
+
     def test_atomic_write_does_not_sweep_an_unrelated_owned_temporary(self):
         directory = self.root / ".dead-code"
         directory.mkdir()
