@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 939,
-  "total_bytes": 20372141,
+  "total_bytes": 20373709,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3571,9 +3571,9 @@
       "source": "plugins/janus/harness/test/WildcatAdapter.t.sol"
     },
     {
-      "bytes": 18285,
+      "bytes": 19853,
       "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
-      "sha256": "eedb5e5e08812734f4ca08ab89b7cdfdedf9de4a799ef751760ccbb0e1a5e74a",
+      "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b",
       "source": "plugins/janus/harness/test/WildcatConformance.t.sol"
     },
     {

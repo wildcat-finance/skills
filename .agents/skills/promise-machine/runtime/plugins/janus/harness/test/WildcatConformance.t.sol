@@ -264,6 +264,35 @@ contract WildcatConformanceTest is JanusBase, JanusHarness {
     );
   }
 
+  /// @dev The provider path is optional, and this is what makes that claim
+  ///      testable rather than merely written down. The hook's guard on an
+  ///      unset provider was a line no mutant could kill: every
+  ///      `HonestAccessHook` in the suite either had a provider set or was
+  ///      never driven, so calling the provider unconditionally -- which on an
+  ///      unset provider means calling `address(0)` and reverting -- changed no
+  ///      result anywhere.
+  ///
+  ///      A provider-less hook still completes a deposit, still keeps its
+  ///      monotone known-lender bit, and makes no call at all, so gate 1 holds
+  ///      against the resolved set for the opposite reason the provider-backed
+  ///      path does: nothing to permit rather than a permitted call.
+  function test_a_hook_without_a_provider_still_deposits_and_calls_nothing() external {
+    HonestAccessHook bare = new HonestAccessHook();
+    model.setHook(address(bare));
+    bare.grant(lender, block.timestamp + 1000);
+
+    DriveResult memory r = _drive(adapter, "deposit", lender, _depositParams(100));
+    assertTrue(!r.reverted, "the provider-less deposit succeeds");
+    assertTrue(bare.knownLender(lender), "and the monotone known-lender bit is set");
+    assertEq(uint256(provider.validations()), 0, "no provider call was made");
+
+    ResolvedThreshold memory t = _threshold("deposit");
+    assertTrue(
+      _gate1_hookCallsWithinAllowed(r.delta, address(bare), t.allowedCallTargets),
+      "gate1: a hook that calls nothing is within any resolved set"
+    );
+  }
+
   /// @dev The honest permit shown to be doing work, without a literal anywhere.
   ///      The same deposit is judged against a second threshold the manifest
   ///      actually carries: `setAnnualInterestAndReserveRatioBips` permits no
