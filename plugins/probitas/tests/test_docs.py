@@ -38,6 +38,21 @@ WORDS = {
     15: "fifteen",
 }
 
+# README fixture counts describe the corpus exercised through the shipped
+# aggregate collector.  Focused adapter specimens can live beside it before an
+# adapter is registered, so classify by a file consumed by a shipped adapter
+# rather than by every top-level directory.
+SHIPPED_FIXTURE_FILES = frozenset(
+    {
+        "wildcat.json",
+        "morpho.json",
+        "euler-v1.json",
+        "euler-events.json",
+        "euler-liquidations.json",
+        "euler-vaults.json",
+    }
+)
+
 
 def read(path):
     with open(path, encoding="utf-8") as handle:
@@ -167,6 +182,9 @@ class TestTheReadmeDescribesTheToolThatExists(unittest.TestCase):
             name
             for name in os.listdir(directory)
             if os.path.isdir(os.path.join(directory, name))
+            and SHIPPED_FIXTURE_FILES.intersection(
+                os.listdir(os.path.join(directory, name))
+            )
         ]
         self.assertIn(
             f"{WORDS[len(shipped)].capitalize()} of them",
