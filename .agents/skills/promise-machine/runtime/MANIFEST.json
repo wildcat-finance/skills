@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 942,
-  "total_bytes": 20398437,
+  "total_bytes": 20397815,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3469,9 +3469,9 @@
       "source": "plugins/janus/harness/manifests/wildcat-open-term.json"
     },
     {
-      "bytes": 7859,
+      "bytes": 7237,
       "path": "plugins/janus/harness/schemas/hook-manifest.schema.json",
-      "sha256": "191e87f54d801ef3aac6a8ee224f5b8437ff233f9824c8018e7edd62ba96d42e",
+      "sha256": "34165559f1d1bd5755fe8db2352e6cbe4284d324d9b95ce8ed136336fa8abc18",
       "source": "plugins/janus/harness/schemas/hook-manifest.schema.json"
     },
     {
