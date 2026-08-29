@@ -10,6 +10,7 @@ import json
 import os
 import re
 import unittest
+from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
@@ -22,6 +23,9 @@ FIXTURES = os.path.join(
 )
 BREACH = re.compile(r"^fail-gate(\d+)-")
 CHECK_BREACH = "fail-check-"
+COMPOUND_CHECKS = frozenset(
+    {"predicate-fields", "components", "optional-evidence"}
+)
 GROUNDED_AGENT_PASSING = (
     "pass-grounded-agent-complete.json",
     "pass-grounded-agent-null-evidence.json",
@@ -150,6 +154,28 @@ def report_for(name):
     return verify.report(document, registry.DEFAULT)
 
 
+def failed_vector(report):
+    return tuple(
+        (gate.number, gate.name) for gate in report.gates if not gate.passed
+    )
+
+
+def failure_vector_obeys_name(name, failures):
+    """Whether a complete ordered failure vector obeys its fixture name."""
+    match = BREACH.match(name)
+    if match:
+        return len(failures) == 1 and failures[0][0] == int(match.group(1))
+    check = check_name_of(name)
+    if check is None:
+        return False
+    if failures == ((None, check),):
+        return True
+    return check in COMPOUND_CHECKS and failures == (
+        (2, "environment"),
+        (None, check),
+    )
+
+
 class FixtureTests(unittest.TestCase):
     def test_every_passing_fixture_verifies_clean(self):
         found = 0
@@ -171,26 +197,12 @@ class FixtureTests(unittest.TestCase):
             match = BREACH.match(name)
             if not match:
                 continue
-            if name in GROUNDED_AGENT_BREACHES:
-                expected = GROUNDED_AGENT_BREACHES[name][1]
-                report = report_for(name)
-                failed = tuple(
-                    (gate.number, gate.name)
-                    for gate in report.gates
-                    if not gate.passed
-                )
-                with self.subTest(fixture=name):
-                    self.assertEqual(failed, expected)
-                    self.assertFalse(report.ok)
-                found += 1
-                continue
             expected = int(match.group(1))
             with self.subTest(fixture=name):
                 report = report_for(name)
-                failed = [gate.number for gate in report.gates if not gate.passed]
-                self.assertEqual(
-                    failed,
-                    [expected],
+                failed = failed_vector(report)
+                self.assertTrue(
+                    failure_vector_obeys_name(name, failed),
                     "%s should breach gate %d alone, breached %s"
                     % (name, expected, failed),
                 )
@@ -229,27 +241,12 @@ class FixtureTests(unittest.TestCase):
             expected = check_name_of(name)
             if expected is None:
                 continue
-            if name in GROUNDED_AGENT_BREACHES:
-                declared = GROUNDED_AGENT_BREACHES[name][1]
-                report = report_for(name)
-                failed = tuple(
-                    (gate.number, gate.name)
-                    for gate in report.gates
-                    if not gate.passed
-                )
-                with self.subTest(fixture=name):
-                    self.assertEqual(failed, declared)
-                    self.assertIn((None, expected), failed)
-                    self.assertFalse(report.ok)
-                found += 1
-                continue
             with self.subTest(fixture=name):
                 report = report_for(name)
-                failed = [gate.name for gate in report.gates if not gate.passed]
-                self.assertEqual(
-                    failed,
-                    [expected],
-                    "%s should breach %s alone, breached %s"
+                failed = failed_vector(report)
+                self.assertTrue(
+                    failure_vector_obeys_name(name, failed),
+                    "%s should breach %s under the naming contract, breached %s"
                     % (name, expected, failed),
                 )
                 self.assertFalse(report.ok)
@@ -333,6 +330,36 @@ class FixtureTests(unittest.TestCase):
                     "https://ariadne.wildcat.finance/state-fixture/v2",
                 )
 
+
+class NamingContractGuardTests(unittest.TestCase):
+    def test_a_grounded_gate_vector_cannot_override_its_filename(self):
+        """A gate-2 name wrapped around a real gate-4 report must be red.
+
+        This drives the generic naming assertion itself.  The parent special
+        case trusted the metadata vector and therefore accepted this mutation.
+        """
+        fake = "fail-gate2-grounded-agent-promotion-verdict.json"
+        report = report_for("fail-gate4-grounded-agent-promotion-verdict.json")
+        metadata = (
+            "pass-grounded-agent-complete.json",
+            ((4, "no-conclusions"),),
+            ("subject[9].annotations.verdict",),
+        )
+        with (
+            mock.patch(__name__ + ".fixtures", return_value=[fake]),
+            mock.patch(__name__ + ".report_for", return_value=report),
+            mock.patch.dict(GROUNDED_AGENT_BREACHES, {fake: metadata}),
+        ):
+            result = unittest.TestResult()
+            FixtureTests(
+                "test_every_breaching_fixture_fails_the_gate_it_is_named_for"
+            ).run(result)
+        self.assertFalse(
+            result.wasSuccessful(),
+            "a fail-gate2 filename was allowed to carry a gate-4 failure",
+        )
+        self.assertEqual(len(result.failures), 1)
+        self.assertEqual(result.errors, [])
 
 
 class MinimalityTests(unittest.TestCase):
@@ -472,13 +499,18 @@ class GroundedAgentFixtureTests(unittest.TestCase):
 
     def test_each_breach_has_its_exact_ordered_failure_vector(self):
         for name, (_, expected, _) in GROUNDED_AGENT_BREACHES.items():
-            failed = tuple(
-                (gate.number, gate.name)
-                for gate in report_for(name).gates
-                if not gate.passed
-            )
+            failed = failed_vector(report_for(name))
             with self.subTest(fixture=name):
                 self.assertEqual(failed, expected)
+
+    def test_each_declared_vector_obeys_its_filename(self):
+        for name, (_, declared, _) in GROUNDED_AGENT_BREACHES.items():
+            with self.subTest(fixture=name):
+                self.assertTrue(
+                    failure_vector_obeys_name(name, declared),
+                    "%s contradicts its declared failure vector %s"
+                    % (name, declared),
+                )
 
     def test_each_breach_differs_from_its_clean_parent_only_at_named_leaves(self):
         for name, (parent, _, changed) in GROUNDED_AGENT_BREACHES.items():

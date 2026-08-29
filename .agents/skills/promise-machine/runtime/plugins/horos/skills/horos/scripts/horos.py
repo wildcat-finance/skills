@@ -913,6 +913,67 @@ def diff_documents(committed, fresh):
     return drifted
 
 
+def diff_boundary_documents(committed, fresh):
+    """Compare every canonical field of a whole-root boundary document.
+
+    Entry drift stays path-granular.  The other canonical fields describe the
+    scan itself, so a mismatch is named against the boundary artefact.  Scoped
+    checks deliberately do not call this function: their fresh counts and
+    universe cover only the admitted subtree and make no whole-tree claim.
+    """
+    drifted = []
+    for field in ("schema", "tool", "universe", "counts"):
+        old = committed.get(field)
+        new = fresh.get(field)
+        if old != new:
+            drifted.append(
+                (
+                    "%s#%s" % (BOUNDARY_RELPATH, field),
+                    "field changed: %r -> %r" % (old, new),
+                )
+            )
+    entry_drift = diff_documents(committed, fresh)
+    if committed.get("entries") != fresh.get("entries"):
+        if entry_drift:
+            drifted.extend(entry_drift)
+        else:
+            drifted.append(
+                (
+                    "%s#entries" % BOUNDARY_RELPATH,
+                    "canonical entry order or multiplicity changed",
+                )
+            )
+    return drifted
+
+
+def candidate_covered_files(document):
+    """The walked files represented by a canonical candidate document."""
+    total = 0
+    for entry in document.get("entries", []):
+        path = entry.get("path")
+        if not isinstance(path, str):
+            return None
+        if not path.endswith("/"):
+            total += 1
+            continue
+        files = entry.get("files")
+        if type(files) is not int or files < 0:
+            return None
+        total += files
+    return total
+
+
+def normalize_candidate_walk_count(boundary, candidates):
+    """Subtract advisory coverage while retaining unrelated count drift."""
+    normalized = dict(boundary)
+    normalized["counts"] = dict(boundary.get("counts", {}))
+    walked = normalized["counts"].get("files_walked")
+    covered = candidate_covered_files(candidates)
+    if type(walked) is int and covered is not None:
+        normalized["counts"]["files_walked"] = walked - covered
+    return normalized
+
+
 def git_worktree_root(path):
     """The worktree root git reports for a path, or None when git cannot say."""
     try:
@@ -1059,7 +1120,7 @@ def check_tree(root, out=None):
     include_untracked = committed.get("universe") == "tracked+untracked"
     result = scan_tree(root, include_untracked=include_untracked)
     fresh = boundary_document(result)
-    drifted = diff_documents(committed, fresh)
+    fresh_candidates = candidates_document(result)
     candidate_drift = []
     try:
         with open(os.path.join(root, CANDIDATES_RELPATH), encoding="utf-8") as handle:
@@ -1067,9 +1128,19 @@ def check_tree(root, out=None):
     except (OSError, json.JSONDecodeError):
         committed_candidates = None
     if committed_candidates is not None:
-        candidate_drift = diff_documents(
-            committed_candidates, candidates_document(result)
+        candidate_drift = diff_documents(committed_candidates, fresh_candidates)
+    hard_committed = committed
+    hard_fresh = fresh
+    if candidate_drift:
+        # Candidate additions and removals change the walked-file total, but
+        # candidates are advisory and must not make a hard check fail.  Remove
+        # each side's candidate-covered files instead of dropping the count,
+        # so unrelated walked-file drift remains binding.
+        hard_committed = normalize_candidate_walk_count(
+            committed, committed_candidates
         )
+        hard_fresh = normalize_candidate_walk_count(fresh, fresh_candidates)
+    drifted = diff_boundary_documents(hard_committed, hard_fresh)
     for path, reason in candidate_drift:
         print(f"candidate drift: {path}: {reason}", file=out)
     if not drifted:

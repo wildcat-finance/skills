@@ -154,7 +154,8 @@ One example per rule family, not one per rule. A verifier that passes every fixt
 here has been shown each *kind* of refusal: a required field absent, a value of the
 wrong type, a value that satisfies the shape and identifies nothing, a digest the
 statement does not cover, a path that resolves outside the tree, a field the type does
-not define, and each numbered gate and named check breached on its own.
+not define, and each numbered gate and named check bound to its complete declared
+failure vector. Most are singletons; the grounded-agent pairs are listed above.
 
 It has not been shown every field. The state-fixture predicate refuses far more
 distinct things than the fourteen its breaching fixtures cover. The fourteen cover

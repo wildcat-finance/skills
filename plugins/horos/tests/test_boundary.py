@@ -85,6 +85,28 @@ class BoundaryTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertIn("candidate drift: notes.svg", output)
 
+    def test_candidate_drift_does_not_mask_unrelated_count_drift(self):
+        document = self.document()
+        document["counts"]["files_walked"] += 1
+        horos.write_boundary(self.root, document)
+        horos.write_candidates(
+            self.root, horos.candidates_document(horos.scan_tree(self.root))
+        )
+        write(self.root, "notes.svg", '<svg xmlns="x"></svg>')
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("candidate drift: notes.svg", output)
+        self.assertIn("drift: .horos/boundary.json#counts", output)
+
+    def test_candidate_coverage_counts_files_and_directory_members(self):
+        document = {
+            "entries": [
+                {"path": "notes.svg"},
+                {"path": "build/", "files": 3},
+            ]
+        }
+        self.assertEqual(horos.candidate_covered_files(document), 4)
+
     def test_a_removed_sink_drifts_and_is_named(self):
         horos.write_boundary(self.root, self.document())
         os.unlink(os.path.join(self.root, "yarn.lock"))
@@ -113,6 +135,14 @@ class BoundaryTests(unittest.TestCase):
         code, output = self.check()
         self.assertEqual(code, 1)
         self.assertIn("drift: yarn.lock: entry changed", output)
+
+    def test_count_only_drift_fails_the_check(self):
+        document = self.document()
+        document["counts"]["files_walked"] += 1
+        horos.write_boundary(self.root, document)
+        code, output = self.check()
+        self.assertEqual(code, 1)
+        self.assertIn("drift: .horos/boundary.json#counts", output)
 
     def test_a_missing_boundary_is_a_distinct_failure(self):
         code, output = self.check()
