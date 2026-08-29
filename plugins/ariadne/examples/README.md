@@ -21,7 +21,7 @@ that no longer exists.
 | --- | --- | --- |
 | `escrow-v1.1.0.json` | Solidity release | A clean release: tests and fuzz passed, an audit covering the released commit, a deployment |
 | `escrow-v1.1.0-with-gaps.json` | Solidity release | The same release with a fuzz campaign that timed out and an audit covering an earlier revision |
-| `goldfinch-demo-v0-agent.json` | Grounded agent | Pinned corpus and reads, two recorded answers, seven recorded evaluation cases, and the promotion decision that selected one answer |
+| `goldfinch-demo-v0-agent.json` | Grounded agent | Pinned corpus and reads, three recorded answers, seven recorded evaluation cases, and the decision that promoted the complete release |
 | `goldfinch-v0-fixture.json` | State fixture | The pinned block with its state root, eleven components, and the three evidence counts read from the Lazarus manifest rather than recomputed |
 
 The second one is why both are here. A format whose only examples are clean
@@ -57,8 +57,9 @@ binds twelve subjects carrying 93,165 declared bytes.
 
 The same run checks the one-byte peer below, then independently changes the
 release identity, input, output and promotion record. Capture refuses each
-mutation by name and writes no statement. A socket guard covers the demo and
-its child commands, so the walk is offline as well as model-free.
+mutation by name and writes no statement. The demo blocks sockets in its parent
+process and injects the same guard into each child command, so the walk is
+offline as well as model-free.
 
 ## The tampered copies
 

@@ -88,6 +88,38 @@ class ExampleTests(unittest.TestCase):
         self.assertEqual(len(statement), GROUNDED_BYTES)
         self.assertEqual(hashlib.sha256(statement).hexdigest(), GROUNDED_SHA256)
 
+    def test_grounded_agent_statement_exposes_its_exact_topology(self):
+        with open(os.path.join(EXAMPLES, GROUNDED_STATEMENT), "rb") as handle:
+            predicate = json.loads(handle.read().decode("utf-8"))["predicate"]
+
+        self.assertEqual(len(predicate["produced"]["answers"]), 3)
+        terminal = predicate["produced"]["promotion"]["terminal"]
+        self.assertEqual(
+            terminal,
+            {
+                "sequence": 1,
+                "action": "promote",
+                "target_release_digest": predicate["release"]["release_digest"],
+            },
+        )
+        self.assertEqual(
+            predicate["adapter"]["command"],
+            [
+                "python3",
+                "plugins/berean/examples/goldfinch-demo-v0/rebuild.py",
+            ],
+        )
+
+    def test_grounded_agent_guide_matches_topology_and_guard_scope(self):
+        with open(os.path.join(EXAMPLES, "README.md"), encoding="utf-8") as handle:
+            guide = handle.read()
+
+        self.assertIn("three recorded answers", guide)
+        self.assertIn("promoted the complete release", guide)
+        self.assertNotIn("selected one answer", guide)
+        self.assertIn("blocks sockets in its parent\nprocess", guide)
+        self.assertIn("injects the same guard into each child command", guide)
+
     def test_the_unhappy_example_carries_its_timed_out_campaign(self):
         with open(os.path.join(EXAMPLES, "escrow-v1.1.0-with-gaps.json"), "rb") as f:
             predicate = json.loads(f.read().decode("utf-8"))["predicate"]

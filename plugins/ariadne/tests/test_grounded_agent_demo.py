@@ -64,6 +64,12 @@ class GroundedAgentDemoTests(unittest.TestCase):
 
         self.assertIn("statement sha256: %s" % STATEMENT_SHA256, output)
         self.assertIn("subjects: 12; declared bytes: 93165", output)
+        self.assertIn(
+            "producer argv: python3 "
+            "plugins/berean/examples/goldfinch-demo-v0/rebuild.py",
+            output,
+        )
+        self.assertIn("parent socket guard: active", output)
 
         verification = output.split(
             "== verify all registered gates offline ==", 1

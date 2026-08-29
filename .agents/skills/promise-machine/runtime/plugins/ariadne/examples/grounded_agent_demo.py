@@ -6,6 +6,7 @@ import hashlib
 import json
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -58,10 +59,10 @@ def stage(name):
     print("\n== %s ==" % name)
 
 
-def run(argv, environment, expected=0):
+def run(argv, environment, expected=0, cwd=ROOT):
     completed = subprocess.run(
         [str(part) for part in argv],
-        cwd=str(ROOT),
+        cwd=str(cwd),
         env=environment,
         capture_output=True,
         text=True,
@@ -145,6 +146,11 @@ def capture_refusal(source, holder, label, mutate, expected, environment):
 
 
 def network_guard(directory):
+    def blocked(*args, **kwargs):
+        raise RuntimeError("network disabled by grounded-agent demo")
+
+    socket.socket = blocked
+    socket.create_connection = blocked
     guard = directory / "network-guard"
     guard.mkdir()
     (guard / "sitecustomize.py").write_text(
@@ -158,7 +164,41 @@ def network_guard(directory):
     environment = os.environ.copy()
     existing = environment.get("PYTHONPATH")
     environment["PYTHONPATH"] = str(guard) + (os.pathsep + existing if existing else "")
+    interpreter_directory = str(Path(sys.executable).resolve().parent)
+    existing_path = environment.get("PATH")
+    environment["PATH"] = interpreter_directory + (
+        os.pathsep + existing_path if existing_path else ""
+    )
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
     return environment
+
+
+def assert_parent_network_guard():
+    try:
+        opened = socket.socket()
+    except RuntimeError as error:
+        if str(error) == "network disabled by grounded-agent demo":
+            return
+        raise DemoError("the parent socket guard returned an unexpected refusal") from error
+    opened.close()
+    raise DemoError("the parent socket guard did not refuse socket creation")
+
+
+def prepare_producer_workspace(holder, source_reads):
+    producer_root = holder / "producer"
+    producer_plugin = producer_root / "plugins" / "berean"
+    shutil.copytree(
+        ROOT / "plugins" / "berean" / "scripts",
+        producer_plugin / "scripts",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    producer_example = producer_plugin / "examples" / "goldfinch-demo-v0"
+    producer_example.mkdir(parents=True)
+    shutil.copyfile(BEREAN_REBUILD, producer_example / "rebuild.py")
+    release = producer_example / "release"
+    release.mkdir()
+    (release / "reads.jsonl").write_bytes(source_reads)
+    return producer_root, release
 
 
 def main():
@@ -169,17 +209,19 @@ def main():
     with tempfile.TemporaryDirectory(prefix="ariadne-grounded-agent-") as temporary:
         holder = Path(temporary)
         environment = network_guard(holder)
+        assert_parent_network_guard()
+        print("parent socket guard: active")
 
         stage("rebuild the preserved Berean release")
         source_reads = (BEREAN_RELEASE / "reads.jsonl").read_bytes()
         if source_reads != LAZARUS_READS.read_bytes():
             raise DemoError("Berean reads differ from the preserved Lazarus bytes")
-        release = holder / "rebuilt" / "release"
-        release.mkdir(parents=True)
-        (release / "reads.jsonl").write_bytes(source_reads)
+        producer_root, release = prepare_producer_workspace(holder, source_reads)
+        producer_argv = list(PRODUCER_COMMAND)
         rebuilt = run(
-            [sys.executable, BEREAN_REBUILD, "--release", release],
+            producer_argv,
             environment,
+            cwd=producer_root,
         )
         if release_files(release) != release_files(BEREAN_RELEASE):
             raise DemoError("the release rebuilt from reads.jsonl differs from the committed tree")
@@ -187,6 +229,7 @@ def main():
         if release_document["release_digest"] != EXPECTED_RELEASE_DIGEST:
             raise DemoError("the rebuilt semantic release identity drifted")
         print(rebuilt.stdout.strip())
+        print("producer argv: %s" % " ".join(producer_argv))
         print("preserved reads: %s" % release_document["reads"]["sha256"])
         print(
             "Berean regenerated its seven-case report; Ariadne binds those bytes "
@@ -204,6 +247,8 @@ def main():
         if sha256(first_bytes) != EXPECTED_STATEMENT_SHA256:
             raise DemoError("the committed statement digest drifted")
         statement = json.loads(first_bytes.decode("utf-8"))
+        if statement["predicate"]["adapter"]["command"] != producer_argv:
+            raise DemoError("the captured producer argv differs from the observed rebuild")
         declared_bytes = sum(
             component["bytes"]
             for component in statement["predicate"]["given"]["corpus"]["components"]

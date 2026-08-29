@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 855,
-  "total_bytes": 11228254,
+  "total_bytes": 11230118,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -541,9 +541,9 @@
       "source": "plugins/ariadne/docs/state-fixture.md"
     },
     {
-      "bytes": 6523,
+      "bytes": 6568,
       "path": "plugins/ariadne/examples/README.md",
-      "sha256": "c30caf0dbeaf516e44cb059e7cc3cc3290648d3fff19c8b0daccc9a769709ae0",
+      "sha256": "a0c6bcbd981a811cc31ff4ca3ab15d53b56490e5330830445e5b1fb857541c27",
       "source": "plugins/ariadne/examples/README.md"
     },
     {
@@ -571,9 +571,9 @@
       "source": "plugins/ariadne/examples/goldfinch-v0-fixture.json"
     },
     {
-      "bytes": 12112,
+      "bytes": 13931,
       "path": "plugins/ariadne/examples/grounded_agent_demo.py",
-      "sha256": "88674392f6e9c9a4bfe65a983c0559f0f28eec6f7e69647b7941e950b8d72c13",
+      "sha256": "b83b20e1837ba1075ce5e8f0f34e508d77697a3559683487db7bdec1b8c532b9",
       "source": "plugins/ariadne/examples/grounded_agent_demo.py"
     },
     {
