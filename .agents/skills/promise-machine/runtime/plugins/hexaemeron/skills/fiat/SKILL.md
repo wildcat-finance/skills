@@ -144,19 +144,22 @@ the second.
 1. If the user passed `status`, run `hexctl status` and report. Stop.
 2. Apply the frontier maturity gate below. This happens before `init` and
    before resuming an existing frontier run.
-3. If `.hexaemeron/state.json` exists, run `hexctl verify`, then
+3. If a run arrives as a checkpoint zip, verify the outer transport and Git
+   boundary first, restore its refs into a fresh clean top-level checkout, then
+   restore the checked controller capsule with `hexctl checkpoint restore`, per
+   the `Step checkpoint` section of
+   [push-discipline.md](references/push-discipline.md). Run `hexctl verify` and
+   `hexctl status --json` against the restored worktree, then enter the loop.
+   Never call `init` or start a fresh ledger for a restored run.
+4. If `.hexaemeron/state.json` exists, run `hexctl verify`, then
    `hexctl status --json`. If its phase is `done`, run `hexctl reset` to
    archive the completed run, then continue immediately as a new run at step
-   4. This is recovery for a run whose terminal cleanup was interrupted or
+   5. This is recovery for a run whose terminal cleanup was interrupted or
    predates the cleanup rule, not the normal start of every run. Do not ask the
    user to remove, rename, or approve resetting completed state. If the phase
    is not `done`, this is a resume: enter the loop and treat the validated state
-   file as canonical. A run arriving as a checkpoint zip verifies the outer
-   transport first, then restores the checked controller capsule with
-   `hexctl checkpoint restore`, per the `Step checkpoint` section of
-   [push-discipline.md](references/push-discipline.md). Never start a fresh
-   ledger for a restored run.
-4. Otherwise: say exactly `Let there be light.` and nothing else before it,
+   file as canonical.
+5. Otherwise: say exactly `Let there be light.` and nothing else before it,
    run the read-only preflight checks below, then bring the base up to date
    before anything is cut from it, then `hexctl init --topic "<topic>" --base
    <ref>`, record the post-init receipts, and enter the loop. If a task issue is

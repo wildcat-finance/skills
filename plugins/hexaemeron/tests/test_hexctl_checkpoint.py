@@ -32,8 +32,16 @@ class HexctlCheckpointTests(HexctlCase):
         checkpoint = fiat.index("checkpoint zip")
         active_state = fiat.index("If `.hexaemeron/state.json` exists")
         fresh_init = fiat.index("Otherwise: say exactly `Let there be light.`")
-        self.assertLess(checkpoint, active_state)
-        self.assertLess(active_state, fresh_init)
+        self.assertLess(
+            checkpoint,
+            active_state,
+            "checkpoint recovery must be selected before active-state resume",
+        )
+        self.assertLess(
+            active_state,
+            fresh_init,
+            "active-state resume must be selected before fresh initialization",
+        )
 
     def controller_root(self):
         return Path(self.target) / ".hexaemeron"
