@@ -122,7 +122,7 @@
       "source": "tests/promise_machine_coverage.json",
       "target": "tests/promise_machine_coverage.json",
       "archive_sha256": "89b5b34c8960691fd98ea62cb088cd5e96f2fa5fb1d4654e71877b6d4a3fe089",
-      "current_sha256": "1cbd633bf9bdb80040a3b49a1200502236fb6fdfdf287b56dcce5802e3e78b7c"
+      "current_sha256": "d1d2b9f37fc97005f3c8fb1d8410c5c8aab78d49607e905dc479a52856db3e97"
     },
     {
       "source": "tests/test_boundary_currency.py",
