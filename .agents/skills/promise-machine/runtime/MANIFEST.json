@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 929,
-  "total_bytes": 20338259,
+  "total_bytes": 20338674,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4867,9 +4867,9 @@
       "source": "plugins/probitas/docs/example-dossier.md"
     },
     {
-      "bytes": 12350,
+      "bytes": 12398,
       "path": "plugins/probitas/scripts/probitas.py",
-      "sha256": "46d33904370fc4fa1ab025df4376d1bf7da0d238dc0f01070da42381f4d36ffb",
+      "sha256": "43cad0bc29446eddcab936580d79f7ef952f64023db7a2b084dc314f3d9954ec",
       "source": "plugins/probitas/scripts/probitas.py"
     },
     {
@@ -4879,9 +4879,9 @@
       "source": "plugins/probitas/scripts/probitas_lib/__init__.py"
     },
     {
-      "bytes": 3783,
+      "bytes": 4150,
       "path": "plugins/probitas/scripts/probitas_lib/adapters/__init__.py",
-      "sha256": "a43799fb4d7f33a437a2e039a75ed810cfbc0593571f09e6841f8552f1ed2b5f",
+      "sha256": "9b105a69e70cb584d034916943b3b8927d796f9f6e84b99471ae7e6e9092cd8d",
       "source": "plugins/probitas/scripts/probitas_lib/adapters/__init__.py"
     },
     {

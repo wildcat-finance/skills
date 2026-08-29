@@ -54,7 +54,7 @@ ADAPTER_ROUTES = ("live", "fixtures")
 ARCHIVE_NOTE = "venue was not harvested into the selected Alexandria index"
 
 
-def unchecked_coverage(venue, routes=("live",)):
+def unchecked_coverage(venue, routes):
     """The coverage row for a venue no requested route answered for.
 
     Gate 2 in one function. An unimplemented venue and one whose credential the
@@ -71,12 +71,13 @@ def unchecked_coverage(venue, routes=("live",)):
     adapter = next((route for route in routes if route in ADAPTER_ROUTES), None)
     archive = "archive" in routes
 
+    base = (
+        f"adapter exists but was not run: {venue.auth} required "
+        "and none was supplied"
+    ) if venue.implemented else venue.note
+
     if adapter is not None and not archive:
-        note = (
-            f"adapter exists but was not run: {venue.auth} required "
-            "and none was supplied"
-        ) if venue.implemented else venue.note
-        return Coverage(venue=venue.id, status=status, note=note, source="none")
+        return Coverage(venue=venue.id, status=status, note=base, source="none")
 
     if adapter is None and archive:
         return Coverage(
@@ -87,6 +88,11 @@ def unchecked_coverage(venue, routes=("live",)):
             source="none",
         )
 
+    # More than one route was asked for, so the note says what each of them
+    # did not do -- after the venue's own description rather than instead of
+    # it. Gate 4 reads this note as the gap's reason, and a union dossier
+    # whose negative space said only "no adapter ships for it" would tell a
+    # reader less about the hole than a single-route one does.
     reasons = []
     if adapter is not None:
         reasons.append(
@@ -99,6 +105,6 @@ def unchecked_coverage(venue, routes=("live",)):
     return Coverage(
         venue=venue.id,
         status=status,
-        note="not checked: " + "; ".join(reasons),
+        note=f"{base} Not reached by this run: " + "; ".join(reasons) + ".",
         source="none",
     )
