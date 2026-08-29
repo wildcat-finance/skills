@@ -1345,3 +1345,113 @@ partial fix.
 
 **Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
 holds.
+
+### Amendment -- 2026-08-28
+
+**What changed.** Complete replacement Exit: The demo path passes, both
+measurements are recorded, and the decision record is committed and lints clean.
+
+Capture the two configuration baselines first, before any suite runs, into a
+directory that outlives the hostile one:
+
+```bash
+CAPTURE_DIR="$(mktemp -d)"
+git config --global --list > "$CAPTURE_DIR/global-before.txt"
+git -C . config --local --list > "$CAPTURE_DIR/local-before.txt"
+```
+
+Then generate the hostile configuration with the harness step 2 committed,
+removing it when the shell exits:
+
+```bash
+HOSTILE_DIR="$(mktemp -d)"
+trap 'rm -rf "$HOSTILE_DIR" "$CAPTURE_DIR"' EXIT
+/Users/kethcode/.local/bin/python3.14 tests/hostile_signing_harness.py --emit "$HOSTILE_DIR"
+export HOSTILE_SENTINEL="$HOSTILE_DIR/sentinel.log"
+```
+
+The demo path is the study's section 1, run under inherited signing. Three of
+the four suites exit 0:
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 -m unittest discover -s tests
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 plugins/hermes/skills/hermes/scripts/test_hermes.py
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  /Users/kethcode/.local/bin/python3.14 -m unittest discover -s plugins/horos/tests -t plugins/horos
+```
+
+The fourth cannot, and these three assertions exit 0 instead:
+
+```bash
+GIT_CONFIG_GLOBAL="$HOSTILE_DIR/hostile.gitconfig" GIT_CONFIG_SYSTEM=/dev/null \
+  npx --yes --package=node@26.6.0 --call '/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/tests/run_tests.py' \
+  > "$HOSTILE_DIR/hexaemeron.log" 2>&1 || true
+grep -q 'Issue429RecoveryTests.test_composition_has_exact_parent_order_and_signed_header' "$HOSTILE_DIR/hexaemeron.log"
+grep -qE 'FAILED \(errors=1[,)]' "$HOSTILE_DIR/hexaemeron.log"
+```
+
+The other half of the criterion is what the sentinel holds after all four suites
+have run. Both exit 0:
+
+```bash
+grep -q -- '--verify' "$HOSTILE_SENTINEL"
+! grep -q -- '-bsau' "$HOSTILE_SENTINEL"
+```
+
+Then the remaining exit commands, all 0:
+
+```bash
+/Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-5.json
+/Users/kethcode/.local/bin/python3.14 -m unittest tests.test_decision_records
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/decisions/ADR-045-declare-signing-policy-on-disposable-git-fixtures.md
+/Users/kethcode/.local/bin/python3.14 plugins/brevitas/skills/brevitas/scripts/brevitas.py docs/decisions/ADR-045-declare-signing-policy-on-disposable-git-fixtures.md
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
+/Users/kethcode/.local/bin/python3.14 plugins/horos/skills/horos/scripts/horos.py check .
+```
+
+Acceptance item 2 is proved by comparison rather than assertion, and both
+commands must print nothing:
+
+```bash
+git config --global --list | diff - "$CAPTURE_DIR/global-before.txt"
+git -C . config --local --list | diff - "$CAPTURE_DIR/local-before.txt"
+```
+
+**Why.** Two defects, both already met and answered elsewhere in this runbook,
+and both worse here than where they were found because this step is the
+acceptance proof.
+
+The sentinel assertion was `test ! -s "$HOSTILE_SENTINEL"` after a demo path
+that runs the Hexaemeron suite. That suite contains
+`plugins/hexaemeron/tests/test_issue_429_recovery.py:154`, which verifies this
+repository's own signed history, so the hostile program is consulted and the
+sentinel is never empty. Step 4 met this and replaced emptiness with the
+distinction the rule actually rests on: a fixture asking the signer to sign
+carries `-bsau` under this harness's openpgp arm, and a verification never does.
+The same replacement is made here, together with the two assertions that bound
+the Hexaemeron suite's one permitted error to exactly that test. A demonstration
+step whose criterion cannot be satisfied on a correct tree would have failed the
+delivery it exists to prove.
+
+The hostile directory was created and never removed, leaving a mode-0700 signing
+program beside a configuration naming it by absolute path. The `trap` is set
+before anything is written into either directory, so both go whether the demo
+path passes, fails, or the shell exits early. Steps 2 and 3 are complete and the
+preamble is not a step field, so their blocks keep the leak and it stays on the
+carried-forward list; this is the last block that could still be repaired, and
+repairing it is why the run's own demonstration no longer contributes to the
+problem it documents.
+
+The two baseline captures moved from fixed `/tmp` paths into a temporary
+directory of their own. A fixed name in a shared directory is a collision
+between two concurrent runs and a stale-file trap for one run repeated, and
+acceptance item 2 is the claim that this delivery changes no configuration
+outside its own fixtures, which a comparison against another run's leftovers
+cannot establish.
+
+**Steps touched.** Step 5's exit.
+
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit
+holds.
