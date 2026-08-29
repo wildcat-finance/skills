@@ -133,6 +133,54 @@ contract WildcatAdapterTest is JanusBase {
     );
   }
 
+  /// @dev The "mirrors categoryOf" claim in the adapter's own header, checked
+  ///      rather than asserted. The two tables encode the same four deployment
+  ///      facts in opposite directions -- name to address here, address to
+  ///      kind there -- and nothing else makes them agree, so either can drift
+  ///      from the other silently. This pins the correspondence at all four
+  ///      names.
+  ///
+  ///      It is the correspondence that is checked, not the implementation.
+  ///      `resolveAccount` deliberately does not call `categoryOf`, because
+  ///      answering by category is the widening this step exists to avoid; the
+  ///      point is that two independent tables still describe one deployment.
+  function test_every_held_name_classifies_as_its_matching_category() external view {
+    (, address h) = adapter.resolveAccount("hook");
+    assertTrue(
+      adapter.categoryOf(h) == WildcatHostAdapter.Category.Hook,
+      "hook resolves to something categoryOf calls the hook"
+    );
+    (, address s) = adapter.resolveAccount("host");
+    assertTrue(
+      adapter.categoryOf(s) == WildcatHostAdapter.Category.Host,
+      "host resolves to something categoryOf calls the host"
+    );
+    (, address a) = adapter.resolveAccount("asset");
+    assertTrue(
+      adapter.categoryOf(a) == WildcatHostAdapter.Category.Asset,
+      "asset resolves to something categoryOf calls the asset"
+    );
+    (, address p) = adapter.resolveAccount("roleProvider");
+    assertTrue(
+      adapter.categoryOf(p) == WildcatHostAdapter.Category.RoleProvider,
+      "roleProvider resolves to something categoryOf calls the role provider"
+    );
+  }
+
+  /// @dev And the other direction of the same claim: a name the table refuses
+  ///      does not classify as one of the four kinds either, so "not in the
+  ///      table" and "not a known category" agree on the addresses that
+  ///      matter. `borrower` is the interesting case -- the host genuinely has
+  ///      one, `roles()` returns it, and neither table names it.
+  function test_a_name_the_table_refuses_is_not_a_known_category() external view {
+    (bool ok, ) = adapter.resolveAccount("borrower");
+    assertTrue(!ok, "borrower is not in the table");
+    assertTrue(
+      adapter.categoryOf(model.borrower()) == WildcatHostAdapter.Category.Unknown,
+      "and the borrower address is not one of the four kinds"
+    );
+  }
+
   // ------------------- The reader against the real adapter ---------------- //
 
   /// @dev The step's goal in one test: the shipped manifest, resolved through

@@ -2,6 +2,10 @@
 pragma solidity 0.8.25;
 
 import {AccountResolver, ManifestReader, ResolvedThreshold} from "../src/ManifestReader.sol";
+import {WildcatHostModel, MockAsset} from "../src/wildcat/WildcatHostModel.sol";
+import {HonestAccessHook} from "../src/wildcat/HonestAccessHook.sol";
+import {WildcatHostAdapter} from "../src/wildcat/WildcatHostAdapter.sol";
+import {MockRoleProvider} from "../src/wildcat/MockRoleProvider.sol";
 
 /// @dev The stub adapter the campaign resolves through. Its table is chosen so
 ///      that every refusal the reader owns is the reader's to get right.
@@ -78,6 +82,21 @@ contract ManifestFuzz {
   uint256 public agreementDraws;
   uint256 public agreementBinds;
 
+  /// @dev The real Wildcat adapter, alongside the stub. `FuzzResolver` exists
+  ///      to make the *reader's* refusals reachable; it cannot say anything
+  ///      about the table the host actually ships, and step 3's whole product
+  ///      is that table.
+  WildcatHostAdapter internal wildcat;
+  address internal wHook;
+  address internal wHost;
+  address internal wAsset;
+  address internal wProvider;
+
+  bool public sawAdapterAnsweredUnknown;
+  bool public sawAdapterCrossBound;
+  uint256 public adapterDraws;
+  uint256 public adapterResolved;
+
   uint256 internal _expectedCalls;
   uint256 internal _expectedDelegates;
   bool internal _anyUnresolvable;
@@ -99,6 +118,17 @@ contract ManifestFuzz {
   constructor() {
     reader = new ManifestReader();
     resolver = new FuzzResolver();
+
+    MockAsset a = new MockAsset();
+    WildcatHostModel m = new WildcatHostModel(a);
+    HonestAccessHook h = new HonestAccessHook();
+    MockRoleProvider rp = new MockRoleProvider();
+    m.setHook(address(h));
+    wildcat = new WildcatHostAdapter(m, a, address(rp));
+    wHook = address(h);
+    wHost = address(m);
+    wAsset = address(a);
+    wProvider = address(rp);
   }
 
   /// @dev Ten symbol choices: five the resolver knows, one it does not, two
@@ -550,6 +580,78 @@ contract ManifestFuzz {
     if (slotBound && valueBound && slotAddr != valueAddr) sawPathDisagreement = true;
   }
 
+  // ------------------------------------------------------------------- //
+  //        The host adapter's own table (GL12, GL13)                      //
+  // ------------------------------------------------------------------- //
+
+  /// @dev The names this draw puts to the real adapter. Four it holds, and
+  ///      six it must not: a category label, two case variants, an untrimmed
+  ///      form, a role the host has but the table does not name, and the empty
+  ///      string. The near-misses are the point. A table built by prefix,
+  ///      case-folding, or category would answer for several of them, and a
+  ///      table that answers for one address it was never asked about is the
+  ///      widening the manifest exists to prevent.
+  function _adapterName(uint8 i) internal pure returns (string memory) {
+    uint8 k = i % 10;
+    if (k == 0) return "hook";
+    if (k == 1) return "host";
+    if (k == 2) return "asset";
+    if (k == 3) return "roleProvider";
+    if (k == 4) return "Asset";
+    if (k == 5) return "HOOK";
+    if (k == 6) return "roleprovider";
+    if (k == 7) return "asset ";
+    if (k == 8) return "borrower";
+    return "";
+  }
+
+  /// @dev True for exactly the four names the table is allowed to hold.
+  function _isHeldName(string memory n) internal pure returns (bool) {
+    bytes32 t = keccak256(bytes(n));
+    return
+      t == keccak256("hook") ||
+      t == keccak256("host") ||
+      t == keccak256("asset") ||
+      t == keccak256("roleProvider");
+  }
+
+  /// @dev Draw one name and put it to the shipped adapter, then check two
+  ///      things the deterministic tests check only at fixed points.
+  ///
+  ///      GL12: a name outside the four never answers `ok`. This is the
+  ///      category-widening law from the risk register, stated where a
+  ///      campaign can falsify it rather than resting on a handful of literal
+  ///      assertions.
+  ///
+  ///      GL13: a held name resolves to its own address and to no other held
+  ///      name's. The generator holds the four addresses independently, from
+  ///      the deployment rather than from the adapter, so a table that
+  ///      returned one address for everything agrees with nothing here.
+  function fuzzAdapterTable(uint8 nameSeed) public {
+    string memory name = _adapterName(nameSeed);
+    adapterDraws++;
+    (bool ok, address addr) = wildcat.resolveAccount(name);
+
+    if (!_isHeldName(name)) {
+      if (ok) sawAdapterAnsweredUnknown = true;
+      return;
+    }
+
+    if (!ok) {
+      // A held name that stops answering is a widening in the other
+      // direction: the permit it carries silently disappears.
+      sawAdapterCrossBound = true;
+      return;
+    }
+    adapterResolved++;
+
+    bytes32 t = keccak256(bytes(name));
+    address expected = t == keccak256("hook") ? wHook : t == keccak256("host")
+      ? wHost
+      : t == keccak256("asset") ? wAsset : wProvider;
+    if (addr != expected) sawAdapterCrossBound = true;
+  }
+
   /// @dev GL00 is the anti-vacuity guard, and it is the property to read
   ///      first. Every other property here is the negation of a ghost flag
   ///      that `_check` sets, and `_check` runs only when `resolveJson`
@@ -605,4 +707,20 @@ contract ManifestFuzz {
   ///      The coverage claim is made where it can be made deterministically
   ///      instead, by `test_gl11_draws_actually_bind_on_more_than_one_path`.
   function echidna_GL11_paths_agree_on_one_name() public view returns (bool) { return !sawPathDisagreement; }
+
+  /// @dev GL12. The shipped adapter never answers for a name outside its four.
+  ///      This is the register's over-permit-by-category line, which named
+  ///      `WildcatHostAdapter` from the start and until now had only
+  ///      deterministic tests behind it -- the same gap S2-R4-02 recorded one
+  ///      step earlier for the reader's ambiguity guard.
+  function echidna_GL12_adapter_never_answers_an_unheld_name() public view returns (bool) {
+    return !sawAdapterAnsweredUnknown;
+  }
+
+  /// @dev GL13. Each held name resolves to its own address and no other's,
+  ///      checked against the deployment rather than against the adapter, so a
+  ///      table collapsing to one address cannot agree with it.
+  function echidna_GL13_adapter_names_keep_their_own_addresses() public view returns (bool) {
+    return !sawAdapterCrossBound;
+  }
 }
