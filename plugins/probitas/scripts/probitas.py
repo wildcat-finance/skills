@@ -127,12 +127,13 @@ def _collect_alexandria(index_path, evidence):
     for venue in registry.all_venues():
         item = by_venue.get(venue.id)
         if item is not None:
-            evidence.add_coverage(Coverage(**item))
+            evidence.add_coverage(Coverage(source="archive", **item))
             continue
         status = "unconfigured" if venue.implemented else "unimplemented"
         evidence.add_coverage(Coverage(
             venue=venue.id, status=status, endpoint="Alexandria index",
             note="venue was not harvested into the selected Alexandria index",
+            source="none",
         ))
 
     for item in translated["gaps"]:

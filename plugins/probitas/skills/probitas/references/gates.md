@@ -47,6 +47,32 @@ The five statuses mean different things and the difference matters:
 `empty` is a finding. The other three are gaps and become entries in the
 negative space section.
 
+Every row also names the route that produced it, and rows are counted on the
+venue and the source together rather than on the venue alone:
+
+| Source | Meaning |
+| --- | --- |
+| `live` | An adapter that queried the venue over the network |
+| `fixtures` | An adapter that read a fixture directory |
+| `archive` | A verified Alexandria index |
+| `none` | Nobody checked this venue |
+
+A run may consult more than one route, so a venue can hold more than one row
+and each one is a separate answer about it. Two rows sharing a venue and a
+source are not: one of them would be lost, and the gate says so and names the
+venue. Keying on the venue alone is what used to lose it silently.
+
+A row that names no source fails. So does an `archive` row with status
+`checked` or `empty` that names no release, because a reader has no way to
+tell which preserved capture answered. The note beside it still carries the
+capture, component and evidence identities in prose; the release is a field so
+that this check can exist at all.
+
+An evidence file written before coverage rows named their source is schema 1.
+`render` refuses it by name and says to collect again, rather than letting it
+reach this gate and fail for a missing field in language that reads like a
+defect in the document.
+
 ## 3. Sourcing is total
 
 Three checks, in order.
