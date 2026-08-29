@@ -2,6 +2,7 @@
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -83,6 +84,42 @@ class TestCollectCommand(unittest.TestCase):
         self.assertNotIn("euler borrowing history", subjects)
         self.assertEqual(len(payload["gaps"]), len(registry.unimplemented()))
 
+    def test_midnight_empty_is_checked_without_a_gap_and_keeps_schema_one(self):
+        payload = self.collect()
+        coverage = next(
+            row for row in payload["coverage"] if row["venue"] == "morpho-midnight"
+        )
+        self.assertEqual(payload["schema"], 1)
+        self.assertEqual(coverage["status"], "empty")
+        self.assertIn("cursor walk(s) exhausted", coverage["note"])
+        self.assertNotIn(
+            "morpho-midnight borrowing history",
+            {gap["subject"] for gap in payload["gaps"]},
+        )
+
+    def test_midnight_refusal_becomes_error_coverage_and_a_named_gap(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = os.path.join(FIXTURES, "empty")
+            for name in os.listdir(source):
+                if name != "morpho-midnight.json":
+                    shutil.copyfile(
+                        os.path.join(source, name), os.path.join(directory, name)
+                    )
+            payload = self.collect(case=directory)
+
+        coverage = next(
+            row for row in payload["coverage"] if row["venue"] == "morpho-midnight"
+        )
+        gap = next(
+            gap
+            for gap in payload["gaps"]
+            if gap["subject"] == "morpho-midnight borrowing history"
+        )
+        self.assertEqual(coverage["status"], "error")
+        self.assertEqual(gap["reason"], coverage["note"])
+        self.assertIn("no records emitted", coverage["note"])
+        self.assertNotIn(directory, coverage["note"])
+
     def test_inferred_addresses_stay_in_their_own_tier(self):
         payload = self.collect("--inferred", "0x" + "b2" * 20)
         tiers = {a["address"]: a["provenance"] for a in payload["subject"]["addresses"]}
@@ -142,6 +179,32 @@ class TestCollectCommand(unittest.TestCase):
             "fixed",
         )
         self.assertEqual(run(*arguments).stdout, run(*arguments).stdout)
+
+    def test_every_aggregate_fixture_has_deterministic_midnight_bytes(self):
+        for case in (
+            "clean",
+            "cured",
+            "defaulted",
+            "demo",
+            "empty",
+            "euler-borrower",
+            "euler-empty",
+            "morpho-bad-debt",
+            "morpho-clean",
+            "morpho-empty",
+            "morpho-liquidated",
+        ):
+            with self.subTest(case=case):
+                first = self.collect(case=case)
+                second = self.collect(case=case)
+                self.assertEqual(first, second)
+                coverage = next(
+                    row
+                    for row in first["coverage"]
+                    if row["venue"] == "morpho-midnight"
+                )
+                expected = "checked" if case == "demo" else "empty"
+                self.assertEqual(coverage["status"], expected)
 
 
 class TestTheWholeSequence(unittest.TestCase):
@@ -209,6 +272,37 @@ class TestTheWholeSequence(unittest.TestCase):
         result = run("render", path, "--out", "-")
         self.assertEqual(result.returncode, 2)
         self.assertIn("not a probitas evidence file", result.stderr)
+
+    def test_evidence_the_renderer_refuses_exits_two(self):
+        # The load-time twin above guards the same contract. Rendering refuses
+        # later than loading does, so the caller has to hold both to the
+        # bounded diagnostic rather than letting one become a traceback.
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = os.path.join(directory.name, "empty-entity.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "schema": 1,
+                    "subject": {
+                        "entity": "",
+                        "addresses": [
+                            {
+                                "address": "0x" + "11" * 20,
+                                "provenance": "declared",
+                            }
+                        ],
+                    },
+                    "records": [],
+                    "coverage": [],
+                    "gaps": [],
+                },
+                handle,
+            )
+        result = run("render", path, "--out", "-")
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("subject entity is empty", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
 
     def test_the_dossier_puts_the_gaps_before_the_summary(self):
         _, dossier, _ = self.pipeline()

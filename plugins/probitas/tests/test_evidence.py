@@ -1,5 +1,6 @@
 """The evidence file has to refuse what the gates would otherwise have to catch."""
 
+import os
 import unittest
 
 from . import support  # noqa: F401
@@ -12,6 +13,7 @@ from probitas_lib.evidence import (  # noqa: E402
     Record,
     classify_source,
 )
+from probitas_lib.adapters.morpho_midnight import adapter as midnight_adapter  # noqa: E402
 
 ADDRESS = "0x00000000000000000000000000000000000000a1"
 TX = "0x" + "ab" * 32
@@ -226,6 +228,32 @@ class TestEvidenceFile(unittest.TestCase):
     def test_a_gap_needs_a_reason(self):
         with self.assertRaises(EvidenceError):
             Gap("maple history", "")
+
+    def test_midnight_outcome_values_survive_schema_one_serialisation(self):
+        subject = "0x535690cb1330232dd4f2ac5b724040751bdf4c91"
+        fixture = os.path.join(
+            support.PLUGIN_ROOT, "tests", "fixtures", "midnight-late"
+        )
+        records, coverage = midnight_adapter(
+            {subject: "declared"}, {"fixtures": fixture}
+        )
+        evidence = Evidence(entity="Midnight Borrower", addresses=[(subject, "declared")])
+        for record in records:
+            evidence.add_record(record)
+        evidence.add_coverage(coverage)
+
+        payload = evidence.to_dict()
+        outcome = next(
+            record
+            for record in payload["records"]
+            if record["claim"] == "maturity_outcome"
+        )
+        self.assertEqual(payload["schema"], 1)
+        self.assertEqual(outcome["values"]["obligation_state"], "outstanding_at_maturity")
+        self.assertEqual(outcome["values"]["observation_state"], "settled_late")
+        self.assertEqual(outcome["values"]["settlement_mode"], "liquidation")
+        self.assertEqual(outcome["values"]["debt_units_at_maturity"], "136075232067")
+        self.assertEqual(outcome["values"]["debt_units_at_observation"], "0")
 
 
 if __name__ == "__main__":

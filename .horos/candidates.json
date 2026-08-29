@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 14721423,
+    "bytes_blob": 14776871,
     "bytes_generated": 98
   },
   "entries": [
@@ -40,6 +40,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-383-prove-receipts-against-the-captured-header-s.synopsis.md"
+    },
+    {
+      "bytes": 37314,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-390-add-fail-closed-morpho-midnight-fixed-maturi.synopsis.md"
+    },
+    {
+      "bytes": 18134,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-390-restore-fail-closed-morpho-midnight-fixed-ma.synopsis.md"
     },
     {
       "bytes": 89662,
