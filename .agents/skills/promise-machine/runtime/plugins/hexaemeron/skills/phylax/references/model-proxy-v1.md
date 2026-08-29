@@ -5,9 +5,10 @@
 This reference is normative for `model-proxy-policy/v1`, its synthetic
 accepted-job adapter, and the provider-independent version-1 guest framing
 grammar. It also fixes the synthetic provider mapping and the standard-library
-HTTPS connector used to test that mapping without a live provider. Runtime
-accounting, receipts, cancellation, and the final hostile-conformance manifest
-are later boundaries.
+HTTPS connector used to test that mapping without a live provider. It defines
+the job-scoped runtime, atomic quota ledger, cancellation and expiry rules,
+content-free receipt file, and operator disclosure. The final hostile-
+conformance manifest is a later boundary.
 
 The implementation is the standard-library CLI at `../scripts/model_proxy.py`
 and the library under `../scripts/model_proxy_lib/`. Golden and refusing
@@ -53,6 +54,17 @@ event, diagnostic, guest response, receipt, argument, or retained snapshot.
 the fixed profile hostname once, accepts one global address, opens TLS to that
 address with the fixed hostname, and rejects a peer that differs from the pin.
 It has no proxy, CONNECT, or redirect machinery.
+
+**Lifecycle runtime.** One in-memory instance bound to one replayed policy,
+job id, and accepted JobSpec digest. It has no loader or resume operation.
+
+**Atomic reservation.** One lock-held decision that either reserves every
+resource needed before provider disclosure or reserves none of them.
+
+**Content-free receipt.** One bounded canonical JSON line containing only the
+closed receipt vocabulary. It carries job and policy identity, fixed versions,
+counts, timings, disclosure state, and an outcome code, but no model content or
+provider authority.
 
 ## Accepted-job evidence
 
@@ -181,6 +193,8 @@ guest cannot submit a response object or choose its sequence.
 Response object names are sorted by the canonical JSON rule, making equal
 sequence and output values byte-identical. A response carries no provider id,
 request id, model, usage claim, header, URL, raw error, or lifecycle field.
+A normal terminal transition first requires an unambiguous guest EOF and
+refuses while any admitted request remains unserved.
 
 ## Admission-bound provider mapping
 
@@ -218,9 +232,10 @@ The connector re-resolves the registered profile before use, so a
 self-consistent replacement dataclass cannot change its transport authority.
 It fixes HTTPS, port 443, `POST`, `/v1/responses`, the profile hostname, a
 30-second connector timeout, strict certificate verification, and TLS hostname
-verification. Its explicit client context does not honour `SSLKEYLOGFILE`, so
-ambient process state cannot select an output path for TLS traffic secrets. It
-resolves that hostname on the first request, bounds the
+verification. A caller-supplied connector timeout must be finite and positive
+and can only shorten that ceiling. Its explicit client context does not honour
+`SSLKEYLOGFILE`, so ambient process state cannot select an output path for TLS
+traffic secrets. It resolves that hostname on the first request, bounds the
 resolver iterator, requires one unique global IP address, and reuses that pin
 for every later request handled by the job connector. Empty, multiple,
 malformed, private, loopback, link-local, multicast, unspecified, reserved,
@@ -231,6 +246,8 @@ passes the profile hostname to TLS. It neither consults proxy environment
 variables nor implements CONNECT. The response peer address must equal the
 selected address, preventing a second resolver decision from changing the
 target. HTTP status 300 through 399 is terminal; no redirect is followed.
+Failure to close an obtained response is a transport refusal, and the
+corresponding guest output is withheld.
 
 Only status 200, `Content-Type: application/json`, absent or identity content
 encoding, and absent or chunked transfer encoding are admitted. Response
@@ -261,9 +278,10 @@ The session retains at most `max_requests + 1` fixed
 profile id, disclosure state, outcome family, fixed code, request and response
 byte counts, input and output token counts, and monotonic duration in
 nanoseconds. A pre-admission or credential-source refusal says `not-read`;
-another attempted provider exchange says `provider-only`. No event contains a
-prompt, output, credential, URL, header, address, provider request id, or raw
-error. Once the connector hands a mapped request to the exchange, a value-free
+validation or resolution that refuses before the exchange handoff also says
+`not-read`; another attempted provider exchange says `provider-only`. No event
+contains a prompt, output, credential, URL, header, address, provider request
+id, or raw error. Once the connector hands a mapped request to the exchange, a value-free
 transport refusal preserves that request's byte count and bounded duration even
 when no response object returns. If a response did return before its status,
 headers, or body refused, the same refusal also preserves the body bytes read
@@ -278,6 +296,182 @@ The core retains at most `2 * max_requests + 2` fixed
 no payload, input, output, path, guest identity, sequence, exception text, or
 free-form field name. This answers which framing stage stopped without
 turning request content into telemetry.
+
+## Atomic runtime accounting
+
+`LifecycleController` replays the captured accepted-job bytes before it accepts
+a reservation. It takes a private copy of every limit and binds itself to the
+replayed job id, JobSpec digest, policy digest, profile, and token counter. A
+second activation, a foreign job or digest, a duplicate sequence, or a
+reservation from another controller refuses. There is no state deserialiser.
+
+One lock covers reservation, rollback, completion, cancellation, expiry, and
+the first terminal transition. Before the runtime reads a credential or calls
+the connector, the lock reserves all of these values together:
+
+- one request and the exact canonical provider-request byte count;
+- the input count produced by the profile's pinned token counter;
+- one concurrency slot;
+- the full per-request output-token ceiling;
+- the full per-request provider-response byte ceiling; and
+- the smaller remaining interval from absolute expiry and elapsed lifetime.
+
+The synthetic `unicode-codepoint-fixture/v1` counter counts the exact mapped
+input string with Python's Unicode scalar count. An unrecognised counter
+refuses before activation. Request count, mapped request bytes, and input
+tokens are committed when disclosure begins. Output tokens and response bytes
+remain reserved at their complete per-request ceilings until a closed provider
+event reports actual usage. Completion requires that event to match the mapped
+request bytes and input count and stay inside both response reservations.
+Unused response capacity is then released. A pre-disclosure rollback releases
+all seven resources and the sequence; a disclosed reservation cannot roll
+back.
+
+Terminal disclosure state is monotone across the job. Once a completed or
+refusing provider event records `provider-only`, a later `not-read` refusal
+cannot erase that earlier disclosure from the terminal receipt.
+
+The aggregate checks include active reservations, so concurrent calls cannot
+each observe the same remaining capacity. A count, byte, token, output,
+response, or concurrency excess makes the job terminal. Later admission and
+provider publication refuse. Requests may reserve concurrently, but the
+runtime registers each durable request receipt in a pending-turn set and gives
+the provider session one turn at a time in guest sequence order. Selection
+waits for the next guest sequence rather than choosing whichever higher
+sequence reached the pending set first or relying on the execution lock's
+unspecified waiter order. A waiting higher turn observes an existing terminal
+transition and polls the lifecycle clocks, so cancellation wakes it and an
+absent or stalled lower worker cannot hold its reservation beyond the job
+deadline. It commits or refuses that turn against its own provider event before
+the next turn can cross the provider boundary. When no terminal transition has
+won, a successful provider event contributes its confirmed response bytes and
+validated output tokens before the post-provider clock check. A refusing event
+likewise contributes its confirmed response bytes,
+including the one over-limit sentinel. Expiry observed by that check wins the
+terminal outcome without dropping those counts. A response arriving after an
+earlier terminal transition cannot rewrite that already durable snapshot.
+
+## Cancellation, expiry, and publication
+
+Activation records two time domains. Absolute expiry comes from the accepted
+UTC `expires_at` value and is compared with `time.time_ns()`. Its
+activation-time remaining interval, capped by the accepted
+`absolute_lifetime_seconds`, is also added to the first
+`time.monotonic_ns()` reading, so a later wall-clock rollback cannot extend the
+signed absolute lifetime. Elapsed lifetime starts from Python's
+`time.monotonic_ns()` and adds the compiled `total_wall_seconds`. Each admission
+uses the smaller remaining interval. If `time.monotonic_ns()` fails, returns an
+invalid value, or decreases, the controller sets `MP405` as the terminal outcome
+at the last verified reading. The runtime checks both clocks again after the
+request receipt is durable and before it marks the reservation disclosed. An
+expiry during that write creates a content-free terminal record and prevents
+the credential read. Otherwise, the runtime passes the shortened interval to
+the connector, whose existing 30-second limit remains the upper transport
+timeout.
+
+After the credential read and pinned resolution, the connector calls a
+controller-owned handoff immediately before entering the exchange adapter.
+That handoff shares the lifecycle lock with cancellation and expiry, rechecks
+both clocks, and shrinks the exchange timeout to the current smaller remaining
+interval. The credential source and system resolver are not independently
+interrupted by that callback, but an expiry observed when either returns
+prevents the exchange and keeps the terminal disclosure state `not-read`. A
+handoff that wins first makes the job-level state `provider-only`, even when
+cancellation closes the in-flight request before a provider response returns.
+
+`poll()` applies the first expired boundary. If both boundaries have passed,
+the one whose activation-time interval was shorter supplies the fixed outcome.
+Trusted cancellation checks both expiry domains under the same lock before it
+can set `MP406`, so a deadline already reached remains the terminal winner.
+Both transitions mark the controller terminal, erase the provider session's
+credential source, connector reference, pending admissions, and content-bearing
+framing buffers and issued-request references, and then invoke the trusted I/O
+closer. Credential and connector references are erased in a `finally` path, and
+a provider or framing cleanup exception cannot skip the trusted I/O cleanup
+attempt. Admission cannot cross that linearisation point. A response that
+returns after cancellation or expiry is closed by the provider component and
+discarded instead of entering guest publication. Any cleanup failure refuses
+with `MP407` and produces no guest response. Provider or trusted-I/O cleanup
+failure occurs before the terminal write and therefore produces no successful
+terminal receipt. If the terminal line was already synchronised before the
+receipt descriptor's close reports failure, that line still records the first
+lifecycle outcome; the close refusal cannot rewrite durable evidence. The
+embedding supervisor remains responsible for terminating the per-job process.
+These component checks do not prove that process exit.
+
+Completion, cancellation, and expiry share one publication lock in
+`ModelProxyRuntime`. Completion either commits before the terminal transition,
+or sees that transition and withholds the response. A transport refusal that
+arrives after cancellation or expiry reports the earlier terminal winner. The
+controller retains one terminal snapshot; another terminal call does not
+create another receipt. A final-response completion that finds another active
+reservation still finalises the resulting refusal before returning it; cleanup
+and terminal evidence do not depend on that other caller running afterwards.
+Every final waiter and direct completion reports an already durable terminal
+outcome instead of replacing it with the closed provider session's refusal.
+The final-response path validates the guest EOF before provider disclosure and
+withholds its already normalised response if a later admitted request remains
+unserved. Direct completion applies the same EOF and pending-admission checks.
+
+## Content-free receipt file
+
+`ReceiptSink` creates one new file with exclusive creation and mode `0600`.
+If that initial creation or the activation-record write refuses, runtime
+construction erases the provider session's credential and connector references,
+attempts any available sink close, and invokes the trusted I/O closer before
+propagating the original refusal. A provider cleanup exception cannot skip the
+remaining cleanup attempts. A path-encoding or descriptor-close failure while
+walking the parent chain or refusing target setup cannot replace the fixed
+`MP407` result or skip those runtime cleanup attempts; every other descriptor
+already acquired for that failed construction is still given one close attempt.
+It walks every parent directory and opens the final target with no-follow
+flags. A symbolic link, directory, existing path, missing parent, replacement,
+or changed inode refuses. Keeping the descriptor open is not enough. The sink
+retains the absolute named path and original parent identity, reopens the whole
+no-follow parent chain, and compares both file and parent identities before and
+after every write. Renaming or replacing an ancestor therefore poisons the
+sink instead of diverting later records to an unnamed file.
+
+Each canonical UTF-8 JSON record is at most the smaller of compiled
+`max_receipt_bytes` and 4,096 bytes, excluding its line feed. One `os.write`
+must write the whole line. A zero, short, partial, failed, or replaced-target
+write poisons the sink; it is never retried as an append. Nanosecond timings
+are decimal strings so an absolute Unix value remains exact without exceeding
+the canonical JSON safe-integer range. The activation write synchronises both
+the file and its parent directory before guest input can be accepted, making
+the new directory entry part of the pre-disclosure durability boundary.
+
+The file has exactly these record kinds in order:
+
+1. one `activation` record before guest input;
+2. at most one `request` record for each consumed sequence, written after all
+   resources are reserved and before credential access; and
+3. one `terminal` record with the first terminal outcome and bounded totals.
+
+Every root record has exactly `schema`, `event`, `job_id`,
+`jobspec_sha256`, `policy_sha256`, `profile`, `sequence`, `versions`, `counts`,
+`timings`, `disclosure_state`, and `outcome_code`. Nested version, count, and
+timing sets are closed by record kind. The schema is
+`model-proxy-receipt/v1`. No record accepts a prompt, response, content digest,
+credential, raw URL, header, provider request id, provider name, or exception
+text.
+
+A request-receipt failure occurs before `mark_disclosed`, rolls the reservation
+back, marks the runtime terminal, and prevents the credential read and provider
+call. A terminal-receipt failure closes the sink, keeps the runtime terminal,
+and refuses guest publication of the response being completed. Because a
+receipt path must be absent at activation and no resume reader exists, a new
+process cannot resume a prior job from its receipt file.
+
+## Operator disclosure
+
+`render_operator_text` replays the exact accepted-job evidence and refuses a
+caller-mutated policy. Its output names what leaves the machine, the provider
+family, origin and path family, profile and model, provider storage and
+retention rule, local content-free receipt retention, every disabled feature,
+and every compiled limit. It also states the boundary directly: restricting
+the destination and withholding the credential from the guest does not prove
+that the provider will not retain or exfiltrate disclosed model content.
 
 ## Policy vocabulary
 
@@ -387,6 +581,16 @@ response bytes, but no credential. Each case generates its canary in memory,
 injects a resolver and in-process exchange, requires one post-admission
 credential read, and closes the response. The command makes no network call.
 
+Successful `lifecycle-demo` emits one line of the same diagnostic schema with
+`outcome=lifecycle_checked`, the fixed lifecycle-manifest schema, case,
+request, and receipt counts, and the policy digest. Its closed manifest uses
+injected wall-clock and monotonic-clock start values, an injected global
+address, an in-process exchange, and a fresh in-memory credential. Each case
+writes a fresh receipt file, completes one request, verifies activation/request/terminal order and
+record bounds, scans retained bytes for the credential and model content, and
+checks the operator disclosure. The command makes no network call and claims
+no provider retention behaviour.
+
 Refusal diagnostics have exactly `schema`, `outcome=refused`, `code`, and
 `field`. `field` is a code-owned schema location, never an input value. CLI
 argument errors use the same value-free shape and accept no abbreviated option
@@ -460,6 +664,17 @@ JobSpec bytes, job id, or exception text.
 | `MP326` | Provider usage disagrees with the synthetic token counter | Provider normalisation |
 | `MP327` | Provider response contains the current credential | Provider disclosure |
 | `MP328` | Provider manifest path, shape, mapping, or expected bytes disagree | Manifest check |
+| `MP400` | Runtime policy, connector, or I/O closer disagrees | Lifecycle activation |
+| `MP401` | Job, digest, sequence, reservation, activation, or state disagrees | Lifecycle identity |
+| `MP402` | Request count, mapped bytes, or input-token reservation exceeds a limit | Lifecycle admission |
+| `MP403` | Concurrency, output-token, or response-byte reservation exceeds a limit | Lifecycle admission |
+| `MP404` | Accepted absolute expiry has arrived | Lifecycle expiry |
+| `MP405` | Monotonic deadline or clock value refuses | Lifecycle expiry |
+| `MP406` | Trusted cancellation made the job terminal | Lifecycle cancellation |
+| `MP407` | Receipt path, count, state, identity, complete write, or close refuses | Receipt sink |
+| `MP408` | Receipt limit, closed shape, or byte ceiling refuses | Receipt schema |
+| `MP409` | Token counter or provider usage disagrees with the reservation | Lifecycle accounting |
+| `MP410` | Lifecycle manifest path, shape, execution, or expected result disagrees | Manifest check |
 
 ## Golden command
 
@@ -504,3 +719,19 @@ that post-activation caller mutation cannot widen the captured policy limits,
 that an out-of-order request stops before credential or provider disclosure,
 that ambient `SSLKEYLOGFILE` cannot enable TLS traffic-secret output, and a
 response refusal retains confirmed content-free disclosure counts.
+
+Check the lifecycle, quota, receipt, and operator vectors with:
+
+```bash
+mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py lifecycle-demo --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json
+```
+
+The two cases exercise ASCII and Unicode input under injected clocks and an
+in-process exchange. The unittest surface covers exact and excessive quota
+reservations, concurrent admission, rollback, request floods, identity and
+restart refusals, both expiry domains, cancellation and late responses,
+ordered concurrent provider turns, quota and active-completion terminalisation,
+provider-usage disagreement, receipt schema and filesystem failures including
+ancestor replacement and parent-directory synchronisation, content absence,
+constructor cleanup, response-close and terminal publication failure,
+truncated terminal input, unserved admission refusal, and operator-text parity.

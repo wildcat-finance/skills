@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 import http.client
 import ipaddress
 import itertools
+import math
 import re
 import socket
 import ssl
@@ -31,6 +32,20 @@ _CONTENT_LENGTH = re.compile(r"0|[1-9][0-9]*\Z")
 _EXPECTED_RESPONSE_HEADERS = frozenset(
     {"content-encoding", "content-length", "content-type", "transfer-encoding"}
 )
+
+
+def _bounded_timeout(value: int | float | None, ceiling: float) -> float:
+    if value is None:
+        return ceiling
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        refuse("MP300", "provider.request")
+    try:
+        converted = float(value)
+    except (OverflowError, ValueError):
+        refuse("MP300", "provider.request")
+    if converted <= 0 or not math.isfinite(converted):
+        refuse("MP300", "provider.request")
+    return min(ceiling, converted)
 
 
 @dataclass(frozen=True, slots=True)
@@ -351,8 +366,9 @@ class HTTPSConnector:
         _validate_profile(profile)
         if not callable(resolver) or not callable(exchange) or not callable(clock):
             refuse("MP300", "provider.transport")
-        if not isinstance(timeout, (int, float)) or isinstance(timeout, bool) or timeout <= 0:
+        if timeout is None:
             refuse("MP300", "provider.transport")
+        bounded_timeout = _bounded_timeout(timeout, TRANSPORT_TIMEOUT_SECONDS)
         try:
             context = context_factory()
         except Exception:
@@ -368,7 +384,7 @@ class HTTPSConnector:
         self._exchange = exchange
         self._context = context
         self._clock = clock
-        self._timeout = float(timeout)
+        self._timeout = bounded_timeout
         self._pinned_address: ipaddress.IPv4Address | ipaddress.IPv6Address | None = None
         self._pin_lock = threading.Lock()
 
@@ -410,6 +426,8 @@ class HTTPSConnector:
         credential: str,
         *,
         max_response_bytes: int,
+        timeout_seconds: float | None = None,
+        on_request_handoff: Callable[[], float | None] | None = None,
     ) -> TransportResult:
         """Send one internally mapped request and retain no authority-bearing value."""
 
@@ -420,8 +438,13 @@ class HTTPSConnector:
             or not isinstance(max_response_bytes, int)
             or max_response_bytes < 1
             or max_response_bytes > self._profile.limit_ceilings["max_response_bytes"]
+            or (
+                on_request_handoff is not None
+                and not callable(on_request_handoff)
+            )
         ):
             refuse("MP300", "provider.request")
+        request_timeout = _bounded_timeout(timeout_seconds, self._timeout)
         headers = _request_headers(self._profile, credential)
         address = self._job_address()
         request = HTTPSRequest(
@@ -440,10 +463,17 @@ class HTTPSConnector:
         length = 0
         failure: PolicyError | None = None
         failure_duration = 0
+        result: TransportResult | None = None
         try:
             started = self._clock()
+            if on_request_handoff is not None:
+                handoff_timeout = on_request_handoff()
+                if handoff_timeout is not None:
+                    request_timeout = _bounded_timeout(
+                        handoff_timeout, request_timeout
+                    )
             request_handed_to_exchange = True
-            response = self._exchange(request, self._context, self._timeout)
+            response = self._exchange(request, self._context, request_timeout)
             if (
                 isinstance(response.status, bool)
                 or not isinstance(response.status, int)
@@ -487,7 +517,7 @@ class HTTPSConnector:
                 or finished < started
             ):
                 refuse("MP306", "provider.duration")
-            return TransportResult(
+            result = TransportResult(
                 body=b"".join(chunks),
                 request_bytes=len(body),
                 response_bytes=length,
@@ -507,15 +537,19 @@ class HTTPSConnector:
                 try:
                     response.close()
                 except Exception:
-                    pass
-        if failure is None:
+                    if failure is None:
+                        failure = PolicyError("MP306", "provider.response.close")
+                        failure_duration = self._failure_duration(started)
+        if failure is not None:
+            if response is not None or request_handed_to_exchange:
+                raise TransportRefusal(
+                    failure.code,
+                    failure.field,
+                    len(body),
+                    length,
+                    failure_duration,
+                ) from None
+            raise failure from None
+        if result is None:
             refuse("MP306", "provider.transport")
-        if response is not None or request_handed_to_exchange:
-            raise TransportRefusal(
-                failure.code,
-                failure.field,
-                len(body),
-                length,
-                failure_duration,
-            ) from None
-        raise failure from None
+        return result
