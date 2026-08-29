@@ -7086,7 +7086,15 @@ def remote_branch_tip(
         f"{label} could not be read",
     )
     lines = [line for line in tool_text(data, label).splitlines() if line]
-    if len(lines) != 1:
+    if not lines:
+        # A deleted branch and a malformed remote answer are different faults,
+        # and the recovery only exists for the first. Integrate reads this
+        # while the run branch still has to be there, so say which one it is.
+        die(
+            f"{label} names no ref: origin has no {expected_ref}. A deleted "
+            "branch reads this way; restore it at its recorded commit and retry"
+        )
+    if len(lines) > 1:
         die(f"{label} must contain exactly one ref")
     fields = lines[0].split("\t")
     if (
