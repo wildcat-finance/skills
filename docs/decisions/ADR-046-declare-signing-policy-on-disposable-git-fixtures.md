@@ -149,11 +149,15 @@ SSH host it returns about 4.6 ms per fixture commit, which is inside noise at
 suite scale and is not a suite-level speedup claim.
 
 Ten sites became ten edit points, one per chokepoint across seven files, and a
-single point of control is what the choice trades away. An eleventh construction site added later
-can forget the declaration. That cost is paid by
-`tests/test_disposable_fixture_signing.py`, which enumerates all four suites and
-fails when a disposable repository reaches the signer, rather than by asking
-contributors to remember.
+single point of control is what the choice trades away. An eleventh construction
+site added later can forget the declaration. Part of that cost is paid by
+`tests/test_disposable_fixture_signing.py`, which runs one representative test
+from each of the four suites under the hostile configuration and fails when that
+representative's fixture reaches the signer. The cover is partial by design and
+the extent was measured: removing the declaration from five of the ten sites
+fails the guard, and removing it from the other five does not, because no
+registered representative exercises them. A new site is caught when a
+representative's path reaches it and by review otherwise.
 
 The rule governs every future test that creates a repository, and getting the
 scope wrong is expensive in both directions: too narrow and the fault returns at
