@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 852,
-  "total_bytes": 11188749,
+  "total_bytes": 11195208,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -613,9 +613,9 @@
       "source": "plugins/ariadne/schemas/state-fixture-v2.json"
     },
     {
-      "bytes": 22313,
+      "bytes": 22633,
       "path": "plugins/ariadne/scripts/ariadne.py",
-      "sha256": "db64be99db661b558b8026b177e42c663429502655ddc6a3228e478a5bce9ed1",
+      "sha256": "c7f29d2cad29232a44b2335fb38e1d74469f7dae26047835cfb887f843068ae8",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     {
@@ -631,9 +631,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/__init__.py"
     },
     {
-      "bytes": 13997,
+      "bytes": 14078,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/dataset.py",
-      "sha256": "68cc921587936e03a4acef364e947fd6c96ff60b49b8fd343be5bd183aff445f",
+      "sha256": "75a4211ba8b924ff5f755717edfe89a38ffbc6884c9f5db77c1a26f2588a016a",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/dataset.py"
     },
     {
@@ -643,21 +643,21 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/foundry.py"
     },
     {
-      "bytes": 31303,
+      "bytes": 36266,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
-      "sha256": "6905831127068c202f23e27216f9097f8f5b98dd769f6ad8ee1fcdd72e5f27de",
+      "sha256": "c197a46663efa824c32c8a540fc9dced1177ec7312b756cc8d800a9a9e7797f9",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py"
     },
     {
-      "bytes": 33710,
+      "bytes": 34064,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py",
-      "sha256": "ba640ba3e9a4f9c9a56d5127649f89ddd2975105c4e588f49036c2a094bb4677",
+      "sha256": "28a8b5b2ac3524717f703ce88f355e0bccde9f2cc21acfa3119eb92e32a1b240",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py"
     },
     {
-      "bytes": 5742,
+      "bytes": 6483,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/tree.py",
-      "sha256": "3572dc571f3e25970e469f2476bf1bcb0b822e4fde976d29a2bb4fbe2ad0dbfa",
+      "sha256": "d9e7110951d0b67ddd7d5e1636f9c55c8d89ed3d4df0f6f270ac1ca1f2e59833",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/tree.py"
     },
     {

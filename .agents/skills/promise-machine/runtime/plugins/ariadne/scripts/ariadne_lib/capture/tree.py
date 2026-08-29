@@ -1,10 +1,11 @@
 """Reading a directory of files without losing any of them quietly.
 
-Every capture that digests a directory needs the same three refusals, and the
-reason is the same one the gates exist for. `os.walk` does not descend a symlinked
-directory and swallows a directory it cannot read, so either would drop files from
-the statement and from the bundle digest with nothing recording that anything was
-dropped. That is silent absence, which this tool refuses everywhere else.
+Every capture that digests a directory needs the same refusals, and the reason is
+the same one the gates exist for. A generic directory walk can materialise a wide
+directory before its caller enforces a bound, does not descend a symlinked
+directory, and may swallow a directory it cannot read. Any of those would defeat a
+capture ceiling or drop files from the statement and bundle digest without a
+record. This reader refuses at the entry where the boundary is crossed instead.
 
 Written once because it was written twice. The dataset capture and the state-fixture
 capture both walk a tree, and the second copy of a path helper in this package was
@@ -18,6 +19,7 @@ state-fixture one.
 """
 
 import os
+import stat
 
 MAX_FILES = 4096
 """The maximum number of filesystem entries a capture will traverse.
@@ -89,49 +91,60 @@ def files(root, kind="release"):
 
     found = []
     seen_entries = 0
-    for directory, names, entries in os.walk(root, onerror=unreadable):
-        seen_entries += len(names) + len(entries)
-        if seen_entries > MAX_FILES:
-            raise CaptureError(
-                "%s holds more than %d entries; name a narrower directory"
-                % (kind, MAX_FILES)
-            )
-        for name in sorted(names):
-            here = os.path.join(directory, name)
-            shown = os.path.relpath(here, root)
-            if name in REFUSED_NAMES:
-                raise CaptureError(
-                    "%s holds %s; remove it or name a directory that holds only "
-                    "the %s" % (kind, shown, kind)
-                )
-            if os.path.islink(here):
-                raise CaptureError(
-                    "%s is a symlink to a directory; its contents would be left "
-                    "out of the statement and out of the %s digest without "
-                    "anything saying so" % (shown, kind)
-                )
-        names[:] = sorted(names)
-        for name in sorted(entries):
-            absolute = os.path.join(directory, name)
-            relative = os.path.relpath(absolute, root)
-            if os.path.islink(absolute):
-                raise CaptureError(
-                    "%s is a symlink; a digest over its target would describe "
-                    "something the %s does not contain" % (relative, kind)
-                )
-            if not os.path.isfile(absolute):
-                # Refused at the walk as well as inside `digests.of_file`, so the
-                # walk stops before anything opens it and the message names the
-                # tree rather than one path. A fifo opened for reading blocks
-                # until somebody writes to it, which hangs a capture with no
-                # output and no timeout.
-                raise CaptureError(
-                    "%s is not a regular file; a %s holds files, and reading a "
-                    "fifo would block until something wrote to it"
-                    % (relative, kind)
-                )
-            inside(root, absolute, "%s file" % kind, kind)
-            found.append((relative, absolute))
+    pending = [root]
+    while pending:
+        directory = pending.pop()
+        child_directories = []
+        try:
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    seen_entries += 1
+                    if seen_entries > MAX_FILES:
+                        raise CaptureError(
+                            "%s holds more than %d entries; name a narrower directory"
+                            % (kind, MAX_FILES)
+                        )
+
+                    absolute = os.path.join(directory, entry.name)
+                    relative = os.path.relpath(absolute, root)
+                    mode = entry.stat(follow_symlinks=False).st_mode
+                    if stat.S_ISLNK(mode):
+                        try:
+                            linked_directory = entry.is_dir()
+                        except OSError:
+                            linked_directory = False
+                        if linked_directory:
+                            raise CaptureError(
+                                "%s is a symlink to a directory; its contents would "
+                                "be left out of the statement and out of the %s "
+                                "digest without anything saying so" % (relative, kind)
+                            )
+                        raise CaptureError(
+                            "%s is a symlink; a digest over its target would describe "
+                            "something the %s does not contain" % (relative, kind)
+                        )
+                    if stat.S_ISDIR(mode):
+                        if entry.name in REFUSED_NAMES:
+                            raise CaptureError(
+                                "%s holds %s; remove it or name a directory that holds "
+                                "only the %s" % (kind, relative, kind)
+                            )
+                        child_directories.append(absolute)
+                        continue
+                    if not stat.S_ISREG(mode):
+                        # Refused before anything opens it. A fifo opened for
+                        # reading blocks until somebody writes to it, which hangs
+                        # a capture with no output and no timeout.
+                        raise CaptureError(
+                            "%s is not a regular file; a %s holds files, and reading "
+                            "a fifo would block until something wrote to it"
+                            % (relative, kind)
+                        )
+                    inside(root, absolute, "%s file" % kind, kind)
+                    found.append((relative, absolute))
+        except OSError as error:
+            unreadable(error)
+        pending.extend(reversed(sorted(child_directories)))
     if not found:
         raise CaptureError("%s %s holds no files" % (kind, root))
-    return found
+    return sorted(found, key=lambda item: item[0])

@@ -25,6 +25,9 @@ MAX_COMPONENT_BYTES = 4 * 1024 * 1024
 MAX_TOTAL_BYTES = 2 * 1024 * 1024 * 1024
 MAX_PREVIOUS_BYTES = 16 * 1024 * 1024
 MAX_RELEASE_FILES = predicate.MAX_SUBJECTS
+MAX_DIAGNOSTIC_FIELDS = 4
+MAX_DIAGNOSTIC_FIELD_CHARS = 96
+MAX_DIAGNOSTIC_BYTES = 960
 
 CORPUS_FORMAT = "berean-corpus/v1"
 CORPUS_FIELDS = ("format", "corpus_version", "files", "corpus_digest")
@@ -95,7 +98,7 @@ def _parse_json(raw, what):
     except UnicodeDecodeError as error:
         raise CaptureError("%s is not UTF-8 at byte %d" % (what, error.start)) from None
     except safejson.InputError as error:
-        raise CaptureError("%s: %s" % (what, gates.one_line(str(error)))) from None
+        raise CaptureError("%s: %s" % (what, diagnostic(error))) from None
     except json.JSONDecodeError as error:
         raise CaptureError(
             "%s is not JSON at line %d column %d"
@@ -114,8 +117,15 @@ def _closed(value, fields, what):
     if missing:
         raise CaptureError("%s is missing %s" % (what, ", ".join(missing)))
     if unknown:
+        preview = ", ".join(
+            _display(field, MAX_DIAGNOSTIC_FIELD_CHARS)
+            for field in unknown[:MAX_DIAGNOSTIC_FIELDS]
+        )
+        if len(unknown) > MAX_DIAGNOSTIC_FIELDS:
+            preview += ", ..."
         raise CaptureError(
-            "%s carries undeclared fields: %s" % (what, ", ".join(unknown))
+            "%s carries %d undeclared field(s): %s"
+            % (what, len(unknown), preview)
         )
     return value
 
@@ -147,6 +157,8 @@ def _digest(value, what):
 
 def _stated(value, what, portable=False):
     valid = predicate.portable_name(value) if portable else predicate.stated(value)
+    if valid and any(0xD800 <= ord(char) <= 0xDFFF for char in value):
+        valid = False
     if not valid:
         adjective = "portable bounded" if portable else "bounded stated"
         raise CaptureError("%s is not a %s string" % (what, adjective))
@@ -174,19 +186,45 @@ def _listing_digest(entries):
 
 
 def _canonical_digest(value):
-    raw = json.dumps(
-        value,
-        sort_keys=True,
-        separators=(",", ":"),
-        ensure_ascii=False,
-    ).encode("utf-8")
+    try:
+        raw = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+    except UnicodeEncodeError:
+        raise CaptureError(
+            "canonical JSON contains a non-Unicode-scalar string"
+        ) from None
     return hashlib.sha256(raw).hexdigest()
 
 
-def _display(value):
+def _display(value, limit=300):
     """Bound one attacker-chosen path before it reaches a one-line diagnostic."""
-    shown = ascii(value)
-    return shown if len(shown) <= 300 else shown[:297] + "..."
+    cropped = isinstance(value, str) and len(value) > limit
+    sample = value[:limit] if cropped else value
+    shown = ascii(sample)
+    if cropped or len(shown) > limit:
+        return shown[: limit - 3] + "..."
+    return shown
+
+
+def diagnostic(value, maximum=MAX_DIAGNOSTIC_BYTES):
+    """Render one terminal-safe diagnostic under a UTF-8 byte ceiling."""
+    try:
+        rendered = gates.one_line(value)
+    except Exception:
+        rendered = "capture refused with an unprintable error"
+    encoded = rendered.encode("utf-8", "backslashreplace")
+    if len(encoded) <= maximum:
+        return encoded.decode("utf-8")
+    cropped = encoded[: maximum - 3]
+    while True:
+        try:
+            return cropped.decode("utf-8") + "..."
+        except UnicodeDecodeError as error:
+            cropped = cropped[: error.start]
 
 
 def _metadata(path):
@@ -247,16 +285,42 @@ def _release_root(path):
     return tree.confined(path, "release")
 
 
+def _ancestor_has_identity(path, identity):
+    """Whether any existing lexical ancestor has one filesystem identity."""
+    cursor = os.path.abspath(path)
+    while True:
+        try:
+            found = os.stat(cursor, follow_symlinks=False)
+        except (FileNotFoundError, NotADirectoryError):
+            pass
+        except OSError:
+            raise CaptureError("cannot inspect --output ancestry") from None
+        else:
+            if (found.st_dev, found.st_ino) == identity:
+                return True
+        parent = os.path.dirname(cursor)
+        if parent == cursor:
+            return False
+        cursor = parent
+
+
 def _output_alias(root, output, inventory):
     if not output:
         raise CaptureError("--output is required; capture never mutates the release")
     absolute = os.path.abspath(output)
     resolved = os.path.realpath(absolute)
     try:
+        release = os.stat(root, follow_symlinks=False)
+    except OSError:
+        raise CaptureError("cannot inspect the Berean release root") from None
+    release_identity = (release.st_dev, release.st_ino)
+    try:
         shared = os.path.commonpath([root, resolved])
     except ValueError:
         shared = None
-    if shared == root:
+    if shared == root or _ancestor_has_identity(
+        absolute, release_identity
+    ) or _ancestor_has_identity(resolved, release_identity):
         raise CaptureError("--output resolves inside the Berean release")
     if os.path.lexists(absolute):
         if os.path.islink(absolute):
@@ -273,6 +337,22 @@ def _output_alias(root, output, inventory):
     parent = os.path.realpath(os.path.dirname(absolute) or ".")
     if not os.path.isdir(parent):
         raise CaptureError("--output parent is not a directory")
+
+
+def _optional_regular_file(root, relative, what):
+    """Distinguish an absent optional file from every present non-file shape."""
+    absolute = os.path.join(root, relative)
+    try:
+        found = os.stat(absolute, follow_symlinks=False)
+    except FileNotFoundError:
+        return False
+    except OSError:
+        raise CaptureError("cannot inspect %s" % what) from None
+    if stat.S_ISLNK(found.st_mode):
+        raise CaptureError("%s is a symlink" % what)
+    if not stat.S_ISREG(found.st_mode):
+        raise CaptureError("%s exists and is not a regular file" % what)
+    return True
 
 
 class _Paths(object):
@@ -304,9 +384,25 @@ class _Reader(object):
     def read(self, relative, name, what, maximum=None):
         if maximum is None:
             maximum = MAX_COMPONENT_BYTES
-        digest, size, raw = state_fixture.read_component(
-            self.root, relative, what, maximum, keep_bytes=True
-        )
+        remaining = MAX_TOTAL_BYTES - self.total
+        if remaining <= 0:
+            raise CaptureError(
+                "release components total more than the %d byte ceiling"
+                % MAX_TOTAL_BYTES
+            )
+        total_limited = remaining < maximum
+        maximum = min(maximum, remaining)
+        try:
+            digest, size, raw = state_fixture.read_component(
+                self.root, relative, what, maximum, keep_bytes=True
+            )
+        except state_fixture.ComponentLimitError:
+            if not total_limited:
+                raise
+            raise CaptureError(
+                "release components total more than the %d byte ceiling"
+                % MAX_TOTAL_BYTES
+            ) from None
         self.total += size
         if self.total > MAX_TOTAL_BYTES:
             raise CaptureError(
@@ -376,9 +472,19 @@ def _release_shape(document, paths):
     )
 
     rules = _closed(document["rules"], predicate.BEREAN_RULES_FIELDS, "release rules")
-    if tuple(rules["source_classes"]) != predicate.BEREAN_SOURCE_CLASSES:
+    source_classes = _array(
+        rules["source_classes"],
+        "release source_classes",
+        predicate.MAX_POLICY_ITEMS,
+    )
+    evidence_classes = _array(
+        rules["evidence_classes"],
+        "release evidence_classes",
+        predicate.MAX_POLICY_ITEMS,
+    )
+    if tuple(source_classes) != predicate.BEREAN_SOURCE_CLASSES:
         raise CaptureError("release source_classes changes the closed Berean vocabulary")
-    if tuple(rules["evidence_classes"]) != predicate.BEREAN_EVIDENCE_CLASSES:
+    if tuple(evidence_classes) != predicate.BEREAN_EVIDENCE_CLASSES:
         raise CaptureError("release evidence_classes changes the closed Berean vocabulary")
 
     allowlists = _closed(
@@ -460,6 +566,29 @@ def _corpus(reader, document, paths):
     if _listing_digest(listed) != manifest["corpus_digest"]:
         raise CaptureError("corpus_digest does not match the manifest file listing")
     return manifest_component, components
+
+
+def _close_corpus_subtree(corpus_path, components, inventory):
+    """Require the manifest to own every file beneath ``corpus.path``."""
+    prefix = unicodedata.normalize("NFC", corpus_path) + "/"
+    expected = {
+        unicodedata.normalize("NFC", component["path"])
+        for component in components
+    }
+    actual = {path for path in inventory if path.startswith(prefix)}
+    if actual == expected:
+        return
+    extra = sorted(actual - expected)
+    if extra:
+        raise CaptureError(
+            "corpus subtree holds file(s) absent from its manifest: %s"
+            % ", ".join(_display(path) for path in extra[:8])
+        )
+    missing = sorted(expected - actual)
+    raise CaptureError(
+        "corpus subtree is missing manifest file(s): %s"
+        % ", ".join(_display(path) for path in missing[:8])
+    )
 
 
 def _promotion_record(record, line, document):
@@ -568,7 +697,7 @@ def _external_document(path):
     except (envelope.EnvelopeError, safejson.InputError, ValueError) as error:
         raise CaptureError(
             "--previous is not a bounded Ariadne statement: %s"
-            % gates.one_line(str(error))
+            % diagnostic(error)
         ) from None
     if document.statement.predicate_type != predicate.TYPE:
         raise CaptureError("--previous is not a grounded-agent/v1 statement")
@@ -608,21 +737,28 @@ def _comparison(name, release_digest, previous, first_capture_reason):
 
 
 def _self_verify(statement):
-    raw = (json.dumps(statement, indent=2, ensure_ascii=False) + "\n").encode("utf-8")
+    try:
+        raw = (json.dumps(statement, indent=2, ensure_ascii=False) + "\n").encode(
+            "utf-8"
+        )
+    except UnicodeEncodeError:
+        raise CaptureError(
+            "constructed statement contains a non-Unicode-scalar string"
+        ) from None
     try:
         document = envelope.read(raw, safejson.loader(len(raw) + 1, MAX_JSON_DEPTH))
         report = verify.report(document, registry.DEFAULT)
     except (envelope.EnvelopeError, safejson.InputError, ValueError) as error:
         raise CaptureError(
             "constructed statement could not be read back: %s"
-            % gates.one_line(str(error))
+            % diagnostic(error)
         ) from None
     if not report.ok or not report.predicate_gates_checked or report.unchecked:
         failed = next((gate for gate in report.ordered if not gate.passed), None)
         if failed is not None:
             raise CaptureError(
                 "constructed statement failed self-verification at %s: %s"
-                % (failed.name, gates.one_line(failed.detail))
+                % (failed.name, diagnostic(failed.detail))
             )
         raise CaptureError("constructed statement left predicate checks unchecked")
     return statement
@@ -645,12 +781,13 @@ def capture(
         not isinstance(producer_command, (list, tuple))
         or not producer_command
         or len(producer_command) > predicate.MAX_COMMAND_WORDS
-        or not all(predicate.stated(word) for word in producer_command)
     ):
         raise CaptureError(
             "--producer-command needs 1 to %d bounded argv words"
             % predicate.MAX_COMMAND_WORDS
         )
+    for index, word in enumerate(producer_command):
+        _stated(word, "--producer-command word %d" % (index + 1))
 
     root = _release_root(release)
     before = _inventory(root)
@@ -666,6 +803,7 @@ def capture(
     )
     question_families, refusal_conditions = _release_shape(document, declared)
     manifest_component, corpus_components = _corpus(reader, document, declared)
+    _close_corpus_subtree(document["corpus"]["path"], corpus_components, before)
 
     reads_component = None
     if document["reads"] is not None:
@@ -694,8 +832,10 @@ def capture(
         _match(report, document["evals"]["report_sha256"], "evaluation report")
         evaluation_components = {"cases": cases, "report": report}
 
-    promotion_key = unicodedata.normalize("NFC", predicate.BEREAN_PROMOTIONS_FILE)
-    promotion = _promotions(reader, document, declared, promotion_key in before)
+    promotion_present = _optional_regular_file(
+        root, predicate.BEREAN_PROMOTIONS_FILE, "promotion chain"
+    )
+    promotion = _promotions(reader, document, declared, promotion_present)
 
     expected = declared.values
     actual = set(before)
