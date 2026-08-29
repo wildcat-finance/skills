@@ -1,0 +1,243 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/dead-code-report-v1.schema.json",
+  "title": "dead-code-report/v1",
+  "description": "A report-only inventory over one clean Git tree. Findings are candidates, their count is not a gate, and this document never authorises deletion.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "tool",
+    "tree",
+    "universe",
+    "status",
+    "analysers",
+    "findings"
+  ],
+  "properties": {
+    "schema": {
+      "const": "dead-code-report/v1"
+    },
+    "tool": {
+      "$ref": "#/$defs/toolIdentity"
+    },
+    "tree": {
+      "$ref": "#/$defs/treeIdentity"
+    },
+    "universe": {
+      "$ref": "#/$defs/universeIdentity"
+    },
+    "status": {
+      "$ref": "#/$defs/analysisStatus"
+    },
+    "analysers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/analyserStatus"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+  "$defs": {
+    "sha256Identity": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "gitObjectIdentity": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^[^/].*$"
+    },
+    "toolIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {
+          "const": "dead-code"
+        },
+        "version": {
+          "const": "1"
+        }
+      }
+    },
+    "treeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commit", "git_tree"],
+      "properties": {
+        "commit": {
+          "$ref": "#/$defs/gitObjectIdentity"
+        },
+        "git_tree": {
+          "$ref": "#/$defs/gitObjectIdentity"
+        }
+      }
+    },
+    "classifiedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "category", "evidence", "grade"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grade": {
+          "const": "hard"
+        }
+      }
+    },
+    "universeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "tracked_count",
+        "analysed_count",
+        "analysed",
+        "excluded_count",
+        "excluded_by_category",
+        "excluded"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/sha256Identity"
+        },
+        "tracked_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "analysed_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "analysed": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/repositoryPath"
+          }
+        },
+        "excluded_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_by_category": {
+          "type": "object",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "excluded": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/classifiedPath"
+          }
+        }
+      }
+    },
+    "analysisStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "detail"],
+      "properties": {
+        "id": {
+          "const": "analysis"
+        },
+        "state": {
+          "enum": ["not-run", "ran", "degraded", "failed"]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "analyserStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "version", "detail"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "state": {
+          "enum": ["ran", "not-available", "degraded", "failed"]
+        },
+        "version": {
+          "type": ["string", "null"]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "analyser_id",
+        "path",
+        "symbol",
+        "evidence",
+        "confidence",
+        "false_positive_boundary"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/sha256Identity"
+        },
+        "analyser_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "symbol": {
+          "type": ["string", "null"]
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidence": {
+          "enum": ["high", "medium", "low"]
+        },
+        "false_positive_boundary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

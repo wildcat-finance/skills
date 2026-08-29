@@ -1,0 +1,112 @@
+name: dead-code
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.horos/**'
+      - '.github/workflows/dead-code.yml'
+      - 'docs/dead-code/**'
+      - 'docs/decisions/ADR-051-keep-dead-code-discovery-report-only.md'
+      - 'schemas/dead-code-report-v1.schema.json'
+      - 'scripts/dead_code.py'
+      - 'scripts/run_checks.py'
+      - 'tests/check-map-v1.json'
+      - 'tests/emit_dead_code_report.py'
+      - 'tests/test_dead_code.py'
+      - ".python-version"
+      - "pyproject.toml"
+  pull_request:
+    paths:
+      - '.horos/**'
+      - '.github/workflows/dead-code.yml'
+      - 'docs/dead-code/**'
+      - 'docs/decisions/ADR-051-keep-dead-code-discovery-report-only.md'
+      - 'schemas/dead-code-report-v1.schema.json'
+      - 'scripts/dead_code.py'
+      - 'scripts/run_checks.py'
+      - 'tests/check-map-v1.json'
+      - 'tests/emit_dead_code_report.py'
+      - 'tests/test_dead_code.py'
+      - ".python-version"
+      - "pyproject.toml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Run the checked dead-code scope
+        run: python3 scripts/run_checks.py --scope dead-code
+
+      - name: Build the report
+        run: |
+          python3 scripts/dead_code.py report --json --output .dead-code/report.json
+          python3 scripts/dead_code.py report
+
+      - name: Check the report contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(
+              Path(".dead-code/report.json").read_text(encoding="utf-8")
+          )
+          if report["schema"] != "dead-code-report/v1":
+              raise SystemExit("dead-code report schema is wrong")
+          if report["universe"]["analysed_count"] < 1:
+              raise SystemExit("dead-code universe collapsed")
+          if report["status"]["state"] == "failed":
+              raise SystemExit("dead-code analyser failed")
+          PY
+
+      - name: Summarise the report
+        if: success()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          from pathlib import Path
+
+          report = json.loads(
+              Path(".dead-code/report.json").read_text(encoding="utf-8")
+          )
+          universe = report["universe"]
+          print("## Dead-code report")
+          print()
+          print("Candidates are reported, not gated.")
+          print()
+          print(f"- commit: {report['tree']['commit']}")
+          print(f"- git_tree: {report['tree']['git_tree']}")
+          print(f"- universe: {universe['id']}")
+          print(
+              f"- paths: {universe['tracked_count']} tracked, "
+              f"{universe['analysed_count']} analysed, "
+              f"{universe['excluded_count']} excluded"
+          )
+          print(f"- status: {report['status']['state']}")
+          states = ", ".join(
+              f"{item['id']}={item['state']}" for item in report["analysers"]
+          )
+          print(f"- analysers: {states or 'none ran'}")
+          print(f"- findings: {len(report['findings'])} candidate(s)")
+          PY
+
+      - name: Record an inconclusive failure
+        if: failure()
+        run: |
+          echo '## Dead-code report' >> "$GITHUB_STEP_SUMMARY"
+          echo '' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The command or report contract failed. This run established no dead-code result.' >> "$GITHUB_STEP_SUMMARY"
