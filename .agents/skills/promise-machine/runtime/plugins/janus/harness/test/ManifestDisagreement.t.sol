@@ -132,6 +132,71 @@ contract ManifestDisagreementTest is JanusBase, JanusHarness {
     assertTrue(underShipped != underOmitted, "so the manifest is what decides");
   }
 
+  // ------------------------------ Fixture drift --------------------------- //
+
+  /// @dev The fixtures are copies of the shipped manifest with one edit each,
+  ///      and the whole disagreement rests on that being true. Nothing was
+  ///      checking it. A fixture that drifted -- because the shipped manifest
+  ///      changed and the copy did not -- would leave the refusal above
+  ///      comparing against a stale baseline and still passing, proving
+  ///      something weaker than it claims while looking identical.
+  ///
+  ///      This walks every action in the manifest and requires the two files to
+  ///      agree on everything the reader exposes, with exactly one exception:
+  ///      deposit's state-changing call set, which is the edit. Comparing
+  ///      through the reader rather than by file bytes is deliberate, because
+  ///      what the disagreement depends on is the resolved threshold, and two
+  ///      files can differ in whitespace or key order without differing in any
+  ///      way a gate could see.
+  function test_the_omitted_fixture_differs_from_the_shipped_manifest_in_one_entry() external view {
+    string[4] memory actions = [
+      "deposit",
+      "queueWithdrawal",
+      "transfer",
+      "setAnnualInterestAndReserveRatioBips"
+    ];
+
+    for (uint256 i; i < actions.length; ++i) {
+      ResolvedThreshold memory a = _resolve(SHIPPED, actions[i]);
+      ResolvedThreshold memory b = _resolve(OMITTED, actions[i]);
+
+      assertEq(a.gasBudget, b.gasBudget, "same gas budget");
+      assertEq(a.allowedWriteAccounts.length, b.allowedWriteAccounts.length, "same write scopes");
+      assertEq(a.allowedDelegateTargets.length, b.allowedDelegateTargets.length, "same delegates");
+      assertEq(a.valueAssets.length, b.valueAssets.length, "same value assets");
+      assertEq(a.valueRecipients.length, b.valueRecipients.length, "same value recipients");
+
+      for (uint256 j; j < a.allowedWriteAccounts.length; ++j) {
+        assertEq(a.allowedWriteAccounts[j], b.allowedWriteAccounts[j], "same write account");
+      }
+
+      if (keccak256(bytes(actions[i])) == keccak256("deposit")) {
+        assertEq(a.allowedCallTargets.length, 1, "the shipped manifest permits the call");
+        assertEq(b.allowedCallTargets.length, 0, "and the fixture omits it");
+      } else {
+        assertEq(a.allowedCallTargets.length, b.allowedCallTargets.length, "same call targets");
+        for (uint256 j; j < a.allowedCallTargets.length; ++j) {
+          assertEq(a.allowedCallTargets[j], b.allowedCallTargets[j], "same call target");
+        }
+      }
+    }
+  }
+
+  /// @dev The same for the unknown-symbol fixture, on the actions it can still
+  ///      resolve. Its deposit threshold cannot be compared because resolving
+  ///      it is the abort the test above asserts, which is the point of it.
+  function test_the_unknown_fixture_differs_from_the_shipped_manifest_only_on_deposit() external view {
+    string[3] memory actions = ["queueWithdrawal", "transfer", "setAnnualInterestAndReserveRatioBips"];
+
+    for (uint256 i; i < actions.length; ++i) {
+      ResolvedThreshold memory a = _resolve(SHIPPED, actions[i]);
+      ResolvedThreshold memory b = _resolve(UNKNOWN, actions[i]);
+      assertEq(a.gasBudget, b.gasBudget, "same gas budget");
+      assertEq(a.allowedCallTargets.length, b.allowedCallTargets.length, "same call targets");
+      assertEq(a.allowedWriteAccounts.length, b.allowedWriteAccounts.length, "same write scopes");
+    }
+  }
+
   // ------------------------------ Fail-closed ----------------------------- //
 
   /// @dev The fail-closed abort, and the direction no gate can report. A
