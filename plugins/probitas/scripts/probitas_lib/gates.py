@@ -156,9 +156,19 @@ def gate_2_coverage(dossier, payload, blocks):
     expected = {venue.id for venue in registry.all_venues()}
 
     seen = {}
-    for row in payload["coverage"]:
+    for index, row in enumerate(payload["coverage"]):
         venue = row.get("venue")
         source = row.get("source")
+        # Checked before anything sorts or compares it. An evidence file is
+        # the one input this gate does not control -- `verify` exists to be
+        # pointed at a document somebody else produced -- and a row whose
+        # venue is not a string used to reach a sort and raise a TypeError,
+        # so a malformed file came back as a traceback rather than as a
+        # breached gate.
+        if not isinstance(venue, str) or not venue.strip():
+            return Gate(
+                2, "coverage", False, f"coverage row {index} names no venue"
+            )
         if not row.get("status"):
             return Gate(2, "coverage", False, f"{venue} has no status")
         if source not in COVERAGE_SOURCES:

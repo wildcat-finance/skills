@@ -254,6 +254,13 @@ class TestEvidenceFile(unittest.TestCase):
                 "clearpool", "checked", source="archive", releases=["a](https://evil/"]
             )
 
+    def test_releases_refuse_anything_that_is_not_a_string_or_a_sequence(self):
+        """`list()` took a mapping's keys and turned an integer into a crash."""
+        for value in (5, {"sha256:aa": 1}, b"sha256:aa"):
+            with self.subTest(value=value):
+                with self.assertRaises(EvidenceError):
+                    Coverage("clearpool", "checked", source="archive", releases=value)
+
     def test_the_wire_carries_schema_two_and_names_every_source(self):
         evidence = self.evidence()
         evidence.add_coverage(Coverage("wildcat", "checked", source="fixtures"))
