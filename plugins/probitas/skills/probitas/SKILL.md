@@ -9,7 +9,7 @@ description: >
   for questions about a single market's own numbers, and never to work out
   which individual controls an address.
 metadata:
-  version: "0.2.0"
+  version: "1.2.0"
 ---
 
 <p align="center">
@@ -30,7 +30,7 @@ another frontier pass after that ledger becomes mature.
 
 Probitas builds a sourced dossier of borrowing and repayment across lending venues from addresses the counterparty declared, without identifying a person or issuing a Wildcat verdict.
 
-**Current frontier.** Euler v1/v2 now ship; Morpho Midnight fixed-maturity coverage and curation remain unimplemented.
+**Current frontier.** Morpho Midnight fixed-maturity coverage now ships API-scoped on Base; secondary-market borrow exits stay refused as unattributable and Morpho curation remains uncollected.
 <!-- marketplace-context:end -->
 
 Wildcat lends without collateral. Nothing stands between a lender and a total
@@ -133,6 +133,16 @@ person, default, full repayment or current balance.
 The checked-in Alexandria `credit-history-v0` example exercises this explicit
 index path offline and checks the resulting evidence and dossier against fixed
 receipts. It does not alter the normal live and fixture routes.
+
+Morpho Midnight coverage is Base chain id 8453 through its own keyless REST API
+alone. Every cursor page is exhausted once, the coverage row states the
+observation time and the returned index bound, and the API's history lower
+bound is unpublished, so the claim is API-scoped history rather than
+archive-chain completeness. An incomplete, ambiguous or out-of-bounds response
+returns no records and a named gap instead of a partial answer, and a
+secondary-market borrow exit is refused because its account-attributed debt
+units are unproved. An overdue maturity closed by liquidation reads as settled
+late through liquidation, never as voluntary repayment.
 
 `render` builds the document in the order the specification sets: coverage and
 what could not be established stand ahead of anything that reads like a

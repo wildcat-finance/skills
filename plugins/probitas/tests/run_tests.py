@@ -1,29 +1,23 @@
 #!/usr/bin/env python3
-"""Run the Probitas suite and optionally emit a structured audit report.
-
-The report is the ``elenchus.unittest.v1`` payload a Fiat audit round names
-when it claims a fix, so the path has to be fresh and inside this checkout.
-The confinement logic is the one the Alexandria runner already carries, kept
-identical on purpose. Each plugin suite that owes an Elenchus report keeps
-its own copy, because every copy locates its tests from its own path.
-"""
+"""Run the Probitas suite and emit one confined Elenchus report."""
 
 import argparse
 import json
 import os
 from pathlib import Path
+import secrets
 import stat
 import sys
 import unittest
 
 
 def worktree_root():
-    """Resolve the owning checkout rather than trusting the caller's cwd."""
+    """Resolve the checkout that owns this runner, independent of cwd."""
     return Path(__file__).resolve(strict=True).parents[3]
 
 
 def absolute_report_parts(supplied, root):
-    """Keep the lexical path below any alias that names the bound root."""
+    """Bind an absolute path or outside alias to the owning checkout."""
     anchor = None
     for ancestor in supplied.parents:
         try:
@@ -37,7 +31,7 @@ def absolute_report_parts(supplied, root):
 
 
 def report_target(argv):
-    """Parse one fresh report path and bind its worktree identity."""
+    """Parse exactly one fresh report path and bind its worktree identity."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--elenchus-report",
@@ -47,10 +41,8 @@ def report_target(argv):
     )
     arguments = parser.parse_args(argv)
     values = list(arguments.elenchus_report or [])
-    if len(values) > 1:
-        parser.error("name one --elenchus-report path")
-    if not values:
-        return None
+    if len(values) != 1:
+        parser.error("name exactly one --elenchus-report path")
 
     raw = values[0]
     if not raw or "\x00" in raw:
@@ -97,19 +89,25 @@ def report_target(argv):
     for operation, name in (
         (os.open, "os.open(dir_fd)"),
         (os.mkdir, "os.mkdir(dir_fd)"),
+        (os.link, "os.link(dir_fd)"),
         (os.stat, "os.stat(dir_fd)"),
         (os.unlink, "os.unlink(dir_fd)"),
     ):
         if operation not in supports_dir_fd:
             missing.append(name)
     supports_follow_symlinks = getattr(os, "supports_follow_symlinks", ())
-    if os.stat not in supports_follow_symlinks:
-        missing.append("os.stat(follow_symlinks)")
+    for operation, name in (
+        (os.link, "os.link(follow_symlinks)"),
+        (os.stat, "os.stat(follow_symlinks)"),
+    ):
+        if operation not in supports_follow_symlinks:
+            missing.append(name)
     if missing:
         parser.error(
             "--elenchus-report requires secure directory operations: "
             + ", ".join(missing)
         )
+
     directory_flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
     try:
         root_stat = root.stat()
@@ -120,30 +118,41 @@ def report_target(argv):
             os.close(root_fd)
     except OSError:
         parser.error("--elenchus-report worktree cannot be opened and inspected")
-    if (opened_stat.st_dev, opened_stat.st_ino) != (
-        root_stat.st_dev,
-        root_stat.st_ino,
-    ):
+    identity = (opened_stat.st_dev, opened_stat.st_ino)
+    if identity != (root_stat.st_dev, root_stat.st_ino):
         parser.error("--elenchus-report worktree changed during inspection")
-    return root, (opened_stat.st_dev, opened_stat.st_ino), relative.parts
+    return root, identity, relative.parts
 
 
-def result_payload(result):
-    """Return Elenchus's complete unittest counter schema."""
+def result_payload(result=None, *, complete=True):
+    """Return the closed unittest counter schema consumed by Elenchus."""
+    if result is None:
+        counts = {
+            "testsRun": 0,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        }
+    else:
+        counts = {
+            "testsRun": result.testsRun,
+            "failures": len(result.failures),
+            "errors": len(result.errors),
+            "skipped": len(result.skipped),
+            "expectedFailures": len(result.expectedFailures),
+            "unexpectedSuccesses": len(result.unexpectedSuccesses),
+        }
     return {
         "schema": "elenchus.unittest.v1",
-        "complete": True,
-        "testsRun": result.testsRun,
-        "failures": len(result.failures),
-        "errors": len(result.errors),
-        "skipped": len(result.skipped),
-        "expectedFailures": len(result.expectedFailures),
-        "unexpectedSuccesses": len(result.unexpectedSuccesses),
+        "complete": complete,
+        **counts,
     }
 
 
 def report_parent(root_fd, parts):
-    """Open or create report directories without following a symlink."""
+    """Open or create report directories without following symlinks."""
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
     current_fd = os.dup(root_fd)
     try:
@@ -165,7 +174,7 @@ def report_parent(root_fd, parts):
 
 
 def report_root(root, identity):
-    """Reopen the bound worktree and refuse a replaced directory."""
+    """Reopen the bound checkout and refuse a replaced directory."""
     flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
     descriptor = os.open(root, flags)
     try:
@@ -179,7 +188,7 @@ def report_root(root, identity):
 
 
 def remove_created_report(parent_fd, name, created):
-    """Remove a failed write only while the target is still our inode."""
+    """Remove a private stage only while the name identifies its inode."""
     try:
         current = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
     except OSError:
@@ -192,22 +201,48 @@ def remove_created_report(parent_fd, name, created):
         pass
 
 
+def staged_report(parent_fd):
+    """Create an unpredictable private stage beside the report target."""
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    for _ in range(16):
+        name = f".elenchus-stage-{secrets.token_hex(16)}"
+        try:
+            descriptor = os.open(name, flags, 0o600, dir_fd=parent_fd)
+        except FileExistsError:
+            continue
+        try:
+            created = os.fstat(descriptor)
+        except BaseException:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+            try:
+                os.unlink(name, dir_fd=parent_fd)
+            except OSError:
+                pass
+            raise
+        if stat.S_ISREG(created.st_mode):
+            return name, descriptor, created
+        os.close(descriptor)
+        remove_created_report(parent_fd, name, created)
+        raise OSError("report stage is not a regular file")
+    raise OSError("report stage name could not be allocated")
+
+
 def write_report(target, payload):
-    """Create the declared report through its bound worktree identity."""
+    """Publish a complete report without exposing a partial target."""
     root, identity, parts = target
     if not parts:
         raise OSError("report path has no filename")
     root_fd = report_root(root, identity)
     try:
         parent_fd = report_parent(root_fd, parts[:-1])
-        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
         descriptor = None
         created = None
+        stage_name = None
         try:
-            descriptor = os.open(parts[-1], flags, 0o600, dir_fd=parent_fd)
-            created = os.fstat(descriptor)
-            if not stat.S_ISREG(created.st_mode):
-                raise OSError("report target is not a regular file")
+            stage_name, descriptor, created = staged_report(parent_fd)
             body = (json.dumps(payload, sort_keys=True) + "\n").encode("utf-8")
             remaining = memoryview(body)
             while remaining:
@@ -215,39 +250,60 @@ def write_report(target, payload):
                 if written <= 0:
                     raise OSError("report write made no progress")
                 remaining = remaining[written:]
+            staged = os.stat(
+                stage_name, dir_fd=parent_fd, follow_symlinks=False
+            )
+            if (staged.st_dev, staged.st_ino) != (
+                created.st_dev,
+                created.st_ino,
+            ):
+                raise OSError("report stage changed during write")
+            os.link(
+                stage_name,
+                parts[-1],
+                src_dir_fd=parent_fd,
+                dst_dir_fd=parent_fd,
+                follow_symlinks=False,
+            )
             os.close(descriptor)
             descriptor = None
-        except OSError:
-            opened_without_identity = descriptor is not None and created is None
+        finally:
             if descriptor is not None:
                 try:
                     os.close(descriptor)
                 except OSError:
                     pass
-            if created is not None:
-                remove_created_report(parent_fd, parts[-1], created)
-            elif opened_without_identity:
-                try:
-                    os.unlink(parts[-1], dir_fd=parent_fd)
-                except OSError:
-                    pass
-            raise
-        finally:
+            if stage_name is not None and created is not None:
+                remove_created_report(parent_fd, stage_name, created)
             os.close(parent_fd)
     finally:
         os.close(root_fd)
 
 
 def main(argv=None):
-    """Run the suite, optionally emit its report, and preserve suite exits."""
+    """Run every Probitas test and preserve its structured exit evidence."""
     target = report_target(sys.argv[1:] if argv is None else argv)
     here = os.path.dirname(os.path.abspath(__file__))
     plugin_root = os.path.dirname(here)
-    suite = unittest.defaultTestLoader.discover(
-        here, pattern="test_*.py", top_level_dir=plugin_root
-    )
-    runner = unittest.TextTestRunner(verbosity=1)
-    result = runner.run(suite)
+    try:
+        suite = unittest.defaultTestLoader.discover(
+            here, pattern="test_*.py", top_level_dir=plugin_root
+        )
+        test_runner = unittest.TextTestRunner(verbosity=1)
+        result = test_runner.run(suite)
+    except BaseException:
+        try:
+            write_report(target, result_payload(complete=False))
+        except OSError:
+            pass
+        raise
+
+    try:
+        write_report(target, result_payload(result))
+    except OSError:
+        print("run_tests.py: report write failed", file=sys.stderr)
+        return 2
+
     total = result.testsRun
     not_passed = sum(
         len(outcomes)
@@ -259,15 +315,10 @@ def main(argv=None):
             result.unexpectedSuccesses,
         )
     )
-
-    if target is not None:
-        try:
-            write_report(target, result_payload(result))
-        except OSError:
-            print("run_tests.py: report write failed", file=sys.stderr)
-            return 2
-
     print(f"{total - not_passed}/{total} tests passed")
+    if total == 0:
+        print("run_tests.py: no tests were discovered", file=sys.stderr)
+        return 2
     return 0 if result.wasSuccessful() else 1
 
 

@@ -1,1 +1,25 @@
-{"coverage":{"checked":1,"error":1,"unconfigured":4,"unimplemented":9},"dossier_sha256":"sha256:ea59a3b3f7285fbc635fc3e8e44e1fffda55f17704e4ed3d306839cf13ad3c44","evidence_sha256":"sha256:9e5565f5c4278832c8006ba84df5bff0a54bb70d133ad49c282b700db1ed8869","format":"alexandria-demo-probitas-receipt/v1","gate_lines":["gate 1 provenance: pass -- no inferred addresses in this run","gate 2 coverage: pass -- 15 venue(s) accounted for over 15 row(s), 1 queried","gate 3 sourcing: pass -- 11 record(s) sourced, no unsupported figure","gate 4 negative space: pass -- 14 gap(s) stated ahead of the summary","gate 5 rating: pass -- no rating emitted"],"record_sources":{"transaction":11},"record_venues":{"clearpool":11},"records":11}
+{
+  "coverage": {
+    "checked": 1,
+    "error": 1,
+    "unconfigured": 5,
+    "unimplemented": 8
+  },
+  "dossier_sha256": "sha256:eebf3d2ebf10801995cac53e778f88d0322a45d29b6f84e9751cbcbcee6047f9",
+  "evidence_sha256": "sha256:e40cd88e1e70e8b5c5fee3cdfabbd4c4807e9bc6dded444fbd653d3ace33c559",
+  "format": "alexandria-demo-probitas-receipt/v1",
+  "gate_lines": [
+    "gate 1 provenance: pass -- no inferred addresses in this run",
+    "gate 2 coverage: pass -- 15 venue(s) accounted for over 15 row(s), 1 queried",
+    "gate 3 sourcing: pass -- 11 record(s) sourced, no unsupported figure",
+    "gate 4 negative space: pass -- 14 gap(s) stated ahead of the summary",
+    "gate 5 rating: pass -- no rating emitted"
+  ],
+  "record_sources": {
+    "transaction": 11
+  },
+  "record_venues": {
+    "clearpool": 11
+  },
+  "records": 11
+}

@@ -24,7 +24,13 @@ from probitas_lib.adapters import (  # noqa: E402
     run_adapter,
     unchecked_coverage,
 )
-from probitas_lib.adapters import euler, euler_v1, morpho, wildcat  # noqa: E402
+from probitas_lib.adapters import (  # noqa: E402
+    euler,
+    euler_v1,
+    morpho,
+    morpho_midnight,
+    wildcat,
+)
 from probitas_lib.evidence import (  # noqa: E402
     Coverage,
     Evidence,
@@ -38,6 +44,7 @@ ADAPTERS = {
     "euler": euler.adapter,
     "euler-v1": euler_v1.adapter,
     "morpho-blue": morpho.adapter,
+    "morpho-midnight": morpho_midnight.adapter,
     "wildcat": wildcat.adapter,
 }
 """Venue id to callable. Everything else in the registry is a stated gap."""
@@ -229,11 +236,13 @@ def _routes_line(args, routes):
 def cmd_render(args):
     try:
         payload = render.load(args.evidence)
+        # render refuses malformed evidence too, so it belongs to the same
+        # bounded diagnostic as load rather than an uncaught traceback.
+        document = render.render(payload)
     except (OSError, ValueError) as error:
         print(f"probitas: {error}", file=sys.stderr)
         return 2
 
-    document = render.render(payload)
     if args.out == "-":
         sys.stdout.write(document)
     else:
@@ -248,11 +257,11 @@ def cmd_verify(args):
         payload = render.load(args.evidence)
         with open(args.dossier, encoding="utf-8") as handle:
             document = handle.read()
+        results = gates.check(document, payload)
     except (OSError, ValueError) as error:
         print(f"probitas: {error}", file=sys.stderr)
         return 2
 
-    results = gates.check(document, payload)
     for gate in results:
         print(gate.line())
     breached = [g for g in results if not g.passed]
