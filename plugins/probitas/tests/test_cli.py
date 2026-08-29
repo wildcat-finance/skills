@@ -38,6 +38,103 @@ class TestVenuesCommand(unittest.TestCase):
         self.assertIn("not implemented", result.stdout)
 
 
+class TestTheRouteTable(unittest.TestCase):
+    """Every row of the documented table, without reaching the network.
+
+    Route selection is a pure function, so the whole table is provable here.
+    Only the offline rows can then be run end to end: a test that quietly made
+    a live request would pass on a laptop and tell you nothing either way.
+    """
+
+    def routes(self, **flags):
+        import argparse
+
+        import probitas
+
+        namespace = argparse.Namespace(fixtures=None, live=False, alexandria_index=None)
+        for key, value in flags.items():
+            setattr(namespace, key, value)
+        return probitas.routes_for(namespace)
+
+    def test_no_flags_run_the_live_adapter_route_alone(self):
+        self.assertEqual(self.routes(), ("live",))
+
+    def test_fixtures_back_the_adapter_route_alone(self):
+        self.assertEqual(self.routes(fixtures="/dir"), ("fixtures",))
+
+    def test_live_alone_names_the_existing_default(self):
+        self.assertEqual(self.routes(live=True), ("live",))
+
+    def test_an_index_alone_runs_no_adapter(self):
+        """The property every existing archive invocation depends on."""
+        self.assertEqual(self.routes(alexandria_index="x.sqlite"), ("archive",))
+
+    def test_fixtures_and_an_index_run_both_routes_offline(self):
+        self.assertEqual(
+            self.routes(fixtures="/dir", alexandria_index="x.sqlite"),
+            ("fixtures", "archive"),
+        )
+
+    def test_live_and_an_index_run_both_routes(self):
+        self.assertEqual(
+            self.routes(live=True, alexandria_index="x.sqlite"), ("live", "archive")
+        )
+
+    def test_live_and_fixtures_are_refused_with_exit_two(self):
+        result = run(
+            "collect", "--entity", "Acme", "--address", "0x" + "a1" * 20,
+            "--live", "--fixtures", os.path.join(FIXTURES, "empty"), "--out", "-",
+        )
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("not allowed with", result.stderr)
+        self.assertIn("--live", result.stderr)
+
+
+class TestTheGapRule(unittest.TestCase):
+    """A venue one route answered for is not a hole because another missed it."""
+
+    def evidence(self):
+        import probitas
+        from probitas_lib.evidence import Coverage, Evidence
+
+        subject = Evidence(
+            entity="Acme", addresses=[("0x" + "a1" * 20, "declared")], run_id="test"
+        )
+        return probitas, Coverage, subject
+
+    def test_a_venue_one_route_answered_is_not_also_a_gap(self):
+        probitas, Coverage, subject = self.evidence()
+        subject.add_coverage(
+            Coverage("wildcat", "checked", source="fixtures", block_range="1-2")
+        )
+        subject.add_coverage(
+            Coverage("wildcat", "unconfigured", source="none", note="nobody looked")
+        )
+        probitas._record_gaps(subject)
+        self.assertEqual([gap.subject for gap in subject.gaps], [])
+
+    def test_a_failed_route_still_leaves_a_gap(self):
+        probitas, Coverage, subject = self.evidence()
+        subject.add_coverage(
+            Coverage("wildcat", "checked", source="fixtures", block_range="1-2")
+        )
+        subject.add_coverage(Coverage("wildcat", "error", source="archive", note="502"))
+        probitas._record_gaps(subject)
+        self.assertEqual(
+            [gap.subject for gap in subject.gaps], ["wildcat borrowing history"]
+        )
+
+    def test_a_venue_nobody_reached_is_named_once(self):
+        probitas, Coverage, subject = self.evidence()
+        subject.add_coverage(
+            Coverage("maple", "unimplemented", source="none", note="no adapter")
+        )
+        probitas._record_gaps(subject)
+        self.assertEqual(
+            [gap.subject for gap in subject.gaps], ["maple borrowing history"]
+        )
+
+
 class TestCollectCommand(unittest.TestCase):
     address = "0x" + "a1" * 20
 
@@ -137,6 +234,12 @@ class TestCollectCommand(unittest.TestCase):
                 f"{len(registry.all_venues())} venue(s) checked",
                 result.stderr,
             )
+            # Counted over venues, not rows: a union run holds more rows than
+            # venues and the line would otherwise understate its own coverage.
+            self.assertIn(
+                f"over {len(registry.all_venues())} row(s)", result.stderr
+            )
+            self.assertIn("routes: fixtures (", result.stderr)
             with open(path, encoding="utf-8") as handle:
                 self.assertEqual(json.load(handle)["schema"], 2)
 
