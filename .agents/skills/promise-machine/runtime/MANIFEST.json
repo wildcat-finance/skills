@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 850,
-  "total_bytes": 11150939,
+  "file_count": 852,
+  "total_bytes": 11188749,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 3198,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "9ccad0b47903f6a4b5b39988ba2e614719d6b3881f01d05961587ca12c571260",
+      "sha256": "330e27ec973fbb61a82a9547ed3ef828788cffb34a97eedd110057c0cc5d77bc",
       "source": null
     },
     {
@@ -487,6 +487,12 @@
       "source": "plugins/ariadne/docs/capturing-a-dataset.md"
     },
     {
+      "bytes": 4746,
+      "path": "plugins/ariadne/docs/capturing-a-grounded-agent.md",
+      "sha256": "cc2d566883ca0d77e498cd258438a7532892e685a928146c9b5124c252bfb72b",
+      "source": "plugins/ariadne/docs/capturing-a-grounded-agent.md"
+    },
+    {
       "bytes": 5028,
       "path": "plugins/ariadne/docs/capturing-a-release.md",
       "sha256": "270c14552bf84f489128d864fcd0e9f543f823c19225c2c677418117146bada2",
@@ -607,9 +613,9 @@
       "source": "plugins/ariadne/schemas/state-fixture-v2.json"
     },
     {
-      "bytes": 20611,
+      "bytes": 22313,
       "path": "plugins/ariadne/scripts/ariadne.py",
-      "sha256": "e8e38c62307737c32c82caac7782c15032edc6383655c50b96a0ec0b158f8156",
+      "sha256": "db64be99db661b558b8026b177e42c663429502655ddc6a3228e478a5bce9ed1",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     {
@@ -619,9 +625,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/__init__.py"
     },
     {
-      "bytes": 637,
+      "bytes": 696,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/__init__.py",
-      "sha256": "b0e184386a0cdb6d0ea0bb20bfd153cc39671b41ae9ba797692959a0abbe5b30",
+      "sha256": "544c1d59b642efe3ee96e0e8c22cf533b2d7d8768ab3a243846cc73459e9bd7d",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/__init__.py"
     },
     {
@@ -635,6 +641,12 @@
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/foundry.py",
       "sha256": "7f539a864c914c1ebecc766134efcfb7e0951af7a694d721cc511835024a513a",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/foundry.py"
+    },
+    {
+      "bytes": 31303,
+      "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
+      "sha256": "6905831127068c202f23e27216f9097f8f5b98dd769f6ad8ee1fcdd72e5f27de",
+      "source": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py"
     },
     {
       "bytes": 33710,

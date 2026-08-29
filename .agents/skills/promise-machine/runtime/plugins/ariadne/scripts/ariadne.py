@@ -7,6 +7,7 @@ Seven subcommands:
     capture     read a build on disk into a statement
     capture-dataset  read a dataset release on disk into a statement
     capture-state-fixture  read a Lazarus v1 or v2 fixture into its matching statement
+    capture-grounded-agent  read a bounded local berean-release/v1 into a statement
     inspect     read a statement or DSSE envelope and report what it covers
     verify      run the gates over a statement and report each one
     replay      re-run the deterministic commands a statement records
@@ -24,6 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from ariadne_lib import digests, envelope, gates, registry, replay, safejson, verify  # noqa: E402
 from ariadne_lib import predicates  # noqa: E402,F401  (registers them)
 from ariadne_lib.capture import dataset as dataset_capture
+from ariadne_lib.capture import grounded_agent as grounded_agent_capture
 from ariadne_lib.capture import state_fixture as state_fixture_capture  # noqa: E402
 from ariadne_lib.capture import foundry  # noqa: E402
 from ariadne_lib.statement import StatementError  # noqa: E402
@@ -310,6 +312,29 @@ def cmd_capture_state_fixture(args):
     return write_statement(statement, args.out)
 
 
+def cmd_capture_grounded_agent(args):
+    try:
+        statement = grounded_agent_capture.capture(
+            args.release,
+            name=args.name,
+            producer_tool=args.producer_tool,
+            producer_version=args.producer_version,
+            producer_command=args.producer_command,
+            output=args.output,
+            previous=args.previous,
+            first_capture_reason=args.first_capture_reason,
+        )
+        grounded_agent_capture.write(args.output, statement, args.release)
+    except (grounded_agent_capture.CaptureError, OSError) as error:
+        print(
+            "capture failed: %s" % gates.one_line(str(error)),
+            file=sys.stderr,
+        )
+        return USAGE_ERROR
+    print("wrote %s" % args.output)
+    return 0
+
+
 def cmd_capture(args):
     try:
         statement = foundry.capture(
@@ -526,6 +551,21 @@ def build_parser():
     grab_fixture.add_argument("--first-capture-reason")
     grab_fixture.add_argument("--out")
     grab_fixture.set_defaults(handler=cmd_capture_state_fixture)
+
+    grab_agent = subcommands.add_parser(
+        "capture-grounded-agent",
+        help="read a bounded local berean-release/v1 into a statement",
+        description="read a bounded local berean-release/v1 into a statement",
+    )
+    grab_agent.add_argument("--release", required=True)
+    grab_agent.add_argument("--name", required=True)
+    grab_agent.add_argument("--producer-tool", required=True)
+    grab_agent.add_argument("--producer-version", required=True)
+    grab_agent.add_argument("--producer-command", action="append", required=True)
+    grab_agent.add_argument("--previous")
+    grab_agent.add_argument("--first-capture-reason")
+    grab_agent.add_argument("--output", required=True)
+    grab_agent.set_defaults(handler=cmd_capture_grounded_agent)
 
     check = subcommands.add_parser(
         "verify", help="run the core gates over a statement"

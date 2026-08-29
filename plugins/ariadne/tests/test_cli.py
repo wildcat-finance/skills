@@ -76,6 +76,33 @@ class PredicatesTests(unittest.TestCase):
             self.fail("capture-state-fixture is not registered")
         self.assertIn("v1 or v2 fixture", fixture_parser.format_help())
 
+    def test_capture_grounded_agent_exposes_the_bounded_local_inputs(self):
+        parser = ariadne.build_parser()
+        for action in parser._subparsers._group_actions:  # noqa: SLF001
+            if "capture-grounded-agent" in action.choices:
+                capture_parser = action.choices["capture-grounded-agent"]
+                break
+        else:
+            self.fail("capture-grounded-agent is not registered")
+
+        options = {
+            option
+            for action in capture_parser._actions  # noqa: SLF001
+            for option in action.option_strings
+        }
+        self.assertTrue(
+            {
+                "--release",
+                "--name",
+                "--producer-tool",
+                "--producer-version",
+                "--producer-command",
+                "--previous",
+                "--first-capture-reason",
+                "--output",
+            }.issubset(options)
+        )
+
 
 class InspectTests(unittest.TestCase):
     def setUp(self):
