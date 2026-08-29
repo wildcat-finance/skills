@@ -23,7 +23,26 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from test_hexctl import HEXCTL, LINTS_CLEAN, HexctlCase, hexctl_module
 
 
+FIAT_SKILL = Path(__file__).resolve().parents[1] / "skills" / "fiat" / "SKILL.md"
+
+
 class HexctlCheckpointTests(HexctlCase):
+    def test_public_recovery_routes_checkpoint_arrivals_before_fresh_init(self):
+        fiat = FIAT_SKILL.read_text(encoding="utf-8")
+        checkpoint = fiat.index("checkpoint zip")
+        active_state = fiat.index("If `.hexaemeron/state.json` exists")
+        fresh_init = fiat.index("Otherwise: say exactly `Let there be light.`")
+        self.assertLess(
+            checkpoint,
+            active_state,
+            "checkpoint recovery must be selected before active-state resume",
+        )
+        self.assertLess(
+            active_state,
+            fresh_init,
+            "active-state resume must be selected before fresh initialization",
+        )
+
     def controller_root(self):
         return Path(self.target) / ".hexaemeron"
 

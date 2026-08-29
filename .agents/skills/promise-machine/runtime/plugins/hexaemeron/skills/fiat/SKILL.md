@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.33.1"
+  version: "5.34.1"
 ---
 
 <p align="center">
@@ -144,17 +144,22 @@ the second.
 1. If the user passed `status`, run `hexctl status` and report. Stop.
 2. Apply the frontier maturity gate below. This happens before `init` and
    before resuming an existing frontier run.
-3. If `.hexaemeron/state.json` exists, run `hexctl verify`, then
+3. If a run arrives as a checkpoint zip, verify the outer transport and Git
+   boundary first, restore its refs into a fresh clean top-level checkout, then
+   restore the checked controller capsule with `hexctl checkpoint restore`, per
+   the `Step checkpoint` section of
+   [push-discipline.md](references/push-discipline.md). Run `hexctl verify` and
+   `hexctl status --json` against the restored worktree, then enter the loop.
+   Never call `init` or start a fresh ledger for a restored run.
+4. If `.hexaemeron/state.json` exists, run `hexctl verify`, then
    `hexctl status --json`. If its phase is `done`, run `hexctl reset` to
    archive the completed run, then continue immediately as a new run at step
-   4. This is recovery for a run whose terminal cleanup was interrupted or
+   5. This is recovery for a run whose terminal cleanup was interrupted or
    predates the cleanup rule, not the normal start of every run. Do not ask the
    user to remove, rename, or approve resetting completed state. If the phase
    is not `done`, this is a resume: enter the loop and treat the validated state
-   file as canonical. A run arriving as a checkpoint zip verifies first, per
-   the `Step checkpoint` section of
-   [push-discipline.md](references/push-discipline.md).
-4. Otherwise: say exactly `Let there be light.` and nothing else before it,
+   file as canonical.
+5. Otherwise: say exactly `Let there be light.` and nothing else before it,
    run the read-only preflight checks below, then bring the base up to date
    before anything is cut from it, then `hexctl init --topic "<topic>" --base
    <ref>`, record the post-init receipts, and enter the loop. If a task issue is
@@ -505,9 +510,11 @@ append its attribution line or session link after creation. Wait for its gates
 but leave it open: a step's work lands in the
 integrate phase, not here. Do not add an issue reference unless one was
 independently supplied or required by higher-priority repository policy. Receipt
-the head SHA, PR URL, and PR base. Then, before acting on the next directive,
+the head SHA, PR URL, and PR base. Then, before packaging or acting on the next
+directive, export the controller capsule with `hexctl checkpoint export` and
 upload the step checkpoint the `Step checkpoint` section of
-[push-discipline.md](references/push-discipline.md) requires.
+[push-discipline.md](references/push-discipline.md) requires. Preserve the
+export command's manifest SHA-256 outside the capsule for checked restore.
 
 **Integrate.** Once every step is pushed, the stack comes down in order.
 Before the run is recorded as integrated, every identity its push receipts
@@ -677,6 +684,18 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 - Consequence: 2
 - Refuses: A missing binding, unsafe or unstable path, wrong contract or controller run, non-contiguous or open prefix, changed earlier bytes, non-increasing selection, mismatched receipt, interval or count, replaced, reordered or truncated bound bytes, or capture, validation or redaction that is not accepted and passed.
 - Recovery: Keep ordinary controller verification available, inspect the stable `FOB` code, restore or append to the exact run-local stream, record one new selected receipt boundary when needed, and rerun `check-prefix`, `observe`, then `verify --observations`.
+- Exceptions: none
+
+### fiat-controller-checkpoint
+
+- Promise: A successful `hexctl checkpoint export` followed by `hexctl checkpoint restore` establishes that one bounded, deterministic `fiat-controller-checkpoint/v1` capsule was exported at an accepted controller boundary, verified against its out-of-band manifest SHA-256 and exact Git refs, and relocated into a fresh clean checkout while continuing the same append-only Fiat ledger.
+- Evidence: Ordinary controller verification before capture, the accepted ledger-tail boundary, stable no-follow regular-file reads, closed sorted inventory and resource totals, exact state and ledger byte identities, semantic state fingerprint and next directive, resolved Git refs, canonical manifest digest reported outside the capsule, hostile-input guards, the restore transaction marker, one `checkpoint:restore` ledger entry, final controller verification and the clone-loss test.
+- Evidence classes: checked, recorded
+- Boundary: The capsule proves the exact controller bytes, declared resources, semantic directive and Git boundary checked by these commands. It does not create or verify the Git bundle or outer archive, handle signing keys, publish to GitHub or Drive, make the manifest digest a semantic checkpoint identity, prove the recorded delivery claims true, or authorise the emitted next directive to run.
+- Authorises: Packaging the exported controller directory through the standing outer checkpoint procedure and, after that transport and its Git boundary have been verified, restoring the same ledger once into the fresh checkout and reporting the recomputed directive without executing it.
+- Consequence: 2
+- Refuses: Any unaccepted or moving boundary, pending controller mutation, unsafe or unstable path, symlink, hard link or special file, duplicate JSON key, non-finite number, resource-cap breach, occupied destination, manifest or file drift, wrong controller version, state-ledger disagreement, missing or moved Git ref, dirty checkout, conflicting transaction marker, or replay.
+- Recovery: Preserve the source controller and any interrupted private stage or marker for inspection, repair the named boundary without editing ledger history, re-establish the exact Git refs and clean destination, then rerun export or restore with the manifest digest printed by the successful export.
 - Exceptions: none
 
 ### fiat-receipted-delivery

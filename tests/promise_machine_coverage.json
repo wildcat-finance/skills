@@ -490,6 +490,31 @@
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "selector": "test_post_amendment_drift_refuses_next_and_verify"
     },
+    "fiat-checkpoint-m": {
+      "claim": "A wrong out-of-band digest or hostile capsule entry refuses before the restore marker or active state exists.",
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
+      "selector": "test_restore_hostile_capsule_and_digest_refuse_before_marker"
+    },
+    "fiat-checkpoint-o": {
+      "claim": "Restore relocates only the two controller paths and preserves every other captured controller byte rather than claiming broader migration.",
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
+      "selector": "test_restore_relocates_only_controller_paths"
+    },
+    "fiat-checkpoint-p": {
+      "claim": "A capsule exported before source-clone loss restores the same ledger into a fresh checkout and reports the bound semantic directive.",
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
+      "selector": "test_restore_after_source_clone_loss"
+    },
+    "fiat-checkpoint-r": {
+      "claim": "An interruption after active publication completes the same transaction exactly once on the named retry path.",
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
+      "selector": "test_restore_interruption_after_publish_finalizes_once"
+    },
+    "fiat-checkpoint-s": {
+      "claim": "Changed Git refs and a replay cannot inherit the capsule's restore authority or rewrite the restored ledger.",
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
+      "selector": "test_restore_ref_substitution_and_replay_refuse_without_rewrite"
+    },
     "fiat-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
@@ -1760,6 +1785,22 @@
       },
       "group": "executable",
       "promise_id": "fiat-run-observation-binding",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "fiat-checkpoint-m",
+        "O": "fiat-checkpoint-o",
+        "P": "fiat-checkpoint-p",
+        "R": "fiat-checkpoint-r",
+        "S": "fiat-checkpoint-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-controller-checkpoint",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -3070,6 +3111,20 @@
       },
       "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407",
       "source": "plugins/hexaemeron/skills/ephoros/SKILL.md"
+    },
+    "fiat-controller-checkpoint": {
+      "bindings": {
+        "evidence_classes": "checked capsule and restore verification plus the recorded relocation event joined to the canonical Evidence classes field",
+        "evidence_references": "manifest digest, closed file inventory, resource totals, exact state and ledger identities, semantic directive, Git ref map and checkpoint:restore event",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the checkpoint command, capsule schema and canonical promise heading",
+        "scope": "one accepted controller capsule, its exact Git boundary and one fresh clean destination checkout",
+        "subject": "source controller identities, out-of-band manifest digest, exact refs and relocated controller state",
+        "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
+        "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
+      },
+      "sha256": "6a12e2453f5ada0cdcb6d40711de47189ce44a3844ee8dfb56d2479bc1484f42",
+      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
       "bindings": {

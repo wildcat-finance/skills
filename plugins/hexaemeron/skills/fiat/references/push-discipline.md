@@ -223,17 +223,30 @@ The receipt refuses a `--merge-commit` here. Merges belong to `integrate`.
 In force for every run until Wave Delta is complete, at the Creator's
 direction (2026-08-27). Anyone directing a run may waive it for that run by
 saying so explicitly; record that waiver and its wording in the run's
-evidence. Nothing else opts out. Once a step's `done push` receipt succeeds, and
-before acting on the next directive, upload a portable checkpoint so another
-contributor can pick up the completed steps in the interim:
+evidence. Nothing else opts out. Once a step's `done push` receipt succeeds,
+and before packaging or acting on the next directive, export the controller
+capsule into a new directory:
+
+```text
+hexctl --dir <run-worktree> checkpoint export --out <new-controller-capsule-directory>
+```
+
+Keep the manifest SHA-256 printed by the command outside the capsule. Export
+accepts only the post-`done push`, pre-next-action boundary (or the active
+`audit-verdict` boundary) and does not change state or append a ledger entry.
+The schema, resource limits and refusal rules live in
+[controller-checkpoint.md](controller-checkpoint.md). Then upload the portable
+checkpoint so another contributor can pick up the completed steps in the
+interim:
 
 - Build the checkpoint in the fashion of
   [the fiat-377 end-of-step-2 note](https://github.com/wildcat-finance/skills/issues/377#issuecomment-5435028801):
   a self-contained Git bundle carrying the base, the run branch and every
-  step branch; the run worktree's complete `.hexaemeron` directory as a zip,
-  transient lock excluded; `MANIFEST.json` with the ref boundary, the run
-  commits with per-commit signature and trailer results, the signer
-  fingerprints, the artifact digests, the restore rule and the proof list;
+  step branch; the exported controller capsule in place of a manually copied
+  or rewritten `.hexaemeron` tree; an outer `MANIFEST.json` with the ref
+  boundary, the controller-capsule manifest digest, the run commits with
+  per-commit signature and trailer results, the signer fingerprints, the
+  artifact digests, the restore rule and the proof list;
   `pubkey.asc`, the public key of whoever signed the run's commits;
   the proof transcript from the producing machine; a `.sha256` sidecar for
   each of the three main artifacts; and `CHECKPOINT-README.txt` with the
@@ -250,12 +263,28 @@ contributor can pick up the completed steps in the interim:
 - Post a note on the run's task issue carrying the SHA-256 digests. The
   digests on the issue are the trust anchor, not the sidecars.
 
-A run picked up from a checkpoint zip verifies before anything else:
-recompute the digests against the issue note, import the bundled key and pin
-it to the fingerprints the MANIFEST records, verify the bundle and its ref
-boundary, then `git verify-commit` every run commit with an exactly-once
-count of both provenance trailers, compared against the bundled proof
-transcript. Work that already landed on `main` needs no clean-machine proof
+A run picked up from a checkpoint zip verifies before anything else: recompute
+the outer archive digest and member digests against the issue note, import the
+bundled key and pin it to the fingerprints the outer MANIFEST records, verify
+the bundle and its ref boundary, then `git verify-commit` every run commit with
+an exactly-once count of both provenance trailers, compared against the bundled
+proof transcript. Restore those refs into a fresh clean top-level checkout,
+then restore the already verified controller capsule with the digest recorded
+outside it:
+
+```text
+hexctl --dir <fresh-origin> checkpoint restore \
+  --from <controller-capsule-directory> \
+  --manifest-sha256 <sha256-reported-by-export>
+```
+
+The restore command checks the capsule, exact refs and semantic directive,
+relocates the same state, appends one `checkpoint:restore` event to the same
+ledger and executes no directive. The standalone
+[controller-checkpoint reference](controller-checkpoint.md) is authoritative
+for the schema and native recovery boundary; this section remains
+authoritative for the outer bundle, signatures, archive, sidecars, Drive object
+and issue note. Work that already landed on `main` needs no clean-machine proof
 beyond that. A run that modifies the alexandria or lazarus plugins owes one
 more: the same battery run by a remote agent in a fresh Linux container
 (colima or Docker, empty keyring, checkpoint fetched inside the container).
@@ -287,7 +316,7 @@ gone. The range a later `merge-step` would receipt is no longer the range that
 was pushed, and the controller refuses it.
 
 So: **do not bring a natively stacked chain down through GitHub's stack merges.**
-[ADR-021](../../../../../docs/decisions/ADR-021-land-a-rewritten-stack-from-the-original-commits.md)
+[ADR-021](https://github.com/wildcat-finance/skills/blob/main/docs/decisions/ADR-021-land-a-rewritten-stack-from-the-original-commits.md)
 records the decision. Land the run from a branch holding the original unrebased
 commits instead, and open one pull request from it into the base; the final
 step's pushed head already carries the whole stack as one linear Shoggoth-signed

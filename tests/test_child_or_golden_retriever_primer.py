@@ -26,12 +26,33 @@ HEX_PLUGIN_MANIFEST = (
     ROOT / "plugins" / "hexaemeron" / ".codex-plugin" / "plugin.json"
 )
 FIAT_SKILL = ROOT / "plugins" / "hexaemeron" / "skills" / "fiat" / "SKILL.md"
+PUSH_DISCIPLINE = (
+    ROOT
+    / "plugins"
+    / "hexaemeron"
+    / "skills"
+    / "fiat"
+    / "references"
+    / "push-discipline.md"
+)
+CHECKPOINT_REFERENCE = (
+    ROOT
+    / "plugins"
+    / "hexaemeron"
+    / "skills"
+    / "fiat"
+    / "references"
+    / "controller-checkpoint.md"
+)
+CONTRIBUTOR_GUIDE = ROOT / "docs" / "how-to-help-shoggoth.md"
+CONTRIBUTOR_BUILDER = ROOT / "scripts" / "build_contributor_guide.py"
+CONTRIBUTOR_PDF = ROOT / "docs" / "pdf" / "how-to-help-shoggoth.pdf"
 
 KIT_DIGEST = "e09eb107921ab52e467bae54e3e605f2e01fa258df7c12529be44fc486d71218"
 COVER_DIGEST = "5763ab9da93a3bd3420d2e905eef9525dbeb2e642f3121d8ad76c38d9f9cc32a"
-HEX_VERSION = "1.6.8"
+HEX_VERSION = "1.6.9"
 STUDY_HEX_VERSION = "1.6.5"
-FIAT_VERSION = "5.33.1"
+FIAT_VERSION = "5.34.1"
 STUDY_FIAT_VERSION = "5.30.1"
 PROMPT_DIGESTS = (
     "5e2c721d2ac5fb76106aa9047f0e3b887d6b66c0c14f44f287a6584b2022b157",
@@ -326,6 +347,19 @@ class ChildOrGoldenRetrieverPrimerTests(unittest.TestCase):
         match = re.search(r'^  version: "([^"]+)"$', fiat, flags=re.MULTILINE)
         self.assertIsNotNone(match)
         self.assertEqual(match.group(1), FIAT_VERSION)
+        self.assertIn("### fiat-controller-checkpoint", fiat)
+        self.assertIn("hexctl checkpoint export", fiat)
+        self.assertIn("hexctl checkpoint restore", fiat)
+
+        procedure = PUSH_DISCIPLINE.read_text(encoding="utf-8")
+        self.assertIn("checkpoint export --out", procedure)
+        self.assertIn("checkpoint restore", procedure)
+        self.assertIn("--manifest-sha256", procedure)
+        self.assertIn("controller-checkpoint.md", procedure)
+        reference = CHECKPOINT_REFERENCE.read_text(encoding="utf-8")
+        self.assertIn("`fiat-controller-checkpoint/v1`", reference)
+        self.assertIn("Continuation means", reference)
+        self.assertIn("never a fresh Fiat ledger", reference)
 
         study = STUDY.read_text(encoding="utf-8")
         self.assertIn(f"Hexaemeron package `{STUDY_HEX_VERSION}`", study)
@@ -345,6 +379,58 @@ class ChildOrGoldenRetrieverPrimerTests(unittest.TestCase):
             "checkpoint, but it must verify that checkpoint before doing anything else.",
             primer,
         )
+
+    def test_fiat_routes_a_checkpoint_arrival_before_fresh_initialization(self) -> None:
+        fiat = FIAT_SKILL.read_text(encoding="utf-8")
+        checkpoint = fiat.index("checkpoint zip")
+        active_state = fiat.index("If `.hexaemeron/state.json` exists")
+        fresh_init = fiat.index("Otherwise: say exactly `Let there be light.`")
+        self.assertLess(
+            checkpoint,
+            active_state,
+            "checkpoint recovery must be selected before active-state resume",
+        )
+        self.assertLess(
+            active_state,
+            fresh_init,
+            "active-state resume must be selected before fresh initialization",
+        )
+
+    def test_contributor_guide_and_pdf_state_the_verified_transfer_boundary(self) -> None:
+        expected = (
+            "after a completed step, another machine may resume from the portable "
+            "checkpoint, but it must verify that checkpoint before doing anything else."
+        )
+        stale_claims = (
+            "does not yet support checkpointing",
+            "no checkpoints yet",
+            "before checkpointing exists",
+        )
+        guide = " ".join(
+            line.removeprefix("> ")
+            for line in CONTRIBUTOR_GUIDE.read_text(encoding="utf-8")
+            .lower()
+            .splitlines()
+        )
+        guide = " ".join(guide.split())
+        builder = " ".join(
+            CONTRIBUTOR_BUILDER.read_text(encoding="utf-8").lower().split()
+        )
+        self.assertIn(expected, guide)
+        self.assertIn(expected, builder)
+        self.assertIn("arbitrary mid-step state is not portable", guide)
+        self.assertIn("restore carries the same verified ledger", builder)
+        for stale_claim in stale_claims:
+            self.assertNotIn(stale_claim, guide)
+            self.assertNotIn(stale_claim, builder)
+
+        pdftotext = shutil.which("pdftotext")
+        if pdftotext is not None:
+            rendered = " ".join(
+                run_text([pdftotext, str(CONTRIBUTOR_PDF), "-"]).lower().split()
+            )
+            self.assertIn(expected, rendered)
+            self.assertIn("restore carries the same verified ledger", rendered)
 
     def test_builder_runtime_discovery_is_host_neutral(self) -> None:
         module_source = Path(__file__).read_text(encoding="utf-8")
