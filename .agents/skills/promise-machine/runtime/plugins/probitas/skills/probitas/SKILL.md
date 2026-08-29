@@ -9,7 +9,7 @@ description: >
   for questions about a single market's own numbers, and never to work out
   which individual controls an address.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 <p align="center">
@@ -213,14 +213,14 @@ dossier pass.
 
 ### probitas-evidence-collection
 
-- Promise: A successful `collect` writes evidence only for declared entity addresses and separately labelled inferred addresses, with one source reference per record and explicit coverage or gap for every registered venue.
-- Evidence: The exact entity and address inputs, venue registry, adapter responses or verified Alexandria index, evidence schema, source references and emitted `evidence.json`.
+- Promise: A successful `collect` writes evidence only for declared entity addresses and separately labelled inferred addresses, with one source reference per record, one coverage row per venue and route the run asked for, every row naming its source class, and explicit coverage or gap for every registered venue.
+- Evidence: The exact entity and address inputs, the routes the invocation selected, the venue registry, adapter responses and any verified Alexandria index with the release identities behind each archive row, the evidence schema, source references and emitted `evidence.json`.
 - Evidence classes: recorded, checked
-- Boundary: Collection does not establish human identity, source completeness, default, full repayment, current balance, creditworthiness or a Wildcat decision.
-- Authorises: Rendering a dossier from the collected evidence while keeping address provenance, venue scope and gaps separate.
+- Boundary: Collection does not establish human identity, source completeness, default, full repayment, current balance, creditworthiness or a Wildcat decision, and a source class names the route that answered rather than vouching for what it returned.
+- Authorises: Rendering a dossier from the collected evidence while keeping address provenance, route provenance, venue scope and gaps separate.
 - Consequence: 1
-- Refuses: Feeding inferred addresses into conclusions, omitting an unqueried venue, admitting an unsourced record or treating an archive gap as clean history.
-- Recovery: Correct the declared inputs or source adapter, collect again and retain any unresolved venue or interval as an explicit gap.
+- Refuses: Feeding inferred addresses into conclusions, omitting an unqueried venue, admitting an unsourced record, admitting a coverage row that does not name its source, naming a release on a row no archive produced, treating an archive gap as clean history, or reaching the network because an archive index was supplied.
+- Recovery: Correct the declared inputs, the selected routes or the source adapter, collect again and retain any unresolved venue or interval as an explicit gap.
 - Exceptions: none
 
 ### probitas-dossier-rendering
