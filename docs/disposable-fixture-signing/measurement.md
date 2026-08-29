@@ -127,7 +127,7 @@ result. Under a hostile global configuration supplied as a file, the four suite
 commands leave a sentinel that records a verification and records no request to
 sign. That pairing is checked by the runbook's step 5 exit rather than here.
 
-`docs/decisions/ADR-046-declare-signing-policy-on-disposable-git-fixtures.md`
+`docs/decisions/ADR-050-declare-signing-policy-on-disposable-git-fixtures.md`
 carries a third measured result, the injection-precedence table, which decides
 how a guard must supply its hostile configuration. It is recorded there because
 it constrains the rule rather than the budget.

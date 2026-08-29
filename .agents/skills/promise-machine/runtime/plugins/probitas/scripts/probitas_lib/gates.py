@@ -15,6 +15,7 @@ gets caught by arithmetic rather than by reading.
 import re
 
 from . import formatting, registry
+from .evidence import COVERAGE_SOURCES
 
 SECTION = re.compile(r"^##\s+(.*)$", re.MULTILINE)
 
@@ -144,11 +145,69 @@ def gate_1_provenance(dossier, payload, blocks):
 
 
 def gate_2_coverage(dossier, payload, blocks):
-    """Every venue in the registry is accounted for, and queried ones say from where."""
-    rows = {row["venue"]: row for row in payload["coverage"]}
+    """Every venue is accounted for, and every row says which route answered.
+
+    Rows are counted on the venue and the source together. Keying on the venue
+    alone used to collapse two rows into one and keep whichever came last, so a
+    run that consulted two routes could lose one route's answer without saying
+    anything -- the same silent-overwrite shape as the provenance-tier bug that
+    finding S2-R1-02 closed.
+    """
     expected = {venue.id for venue in registry.all_venues()}
 
-    missing = sorted(expected - set(rows))
+    seen = {}
+    for index, row in enumerate(payload["coverage"]):
+        venue = row.get("venue")
+        source = row.get("source")
+        # Checked before anything sorts or compares it. An evidence file is
+        # the one input this gate does not control -- `verify` exists to be
+        # pointed at a document somebody else produced -- and a row whose
+        # venue is not a string used to reach a sort and raise a TypeError,
+        # so a malformed file came back as a traceback rather than as a
+        # breached gate.
+        if not isinstance(venue, str) or not venue.strip():
+            return Gate(
+                2, "coverage", False, f"coverage row {index} names no venue"
+            )
+        if not row.get("status"):
+            return Gate(2, "coverage", False, f"{venue} has no status")
+        if source not in COVERAGE_SOURCES:
+            return Gate(
+                2,
+                "coverage",
+                False,
+                f"{venue} names no source, so the row does not say how it was checked",
+            )
+        if (venue, source) in seen:
+            return Gate(
+                2,
+                "coverage",
+                False,
+                f"{venue} carries two {source} rows and one of them would be lost",
+            )
+        seen[(venue, source)] = row
+        # A venue that was actually queried has to say over what range. One
+        # that was never queried cannot, and saying otherwise would be worse
+        # than the gap it is already declaring.
+        if row["status"] in ("checked", "empty") and not row.get("block_range"):
+            return Gate(2, "coverage", False, f"{venue} was queried but names no range")
+        # An archive row stands on a release. Without one a reader cannot tell
+        # which preserved capture answered, and the note that used to carry
+        # that identity is prose no gate can hold to it.
+        if (
+            source == "archive"
+            and row["status"] in ("checked", "empty")
+            and not row.get("releases")
+        ):
+            return Gate(
+                2,
+                "coverage",
+                False,
+                f"{venue} was read from the archive but names no release",
+            )
+
+    venues = {venue for venue, _ in seen}
+    missing = sorted(expected - venues)
     if missing:
         return Gate(
             2,
@@ -156,15 +215,6 @@ def gate_2_coverage(dossier, payload, blocks):
             False,
             "no coverage row for " + ", ".join(missing),
         )
-
-    for venue, row in sorted(rows.items()):
-        if not row.get("status"):
-            return Gate(2, "coverage", False, f"{venue} has no status")
-        # A venue that was actually queried has to say over what range. One
-        # that was never queried cannot, and saying otherwise would be worse
-        # than the gap it is already declaring.
-        if row["status"] in ("checked", "empty") and not row.get("block_range"):
-            return Gate(2, "coverage", False, f"{venue} was queried but names no range")
 
     span = blocks.get("Coverage")
     if span is None:
@@ -183,7 +233,7 @@ def gate_2_coverage(dossier, payload, blocks):
         if line.startswith("|") and line.count("|") >= 2
     }
     names = {v.id: v.name for v in registry.all_venues()}
-    for venue in sorted(rows):
+    for venue in sorted(venues):
         label = names.get(venue, venue).lower()
         if label not in listed and venue.lower() not in listed:
             return Gate(
@@ -193,12 +243,13 @@ def gate_2_coverage(dossier, payload, blocks):
                 f"{venue} has a coverage row but no row of its own in the table",
             )
 
-    checked = sum(1 for r in rows.values() if r["status"] in ("checked", "empty"))
+    checked = sum(1 for r in seen.values() if r["status"] in ("checked", "empty"))
     return Gate(
         2,
         "coverage",
         True,
-        f"{len(rows)} venue(s) accounted for, {checked} queried",
+        f"{len(venues)} venue(s) accounted for over {len(seen)} row(s), "
+        f"{checked} queried",
     )
 
 
@@ -221,7 +272,16 @@ def known_tokens(payload):
         note(entry["address"])
 
     for row in payload["coverage"]:
-        for key in ("venue", "status", "endpoint", "block_range", "note", "records"):
+        for key in (
+            "venue",
+            "status",
+            "source",
+            "endpoint",
+            "block_range",
+            "note",
+            "records",
+            "releases",
+        ):
             note(row.get(key) or "")
 
     for gap in payload["gaps"]:

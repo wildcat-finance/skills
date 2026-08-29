@@ -43,7 +43,7 @@ PRODUCT_CONTROLLER_SHA256 = (
     "2c29f696f2b368a334eb4a880e745fa3cd468cc9c385e36346000aed7c91ba9f"
 )
 INTEGRATED_CONTROLLER_SHA256 = (
-    "07bacbd5792a241b880b4a16e973bf2b4af11db039dd29a4955cd81c390541ef"
+    "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728"
 )
 PROOF_SHA256 = "badb5f3eeffe9927453e43b8d3dbdcfbda87773e5b9ce1cbb7973cc44796bafb"
 PRODUCT_SUFFIX = (
@@ -271,6 +271,7 @@ class Issue429RecoveryTests(unittest.TestCase):
         digests = [coverage["run_observation_binding"]["controller"]["sha256"]]
         for promise in (
             "fiat-final-integration",
+            "fiat-local-retirement",
             "fiat-receipted-delivery",
             "fiat-study-amendment",
             "fiat-runbook-amendment",

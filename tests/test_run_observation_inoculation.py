@@ -18,6 +18,11 @@ from tests import test_run_observation as focused
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = ROOT / "tests" / "fixtures" / "run-observation"
 CARRYOVER = FIXTURES / "434-carryover-v1.json"
+
+
+scratch_directory = focused.scratch_directory
+
+
 VALID_FLOWS = ("success.jsonl", "refusal.jsonl", "retry.jsonl", "handoff.jsonl")
 FAMILIES = {
     "schema-runtime",
@@ -460,7 +465,7 @@ class RunObservationInoculationTests(unittest.TestCase):
             self.assertEqual(Decimal(str(field["maximum"])), runtime.MAX_FINITE_NUMBER)
             CASE_COUNTS["schema-runtime"] += 1
 
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "required.jsonl"
             for flow in VALID_FLOWS:
                 original = events(flow)
@@ -519,7 +524,7 @@ class RunObservationInoculationTests(unittest.TestCase):
                 self.write_and_refuse(target, changed, "schema-runtime")
 
     def test_03_recursive_wrong_kind_matrix(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "wrong-kind.jsonl"
             generated = 0
             for flow in VALID_FLOWS:
@@ -533,7 +538,7 @@ class RunObservationInoculationTests(unittest.TestCase):
         self.assertEqual(generated, EXPECTED_CASE_COUNTS["recursive-wrong-kind"])
 
     def test_04_lifecycle_and_reference_matrix(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "relations.jsonl"
             cases = []
 
@@ -625,7 +630,7 @@ class RunObservationInoculationTests(unittest.TestCase):
             "😀" * 64,
             "/".join(["😀" * 63] * 17),
         )
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "paths.jsonl"
             for value in repository_paths:
                 changed = events()
@@ -726,7 +731,7 @@ class RunObservationInoculationTests(unittest.TestCase):
             generated.extend(("RO014", name) for name in styled_names(parts))
         for parts in hidden_parts:
             generated.extend(("RO013", name) for name in styled_names(parts))
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "names.jsonl"
             for expected, name in sorted(set(generated)):
                 changed = events()
@@ -826,7 +831,7 @@ class RunObservationInoculationTests(unittest.TestCase):
             ("unknown/~", "secret-value-3"),
             ("unknown" + "x" * 5000, "secret-value-4"),
         )
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "report.jsonl"
             for key, value in hostile:
                 changed = events()
@@ -860,7 +865,7 @@ class RunObservationInoculationTests(unittest.TestCase):
                 self.assertNotIn(key, encoded)
 
     def test_09_work_and_repository_context_matrix(self):
-        with tempfile.TemporaryDirectory(dir=FIXTURES) as directory:
+        with scratch_directory() as directory:
             target = Path(directory) / "context.jsonl"
             for field in ("issue_or_topic", "step", "role", "selected_skill", "promise_id"):
                 changed = events()

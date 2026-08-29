@@ -1,16 +1,18 @@
-# ADR-046: Declare the signing policy on disposable Git fixtures
+# ADR-050: Declare the signing policy on disposable Git fixtures
 
 ## Status
 
 Accepted, 2026-08-28. This record fixes the rule selected for issue
 [#621](https://github.com/wildcat-finance/skills/issues/621).
 
-The number is 046 rather than 045. ADR-045 was free when the study named it and
+The number is 050 rather than 045. ADR-045 was free when the study named it and
 went to `docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md`,
-issue [#622](https://github.com/wildcat-finance/skills/issues/622)'s decision,
-which reached `origin/main` while this delivery was building. A reader who finds
-the rule described at 046 and the study still naming 045 has found a base that
-moved under a run, not a missing record.
+issue [#622](https://github.com/wildcat-finance/skills/issues/622)'s decision.
+ADR-046 then went to `ADR-046-use-a-job-scoped-model-proxy.md`, and ADR-049 went
+to `ADR-049-bound-integration-revalidation-separately.md`. All three reached
+`origin/main` while this delivery was building. A reader who finds the rule
+described at 050 and the study still naming 045 has found a base that moved under
+a run, not a missing record.
 
 This record supersedes `plugins/horos/docs/marker-self-exclusion/runbook.md` on
 the subject of fixture signing. That document is not edited. It recorded a true

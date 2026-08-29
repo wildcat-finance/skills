@@ -29,7 +29,7 @@ def write(root, relpath, content):
 
 def git(root, *args):
     subprocess.run(  # phylax: allow subprocess: fixed argv git in a test tempdir, no shell
-        ["git", "-C", root, *args],
+        ["git", "-c", "commit.gpgsign=false", "-C", root, *args],
         capture_output=True,
         check=True,
         env={**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
@@ -54,8 +54,6 @@ class UniverseTests(unittest.TestCase):
         self.root = self._tmp.name
         self.addCleanup(self._tmp.cleanup)
         git(self.root, "init", "-q")
-        # Fixture history is not signing evidence, so inherited signing must
-        # not decide whether the repository can be built.
         git(self.root, "config", "--local", "commit.gpgsign", "false")
         write(self.root, ".gitignore", "ignored.wasm\n")
         write(self.root, "src/app.py", "x = 1\n")
@@ -115,6 +113,34 @@ class UniverseTests(unittest.TestCase):
         result = horos.scan_tree(self.root)
         entry = {e["path"]: e for e in result["entries"]}["node_modules/"]
         self.assertEqual(entry["files"], 2)
+
+    def test_a_new_tracked_candidate_still_drifts_the_walked_file_count(self):
+        with tempfile.TemporaryDirectory() as root:
+            git(root, "init", "-q")
+            write(root, "one.py", "one = 1\n")
+            write(root, "two.py", "two = 2\n")
+            git(root, "add", "one.py", "two.py")
+            git(root, "commit", "-q", "-m", "two ordinary files")
+
+            baseline = horos.scan_tree(root)
+            self.assertEqual(baseline["counts"]["files_walked"], 2)
+            self.assertEqual(baseline["candidates"], [])
+            horos.write_boundary(root, horos.boundary_document(baseline))
+            horos.write_candidates(root, horos.candidates_document(baseline))
+
+            write(root, "notes.svg", '<svg xmlns="x"></svg>')
+            git(root, "add", "notes.svg")
+            git(root, "commit", "-q", "-m", "one candidate file")
+            fresh = horos.scan_tree(root)
+            self.assertEqual(fresh["counts"]["files_walked"], 3)
+            self.assertEqual(
+                [entry["path"] for entry in fresh["candidates"]], ["notes.svg"]
+            )
+
+            out = io.StringIO()
+            self.assertEqual(horos.check_tree(root, out=out), 1)
+            self.assertIn("candidate drift: notes.svg", out.getvalue())
+            self.assertIn("drift: .horos/boundary.json#counts", out.getvalue())
 
 
 MINIFIED = "var a=1;" * 400 + "\n"

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 14361922,
+    "bytes_blob": 15747439,
     "bytes_generated": 98
   },
   "entries": [
@@ -40,6 +40,41 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-383-prove-receipts-against-the-captured-header-s.synopsis.md"
+    },
+    {
+      "bytes": 50402,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-390-add-fail-closed-morpho-midnight-fixed-maturi.synopsis.md"
+    },
+    {
+      "bytes": 23478,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-390-restore-fail-closed-morpho-midnight-fixed-ma.synopsis.md"
+    },
+    {
+      "bytes": 18752,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-391-unified-live-and-archive-collection.synopsis.md"
+    },
+    {
+      "bytes": 297271,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 148635 of 297271 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-402-implement-the-grounded-agent-predicate.md"
+    },
+    {
+      "bytes": 299247,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-402-implement-the-grounded-agent-predicate.synopsis.md"
     },
     {
       "bytes": 89662,
@@ -98,6 +133,13 @@
       "path": "audit/rounds/fiat-510-reuse-source-bound-x-ray-analysis-across-fia.synopsis.md"
     },
     {
+      "bytes": 52994,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-557-portable-run-state-recovery-r2.synopsis.md"
+    },
+    {
       "bytes": 31859,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
@@ -117,6 +159,55 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-621-isolate-disposable-fixture-signing.synopsis.md"
+    },
+    {
+      "bytes": 65312,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-2-implementation-continuation.synopsis.md"
+    },
+    {
+      "bytes": 132367,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 130319",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-3-implementation-continuation.md"
+    },
+    {
+      "bytes": 133422,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-3-implementation-continuation.synopsis.md"
+    },
+    {
+      "bytes": 42672,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-inoculate-affected-scope-runner.synopsis.md"
+    },
+    {
+      "bytes": 28413,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.synopsis.md"
+    },
+    {
+      "bytes": 119875,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 117827",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-700-proxy-model-traffic-without-giving-the-worke.md"
+    },
+    {
+      "bytes": 121312,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-700-proxy-model-traffic-without-giving-the-worke.synopsis.md"
     },
     {
       "bytes": 27146,

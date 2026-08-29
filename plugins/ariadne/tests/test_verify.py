@@ -91,9 +91,124 @@ class ReportTests(unittest.TestCase):
         known = registry.Registry()
         known.register(Checking)
         report = verify.report(document(), known)
-        self.assertEqual(report.unchecked, [])
+        self.assertIn("gate 5 was not checked", "\n".join(report.unchecked))
+        self.assertFalse(report.predicate_gates_checked)
+        self.assertIs(
+            report.to_dict().get("predicateGatesChecked"),
+            False,
+        )
         self.assertFalse(report.ok)
         self.assertIn("gate 2 environment: FAIL", "\n".join(report.lines()))
+
+    def test_a_predicate_that_reports_both_owned_gates_is_complete(self):
+        class Checking(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate with both owned gates"
+
+            @staticmethod
+            def check(statement):
+                return [
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(5, "comparison", True, "recorded"),
+                ]
+
+        known = registry.Registry()
+        known.register(Checking)
+        report = verify.report(document(), known)
+        self.assertTrue(report.predicate_gates_checked)
+        self.assertEqual(report.unchecked, [])
+        self.assertIs(
+            report.to_dict().get("predicateGatesChecked"),
+            True,
+        )
+
+    def test_a_declared_result_contract_refuses_missing_duplicate_or_reordered_checks(self):
+        expected = (
+            (2, "environment"),
+            (5, "comparison"),
+            (None, "binding"),
+        )
+        cases = (
+            (
+                "missing",
+                [
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(5, "comparison", True, "recorded"),
+                ],
+            ),
+            (
+                "duplicate",
+                [
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(2, "environment", True, "recorded again"),
+                    gates.Gate(5, "comparison", True, "recorded"),
+                    gates.Gate(None, "binding", True, "recorded"),
+                ],
+            ),
+            (
+                "reordered",
+                [
+                    gates.Gate(5, "comparison", True, "recorded"),
+                    gates.Gate(2, "environment", True, "recorded"),
+                    gates.Gate(None, "binding", True, "recorded"),
+                ],
+            ),
+        )
+        for label, returned in cases:
+            class Regressed(object):
+                TYPE = TYPE
+                SUMMARY = "a predicate whose declared result set regressed"
+                EXPECTED_RESULTS = expected
+
+                @staticmethod
+                def check(statement):
+                    return returned
+
+            known = registry.Registry()
+            known.register(Regressed)
+            with self.subTest(label=label):
+                report = verify.report(document(), known)
+                self.assertFalse(report.ok)
+                self.assertFalse(report.predicate_gates_checked)
+                self.assertEqual(report.missing_predicate_gates, (2, 5))
+                self.assertIn(
+                    "does not match its declared result contract",
+                    "\n".join(report.lines()),
+                )
+
+    def test_a_malformed_declared_result_contract_fails_closed(self):
+        malformed = (
+            [(2, "environment"), (5, "comparison")],
+            ((2, "environment"),),
+            ((2, "environment"), (2, "again"), (5, "comparison")),
+            ((1, "core-owned"), (2, "environment"), (5, "comparison")),
+            ((True, "environment"), (5, "comparison")),
+            ((2, "same"), (5, "same")),
+        )
+        for declared in malformed:
+            class BrokenContract(object):
+                TYPE = TYPE
+                SUMMARY = "a predicate with a malformed result contract"
+                EXPECTED_RESULTS = declared
+
+                @staticmethod
+                def check(statement):
+                    return [
+                        gates.Gate(2, "environment", True, "recorded"),
+                        gates.Gate(5, "comparison", True, "recorded"),
+                    ]
+
+            known = registry.Registry()
+            known.register(BrokenContract)
+            with self.subTest(declared=declared):
+                report = verify.report(document(), known)
+                self.assertFalse(report.ok)
+                self.assertFalse(report.predicate_gates_checked)
+                self.assertEqual(report.missing_predicate_gates, (2, 5))
+                self.assertIn(
+                    "malformed declared result contract",
+                    "\n".join(report.lines()),
+                )
 
     def test_a_predicate_that_raises_fails_its_own_gate_rather_than_the_run(self):
         class Broken(object):
@@ -127,6 +242,74 @@ class ReportTests(unittest.TestCase):
         self.assertFalse(report.ok)
         self.assertIn("not a gate", "\n".join(report.lines()))
 
+    def test_predicate_gate_fields_are_validated_before_the_report_trusts_them(self):
+        cases = (
+            ("number", "2"),
+            ("number", 2.0),
+            ("number", 1),
+            ("name", 17),
+            ("passed", "false"),
+            ("detail", {"unexpected": "shape"}),
+        )
+        observed = []
+        for field, value in cases:
+            first = gates.Gate(2, "environment", True, "recorded")
+            setattr(first, field, value)
+            returned = [first, gates.Gate(5, "comparison", True, "recorded")]
+
+            class Malformed(object):
+                TYPE = TYPE
+                SUMMARY = "a predicate returning a malformed gate"
+
+                @staticmethod
+                def check(statement):
+                    return returned
+
+            known = registry.Registry()
+            known.register(Malformed)
+            try:
+                report = verify.report(document(), known)
+                rendered = report.to_dict()
+                lines = "\n".join(report.lines())
+                outcome = (
+                    report.ok,
+                    report.predicate_gates_checked,
+                    report.missing_predicate_gates,
+                    "malformed gate" in lines,
+                    all(type(gate.get("passed")) is bool for gate in rendered["gates"]),
+                )
+            except Exception as error:  # noqa: BLE001 -- a crash is the observed result
+                outcome = ("raised", type(error).__name__)
+            observed.append((field, type(value).__name__, outcome))
+
+        expected = [
+            (field, type(value).__name__, (False, False, (2, 5), True, True))
+            for field, value in cases
+        ]
+        self.assertEqual(observed, expected)
+
+    def test_an_exception_with_an_unprintable_message_still_becomes_a_gate(self):
+        class Unprintable(Exception):
+            def __str__(self):
+                raise RuntimeError("message rendering broke")
+
+        class Broken(object):
+            TYPE = TYPE
+            SUMMARY = "a predicate whose exception cannot be rendered"
+
+            @staticmethod
+            def check(statement):
+                raise Unprintable()
+
+        known = registry.Registry()
+        known.register(Broken)
+        try:
+            report = verify.report(document(), known)
+            outcome = (report.ok, "raised while checking" in "\n".join(report.lines()))
+        except Exception as error:  # noqa: BLE001 -- a crash is the observed result
+            outcome = ("raised", type(error).__name__)
+        self.assertEqual(outcome, (False, True))
+
     def test_a_signed_document_reports_that_signatures_went_unchecked(self):
         payload = json.dumps(
             {
@@ -157,6 +340,7 @@ class ReportTests(unittest.TestCase):
         self.assertTrue(found["ok"])
         self.assertEqual(len(found["gates"]), 5)
         self.assertFalse(found["predicateTypeKnown"])
+        self.assertIs(found.get("predicateGatesChecked"), False)
 
 
 class CommandTests(unittest.TestCase):

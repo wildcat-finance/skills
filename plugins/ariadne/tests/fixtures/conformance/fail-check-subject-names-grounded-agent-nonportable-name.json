@@ -1,0 +1,217 @@
+{
+  "_type": "https://in-toto.io/Statement/v1",
+  "subject": [
+    {
+      "name": "bad\nname",
+      "digest": {
+        "sha256": "6204f7b2925f79a82cf81fde4e96641e541e37d1d9f4db056796c75f6101abfe"
+      }
+    },
+    {
+      "name": "corpus manifest",
+      "digest": {
+        "sha256": "062a2f58b2c7fccb032a6bd8324e370f0e4ecc0289d31687ac8ee9e32955811d"
+      }
+    },
+    {
+      "name": "corpus terms",
+      "digest": {
+        "sha256": "c760a8c6d2ec9c902b61ad3b6a662bc89d1f2e9853436857772c6a24da2b445f"
+      }
+    },
+    {
+      "name": "corpus history",
+      "digest": {
+        "sha256": "040d47c4fb9bf62c52ac4fc2e0af82484731d0ca2360663966a2b9c703083d52"
+      }
+    },
+    {
+      "name": "block-bound reads",
+      "digest": {
+        "sha256": "4e7e6b5004394ae7d6f566aaf3e548ba8086fdc9fd720e4f3520434242d5da6f"
+      }
+    },
+    {
+      "name": "grounded answer",
+      "digest": {
+        "sha256": "0f8334b651d8bf554086125c831beda35526ff71acf3e7fa4d42b3b7d013c9dd"
+      }
+    },
+    {
+      "name": "refusal answer",
+      "digest": {
+        "sha256": "3cf59e324e90dfd6866bab0b926da3c5e849e4b66d4e2741eeb00e286517a01e"
+      }
+    },
+    {
+      "name": "evaluation cases",
+      "digest": {
+        "sha256": "386dd76eb5d8b4e93b0de33de13346564b9407f845d573dd9fe802009065b2ed"
+      }
+    },
+    {
+      "name": "evaluation report",
+      "digest": {
+        "sha256": "30c25d76ad79b1526dbd8b79e0632cdfb57cbce824f3cbb2198241ccf3f6f357"
+      }
+    },
+    {
+      "name": "promotion chain",
+      "digest": {
+        "sha256": "788946f72061b7b7ab1c73620bb8c8038e6ed90aa9be1a42af35d59fb4ca5d4b"
+      }
+    }
+  ],
+  "predicateType": "https://ariadne.wildcat.finance/grounded-agent/v1",
+  "predicate": {
+    "release": {
+      "format": "berean-release/v1",
+      "release_version": "goldfinch-demo-v0",
+      "release_digest": "da4825422ee956cca02ca4cdd8bc05246166b3a68f9c11ae70569eebd801d276",
+      "document": {
+        "name": "Berean release document",
+        "path": "release.json",
+        "sha256": "6204f7b2925f79a82cf81fde4e96641e541e37d1d9f4db056796c75f6101abfe",
+        "bytes": 12
+      }
+    },
+    "given": {
+      "corpus": {
+        "path": "corpus",
+        "corpus_version": "demo-v2",
+        "corpus_digest": "93d9bc65fb710737c0ec05dd9a5b7f960a0371aae500ff2dc678501b1f7d5a8d",
+        "manifest": {
+          "name": "corpus manifest",
+          "path": "corpus-manifest.json",
+          "sha256": "062a2f58b2c7fccb032a6bd8324e370f0e4ecc0289d31687ac8ee9e32955811d",
+          "bytes": 20
+        },
+        "components": [
+          {
+            "name": "corpus terms",
+            "path": "corpus/terms.md",
+            "sha256": "c760a8c6d2ec9c902b61ad3b6a662bc89d1f2e9853436857772c6a24da2b445f",
+            "bytes": 15
+          },
+          {
+            "name": "corpus history",
+            "path": "corpus/history.md",
+            "sha256": "040d47c4fb9bf62c52ac4fc2e0af82484731d0ca2360663966a2b9c703083d52",
+            "bytes": 17
+          }
+        ]
+      },
+      "reads": {
+        "component": {
+          "name": "block-bound reads",
+          "path": "reads.jsonl",
+          "sha256": "4e7e6b5004394ae7d6f566aaf3e548ba8086fdc9fd720e4f3520434242d5da6f",
+          "bytes": 11
+        },
+        "chain_id": 1,
+        "block_number": 13097494,
+        "block_hash": "0x496aca80e4d8f29fb8e8cd816c3afb48d3f103970b3a2ee1600c08ca67326dee",
+        "source": "copied preserved RPC records; evidence classes unchanged"
+      },
+      "reads_absence_reason": null
+    },
+    "produced": {
+      "answers": [
+        {
+          "name": "grounded answer",
+          "path": "answers/grounded.json",
+          "sha256": "0f8334b651d8bf554086125c831beda35526ff71acf3e7fa4d42b3b7d013c9dd",
+          "bytes": 21
+        },
+        {
+          "name": "refusal answer",
+          "path": "answers/refusal.json",
+          "sha256": "3cf59e324e90dfd6866bab0b926da3c5e849e4b66d4e2741eeb00e286517a01e",
+          "bytes": 20
+        }
+      ],
+      "evaluations": {
+        "cases": {
+          "name": "evaluation cases",
+          "path": "evals/cases.json",
+          "sha256": "386dd76eb5d8b4e93b0de33de13346564b9407f845d573dd9fe802009065b2ed",
+          "bytes": 16
+        },
+        "report": {
+          "name": "evaluation report",
+          "path": "evals/report.json",
+          "sha256": "30c25d76ad79b1526dbd8b79e0632cdfb57cbce824f3cbb2198241ccf3f6f357",
+          "bytes": 17
+        }
+      },
+      "evaluations_absence_reason": null,
+      "promotion": {
+        "component": {
+          "name": "promotion chain",
+          "path": "promotions.jsonl",
+          "sha256": "788946f72061b7b7ab1c73620bb8c8038e6ed90aa9be1a42af35d59fb4ca5d4b",
+          "bytes": 16
+        },
+        "format": "berean-promotion/v1",
+        "terminal": {
+          "sequence": 1,
+          "action": "promote",
+          "target_release_digest": "da4825422ee956cca02ca4cdd8bc05246166b3a68f9c11ae70569eebd801d276"
+        }
+      },
+      "promotion_absence_reason": null
+    },
+    "policy": {
+      "question_families": [
+        "demonstration subject state"
+      ],
+      "refusal_conditions": [
+        "questions outside the pinned corpus"
+      ],
+      "rules": {
+        "source_classes": [
+          "document",
+          "chain_read",
+          "calculation",
+          "user_supplied"
+        ],
+        "evidence_classes": [
+          "proof-backed",
+          "header-bound",
+          "recorded-rpc"
+        ]
+      },
+      "allowlists": {
+        "chains": [
+          1
+        ],
+        "contracts": [
+          "0x1111111111111111111111111111111111111111"
+        ]
+      },
+      "retention": "none"
+    },
+    "adapter": {
+      "tool": "ariadne",
+      "tool_version": "2.2.0",
+      "command": [
+        "python3",
+        "scripts/ariadne.py",
+        "capture-grounded-agent"
+      ],
+      "parameters_digest": {
+        "sha256": "5ea0ee20ae32322995df4d18e002bed2b536496edddb0f0333e9857ddd0f84aa"
+      }
+    },
+    "comparison": {
+      "baseline": null,
+      "current": {
+        "name": "goldfinch-demo-v0",
+        "release_digest": "da4825422ee956cca02ca4cdd8bc05246166b3a68f9c11ae70569eebd801d276"
+      },
+      "first_capture_reason": "first Ariadne capture of this release"
+    },
+    "claims": [],
+    "commands": []
+  }
+}

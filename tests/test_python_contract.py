@@ -191,9 +191,9 @@ def is_current_runtime_prose(path):
         return False
     if name in {"evolution.md", "promise_machine.md"}:
         return False
-    if name in {"study.md", "runbook.md", "proof.md"}:
+    if name in {"study.md", "runbook.md", "proof.md", "benchmark.md"}:
         return False
-    if name.endswith(("-study.md", "-runbook.md", "-proof.md")):
+    if name.endswith(("-study.md", "-runbook.md", "-proof.md", "-benchmark.md")):
         return False
     if parts[:3] == ("docs", "promise-machine", "evidence"):
         return False

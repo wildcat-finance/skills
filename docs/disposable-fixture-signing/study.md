@@ -718,7 +718,7 @@ its class created, that repository carries the declaration, and the worktree
 therefore needs none of its own.
 
 **Why.** The attribution named a site three classes away from the worktree it
-was meant to cover, and site 10 is load-bearing rather than decorative: its
+was meant to cover, and site 10 is operational rather than decorative: its
 `setUp` commits, so it is a construction site in its own right. A reader who
 trusted the note as written could conclude that site 10 was redundant with site
 8 and remove it, which would reintroduce inherited signing at a site this study

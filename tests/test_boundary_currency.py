@@ -36,7 +36,7 @@ REFRESH = (
 
 
 def drifted_paths(root):
-    """Every path where the committed boundary and a fresh scan disagree."""
+    """Every canonical item where the boundary and fresh scan disagree."""
     committed = horos.load_boundary(str(root))
     fresh = horos.boundary_document(
         horos.scan_tree(
@@ -44,7 +44,7 @@ def drifted_paths(root):
             include_untracked=committed.get("universe") == "tracked+untracked",
         )
     )
-    return [path for path, _ in horos.diff_documents(committed, fresh)]
+    return [path for path, _ in horos.diff_boundary_documents(committed, fresh)]
 
 
 def write(root, relpath, content):
@@ -94,7 +94,7 @@ def git_env(base=None):
 
 def git(root, *args):
     subprocess.run(  # phylax: allow subprocess: fixed argv git in a test tempdir, no shell
-        ["git", "-C", root, *args],
+        ["git", "-c", "commit.gpgsign=false", "-C", root, *args],
         capture_output=True,
         check=True,
         env=git_env(),
@@ -165,7 +165,7 @@ class GuardMutationTests(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         git(self.root, "init", "-q")
         # Fixture history is not signing evidence, so inherited signing must
-        # not decide whether the repository can be built.
+        # not decide whether this disposable repository can be constructed.
         git(self.root, "config", "--local", "commit.gpgsign", "false")
         write(self.root, "src/app.py", "value = 1\n")
         write(self.root, "yarn.lock", "# lockfile\n")
@@ -186,7 +186,10 @@ class GuardMutationTests(unittest.TestCase):
         write(self.root, "src/schema.py", marker + "X = 1\n")
         git(self.root, "add", ".")
         git(self.root, "commit", "-qm", "generated file")
-        self.assertEqual(drifted_paths(self.root), ["src/schema.py"])
+        self.assertEqual(
+            drifted_paths(self.root),
+            [".horos/boundary.json#counts", "src/schema.py"],
+        )
 
     def test_an_entry_the_tree_no_longer_earns_is_named(self):
         path = os.path.join(self.root, horos.BOUNDARY_RELPATH)

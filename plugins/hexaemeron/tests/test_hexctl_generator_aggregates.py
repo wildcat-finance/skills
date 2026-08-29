@@ -26,6 +26,20 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 HEXCTL = ROOT / "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
 FIXTURE = HERE / "fixtures/fiat-710-generator-aggregate.json"
+def scratch_directory(prefix, suffix=".json"):
+    """A transient in-repository file that `git status` never sees.
+
+    The revalidation artefact must sit inside the repository root for the
+    bounded-source read, but a temporary at the root itself is untracked,
+    status-visible state that races the disposable-signing guard's
+    outer-stability assertion under parallel shards.  The ignored top-level
+    tmp/ satisfies both: confined, and invisible to status.
+    """
+    scratch = ROOT / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.mkstemp(prefix=prefix, suffix=suffix, dir=scratch)
+
+
 AGGREGATE_FIELDS = (
     "id",
     "prefix",
@@ -109,9 +123,7 @@ class IncidentAggregateTests(unittest.TestCase):
         }
 
     def call(self, artifact):
-        descriptor, path = tempfile.mkstemp(
-            prefix=".fiat-710-revalidation-", suffix=".json", dir=ROOT
-        )
+        descriptor, path = scratch_directory(".fiat-710-revalidation-")
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
                 json.dump(artifact, handle)
@@ -152,7 +164,17 @@ class IncidentAggregateTests(unittest.TestCase):
             {name: inventory_digest(paths) for name, paths in inventories.items()},
         )
 
-    def test_acceptance_1_v1_refuses_the_1095_path_incident_unchanged(self):
+    def test_acceptance_1_v1_no_longer_refuses_the_incident_on_its_count(self):
+        """Issue 774 moved this. The fixture keeps what the entry controller did.
+
+        Under `fiat-v5.30.1` the 1,095-path incident stopped at the shared
+        500-path bound, which is the refusal the fixture records and the reason
+        issue 710 built v2. Integration revalidation now carries its own 4,096
+        ceiling, so a count of 1,095 no longer stops the artefact and it is
+        refused further in, on its empty check array. What v2 still owns is the
+        aggregate accounting and its 1,024-file and 32 MiB ceilings, which is
+        what the remaining acceptances exercise.
+        """
         artifact = {
             "schema": "fiat-integration-revalidation/v1",
             "affected_paths": self.required_paths,
@@ -160,9 +182,12 @@ class IncidentAggregateTests(unittest.TestCase):
         }
         error = self.refusal(artifact)
         self.assertEqual(
-            error,
-            self.fixture["entry_v1_refusal"]["stderr"] + "\n",
+            self.fixture["entry_v1_refusal"]["stderr"],
+            "hexctl: error: integration path delta exceeds 500 paths",
         )
+        self.assertLess(len(self.required_paths), self.module.INTEGRATION_PATHS_MAX)
+        self.assertNotIn("exceeds 500 paths", error)
+        self.assertIn("checks must be a non-empty array", error)
 
     def test_acceptance_2_v2_receipts_887_owned_and_208_outside_paths(self):
         record = self.call(self.v2_artifact())
@@ -179,9 +204,7 @@ class IncidentAggregateTests(unittest.TestCase):
 
     def test_acceptance_2_v2_sync_receipt_survives_done_integrate(self):
         artifact = self.v2_artifact()
-        descriptor, path = tempfile.mkstemp(
-            prefix=".fiat-710-transition-", suffix=".json", dir=ROOT
-        )
+        descriptor, path = scratch_directory(".fiat-710-transition-")
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
                 json.dump(artifact, handle)
@@ -362,9 +385,7 @@ class IncidentAggregateTests(unittest.TestCase):
                 }
             ],
         }
-        descriptor, path = tempfile.mkstemp(
-            prefix=".fiat-710-v1-", suffix=".json", dir=ROOT
-        )
+        descriptor, path = scratch_directory(".fiat-710-v1-")
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
                 json.dump(artifact, handle)

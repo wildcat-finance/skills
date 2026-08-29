@@ -131,7 +131,7 @@ class Fixture:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(body, encoding="utf-8")
         self.run("add", "-A")
-        self.run("commit", "--quiet", "-m", message)
+        self.run("-c", "commit.gpgsign=false", "commit", "--quiet", "-m", message)
         return self.run("rev-parse", "HEAD").strip()
 
     def child(self, message, files):
@@ -728,6 +728,7 @@ class HexaemeronUnittestReport(unittest.TestCase):
             report = Path(root) / "report.json"
             suite = unittest.TestSuite([unittest.FunctionTestCase(lambda: None)])
             real_write = os.write
+            real_write_report = hexaemeron_runner.write_report
             writes = 0
 
             def short_then_fail(descriptor, body):
@@ -737,6 +738,14 @@ class HexaemeronUnittestReport(unittest.TestCase):
                     return real_write(descriptor, body[: max(1, len(body) // 2)])
                 raise OSError("write blocked")
 
+            def partially_write_report(target, payload):
+                with mock.patch.object(
+                    hexaemeron_runner.os,
+                    "write",
+                    side_effect=short_then_fail,
+                ):
+                    return real_write_report(target, payload)
+
             with (
                 mock.patch.object(
                     hexaemeron_runner.unittest.defaultTestLoader,
@@ -744,9 +753,9 @@ class HexaemeronUnittestReport(unittest.TestCase):
                     return_value=suite,
                 ),
                 mock.patch.object(
-                    hexaemeron_runner.os,
-                    "write",
-                    side_effect=short_then_fail,
+                    hexaemeron_runner,
+                    "write_report",
+                    side_effect=partially_write_report,
                 ),
                 mock.patch.object(
                     hexaemeron_runner.Path,

@@ -1,0 +1,183 @@
+{
+  "source": {
+    "date": "2026-08-28",
+    "origin": "https://api.morpho.org",
+    "observed_at": 1785374000,
+    "transactions_reference": "https://docs.morpho.org/api/midnight/transactions/list-user-transactions/",
+    "market_reference": "https://docs.morpho.org/api/midnight/markets/get-market/",
+    "token_reference": "https://docs.morpho.org/api/global/get-token/",
+    "position_reference": "https://docs.morpho.org/api/midnight/positions/get-position/"
+  },
+  "transactions": {
+    "0x535690cb1330232dd4f2ac5b724040751bdf4c91": [
+      {
+        "cursor": null,
+        "data": [
+          {
+            "id": "0048375312-ab3e3-000386:4",
+            "chain_id": 8453,
+            "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+            "event_type": "borrow",
+            "tx_hash": "0x56f130f4eddebaf7fc337c58d795acd951236375b7af151de541ac7104ef1c21",
+            "data": {
+              "account": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "caller": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "maker": "0xd4F43105098845fFE89B16E7A3DCdd0A31898118",
+              "taker": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "buyer": "0xd4F43105098845fFE89B16E7A3DCdd0A31898118",
+              "seller": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "buyer_assets": "320000000000000",
+              "seller_assets": "320000000000000",
+              "assets": "320000000000000",
+              "units": "320136075232067",
+              "take_units": "320136075232067",
+              "buyer_pending_fee_increase": "0",
+              "seller_pending_fee_decrease": "0",
+              "total_units_delta": "320136075232067",
+              "payer": "0xd4F43105098845fFE89B16E7A3DCdd0A31898118",
+              "receiver": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "group": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "consumed": "320000000000000"
+            },
+            "created_at": 1783539971
+          },
+          {
+            "id": "0048708902-cbae8-000546:1",
+            "chain_id": 8453,
+            "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+            "event_type": "exit_borrow_primary",
+            "tx_hash": "0xf04867377861f3f79360504eb22adaa67fac0f3e26135494f3d19b340984584f",
+            "data": {
+              "account": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "caller": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "on_behalf": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "units": "320000000000000",
+              "payer": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "created_at": 1784207151
+          },
+          {
+            "id": "0048755569-5449d-000476:1",
+            "chain_id": 8453,
+            "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+            "event_type": "partial_liquidation",
+            "tx_hash": "0xb3aa5b300eb7532c6dc3723c3937d76e603f17ca9262a5369a74e2348dfe5d63",
+            "data": {
+              "account": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "caller": "0xcccccccccccccccccccccccccccccccccccccccc",
+              "borrower": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "collateral": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+              "seized_assets": "246",
+              "repaid_units": "135118071440",
+              "post_maturity_mode": true,
+              "bad_debt": "0",
+              "latest_loss_factor": "0",
+              "latest_continuous_fee_credit": "0",
+              "payer": "0xcccccccccccccccccccccccccccccccccccccccc",
+              "receiver": "0xcccccccccccccccccccccccccccccccccccccccc",
+              "pure_bad_debt_realization": false
+            },
+            "created_at": 1784300485
+          },
+          {
+            "id": "0048755712-d33ee-000000:1",
+            "chain_id": 8453,
+            "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+            "event_type": "partial_liquidation",
+            "tx_hash": "0x10a157e572a451de2821ea75d4d25136ab77d28748ced7167252f1a607b35430",
+            "data": {
+              "account": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "caller": "0xcccccccccccccccccccccccccccccccccccccccc",
+              "borrower": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "collateral": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+              "seized_assets": "1",
+              "repaid_units": "547356011",
+              "post_maturity_mode": true,
+              "bad_debt": "0",
+              "latest_loss_factor": "0",
+              "latest_continuous_fee_credit": "0",
+              "payer": "0xcccccccccccccccccccccccccccccccccccccccc",
+              "receiver": "0xcccccccccccccccccccccccccccccccccccccccc",
+              "pure_bad_debt_realization": false
+            },
+            "created_at": 1784300771
+          },
+          {
+            "id": "0049291983-5f518-000087:1",
+            "chain_id": 8453,
+            "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+            "event_type": "full_liquidation",
+            "tx_hash": "0xa542774c5cc03cc7e94a07b392d2de4e27a620f41a3a4f17a025482b1f7e1490",
+            "data": {
+              "account": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "caller": "0xcccccccccccccccccccccccccccccccccccccccc",
+              "borrower": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "collateral": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+              "seized_assets": "0",
+              "repaid_units": "409804616",
+              "post_maturity_mode": true,
+              "bad_debt": "0",
+              "latest_loss_factor": "0",
+              "latest_continuous_fee_credit": "0",
+              "payer": "0xcccccccccccccccccccccccccccccccccccccccc",
+              "receiver": "0xcccccccccccccccccccccccccccccccccccccccc",
+              "pure_bad_debt_realization": false
+            },
+            "created_at": 1785373313
+          }
+        ]
+      }
+    ]
+  },
+  "markets": {
+    "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738": {
+      "data": {
+        "chain_id": 8453,
+        "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+        "loan_token": "0x4200000000000000000000000000000000000006",
+        "maturity": 1784300400,
+        "rcf_threshold": "0",
+        "enter_gate": "0x0000000000000000000000000000000000000000",
+        "liquidator_gate": "0x0000000000000000000000000000000000000000",
+        "collaterals": [
+          {
+            "token": "0x833589fCD6eDb6E08f4C7C32D4f71b54bdA02913",
+            "lltv": "860000000000000000",
+            "liquidation_cursor": "300000000000000000",
+            "oracle": "0xD09048c8B568Dbf5f189302beA26c9edABFC4858"
+          }
+        ]
+      }
+    }
+  },
+  "tokens": {
+    "8453:0x4200000000000000000000000000000000000006": {
+      "data": {
+        "chain_id": 8453,
+        "address": "0x4200000000000000000000000000000000000006",
+        "name": "Wrapped Ether",
+        "symbol": "WETH",
+        "decimals": 18
+      }
+    }
+  },
+  "positions": {
+    "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738:0x535690cb1330232dd4f2ac5b724040751bdf4c91": {
+      "data": {
+        "chain_id": 8453,
+        "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+        "user_address": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+        "loan_token": "0x4200000000000000000000000000000000000006",
+        "maturity": 1784300400,
+        "type": null,
+        "credit": "0",
+        "pending_fee": "0",
+        "last_loss_factor": "0",
+        "loss_factor": "0",
+        "debt": "0",
+        "collaterals": [],
+        "last_indexed_block": "50551562"
+      }
+    }
+  }
+}

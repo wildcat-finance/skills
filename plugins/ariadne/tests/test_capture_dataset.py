@@ -5,6 +5,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
@@ -482,6 +483,19 @@ class WriteTests(unittest.TestCase):
         capture.write(path, json.dumps(grab(), indent=2) + "\n")
         with open(path, "rb") as handle:
             self.assertTrue(json.loads(handle.read().decode("utf-8")))
+
+    def test_writer_pins_utf8_and_literal_lf(self):
+        path = os.path.join(self.root, "unicode.json")
+        with mock.patch.object(
+            capture.tempfile,
+            "NamedTemporaryFile",
+            wraps=tempfile.NamedTemporaryFile,
+        ) as temporary:
+            capture.write(path, '{"label": "caf\u00e9"}\n')
+        self.assertEqual(temporary.call_args.kwargs["encoding"], "utf-8")
+        self.assertEqual(temporary.call_args.kwargs["newline"], "\n")
+        with open(path, "rb") as handle:
+            self.assertEqual(handle.read(), b'{"label": "caf\xc3\xa9"}\n')
 
     def test_a_failed_write_leaves_nothing_behind(self):
         """A capture that died before the replace used to leave a truncated file

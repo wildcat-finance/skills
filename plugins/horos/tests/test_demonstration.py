@@ -35,7 +35,7 @@ APPENDED = "example.com/other v0.1.0 h1:2222222222222222222222222222222222222222
 
 def git(root, *args):
     subprocess.run(  # phylax: allow subprocess: fixed argv git in a test tempdir, no shell
-        ["git", "-C", root, *args],
+        ["git", "-c", "commit.gpgsign=false", "-C", root, *args],
         capture_output=True,
         check=True,
         env={**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",

@@ -38,6 +38,18 @@ class CheckTests(unittest.TestCase):
             digests.check({"sha256": "z" * 64})
         self.assertIn("not hex", str(caught.exception))
 
+    def test_a_final_newline_cannot_replace_the_last_hex_digit(self):
+        for algorithm, (_, length) in digests.ALGORITHMS.items():
+            with self.subTest(algorithm=algorithm):
+                with self.assertRaises(digests.DigestError) as caught:
+                    digests.check({algorithm: "a" * (length - 1) + "\n"})
+                self.assertIn("not hex", str(caught.exception))
+
+    def test_an_unsupported_alias_is_still_hex_through_its_absolute_end(self):
+        with self.assertRaises(digests.DigestError) as caught:
+            digests.check({"sha256": SHA256_OF_EMPTY, "transition": "a\n"})
+        self.assertIn("not hex", str(caught.exception))
+
     def test_a_set_of_only_unsupported_algorithms_is_refused(self):
         with self.assertRaises(digests.DigestError) as caught:
             digests.check({"sha1": "a" * 40})
@@ -76,6 +88,20 @@ class AgreementTests(unittest.TestCase):
         left = {"sha256": SHA256_OF_EMPTY, "sha512": "b" * 128}
         right = {"sha256": SHA256_OF_EMPTY, "sha512": "c" * 128}
         self.assertFalse(digests.agree(left, right))
+
+    def test_agreement_does_not_rescan_the_wider_digest_set(self):
+        """One wide claim compared with many subjects stays linear in its input."""
+
+        class RefuseIteration(dict):
+            def __iter__(self):
+                raise AssertionError("the wider digest set was iterated")
+
+        wide = RefuseIteration(
+            {"sha256": SHA256_OF_EMPTY, **{"unknown-%d" % i: "a" for i in range(32)}}
+        )
+        narrow = {"sha256": SHA256_OF_EMPTY}
+        self.assertTrue(digests.agree(wide, narrow))
+        self.assertTrue(digests.agree(narrow, wide))
 
 
 class FileAndTreeTests(unittest.TestCase):

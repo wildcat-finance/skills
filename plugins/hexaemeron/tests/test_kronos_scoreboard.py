@@ -644,7 +644,7 @@ class DurableHomeTest(unittest.TestCase):
 
     def git(self, cwd, *args):
         result = subprocess.run(
-            ["git", *args],
+            ["git", "-c", "commit.gpgsign=false", *args],
             cwd=cwd,
             check=True,
             capture_output=True,
@@ -662,8 +662,6 @@ class DurableHomeTest(unittest.TestCase):
             LEDGER.replace("some-revision", "other-revision"), encoding="utf-8"
         )
         self.git(path, "init")
-        # Fixture history is not signing evidence, so inherited signing must
-        # not decide whether the repository can be built.
         self.git(path, "config", "--local", "commit.gpgsign", "false")
         self.git(path, "config", "user.name", "Kronos Test")
         self.git(path, "config", "user.email", "kronos@test.invalid")

@@ -44,11 +44,15 @@
         },
         "block_hash": {
           "type": "string",
+          "minLength": 66,
+          "maxLength": 66,
           "pattern": "^0x(?!0{64}$)[0-9a-f]{64}$",
           "description": "A 32-byte hash, 0x-prefixed and lowercase. Lazarus writes block hashes in either case; this type accepts only lowercase, because two spellings of one value compare unequal and a statement is a thing other implementations compare. The all-zero value is refused: it matches the shape and identifies nothing."
         },
         "state_root": {
           "type": "string",
+          "minLength": 66,
+          "maxLength": 66,
           "pattern": "^0x(?!0{64}$)[0-9a-f]{64}$",
           "description": "The state root a proof-backed record was checked against. A 32-byte hash, 0x-prefixed and lowercase. Required whenever proof_backed is above zero. The all-zero value is refused by the verifier: it matches the pattern and identifies nothing."
         }

@@ -601,7 +601,7 @@ step's own mandated divergence rather than chosen: `TestLoader.discover`
 refuses a start directory that is not importable whenever `start_dir` differs
 from `top_level_dir`, so passing the repository root is unreachable without it.
 Every plugin suite in this repository that passes a top-level directory already
-carries one. It is also load-bearing: `tests/test_marketplace_prose.py` imports
+carries one. It is also required for stable imports: `tests/test_marketplace_prose.py` imports
 `repo_contract` and `tests/test_run_observation_inoculation.py` imports
 `tests.test_run_observation`, and today both resolve only because another test
 module inserts the repository root as an import side effect and happens to sort
@@ -1128,7 +1128,7 @@ The expected verdict said `passed` on the reasoning that a test-only change
 carries its own fix. That reasoning was sound and its premise was not: the eighth
 amendment had already established this step regenerates four non-test artefacts,
 which is precisely what makes the classifier's copy incomplete and the parent
-fail. The measured value is `guarded`, and it is the better outcome — but a
+fail. The measured value is `guarded`, and it is the better outcome; but a
 prediction that contradicts its own step's files field should never have been
 written.
 
@@ -1334,7 +1334,7 @@ temporary directory that holds them, which is true of the Python guard, measured
 and false of these shell blocks, which write the same two files through the same
 entry point. The signer is inert on its own and owner-readable only, so the
 severity is low, but a runbook that ships a claim its own commands contradict is
-the defect regardless of blast radius.
+the defect regardless of its low severity.
 
 Only this step's exit and step 5's can be repaired. Steps 2 and 3 are complete,
 and the preamble is not a step field, so their blocks keep the leak; that
@@ -1558,8 +1558,8 @@ Then the remaining exit commands, all 0:
 ```bash
 /Users/kethcode/.local/bin/python3.14 tests/run_tests.py --elenchus-report .elenchus/fiat-621-step-5.json
 /Users/kethcode/.local/bin/python3.14 -m unittest tests.test_decision_records
-/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/decisions/ADR-046-declare-signing-policy-on-disposable-git-fixtures.md
-/Users/kethcode/.local/bin/python3.14 plugins/brevitas/skills/brevitas/scripts/brevitas.py docs/decisions/ADR-046-declare-signing-policy-on-disposable-git-fixtures.md
+/Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/decisions/ADR-050-declare-signing-policy-on-disposable-git-fixtures.md
+/Users/kethcode/.local/bin/python3.14 plugins/brevitas/skills/brevitas/scripts/brevitas.py docs/decisions/ADR-050-declare-signing-policy-on-disposable-git-fixtures.md
 /Users/kethcode/.local/bin/python3.14 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
 /Users/kethcode/.local/bin/python3.14 plugins/horos/skills/horos/scripts/horos.py check .
 ```
@@ -1573,7 +1573,7 @@ git -C . config --local --list | diff - "$CAPTURE_DIR/local-before.txt"
 ```
 
 Complete replacement Files: Created:
-`docs/decisions/ADR-046-declare-signing-policy-on-disposable-git-fixtures.md`,
+`docs/decisions/ADR-050-declare-signing-policy-on-disposable-git-fixtures.md`,
 `docs/disposable-fixture-signing/measurement.md`. Refreshed, as the last thing
 this step does: `docs/disposable-fixture-signing/runbook.md` and
 `docs/disposable-fixture-signing/study.md`, so the shipped copies stay
@@ -1585,12 +1585,16 @@ supersedes it rather than editing it.
 The record carries the scope rule, the three rejected options from the study's
 section 4 with the measured reason for rejecting the process-wide override, the
 `GIT_CONFIG_GLOBAL` constraint, and the retirement of the `<sign-off>` prefix.
-Its number is 046 because 045 was taken while this run was in flight, by
+Its number is 050 because 045 was taken while this run was in flight, by
 `ADR-045-select-and-schedule-repository-checks-from-one-graph.md`, which is issue
-622's work. Confirm 046 is still free before writing it, by the same reasoning
-that made 045 unavailable: `tests/test_decision_records.py` refuses a number
-already on the default branch, `main` moves during a run, and the filename and
-first heading must state the same number.
+622's work, and 046 was taken before this run integrated, by
+`ADR-046-use-a-job-scoped-model-proxy.md`. ADR-049 was then taken by
+`ADR-049-bound-integration-revalidation-separately.md`. The default branch had
+advanced through 049, so the integration merge takes the next free number. The
+same reasoning that made 045, 046 and 049 unavailable still applies:
+`tests/test_decision_records.py` refuses a number already on the default branch,
+`main` moves during a run, and the filename and first heading must state the
+same number.
 
 `docs/disposable-fixture-signing/measurement.md` records both measurements with
 the host and its `commit.gpgsign`, `gpg.format` and `user.signingkey` beside the
@@ -1600,19 +1604,19 @@ If any later amendment moves the canonical runbook after the refresh has run,
 the refresh runs again. It is the last action of the step, not a single event
 part-way through it.
 
-**Why.** ADR-045 was free when the runbook was written and is taken now. It went
-to `select-and-schedule-repository-checks-from-one-graph`, the decision record
-belonging to issue 622, which landed on the default branch while this run was
-building. The step anticipated exactly this and said to take the next free number
-and move the filename and first heading together; this amendment does that in the
-spec rather than leaving the builder to reconcile a number the exit commands name
-twice. 046 is the next free number on the default branch and no open pull request
-claims it.
+**Why.** ADR-045 was free when the runbook was written and went to
+`select-and-schedule-repository-checks-from-one-graph` while this run was
+building. The product tree then took 046, but `main` assigned that number to the
+job-scoped model proxy before integration and advanced through 048. The step
+anticipated the first collision and required the next free number; the sync-run
+composition repair applies the same rule again, moving the filename, first
+heading and current references together. 049 is the next free number on the
+default branch.
 
 This is the base moving under a run, which the runbook cannot prevent and should
 not pretend to. What it can do is name the reason the number changed, so a reader
-who finds this delivery at 046 and the study still describing the rule does not
-go looking for a missing 045.
+who finds this delivery at 049 and the study still describing the rule does not
+go looking for a missing 045 or 046.
 
 **Steps touched.** Step 5's exit and files.
 

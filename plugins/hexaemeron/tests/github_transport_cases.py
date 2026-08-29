@@ -100,6 +100,15 @@ class GithubTransportCases:
 
     def test_no_answer_at_all_is_transport_not_verdict(self):
         """A stall, an overrun and a non-document are not verdicts."""
+        # Resolve Git before the deliberately short GitHub transport probe.
+        with mock.patch.dict(
+            os.environ,
+            {
+                "PATH": self.env["PATH"],
+                "FAKE_GIT_MODE": "slow-remote",
+            },
+        ):
+            repository = hexctl_module().target_repository(self.dir)
         for mode in ("invalid-json", "overflow", "timeout"):
             with self.subTest(mode=mode):
                 module = hexctl_module()
@@ -107,10 +116,19 @@ class GithubTransportCases:
                 error = StringIO()
                 with mock.patch.dict(
                     os.environ,
-                    {"PATH": self.env["PATH"], "FAKE_GH_MODE": mode},
-                ), redirect_stderr(error):
+                    {
+                        "PATH": self.env["PATH"],
+                        "FAKE_GH_MODE": mode,
+                        "FAKE_GIT_MODE": "slow-remote",
+                    },
+                ), mock.patch.object(
+                    module,
+                    "target_repository",
+                    return_value=repository,
+                ) as target_repository, redirect_stderr(error):
                     with self.assertRaises(SystemExit):
                         module.verify_github_commits(self.dir, ["a" * 40])
+                target_repository.assert_called_once_with(self.dir)
                 self.assertIn("transport failure", error.getvalue())
                 self.assertNotIn("not verified:true", error.getvalue())
 

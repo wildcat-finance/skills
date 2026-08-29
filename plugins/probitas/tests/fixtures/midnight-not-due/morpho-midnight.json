@@ -1,0 +1,104 @@
+{
+  "source": {
+    "date": "2026-08-28",
+    "origin": "https://api.morpho.org",
+    "observed_at": 1785374000,
+    "transactions_reference": "https://docs.morpho.org/api/midnight/transactions/list-user-transactions/",
+    "market_reference": "https://docs.morpho.org/api/midnight/markets/get-market/",
+    "token_reference": "https://docs.morpho.org/api/global/get-token/",
+    "position_reference": "https://docs.morpho.org/api/midnight/positions/get-position/"
+  },
+  "transactions": {
+    "0x535690cb1330232dd4f2ac5b724040751bdf4c91": [
+      {
+        "cursor": null,
+        "data": [
+          {
+            "id": "0049292000-aaaaa-000001:1",
+            "chain_id": 8453,
+            "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+            "event_type": "borrow",
+            "tx_hash": "0x4444444444444444444444444444444444444444444444444444444444444444",
+            "data": {
+              "account": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "caller": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "maker": "0xd4F43105098845fFE89B16E7A3DCdd0A31898118",
+              "taker": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "buyer": "0xd4F43105098845fFE89B16E7A3DCdd0A31898118",
+              "seller": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "buyer_assets": "100",
+              "seller_assets": "100",
+              "assets": "100",
+              "units": "100",
+              "take_units": "100",
+              "buyer_pending_fee_increase": "0",
+              "seller_pending_fee_decrease": "0",
+              "total_units_delta": "100",
+              "payer": "0xd4F43105098845fFE89B16E7A3DCdd0A31898118",
+              "receiver": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+              "group": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "consumed": "100"
+            },
+            "created_at": 1785373000
+          }
+        ]
+      }
+    ]
+  },
+  "markets": {
+    "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738": {
+      "data": {
+        "chain_id": 8453,
+        "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+        "loan_token": "0x4200000000000000000000000000000000000006",
+        "maturity": 1786000000,
+        "rcf_threshold": "0",
+        "enter_gate": "0x0000000000000000000000000000000000000000",
+        "liquidator_gate": "0x0000000000000000000000000000000000000000",
+        "collaterals": [
+          {
+            "token": "0x833589fCD6eDb6E08f4C7C32D4f71b54bdA02913",
+            "lltv": "860000000000000000",
+            "liquidation_cursor": "300000000000000000",
+            "oracle": "0xD09048c8B568Dbf5f189302beA26c9edABFC4858"
+          }
+        ]
+      }
+    }
+  },
+  "tokens": {
+    "8453:0x4200000000000000000000000000000000000006": {
+      "data": {
+        "chain_id": 8453,
+        "address": "0x4200000000000000000000000000000000000006",
+        "name": "Wrapped Ether",
+        "symbol": "WETH",
+        "decimals": 18
+      }
+    }
+  },
+  "positions": {
+    "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738:0x535690cb1330232dd4f2ac5b724040751bdf4c91": {
+      "data": {
+        "chain_id": 8453,
+        "market_id": "0xcc9418ea594c6e658650aedd205ce4544b266b69493f56fd2adc65c14bd06738",
+        "user_address": "0x535690CB1330232dd4f2ac5B724040751bdF4C91",
+        "loan_token": "0x4200000000000000000000000000000000000006",
+        "maturity": 1786000000,
+        "type": "borrow",
+        "credit": "0",
+        "pending_fee": "0",
+        "last_loss_factor": "0",
+        "loss_factor": "0",
+        "debt": "100",
+        "collaterals": [
+          {
+            "token": "0x833589fCD6eDb6E08f4C7C32D4f71b54bdA02913",
+            "amount": "1000000"
+          }
+        ],
+        "last_indexed_block": "50551562"
+      }
+    }
+  }
+}

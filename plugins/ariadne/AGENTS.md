@@ -1,7 +1,7 @@
 # Ariadne runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Ariadne.** Ariadne binds an artefact digest to the build, test, review and deployment evidence behind a release. Use an external Sigstore or cosign verifier for signature identity; use Lazarus for historical fixtures and Pandects for executable credit-law evidence. **Current frontier:** The grounded-agent predicate remains unimplemented; the state-fixture predicate now ships with its schema, gates, conformance fixtures and a capture path that reads a Lazarus fixture's evidence counts rather than recomputing them.
+> **Marketplace context: Ariadne.** Ariadne binds an artefact digest to the build, test, review and deployment evidence behind a release. Use an external Sigstore or cosign verifier for signature identity; use Lazarus for historical fixtures and Pandects for executable credit-law evidence. **Current frontier:** The grounded-agent predicate now ships as the fifth registered Ariadne predicate, with a closed schema, gates 2 and 5, conformance fixtures and a bounded offline capture path that binds an existing `berean-release/v1` tree without importing or running Berean, executing an agent, regrading evaluations or reaching a network.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -50,10 +50,12 @@ as clean when it exited 1.
 
 ## Network and side effects
 
-Ariadne reaches no network of its own. The three capture subcommands --
-`capture`, `capture-dataset` and `capture-state-fixture` -- write only where
-`--out` points, and every other subcommand prints. Each reads a directory that
-already exists and runs nothing in it.
+Ariadne reaches no network of its own. The four capture subcommands --
+`capture`, `capture-dataset`, `capture-state-fixture` and
+`capture-grounded-agent` -- write only to a caller-selected path. The first
+three use optional `--out`; grounded-agent capture requires `--output`. Without
+an output path the first three print. Each reads a directory that already
+exists and runs nothing in it.
 
 State-fixture/v2 carries a Lazarus manifest's `receipts_root` and separately
 counted `receipt_trie_proved` relations. Ariadne reads those verified fixture

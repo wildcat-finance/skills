@@ -1,14 +1,123 @@
 """Verification: the core gates, the signature state, and what went unchecked.
 
-A report says three things. Whether each core gate held. What is known about
-the signatures, which is never that they were checked, because this tool does
-not check them. And which gates belong to a predicate this build does not know,
-so a reader is told what was not looked at rather than left to assume it was
-clean.
+A report says three things. Whether each gate that ran held. What is known
+about the signatures, which is never that they were checked, because this tool
+does not check them. And which predicate-owned gates did not run, whether the
+type is unknown or a registered module is incomplete, so a reader is told what
+was not looked at rather than left to assume it was clean.
 """
 
 from . import gates as gates_module
 from . import registry as registry_module
+
+
+def _predicate_failure(predicate_type, detail):
+    return gates_module.Gate(
+        None,
+        "predicate-check",
+        False,
+        "%s %s" % (predicate_type, detail),
+    )
+
+
+def _exception_text(error):
+    try:
+        return str(error)
+    except Exception:  # noqa: BLE001 -- diagnostics must not replace the first failure
+        return "<unprintable %s>" % type(error).__name__
+
+
+def _declared_results(predicate_type, declared):
+    """Snapshot a module's complete, ordered result contract or fail closed."""
+    if declared is None:
+        return None, None
+    if type(declared) is not tuple:
+        return None, _predicate_failure(
+            predicate_type, "has a malformed declared result contract"
+        )
+
+    expected = []
+    names = set()
+    numbered = []
+    for entry in declared:
+        if type(entry) is not tuple or len(entry) != 2:
+            return None, _predicate_failure(
+                predicate_type, "has a malformed declared result contract"
+            )
+        number, name = entry
+        if (
+            number is not None
+            and (
+                type(number) is not int
+                or number not in gates_module.PREDICATE_GATES
+            )
+        ) or type(name) is not str or not name or name in names:
+            return None, _predicate_failure(
+                predicate_type, "has a malformed declared result contract"
+            )
+        names.add(name)
+        if number is not None:
+            numbered.append(number)
+        expected.append((number, name))
+
+    if tuple(sorted(numbered)) != gates_module.PREDICATE_GATES:
+        return None, _predicate_failure(
+            predicate_type, "has a malformed declared result contract"
+        )
+    return tuple(expected), None
+
+
+def _validated_predicate_gates(predicate_type, entries, expected=None):
+    """Snapshot one module's gates only after their shared shape is sound."""
+    found = []
+    for entry in entries:
+        if not isinstance(entry, gates_module.Gate):
+            return [
+                _predicate_failure(
+                    predicate_type,
+                    "returned something that is not a gate",
+                )
+            ]
+        try:
+            number = entry.number
+            name = entry.name
+            passed = entry.passed
+            detail = entry.detail
+        except Exception:  # noqa: BLE001 -- a broken module remains a failed check
+            return [
+                _predicate_failure(predicate_type, "returned a malformed gate")
+            ]
+        if (
+            number is not None
+            and (
+                type(number) is not int
+                or number not in gates_module.PREDICATE_GATES
+            )
+        ):
+            return [
+                _predicate_failure(predicate_type, "returned a malformed gate")
+            ]
+        if (
+            type(name) is not str
+            or type(passed) is not bool
+            or type(detail) is not str
+        ):
+            return [
+                _predicate_failure(predicate_type, "returned a malformed gate")
+            ]
+        # Copy the fields into the verifier's Gate class. A module-provided
+        # subclass cannot then change how the report orders or renders it.
+        found.append(gates_module.Gate(number, name, passed, detail))
+    if expected is not None and tuple(
+        (gate.number, gate.name) for gate in found
+    ) != expected:
+        return [
+            _predicate_failure(
+                predicate_type,
+                "does not match its declared result contract",
+            )
+        ]
+    return found
 
 
 class Report(object):
@@ -25,6 +134,21 @@ class Report(object):
     @property
     def ok(self):
         return all(gate.passed for gate in self.gates)
+
+    @property
+    def missing_predicate_gates(self):
+        """Predicate-owned gate numbers absent from this report."""
+        found = {gate.number for gate in self.gates}
+        return tuple(
+            number
+            for number in gates_module.PREDICATE_GATES
+            if number not in found
+        )
+
+    @property
+    def predicate_gates_checked(self):
+        """Whether a registered predicate reported both gates it owns."""
+        return self.predicate_module is not None and not self.missing_predicate_gates
 
     @property
     def ordered(self):
@@ -54,6 +178,19 @@ class Report(object):
                 "gates %s were not checked: %s is registered but exposes no "
                 "checks" % (numbers, self.statement.predicate_type)
             )
+        elif self.missing_predicate_gates:
+            missing = " and ".join(str(n) for n in self.missing_predicate_gates)
+            singular = len(self.missing_predicate_gates) == 1
+            out.append(
+                "%s %s %s not checked: %s is registered but did not report %s"
+                % (
+                    "gate" if singular else "gates",
+                    missing,
+                    "was" if singular else "were",
+                    self.statement.predicate_type,
+                    "it" if singular else "them",
+                )
+            )
         if self.document.signed:
             out.append(
                 "signatures were not checked; run cosign verify-attestation "
@@ -72,12 +209,13 @@ class Report(object):
         ]
         out.extend(gate.line() for gate in self.ordered)
         out.extend(self.unchecked)
-        return out
+        return [gates_module.one_line(line) for line in out]
 
     def to_dict(self):
         return {
             "predicateType": self.statement.predicate_type,
             "predicateTypeKnown": self.predicate_module is not None,
+            "predicateGatesChecked": self.predicate_gates_checked,
             "signatureState": self.document.signature_state,
             "gates": [gate.to_dict() for gate in self.ordered],
             "unchecked": self.unchecked,
@@ -89,18 +227,35 @@ def report(document, registry=None):
     """Run the core gates, then whatever the predicate module adds.
 
     A predicate module contributes by exposing `check(statement)`, returning
-    gates of its own. Registering without one is allowed and reported: gates 2
-    and 5 go on the unchecked list rather than being assumed to hold.
+    gates of its own. A shipped module also declares their complete ordered
+    `(number, name)` set in `EXPECTED_RESULTS`. Registering without a check is
+    allowed and reported: gates 2 and 5 go on the unchecked list rather than
+    being assumed to hold.
     """
     if registry is None:
         registry = registry_module.DEFAULT
     statement = document.statement
-    found = gates_module.run(statement)
     module = registry.get(statement.predicate_type)
+    found = gates_module.run(statement, getattr(module, "CORE_LIMITS", None))
 
     ran = False
     check = getattr(module, "check", None) if module is not None else None
     if callable(check):
+        try:
+            declared = getattr(module, "EXPECTED_RESULTS", None)
+        except Exception:  # noqa: BLE001 -- a broken interface remains a failed check
+            declared = None
+            contract_failure = _predicate_failure(
+                statement.predicate_type,
+                "has a malformed declared result contract",
+            )
+        else:
+            declared, contract_failure = _declared_results(
+                statement.predicate_type, declared
+            )
+        if contract_failure is not None:
+            found.append(contract_failure)
+            return Report(document, found, module, True)
         try:
             added = list(check(statement) or [])
         except Exception as error:  # noqa: BLE001  (see below)
@@ -108,27 +263,16 @@ def report(document, registry=None):
             # it. An escaping exception exits 1, the code that means a gate was
             # breached, and buries the core gates that did run.
             added = [
-                gates_module.Gate(
-                    None,
-                    "predicate-check",
-                    False,
-                    "%s raised while checking: %s"
-                    % (statement.predicate_type, error),
+                _predicate_failure(
+                    statement.predicate_type,
+                    "raised while checking: %s" % _exception_text(error),
                 )
             ]
             ran = True
         else:
-            stray = [entry for entry in added if not isinstance(entry, gates_module.Gate)]
-            if stray:
-                added = [
-                    gates_module.Gate(
-                        None,
-                        "predicate-check",
-                        False,
-                        "%s returned something that is not a gate"
-                        % statement.predicate_type,
-                    )
-                ]
+            added = _validated_predicate_gates(
+                statement.predicate_type, added, declared
+            )
             ran = bool(added)
         found.extend(added)
 
