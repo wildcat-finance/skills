@@ -1,7 +1,7 @@
 {
   "name": "alexandria",
   "displayName": "Alexandria",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Digest-bound lending-data releases with unsigned evidence statements, reviewed credit views and address queries.",
   "author": {
     "name": "Wildcat Labs",

@@ -64,6 +64,7 @@ python3 chunkers/solidity.py \
   --input path/to/standard-input.json \
   --solc ./solc-container \
   --include 'src/**' \
+  --source-ref 'https://github.com/owner/repo@<commit>' \
   --out chunks.jsonl
 ```
 
@@ -79,6 +80,7 @@ python3 chunkers/markdown.py \
   --root docs \
   --summary SUMMARY.md \
   --exclude SUMMARY.md \
+  --source-ref 'https://github.com/owner/repo@<commit>' \
   --out chunks.jsonl
 ```
 
@@ -88,6 +90,116 @@ the corpus.
 
 Both commands validate their output before writing it. A non-zero exit means no
 JSONL file should be used.
+
+## The record beside the chunks
+
+Both chunkers take two more flags:
+
+- `--source-ref REF` names what was chunked: a tag, a commit or a URL. It is
+  required whenever `--out` is given. A run without it exits non-zero and
+  writes nothing, because a corpus nobody can trace back to a source is the one
+  thing a delivered corpus must not be. The ref is recorded as given, less any
+  userinfo in a URL; nothing fetches it and nothing checks that it names a real
+  object.
+- `--provenance PATH` puts the record somewhere other than `provenance.jsonl`
+  beside the file `--out` names.
+
+A delivered corpus is therefore two files in one directory. `chunks.jsonl`
+carries what a citation quotes; `provenance.jsonl` carries one line of JSON
+saying what produced it: the schema identity, which chunker ran and at which
+governed version, the source ref, a build identifier recomputed from the chunks
+actually written, how many chunks are beside it, the digest of every input, the
+selection (the include patterns and the source units present, selected and
+excluded), and the compiler.
+
+The compiler entry is the part worth reading twice. Solidity records the
+`--solc` argument as given, the version the compiler reported for itself, and
+either the `--expect-solc` pin or the reason nothing was pinned. A recorded
+pin is named a prefix pin, because that is how the gate compares. Markdown
+records that no compiler applies, with the reason. No field is ever written as
+`unknown`: an absent value is recorded as an absence that says why.
+
+Every chunk in `chunks.jsonl` also carries the source ref and the build
+identifier, stamped by the pipeline above the chunker rather than by the
+chunker itself.
+
+## From a corpus to a dataset statement
+
+Each chunker prints the flags Ariadne's `capture-dataset` needs for the corpus
+it just wrote: the release directory, the producer and its governed version,
+the include patterns, the coverage bounds with any gaps, and one input per
+digested file. Copy them. The operator adds only `--name`, `--out` and either
+`--first-release-reason` or the `--previous` release to compare against.
+
+Solidity, run from `plugins/lemma`:
+
+```bash
+python3 chunkers/solidity.py \
+  --input /tmp/w/standard-input.json \
+  --solc solc \
+  --expect-solc 0.8.35 \
+  --include 'src/**' \
+  --source-ref 'https://github.com/owner/repo@<commit>' \
+  --out /tmp/w/corpus/chunks.jsonl
+
+python3 ../ariadne/scripts/ariadne.py capture-dataset \
+  --name my-solidity-corpus-v0 \
+  --first-release-reason 'the first corpus built from this input' \
+  --release /tmp/w/corpus \
+  --producer-tool lemma \
+  --producer-version 0.2.1 \
+  --producer-command python3 \
+  --producer-command chunkers/solidity.py \
+  --parameter 'include=src/**' \
+  --coverage-dimension 'source unit' \
+  --coverage-start 1 \
+  --coverage-end 4 \
+  --input 'name=/tmp/w/standard-input.json,locator=https://github.com/owner/repo@<commit>,file=/tmp/w/standard-input.json' \
+  --out /tmp/w/statement.json
+
+python3 ../ariadne/scripts/ariadne.py verify /tmp/w/statement.json
+```
+
+`verify` exits zero, and the statement carries both `chunks.jsonl` and
+`provenance.jsonl` under `dataset_subjects`, each with a digest and the second
+with a record count of one.
+
+Markdown takes the same shape with one difference: its recorded input paths are
+relative to `--root`, so the capture runs from there.
+
+```bash
+python3 chunkers/markdown.py \
+  --root /tmp/w/docs \
+  --summary SUMMARY.md \
+  --exclude SUMMARY.md \
+  --source-ref 'https://github.com/owner/repo@<commit>' \
+  --out /tmp/w/corpus-docs/chunks.jsonl
+
+cd /tmp/w/docs
+python3 /path/to/skills/plugins/ariadne/scripts/ariadne.py capture-dataset \
+  --name my-docs-corpus-v0 \
+  --first-release-reason 'the first corpus built from this tree' \
+  --release /tmp/w/corpus-docs \
+  --producer-tool lemma \
+  --producer-version 0.2.1 \
+  --producer-command python3 \
+  --producer-command chunkers/markdown.py \
+  --parameter 'include=**/*.md' \
+  --coverage-dimension 'source unit' \
+  --coverage-start 1 \
+  --coverage-end 10 \
+  --gap 'start=2,end=2,reason=present in the input and not selected under include **/*.md' \
+  --input 'name=README.md,locator=https://github.com/owner/repo@<commit>,file=README.md' \
+  --out /tmp/w/docs-statement.json
+```
+
+The chunker prints one `--input` per selected document; one is shown here.
+Coverage reads the source unit dimension. The bounds span the sorted units the
+input declared, and every excluded unit is a gap naming the pattern the
+selection was made under, because an interval with no gaps reads as complete.
+
+Lemma writes no statement and signs nothing. It records what produced a corpus
+and stops there.
 
 ## Output
 
@@ -100,7 +212,8 @@ are:
 - `synthesised`: true when `display_text` was assembled and must not be treated
   as a verbatim quotation.
 
-The calling pipeline can add build provenance with `schema.stamp()`.
+Build provenance is applied with `schema.stamp()` from the pipeline above
+the chunker, which is why `chunk()` leaves those fields unset.
 
 ## Checks
 

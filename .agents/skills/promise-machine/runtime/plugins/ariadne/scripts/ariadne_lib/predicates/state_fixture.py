@@ -48,6 +48,13 @@ from ..gates import Gate
 
 TYPE = "https://ariadne.wildcat.finance/state-fixture/v1"
 SUMMARY = "a state fixture: the pinned block, its components, and what was proved"
+EXPECTED_RESULTS = (
+    (2, "environment"),
+    (5, "deltas"),
+    (None, "predicate-fields"),
+    (None, "evidence"),
+    (None, "replay"),
+)
 
 TYPE_V2 = "https://ariadne.wildcat.finance/state-fixture/v2"
 SUMMARY_V2 = (
@@ -296,7 +303,7 @@ def hash32(value):
     accepting it would let a proof-backed count sit beside a state root that was
     never filled in.
     """
-    if not isinstance(value, str) or not HASH32.match(value):
+    if not isinstance(value, str) or not HASH32.fullmatch(value):
         return False
     return value != ZERO_HASH
 
@@ -920,6 +927,14 @@ class _StateFixtureV2(object):
     REQUIRED_FIELDS = REQUIRED_FIELDS
     MAX_PATH = MAX_PATH
     MAX_FIXTURE_SUBJECTS = MAX_FIXTURE_SUBJECTS_V2
+    EXPECTED_RESULTS = (
+        (2, "environment"),
+        (5, "deltas"),
+        (None, "predicate-fields"),
+        (None, "evidence"),
+        (None, "subject-names"),
+        (None, "replay"),
+    )
 
     @staticmethod
     def check(statement):

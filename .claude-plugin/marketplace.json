@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.5",
+      "version": "1.6.11",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -118,7 +118,7 @@
       "displayName": "Probitas",
       "source": "./plugins/probitas",
       "description": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
-      "version": "0.1.1",
+      "version": "0.1.3",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -205,7 +205,7 @@
       "displayName": "Ariadne",
       "source": "./plugins/ariadne",
       "description": "Release evidence statements binding artefact digests to the record behind them.",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -248,7 +248,7 @@
       "displayName": "Alexandria",
       "source": "./plugins/alexandria",
       "description": "Digest-bound lending-data releases with unsigned evidence statements, reviewed credit views and address queries.",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

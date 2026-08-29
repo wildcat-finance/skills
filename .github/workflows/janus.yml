@@ -2,23 +2,20 @@ name: janus
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/janus/**"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
       - ".github/workflows/janus.yml"
   pull_request:
     paths:
       - "plugins/janus/**"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
       - ".github/workflows/janus.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

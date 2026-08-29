@@ -1,7 +1,7 @@
 # Design
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Ariadne.** Ariadne binds an artefact digest to the build, test, review and deployment evidence behind a release. Use an external Sigstore or cosign verifier for signature identity; use Lazarus for historical fixtures and Pandects for executable credit-law evidence. **Current frontier:** The grounded-agent predicate remains unimplemented; the state-fixture predicate now ships with its schema, gates, conformance fixtures and a capture path that reads a Lazarus fixture's evidence counts rather than recomputing them.
+> **Marketplace context: Ariadne.** Ariadne binds an artefact digest to the build, test, review and deployment evidence behind a release. Use an external Sigstore or cosign verifier for signature identity; use Lazarus for historical fixtures and Pandects for executable credit-law evidence. **Current frontier:** The grounded-agent predicate now ships as the fifth registered Ariadne predicate, with a closed schema, gates 2 and 5, conformance fixtures and a bounded offline capture path that binds an existing `berean-release/v1` tree without importing or running Berean, executing an agent, regrading evaluations or reaching a network.
 <!-- marketplace-context:end -->
 
 Why ariadne is shaped the way it is, and what was considered and rejected on
@@ -67,20 +67,20 @@ a statement of that kind carries and how a verifier checks them. The core holds
 predicates apart so a dataset statement and a contract statement share a
 verifier and one envelope format without sharing a schema.
 
-| Module | Holds |
-| --- | --- |
-| `digests.py` | Digest sets, file and tree digests, and the rule for when two agree |
-| `statement.py` | Statement v1 construction and parsing, subject handling |
-| `envelope.py` | DSSE read and write, PAE, both base64 alphabets |
-| `safejson.py` | Size, depth and duplicate-key bounds for documents from elsewhere |
-| `core_predicate.py` | The `claims` and `commands` block every predicate carries |
-| `gates.py` | The five core gates, run for any predicate |
-| `verify.py` | The report: gates, signature state, and what went unchecked |
-| `registry.py` | Type URI to predicate module |
-| `predicates/solidity_release.py` | The Solidity release predicate |
-| `capture/foundry.py` | A Foundry build read into that predicate |
-| `deltas.py` | ABI, method identifier and storage comparisons |
-| `replay.py` | Re-running the commands a statement marks deterministic |
+| Module | Layer | Holds |
+| --- | --- | --- |
+| `digests.py` | foundation | Digest sets, file and tree digests, and the rule for when two agree |
+| `statement.py` | core | Statement v1 construction and parsing, subject handling |
+| `envelope.py` | envelope | DSSE read and write, PAE, both base64 alphabets |
+| `safejson.py` | boundary | Size, depth and duplicate-key bounds for documents from elsewhere |
+| `core_predicate.py` | core | The `claims` and `commands` block every predicate carries |
+| `gates.py` | verification | The five core gates, run for any predicate |
+| `verify.py` | verification | The report: gates, signature state, and what went unchecked |
+| `registry.py` | dispatch | Type URI to predicate module |
+| `predicates/solidity_release.py` | predicate | The Solidity release predicate |
+| `capture/foundry.py` | adapter | A Foundry build read into that predicate |
+| `deltas.py` | comparison | ABI, method identifier and storage comparisons |
+| `replay.py` | execution | Re-running the commands a statement marks deterministic |
 
 ## The gates
 

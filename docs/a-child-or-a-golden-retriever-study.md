@@ -74,7 +74,7 @@ No in-scope finding remains open against this design. S4-R1-02 and the #377 cens
 
 ## 3. Constraints and non-goals
 
-Starting ref: `main` at `fc0374bcd2d4311a2ce7d1f710e6809e40f00c92`, checked out on `docs/a-child-or-a-golden-retriever`. Current contracts: `shoggoth-collective/v2`, `promise-machine/v1`, Hexaemeron package `1.6.5`, Fiat `5.30.1`. Layout runtime: bundled Python 3.12.13, ReportLab 4.4.9, Pillow 12.3.0; visual inspection: Poppler `pdfinfo` and `pdftoppm` 26.08.0. The ordinary `python3` is 3.14.6 and lacks ReportLab, so it is not the PDF builder unless the dependency change is separately approved.
+Starting ref: `main` at `fc0374bcd2d4311a2ce7d1f710e6809e40f00c92`, checked out on `docs/a-child-or-a-golden-retriever`. Current contracts: `shoggoth-collective/v2`, `promise-machine/v1`, Hexaemeron package `1.6.9`, Fiat `5.34.1`. Those are the versions at that ref; the packages have since moved and now stand at Hexaemeron `1.6.11` with Fiat `5.36.1`. Layout runtime: bundled Python 3.12.13, ReportLab 4.4.9, Pillow 12.3.0; visual inspection: Poppler `pdfinfo` and `pdftoppm` 26.08.0. The ordinary `python3` is 3.14.6 and lacks ReportLab, so it is not the PDF builder unless the dependency change is separately approved.
 
 The user fixes the scope to one implementation step, PDFs and infographics, use of the supplied mascot kit, push to the exact branch, and no merge to `main`. The branch must remain reviewable and reproducible; generated text inside image-model output is forbidden. All labels and body copy are laid out by code over text-free mascot imagery.
 
@@ -121,17 +121,17 @@ scope-creep | beginner primer versus the complete marketplace catalogue | the ar
 
 ## 6. Glossary seeds
 
-- **Shoggoth:** the Wildcat agent-and-skill collective.
-- **Shog / Shoggy / Big S / the Goth:** affectionate names for the same collective or the active member; not invocations.
-- **Shoggoth Interceptor:** the same collective operating through the external repository-and-issue harness.
-- **Hexaemeron / Hex:** the delivery plugin and ordered system containing Fiat, workers, phase disciplines, prose masks, and vendored security tools.
-- **Fiat:** the explicit controller that emits one next action, validates its receipt, and keeps the run's order.
-- **Worker:** Surveyor, Mason, Warden, or Scribe executing one source-bound Fiat packet without advancing the controller.
-- **Skill:** one bounded working method selected for a matching job.
-- **Promise Machine:** the suite-wide law that limits claims and actions to their evidence.
-- **Receipt:** a durable record that one named phase crossed its required boundary; not proof of perfection.
-- **Gate:** a check that blocks the dependent action while leaving inspection, repair, rerun, or safe exit available.
-- **Target repository:** the repository being worked on; its instructions and permissions still govern the Interceptor and Fiat.
+- Shoggoth: the Wildcat agent-and-skill collective.
+- Shog / Shoggy / Big S / the Goth: affectionate names for the same collective or the active member; not invocations.
+- Shoggoth Interceptor: the same collective operating through the external repository-and-issue harness.
+- Hexaemeron / Hex: the delivery plugin and ordered system containing Fiat, workers, phase disciplines, prose masks, and vendored security tools.
+- Fiat: the explicit controller that emits one next action, validates its receipt, and keeps the run's order.
+- Worker: Surveyor, Mason, Warden, or Scribe executing one source-bound Fiat packet without advancing the controller.
+- Skill: one bounded working method selected for a matching job.
+- Promise Machine: the suite-wide law that limits claims and actions to their evidence.
+- Receipt: a durable record that one named phase crossed its required boundary; not proof of perfection.
+- Gate: a check that blocks the dependent action while leaving inspection, repair, rerun, or safe exit available.
+- Target repository: the repository being worked on; its instructions and permissions still govern the Interceptor and Fiat.
 
 ## 7. Sources
 

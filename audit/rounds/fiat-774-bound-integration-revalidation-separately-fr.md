@@ -1,0 +1,47 @@
+## Step 1, round 1 -- 2026-08-29T17:52:27Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: shared-constant-widening=reviewed; integration-site-scope=reviewed; byte-ceiling-bypass=reviewed; upper-bound-absent=reviewed; v2-aggregate-regression=reviewed; v1-compatibility=reviewed; refusal-order=reviewed; generated-copy-drift=reviewed; boundary-currency=reviewed; version-propagation=not-applicable; base-advance-sync=not-applicable
+
+Not checked: the Pashov pair and any fuzz campaign, under the recorded suite waiver, because the step ships no Solidity and no Foundry or Hardhat project. The two integration ceilings, end to end: they were exercised through direct calls with a mocked Git reader rather than a 4,096-path repository, so the count boundary is proved at the function and not through `done sync-run`. The v2 outside-path surface above 600 paths: it was proved end to end at 600, not at 4,096. `version-propagation`, which is step 2's work, and `base-advance-sync`, which is measured at integrate.
+
+Elenchus verdict: unguarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | low | plugins/hexaemeron/tests/test_disposable_git_signing.py | The new `test_hexctl_integration_path_bounds` module builds a disposable Git repository but was absent from `FIXTURE_COMMIT_MATRIX`, issue 622's inherited-signing guard, which names every other module that does, so nothing would catch a later edit letting a contributor's signer handle a fixture commit. Run by hand under an injected `commit.gpgsign=true` with a hostile signer, the module passed and the signer was never invoked, because every fixture commit and the merge carry `--no-gpg-sign`. The exposure was that nothing kept that true. | fixed in 8a14853b7e7e6b71505dca0ee6ab1a315cac7566 |
+
+Leads not pursued: `_checkpoint_ref_names` refuses a duplicated ref set and an oversized one with the same diagnostic, so its pin case cannot tell which branch fired. The bound is unchanged by this step and the diagnostic predates it, so splitting it is not this run's work. Issue 710's fixture names sync commit `f0a84ca3`, which is not an ancestor of `main`, so `test_hexctl_generator_aggregates` errors in `setUpClass` on any fresh clone that has not fetched it; the new module builds its own repository to avoid inheriting that, and repairing the older fixture is out of scope here. The two pre-existing Hexaemeron failures stay open and out of scope: `test_resource_limits_refuse_before_publish` constructs a 1,206-character path against a macOS limit of 1,024, and `test_duplicate_state_and_ledger_keys_refuse` expects `SystemExit` from 50,000-deep JSON that CPython 3.14 parses without recursion failure. The Elenchus verdict is `unguarded` rather than `guarded` because the repair adds coverage to a guard matrix: removing the entry again reduces what runs, and no case turns red to say so.
+
+## Step 1, round 2 -- 2026-08-29T17:55:27Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: shared-constant-widening=reviewed; integration-site-scope=reviewed; byte-ceiling-bypass=reviewed; upper-bound-absent=reviewed; v2-aggregate-regression=reviewed; v1-compatibility=reviewed; refusal-order=reviewed; generated-copy-drift=reviewed; boundary-currency=reviewed; version-propagation=not-applicable; base-advance-sync=not-applicable
+
+Not checked: the Pashov pair and any fuzz campaign, unchanged from round 1 under the recorded suite waiver. The two integration ceilings end to end, and the version-2 outside-path surface above 600 paths, both unchanged from round 1.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the three carried from round 1 stay open and out of scope, unchanged: the shared duplicate-or-oversized diagnostic in `_checkpoint_ref_names`, issue 710's fixture naming sync commit `f0a84ca3` which is not an ancestor of `main`, and the two pre-existing Hexaemeron failures against the macOS 1,024-character path limit and CPython 3.14's handling of 50,000-deep JSON. This round audited the tree with round 1's fix applied: the three lints returned clean over all fifteen changed paths, the Horos boundary still matches the tree, and the portable runtime, Promise Machine law, coverage classification, audit synopsis and `git diff --check` all exit 0. The full suite last ran against this exact tree at 1,897 tests with one failure and one error, both of them the pre-existing environmental cases named above.
+
+## Step 2, round 1 -- 2026-08-29T18:18:24Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: version-propagation=reviewed; shared-constant-widening=not-applicable; integration-site-scope=not-applicable; byte-ceiling-bypass=not-applicable; upper-bound-absent=not-applicable; v2-aggregate-regression=not-applicable; v1-compatibility=not-applicable; refusal-order=not-applicable; generated-copy-drift=reviewed; boundary-currency=reviewed; base-advance-sync=not-applicable
+
+Not checked: the Pashov pair and any fuzz campaign, unchanged from step 1 under the recorded suite waiver. No controller behaviour changed in this step, so the seven bound concerns are the previous step's evidence and were not re-exercised here. `base-advance-sync` is still measured at integrate; `main` stood at `43f9ea57` when this round ran.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: `tests/test_python_contract.py` walks the whole tree for prose making a bare Python version claim, and its exclusion list does not cover `.hexaemeron/`. This run's own pull-request draft at `.hexaemeron/steps/1/pr.md` therefore failed the root suite for naming CPython 3.14, and any Fiat run whose draft mentions an interpreter version will do the same. The draft was reworded and the published body brought back into agreement with it; widening the scanner's exclusion list is not this run's work. The three leads carried from step 1 stay open and out of scope, unchanged. Version propagation was reviewed by checking that no tracked file outside the generated mirror still names `1.6.10` or `5.35.1`, that both marketplace edits landed on the hexaemeron entry rather than a neighbouring plugin, that the ledger row keeps frontier revision `state-shape-validation` and digest `e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa` byte for byte with the held issue 363 job untouched, and that `fiat-v5.36.1`, hexaemeron `1.6.11` and `ADR-049` are each unclaimed on `origin/main` and on every remote ref. The root suite runs 472 green against a 456-with-one-error baseline, because this step clears the primer failure the study recorded in its section 3.

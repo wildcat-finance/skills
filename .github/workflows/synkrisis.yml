@@ -2,23 +2,24 @@ name: synkrisis
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/synkrisis/**"
+      - "docs/synkrisis/**"
+      - "scripts/run_observation.py"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
       - ".github/workflows/synkrisis.yml"
   pull_request:
     paths:
       - "plugins/synkrisis/**"
+      - "docs/synkrisis/**"
+      - "scripts/run_observation.py"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "AGENTS.md"
       - ".github/workflows/synkrisis.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read

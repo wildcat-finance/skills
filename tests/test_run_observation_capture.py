@@ -19,6 +19,22 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def scratch_directory(prefix="run-observation-capture-"):
+    """A transient in-repository directory that `git status` never sees.
+
+    The validator and writers confine paths under the repository root, so
+    scratch space must stay inside it -- but a temporary directory under the
+    tracked fixture tree (or the repository top level) makes the repository
+    non-quiescent while a case runs, and the disposable-signing guard's
+    outer-stability assertion races against it under parallel shards.  The
+    ignored top-level tmp/ satisfies both: confined, and invisible to status.
+    """
+    scratch = ROOT / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
+
 STARTING_BASE = "411d5131ecc8f4e50f3db57deee881a56605cd38"
 PRODUCT_HEAD = "1979372032828f4ed82fdc258187910163a67cb7"
 SCRIPT = ROOT / "scripts" / "run_observation_capture.py"
@@ -196,7 +212,7 @@ class CaptureProfileTests(unittest.TestCase):
     def test_writer_refuses_bypass_and_never_writes_a_gap(self):
         result = capture.capture_candidate(self.candidate(), ROOT)
         gap = capture.capture_candidate({"prompt": "HOSTILE"}, ROOT)
-        with tempfile.TemporaryDirectory(dir=ROOT) as directory, tempfile.TemporaryDirectory() as outside:
+        with scratch_directory() as directory, tempfile.TemporaryDirectory() as outside:
             destination = Path(directory) / "capture" / "record.json"
             with self.assertRaises(ValueError):
                 capture.write_accepted(destination, {"outcome": "accepted"})
@@ -295,7 +311,7 @@ class CaptureProfileTests(unittest.TestCase):
             "tests.test_run_observation_capture_inoculation",
             "tests.test_promise_machine_contract",
         ))
-        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+        with scratch_directory() as directory:
             output = Path(directory) / "report.json"
             class FailingCaptureTest(unittest.TestCase):
                 def test_failure(self):
@@ -313,7 +329,7 @@ class CaptureProfileTests(unittest.TestCase):
         reporter = importlib.util.module_from_spec(reporter_spec)
         assert reporter_spec.loader is not None
         reporter_spec.loader.exec_module(reporter)
-        with tempfile.TemporaryDirectory(dir=ROOT) as directory, tempfile.TemporaryDirectory() as outside:
+        with scratch_directory() as directory, tempfile.TemporaryDirectory() as outside:
             redirected = Path(directory) / "redirected"
             redirected.symlink_to(outside, target_is_directory=True)
             target = redirected / "report.json"

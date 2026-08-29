@@ -1,7 +1,9 @@
 """The five core gates, one by one."""
 
 import hashlib
+import unicodedata
 import unittest
+from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
@@ -158,6 +160,80 @@ class GateFourTests(unittest.TestCase):
             gate = only(4, {"claims": [], "commands": [], key: True})
             self.assertFalse(gate.passed, key)
 
+    def test_structured_conclusion_compounds_fail(self):
+        for key in (
+            "security_verdict",
+            "riskScore",
+            "safety-conclusion",
+            "approval_status",
+            "securityRating",
+            "assurance_level",
+            "audit_recommendation",
+        ):
+            gate = only(4, {"claims": [], "commands": [], key: "positive"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_unseparated_bounded_conclusion_chains_fail(self):
+        for key in (
+            "securityverdictstatus",
+            "riskscoreresult",
+            "safetyconclusionstate",
+            "auditrecommendationvalue",
+            "verdictresultstatus",
+            "security2verdictstatus",
+            "verdictresultstatus2",
+            "securityauditverdictresultstatusvalue",
+        ):
+            gate = only(4, {"claims": [], "commands": [], key: "positive"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_compatibility_equivalent_conclusion_keys_fail(self):
+        cases = (
+            ("\uff53\uff43\uff4f\uff52\uff45", "score"),
+            ("\u017fcore", "score"),
+            (
+                "\uff53\uff45\uff43\uff55\uff52\uff49\uff54\uff59"
+                "\uff56\uff45\uff52\uff44\uff49\uff43\uff54"
+                "\uff53\uff54\uff41\uff54\uff55\uff53",
+                "securityverdictstatus",
+            ),
+        )
+        for key, folded in cases:
+            with self.subTest(key=key):
+                self.assertEqual(unicodedata.normalize("NFKC", key), folded)
+                gate = only(4, {"claims": [], "commands": [], key: "positive"})
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_neutral_status_and_conclusion_process_metadata_pass(self):
+        for key in (
+            "status",
+            "identity",
+            "approval_workflow",
+            "score_method",
+            "riskmanagementstatus",
+            "underscorestatus",
+        ):
+            gate = only(4, {"claims": [], "commands": [], key: "recorded"})
+            with self.subTest(key=key):
+                self.assertTrue(gate.passed, gate.detail)
+
+    def test_neutral_conclusion_process_state_metadata_passes(self):
+        for key in (
+            "score_method_status",
+            "score_method_result_status",
+            "approval_workflow_status",
+            "recommendation_pipeline_status",
+            "assurance_process_state",
+        ):
+            gate = only(4, {"claims": [], "commands": [], key: "configured"})
+            with self.subTest(key=key):
+                self.assertTrue(gate.passed, gate.detail)
+
     def test_a_verdict_in_a_subject_annotation_fails_too(self):
         """The shorter route: a subject's annotations are producer-chosen too."""
         gate = only(
@@ -241,6 +317,93 @@ class GateSevenTests(unittest.TestCase):
             gate = only(7, {"claims": [], "commands": [], key: "someone"})
             self.assertFalse(gate.passed, key)
 
+    def test_direct_authorship_identity_and_status_compounds_fail(self):
+        for key in (
+            "signature_status",
+            "verificationStatus",
+            "SIGNER-IDENTITY",
+            "attestation_status",
+            "authorshipIdentity",
+            "notarization_status",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "verified"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_direct_authorship_names_and_multitoken_status_claims_fail(self):
+        for key in (
+            "author_name",
+            "publisherName",
+            "SIGNER-NAME",
+            "signature_verification_status",
+            "signatureValidationStatus",
+            "signatureverificationstatus",
+            "attestation-verification-status",
+            "is_verified",
+            "signed_by_identity",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "someone"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_unseparated_bounded_authorship_chains_fail(self):
+        for key in (
+            "signaturesigneridentity",
+            "signatureverificationactorstatus",
+            "attestationverificationactoridentity",
+            "authenticationpublishername",
+            "signature2signeridentity",
+            "signatureverificationactorstatus2",
+            "signatureverificationactorstatusidentity",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "someone"})
+            with self.subTest(key=key):
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_compatibility_and_unseparated_authorship_claims_fail(self):
+        cases = (
+            ("\uff56\uff45\uff52\uff49\uff46\uff49\uff45\uff44", "verified"),
+            ("\u017figneridentity", "signeridentity"),
+            ("signaturevalidationstatus", "signaturevalidationstatus"),
+            ("isverified", "isverified"),
+        )
+        for key, folded in cases:
+            with self.subTest(key=key):
+                self.assertEqual(unicodedata.normalize("NFKC", key), folded)
+                gate = only(7, {"claims": [], "commands": [], key: "someone"})
+                self.assertFalse(gate.passed, gate.detail)
+                self.assertIn(key, gate.detail)
+
+    def test_neutral_identity_and_signature_metadata_pass(self):
+        for key in (
+            "identity",
+            "status",
+            "signature_algorithm",
+            "verification_method",
+            "attestation_format",
+            "authorizationstatus",
+            "authorizationstatusidentity",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "recorded"})
+            with self.subTest(key=key):
+                self.assertTrue(gate.passed, gate.detail)
+
+    def test_neutral_identity_method_metadata_passes(self):
+        for key in (
+            "identity_verification_method",
+            "identity_attestation_format",
+            "signature_algorithm_identity",
+            "status_signature_algorithm",
+            "validation_status",
+            "is_status",
+        ):
+            gate = only(7, {"claims": [], "commands": [], key: "did:web"})
+            with self.subTest(key=key):
+                self.assertTrue(gate.passed, gate.detail)
+
     def test_an_author_in_a_subject_annotation_fails_too(self):
         gate = only(
             7,
@@ -252,6 +415,75 @@ class GateSevenTests(unittest.TestCase):
     def test_an_ordinary_predicate_passes(self):
         gate = only(7, {"claims": [claim()], "commands": [command()]})
         self.assertTrue(gate.passed, gate.detail)
+
+
+class StructuredKeyBoundTests(unittest.TestCase):
+    def test_compatibility_folding_never_expands_an_oversized_key(self):
+        key = "\ufdfa" * 4097
+        found = built(
+            {"claims": [], "commands": []},
+            subject=[
+                {
+                    "name": "a",
+                    "digest": ART,
+                    "annotations": {key: "neutral metadata"},
+                }
+            ],
+        )
+        original = unicodedata.normalize
+
+        def bounded_normalise(form, value):
+            if value is key or len(value) > 4096:
+                raise AssertionError("oversized structured key reached NFKC")
+            return original(form, value)
+
+        with mock.patch.object(gates.unicodedata, "normalize", bounded_normalise):
+            gate_four = gates.gate_4_conclusions(found)
+            gate_seven = gates.gate_7_authorship(found)
+
+        self.assertFalse(gate_four.passed)
+        self.assertFalse(gate_seven.passed)
+        self.assertIn("4096-character scan limit", gate_four.detail)
+        self.assertIn("4096-character scan limit", gate_seven.detail)
+
+    def test_many_bounded_keys_cannot_exceed_the_aggregate_fold_budget(self):
+        annotations = {
+            "%s%d" % ("\ufdfa" * 1024, index): index for index in range(270)
+        }
+        found = built(
+            {"claims": [], "commands": []},
+            subject=[
+                {
+                    "name": "a",
+                    "digest": ART,
+                    "annotations": annotations,
+                }
+            ],
+        )
+        original = unicodedata.normalize
+
+        def run(check):
+            scanned = 0
+
+            def bounded_normalise(form, value):
+                nonlocal scanned
+                scanned += len(value)
+                # Each classifier performs one folded-key pass and one token
+                # pass over an admitted source key. Both stay inside the same
+                # source-key budget up to that fixed factor.
+                if scanned > 2 * 262144:
+                    raise AssertionError("aggregate structured keys exceeded the budget")
+                return original(form, value)
+
+            with mock.patch.object(gates.unicodedata, "normalize", bounded_normalise):
+                return check(found)
+
+        gate_four = run(gates.gate_4_conclusions)
+        gate_seven = run(gates.gate_7_authorship)
+        self.assertFalse(gate_four.passed)
+        self.assertFalse(gate_seven.passed)
+        self.assertIn("262144-character aggregate scan budget", gate_four.detail)
+        self.assertIn("262144-character aggregate scan budget", gate_seven.detail)
 
 
 class RunTests(unittest.TestCase):

@@ -33,6 +33,20 @@ EXPECTED_OMISSIONS = {
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
 }
+PORTABLE_TEST_FILES = {
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/invalid-unicode.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/jobspec.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
+}
 
 
 def load_manifest():
@@ -71,6 +85,12 @@ class SkillsShPackageTests(unittest.TestCase):
             {entry["pattern"] for entry in manifest["omissions"]},
             EXPECTED_OMISSIONS,
         )
+        tests_omission = next(
+            entry
+            for entry in manifest["omissions"]
+            if entry["pattern"] == "plugins/*/tests/**"
+        )
+        self.assertEqual(set(tests_omission["exceptions"]), PORTABLE_TEST_FILES)
 
         expected = {"MANIFEST.json"}
         total = 0
@@ -183,7 +203,17 @@ class SkillsShPackageTests(unittest.TestCase):
                 self.assertFalse((plugin / ".claude-plugin").exists())
                 self.assertFalse((plugin / ".codex-plugin").exists())
                 self.assertFalse((plugin / "audit").exists())
-                self.assertFalse((plugin / "tests").exists())
+                if plugin.name != "hexaemeron":
+                    self.assertFalse((plugin / "tests").exists())
+        portable_tests = RUNTIME / "plugins/hexaemeron/tests"
+        self.assertEqual(
+            {
+                path.relative_to(RUNTIME).as_posix()
+                for path in portable_tests.rglob("*")
+                if path.is_file() or path.is_symlink()
+            },
+            PORTABLE_TEST_FILES,
+        )
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())
         self.assertTrue((example / "rebuild.py").is_file())
@@ -225,6 +255,35 @@ class SkillsShPackageTests(unittest.TestCase):
             )
             self.assertEqual(
                 boundary.returncode, 0, boundary.stdout + boundary.stderr
+            )
+            model_proxy = (
+                installed
+                / "runtime/plugins/hexaemeron/skills/phylax/scripts/model_proxy.py"
+            )
+            conformance_manifest = (
+                installed
+                / "runtime/plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json"
+            )
+            conformance = subprocess.run(  # phylax: allow subprocess: fixed installed demo
+                [
+                    sys.executable,
+                    str(model_proxy),
+                    "conformance",
+                    "--manifest",
+                    str(conformance_manifest),
+                ],
+                cwd=project,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                conformance.returncode,
+                0,
+                conformance.stdout + conformance.stderr,
+            )
+            self.assertEqual(
+                json.loads(conformance.stdout)["outcome"],
+                "conformance_checked",
             )
 
 

@@ -8,23 +8,27 @@ campaign that produced different coverage the second time has not failed.
 
 The commands inside a statement are somebody else's data. They are not
 instructions to this tool, so nothing runs without `--allow-execution`, nothing
-runs through a shell, and three shapes are refused outright:
+runs through a shell, and four shapes are refused outright:
 
 - A command whose arguments were redacted at capture. What is left is a
   different command, and running it while calling it a replay would be a lie.
-- A program name carrying a path separator, which would let a statement point
-  the replay at a binary sitting beside it, or naming a shell, which would hand
-  back what `shell=False` was avoiding.
-- Anything at all when the caller has not asked for execution.
+- A program name carrying a path separator or Windows drive prefix, which would
+  let a statement point the replay at a binary sitting beside it.
+- A known shell name, which would hand back what `shell=False` was avoiding.
+- A Windows batch program, because the operating system may run `.bat` and
+  `.cmd` files through a system shell even when Python was given `shell=False`.
 
 None of that is a sandbox. Replay runs the program named, with the arguments
 given, under the caller's own account. What it offers is that the choice is the
-caller's and the plan is printed first.
+caller's and the plan is printed first. Plan lines escape untrusted control
+characters, and an argv value the host cannot encode or start is a contained
+failure rather than an exception from the reader.
 """
 
+import ntpath
 import subprocess
 
-from . import core_predicate, digests
+from . import core_predicate, digests, gates
 
 DEFAULT_TIMEOUT = 900
 
@@ -33,8 +37,9 @@ REDACTION = "<redacted>"
 RUN = "run"
 SKIP_NONDETERMINISTIC = "not run: declared nondeterministic"
 SKIP_REDACTED = "not run: arguments were redacted at capture"
-SKIP_PATH = "not run: the program name carries a path separator"
+SKIP_PATH = "not run: the program name carries a path separator or drive prefix"
 SKIP_SHELL = "not run: the program is a shell, which is what shell=False avoids"
+SKIP_BATCH = "not run: Windows batch programs invoke a system shell"
 SKIP_MALFORMED = "not run: the command has no argv of strings"
 SKIP_STATE_FIXTURE_V2 = (
     "not run: state-fixture/v2 replay is local-file verification only"
@@ -47,12 +52,50 @@ SEPARATORS = ("/", "\\")
 the same answer replayed on another, which is the point of a portable
 format."""
 
-SHELLS = frozenset(
-    {"sh", "bash", "zsh", "dash", "ksh", "fish", "csh", "cmd", "cmd.exe", "powershell", "pwsh"}
+SHELL_NAMES = frozenset(
+    {
+        "ash",
+        "bash",
+        "csh",
+        "dash",
+        "elvish",
+        "fish",
+        "git-shell",
+        "ksh",
+        "ksh93",
+        "lksh",
+        "mksh",
+        "nu",
+        "oksh",
+        "osh",
+        "pdksh",
+        "posh",
+        "rbash",
+        "sh",
+        "tcsh",
+        "xonsh",
+        "yash",
+        "zsh",
+        "cmd",
+        "command",
+        "powershell",
+        "powershell_ise",
+        "pwsh",
+        "pwsh-preview",
+    }
+)
+WINDOWS_EXECUTABLE_SUFFIXES = (".com", ".exe")
+SHELLS = SHELL_NAMES | frozenset(
+    "%s%s" % (name, suffix)
+    for name in SHELL_NAMES
+    for suffix in WINDOWS_EXECUTABLE_SUFFIXES
 )
 """Running a shell as the program would hand back exactly what `shell=False`
-was avoiding. This is a guard against the obvious case rather than a sandbox;
-see the note in the module docstring."""
+was avoiding. The portable set covers the common direct POSIX and Windows
+spellings, including Windows executable extensions. This is still a guard
+against direct shell names rather than a sandbox; see the module docstring."""
+
+WINDOWS_BATCH_SUFFIXES = (".bat", ".cmd")
 
 
 class Step(object):
@@ -63,6 +106,8 @@ class Step(object):
         self.argv = argv
         self.action = action
         self.output_digest = output_digest
+        self.predicate_type = None
+        self.build_command = None
         self.status = None
         self.compared = None
         self.detail = ""
@@ -73,17 +118,19 @@ class Step(object):
 
     def line(self):
         if self.action != RUN:
-            return "%s: %s" % (self.name, self.action)
-        if self.status is None:
-            return "%s: would run %s" % (self.name, " ".join(self.argv))
-        outcome = "exit %s" % self.status
-        if self.compared is True:
-            outcome += ", output matches the recorded digest"
-        elif self.compared is False:
-            outcome += ", output does NOT match the recorded digest"
+            line = "%s: %s" % (self.name, self.action)
+        elif self.status is None:
+            line = "%s: would run %s" % (self.name, " ".join(self.argv))
         else:
-            outcome += ", not compared (%s)" % self.detail
-        return "%s: %s" % (self.name, outcome)
+            outcome = "exit %s" % self.status
+            if self.compared is True:
+                outcome += ", output matches the recorded digest"
+            elif self.compared is False:
+                outcome += ", output does NOT match the recorded digest"
+            else:
+                outcome += ", not compared (%s)" % self.detail
+            line = "%s: %s" % (self.name, outcome)
+        return gates.one_line(line)
 
     def to_dict(self):
         return {
@@ -99,6 +146,9 @@ class Step(object):
 def plan(statement):
     """What replay would do with each recorded command, and why."""
     steps = []
+    predicate = statement.predicate if isinstance(statement.predicate, dict) else {}
+    build = predicate.get("build")
+    build_command = build.get("command") if isinstance(build, dict) else None
     commands = core_predicate.commands(statement.predicate) or []
     for index, command in enumerate(commands):
         name = core_predicate.label(command, index, "command")
@@ -126,13 +176,28 @@ def plan(statement):
         if any(REDACTION in str(word) for word in argv):
             steps.append(Step(name, argv, SKIP_REDACTED))
             continue
-        if any(separator in argv[0] for separator in SEPARATORS):
+        drive, _ = ntpath.splitdrive(argv[0])
+        if drive or any(separator in argv[0] for separator in SEPARATORS):
             steps.append(Step(name, argv, SKIP_PATH))
             continue
-        if argv[0].lower() in SHELLS:
+        # Win32 filename lookup ignores trailing spaces and periods. Normalise
+        # them before checking executable and batch suffixes so a plan cannot
+        # disagree with the program family that Windows would start.
+        # Case-insensitive filesystems can resolve compatibility case forms as
+        # the same executable name.  APFS, for example, resolves long-s `ſh`
+        # to `/bin/sh`; Unicode case folding closes that direct-shell spelling
+        # without compatibility-normalising unrelated program names.
+        program = argv[0].casefold().rstrip(" .")
+        if program.endswith(WINDOWS_BATCH_SUFFIXES):
+            steps.append(Step(name, argv, SKIP_BATCH))
+            continue
+        if program in SHELLS:
             steps.append(Step(name, argv, SKIP_SHELL))
             continue
         steps.append(Step(name, argv, RUN, command.get("output_digest")))
+    for step in steps:
+        step.predicate_type = statement.predicate_type
+        step.build_command = build_command
     return steps
 
 
@@ -158,7 +223,10 @@ def execute(step, cwd, timeout=DEFAULT_TIMEOUT):
         step.status = "timed out"
         step.detail = "after %d seconds" % timeout
         return step
-    except OSError as error:
+    except (OSError, ValueError) as error:
+        # A parsed JSON string may contain a NUL or a Unicode value this host
+        # cannot put into an OS argv. Those are hostile input failures, not a
+        # reason for the replay reader to escape with an exception.
         step.status = "failed to start"
         step.detail = str(error)
         return step
@@ -187,9 +255,16 @@ def compare(step, recomputed):
 
 
 class Result(object):
-    def __init__(self, steps, executed):
+    def __init__(self, steps, execution_allowed):
         self.steps = steps
-        self.executed = executed
+        self.execution_allowed = execution_allowed
+        # Permission to execute is evidence of authority, not evidence that a
+        # process ran. A skipped or failed-to-start plan must not set the
+        # machine-readable execution claim merely because the flag was present.
+        self.executed = any(
+            isinstance(step.status, int) or step.status == "timed out"
+            for step in steps
+        )
 
     @property
     def ok(self):
@@ -200,21 +275,26 @@ class Result(object):
         for step in self.steps:
             if step.status not in (None, 0):
                 return False
+            if step.status == 0 and step.compared is not True:
+                return False
             if step.compared is False:
                 return False
         return True
 
     def lines(self):
         out = [step.line() for step in self.steps]
-        if not self.executed:
+        if not self.execution_allowed:
             out.append(
                 "nothing was run; pass --allow-execution to replay the exact "
                 "commands above"
             )
+        elif not self.executed:
+            out.append("nothing was run; no eligible command started")
         return out
 
     def to_dict(self):
         return {
+            "executionAllowed": self.execution_allowed,
             "executed": self.executed,
             "steps": [step.to_dict() for step in self.steps],
             "ok": self.ok,
