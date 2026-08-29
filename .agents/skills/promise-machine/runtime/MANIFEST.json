@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 929,
-  "total_bytes": 20215339,
+  "file_count": 930,
+  "total_bytes": 20216953,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "5b661db752923946489b704877cdc13f78d4a9360cf022e9e05f83a8770bbb4e",
+      "sha256": "73092c9828695f09ca475d118447215e3b0d52fe8c282df711e4498a389000ba",
       "source": null
     },
     {
@@ -3533,6 +3533,12 @@
       "path": "plugins/janus/scripts/janus.py",
       "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d",
       "source": "plugins/janus/scripts/janus.py"
+    },
+    {
+      "bytes": 1614,
+      "path": "plugins/janus/scripts/run_forge_tests.py",
+      "sha256": "f68fb062404433cb83a2ce3490993930a01ea206593707a7fff459f4763321e3",
+      "source": "plugins/janus/scripts/run_forge_tests.py"
     },
     {
       "bytes": 1623,
