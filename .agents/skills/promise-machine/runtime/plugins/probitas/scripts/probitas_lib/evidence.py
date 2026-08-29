@@ -355,8 +355,15 @@ def _releases(releases, source):
         )
     if isinstance(releases, str):
         values = [part for part in releases.split(",") if part]
-    else:
+    elif isinstance(releases, (list, tuple)):
         values = list(releases)
+    else:
+        # `list()` takes anything iterable, which quietly turned a mapping
+        # into its keys and an integer into a TypeError from somewhere else.
+        raise EvidenceError(
+            "releases must be a comma-separated string, a list or a tuple; "
+            f"got {type(releases).__name__}"
+        )
     cleaned = []
     for value in values:
         text = _require_text(value, "release")

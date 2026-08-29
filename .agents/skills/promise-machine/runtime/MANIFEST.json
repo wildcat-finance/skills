@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 929,
-  "total_bytes": 20329740,
+  "total_bytes": 20330692,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4915,9 +4915,9 @@
       "source": "plugins/probitas/scripts/probitas_lib/endpoints.py"
     },
     {
-      "bytes": 17122,
+      "bytes": 17481,
       "path": "plugins/probitas/scripts/probitas_lib/evidence.py",
-      "sha256": "ef37c9e3abb647fd0cde5a5a0c4fcfdf6e9badb8b041701aaef29949a36aa57d",
+      "sha256": "819cd1769e1b3d696d11168d76f787fe2aba01fe10b7018fab72de7c5aecd792",
       "source": "plugins/probitas/scripts/probitas_lib/evidence.py"
     },
     {
@@ -4927,9 +4927,9 @@
       "source": "plugins/probitas/scripts/probitas_lib/formatting.py"
     },
     {
-      "bytes": 14997,
+      "bytes": 15590,
       "path": "plugins/probitas/scripts/probitas_lib/gates.py",
-      "sha256": "9a6976fbbe3b9d4997cf82d6a1e4e8f0e945614a1afaf9df4db3da23befef36b",
+      "sha256": "da6d4d56da1af2cd72d47ad14e85feed118162d937d7a0e08c76b221068a75f1",
       "source": "plugins/probitas/scripts/probitas_lib/gates.py"
     },
     {
