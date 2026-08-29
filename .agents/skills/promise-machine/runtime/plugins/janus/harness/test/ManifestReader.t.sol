@@ -786,6 +786,26 @@ contract ManifestReaderTest is JanusBase {
     );
   }
 
+  /// @dev The one shape of the widened walk that had no test: a slot whose
+  ///      bracket expression contains a dot. The walk does not parse brackets,
+  ///      so it asks about `market.lenderStatus[a` as well as the whole
+  ///      string -- a syntactically meaningless candidate, and that is exactly
+  ///      why it is harmless: it is not a name any adapter holds, so it cannot
+  ///      make the reader refuse a slot it should resolve. Pinned rather than
+  ///      argued, because the false-fail direction of a widened guard is the
+  ///      one that breaks working manifests.
+  function test_a_dot_inside_a_slot_bracket_does_not_break_resolution() external view {
+    ResolvedThreshold memory t = reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedCalls":[],"permittedValueMovements":[],'
+      '"permittedStorageWrites":[{"scope":"external","slot":"roleProvider.lenderStatus[a.b]"}]}]}',
+      "deposit",
+      stub
+    );
+    assertEq(t.allowedWriteAccounts.length, 1, "the slot still resolves");
+    assertEq(t.allowedWriteAccounts[0], PROVIDER, "to the grammar's own prefix");
+  }
+
   /// @dev The same decision on the value path, from the other side: there the
   ///      whole string *is* the name, so the identical adapter resolves it.
   ///      The two paths disagree about the outcome kind and that is the design;

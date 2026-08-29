@@ -327,17 +327,20 @@ contract ManifestReader {
   ///      manifest is ambiguous and the reader refuses rather than choosing.
   ///
   ///      `head` is the grammar's prefix length rather than the prefix itself,
-  ///      so a dot-free name is the single comparison `head == b.length` and
-  ///      needs no string equality. That case returns before any candidate is
-  ///      built, which is what keeps `hook`, `host` and a bracketed slot
-  ///      expression from ever reaching the adapter twice.
+  ///      so no string equality is needed anywhere here. It is also what keeps
+  ///      `hook`, `host` and a bracketed slot expression from reaching the
+  ///      adapter twice, and the loop bound alone is what carries that: a
+  ///      dot-free name has `head == b.length`, so `i` starts past the end and
+  ///      the body never runs. An explicit early return for that case was
+  ///      written here and removed -- it read as the protection and was not
+  ///      it, deleting it changed nothing in the whole suite, and that is the
+  ///      same dead guard as S2-R4-03 one round further on.
   function _refuseASecondReading(
     string memory written,
     uint256 head,
     AccountResolver resolver
   ) private view {
     bytes memory b = bytes(written);
-    if (head == b.length) return; // no dot: the grammar has the only reading
     for (uint256 i = head + 1; i <= b.length; i++) {
       if (i != b.length && b[i] != ".") continue;
       bytes memory candidate = new bytes(i);
