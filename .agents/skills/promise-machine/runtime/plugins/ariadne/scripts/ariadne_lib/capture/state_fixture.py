@@ -855,7 +855,13 @@ def write(path, body):
     """
     directory = os.path.dirname(os.path.abspath(path)) or "."
     handle = tempfile.NamedTemporaryFile(
-        mode="w", dir=directory, prefix=".ariadne-", suffix=".tmp", delete=False
+        mode="w",
+        encoding="utf-8",
+        newline="\n",
+        dir=directory,
+        prefix=".ariadne-",
+        suffix=".tmp",
+        delete=False,
     )
     try:
         with handle:

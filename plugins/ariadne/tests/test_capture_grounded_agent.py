@@ -6,7 +6,10 @@ import io
 import json
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
+import unicodedata
 import unittest
 from unittest import mock
 
@@ -196,7 +199,7 @@ class CaptureTests(unittest.TestCase):
         document = envelope.read(json.dumps(statement).encode("utf-8"))
         return verify.report(document, registry.DEFAULT)
 
-    def run_cli(self, producer_command=None):
+    def run_cli(self, producer_command=None, previous=None):
         out = io.StringIO()
         err = io.StringIO()
         argv = [
@@ -211,11 +214,12 @@ class CaptureTests(unittest.TestCase):
             "1.0.0",
             "--producer-command",
             *(producer_command or ["python3"]),
-            "--first-capture-reason",
-            "first capture",
-            "--output",
-            self.output,
         ]
+        if previous is None:
+            argv.extend(["--first-capture-reason", "first capture"])
+        else:
+            argv.extend(["--previous", previous])
+        argv.extend(["--output", self.output])
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = ariadne.main(argv)
         return code, out.getvalue(), err.getvalue()
@@ -352,6 +356,32 @@ class CaptureTests(unittest.TestCase):
         write_bytes(path, canonical(record) + b"\n")
         with self.assertRaisesRegex(capture.CaptureError, "release report"):
             self.taken()
+
+    def test_present_reserved_promotion_path_is_never_treated_as_absent(self):
+        kinds = ["directory", "symlink"]
+        if hasattr(os, "mkfifo"):
+            kinds.append("fifo")
+        for kind in kinds:
+            with self.subTest(kind=kind):
+                if os.path.exists(self.output):
+                    os.unlink(self.output)
+                self.build_release(promotion=False)
+                path = os.path.join(self.release, "promotions.jsonl")
+                if kind == "directory":
+                    os.mkdir(path)
+                elif kind == "symlink":
+                    target = os.path.join(self.root, "outside-promotions.jsonl")
+                    write_bytes(target, b"{}\n")
+                    os.symlink(target, path)
+                else:
+                    os.mkfifo(path)
+                code, out, err = self.run_cli()
+                self.assertEqual(code, 2)
+                self.assertEqual(out, "")
+                self.assertIn("promotion", err)
+                self.assertNotIn("Traceback", err)
+                self.assertEqual(len(err.splitlines()), 1)
+                self.assertFalse(os.path.exists(self.output))
 
     def test_unicode_line_separators_do_not_create_promotion_records(self):
         path = os.path.join(self.release, "promotions.jsonl")
@@ -504,6 +534,44 @@ class CaptureTests(unittest.TestCase):
         with self.assertRaisesRegex(capture.CaptureError, "inside|symlink"):
             self.taken(output=symlink)
 
+    def test_case_insensitive_release_alias_is_refused_by_capture_and_write(self):
+        alias_root = os.path.join(self.root, "RELEASE")
+        try:
+            aliases_release = os.path.samefile(alias_root, self.release)
+        except OSError:
+            aliases_release = False
+        if not aliases_release:
+            self.skipTest("filesystem is case-sensitive")
+        alias = os.path.join(alias_root, "captured.json")
+        statement = self.taken()
+        with self.assertRaisesRegex(capture.CaptureError, "inside"):
+            self.taken(output=alias)
+        with self.assertRaisesRegex(capture.CaptureError, "inside"):
+            capture.write(alias, statement, self.release)
+        self.assertFalse(os.path.exists(alias))
+
+    def test_unicode_normalisation_alias_is_refused_by_capture_and_write(self):
+        composed_name = "r\u00e9lease"
+        composed = os.path.join(self.root, composed_name)
+        os.replace(self.release, composed)
+        self.release = composed
+        decomposed = os.path.join(
+            self.root, unicodedata.normalize("NFD", composed_name)
+        )
+        try:
+            aliases_release = os.path.samefile(decomposed, self.release)
+        except OSError:
+            aliases_release = False
+        if not aliases_release:
+            self.skipTest("filesystem distinguishes Unicode normalisation forms")
+        alias = os.path.join(decomposed, "captured.json")
+        statement = self.taken()
+        with self.assertRaisesRegex(capture.CaptureError, "inside"):
+            self.taken(output=alias)
+        with self.assertRaisesRegex(capture.CaptureError, "inside"):
+            capture.write(alias, statement, self.release)
+        self.assertFalse(os.path.exists(alias))
+
     def test_existing_output_is_replaced_and_interruption_preserves_old_bytes(self):
         statement = self.taken()
         write_bytes(self.output, b"old bytes\n")
@@ -555,6 +623,92 @@ class CaptureTests(unittest.TestCase):
         self.assertNotIn(oversized, err)
         self.assertEqual(len(err.splitlines()), 1)
         self.assertFalse(os.path.exists(self.output))
+
+    def test_rules_vocabularies_require_arrays_without_cli_tracebacks(self):
+        for field in ("source_classes", "evidence_classes"):
+            for invalid in (None, 7, {}):
+                with self.subTest(field=field, invalid=invalid):
+                    self.build_release()
+                    document = read_json(os.path.join(self.release, "release.json"))
+                    document["rules"][field] = invalid
+                    document["release_digest"] = semantic_digest(document)
+                    write_json(os.path.join(self.release, "release.json"), document)
+                    code, out, err = self.run_cli()
+                    self.assertEqual(code, 2)
+                    self.assertEqual(out, "")
+                    self.assertIn("release %s" % field, err)
+                    self.assertNotIn("Traceback", err)
+                    self.assertEqual(len(err.splitlines()), 1)
+                    self.assertFalse(os.path.exists(self.output))
+
+    def test_previous_parser_diagnostic_is_bounded_and_does_not_dump_input(self):
+        previous = os.path.join(self.root, "previous.json")
+        oversized = "p" * (1024 * 1024)
+        write_json(previous, {"payload": "", oversized: None})
+        code, out, err = self.run_cli(previous=previous)
+        self.assertEqual(code, 2)
+        self.assertEqual(out, "")
+        self.assertLessEqual(len(err.encode("utf-8")), 1024)
+        self.assertNotIn(oversized, err)
+        self.assertNotIn("Traceback", err)
+        self.assertEqual(len(err.splitlines()), 1)
+        self.assertFalse(os.path.exists(self.output))
+
+    def test_cli_writes_utf8_under_an_ascii_process_locale(self):
+        self.build_release(promotion=False)
+        self.rewrite_release(
+            lambda document: document["question_families"].__setitem__(
+                0, "caf\u00e9 questions"
+            )
+        )
+        command = [
+            sys.executable,
+            ariadne.__file__,
+            "capture-grounded-agent",
+            "--release",
+            self.release,
+            "--name",
+            "test-v1",
+            "--producer-tool",
+            "berean",
+            "--producer-version",
+            "1.0.0",
+            "--producer-command",
+            "python3",
+            "--first-capture-reason",
+            "first capture",
+            "--output",
+            self.output,
+        ]
+        environment = dict(os.environ)
+        environment.update(
+            {
+                "LANG": "C",
+                "LC_ALL": "C",
+                "PYTHONCOERCECLOCALE": "0",
+                "PYTHONUTF8": "0",
+            }
+        )
+        completed = subprocess.run(
+            command,
+            cwd=support.REPO_ROOT,
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        self.assertEqual(
+            completed.returncode,
+            0,
+            completed.stderr.decode("utf-8", "backslashreplace"),
+        )
+        with open(self.output, "rb") as handle:
+            statement = json.loads(handle.read().decode("utf-8"))
+        self.assertEqual(
+            statement["predicate"]["policy"]["question_families"][0],
+            "caf\u00e9 questions",
+        )
+        self.assertTrue(self.report_for(statement).ok)
 
     def test_non_unicode_scalar_strings_are_controlled_cli_refusals(self):
         identity = b"bounded test questions"

@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 852,
-  "total_bytes": 11190636,
+  "total_bytes": 11193279,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -613,9 +613,9 @@
       "source": "plugins/ariadne/schemas/state-fixture-v2.json"
     },
     {
-      "bytes": 22313,
+      "bytes": 22327,
       "path": "plugins/ariadne/scripts/ariadne.py",
-      "sha256": "db64be99db661b558b8026b177e42c663429502655ddc6a3228e478a5bce9ed1",
+      "sha256": "4a07348259983548d2843ace7855f3571507a1714b19a63dbce5a5aa4ec33048",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     {
@@ -631,9 +631,9 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/__init__.py"
     },
     {
-      "bytes": 13997,
+      "bytes": 14078,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/dataset.py",
-      "sha256": "68cc921587936e03a4acef364e947fd6c96ff60b49b8fd343be5bd183aff445f",
+      "sha256": "75a4211ba8b924ff5f755717edfe89a38ffbc6884c9f5db77c1a26f2588a016a",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/dataset.py"
     },
     {
@@ -643,15 +643,15 @@
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/foundry.py"
     },
     {
-      "bytes": 33190,
+      "bytes": 35657,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
-      "sha256": "fc078aa04e97b8c4729ba30af0491a821e08bf179fba8c6e9b1e3c9859dad490",
+      "sha256": "b19c48b7e03fb82d6dcd6d9c8d81d2ddc5dad3076088e3ef73883258ab2714ac",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py"
     },
     {
-      "bytes": 33710,
+      "bytes": 33791,
       "path": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py",
-      "sha256": "ba640ba3e9a4f9c9a56d5127649f89ddd2975105c4e588f49036c2a094bb4677",
+      "sha256": "000b9733c78ce7e88828de654d660e105ef3f51cf972ee1f8927c171fc31ff52",
       "source": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py"
     },
     {

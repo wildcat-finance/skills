@@ -327,7 +327,7 @@ def cmd_capture_grounded_agent(args):
         grounded_agent_capture.write(args.output, statement, args.release)
     except (grounded_agent_capture.CaptureError, OSError) as error:
         print(
-            "capture failed: %s" % gates.one_line(str(error)),
+            "capture failed: %s" % grounded_agent_capture.diagnostic(error),
             file=sys.stderr,
         )
         return USAGE_ERROR

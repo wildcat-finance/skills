@@ -27,6 +27,7 @@ MAX_PREVIOUS_BYTES = 16 * 1024 * 1024
 MAX_RELEASE_FILES = predicate.MAX_SUBJECTS
 MAX_DIAGNOSTIC_FIELDS = 4
 MAX_DIAGNOSTIC_FIELD_CHARS = 96
+MAX_DIAGNOSTIC_BYTES = 960
 
 CORPUS_FORMAT = "berean-corpus/v1"
 CORPUS_FIELDS = ("format", "corpus_version", "files", "corpus_digest")
@@ -97,7 +98,7 @@ def _parse_json(raw, what):
     except UnicodeDecodeError as error:
         raise CaptureError("%s is not UTF-8 at byte %d" % (what, error.start)) from None
     except safejson.InputError as error:
-        raise CaptureError("%s: %s" % (what, gates.one_line(str(error)))) from None
+        raise CaptureError("%s: %s" % (what, diagnostic(error))) from None
     except json.JSONDecodeError as error:
         raise CaptureError(
             "%s is not JSON at line %d column %d"
@@ -209,6 +210,23 @@ def _display(value, limit=300):
     return shown
 
 
+def diagnostic(value, maximum=MAX_DIAGNOSTIC_BYTES):
+    """Render one terminal-safe diagnostic under a UTF-8 byte ceiling."""
+    try:
+        rendered = gates.one_line(value)
+    except Exception:
+        rendered = "capture refused with an unprintable error"
+    encoded = rendered.encode("utf-8", "backslashreplace")
+    if len(encoded) <= maximum:
+        return encoded.decode("utf-8")
+    cropped = encoded[: maximum - 3]
+    while True:
+        try:
+            return cropped.decode("utf-8") + "..."
+        except UnicodeDecodeError as error:
+            cropped = cropped[: error.start]
+
+
 def _metadata(path):
     try:
         found = os.stat(path, follow_symlinks=False)
@@ -267,16 +285,42 @@ def _release_root(path):
     return tree.confined(path, "release")
 
 
+def _ancestor_has_identity(path, identity):
+    """Whether any existing lexical ancestor has one filesystem identity."""
+    cursor = os.path.abspath(path)
+    while True:
+        try:
+            found = os.stat(cursor, follow_symlinks=False)
+        except (FileNotFoundError, NotADirectoryError):
+            pass
+        except OSError:
+            raise CaptureError("cannot inspect --output ancestry") from None
+        else:
+            if (found.st_dev, found.st_ino) == identity:
+                return True
+        parent = os.path.dirname(cursor)
+        if parent == cursor:
+            return False
+        cursor = parent
+
+
 def _output_alias(root, output, inventory):
     if not output:
         raise CaptureError("--output is required; capture never mutates the release")
     absolute = os.path.abspath(output)
     resolved = os.path.realpath(absolute)
     try:
+        release = os.stat(root, follow_symlinks=False)
+    except OSError:
+        raise CaptureError("cannot inspect the Berean release root") from None
+    release_identity = (release.st_dev, release.st_ino)
+    try:
         shared = os.path.commonpath([root, resolved])
     except ValueError:
         shared = None
-    if shared == root:
+    if shared == root or _ancestor_has_identity(
+        absolute, release_identity
+    ) or _ancestor_has_identity(resolved, release_identity):
         raise CaptureError("--output resolves inside the Berean release")
     if os.path.lexists(absolute):
         if os.path.islink(absolute):
@@ -293,6 +337,22 @@ def _output_alias(root, output, inventory):
     parent = os.path.realpath(os.path.dirname(absolute) or ".")
     if not os.path.isdir(parent):
         raise CaptureError("--output parent is not a directory")
+
+
+def _optional_regular_file(root, relative, what):
+    """Distinguish an absent optional file from every present non-file shape."""
+    absolute = os.path.join(root, relative)
+    try:
+        found = os.stat(absolute, follow_symlinks=False)
+    except FileNotFoundError:
+        return False
+    except OSError:
+        raise CaptureError("cannot inspect %s" % what) from None
+    if stat.S_ISLNK(found.st_mode):
+        raise CaptureError("%s is a symlink" % what)
+    if not stat.S_ISREG(found.st_mode):
+        raise CaptureError("%s exists and is not a regular file" % what)
+    return True
 
 
 class _Paths(object):
@@ -396,9 +456,19 @@ def _release_shape(document, paths):
     )
 
     rules = _closed(document["rules"], predicate.BEREAN_RULES_FIELDS, "release rules")
-    if tuple(rules["source_classes"]) != predicate.BEREAN_SOURCE_CLASSES:
+    source_classes = _array(
+        rules["source_classes"],
+        "release source_classes",
+        predicate.MAX_POLICY_ITEMS,
+    )
+    evidence_classes = _array(
+        rules["evidence_classes"],
+        "release evidence_classes",
+        predicate.MAX_POLICY_ITEMS,
+    )
+    if tuple(source_classes) != predicate.BEREAN_SOURCE_CLASSES:
         raise CaptureError("release source_classes changes the closed Berean vocabulary")
-    if tuple(rules["evidence_classes"]) != predicate.BEREAN_EVIDENCE_CLASSES:
+    if tuple(evidence_classes) != predicate.BEREAN_EVIDENCE_CLASSES:
         raise CaptureError("release evidence_classes changes the closed Berean vocabulary")
 
     allowlists = _closed(
@@ -611,7 +681,7 @@ def _external_document(path):
     except (envelope.EnvelopeError, safejson.InputError, ValueError) as error:
         raise CaptureError(
             "--previous is not a bounded Ariadne statement: %s"
-            % gates.one_line(str(error))
+            % diagnostic(error)
         ) from None
     if document.statement.predicate_type != predicate.TYPE:
         raise CaptureError("--previous is not a grounded-agent/v1 statement")
@@ -665,14 +735,14 @@ def _self_verify(statement):
     except (envelope.EnvelopeError, safejson.InputError, ValueError) as error:
         raise CaptureError(
             "constructed statement could not be read back: %s"
-            % gates.one_line(str(error))
+            % diagnostic(error)
         ) from None
     if not report.ok or not report.predicate_gates_checked or report.unchecked:
         failed = next((gate for gate in report.ordered if not gate.passed), None)
         if failed is not None:
             raise CaptureError(
                 "constructed statement failed self-verification at %s: %s"
-                % (failed.name, gates.one_line(failed.detail))
+                % (failed.name, diagnostic(failed.detail))
             )
         raise CaptureError("constructed statement left predicate checks unchecked")
     return statement
@@ -746,8 +816,10 @@ def capture(
         _match(report, document["evals"]["report_sha256"], "evaluation report")
         evaluation_components = {"cases": cases, "report": report}
 
-    promotion_key = unicodedata.normalize("NFC", predicate.BEREAN_PROMOTIONS_FILE)
-    promotion = _promotions(reader, document, declared, promotion_key in before)
+    promotion_present = _optional_regular_file(
+        root, predicate.BEREAN_PROMOTIONS_FILE, "promotion chain"
+    )
+    promotion = _promotions(reader, document, declared, promotion_present)
 
     expected = declared.values
     actual = set(before)

@@ -953,6 +953,21 @@ class WriteTests(unittest.TestCase):
         leftovers = [n for n in os.listdir(directory) if n.startswith(".ariadne-")]
         self.assertEqual(leftovers, [])
 
+    def test_writer_pins_utf8_and_literal_lf(self):
+        directory = tempfile.mkdtemp(prefix="ariadne-write-")
+        self.addCleanup(shutil.rmtree, directory, True)
+        path = os.path.join(directory, "unicode.json")
+        with mock.patch.object(
+            capture.tempfile,
+            "NamedTemporaryFile",
+            wraps=tempfile.NamedTemporaryFile,
+        ) as temporary:
+            capture.write(path, '{"label": "caf\u00e9"}\n')
+        self.assertEqual(temporary.call_args.kwargs["encoding"], "utf-8")
+        self.assertEqual(temporary.call_args.kwargs["newline"], "\n")
+        with open(path, "rb") as handle:
+            self.assertEqual(handle.read(), b'{"label": "caf\xc3\xa9"}\n')
+
     def test_a_failed_write_leaves_no_temporary_file(self):
         directory = tempfile.mkdtemp(prefix="ariadne-write-")
         self.addCleanup(shutil.rmtree, directory, True)
