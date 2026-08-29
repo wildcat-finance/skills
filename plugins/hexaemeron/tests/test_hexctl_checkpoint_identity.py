@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -618,6 +619,14 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
         self.assertEqual(1, payload["evidence"]["observation_bindings"])
 
     def test_accepted_observation_prefix_is_reverified_and_bound(self):
+        self.bind_accepted_observation()
+        self.run_ctl("record", "security_suite", '"waived: fixture"')
+        self.finish_step(1)
+        payload = json.loads(self.identity().stdout)["identity"]["evidence"]
+        self.assertEqual("bound", payload["observation_status"])
+        self.assertEqual(1, payload["observation_bindings"])
+
+    def bind_accepted_observation(self):
         self.git(
             "remote",
             "add",
@@ -652,11 +661,62 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
             "--redaction-status",
             "passed",
         )
+
+    def test_identity_with_observation_writes_no_validator_bytecode(self):
+        self.bind_accepted_observation()
         self.run_ctl("record", "security_suite", '"waived: fixture"')
         self.finish_step(1)
-        payload = json.loads(self.identity().stdout)["identity"]["evidence"]
-        self.assertEqual("bound", payload["observation_status"])
-        self.assertEqual(1, payload["observation_bindings"])
+        module = hexctl_module()
+        environment = self.direct_environment()
+        output = StringIO()
+        error = StringIO()
+        prior_bytecode_policy = sys.dont_write_bytecode
+        with tempfile.TemporaryDirectory() as runtime_directory:
+            runtime = Path(runtime_directory)
+            validator = runtime / "scripts" / "run_observation.py"
+            validator.parent.mkdir(parents=True)
+            shutil.copyfile(
+                HERE.parents[2] / "scripts" / "run_observation.py", validator
+            )
+            fake_controller = (
+                runtime
+                / "plugins"
+                / "hexaemeron"
+                / "skills"
+                / "fiat"
+                / "scripts"
+                / "hexctl.py"
+            )
+            with mock.patch.dict(
+                os.environ, environment, clear=True
+            ), mock.patch.object(
+                module, "__file__", str(fake_controller)
+            ), redirect_stdout(output), redirect_stderr(error):
+                module.cmd_checkpoint_identity(SimpleNamespace(dir=self.target))
+            self.assertFalse(validator.parent.joinpath("__pycache__").exists())
+        self.assertEqual(prior_bytecode_policy, sys.dont_write_bytecode)
+        self.assertEqual("", error.getvalue())
+        self.assertEqual(
+            "fiat-checkpoint-identity-result/v1",
+            json.loads(output.getvalue())["schema"],
+        )
+
+    def test_identity_refusal_does_not_echo_hostile_source_path(self):
+        self.to_post_push()
+        hostile_marker = "ghp_SUPER_SECRET"
+
+        def hostile_source(state, _entries):
+            state["receipts"]["study"]["artifact"] = (
+                f"/tmp/{hostile_marker}/study.md"
+            )
+
+        self.rewrite_live_capture(hostile_source)
+        before = self.state_ledger_bytes()
+        result = self.identity(expect=2)
+        self.assertEqual("", result.stdout)
+        self.assertNotIn(hostile_marker, result.stderr)
+        self.assertIn("controller verification failed", result.stderr)
+        self.assertEqual(before, self.state_ledger_bytes())
 
     def test_source_and_ref_mutation_refuse_before_stdout(self):
         self.to_post_push()
@@ -821,6 +881,38 @@ class HexctlSemanticCheckpointIdentityTests(HexctlCase):
             self, module, state_bytes, ledger_bytes, bool_count
         )
         self.assertIn("observation evidence", error)
+
+        for invalid_version in (True, 1.0):
+            with self.subTest(state_version=invalid_version):
+                state = json.loads(state_bytes)
+                entries = self.parsed_ledger(ledger_bytes)
+                state["version"] = invalid_version
+                state["receipts"]["run_anchor"][
+                    "run_id"
+                ] = module.controller_run_id(state)
+                malformed_state, malformed_ledger = self.rebuild_capture(
+                    module, state, entries
+                )
+                error = self.assert_helper_refuses(
+                    self, module, malformed_state, malformed_ledger, evidence
+                )
+                self.assertIn("controller state", error)
+
+        for field in ("current_step", "step_number"):
+            with self.subTest(field=field):
+                state = json.loads(state_bytes)
+                entries = self.parsed_ledger(ledger_bytes)
+                if field == "current_step":
+                    state["current_step"] = True
+                else:
+                    state["steps"][0]["n"] = True
+                malformed_state, malformed_ledger = self.rebuild_capture(
+                    module, state, entries
+                )
+                error = self.assert_helper_refuses(
+                    self, module, malformed_state, malformed_ledger, evidence
+                )
+                self.assertIn("step", error)
 
         for name, patch_name, value in (
             ("state", "CHECKPOINT_FILE_BYTES_MAX", len(state_bytes) - 1),

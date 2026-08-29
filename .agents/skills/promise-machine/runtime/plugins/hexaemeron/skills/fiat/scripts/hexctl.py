@@ -8963,8 +8963,16 @@ def _checkpoint_identity_working_commit(
             die("checkpoint identity audit-verdict receipt is incomplete")
         latest = rounds[-1]
         latest_verified = as_dict(latest).get("verified_commits")
+        latest_round = as_dict(latest).get("round")
+        latest_findings = as_dict(latest).get("findings")
         if (
             not isinstance(latest, dict)
+            or type(latest_round) is not int
+            or latest_round < 1
+            or type(latest_findings) is not int
+            or latest_findings < 0
+            or type(data.get("round")) is not int
+            or type(data.get("findings")) is not int
             or not isinstance(latest_verified, list)
             or len(latest_verified) > GIT_PATHS_MAX
             or any(
@@ -8972,8 +8980,8 @@ def _checkpoint_identity_working_commit(
                 or COMMIT_RE.fullmatch(commit_sha) is None
                 for commit_sha in latest_verified
             )
-            or data.get("round") != latest.get("round")
-            or data.get("findings") != latest.get("findings")
+            or data.get("round") != latest_round
+            or data.get("findings") != latest_findings
             or data.get("verified_commits") != latest_verified
         ):
             die("checkpoint identity audit-verdict ledger tail disagrees with state")
@@ -8991,6 +8999,25 @@ def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> d
     if not state_bytes or len(state_bytes) > CHECKPOINT_FILE_BYTES_MAX:
         die("checkpoint identity state exceeds its byte ceiling")
     state = validate_state_shape(_checkpoint_json(state_bytes, "identity state"))
+    if (
+        type(state.get("version")) is not int
+        or state["version"] != 1
+        or state.get("controller") != "hexctl"
+    ):
+        die("checkpoint identity controller state has an unsupported identity")
+    selected_step = state.get("current_step")
+    if selected_step is not None and (
+        type(selected_step) is not int or selected_step < 1
+    ):
+        die("checkpoint identity current step is not a positive integer")
+    step_numbers = []
+    for step in state["steps"]:
+        number = step.get("n")
+        if type(number) is not int or number < 1:
+            die("checkpoint identity step number is not a positive integer")
+        step_numbers.append(number)
+    if len(step_numbers) != len(set(step_numbers)):
+        die("checkpoint identity step numbers are duplicated")
     entries, ledger_count, ledger_tail = _checkpoint_identity_ledger(
         ledger_bytes, state
     )
@@ -9184,13 +9211,25 @@ def checkpoint_identity_from_captured(
     }
 
 
+def _checkpoint_identity_sanitized(operation, refusal: str):
+    """Run a legacy verifier without letting its path-bearing errors escape."""
+    try:
+        with contextlib.redirect_stderr(io.StringIO()):
+            return operation()
+    except (Exception, SystemExit):
+        die(refusal)
+
+
 def _checkpoint_identity_source_evidence(
     base_dir: str, state: dict
 ) -> tuple[dict, tuple[tuple[str, str, str], ...]]:
     """Verify current source receipts and return a stable-reread comparison token."""
     sources = []
     for name in ("study", "runbook"):
-        source = receipted_source(base_dir, state, name)
+        source = _checkpoint_identity_sanitized(
+            lambda: receipted_source(base_dir, state, name),
+            f"checkpoint identity {name} source verification failed",
+        )
         if source is None:
             die(f"checkpoint identity requires a current {name} source receipt")
         if name == "runbook":
@@ -9247,7 +9286,12 @@ def _checkpoint_identity_verify_observations(
     """Verify bound bytes and return an exact stable-reread comparison token."""
     if "run_observations" not in state["receipts"]:
         return ()
-    verify_observation_bindings(base_dir, state, allow_unavailable=True)
+    prior_bytecode_policy = sys.dont_write_bytecode
+    try:
+        sys.dont_write_bytecode = True
+        verify_observation_bindings(base_dir, state, allow_unavailable=True)
+    finally:
+        sys.dont_write_bytecode = prior_bytecode_policy
     token = []
     seen = set()
     for binding in state["receipts"]["run_observations"]:
@@ -9277,7 +9321,10 @@ def cmd_checkpoint_identity(args) -> None:
         ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
     )
 
-    verify_run(base_dir)
+    _checkpoint_identity_sanitized(
+        lambda: verify_run(base_dir),
+        "checkpoint identity controller verification failed",
+    )
     if (
         _checkpoint_read_staged(state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX)
         != state_bytes
