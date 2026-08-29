@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 982,
-  "total_bytes": 21394390,
+  "total_bytes": 21394929,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1905,9 +1905,9 @@
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 61346,
+      "bytes": 61389,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "23ec19093794e14a9a8e44a32f334f0f061c7bb096a375a0d6d2ec1a10781342",
+      "sha256": "49b8514b6259a074d44d40ad0417ac9d7aea3569bac87ef464a5abad94d8d548",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1941,9 +1941,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/prose-pass.md"
     },
     {
-      "bytes": 31149,
+      "bytes": 31645,
       "path": "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
-      "sha256": "e89ada33205cf447beec685211cb5d0a7887bff7bab697d452f185c2719b1118",
+      "sha256": "5dc312c0591b3beb57b9612fe24b3a28e3c198f5a714306c8f1edbf54bf55e20",
       "source": "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
     },
     {
