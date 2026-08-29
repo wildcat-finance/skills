@@ -125,10 +125,67 @@ semantic directive, ref map, resource totals, manifest SHA-256, state byte and
 semantic identities, and ledger byte, count and tail identities. Keep the
 reported manifest digest outside the capsule; restore requires that value.
 
-## Current recovery boundary
+## Restore command
 
-This generation exports only. It does not create or verify the Git bundle,
-package an archive, publish to GitHub or Drive, import a capsule, rewrite
-controller paths or append a relocation receipt. Until `checkpoint restore`
-lands, a missing source worktree still requires the standing manual recovery
-procedure. Do not call a fresh Fiat ledger a continuation of this capsule.
+Restore the Git boundary with the standing outer procedure first. The fresh
+checkout must be a clean top-level worktree, and every local ref named by the
+manifest must already resolve to its recorded commit. Then run:
+
+```text
+hexctl --dir <fresh-origin> checkpoint restore \
+  --from <capsule-directory> \
+  --manifest-sha256 <sha256-reported-by-export>
+```
+
+The digest is mandatory out-of-band evidence. Restore recomputes it over the
+exact canonical manifest bytes; a digest found inside the capsule would not
+establish the same boundary.
+
+Restore treats the capsule as hostile. Before it creates active state, it
+checks the schema and closed object shapes, canonical manifest encoding,
+resource declarations, sorted inventory, every file digest, state identity,
+the exact ledger prefix and tail, controller version, accepted boundary,
+semantic next directive and local Git refs. Capsule reads use the export
+ceilings and no-follow, stable-file rules. A study or runbook receipt must name
+a relative artefact under the ordinary 2 MiB source cap.
+
+## Relocation transaction
+
+The new origin's `.hexaemeron/checkpoint-restore.json` is published before the
+derived worktree or its sibling private stage is created. It binds the
+manifest digest, run branch and exact owned paths. An existing controller
+directory, occupied derived worktree, conflicting marker, symlink or changed
+ref refuses without replacing or deleting it.
+
+The private stage receives the verified controller tree. All files other than
+`state.json` and `ledger.jsonl` remain byte-identical. Fiat changes only
+`config.git.origin` and `config.git.worktree`, then appends one
+`checkpoint:restore` entry to the exact imported ledger prefix. That entry
+binds the manifest, source state and ledger digests, prior tail, full ref map
+and relocated state fingerprint. The completed controller directory is
+published with an atomic no-replace rename.
+
+A retry after an interruption never guesses ownership. A marker with no owned
+path may resume. A marker whose private stage or incomplete worktree remains
+refuses and preserves both for inspection. If active state was published
+before the breadcrumb and marker retirement, a retry verifies the single
+restore entry, completes those two final operations and does not append a
+second entry. Once the marker is retired, another restore is a replay and the
+occupied derived worktree refuses it.
+
+On success Fiat recreates the origin breadcrumb, runs its internal ledger
+verification and status reader, recomputes the semantic next directive and
+executes no directive. Stdout is one bounded JSON object using schema
+`fiat-controller-checkpoint-restore/v1`. It reports the manifest and state
+identities, new ledger digest/count/tail, ref count, worktree, verification
+result, status-output digest, semantic next object and whether it completed a
+new or interrupted publication.
+
+## Outer recovery boundary
+
+These commands do not create or verify the Git bundle, package an archive,
+publish to GitHub or Drive, handle keys or mint a semantic checkpoint
+identity. ADR-028 retains those jobs in the standing manual outer procedure.
+Restore accepts a directory already obtained and verified by that procedure;
+it does not extract an archive or fetch a remote object. Continuation means
+the imported ledger plus its one relocation entry, never a fresh Fiat ledger.

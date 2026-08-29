@@ -1,8 +1,4 @@
-"""Focused controller-capsule export guards.
-
-Step 2 exports exact controller bytes. It deliberately leaves relocation and
-the clone-loss transition red for Step 3.
-"""
+"""Focused controller-capsule export and same-ledger restore guards."""
 
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
@@ -13,10 +9,12 @@ import glob
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -47,6 +45,56 @@ class HexctlCheckpointTests(HexctlCase):
         )
         payload = json.loads(result.stdout) if expect == 0 else None
         return destination, result, payload
+
+    def fresh_origin_for(self, capsule):
+        home = tempfile.TemporaryDirectory()
+        self.addCleanup(home.cleanup)
+        origin = Path(home.name) / "origin"
+        subprocess.run(
+            ["git", "clone", "-q", self.dir, str(origin)],
+            check=True,
+            capture_output=True,
+        )
+        manifest = json.loads(capsule.joinpath("MANIFEST.json").read_bytes())
+        for ref in manifest["boundary"]["refs"]:
+            if ref == "main" or re.fullmatch(r"[0-9a-f]{40}", ref):
+                continue
+            subprocess.run(
+                ["git", "branch", ref, f"origin/{ref}"],
+                cwd=origin,
+                check=True,
+                capture_output=True,
+            )
+        return origin, manifest
+
+    def restore_into(self, origin, capsule, digest, *, expect=0, environment=None):
+        result = subprocess.run(
+            [
+                sys.executable,
+                HEXCTL,
+                "--dir",
+                str(origin),
+                "checkpoint",
+                "restore",
+                "--from",
+                str(capsule),
+                "--manifest-sha256",
+                digest,
+            ],
+            capture_output=True,
+            text=True,
+            env=environment or self.direct_environment(),
+        )
+        self.assertEqual(expect, result.returncode, result.stderr)
+        return result
+
+    @staticmethod
+    def restored_worktree(origin):
+        return Path(
+            origin.joinpath(".hexaemeron", "worktree")
+            .read_text(encoding="utf-8")
+            .strip()
+        )
 
     def assert_no_stage(self, destination):
         pattern = str(destination.parent / f".{destination.name}.stage-*")
@@ -638,6 +686,304 @@ class HexctlCheckpointTests(HexctlCase):
         self.assertEqual(2, result.returncode)
         self.assertIn("no longer there", result.stderr)
         self.assertIn("Restore it", result.stderr)
+
+    def test_restore_after_source_clone_loss(self):
+        self.to_post_push()
+        source_state, source_ledger = self.state_ledger_bytes()
+        capsule, _, exported = self.export("capsule")
+        expected_next = json.loads(
+            capsule.joinpath("MANIFEST.json").read_bytes()
+        )["boundary"]["next"]
+
+        source_worktree = Path(self.target)
+        shutil.rmtree(source_worktree)
+        fresh_origin, _ = self.fresh_origin_for(capsule)
+        result = self.restore_into(
+            fresh_origin, capsule, exported["manifest_sha256"]
+        )
+        restored = self.restored_worktree(fresh_origin)
+        state = json.loads(restored.joinpath(".hexaemeron", "state.json").read_bytes())
+        ledger = restored.joinpath(".hexaemeron", "ledger.jsonl").read_bytes()
+        self.assertEqual(
+            str(fresh_origin.resolve()), state["config"]["git"]["origin"]
+        )
+        self.assertEqual(
+            str(restored.resolve()), state["config"]["git"]["worktree"]
+        )
+        self.assertTrue(ledger.startswith(source_ledger))
+        self.assertEqual(
+            len(source_ledger.splitlines()) + 1,
+            len(ledger.splitlines()),
+        )
+        self.assertNotEqual(source_state, state)
+        self.assertEqual("checkpoint:restore", json.loads(ledger.splitlines()[-1])["event"])
+        self.assertEqual(expected_next, json.loads(result.stdout)["next"])
+
+    def test_restore_preserves_prefix_and_appends_one_receipt(self):
+        self.to_post_push()
+        _, source_ledger = self.state_ledger_bytes()
+        capsule, _, exported = self.export("capsule")
+        origin, manifest = self.fresh_origin_for(capsule)
+
+        result = self.restore_into(origin, capsule, exported["manifest_sha256"])
+        restored = self.restored_worktree(origin)
+        ledger = restored.joinpath(".hexaemeron", "ledger.jsonl").read_bytes()
+        self.assertEqual(source_ledger, ledger[: len(source_ledger)])
+        self.assertEqual(
+            len(source_ledger.splitlines()) + 1, len(ledger.splitlines())
+        )
+        receipt = json.loads(ledger.splitlines()[-1])
+        self.assertEqual("checkpoint:restore", receipt["event"])
+        self.assertEqual(manifest["source"]["ledger_tail"], receipt["prev"])
+        self.assertEqual(exported["manifest_sha256"], receipt["data"]["manifest_sha256"])
+        self.assertEqual(manifest["boundary"]["refs"], receipt["data"]["refs"])
+        self.assertEqual(receipt["hash"], json.loads(result.stdout)["ledger_tail"])
+
+    def test_restore_relocates_only_controller_paths(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        imported = json.loads(capsule.joinpath("controller", "state.json").read_bytes())
+
+        self.restore_into(origin, capsule, exported["manifest_sha256"])
+        restored = self.restored_worktree(origin)
+        relocated = json.loads(
+            restored.joinpath(".hexaemeron", "state.json").read_bytes()
+        )
+        expected = json.loads(json.dumps(imported))
+        expected.pop("origin", None)
+        expected.pop("worktree", None)
+        expected["config"]["git"]["origin"] = str(origin.resolve())
+        expected["config"]["git"]["worktree"] = str(restored.resolve())
+        self.assertEqual(expected, relocated)
+
+        source_root = capsule / "controller"
+        target_root = restored / ".hexaemeron"
+        for current, directories, files in os.walk(source_root):
+            directories.sort()
+            for name in sorted(files):
+                relative = (Path(current) / name).relative_to(source_root)
+                if str(relative) in ("state.json", "ledger.jsonl"):
+                    continue
+                self.assertEqual(
+                    (Path(current) / name).read_bytes(),
+                    target_root.joinpath(relative).read_bytes(),
+                    str(relative),
+                )
+        receipt = json.loads(
+            target_root.joinpath("ledger.jsonl").read_bytes().splitlines()[-1]
+        )["data"]
+        self.assertEqual(
+            hexctl_module().state_fingerprint(relocated),
+            receipt["relocated_state_fingerprint"],
+        )
+
+    def test_restore_ref_substitution_and_replay_refuse_without_rewrite(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, manifest = self.fresh_origin_for(capsule)
+        substituted = dict(self.fake_refs)
+        ref = next(iter(manifest["boundary"]["refs"]))
+        substituted[ref] = "9" * 40
+        environment = self.direct_environment()
+        environment["FAKE_GIT_REFS"] = json.dumps(substituted)
+
+        refused = self.restore_into(
+            origin,
+            capsule,
+            exported["manifest_sha256"],
+            expect=2,
+            environment=environment,
+        )
+        self.assertIn("refs do not match", refused.stderr)
+        self.assertFalse(origin.joinpath(".hexaemeron").exists())
+
+        self.restore_into(origin, capsule, exported["manifest_sha256"])
+        restored = self.restored_worktree(origin)
+        before = restored.joinpath(".hexaemeron", "ledger.jsonl").read_bytes()
+        replay = self.restore_into(
+            origin, capsule, exported["manifest_sha256"], expect=2
+        )
+        self.assertIn("already occupied", replay.stderr)
+        self.assertEqual(
+            before, restored.joinpath(".hexaemeron", "ledger.jsonl").read_bytes()
+        )
+
+    def test_restore_hostile_capsule_and_digest_refuse_before_marker(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        mismatch = self.restore_into(origin, capsule, "0" * 64, expect=2)
+        self.assertIn("digest does not match", mismatch.stderr)
+        self.assertFalse(origin.joinpath(".hexaemeron").exists())
+
+        hostile = capsule.joinpath("controller", "hostile-link")
+        hostile.symlink_to("state.json")
+        refused = self.restore_into(
+            origin, capsule, exported["manifest_sha256"], expect=2
+        )
+        self.assertIn("special or linked", refused.stderr)
+        self.assertFalse(origin.joinpath(".hexaemeron").exists())
+
+    def test_restore_manifest_shape_and_caps_refuse_before_marker(self):
+        self.to_post_push()
+        capsule, _, _ = self.export("capsule")
+
+        duplicate = Path(self.dir) / "duplicate-manifest"
+        shutil.copytree(capsule, duplicate)
+        manifest_path = duplicate / "MANIFEST.json"
+        malformed = manifest_path.read_bytes().replace(
+            b'{"boundary"', b'{"schema":"duplicate","boundary"', 1
+        )
+        manifest_path.write_bytes(malformed)
+        origin, _ = self.fresh_origin_for(capsule)
+        refused = self.restore_into(
+            origin,
+            duplicate,
+            hashlib.sha256(malformed).hexdigest(),
+            expect=2,
+        )
+        self.assertIn("strict UTF-8 JSON", refused.stderr)
+        self.assertFalse(origin.joinpath(".hexaemeron").exists())
+
+        capped = Path(self.dir) / "false-cap"
+        shutil.copytree(capsule, capped)
+        manifest_path = capped / "MANIFEST.json"
+        manifest = json.loads(manifest_path.read_bytes())
+        manifest["resources"]["limits"]["files"] += 1
+        payload = (
+            json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+            + b"\n"
+        )
+        manifest_path.write_bytes(payload)
+        origin, _ = self.fresh_origin_for(capsule)
+        refused = self.restore_into(
+            origin,
+            capped,
+            hashlib.sha256(payload).hexdigest(),
+            expect=2,
+        )
+        self.assertIn("resource limits", refused.stderr)
+        self.assertFalse(origin.joinpath(".hexaemeron").exists())
+
+    def test_restore_occupied_paths_are_never_replaced(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, manifest = self.fresh_origin_for(capsule)
+        state = json.loads(capsule.joinpath("controller", "state.json").read_bytes())
+        run_branch = state["run_branch"].replace("/", "-")
+        home = origin / "tmp" / "fiat"
+        home.mkdir(parents=True)
+        home.joinpath(".gitignore").write_text("*\n", encoding="utf-8")
+        occupied = home / run_branch
+        occupied.mkdir(parents=True)
+        sentinel = occupied / "sentinel"
+        sentinel.write_text("unowned\n", encoding="utf-8")
+
+        refused = self.restore_into(
+            origin, capsule, exported["manifest_sha256"], expect=2
+        )
+        self.assertIn("already occupied", refused.stderr)
+        self.assertEqual("unowned\n", sentinel.read_text(encoding="utf-8"))
+        self.assertFalse(origin.joinpath(".hexaemeron").exists())
+        self.assertEqual(manifest["boundary"]["refs"], exported["refs"])
+
+    def test_restore_moving_capsule_refuses_before_marker(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        module = hexctl_module()
+        original = module._checkpoint_snapshot
+        changed = False
+
+        def move_after_inventory(source, destination):
+            nonlocal changed
+            inventory = original(source, destination)
+            if destination is None and not changed:
+                changed = True
+                Path(source, ".gitignore").write_text("changed\n", encoding="utf-8")
+            return inventory
+
+        stderr = StringIO()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(module, "_checkpoint_snapshot", move_after_inventory):
+                with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module.cmd_checkpoint_restore(
+                        SimpleNamespace(
+                            dir=str(origin),
+                            source=str(capsule),
+                            manifest_sha256=exported["manifest_sha256"],
+                        )
+                    )
+        self.assertIn("changed during verification", stderr.getvalue())
+        self.assertFalse(origin.joinpath(".hexaemeron").exists())
+
+    def test_restore_interruption_preserves_marker_owned_paths(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        module = hexctl_module()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(
+                module, "_checkpoint_atomic_publish", side_effect=SystemExit(73)
+            ):
+                with self.assertRaises(SystemExit) as stopped:
+                    module.cmd_checkpoint_restore(
+                        SimpleNamespace(
+                            dir=str(origin),
+                            source=str(capsule),
+                            manifest_sha256=exported["manifest_sha256"],
+                        )
+                    )
+        self.assertEqual(73, stopped.exception.code)
+        marker = origin / ".hexaemeron" / "checkpoint-restore.json"
+        self.assertTrue(marker.is_file())
+        marker_payload = json.loads(marker.read_bytes())
+        stage = Path(marker_payload["stage"])
+        self.assertTrue(stage.is_dir())
+        retry = self.restore_into(
+            origin, capsule, exported["manifest_sha256"], expect=2
+        )
+        self.assertIn("interrupted before active state", retry.stderr)
+        self.assertTrue(stage.is_dir())
+        self.assertTrue(marker.is_file())
+
+    def test_restore_interruption_after_publish_finalizes_once(self):
+        self.to_post_push()
+        capsule, _, exported = self.export("capsule")
+        origin, _ = self.fresh_origin_for(capsule)
+        module = hexctl_module()
+        with mock.patch.dict(os.environ, self.direct_environment(), clear=True):
+            with mock.patch.object(
+                module, "_checkpoint_restore_internal_checks", side_effect=SystemExit(74)
+            ):
+                with self.assertRaises(SystemExit):
+                    module.cmd_checkpoint_restore(
+                        SimpleNamespace(
+                            dir=str(origin),
+                            source=str(capsule),
+                            manifest_sha256=exported["manifest_sha256"],
+                        )
+                    )
+        marker = origin / ".hexaemeron" / "checkpoint-restore.json"
+        self.assertTrue(marker.is_file())
+        worktree = Path(json.loads(marker.read_bytes())["worktree"])
+        ledger_path = worktree / ".hexaemeron" / "ledger.jsonl"
+        before = ledger_path.read_bytes()
+
+        result = self.restore_into(origin, capsule, exported["manifest_sha256"])
+        self.assertEqual(
+            "finalized-interrupted-publication", json.loads(result.stdout)["recovery"]
+        )
+        self.assertFalse(marker.exists())
+        self.assertEqual(before, ledger_path.read_bytes())
+        self.assertEqual(
+            1,
+            sum(
+                json.loads(line)["event"] == "checkpoint:restore"
+                for line in before.splitlines()
+            ),
+        )
 
 
 if __name__ == "__main__":
