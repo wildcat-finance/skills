@@ -946,34 +946,6 @@ def diff_boundary_documents(committed, fresh):
     return drifted
 
 
-def candidate_covered_files(document):
-    """The walked files represented by a canonical candidate document."""
-    total = 0
-    for entry in document.get("entries", []):
-        path = entry.get("path")
-        if not isinstance(path, str):
-            return None
-        if not path.endswith("/"):
-            total += 1
-            continue
-        files = entry.get("files")
-        if type(files) is not int or files < 0:
-            return None
-        total += files
-    return total
-
-
-def normalize_candidate_walk_count(boundary, candidates):
-    """Subtract advisory coverage while retaining unrelated count drift."""
-    normalized = dict(boundary)
-    normalized["counts"] = dict(boundary.get("counts", {}))
-    walked = normalized["counts"].get("files_walked")
-    covered = candidate_covered_files(candidates)
-    if type(walked) is int and covered is not None:
-        normalized["counts"]["files_walked"] = walked - covered
-    return normalized
-
-
 def git_worktree_root(path):
     """The worktree root git reports for a path, or None when git cannot say."""
     try:
@@ -1129,18 +1101,10 @@ def check_tree(root, out=None):
         committed_candidates = None
     if committed_candidates is not None:
         candidate_drift = diff_documents(committed_candidates, fresh_candidates)
-    hard_committed = committed
-    hard_fresh = fresh
-    if candidate_drift:
-        # Candidate additions and removals change the walked-file total, but
-        # candidates are advisory and must not make a hard check fail.  Remove
-        # each side's candidate-covered files instead of dropping the count,
-        # so unrelated walked-file drift remains binding.
-        hard_committed = normalize_candidate_walk_count(
-            committed, committed_candidates
-        )
-        hard_fresh = normalize_candidate_walk_count(fresh, fresh_candidates)
-    drifted = diff_boundary_documents(hard_committed, hard_fresh)
+    # Candidate classification is advisory, but the whole-root boundary's raw
+    # canonical metadata is not. Adding or removing any tracked file changes
+    # files_walked independently of whether that file is only a candidate.
+    drifted = diff_boundary_documents(committed, fresh)
     for path, reason in candidate_drift:
         print(f"candidate drift: {path}: {reason}", file=out)
     if not drifted:

@@ -34,52 +34,52 @@ GROUNDED_AGENT_BREACHES = {
     "fail-gate2-grounded-agent-adapter-digest.json": (
         "pass-grounded-agent-complete.json",
         ((2, "environment"),),
-        ("predicate.adapter.parameters_digest.sha256",),
+        ("/predicate/adapter/parameters_digest/sha256",),
     ),
     "fail-gate5-grounded-agent-first-capture-without-reason.json": (
         "pass-grounded-agent-complete.json",
         ((5, "comparison"),),
-        ("predicate.comparison.first_capture_reason",),
+        ("/predicate/comparison/first_capture_reason",),
     ),
     "fail-gate4-grounded-agent-promotion-verdict.json": (
         "pass-grounded-agent-complete.json",
         ((4, "no-conclusions"),),
-        ("subject[9].annotations.verdict",),
+        ("/subject/9/annotations/verdict",),
     ),
     "fail-check-predicate-fields-grounded-agent-unknown-field.json": (
         "pass-grounded-agent-complete.json",
         ((2, "environment"), (None, "predicate-fields")),
-        ("predicate.undeclared",),
+        ("/predicate/undeclared",),
     ),
     "fail-check-components-grounded-agent-component-not-a-subject.json": (
         "pass-grounded-agent-complete.json",
         ((2, "environment"), (None, "components")),
-        ("predicate.given.corpus.components[0].sha256",),
+        ("/predicate/given/corpus/components/0/sha256",),
     ),
     "fail-check-components-grounded-agent-unsafe-path.json": (
         "pass-grounded-agent-complete.json",
         ((2, "environment"), (None, "components")),
-        ("predicate.given.corpus.components[0].path",),
+        ("/predicate/given/corpus/components/0/path",),
     ),
     "fail-check-release-digest-grounded-agent-stale-semantic-digest.json": (
         "pass-grounded-agent-complete.json",
         ((None, "release-digest"),),
-        ("predicate.policy.refusal_conditions[0]",),
+        ("/predicate/policy/refusal_conditions/0",),
     ),
     "fail-check-optional-evidence-grounded-agent-null-reads-without-reason.json": (
         "pass-grounded-agent-null-evidence.json",
         ((2, "environment"), (None, "optional-evidence")),
-        ("predicate.given.reads_absence_reason",),
+        ("/predicate/given/reads_absence_reason",),
     ),
     "fail-check-subject-names-grounded-agent-nonportable-name.json": (
         "pass-grounded-agent-complete.json",
         ((None, "subject-names"),),
-        ("subject[0].name",),
+        ("/subject/0/name",),
     ),
     "fail-check-evidence-boundary-grounded-agent-promotion-result.json": (
         "pass-grounded-agent-complete.json",
         ((None, "evidence-boundary"),),
-        ("subject[9].annotations.passed",),
+        ("/subject/9/annotations/passed",),
     ),
 }
 """The exact parent, ordered failures and changed leaves for each new vector.
@@ -174,6 +174,59 @@ def failure_vector_obeys_name(name, failures):
         (2, "environment"),
         (None, check),
     )
+
+
+def _json_pointer_child(pointer, segment):
+    escaped = segment.replace("~", "~0").replace("/", "~1")
+    return pointer + "/" + escaped
+
+
+def structural_nodes(value, pointer=""):
+    """Map every JSON node to its collision-free JSON Pointer and typed value."""
+    if isinstance(value, dict):
+        found = {pointer: ("object",)}
+        for key, item in value.items():
+            found.update(
+                structural_nodes(item, _json_pointer_child(pointer, key))
+            )
+        return found
+    if isinstance(value, list):
+        found = {pointer: ("array",)}
+        for index, item in enumerate(value):
+            found.update(
+                structural_nodes(item, _json_pointer_child(pointer, str(index)))
+            )
+        return found
+    return {pointer: ("scalar", type(value).__name__, value)}
+
+
+def structural_distance(left, right):
+    """Return the minimal changed JSON Pointers without losing empty containers."""
+    one, two = structural_nodes(left), structural_nodes(right)
+    missing = object()
+    changed = {
+        pointer
+        for pointer in set(one) | set(two)
+        if one.get(pointer, missing) != two.get(pointer, missing)
+    }
+    # An added or removed non-empty container is already described by its
+    # changed descendants. Keep the container pointer only when it is empty,
+    # or when the two present containers differ in kind.
+    for pointer in tuple(changed):
+        left_node = one.get(pointer)
+        right_node = two.get(pointer)
+        present = left_node if left_node is not None else right_node
+        if (
+            (left_node is None or right_node is None)
+            and present in (("object",), ("array",))
+            and any(
+                child != pointer
+                and child.startswith(pointer + "/")
+                for child in changed
+            )
+        ):
+            changed.remove(pointer)
+    return sorted(changed)
 
 
 class FixtureTests(unittest.TestCase):
@@ -343,7 +396,7 @@ class NamingContractGuardTests(unittest.TestCase):
         metadata = (
             "pass-grounded-agent-complete.json",
             ((4, "no-conclusions"),),
-            ("subject[9].annotations.verdict",),
+            ("/subject/9/annotations/verdict",),
         )
         with (
             mock.patch(__name__ + ".fixtures", return_value=[fake]),
@@ -385,32 +438,8 @@ class MinimalityTests(unittest.TestCase):
         "fail-gate5-state-fixture-baseline-without-digest.json": 4,
     }
 
-    @staticmethod
-    def leaves(value, path=""):
-        """Every leaf of a document, with its type beside its value.
-
-        The type travels because `True == 1` and `0 == False` in Python. Two
-        fixtures here change only a value's type, and a comparison without the type
-        reports them as identical to the fixture they breach against -- which is
-        the very equality those two rules exist to refuse.
-        """
-        if isinstance(value, dict):
-            found = {}
-            for key, item in value.items():
-                here = "%s.%s" % (path, key) if path else key
-                found.update(MinimalityTests.leaves(item, here))
-            return found
-        if isinstance(value, list):
-            found = {}
-            for index, item in enumerate(value):
-                found.update(MinimalityTests.leaves(item, "%s[%d]" % (path, index)))
-            return found or {path + "[]": ("empty", None)}
-        return {path: (type(value).__name__, value)}
-
     def distance(self, left, right):
-        one, two = self.leaves(left), self.leaves(right)
-        changed = sorted(key for key in set(one) & set(two) if one[key] != two[key])
-        return sorted(set(one) ^ set(two)) + changed
+        return structural_distance(left, right)
 
     def test_each_breaching_fixture_is_one_change_from_the_passing_one(self):
         passing = statement_of(self.PASSING).predicate
@@ -446,13 +475,32 @@ class MinimalityTests(unittest.TestCase):
                     len(self.distance(passing, statement_of(name).predicate)), 1
                 )
 
+    def test_an_added_empty_object_is_a_structural_change(self):
+        self.assertEqual(
+            self.distance({"kept": 1}, {"kept": 1, "hitchhiker": {}}),
+            ["/hitchhiker"],
+        )
+
+    def test_an_added_empty_array_is_a_structural_change(self):
+        self.assertEqual(
+            self.distance({"kept": 1}, {"kept": 1, "hitchhiker": []}),
+            ["/hitchhiker"],
+        )
+
+    def test_structural_paths_escape_json_pointer_segments(self):
+        self.assertEqual(
+            self.distance({}, {"a/b~c": 1}),
+            ["/a~1b~0c"],
+        )
+        self.assertEqual(
+            self.distance({"a.b": 1}, {"a": {"b": 1}}),
+            ["/a.b", "/a/b"],
+        )
+
 
 class GroundedAgentFixtureTests(unittest.TestCase):
     def distance(self, left, right):
-        one = MinimalityTests.leaves(left)
-        two = MinimalityTests.leaves(right)
-        changed = sorted(key for key in set(one) & set(two) if one[key] != two[key])
-        return sorted(set(one) ^ set(two)) + changed
+        return structural_distance(left, right)
 
     def test_the_grounded_agent_inventory_is_complete(self):
         passing = {
