@@ -64,3 +64,19 @@ Elenchus verdict: passed
 | S2-R2-01 | medium | .agents/skills/promise-machine/runtime, .horos/boundary.json | Round 1's repair changed `gates.py` and `evidence.py`, both of which `scripts/portable_promise_machine.py` mirrors, and regenerated neither the mirror nor the Horos boundary that scans it. `portable_promise_machine.py check` exited 1 and the repository suite failed `test_boundary_currency`, so a repair for three findings would itself have landed main red. Found by re-running the whole battery against the fixed tree rather than only the suite the fix touched. | fixed in a36a3a39 |
 
 Leads not pursued: one thing is recorded rather than fixed. `_write_evidence` prints `N of M venue(s) checked`, where M is the number of coverage rows; today a run consults one route, so rows and venues are the same number and the line is right. Step 3 lets both routes answer, and the line becomes wrong the moment a venue holds two rows, so it is step 3's to correct alongside the summary that step already owes. The bounded coverage-field length and the `payload["coverage"]` shape assumption recorded under round 1 both still stand. Nothing else is open.
+
+## Step 2, round 3 -- 2026-08-29T08:27:32Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-row-collapse=reviewed; unrequested-network=not-applicable; schema-refusal=reviewed; release-id-figures=reviewed; overlap-attribution=reviewed; gap-double-count=not-applicable; demo-receipt-drift=reviewed; markdown-injection=reviewed
+
+Not checked: nothing new. The two step 3 concerns still belong to step 3, and the Pashov pair remains waived by the `security_suite` receipt.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the whole battery ran against the fixed tree and came back clean. The three bundled lints exited 0, the Probitas suite reported 301 of 301 through the runner step 2's contract names, Alexandria reported 296, the repository suite reported 466, and `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with the working tree clean. The three items recorded under rounds 1 and 2 still stand: the coverage-field length ceiling, the `payload["coverage"]` shape assumption, and the `N of M venue(s) checked` line that step 3 will have to correct. Nothing else is open.
