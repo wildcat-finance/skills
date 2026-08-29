@@ -270,10 +270,10 @@ def draw_number_page(c: canvas.Canvas) -> None:
     )
 
     card(c, 44, 341, 754, 128, fill=BUNKER, stroke=GOLD, accent=GOLD, radius=13)
-    label(c, "No checkpoints yet", 64, 438, GOLD)
+    label(c, "Verified step hand-off", 64, 438, GOLD)
     para(
         c,
-        "Fiat does not yet support checkpointing. Work is actively ongoing to complete it. Once Fiat starts, finish the entire run locally. Closing the harness or abandoning the unfinished run can lose the work.",
+        "After a completed step, another machine may resume from the portable checkpoint, but it must verify that checkpoint before doing anything else. Mid-step state is not portable.",
         64,
         370,
         545,
@@ -499,7 +499,7 @@ def draw_trouble_page(c: canvas.Canvas) -> None:
     label(c, "Why this shape", 62, 252, GOLD)
     para(
         c,
-        "Random allocation spreads contributors across the dependency-clear pool. The issue number bounds the work. Fiat leaves study, implementation and review evidence a maintainer can inspect. The local-completion rule stops unfinished controller state being mistaken for a portable hand-off.",
+        "Random allocation spreads contributors across the dependency-clear pool. The issue number bounds the work. Fiat leaves study, implementation and review evidence a maintainer can inspect. The accepted-boundary rule stops unfinished controller state being mistaken for a portable hand-off. Restore carries the same verified ledger.",
         62,
         214,
         718,

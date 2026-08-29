@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 957,
-  "total_bytes": 20673239,
+  "total_bytes": 20678530,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1845,15 +1845,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 41450,
+      "bytes": 42719,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "164a7712683c63b6b2950e6b674163bf34975b94819e8171b04af10ee65cade5",
+      "sha256": "feffff9d36f73e3aed80069f2cac1cf53783faea17493d3ef641f491e20b8c19",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 51992,
+      "bytes": 54665,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "ce51b578ae6222ca4d77688d8844ab99e751992237d3235189b19f6788239496",
+      "sha256": "1b6e292e8df0be8948ee1bb06e842828088b1196b14a8f67be59c9533a3665ac",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1887,9 +1887,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/prose-pass.md"
     },
     {
-      "bytes": 27713,
+      "bytes": 29062,
       "path": "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
-      "sha256": "418a04f362846b8dc3a745ba6b7dd850846004223391997f5316f02396a1cc14",
+      "sha256": "438209874a2cfc760eb62c14d9620866b1730d0c15cc7569ede6c836bce70ca8",
       "source": "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
     },
     {
