@@ -213,8 +213,16 @@ could not match records `null` rather than a placeholder, because an address a
 contributor has not put on their account is the ordinary reason for it.
 
 ```text
-hexctl done push --pr-url <url> --head-commit <sha> --pr-base <ref>
+hexctl done push --pr-url <url> --head-commit <full-sha> --pr-base <ref>
 ```
+
+Give `--head-commit` the full forty-character SHA, from `git rev-parse HEAD`
+rather than `git rev-parse --short HEAD`. The command accepts any ref git
+resolves, so an abbreviated one is validated and stored, and the receipt then
+reads differently from every other commit identity the run records. The same
+holds for `--commit` on `done implement`, `--fixes-commit` on `audit-round`,
+and `--merge-commit` on `done merge-step`: a receipt names a commit, and the
+full SHA is how one is named.
 
 The receipt refuses a `--merge-commit` here. Merges belong to `integrate`.
 
