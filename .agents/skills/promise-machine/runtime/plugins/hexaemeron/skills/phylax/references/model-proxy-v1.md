@@ -4,8 +4,10 @@
 
 This reference is normative for `model-proxy-policy/v1`, its synthetic
 accepted-job adapter, and the provider-independent version-1 guest framing
-grammar. Provider transport, runtime accounting, receipts, cancellation, and
-the final hostile-conformance manifest are later boundaries.
+grammar. It also fixes the synthetic provider mapping and the standard-library
+HTTPS connector used to test that mapping without a live provider. Runtime
+accounting, receipts, cancellation, and the final hostile-conformance manifest
+are later boundaries.
 
 The implementation is the standard-library CLI at `../scripts/model_proxy.py`
 and the library under `../scripts/model_proxy_lib/`. Golden and refusing
@@ -39,8 +41,18 @@ trailing newline. A policy file and CLI output add one line feed after those
 bytes. `policy_sha256` is computed before that line feed is added.
 
 **Synthetic boundary.** A component adapter whose origin ends in `.invalid`
-and whose future transport is injected by tests. It cannot resolve or send a
-live provider request.
+and whose transport and resolver are injected by tests. It cannot resolve or
+send a live provider request in the component vectors.
+
+**Provider credential.** A value read from the profile-owned environment name
+only after the provider session has accepted the exact guest request object.
+The value enters the fixed authentication header and no policy, request body,
+event, diagnostic, guest response, receipt, argument, or retained snapshot.
+
+**Pinned HTTPS connector.** The direct standard-library connector that resolves
+the fixed profile hostname once, accepts one global address, opens TLS to that
+address with the fixed hostname, and rejects a peer that differs from the pin.
+It has no proxy, CONNECT, or redirect machinery.
 
 ## Accepted-job evidence
 
@@ -170,6 +182,93 @@ Response object names are sorted by the canonical JSON rule, making equal
 sequence and output values byte-identical. A response carries no provider id,
 request id, model, usage claim, header, URL, raw error, or lifecycle field.
 
+## Admission-bound provider mapping
+
+`ProviderSession` owns one framing core. It records the exact `TextRequest`
+objects that core issues and will cross the provider boundary only for the
+same unconsumed object in admission order. A copied, foreign, unadmitted,
+out-of-order, or already failed request refuses before the credential source
+is called. A provider refusal
+poisons the session rather than permitting a retry against an ambiguous
+provider state. A framing refusal also poisons the session and clears every
+pending provider admission before another credential read or exchange.
+After validating the supplied compiled policy against its captured
+accepted-job evidence, the session replays those immutable evidence bytes into
+a private limit snapshot. Later mutation of the caller's policy document cannot
+widen request, response, parser, token, or event bounds.
+
+After admission, the session reads the credential from the environment name
+fixed by the registered profile. The synthetic request body is canonical JSON
+with exactly `schema=synthetic-provider-request/v1`, the fixed profile model,
+and the normalised input. Authentication is not in that body. The connector
+constructs exactly `Accept: application/json`, `Authorization: Bearer <value>`,
+`Content-Encoding: identity`, and `Content-Type: application/json`. The caller
+cannot supply a scheme, hostname, port, path, method, model, header, or
+credential field.
+
+The credential is a non-empty bounded ASCII bearer value. Missing, malformed,
+or unreadable credential state refuses through a fixed diagnostic. Raw source
+exceptions and values are not retained. Component vectors generate a fresh
+in-memory canary, inject its source, and require the in-process provider
+fixture to see it after admission.
+
+## Pinned HTTPS transport
+
+The connector re-resolves the registered profile before use, so a
+self-consistent replacement dataclass cannot change its transport authority.
+It fixes HTTPS, port 443, `POST`, `/v1/responses`, the profile hostname, a
+30-second connector timeout, strict certificate verification, and TLS hostname
+verification. Its explicit client context does not honour `SSLKEYLOGFILE`, so
+ambient process state cannot select an output path for TLS traffic secrets. It
+resolves that hostname on the first request, bounds the
+resolver iterator, requires one unique global IP address, and reuses that pin
+for every later request handled by the job connector. Empty, multiple,
+malformed, private, loopback, link-local, multicast, unspecified, reserved,
+documentation, and other non-global answers refuse.
+
+The standard-library exchange connects to the selected address directly and
+passes the profile hostname to TLS. It neither consults proxy environment
+variables nor implements CONNECT. The response peer address must equal the
+selected address, preventing a second resolver decision from changing the
+target. HTTP status 300 through 399 is terminal; no redirect is followed.
+
+Only status 200, `Content-Type: application/json`, absent or identity content
+encoding, and absent or chunked transfer encoding are admitted. Response
+header names are unique and drawn from the closed content header set. A
+declared content length is checked before reading and must equal the bytes
+read. Chunked and connection-delimited bodies are read in bounded chunks and
+stop at the compiled response-byte ceiling. Every obtained response is closed
+on success and refusal. TLS, socket, HTTP, resolver, and injected-exchange
+errors become fixed value-free refusals.
+
+## Closed provider response
+
+The upstream body is strict JSON under the compiled response-byte, JSON depth,
+member, scalar, and string limits. It has exactly `schema`, `output`, and
+`usage`. The schema is `synthetic-provider-response/v1`; `output` is a string;
+and `usage` has exactly non-negative integer `input_tokens` and
+`output_tokens`. For the synthetic profile, both counts must equal the Python
+Unicode scalar counts of the admitted input and returned output. A duplicate,
+unknown, missing, malformed, mistyped, over-limit, or disagreeing field
+refuses. A body or parsed field containing the current credential also
+refuses. After validation, only the output string reaches the existing closed
+guest response encoder.
+
+## Content-free provider events
+
+The session retains at most `max_requests + 1` fixed
+`model-proxy-provider-event/v1` records. Each record carries only the safe
+profile id, disclosure state, outcome family, fixed code, request and response
+byte counts, input and output token counts, and monotonic duration in
+nanoseconds. A pre-admission or credential-source refusal says `not-read`;
+another attempted provider exchange says `provider-only`. No event contains a
+prompt, output, credential, URL, header, address, provider request id, or raw
+error. Once the connector hands a mapped request to the exchange, a value-free
+transport refusal preserves that request's byte count and bounded duration even
+when no response object returns. If a response did return before its status,
+headers, or body refused, the same refusal also preserves the body bytes read
+rather than recording zero disclosure.
+
 ## Content-free frame events
 
 The core retains at most `2 * max_requests + 2` fixed
@@ -209,15 +308,19 @@ Version 1 has one profile, `loopback-text/v1`:
 | Path family and method | `/v1/responses`, `POST` | Pins request routing |
 | Operation and model | `text.generate`, `fixture-text-1` | Pins inference semantics |
 | Schemas | `model-request/v1`, `model-response/v1` | Pins both mapping boundaries |
+| Provider schemas | `synthetic-provider-request/v1`, `synthetic-provider-response/v1` | Pins the internal adapter boundary |
 | Token counter | `unicode-codepoint-fixture/v1` | Pins synthetic counting |
 | Storage and retention | `false`, `process-memory-only` | Forbids provider-side state |
 | Allowed data class | `synthetic-public` | Excludes private input |
+| HTTPS authority | `model-proxy.loopback.invalid`, port 443, `/v1/responses`, `POST` | Pins transport authority |
+| Credential source | `WILDCAT_MODEL_PROXY_CREDENTIAL`, `Bearer` | Keeps source and header construction in code |
 
-The origin is descriptive policy data, not a connectable endpoint. The
-reserved `.invalid` name and absent transport make a network call impossible
-in this step. A later live profile must choose its own origin, retention tier,
-token counter, and credential source in reviewed code; none can come from the
-guest or accepted JobSpec as an arbitrary URL or header.
+The origin remains a non-connectable component endpoint. The reserved
+`.invalid` name cannot resolve through the default resolver, while provider
+vectors inject both the resolver and an in-process exchange. No live call is
+part of the command or test suite. A later live profile must choose its own
+origin, retention tier, token counter, and credential source in reviewed code;
+none can come from the guest or accepted JobSpec as an arbitrary URL or header.
 
 The complete disabled feature set is `audio`, `background`, `conversations`,
 `files`, `images`, `remote_urls`, `storage`, `streaming`, `tools`, and
@@ -276,6 +379,14 @@ uses lowercase hexadecimal chunks, resolves only its sibling
 wrong scalar type refuses through the same content-free diagnostic boundary.
 The command is component-vector evidence rather than a live guest transport.
 
+Successful `provider-demo` emits one line of the same diagnostic schema with
+only `outcome=provider_checked`, the fixed manifest schema, case and request
+counts, and the policy digest. The bounded closed manifest carries exact guest
+frames, provider request objects, synthetic provider responses, and guest
+response bytes, but no credential. Each case generates its canary in memory,
+injects a resolver and in-process exchange, requires one post-admission
+credential read, and closes the response. The command makes no network call.
+
 Refusal diagnostics have exactly `schema`, `outcome=refused`, `code`, and
 `field`. `field` is a code-owned schema location, never an input value. CLI
 argument errors use the same value-free shape and accept no abbreviated option
@@ -328,6 +439,27 @@ JobSpec bytes, job id, or exception text.
 | `MP216` | Input resumed after finish or refusal | Stream state |
 | `MP217` | Request count exceeds the compiled safety ceiling | Request count |
 | `MP218` | Framing manifest path, shape, or expected bytes disagree | Manifest check |
+| `MP300` | Profile, connector, or internally mapped request authority disagrees | Provider activation |
+| `MP301` | Name resolution failed or returned no bounded answer | Provider resolution |
+| `MP302` | Resolved address is malformed or not globally routable | Provider resolution |
+| `MP303` | Resolution returned more than one distinct address | Provider resolution |
+| `MP304` | Connected peer differs from the pinned resolved address | Provider connection |
+| `MP305` | Strict TLS context, certificate, or hostname verification failed | Provider TLS |
+| `MP306` | Socket, HTTP, timeout, exchange, or duration failed | Provider transport |
+| `MP307` | Redirect status is terminal | Provider response |
+| `MP308` | Status is mistyped or not 200 | Provider response |
+| `MP309` | Response headers are malformed, repeated, unknown, or inconsistent | Provider response |
+| `MP310` | Declared, streamed, or actual response bytes exceed or disagree with the bound | Provider response |
+| `MP311` | Content type, content encoding, or transfer encoding is not admitted | Provider response |
+| `MP320` | Request is not the exact admitted object or session is poisoned | Provider admission |
+| `MP321` | Credential source or bounded bearer value is unavailable | Provider credential |
+| `MP322` | Mapped provider request exceeds its compiled bound | Provider mapping |
+| `MP323` | Provider response JSON or closed field set is malformed | Provider normalisation |
+| `MP324` | Provider response schema is not exactly version 1 | Provider normalisation |
+| `MP325` | Provider output or usage has the wrong type or exceeds a bound | Provider normalisation |
+| `MP326` | Provider usage disagrees with the synthetic token counter | Provider normalisation |
+| `MP327` | Provider response contains the current credential | Provider disclosure |
+| `MP328` | Provider manifest path, shape, mapping, or expected bytes disagree | Manifest check |
 
 ## Golden command
 
@@ -353,3 +485,22 @@ The two cases exercise a one-byte-fragmented request and two concatenated
 requests with exact closed responses. The unittest surface carries the
 hostile, incomplete, oversized, duplicate, forbidden-authority, and
 content-free diagnostic cases.
+
+Check the provider vectors with:
+
+```bash
+mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py provider-demo --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json
+```
+
+The two cases exercise exact ASCII and Unicode mappings through an injected
+resolver and in-process exchange. Hostile unittests cover admission ordering,
+credential-source failure and absence from retained surfaces, endpoint and
+header authority, resolution and peer pinning, TLS, all 3xx statuses, response
+headers and byte floods, closed response JSON, usage disagreement, secret
+echo, raw-error sanitisation, connection close, and the absence of a live
+socket call. They also show that a framing refusal blocks every pending
+provider call, one job connector keeps its first address pin across requests,
+that post-activation caller mutation cannot widen the captured policy limits,
+that an out-of-order request stops before credential or provider disclosure,
+that ambient `SSLKEYLOGFILE` cannot enable TLS traffic-secret output, and a
+response refusal retains confirmed content-free disclosure counts.

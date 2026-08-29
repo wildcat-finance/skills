@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Check the credential-free model proxy policy and framing boundaries."""
+"""Check the credential-free model proxy policy, framing, and provider boundaries."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from model_proxy_lib import (
     verify_golden,
 )
 from model_proxy_lib.framing import check_framing_manifest
+from model_proxy_lib.provider import PROVIDER_MANIFEST_SCHEMA, check_provider_manifest
 
 
 class _DiagnosticArgumentParser(argparse.ArgumentParser):
@@ -40,6 +41,12 @@ def _parser() -> argparse.ArgumentParser:
         allow_abbrev=False,
     )
     frame_command.add_argument("--manifest", required=True, metavar="PATH")
+    provider_command = commands.add_parser(
+        "provider-demo",
+        help="check injected provider mapping and response vectors",
+        allow_abbrev=False,
+    )
+    provider_command.add_argument("--manifest", required=True, metavar="PATH")
     return parser
 
 
@@ -83,6 +90,24 @@ def _check_frames(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def _provider_demo(arguments: argparse.Namespace) -> int:
+    result = check_provider_manifest(arguments.manifest)
+    sys.stdout.buffer.write(
+        canonical_json(
+            {
+                "schema": DIAGNOSTIC_SCHEMA,
+                "outcome": "provider_checked",
+                "manifest_schema": PROVIDER_MANIFEST_SCHEMA,
+                "cases": result.cases,
+                "requests": result.requests,
+                "policy_sha256": result.policy_sha256,
+            }
+        )
+        + b"\n"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     try:
         arguments = _parser().parse_args(argv)
@@ -90,6 +115,8 @@ def main(argv: list[str] | None = None) -> int:
             return _compile(arguments)
         if arguments.command == "check-frames":
             return _check_frames(arguments)
+        if arguments.command == "provider-demo":
+            return _provider_demo(arguments)
     except PolicyError as error:
         _write_diagnostic(error.diagnostic())
         return 2
