@@ -526,6 +526,18 @@ contract ManifestFuzz {
   ///      not kill S2-R5-01, whose call path binds while the value path
   ///      refuses. GL10 is what covers that direction, and neither property
   ///      stands in for the other.
+  ///
+  ///      One of the three comparisons below cannot fire today, and it is
+  ///      recorded rather than left implying cover it does not give. The call
+  ///      and slot arms resolve the same written name through the same
+  ///      `_resolveDotted` grammar, differing only in which manifest field
+  ///      carries it, so `slotBound` always equals `callBound` and any single
+  ///      defect that moves the slot arm moves the call arm with it -- the
+  ///      call/value comparison reaches it first. Deleting the slot/value line
+  ///      therefore changes no result here, which was confirmed by mutation
+  ///      rather than assumed. It is kept because step 3 and step 4 give the
+  ///      two arms different resolution work, and it becomes reachable the
+  ///      moment they stop being the same path.
   function fuzzPathAgreement(uint8 nameSeed) public {
     string memory name = _pathName(nameSeed);
     agreementDraws++;
