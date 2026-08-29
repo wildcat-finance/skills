@@ -50,10 +50,17 @@ struct ResolvedThreshold {
 ///      so a misnamed entry aborts instead of vanishing.
 ///
 ///      Fail-closed posture: an action the manifest does not carry, a
-///      duplicated action name, a symbol the adapter cannot resolve, an empty
+///      duplicated action name, a symbol the adapter cannot resolve, a blank
 ///      account symbol, and a resolution to the zero address each revert with
 ///      a named error. The reader never returns a default or shrunken set,
 ///      and never admits an entry the manifest did not write.
+///
+///      Blank means empty or nothing but ASCII whitespace. Both arise the
+///      same way, from a target or slot the grammar cannot take a name out
+///      of -- `.getCredential`, or ` .field` -- and neither is a name the
+///      manifest author wrote. Asking the adapter about one would make
+///      failing closed the adapter's decision rather than the reader's,
+///      which is what this guard exists to prevent.
 ///
 ///      Granularity boundary, stated because the header would otherwise read
 ///      stricter than the reader is: resolution is account-granular. A slot
@@ -69,6 +76,7 @@ contract ManifestReader {
 
   error ActionNotInManifest(string action);
   error DuplicateActionInManifest(string action);
+  /// @dev Raised for a symbol that is empty or nothing but ASCII whitespace.
   error EmptyAccountSymbol(string name);
   error UnresolvableSymbol(string symbol);
   error SymbolResolvesToZero(string symbol);
@@ -220,15 +228,33 @@ contract ManifestReader {
     string memory symbol,
     AccountResolver resolver
   ) private view returns (address addr) {
-    // An empty symbol is not a name the adapter should be asked about. It
-    // arises from a malformed target or slot whose first character is `.`,
-    // and whether it then fails closed would be the adapter's decision, not
-    // the reader's. The reader owns its own grammar, so it refuses here.
-    if (bytes(symbol).length == 0) revert EmptyAccountSymbol(symbol);
+    // A blank symbol is not a name the adapter should be asked about. It
+    // arises from a malformed target or slot the grammar cannot take a name
+    // out of -- a leading `.`, or whitespace ahead of one -- and whether it
+    // then fails closed would be the adapter's decision, not the reader's.
+    // The reader owns its own grammar, so it refuses here. Whitespace counts:
+    // ` ` is no more a name the manifest author wrote than `` is, and an
+    // adapter that trims a name before looking it up would admit it.
+    if (_isBlank(symbol)) revert EmptyAccountSymbol(symbol);
     bool ok;
     (ok, addr) = resolver.resolveAccount(symbol);
     if (!ok) revert UnresolvableSymbol(symbol);
     if (addr == address(0)) revert SymbolResolvesToZero(symbol);
+  }
+
+  /// @dev True for a symbol that is not a name at all: no bytes, or nothing
+  ///      but ASCII space, tab, carriage return or line feed. Multi-byte
+  ///      whitespace is deliberately not folded in. No UTF-8 continuation
+  ///      byte is one of these four, so this decides on bytes without
+  ///      decoding, and a symbol carrying any other byte is a name the
+  ///      adapter is entitled to answer about or to refuse.
+  function _isBlank(string memory s) private pure returns (bool) {
+    bytes memory b = bytes(s);
+    for (uint256 i = 0; i < b.length; i++) {
+      bytes1 c = b[i];
+      if (c != 0x20 && c != 0x09 && c != 0x0D && c != 0x0A) return false;
+    }
+    return true;
   }
 
   /// @dev The account symbol: the text before the first `.`, or the whole

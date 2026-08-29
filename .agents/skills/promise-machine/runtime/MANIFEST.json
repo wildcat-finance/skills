@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 932,
-  "total_bytes": 20242682,
+  "file_count": 936,
+  "total_bytes": 20274306,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "9f633e5a8cc96389ca50ebb3ad9613e4b441e62edfa9022e5f0d111b3f9fb6fd",
+      "sha256": "3535389ed17ec50c492b191e4ee79fee7caf4199261518a84ae344f5812d0b85",
       "source": null
     },
     {
@@ -3427,6 +3427,24 @@
       "source": "plugins/janus/examples/findings.sample.json"
     },
     {
+      "bytes": 12684,
+      "path": "plugins/janus/harness/adapters/ManifestFuzz.sol",
+      "sha256": "ab70ed9f3a6cb16450da2e9aab90e90c79c88000b5e65d373bd684fe54b103e2",
+      "source": "plugins/janus/harness/adapters/ManifestFuzz.sol"
+    },
+    {
+      "bytes": 2000,
+      "path": "plugins/janus/harness/adapters/echidna/echidna.yaml",
+      "sha256": "6954e890972976dae384a05918441aa1489bdf36e6e279a3f85c1ab6246b1371",
+      "source": "plugins/janus/harness/adapters/echidna/echidna.yaml"
+    },
+    {
+      "bytes": 2626,
+      "path": "plugins/janus/harness/adapters/medusa/medusa.json",
+      "sha256": "bb69a15014a59dc7f9fd8bcd223ecebd6497fc81199c35524e23335f34b56cea",
+      "source": "plugins/janus/harness/adapters/medusa/medusa.json"
+    },
+    {
       "bytes": 514,
       "path": "plugins/janus/harness/foundry.toml",
       "sha256": "587058061a915c894932aa292e10f15caab845364e0038db1d2e463f580b47d4",
@@ -3463,9 +3481,9 @@
       "source": "plugins/janus/harness/src/JanusHarness.sol"
     },
     {
-      "bytes": 11940,
+      "bytes": 13359,
       "path": "plugins/janus/harness/src/ManifestReader.sol",
-      "sha256": "275ccd576c7b256b05496b8eb270d0c0fe8bc2ab528fae28c07ccf023505e33f",
+      "sha256": "f5af0297167b0c384da22a39f8b36a425295db19e78377eb0a79d60d392942f0",
       "source": "plugins/janus/harness/src/ManifestReader.sol"
     },
     {
@@ -3517,9 +3535,9 @@
       "source": "plugins/janus/harness/test/HostileHooks.t.sol"
     },
     {
-      "bytes": 13691,
+      "bytes": 21422,
       "path": "plugins/janus/harness/test/ManifestReader.t.sol",
-      "sha256": "eb5b48c79d95b891c57f74f62a49a75bed0e7bca570f9692f6b5047e7373815c",
+      "sha256": "a5598198e6ab1579bfe56644efaa11e166c77c39016fed4be8cba95de27da666",
       "source": "plugins/janus/harness/test/ManifestReader.t.sol"
     },
     {
@@ -3551,6 +3569,12 @@
       "path": "plugins/janus/scripts/run_forge_tests.py",
       "sha256": "f68fb062404433cb83a2ce3490993930a01ea206593707a7fff459f4763321e3",
       "source": "plugins/janus/scripts/run_forge_tests.py"
+    },
+    {
+      "bytes": 5164,
+      "path": "plugins/janus/scripts/run_fuzz_campaigns.py",
+      "sha256": "63c717c75c2509983e0f22f27b07e2b7ce46a6d8233fdf5c26d93bee66cbd25d",
+      "source": "plugins/janus/scripts/run_fuzz_campaigns.py"
     },
     {
       "bytes": 1623,
