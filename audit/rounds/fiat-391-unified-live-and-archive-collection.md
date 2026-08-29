@@ -48,3 +48,19 @@ Elenchus verdict: passed
 | S2-R1-03 | info | plugins/probitas/tests/test_gates.py | The new rule that an archive row must name a release was proved only for a `checked` row. An `empty` archive row is the answer a reader is most likely to over-trust, and nothing exercised it. Behaviour was already correct; the coverage was not there. | fixed in b094ff2e |
 
 Leads not pursued: the fixes commit b094ff2e changed tests as well as code, and the runner named by step 2's contract reports 301 of 301 passing against it, so the verdict is `passed`. Against the unfixed parent the three guards fail, two by the `TypeError` above and one by assertion, which is the guard evidence; that mixed shape is why the verdict recorded here is not `guarded`. Two bounded things are recorded rather than fixed. A coverage row's fields carry no length ceiling, so a venue with many releases makes a wide table cell; the note beside it already carries the same identities unbounded, so this adds no new exposure and a ceiling belongs with one for every coverage field rather than this one alone. And `gate_2_coverage` still trusts `payload["coverage"]` to be a list of mappings, because `render.load` checks that before any gate runs. Nothing else is open.
+
+## Step 2, round 2 -- 2026-08-29T08:25:39Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-row-collapse=reviewed; unrequested-network=not-applicable; schema-refusal=reviewed; release-id-figures=reviewed; overlap-attribution=reviewed; gap-double-count=not-applicable; demo-receipt-drift=reviewed; markdown-injection=reviewed
+
+Not checked: the same two concerns belong to step 3 and this step still does not touch the routes. The Pashov pair remains waived by the `security_suite` receipt. The three bundled lints ran again over the fixed tree and each exited 0.
+
+Elenchus verdict: passed
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R2-01 | medium | .agents/skills/promise-machine/runtime, .horos/boundary.json | Round 1's repair changed `gates.py` and `evidence.py`, both of which `scripts/portable_promise_machine.py` mirrors, and regenerated neither the mirror nor the Horos boundary that scans it. `portable_promise_machine.py check` exited 1 and the repository suite failed `test_boundary_currency`, so a repair for three findings would itself have landed main red. Found by re-running the whole battery against the fixed tree rather than only the suite the fix touched. | fixed in a36a3a39 |
+
+Leads not pursued: one thing is recorded rather than fixed. `_write_evidence` prints `N of M venue(s) checked`, where M is the number of coverage rows; today a run consults one route, so rows and venues are the same number and the line is right. Step 3 lets both routes answer, and the line becomes wrong the moment a venue holds two rows, so it is step 3's to correct alongside the summary that step already owes. The bounded coverage-field length and the `payload["coverage"]` shape assumption recorded under round 1 both still stand. Nothing else is open.
