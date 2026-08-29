@@ -321,3 +321,87 @@ report. metron: none, no performance claim. elenchus: the
 the Alexandria demonstration and comparing. hypomnema: the generation row is
 the standing record for the whole design, pointing at the committed study for
 the options that lost, which is where study item 12 put it.
+
+### Amendment -- 2026-08-29
+
+**What changed.** Complete replacement Files: Change
+`plugins/probitas/scripts/probitas_lib/evidence.py`,
+`plugins/probitas/scripts/probitas_lib/gates.py`,
+`plugins/probitas/scripts/probitas_lib/render.py`,
+`plugins/probitas/scripts/probitas_lib/adapters/__init__.py`,
+`plugins/probitas/scripts/probitas.py`,
+`plugins/alexandria/scripts/alexandria_lib/probitas.py`,
+`plugins/probitas/tests/test_evidence.py`,
+`plugins/probitas/tests/test_gates.py`,
+`plugins/probitas/tests/test_render.py`,
+`plugins/probitas/tests/test_cli.py`,
+`plugins/probitas/tests/test_registry.py`,
+`plugins/probitas/docs/example-dossier.md`,
+`plugins/probitas/skills/probitas/references/gates.md`,
+`plugins/alexandria/examples/credit-history-v0/expected-probitas.json`. Refresh
+`docs/probitas-unified-collection-study.md` and
+`docs/probitas-unified-collection-runbook.md` so the committed copies match the
+receipted controller artefacts byte for byte after any amendment this step
+records. Regenerate `.agents/skills/promise-machine/runtime/` and its
+`MANIFEST.json`. Permit the three `.horos` JSON files only where the
+deterministic scan changes them.
+
+**Why.** Two reasons, both found while starting step 2. Step 2 puts the
+Alexandria release identities on the coverage row as a field a gate can read,
+and today they exist only inside the prose of the note that
+`alexandria_lib.probitas.translate` writes. The alternatives are worse: a row
+with zero records has no record to derive them from, so deriving them
+Probitas-side fails for exactly the empty archive row that most needs them, and
+parsing another plugin's prose would turn an undocumented format into a
+contract. `translate` gains one `releases` key per coverage row instead, which
+makes it an Alexandria behaviour change, so step 4 will owe Alexandria its own
+generation row and that is a separate amendment when step 4 becomes current.
+Separately, step 1 committed copies of the study and runbook and proved them
+equal to the receipted artefacts; an amendment recorded during a later step
+makes those copies stale, and no step could refresh them without this
+allowance.
+
+**Steps touched.** Step 2's files only. No other field of step 2 changes, and
+steps 3 and 4 are untouched by this amendment.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-29
+
+**What changed.** Complete replacement Files: Change
+`plugins/probitas/scripts/probitas_lib/evidence.py`,
+`plugins/probitas/scripts/probitas_lib/gates.py`,
+`plugins/probitas/scripts/probitas_lib/render.py`,
+`plugins/probitas/scripts/probitas_lib/adapters/__init__.py`,
+`plugins/probitas/scripts/probitas.py`,
+`plugins/alexandria/scripts/alexandria_lib/probitas.py`,
+`plugins/probitas/tests/test_evidence.py`,
+`plugins/probitas/tests/test_gates.py`,
+`plugins/probitas/tests/test_render.py`,
+`plugins/probitas/tests/test_cli.py`,
+`plugins/probitas/tests/test_registry.py`,
+`plugins/probitas/docs/example-dossier.md`,
+`plugins/probitas/skills/probitas/references/gates.md`,
+`plugins/alexandria/examples/credit-history-v0/expected-probitas.json`,
+`tests/promise_machine_coverage.json`. Refresh
+`docs/probitas-unified-collection-study.md` and
+`docs/probitas-unified-collection-runbook.md` so the committed copies match the
+receipted controller artefacts byte for byte after any amendment this step
+records. Regenerate `.agents/skills/promise-machine/runtime/` and its
+`MANIFEST.json`. Permit the three `.horos` JSON files only where the
+deterministic scan changes them.
+
+**Why.** `tests/promise_machine_coverage.json` pins a digest of
+`plugins/probitas/scripts/probitas.py` under
+`runtime.probitas-dossier-verification`, together with the field map describing
+what a verification result exposes. Step 2 changes that file, so the repository
+suite reports PM071 drift and names the remedy: review the changed result
+surface and update the field map and the digest together. Neither can be left
+alone without leaving the root suite red, and no other step touches that file.
+
+**Steps touched.** Step 2's files only. No other field of step 2 changes, and
+steps 3 and 4 are untouched by this amendment.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds. Step 4: entry holds; exit holds.

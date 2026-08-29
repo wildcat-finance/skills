@@ -83,6 +83,19 @@ class TestCollectCommand(unittest.TestCase):
         self.assertNotIn("euler borrowing history", subjects)
         self.assertEqual(len(payload["gaps"]), len(registry.unimplemented()))
 
+    def test_every_coverage_row_names_its_source(self):
+        payload = self.collect()
+        sources = {row["source"] for row in payload["coverage"]}
+        self.assertEqual(sources, {"fixtures", "none"})
+        self.assertEqual(payload["schema"], 2)
+
+    def test_a_fixture_run_never_reports_itself_as_live(self):
+        """The route stamps this, so a fixture run cannot read as a live one."""
+        payload = self.collect()
+        queried = [r for r in payload["coverage"] if r["status"] in ("checked", "empty")]
+        self.assertTrue(queried)
+        self.assertTrue(all(row["source"] == "fixtures" for row in queried))
+
     def test_inferred_addresses_stay_in_their_own_tier(self):
         payload = self.collect("--inferred", "0x" + "b2" * 20)
         tiers = {a["address"]: a["provenance"] for a in payload["subject"]["addresses"]}
@@ -125,7 +138,7 @@ class TestCollectCommand(unittest.TestCase):
                 result.stderr,
             )
             with open(path, encoding="utf-8") as handle:
-                self.assertEqual(json.load(handle)["schema"], 1)
+                self.assertEqual(json.load(handle)["schema"], 2)
 
     def test_two_runs_produce_identical_bytes(self):
         arguments = (
@@ -199,6 +212,24 @@ class TestTheWholeSequence(unittest.TestCase):
             run("render", evidence, "--out", "-").stdout,
             run("render", evidence, "--out", "-").stdout,
         )
+
+    def test_rendering_a_schema_one_file_exits_two_and_says_to_collect_again(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = os.path.join(directory.name, "old-evidence.json")
+        source, _, _ = self.pipeline()
+        with open(source, encoding="utf-8") as handle:
+            payload = json.load(handle)
+        payload["schema"] = 1
+        for row in payload["coverage"]:
+            row.pop("source", None)
+            row.pop("releases", None)
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle)
+        result = run("render", path, "--out", "-")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("schema 1", result.stderr)
+        self.assertIn("collect again", result.stderr)
 
     def test_rendering_something_that_is_not_evidence_exits_two(self):
         directory = tempfile.TemporaryDirectory()

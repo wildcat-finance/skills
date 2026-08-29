@@ -214,14 +214,72 @@ class TestEvidenceFile(unittest.TestCase):
                 evidence.add_record(
                     a_record(claim=f"claim_{n}", source="0x" + f"{n:02x}" * 32)
                 )
-            evidence.add_coverage(Coverage("wildcat", "checked"))
-            evidence.add_coverage(Coverage("maple", "unimplemented"))
+            evidence.add_coverage(Coverage("wildcat", "checked", source="live"))
+            evidence.add_coverage(Coverage("maple", "unimplemented", source="none"))
             evidence.add_gap(Gap("maple history", "no adapter"))
         self.assertEqual(first.to_json(), second.to_json())
 
     def test_coverage_status_must_be_known(self):
         with self.assertRaises(EvidenceError):
             Coverage("wildcat", "fine")
+
+    def test_coverage_source_must_be_known(self):
+        with self.assertRaises(EvidenceError):
+            Coverage("wildcat", "checked", source="somewhere")
+
+    def test_a_row_with_no_source_cannot_enter_the_evidence_file(self):
+        """A row that does not say how a venue was checked reads as checked."""
+        evidence = self.evidence()
+        with self.assertRaises(EvidenceError) as caught:
+            evidence.add_coverage(Coverage("wildcat", "checked"))
+        self.assertIn("names no source", str(caught.exception))
+
+    def test_only_an_archive_row_may_name_releases(self):
+        with self.assertRaises(EvidenceError):
+            Coverage("wildcat", "checked", source="live", releases=["sha256:aa"])
+
+    def test_releases_are_sorted_and_deduplicated(self):
+        row = Coverage(
+            "clearpool",
+            "checked",
+            source="archive",
+            releases=["sha256:bb", "sha256:aa", "sha256:bb"],
+        )
+        self.assertEqual(row.releases, "sha256:aa,sha256:bb")
+
+    def test_a_release_that_would_break_a_table_cell_is_refused(self):
+        """The same shape as finding S2-R1-01, arriving from another plugin."""
+        with self.assertRaises(EvidenceError):
+            Coverage(
+                "clearpool", "checked", source="archive", releases=["a](https://evil/"]
+            )
+
+    def test_the_wire_carries_schema_two_and_names_every_source(self):
+        evidence = self.evidence()
+        evidence.add_coverage(Coverage("wildcat", "checked", source="fixtures"))
+        payload = evidence.to_dict()
+        self.assertEqual(payload["schema"], 2)
+        for row in payload["coverage"]:
+            self.assertIn("source", row)
+            self.assertIn("releases", row)
+
+    def test_two_rows_for_one_venue_sort_by_source(self):
+        """Determinism has to survive a venue two routes both answered."""
+        evidence = self.evidence()
+        evidence.add_coverage(
+            Coverage("wildcat", "checked", source="live", block_range="1-2")
+        )
+        evidence.add_coverage(
+            Coverage(
+                "wildcat",
+                "checked",
+                source="archive",
+                block_range="1-2",
+                releases=["sha256:aa"],
+            )
+        )
+        sources = [row["source"] for row in evidence.to_dict()["coverage"]]
+        self.assertEqual(sources, ["archive", "live"])
 
     def test_a_gap_needs_a_reason(self):
         with self.assertRaises(EvidenceError):

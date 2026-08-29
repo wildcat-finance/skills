@@ -85,6 +85,29 @@ class TestAdapterFailures(unittest.TestCase):
         self.assertEqual(coverage.records, 0)
         self.assertEqual(coverage.status, "empty")
 
+    def test_the_route_stamps_the_source_rather_than_the_adapter(self):
+        """Four adapters would otherwise each read the same config key."""
+        def quiet(addresses, config):
+            return [], Coverage("wildcat", "empty", block_range="1-2")
+
+        _, live = run_adapter("wildcat", quiet, {}, {})
+        _, fixture = run_adapter("wildcat", quiet, {}, {"fixtures": "/somewhere"})
+        self.assertEqual(live.source, "live")
+        self.assertEqual(fixture.source, "fixtures")
+
+    def test_an_error_row_still_names_the_route_that_failed(self):
+        def explode(addresses, config):
+            raise ValueError("boom")
+
+        _, coverage = run_adapter("wildcat", explode, {}, {"fixtures": "/somewhere"})
+        self.assertEqual(coverage.status, "error")
+        self.assertEqual(coverage.source, "fixtures")
+
+    def test_a_venue_nobody_checked_names_none(self):
+        for venue in registry.all_venues():
+            with self.subTest(venue=venue.id):
+                self.assertEqual(unchecked_coverage(venue).source, "none")
+
     def test_an_adapter_returning_no_coverage_is_a_bug_not_a_silence(self):
         def sloppy(addresses, config):
             return [], None

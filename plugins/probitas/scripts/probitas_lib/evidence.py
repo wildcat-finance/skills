@@ -14,6 +14,11 @@ import json
 import re
 import unicodedata
 
+# Bumped from 1 when a coverage row began naming the route that produced it.
+# A schema 1 file cannot satisfy gate 2, so the renderer refuses it by name
+# rather than letting the gate report it as a defect in the document.
+EVIDENCE_SCHEMA = 2
+
 PROVENANCE_TIERS = ("declared", "linked", "inferred")
 
 COVERAGE_STATUSES = (
@@ -23,6 +28,18 @@ COVERAGE_STATUSES = (
     "unimplemented",  # no adapter exists yet
     "unconfigured",  # an adapter exists but the operator supplied no credential
 )
+
+COVERAGE_SOURCES = (
+    "live",  # an adapter that queried the venue over the network
+    "fixtures",  # an adapter that read a fixture directory
+    "archive",  # a verified Alexandria index
+    "none",  # nobody checked this venue
+)
+
+# A release identity reaches a Markdown table cell, so it is held to the same
+# punctuation rule as a source. Finding S2-R1-01 was a URL escaping its own
+# link; a release id is the same shape of value arriving from another plugin.
+_RELEASE_ID = re.compile(r"\A[A-Za-z0-9][A-Za-z0-9:_.-]{0,127}\Z")
 
 _TX_HASH = re.compile(r"\A0x[0-9a-fA-F]{64}\Z")
 
@@ -255,12 +272,41 @@ def _wire(value):
 
 
 class Coverage:
-    """One row of the coverage table: what happened when a venue was checked."""
+    """One row of the coverage table: what happened when a venue was checked.
 
-    __slots__ = ("venue", "status", "endpoint", "block_range", "note", "records")
+    `source` names the route that produced the row. A run may consult more
+    than one, so a venue and a status no longer identify a row on their own:
+    two rows for one venue are two different answers about it, and the source
+    is what tells them apart. The route stamps it rather than the adapter,
+    because whether a response came off the network or out of a fixture
+    directory is a fact about the run and not about the venue.
+
+    A row may be built without one; it may not enter an evidence file without
+    one. `Evidence.add_coverage` is the gate, because an unstamped row in a
+    dossier reads exactly like a venue somebody checked.
+    """
+
+    __slots__ = (
+        "venue",
+        "status",
+        "endpoint",
+        "block_range",
+        "note",
+        "records",
+        "source",
+        "releases",
+    )
 
     def __init__(
-        self, venue, status, endpoint=None, block_range=None, note=None, records=0
+        self,
+        venue,
+        status,
+        endpoint=None,
+        block_range=None,
+        note=None,
+        records=0,
+        source=None,
+        releases=None,
     ):
         self.venue = _require_text(venue, "venue")
         self.status = _require_text(status, "status")
@@ -268,20 +314,61 @@ class Coverage:
             raise EvidenceError(
                 f"status must be one of {COVERAGE_STATUSES}, got {self.status!r}"
             )
+        if source is not None and source not in COVERAGE_SOURCES:
+            raise EvidenceError(
+                f"source must be one of {COVERAGE_SOURCES}, got {source!r}"
+            )
+        self.source = source
         self.endpoint = endpoint
         self.block_range = block_range
         self.note = note
         self.records = int(records)
+        self.releases = _releases(releases, source)
 
     def to_dict(self):
         return {
             "venue": self.venue,
             "status": self.status,
+            "source": self.source,
             "endpoint": self.endpoint,
             "block_range": self.block_range,
             "note": self.note,
             "records": self.records,
+            "releases": self.releases,
         }
+
+    def sort_key(self):
+        return (self.venue, self.source or "")
+
+
+def _releases(releases, source):
+    """The Alexandria releases behind an archive row, as sorted stable text.
+
+    Only an archive row has any, so a release on any other row is a mistake
+    about where the evidence came from rather than a harmless extra field.
+    """
+    if releases is None:
+        return None
+    if source != "archive":
+        raise EvidenceError(
+            f"only an archive coverage row may name releases; source is {source!r}"
+        )
+    if isinstance(releases, str):
+        values = [part for part in releases.split(",") if part]
+    else:
+        values = list(releases)
+    cleaned = []
+    for value in values:
+        text = _require_text(value, "release")
+        if not _RELEASE_ID.match(text):
+            raise EvidenceError(
+                f"release {text!r} is not a plain identifier; it would be "
+                "rendered into a Markdown table cell"
+            )
+        cleaned.append(text)
+    if not cleaned:
+        return None
+    return ",".join(sorted(set(cleaned)))
 
 
 class Gap:
@@ -343,6 +430,13 @@ class Evidence:
         self.records.append(record)
 
     def add_coverage(self, coverage):
+        if not isinstance(coverage, Coverage):
+            raise EvidenceError("only Coverage instances may enter the evidence file")
+        if coverage.source not in COVERAGE_SOURCES:
+            raise EvidenceError(
+                f"{coverage.venue} coverage names no source; a row that does not "
+                "say how the venue was checked reads as though somebody checked it"
+            )
         self.coverage.append(coverage)
 
     def add_gap(self, gap):
@@ -356,7 +450,7 @@ class Evidence:
         reordering.
         """
         return {
-            "schema": 1,
+            "schema": EVIDENCE_SCHEMA,
             "run": {"id": self.run_id, "collected_at": self.collected_at},
             "subject": {
                 "entity": self.entity,
@@ -367,7 +461,7 @@ class Evidence:
             },
             "records": [r.to_dict() for r in sorted(self.records, key=Record.sort_key)],
             "coverage": [
-                c.to_dict() for c in sorted(self.coverage, key=lambda c: c.venue)
+                c.to_dict() for c in sorted(self.coverage, key=Coverage.sort_key)
             ],
             "gaps": [
                 g.to_dict()
