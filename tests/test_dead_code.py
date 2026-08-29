@@ -637,15 +637,19 @@ class WriteBoundaryTests(TemporaryRepositoryTestCase):
             dead_code.confine(self.root, "out" + chr(0) + ".json")
 
     def test_descendant_output_is_confined_to_the_repository(self):
-        target = dead_code.confine(self.root, "reports/out.json")
-        self.assertEqual(target, self.root / "reports" / "out.json")
+        target = dead_code.confine(self.root, ".dead-code/report.json")
+        self.assertEqual(target, self.root / ".dead-code" / "report.json")
+
+    def test_output_outside_the_owned_dead_code_sink_is_refused(self):
+        with self.assertRaisesRegex(dead_code.Refusal, "owned .dead-code"):
+            dead_code.confine(self.root, "a.py")
 
     def test_symlinked_output_ancestor_is_refused(self):
         outside = self.root.parent / (self.root.name + "-outside")
         outside.mkdir()
         self.addCleanup(outside.rmdir)
-        (self.root / "reports").symlink_to(outside, target_is_directory=True)
-        target = dead_code.confine(self.root, "reports/out.json")
+        (self.root / ".dead-code").symlink_to(outside, target_is_directory=True)
+        target = dead_code.confine(self.root, ".dead-code/out.json")
         with self.assertRaisesRegex(dead_code.Refusal, "not a real directory"):
             dead_code.atomic_write(self.root, target, "{}" + NL)
 
@@ -653,14 +657,15 @@ class WriteBoundaryTests(TemporaryRepositoryTestCase):
         outside = self.root.parent / (self.root.name + "-outside.json")
         outside.write_text("old", encoding="utf-8")
         self.addCleanup(outside.unlink, missing_ok=True)
-        target = self.root / "out.json"
+        (self.root / ".dead-code").mkdir()
+        target = self.root / ".dead-code" / "out.json"
         target.symlink_to(outside)
         with self.assertRaisesRegex(dead_code.Refusal, "not a regular file"):
             dead_code.atomic_write(self.root, target, "new" + NL)
         self.assertEqual(outside.read_text(encoding="utf-8"), "old")
 
     def test_atomic_write_publishes_complete_bytes_and_no_temporary(self):
-        target = dead_code.confine(self.root, "reports/out.json")
+        target = dead_code.confine(self.root, ".dead-code/report.json")
         dead_code.atomic_write(self.root, target, "payload" + NL)
         self.assertEqual(target.read_text(encoding="utf-8"), "payload" + NL)
         leftovers = [
@@ -671,7 +676,7 @@ class WriteBoundaryTests(TemporaryRepositoryTestCase):
         self.assertEqual(leftovers, [])
 
     def test_failed_replace_leaves_the_previous_report_intact(self):
-        target = dead_code.confine(self.root, "reports/out.json")
+        target = dead_code.confine(self.root, ".dead-code/report.json")
         target.parent.mkdir()
         target.write_text("previous" + NL, encoding="utf-8")
         with mock.patch.object(
@@ -689,22 +694,46 @@ class WriteBoundaryTests(TemporaryRepositoryTestCase):
         ]
         self.assertEqual(leftovers, [])
 
-    def test_orphan_sweep_removes_only_regular_files_with_the_owned_prefix(self):
-        directory = self.root / "reports"
+    def test_ancestor_substitution_cannot_redirect_the_atomic_replace(self):
+        target = dead_code.confine(self.root, ".dead-code/report.json")
+        outside = self.root.parent / (self.root.name + "-outside-directory")
+        held = self.root / ".dead-code-opened"
+        outside.mkdir()
+        self.addCleanup(outside.rmdir)
+        real_replace = os.replace
+
+        def substitute_ancestor(source, destination, **kwargs):
+            target.parent.rename(held)
+            target.parent.symlink_to(outside, target_is_directory=True)
+            real_replace(source, destination, **kwargs)
+
+        refusal = None
+        try:
+            with mock.patch.object(
+                dead_code.os,
+                "replace",
+                side_effect=substitute_ancestor,
+            ):
+                dead_code.atomic_write(self.root, target, "payload" + NL)
+        except dead_code.Refusal as error:
+            refusal = str(error)
+        self.assertIsNone(refusal, refusal)
+        self.assertFalse((outside / "report.json").exists())
+        self.assertEqual(
+            (held / "report.json").read_text(encoding="utf-8"),
+            "payload" + NL,
+        )
+
+    def test_atomic_write_does_not_sweep_an_unrelated_owned_temporary(self):
+        directory = self.root / ".dead-code"
         directory.mkdir()
         orphan = directory / (dead_code.TEMP_PREFIX + "old")
         bystander = directory / "keep.json"
-        symlink = directory / (dead_code.TEMP_PREFIX + "link")
-        outside = self.root / "outside.txt"
         orphan.write_text("half", encoding="utf-8")
         bystander.write_text("keep", encoding="utf-8")
-        outside.write_text("outside", encoding="utf-8")
-        symlink.symlink_to(outside)
-        dead_code.sweep_orphans(directory)
-        self.assertFalse(orphan.exists())
+        dead_code.atomic_write(self.root, directory / "report.json", "payload" + NL)
+        self.assertTrue(orphan.exists())
         self.assertTrue(bystander.exists())
-        self.assertTrue(symlink.is_symlink())
-        self.assertEqual(outside.read_text(encoding="utf-8"), "outside")
 
 
 class CommandLineTests(TemporaryRepositoryTestCase):
@@ -761,11 +790,11 @@ class CommandLineTests(TemporaryRepositoryTestCase):
             "report",
             "--json",
             "--output",
-            "reports/out.json",
+            ".dead-code/report.json",
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         document = json.loads(
-            (self.root / "reports" / "out.json").read_text(encoding="utf-8")
+            (self.root / ".dead-code" / "report.json").read_text(encoding="utf-8")
         )
         schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
         self.assertEqual(set(document), set(schema["required"]))
@@ -779,6 +808,15 @@ class CommandLineTests(TemporaryRepositoryTestCase):
         completed = self._run("report", "--output", "../escape.json")
         self.assertEqual(completed.returncode, 2)
         self.assertIn("escapes", completed.stderr)
+
+    def test_output_flag_cannot_overwrite_a_tracked_source_file(self):
+        target = self.root / "a.py"
+        before = target.read_bytes()
+        completed = self._run("report", "--output", "a.py")
+        self.assertEqual(completed.returncode, 2)
+        self.assertIn("owned .dead-code", completed.stderr)
+        self.assertEqual(target.read_bytes(), before)
+        self.assertEqual(git(self.root, "status", "--porcelain"), "")
 
 
 class ShippedSurfaceTests(unittest.TestCase):

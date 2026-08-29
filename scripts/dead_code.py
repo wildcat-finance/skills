@@ -17,7 +17,6 @@ import selectors
 import stat
 import subprocess
 import sys
-import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -33,6 +32,7 @@ BOUNDARY_TOOL = "horos"
 EXCLUDING_GRADE = "hard"
 UNIVERSE_FLOOR = 1
 TEMP_PREFIX = ".dead-code-tmp-"
+OWNED_OUTPUT_DIRECTORY = ".dead-code"
 GIT_TIMEOUT_SECONDS = 60
 MAX_GIT_OUTPUT_BYTES = 16 * 1024 * 1024
 MAX_BOUNDARY_BYTES = 4 * 1024 * 1024
@@ -717,6 +717,10 @@ def confine(root: Path, candidate: str) -> Path:
         raise Refusal("the output path is empty")
     if chr(0) in candidate:
         raise Refusal("the output path contains a null byte")
+    if chr(92) in candidate or any(
+        ord(character) < 32 or ord(character) == 127 for character in candidate
+    ):
+        raise Refusal("the output path is not a safe repository-relative POSIX path")
     supplied = Path(candidate)
     if supplied.is_absolute():
         raise Refusal("the output path must be repository-relative")
@@ -725,108 +729,141 @@ def confine(root: Path, candidate: str) -> Path:
         raise Refusal(f"the output path {candidate} escapes the repository root")
     if len(candidate.encode("utf-8")) > MAX_PATH_BYTES:
         raise Refusal(f"the output path exceeds {MAX_PATH_BYTES} bytes")
+    if len(parts) < 2 or parts[0] != OWNED_OUTPUT_DIRECTORY:
+        raise Refusal(
+            f"the output path must be beneath the owned {OWNED_OUTPUT_DIRECTORY}/ sink"
+        )
     target = root.resolve(strict=True).joinpath(*parts)
     if target == root.resolve(strict=True):
         raise Refusal("the repository root is not an output file")
     return target
 
 
-def ensure_safe_parent(root: Path, target: Path) -> Path:
+def output_parts(root: Path, target: Path) -> tuple[str, ...]:
     root = root.resolve(strict=True)
     try:
         relative = target.relative_to(root)
     except ValueError as error:
         raise Refusal("the output path escapes the repository root") from error
-    current = root
-    for part in relative.parts[:-1]:
-        current = current / part
-        try:
-            current.mkdir()
-        except FileExistsError:
-            pass
-        except OSError as error:
-            raise Refusal(f"the output directory cannot be created: {error}") from error
-        try:
-            current_stat = current.lstat()
-        except OSError as error:
-            raise Refusal(f"the output directory cannot be inspected: {error}") from error
-        if stat.S_ISLNK(current_stat.st_mode) or not stat.S_ISDIR(current_stat.st_mode):
-            raise Refusal(f"the output ancestor {current} is not a real directory")
+    parts = relative.parts
+    if (
+        not parts
+        or any(part in {"", ".", ".."} for part in parts)
+        or chr(92) in relative.as_posix()
+        or any(
+            ord(character) < 32 or ord(character) == 127
+            for character in relative.as_posix()
+        )
+        or len(relative.as_posix().encode("utf-8")) > MAX_PATH_BYTES
+    ):
+        raise Refusal("the output path is not a safe repository-relative POSIX path")
+    if len(parts) < 2 or parts[0] != OWNED_OUTPUT_DIRECTORY:
+        raise Refusal(
+            f"the output path must be beneath the owned {OWNED_OUTPUT_DIRECTORY}/ sink"
+        )
+    return parts
+
+
+def open_output_directory(root: Path, parts: tuple[str, ...]) -> int:
+    nofollow = getattr(os, "O_NOFOLLOW", None)
+    directory_flag = getattr(os, "O_DIRECTORY", None)
+    if nofollow is None or directory_flag is None:
+        raise Refusal("this platform cannot open output directories without following links")
+    flags = os.O_RDONLY | nofollow | directory_flag | getattr(os, "O_CLOEXEC", 0)
     try:
-        target_stat = target.lstat()
+        current_fd = os.open(root.resolve(strict=True), flags)
+    except OSError as error:
+        raise Refusal(f"the repository root cannot be opened safely: {error}") from error
+    try:
+        for part in parts[:-1]:
+            try:
+                os.mkdir(part, mode=0o755, dir_fd=current_fd)
+            except FileExistsError:
+                pass
+            except OSError as error:
+                raise Refusal(
+                    f"the output directory {part} cannot be created: {error}"
+                ) from error
+            try:
+                next_fd = os.open(part, flags, dir_fd=current_fd)
+            except OSError as error:
+                raise Refusal(
+                    f"the output ancestor {part} is not a real directory: {error}"
+                ) from error
+            os.close(current_fd)
+            current_fd = next_fd
+        return current_fd
+    except BaseException:
+        os.close(current_fd)
+        raise
+
+
+def require_regular_target(directory_fd: int, name: str) -> None:
+    try:
+        target_stat = os.stat(name, dir_fd=directory_fd, follow_symlinks=False)
     except FileNotFoundError:
-        pass
+        return
     except OSError as error:
         raise Refusal(f"the output target cannot be inspected: {error}") from error
-    else:
-        if stat.S_ISLNK(target_stat.st_mode) or not stat.S_ISREG(target_stat.st_mode):
-            raise Refusal("the output target is not a regular file")
-    return current
+    if stat.S_ISLNK(target_stat.st_mode) or not stat.S_ISREG(target_stat.st_mode):
+        raise Refusal("the output target is not a regular file")
 
 
-def sweep_orphans(directory: Path) -> None:
-    try:
-        candidates = list(directory.iterdir())
-    except OSError:
-        return
-    for candidate in candidates:
-        if not candidate.name.startswith(TEMP_PREFIX):
-            continue
+def create_temporary(directory_fd: int) -> tuple[int, str]:
+    nofollow = getattr(os, "O_NOFOLLOW", None)
+    if nofollow is None:
+        raise Refusal("this platform cannot create output files without following links")
+    flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | os.O_EXCL
+        | nofollow
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    for _ in range(128):
+        name = TEMP_PREFIX + os.urandom(16).hex()
         try:
-            candidate_stat = candidate.lstat()
-            if stat.S_ISREG(candidate_stat.st_mode):
-                candidate.unlink()
-        except OSError:
+            return os.open(name, flags, 0o600, dir_fd=directory_fd), name
+        except FileExistsError:
             continue
+        except OSError as error:
+            raise Refusal(f"report temporary cannot be created: {error}") from error
+    raise Refusal("report temporary name allocation was exhausted")
 
 
 def atomic_write(root: Path, target: Path, payload: str) -> None:
     encoded = payload.encode("utf-8")
     if len(encoded) > MAX_REPORT_BYTES:
         raise Refusal(f"report exceeds {MAX_REPORT_BYTES} bytes")
-    directory = ensure_safe_parent(root, target)
-    before_directory = directory.lstat()
-    sweep_orphans(directory)
+    parts = output_parts(root, target)
+    directory_fd = open_output_directory(root, parts)
+    temporary_name: str | None = None
     try:
-        handle = tempfile.NamedTemporaryFile(
-            "wb",
-            dir=directory,
-            prefix=TEMP_PREFIX,
-            delete=False,
-        )
-    except OSError as error:
-        raise Refusal(f"report temporary cannot be created: {error}") from error
-    temporary = Path(handle.name)
-    try:
-        with handle:
+        require_regular_target(directory_fd, parts[-1])
+        temporary_fd, temporary_name = create_temporary(directory_fd)
+        with os.fdopen(temporary_fd, "wb") as handle:
             handle.write(encoded)
             handle.flush()
             os.fsync(handle.fileno())
-        after_directory = directory.lstat()
-        if (before_directory.st_dev, before_directory.st_ino) != (
-            after_directory.st_dev,
-            after_directory.st_ino,
-        ):
-            raise Refusal("the output directory changed during the write")
-        ensure_safe_parent(root, target)
-        os.replace(temporary, target)
-        directory_fd = os.open(directory, os.O_RDONLY)
-        try:
-            os.fsync(directory_fd)
-        finally:
-            os.close(directory_fd)
+        os.replace(
+            temporary_name,
+            parts[-1],
+            src_dir_fd=directory_fd,
+            dst_dir_fd=directory_fd,
+        )
+        temporary_name = None
+        os.fsync(directory_fd)
     except Refusal:
-        try:
-            temporary.unlink()
-        except OSError:
-            pass
         raise
     except OSError as error:
-        try:
-            temporary.unlink()
-        except OSError:
-            pass
         raise Refusal(f"report write failed: {error}") from error
+    finally:
+        if temporary_name is not None:
+            try:
+                os.unlink(temporary_name, dir_fd=directory_fd)
+            except OSError:
+                pass
+        os.close(directory_fd)
 
 
 def command_report(arguments: argparse.Namespace) -> int:
