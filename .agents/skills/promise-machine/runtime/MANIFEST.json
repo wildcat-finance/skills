@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 942,
-  "total_bytes": 20391967,
+  "total_bytes": 20398437,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3409,9 +3409,9 @@
       "source": "plugins/janus/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 5547,
+      "bytes": 6608,
       "path": "plugins/janus/README.md",
-      "sha256": "f879ef6ea7e66986263bbf9f98067e154ee9a14d526d86c1d41746ca879aace1",
+      "sha256": "c8dd9a0367238b0602f6c00002e06d53a9e63445e4c3d30901d91e0bd571b8e8",
       "source": "plugins/janus/README.md"
     },
     {
@@ -3469,9 +3469,9 @@
       "source": "plugins/janus/harness/manifests/wildcat-open-term.json"
     },
     {
-      "bytes": 5903,
+      "bytes": 7859,
       "path": "plugins/janus/harness/schemas/hook-manifest.schema.json",
-      "sha256": "9ba947ca6897f717cec4fdf097d56641c6b0dea5854849e44f66009671f77a95",
+      "sha256": "191e87f54d801ef3aac6a8ee224f5b8437ff233f9824c8018e7edd62ba96d42e",
       "source": "plugins/janus/harness/schemas/hook-manifest.schema.json"
     },
     {
@@ -3613,15 +3613,15 @@
       "source": "plugins/janus/scripts/run_fuzz_campaigns.py"
     },
     {
-      "bytes": 1623,
+      "bytes": 3208,
       "path": "plugins/janus/skills/janus/EVOLUTION.md",
-      "sha256": "01e003e5b0199c44756622cb617d8464207e86103f5d5b45ffb4d3065cd8b21a",
+      "sha256": "a31deec912521dfa876ecefd3180f8027007c0dbd4f48d952038573c7d28f7b0",
       "source": "plugins/janus/skills/janus/EVOLUTION.md"
     },
     {
-      "bytes": 9650,
+      "bytes": 11518,
       "path": "plugins/janus/skills/janus/SKILL.md",
-      "sha256": "d3eaaca78a499dc6fc47dbc28e20831def7e0a5f3a46c13bffb5a80c5bb0b678",
+      "sha256": "ac190ee07c42828a58c3f5710d71b65e81b8b19a413dfd013707746e3cc22147",
       "source": "plugins/janus/skills/janus/SKILL.md"
     },
     {

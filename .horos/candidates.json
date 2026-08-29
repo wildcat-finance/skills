@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 14173530,
+    "bytes_blob": 14191270,
     "bytes_generated": 98
   },
   "entries": [
@@ -14,14 +14,14 @@
       "path": "audit/AUDIT_SYNOPSIS.md"
     },
     {
-      "bytes": 150827,
+      "bytes": 159656,
       "category": "blob",
-      "evidence": "no newline in a 2048-byte window at offset 75413 of 150827 bytes",
+      "evidence": "mean line length above 400 in a window at offset 79828",
       "grade": "candidate",
       "path": "audit/rounds/fiat-329-janus-resolve-the-manifest-s-permitted-effec.md"
     },
     {
-      "bytes": 151851,
+      "bytes": 160762,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

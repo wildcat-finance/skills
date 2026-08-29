@@ -5,7 +5,14 @@
   "description": "Declares what a hook may observe and change at each host-action threshold. Every effect list must be present; an omitted list means no such effect is permitted, never that any effect is allowed. Wildcards are rejected, so a manifest cannot say a hook may change anything.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["manifestVersion", "host", "hook", "rollbackRule", "thresholds", "liveness"],
+  "required": [
+    "manifestVersion",
+    "host",
+    "hook",
+    "rollbackRule",
+    "thresholds",
+    "liveness"
+  ],
   "properties": {
     "manifestVersion": {
       "description": "The manifest format version. Only 1 is defined.",
@@ -23,23 +30,41 @@
     },
     "rollbackRule": {
       "description": "The host's declared behaviour on hook revert, host revert, and partial batch failure. 'full' means the whole action rolls back; 'none' means the host declares no rollback and each effect must be justified on its own.",
-      "enum": ["full", "none"]
+      "enum": [
+        "full",
+        "none"
+      ]
     },
     "thresholds": {
       "description": "One entry per host action the hook runs around. Must be non-empty.",
       "type": "array",
       "minItems": 1,
-      "items": {"$ref": "#/$defs/threshold"}
+      "items": {
+        "$ref": "#/$defs/threshold"
+      }
     },
     "liveness": {
       "description": "The conditions under which a user must still be able to leave, uninstall, or invoke an emergency path, tested on exit rather than only on entry.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["withdrawal", "uninstall", "emergency"],
+      "required": [
+        "withdrawal",
+        "uninstall",
+        "emergency"
+      ],
       "properties": {
-        "withdrawal": {"type": "string", "minLength": 1},
-        "uninstall": {"type": "string", "minLength": 1},
-        "emergency": {"type": "string", "minLength": 1}
+        "withdrawal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "uninstall": {
+          "type": "string",
+          "minLength": 1
+        },
+        "emergency": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   },
@@ -65,11 +90,20 @@
     "storageWrite": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["scope", "slot"],
+      "required": [
+        "scope",
+        "slot"
+      ],
       "properties": {
-        "scope": {"enum": ["hook", "host", "external"]},
+        "scope": {
+          "enum": [
+            "hook",
+            "host",
+            "external"
+          ]
+        },
         "slot": {
-          "description": "A named storage location the hook may write. A literal wildcard is rejected by the validator.",
+          "description": "A named storage location the hook may write. A literal wildcard is rejected by the validator. The account is the text before the first '.', and the rest is documentation: enforcement is account-granular, so naming a slot expression permits writes to the account that holds it and the slot itself is recorded but never compared.",
           "type": "string",
           "minLength": 1
         }
@@ -78,23 +112,41 @@
     "call": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["target", "kind"],
+      "required": [
+        "target",
+        "kind"
+      ],
       "properties": {
         "target": {
-          "description": "A named call target the hook may reach. A literal wildcard is rejected by the validator.",
+          "description": "A named call target the hook may reach. A literal wildcard is rejected by the validator. The account is the text before the first '.', and a function suffix is documentation that is never resolved. A dot is an ordinary character in an account name, so where a host adapter also answers for a longer reading of the same string the entry is ambiguous and resolution refuses rather than choosing one.",
           "type": "string",
           "minLength": 1
         },
-        "kind": {"enum": ["call", "staticcall", "delegatecall"]}
+        "kind": {
+          "enum": [
+            "call",
+            "staticcall",
+            "delegatecall"
+          ]
+        }
       }
     },
     "valueMovement": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["asset", "recipient"],
+      "required": [
+        "asset",
+        "recipient"
+      ],
       "properties": {
-        "asset": {"type": "string", "minLength": 1},
-        "recipient": {"type": "string", "minLength": 1}
+        "asset": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recipient": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "threshold": {
@@ -112,31 +164,42 @@
         "mayReturnValues"
       ],
       "properties": {
-        "action": {"$ref": "#/$defs/hostAction"},
+        "action": {
+          "$ref": "#/$defs/hostAction"
+        },
         "entryPoints": {
           "description": "The host function signatures whose calls run this threshold.",
           "type": "array",
           "minItems": 1,
-          "items": {"type": "string", "minLength": 1}
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
         },
         "extraDataAllowed": {
           "description": "Whether the host forwards appended extraData to the hook at this threshold.",
           "type": "boolean"
         },
         "permittedStorageWrites": {
-          "description": "The storage the hook may change. An empty list permits none.",
+          "description": "The storage the hook may change. An empty list permits none. Scope 'hook' and 'host' resolve those symbols through the host adapter and 'external' resolves its slot expression's account prefix. A call the manifest permits into another account is a call and not a licence to write that account's storage, so an account whose storage the hook causes to change must be named here as well.",
           "type": "array",
-          "items": {"$ref": "#/$defs/storageWrite"}
+          "items": {
+            "$ref": "#/$defs/storageWrite"
+          }
         },
         "permittedCalls": {
-          "description": "The external calls and callbacks the hook may make. An empty list permits none.",
+          "description": "The external calls and callbacks the hook may make. An empty list permits none. Only entries of kind 'call' and 'delegatecall' admit a state-changing call, and the two are kept apart because a delegatecall runs the target's code in the hook's own storage. A 'staticcall' entry admits nothing state-changing; its symbol must still resolve, so a misnamed read target aborts rather than vanishing.",
           "type": "array",
-          "items": {"$ref": "#/$defs/call"}
+          "items": {
+            "$ref": "#/$defs/call"
+          }
         },
         "permittedValueMovements": {
-          "description": "The assets and recipients the hook may cause to move. An empty list permits none.",
+          "description": "The assets and recipients the hook may cause to move. An empty list permits none. Unlike a call target or a storage slot, these names carry no suffix, so the whole string is the account name and a dot inside it is part of that name.",
           "type": "array",
-          "items": {"$ref": "#/$defs/valueMovement"}
+          "items": {
+            "$ref": "#/$defs/valueMovement"
+          }
         },
         "gasBudget": {
           "description": "The maximum gas the hook may consume at this threshold.",
@@ -145,7 +208,10 @@
         },
         "failureMode": {
           "description": "Whether a hook failure blocks the action (fail-closed) or lets it proceed (fail-open).",
-          "enum": ["fail-open", "fail-closed"]
+          "enum": [
+            "fail-open",
+            "fail-closed"
+          ]
         },
         "mayReturnValues": {
           "description": "Whether the hook may return values the host applies, which only setAnnualInterestAndReserveRatioBips and executePendingAnnualInterestBipsReduction do on Wildcat.",
