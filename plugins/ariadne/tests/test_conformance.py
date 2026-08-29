@@ -10,6 +10,7 @@ import json
 import os
 import re
 import unittest
+from unittest import mock
 
 from . import support  # noqa: F401  (sets sys.path)
 
@@ -30,52 +31,70 @@ GROUNDED_AGENT_BREACHES = {
     "fail-gate2-grounded-agent-adapter-digest.json": (
         "pass-grounded-agent-complete.json",
         ((2, "environment"),),
-        ("predicate.adapter.parameters_digest.sha256",),
+        ("/predicate/adapter/parameters_digest/sha256",),
     ),
     "fail-gate5-grounded-agent-first-capture-without-reason.json": (
         "pass-grounded-agent-complete.json",
         ((5, "comparison"),),
-        ("predicate.comparison.first_capture_reason",),
+        ("/predicate/comparison/first_capture_reason",),
     ),
     "fail-gate4-grounded-agent-promotion-verdict.json": (
         "pass-grounded-agent-complete.json",
         ((4, "no-conclusions"),),
-        ("subject[9].annotations.verdict",),
+        ("/subject/9/annotations/verdict",),
     ),
     "fail-check-predicate-fields-grounded-agent-unknown-field.json": (
         "pass-grounded-agent-complete.json",
         ((2, "environment"), (None, "predicate-fields")),
-        ("predicate.undeclared",),
+        ("/predicate/undeclared",),
     ),
     "fail-check-components-grounded-agent-component-not-a-subject.json": (
         "pass-grounded-agent-complete.json",
         ((2, "environment"), (None, "components")),
-        ("predicate.given.corpus.components[0].sha256",),
+        ("/predicate/given/corpus/components/0/sha256",),
     ),
     "fail-check-components-grounded-agent-unsafe-path.json": (
         "pass-grounded-agent-complete.json",
         ((2, "environment"), (None, "components")),
-        ("predicate.given.corpus.components[0].path",),
+        ("/predicate/given/corpus/components/0/path",),
     ),
     "fail-check-release-digest-grounded-agent-stale-semantic-digest.json": (
         "pass-grounded-agent-complete.json",
         ((None, "release-digest"),),
-        ("predicate.policy.refusal_conditions[0]",),
+        ("/predicate/policy/refusal_conditions/0",),
     ),
     "fail-check-optional-evidence-grounded-agent-null-reads-without-reason.json": (
         "pass-grounded-agent-null-evidence.json",
         ((2, "environment"), (None, "optional-evidence")),
-        ("predicate.given.reads_absence_reason",),
+        ("/predicate/given/reads_absence_reason",),
     ),
     "fail-check-subject-names-grounded-agent-nonportable-name.json": (
         "pass-grounded-agent-complete.json",
         ((None, "subject-names"),),
-        ("subject[0].name",),
+        ("/subject/0/name",),
     ),
     "fail-check-evidence-boundary-grounded-agent-promotion-result.json": (
         "pass-grounded-agent-complete.json",
         ((None, "evidence-boundary"),),
-        ("subject[9].annotations.passed",),
+        ("/subject/9/annotations/passed",),
+    ),
+}
+COMPOUND_FAILURE_VECTORS = {
+    "fail-check-predicate-fields-grounded-agent-unknown-field.json": (
+        (2, "environment"),
+        (None, "predicate-fields"),
+    ),
+    "fail-check-components-grounded-agent-component-not-a-subject.json": (
+        (2, "environment"),
+        (None, "components"),
+    ),
+    "fail-check-components-grounded-agent-unsafe-path.json": (
+        (2, "environment"),
+        (None, "components"),
+    ),
+    "fail-check-optional-evidence-grounded-agent-null-reads-without-reason.json": (
+        (2, "environment"),
+        (None, "optional-evidence"),
     ),
 }
 """The exact parent, ordered failures and changed leaves for each new vector.
@@ -98,9 +117,28 @@ separator.
 """
 
 
-def statement_of(name):
+def document_of(name):
     with open(os.path.join(FIXTURES, name), "rb") as handle:
-        return envelope.read(handle.read()).statement
+        return envelope.read(handle.read())
+
+
+def statement_of(name):
+    return document_of(name).statement
+
+
+def outer_transport_state(document):
+    """The parsed transport surrounding a statement, excluding its payload.
+
+    The payload's complete semantic structure is compared separately.  What
+    remains is every parsed DSSE transport field and explicit bare/enveloped
+    state, so wrapping a child or changing its signatures cannot hitchhike on
+    an otherwise minimal statement mutation.
+    """
+    if document.envelope is None:
+        return None
+    state = document.envelope.to_dict()
+    del state["payload"]
+    return state
 
 
 def passing_by_type():
@@ -150,6 +188,78 @@ def report_for(name):
     return verify.report(document, registry.DEFAULT)
 
 
+def failed_vector(report):
+    return tuple(
+        (gate.number, gate.name) for gate in report.gates if not gate.passed
+    )
+
+
+def failure_vector_obeys_name(name, failures):
+    """Whether a complete ordered failure vector obeys its fixture name."""
+    match = BREACH.match(name)
+    if match:
+        return len(failures) == 1 and failures[0][0] == int(match.group(1))
+    check = check_name_of(name)
+    if check is None:
+        return False
+    if failures == ((None, check),):
+        return True
+    return COMPOUND_FAILURE_VECTORS.get(name) == failures
+
+
+def _json_pointer_child(pointer, segment):
+    escaped = segment.replace("~", "~0").replace("/", "~1")
+    return pointer + "/" + escaped
+
+
+def structural_nodes(value, pointer=""):
+    """Map every JSON node to its collision-free JSON Pointer and typed value."""
+    if isinstance(value, dict):
+        found = {pointer: ("object",)}
+        for key, item in value.items():
+            found.update(
+                structural_nodes(item, _json_pointer_child(pointer, key))
+            )
+        return found
+    if isinstance(value, list):
+        found = {pointer: ("array",)}
+        for index, item in enumerate(value):
+            found.update(
+                structural_nodes(item, _json_pointer_child(pointer, str(index)))
+            )
+        return found
+    return {pointer: ("scalar", type(value).__name__, value)}
+
+
+def structural_distance(left, right):
+    """Return the minimal changed JSON Pointers without losing empty containers."""
+    one, two = structural_nodes(left), structural_nodes(right)
+    missing = object()
+    changed = {
+        pointer
+        for pointer in set(one) | set(two)
+        if one.get(pointer, missing) != two.get(pointer, missing)
+    }
+    # An added or removed non-empty container is already described by its
+    # changed descendants. Keep the container pointer only when it is empty,
+    # or when the two present containers differ in kind.
+    for pointer in tuple(changed):
+        left_node = one.get(pointer)
+        right_node = two.get(pointer)
+        present = left_node if left_node is not None else right_node
+        if (
+            (left_node is None or right_node is None)
+            and present in (("object",), ("array",))
+            and any(
+                child != pointer
+                and child.startswith(pointer + "/")
+                for child in changed
+            )
+        ):
+            changed.remove(pointer)
+    return sorted(changed)
+
+
 class FixtureTests(unittest.TestCase):
     def test_every_passing_fixture_verifies_clean(self):
         found = 0
@@ -171,26 +281,12 @@ class FixtureTests(unittest.TestCase):
             match = BREACH.match(name)
             if not match:
                 continue
-            if name in GROUNDED_AGENT_BREACHES:
-                expected = GROUNDED_AGENT_BREACHES[name][1]
-                report = report_for(name)
-                failed = tuple(
-                    (gate.number, gate.name)
-                    for gate in report.gates
-                    if not gate.passed
-                )
-                with self.subTest(fixture=name):
-                    self.assertEqual(failed, expected)
-                    self.assertFalse(report.ok)
-                found += 1
-                continue
             expected = int(match.group(1))
             with self.subTest(fixture=name):
                 report = report_for(name)
-                failed = [gate.number for gate in report.gates if not gate.passed]
-                self.assertEqual(
-                    failed,
-                    [expected],
+                failed = failed_vector(report)
+                self.assertTrue(
+                    failure_vector_obeys_name(name, failed),
                     "%s should breach gate %d alone, breached %s"
                     % (name, expected, failed),
                 )
@@ -229,27 +325,12 @@ class FixtureTests(unittest.TestCase):
             expected = check_name_of(name)
             if expected is None:
                 continue
-            if name in GROUNDED_AGENT_BREACHES:
-                declared = GROUNDED_AGENT_BREACHES[name][1]
-                report = report_for(name)
-                failed = tuple(
-                    (gate.number, gate.name)
-                    for gate in report.gates
-                    if not gate.passed
-                )
-                with self.subTest(fixture=name):
-                    self.assertEqual(failed, declared)
-                    self.assertIn((None, expected), failed)
-                    self.assertFalse(report.ok)
-                found += 1
-                continue
             with self.subTest(fixture=name):
                 report = report_for(name)
-                failed = [gate.name for gate in report.gates if not gate.passed]
-                self.assertEqual(
-                    failed,
-                    [expected],
-                    "%s should breach %s alone, breached %s"
+                failed = failed_vector(report)
+                self.assertTrue(
+                    failure_vector_obeys_name(name, failed),
+                    "%s should breach %s under the naming contract, breached %s"
                     % (name, expected, failed),
                 )
                 self.assertFalse(report.ok)
@@ -334,6 +415,109 @@ class FixtureTests(unittest.TestCase):
                 )
 
 
+class NamingContractGuardTests(unittest.TestCase):
+    def test_a_grounded_gate_vector_cannot_override_its_filename(self):
+        """A gate-2 name wrapped around a real gate-4 report must be red.
+
+        This drives the generic naming assertion itself.  The parent special
+        case trusted the metadata vector and therefore accepted this mutation.
+        """
+        fake = "fail-gate2-grounded-agent-promotion-verdict.json"
+        report = report_for("fail-gate4-grounded-agent-promotion-verdict.json")
+        metadata = (
+            "pass-grounded-agent-complete.json",
+            ((4, "no-conclusions"),),
+            ("/subject/9/annotations/verdict",),
+        )
+        with (
+            mock.patch(__name__ + ".fixtures", return_value=[fake]),
+            mock.patch(__name__ + ".report_for", return_value=report),
+            mock.patch.dict(GROUNDED_AGENT_BREACHES, {fake: metadata}),
+        ):
+            result = unittest.TestResult()
+            FixtureTests(
+                "test_every_breaching_fixture_fails_the_gate_it_is_named_for"
+            ).run(result)
+        self.assertFalse(
+            result.wasSuccessful(),
+            "a fail-gate2 filename was allowed to carry a gate-4 failure",
+        )
+        self.assertEqual(len(result.failures), 1)
+        self.assertEqual(result.errors, [])
+
+    def test_a_dataset_check_cannot_borrow_a_grounded_compound_vector(self):
+        """A check name shared with grounded-agent grants no exception itself."""
+        fake = (
+            "fail-check-predicate-fields-dataset-uppercase-parameters-digest.json"
+        )
+        source = statement_of(
+            "fail-check-predicate-fields-dataset-unknown-field.json"
+        ).to_dict()
+        digest = source["predicate"]["producer"]["parameters_digest"]["sha256"]
+        source["predicate"]["producer"]["parameters_digest"]["sha256"] = (
+            digest.upper()
+        )
+        statement = type(statement_of("pass-dataset-release.json")).from_dict(source)
+        report = verify.report(
+            envelope.Document(statement, b"", None), registry.DEFAULT
+        )
+        vector = failed_vector(report)
+        self.assertEqual(
+            vector,
+            ((2, "environment"), (None, "predicate-fields")),
+        )
+        self.assertFalse(failure_vector_obeys_name(fake, vector))
+
+        with (
+            mock.patch(__name__ + ".fixtures", return_value=[fake]),
+            mock.patch(__name__ + ".report_for", return_value=report),
+            mock.patch(
+                __name__ + ".check_name_of", return_value="predicate-fields"
+            ),
+        ):
+            result = unittest.TestResult()
+            FixtureTests(
+                "test_every_check_breaching_fixture_fails_the_check_it_is_named_for"
+            ).run(result)
+        self.assertFalse(
+            result.wasSuccessful(),
+            "a dataset fixture borrowed a grounded-agent compound vector",
+        )
+        self.assertEqual(len(result.failures), 1)
+        self.assertEqual(result.errors, [])
+
+    def test_a_grounded_child_cannot_add_a_dsse_wrapper(self):
+        """Named-parent minimality includes explicit outer transport state."""
+        parent = "pass-grounded-agent-complete.json"
+        child = "fail-gate2-grounded-agent-adapter-digest.json"
+        parent_document = document_of(parent)
+        with open(os.path.join(FIXTURES, child), "rb") as handle:
+            wrapped_child = envelope.read(
+                envelope.wrap(handle.read()).to_json().encode("utf-8")
+            )
+        metadata = GROUNDED_AGENT_BREACHES[child]
+
+        def mutant_document(name):
+            return wrapped_child if name == child else parent_document
+
+        with (
+            mock.patch.dict(
+                GROUNDED_AGENT_BREACHES, {child: metadata}, clear=True
+            ),
+            mock.patch(__name__ + ".document_of", side_effect=mutant_document),
+        ):
+            result = unittest.TestResult()
+            GroundedAgentFixtureTests(
+                "test_each_breach_differs_from_its_clean_parent_only_at_named_leaves"
+            ).run(result)
+        self.assertFalse(
+            result.wasSuccessful(),
+            "a DSSE wrapper hitchhiked on a minimal grounded-agent breach",
+        )
+        self.assertEqual(len(result.failures), 1)
+        self.assertIn("changes outer transport state", result.failures[0][1])
+        self.assertEqual(result.errors, [])
+
 
 class MinimalityTests(unittest.TestCase):
     """A breaching fixture of the state-fixture type is one change from a passing one.
@@ -358,32 +542,8 @@ class MinimalityTests(unittest.TestCase):
         "fail-gate5-state-fixture-baseline-without-digest.json": 4,
     }
 
-    @staticmethod
-    def leaves(value, path=""):
-        """Every leaf of a document, with its type beside its value.
-
-        The type travels because `True == 1` and `0 == False` in Python. Two
-        fixtures here change only a value's type, and a comparison without the type
-        reports them as identical to the fixture they breach against -- which is
-        the very equality those two rules exist to refuse.
-        """
-        if isinstance(value, dict):
-            found = {}
-            for key, item in value.items():
-                here = "%s.%s" % (path, key) if path else key
-                found.update(MinimalityTests.leaves(item, here))
-            return found
-        if isinstance(value, list):
-            found = {}
-            for index, item in enumerate(value):
-                found.update(MinimalityTests.leaves(item, "%s[%d]" % (path, index)))
-            return found or {path + "[]": ("empty", None)}
-        return {path: (type(value).__name__, value)}
-
     def distance(self, left, right):
-        one, two = self.leaves(left), self.leaves(right)
-        changed = sorted(key for key in set(one) & set(two) if one[key] != two[key])
-        return sorted(set(one) ^ set(two)) + changed
+        return structural_distance(left, right)
 
     def test_each_breaching_fixture_is_one_change_from_the_passing_one(self):
         passing = statement_of(self.PASSING).predicate
@@ -419,13 +579,32 @@ class MinimalityTests(unittest.TestCase):
                     len(self.distance(passing, statement_of(name).predicate)), 1
                 )
 
+    def test_an_added_empty_object_is_a_structural_change(self):
+        self.assertEqual(
+            self.distance({"kept": 1}, {"kept": 1, "hitchhiker": {}}),
+            ["/hitchhiker"],
+        )
+
+    def test_an_added_empty_array_is_a_structural_change(self):
+        self.assertEqual(
+            self.distance({"kept": 1}, {"kept": 1, "hitchhiker": []}),
+            ["/hitchhiker"],
+        )
+
+    def test_structural_paths_escape_json_pointer_segments(self):
+        self.assertEqual(
+            self.distance({}, {"a/b~c": 1}),
+            ["/a~1b~0c"],
+        )
+        self.assertEqual(
+            self.distance({"a.b": 1}, {"a": {"b": 1}}),
+            ["/a.b", "/a/b"],
+        )
+
 
 class GroundedAgentFixtureTests(unittest.TestCase):
     def distance(self, left, right):
-        one = MinimalityTests.leaves(left)
-        two = MinimalityTests.leaves(right)
-        changed = sorted(key for key in set(one) & set(two) if one[key] != two[key])
-        return sorted(set(one) ^ set(two)) + changed
+        return structural_distance(left, right)
 
     def test_the_grounded_agent_inventory_is_complete(self):
         passing = {
@@ -472,24 +651,45 @@ class GroundedAgentFixtureTests(unittest.TestCase):
 
     def test_each_breach_has_its_exact_ordered_failure_vector(self):
         for name, (_, expected, _) in GROUNDED_AGENT_BREACHES.items():
-            failed = tuple(
-                (gate.number, gate.name)
-                for gate in report_for(name).gates
-                if not gate.passed
-            )
+            failed = failed_vector(report_for(name))
             with self.subTest(fixture=name):
                 self.assertEqual(failed, expected)
 
+    def test_each_declared_vector_obeys_its_filename(self):
+        for name, (_, declared, _) in GROUNDED_AGENT_BREACHES.items():
+            with self.subTest(fixture=name):
+                self.assertTrue(
+                    failure_vector_obeys_name(name, declared),
+                    "%s contradicts its declared failure vector %s"
+                    % (name, declared),
+                )
+
+    def test_the_compound_vector_allowlist_is_exact(self):
+        declared = {
+            name: vector
+            for name, (_, vector, _) in GROUNDED_AGENT_BREACHES.items()
+            if len(vector) > 1
+        }
+        self.assertEqual(COMPOUND_FAILURE_VECTORS, declared)
+
     def test_each_breach_differs_from_its_clean_parent_only_at_named_leaves(self):
         for name, (parent, _, changed) in GROUNDED_AGENT_BREACHES.items():
-            parent_statement = statement_of(parent)
+            parent_document = document_of(parent)
+            child_document = document_of(name)
             with self.subTest(fixture=name, parent=parent):
                 self.assertTrue(report_for(parent).ok)
                 self.assertEqual(
                     self.distance(
-                        parent_statement.to_dict(), statement_of(name).to_dict()
+                        parent_document.statement.to_dict(),
+                        child_document.statement.to_dict(),
                     ),
                     list(changed),
+                )
+                self.assertEqual(
+                    outer_transport_state(parent_document),
+                    outer_transport_state(child_document),
+                    "%s changes outer transport state relative to %s"
+                    % (name, parent),
                 )
 
     def test_passing_bodies_carry_no_gate_four_conclusion_keys(self):

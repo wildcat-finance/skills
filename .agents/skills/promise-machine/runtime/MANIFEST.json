@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 850,
-  "total_bytes": 11145303,
+  "total_bytes": 11150939,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -499,9 +499,9 @@
       "source": "plugins/ariadne/docs/capturing-a-state-fixture.md"
     },
     {
-      "bytes": 20045,
+      "bytes": 20135,
       "path": "plugins/ariadne/docs/conformance.md",
-      "sha256": "09d6927f48624aa7ec55501a08a9fe9a0127b151e9aaf9e1d1ee93d94d0d1c54",
+      "sha256": "7e0911ce0ffb2f154af547a7c8e570ac7bff81cc7b07772536ef7e03e2ecd8d2",
       "source": "plugins/ariadne/docs/conformance.md"
     },
     {
@@ -2767,15 +2767,15 @@
       "source": "plugins/horos/docs/refinement/maintainer-spec.md"
     },
     {
-      "bytes": 3925,
+      "bytes": 4227,
       "path": "plugins/horos/docs/refinement/runbook.md",
-      "sha256": "d4e556508828e487ae6d328880e9e50a9ddb02ada5a2fa6236fc0933a3619cb6",
+      "sha256": "0d4b6e618b131eb918c5442e4e1c1bd3446843558db90aff288fbd9cbb2cac1c",
       "source": "plugins/horos/docs/refinement/runbook.md"
     },
     {
-      "bytes": 8129,
+      "bytes": 8743,
       "path": "plugins/horos/docs/refinement/study.md",
-      "sha256": "85682bb10e5ac5923e5232f9792549115539a81639a751640db9800e370d23bd",
+      "sha256": "9735c49ae3a77ff849e9289068b811e08e30764b620c07ad549865b16e12d505",
       "source": "plugins/horos/docs/refinement/study.md"
     },
     {
@@ -2803,9 +2803,9 @@
       "source": "plugins/horos/docs/scoped-entry/runbook.md"
     },
     {
-      "bytes": 15290,
+      "bytes": 15794,
       "path": "plugins/horos/docs/scoped-entry/study.md",
-      "sha256": "6d0799213d64f4444bc67261697624fb09c66c31ef10caccd85b35ab8414aa46",
+      "sha256": "a47bdd20d916debf54ed518f64f62bcf9eeac3cf513375129620252d9b50ef0d",
       "source": "plugins/horos/docs/scoped-entry/study.md"
     },
     {
@@ -3003,7 +3003,7 @@
     {
       "bytes": 517,
       "path": "plugins/horos/examples/scoped-entry/.horos/boundary.json",
-      "sha256": "99f1b54fcb37b4622b8e5c051b5a64a4d4866cf0f970d608915dc66b2ef4605f",
+      "sha256": "d551c0322ea08bf1b38fdc95f5fdd0db323a9a8eb1d74dbbed9065686c218b8c",
       "source": "plugins/horos/examples/scoped-entry/.horos/boundary.json"
     },
     {
@@ -3055,15 +3055,15 @@
       "source": "plugins/horos/skills/horos/EVOLUTION.md"
     },
     {
-      "bytes": 13446,
+      "bytes": 13740,
       "path": "plugins/horos/skills/horos/SKILL.md",
-      "sha256": "3463165ed3a0e1c08c00c41458cd37987a6328bbbf06639c04ec40480b80e2fb",
+      "sha256": "6c0f7fe9ddaa0e2bb4331ff2818027cb9226dcd6bd93d9a65e1c2aa93367471a",
       "source": "plugins/horos/skills/horos/SKILL.md"
     },
     {
-      "bytes": 45159,
+      "bytes": 48991,
       "path": "plugins/horos/skills/horos/scripts/horos.py",
-      "sha256": "baffc31c6b40703361f05175d3c233b33f1abf1802a4139032094f58fb15aeae",
+      "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
       "source": "plugins/horos/skills/horos/scripts/horos.py"
     },
     {
