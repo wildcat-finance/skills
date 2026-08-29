@@ -80,3 +80,37 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the whole battery ran against the fixed tree and came back clean. The three bundled lints exited 0, the Probitas suite reported 301 of 301 through the runner step 2's contract names, Alexandria reported 296, the repository suite reported 466, and `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with the working tree clean. The three items recorded under rounds 1 and 2 still stand: the coverage-field length ceiling, the `payload["coverage"]` shape assumption, and the `N of M venue(s) checked` line that step 3 will have to correct. Nothing else is open.
+
+## Step 3, round 1 -- 2026-08-29T09:03:47Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-row-collapse=reviewed; unrequested-network=reviewed; schema-refusal=not-applicable; release-id-figures=not-applicable; overlap-attribution=reviewed; gap-double-count=reviewed; demo-receipt-drift=reviewed; markdown-injection=reviewed
+
+Not checked: `schema-refusal` and `release-id-figures` were settled in step 2 and this step changes neither the schema number nor the permitted-figure set. The Pashov pair did not run; the `security_suite` receipt waives it because nothing in scope is Solidity. The three bundled lints ran over the two changed Python files and the four changed documents and each exited 0. The round then read the diff for the register's concerns the lints cannot see and ran the union by hand against an index built from Alexandria's demonstration.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | medium | plugins/probitas/scripts/probitas_lib/adapters/\_\_init\_\_.py | The composed note for a venue no route reached dropped the registry's own description of that venue. Gate 4 reads a coverage note as the gap's reason, so a union dossier's negative space said only "no adapter ships for it" where a fixtures-only dossier explained that Goldfinch wound down in June 2026 after defaults and why its record matters. The union path told a reader strictly less than the path it is meant to extend. Reproduced by running the union against an index built from Alexandria's demonstration and reading the nine unreached rows. | fixed in ff45fbf4 |
+| S3-R1-02 | low | plugins/probitas/scripts/probitas_lib/adapters/\_\_init\_\_.py | `unchecked_coverage` defaulted `routes` to `("live",)`, so a caller that did not say which routes ran got a note asserting that one did. Provenance is the one thing this module refuses to assume anywhere else. | fixed in ff45fbf4 |
+| S3-R1-03 | low | plugins/probitas/scripts/probitas.py | `cmd_collect` tested `routes[0]` for the adapter route. Correct only because of the order `routes_for` happens to build its tuple, and silently wrong the day that order changes. | fixed in ff45fbf4 |
+
+Leads not pursued: the fix commit ff45fbf4 changed tests as well as code. Both new guards fail against the unfixed parent by assertion with no infrastructure error and pass on the fixed tree, which is why this round's verdict is `guarded` where the step 2 rounds recorded `passed`. Two bounded things are recorded rather than fixed. The archive-only route's unreached note has always been the terse "venue was not harvested into the selected Alexandria index" and loses the venue description in the same way S3-R1-01 did; correcting it would change the digests Alexandria's checked-in demonstration pins, so it belongs to a change that owns those receipts rather than to this one. And `_collect_alexandria` still drops a coverage row for a venue the index holds but the registry does not know, silently, exactly as it did before this step; `translate` supports only Goldfinch and Clearpool and both are registered, so nothing reaches it today. The three items recorded under step 2 still stand.
+
+## Step 3, round 2 -- 2026-08-29T09:05:58Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-row-collapse=reviewed; unrequested-network=reviewed; schema-refusal=not-applicable; release-id-figures=not-applicable; overlap-attribution=reviewed; gap-double-count=reviewed; demo-receipt-drift=reviewed; markdown-injection=reviewed
+
+Not checked: nothing new. The same two step 2 concerns remain settled and the Pashov pair remains waived by the `security_suite` receipt.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the round re-ran the union end to end against an index built from Alexandria's demonstration, and the repaired note now reads, for maple, "api.maple.finance responds but disables introspection, so the query shape could not be established. Undercollateralised, so worth the work. Not reached by this run: no adapter ships for it; venue was not harvested into the selected Alexandria index." All five gates pass on that dossier. The three bundled lints exited 0, the Probitas suite reported 315 of 315, Alexandria 298, the repository suite 466, and the portable, Horos and whitespace checks each exited 0 with the working tree clean. The two items recorded under round 1 and the three under step 2 all still stand. Nothing else is open.
