@@ -9,7 +9,13 @@
 #     --config adapters/echidna/echidna.yaml --format text
 #
 # testMode is `property`, so Echidna reads functions prefixed `echidna_` and
-# nothing else. GL01 to GL07 carry that prefix for this reason.
+# nothing else. GL00 to GL08 carry that prefix for this reason.
+#
+# GL00 is expected to FAIL under this engine, and that is the honest result
+# rather than a regression: Echidna 2.3.3 does not implement the JSON
+# cheatcodes the reader is built on, so every generated manifest reverts
+# before resolution and GL01 to GL08 -- all negated ghost flags -- hold
+# without being tested. See run_fuzz_campaigns.py.
 testMode: property
 
 # One hundred thousand transactions. The suite drives manifest *structure* --
@@ -23,9 +29,12 @@ testLimit: 100000
 # across a sequence.
 seqLen: 20
 
-# A manifest that names an unresolvable symbol, an unknown call kind or an
-# unknown storage scope is *meant* to revert. Roughly half of all generated
-# manifests refuse by design, so a revert is not a property failing.
+# A manifest that names an unresolvable symbol, an unknown call kind, an
+# unknown storage scope, a blank account symbol or a duplicated action name is
+# *meant* to revert. Most generated manifests refuse by design -- about one
+# draw in sixteen resolves -- so a revert is not a property failing. Every
+# fourth draw is built inside the accepted subrange so that GL00 can tell
+# "refused by design" apart from "never reached the reader at all".
 shrinkLimit: 5000
 
 # Generated, never committed. Matches .gitignore's `**/corpus/`.

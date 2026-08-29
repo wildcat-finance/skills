@@ -3,6 +3,7 @@ pragma solidity 0.8.25;
 
 import {JanusBase} from "../src/JanusBase.sol";
 import {AccountResolver, ManifestReader, ResolvedThreshold} from "../src/ManifestReader.sol";
+import {ManifestFuzz} from "../adapters/ManifestFuzz.sol";
 
 /// @dev A stub adapter local to this test: a name table the tests fill. An
 ///      unset name reports `ok = false`, which is how a real adapter refuses
@@ -302,5 +303,162 @@ contract ManifestReaderTest is JanusBase {
       "deposit",
       omni
     );
+  }
+
+  // -- Guards added by the step 2 round 2 audit -----------------------------
+
+  /// @dev S2-R2-03. The round 1 guard refused only the zero-length symbol, so
+  ///      a target of ` ` or ` .field` still reached the adapter as a name.
+  ///      That is the same class the guard was installed to close: neither is
+  ///      a name the manifest author wrote, and an adapter that trims before
+  ///      looking a name up admits it. Driven with an adapter that answers to
+  ///      every name, so without the fix this admits 0xBEEF.
+  function test_whitespace_only_symbol_reverts() external {
+    OmniResolver omni = new OmniResolver();
+    vm.expectRevert(abi.encodeWithSelector(ManifestReader.EmptyAccountSymbol.selector, " "));
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":" ","kind":"call"}]}]}',
+      "deposit",
+      omni
+    );
+  }
+
+  /// @dev S2-R2-03, the leading-whitespace shape: ` .getCredential` splits at
+  ///      the dot into the symbol ` `, which is blank for the same reason.
+  function test_whitespace_before_the_dot_reverts() external {
+    OmniResolver omni = new OmniResolver();
+    vm.expectRevert(abi.encodeWithSelector(ManifestReader.EmptyAccountSymbol.selector, " "));
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":" .getCredential","kind":"call"}]}]}',
+      "deposit",
+      omni
+    );
+  }
+
+  /// @dev S2-R2-03, the storage path, and a tab rather than a space so the
+  ///      guard is shown to be about whitespace and not about one byte. The
+  ///      slot carries the two characters `\` and `t`, which is how a tab is
+  ///      written inside a JSON string; the parser hands the reader a real
+  ///      tab.
+  function test_tab_only_symbol_in_an_external_slot_reverts() external {
+    OmniResolver omni = new OmniResolver();
+    vm.expectRevert(abi.encodeWithSelector(ManifestReader.EmptyAccountSymbol.selector, "\t"));
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[{"scope":"external","slot":"\\t.counter[market]"}],'
+      '"permittedValueMovements":[],"permittedCalls":[]}]}',
+      "deposit",
+      omni
+    );
+  }
+
+  /// @dev The boundary the blank guard must not cross: a symbol that merely
+  ///      contains whitespace is still a name, and stays the adapter's call.
+  function test_a_name_containing_a_space_is_still_a_name() external {
+    OmniResolver omni = new OmniResolver();
+    ResolvedThreshold memory t = reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"role provider","kind":"call"}]}]}',
+      "deposit",
+      omni
+    );
+    assertEq(t.allowedCallTargets.length, 1, "a name with a space in it is still a name");
+    assertEq(t.allowedCallTargets[0], omni.ANY(), "and the adapter decides it");
+  }
+}
+
+/// @dev The invariant fuzz suite in `adapters/ManifestFuzz.sol` is written for
+///      Echidna and Medusa, but neither engine implements the JSON cheatcodes
+///      `ManifestReader` is built on: under both, every generated manifest
+///      reverts with empty return data before the reader resolves anything, so
+///      all seven GL properties hold without being tested. Foundry's invariant
+///      engine does carry those cheatcodes, so this contract drives the same
+///      generator and asserts the same seven properties where they can fail.
+///
+///      Importing the suite here has a second effect worth stating: the suite
+///      lives outside `src` and `test`, so `forge test` did not compile it and
+///      a compile break inside it was invisible to this run. The import ends
+///      that.
+contract ManifestFuzzInvariantTest is JanusBase {
+  ManifestFuzz fuzz;
+
+  function setUp() public {
+    fuzz = new ManifestFuzz();
+  }
+
+  /// @dev Drive only the generator; the reader and the stub resolver it
+  ///      deploys are reached through it, never directly.
+  function targetContracts() public view returns (address[] memory addrs) {
+    addrs = new address[](1);
+    addrs[0] = address(fuzz);
+  }
+
+  function invariant_manifest_resolution_holds() external view {
+    assertTrue(
+      fuzz.echidna_GL00_the_reader_was_actually_reached(),
+      "GL00: the generator reached the reader, so the seven ghosts below were actually tested"
+    );
+    assertTrue(!fuzz.sawWidenedSet(), "GL01: no resolved set is wider than the manifest entries behind it");
+    assertTrue(!fuzz.sawZeroAddress(), "GL02: no resolved set carries the zero address");
+    assertTrue(!fuzz.sawPairMismatch(), "GL03: the value asset and recipient sets stay the same length");
+    assertTrue(!fuzz.sawKindConfusion(), "GL04: each call set holds exactly its own kind's entries");
+    assertTrue(!fuzz.sawBudgetDrift(), "GL05: the gas budget is the named action's own");
+    assertTrue(!fuzz.sawUnresolvableAccepted(), "GL06: an unresolvable symbol or unknown kind or scope never resolves");
+    assertTrue(!fuzz.sawBlankSymbolAccepted(), "GL07: a manifest carrying a blank account symbol never resolves");
+    assertTrue(!fuzz.sawDuplicateActionAccepted(), "GL08: a manifest naming one action twice never resolves");
+  }
+
+  /// @dev The anti-vacuity guard, deterministic rather than sampled: the seven
+  ///      properties above are all negated ghost flags, so a generator that
+  ///      never reaches the reader satisfies every one of them. This drives a
+  ///      fixed sequence of 256 draws and requires that some of them resolved.
+  ///      About one manifest in sixteen resolves, so 256 fixed draws clear the
+  ///      bar by a wide margin; it is the test that fails first if the JSON
+  ///      cheatcodes stop working or the generator degenerates.
+  function test_the_generator_actually_reaches_the_reader() external {
+    for (uint256 i = 0; i < 256; i++) {
+      bytes32 h = keccak256(abi.encode(i));
+      fuzz.fuzzResolve(
+        uint8(uint256(h)),
+        uint8(uint256(h) >> 8),
+        uint8(uint256(h) >> 16),
+        uint8(uint256(h) >> 24),
+        uint8(uint256(h) >> 32),
+        uint8(uint256(h) >> 40),
+        uint64(uint256(h) >> 48),
+        (uint256(h) >> 112) & 1 == 1,
+        (uint256(h) >> 120) & 1 == 1
+      );
+    }
+    assertEq(fuzz.resolveAttempts(), 256, "every draw was attempted");
+    assertTrue(fuzz.resolveSuccesses() > 0, "some generated manifest resolved, so the ghost checks ran");
+    assertTrue(fuzz.resolveReverts() > 0, "and some refused, so the fail-closed paths ran too");
+  }
+
+  /// @dev GL00 as the external engines see it. Under Echidna and Medusa this
+  ///      is the property that fails; here it is shown to hold once the
+  ///      generator has actually resolved something.
+  function test_gl00_holds_once_the_reader_has_been_reached() external {
+    assertTrue(fuzz.echidna_GL00_the_reader_was_actually_reached(), "GL00 holds before any attempt");
+    for (uint256 i = 0; i < 256; i++) {
+      bytes32 h = keccak256(abi.encode(i));
+      fuzz.fuzzResolve(
+        uint8(uint256(h)),
+        uint8(uint256(h) >> 8),
+        uint8(uint256(h) >> 16),
+        uint8(uint256(h) >> 24),
+        uint8(uint256(h) >> 32),
+        uint8(uint256(h) >> 40),
+        uint64(uint256(h) >> 48),
+        (uint256(h) >> 112) & 1 == 1,
+        (uint256(h) >> 120) & 1 == 1
+      );
+    }
+    assertTrue(fuzz.echidna_GL00_the_reader_was_actually_reached(), "and holds after the reader was reached");
   }
 }

@@ -26,6 +26,20 @@ crytic-compile skips `./test/**` on the Foundry platform.
 
 Neither engine is run concurrently with the other; each invocation runs one.
 The launcher's exit code is the engine's exit code.
+
+A non-zero exit is expected here, and it is not a regression. Neither Echidna
+2.3.3 nor Medusa 1.5.1 implements the `keyExistsJson`, `parseJsonUint` and
+`parseJsonString` cheatcodes `ManifestReader` is built on: the cheatcode
+address carries code under both, but a call to `keyExistsJson(string,string)`
+fails, so every manifest the suite generates reverts with empty return data
+before the reader resolves anything. Property `GL00` in the suite says exactly
+that and fails, which is the point -- `GL01` to `GL08` are negated ghost flags
+set only after a successful resolve, so without GL00 a campaign that resolves
+nothing reports eight green ticks and no evidence. The properties are asserted
+where they can actually fail by `ManifestFuzzInvariantTest` in
+`harness/test/ManifestReader.t.sol`, under Foundry's invariant engine, which
+does carry the cheatcodes. Run these campaigns to see whether either engine
+has gained JSON cheatcode support; read `forge test` for the invariant result.
 """
 
 from __future__ import annotations
