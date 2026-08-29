@@ -54,6 +54,23 @@ def cmd_venues(args):
     return 0
 
 
+def routes_for(args):
+    """Which routes this invocation asked for, in the order they run.
+
+    An archive index on its own suppresses the adapter route, exactly as it
+    always has. That is deliberate rather than tidy: making an index additive
+    by default would start sending requests from every command that already
+    passes one, and a tool whose whole claim is provenance should not widen
+    what it reaches to save a flag.
+    """
+    routes = []
+    if args.alexandria_index is None or args.fixtures is not None or args.live:
+        routes.append("fixtures" if args.fixtures else "live")
+    if args.alexandria_index:
+        routes.append("archive")
+    return tuple(routes)
+
+
 def cmd_collect(args):
     try:
         entity = sanitise.entity_name(args.entity)
@@ -64,32 +81,66 @@ def cmd_collect(args):
         return 2
 
     evidence = Evidence(entity=entity, addresses=declared + inferred, run_id=args.run_id)
+    routes = routes_for(args)
+
+    if routes[0] in ("live", "fixtures"):
+        config = {"fixtures": args.fixtures, "timeout": args.timeout}
+        for venue in registry.all_venues():
+            adapter = ADAPTERS.get(venue.id)
+            if adapter is None:
+                continue
+            records, coverage = run_adapter(
+                venue.id, adapter, evidence.addresses, config
+            )
+            for record in records:
+                evidence.add_record(record)
+            evidence.add_coverage(coverage)
+
     if args.alexandria_index:
         _collect_alexandria(args.alexandria_index, evidence)
-        return _write_evidence(args, evidence)
 
-    config = {"fixtures": args.fixtures, "timeout": args.timeout}
-
+    # Every route has now put down a row for each venue it answered for, and
+    # only for those. What is left over is the venue nobody reached, and it
+    # gets one row saying so rather than one per route saying the same thing.
+    answered = {coverage.venue for coverage in evidence.coverage}
     for venue in registry.all_venues():
-        adapter = ADAPTERS.get(venue.id)
-        if adapter is None:
-            evidence.add_coverage(unchecked_coverage(venue))
-            continue
-        records, coverage = run_adapter(venue.id, adapter, evidence.addresses, config)
-        for record in records:
-            evidence.add_record(record)
-        evidence.add_coverage(coverage)
+        if venue.id not in answered:
+            evidence.add_coverage(unchecked_coverage(venue, routes))
 
+    _record_gaps(evidence)
+    return _write_evidence(args, evidence, routes)
+
+
+def _record_gaps(evidence):
+    """Name what could not be established, once per venue.
+
+    A venue some route answered for is not a hole, even when another route
+    had nothing to say about it, so a run that reached Wildcat live does not
+    also report Wildcat as unchecked because the archive never held it. An
+    `error` row still counts: a route that failed leaves a gap whether or not
+    something else answered.
+    """
+    observed = {
+        coverage.venue
+        for coverage in evidence.coverage
+        if coverage.status in ("checked", "empty")
+    }
     for coverage in evidence.coverage:
-        if coverage.status in ("unimplemented", "unconfigured", "error"):
-            evidence.add_gap(
-                Gap(
-                    subject=f"{coverage.venue} borrowing history",
-                    reason=coverage.note or f"venue not checked ({coverage.status})",
-                )
+        unreached = (
+            coverage.status in ("unimplemented", "unconfigured")
+            and coverage.venue not in observed
+        )
+        if coverage.status != "error" and not unreached:
+            continue
+        subject = f"{coverage.venue} borrowing history"
+        if any(gap.subject == subject for gap in evidence.gaps):
+            continue
+        evidence.add_gap(
+            Gap(
+                subject=subject,
+                reason=coverage.note or f"venue not checked ({coverage.status})",
             )
-
-    return _write_evidence(args, evidence)
+        )
 
 
 def _collect_alexandria(index_path, evidence):
@@ -112,6 +163,7 @@ def _collect_alexandria(index_path, evidence):
         raise EvidenceError(f"Alexandria index: {error}") from error
 
     by_venue = {item["venue"]: item for item in translated["coverage"]}
+    known = {venue.id for venue in registry.all_venues()}
     for item in translated["records"]:
         address = item["address"]
         values = dict(item["values"])
@@ -124,44 +176,50 @@ def _collect_alexandria(index_path, evidence):
             observed_at=item["observed_at"], block=item["block"],
         ))
 
-    for venue in registry.all_venues():
-        item = by_venue.get(venue.id)
-        if item is not None:
-            evidence.add_coverage(Coverage(source="archive", **item))
+    # Only the venues the archive actually holds. A venue this index never
+    # harvested is not this route's to describe: another route may have
+    # answered for it, and the shared pass below owns the ones nobody reached.
+    for venue_id in sorted(by_venue):
+        if venue_id not in known:
             continue
-        status = "unconfigured" if venue.implemented else "unimplemented"
-        evidence.add_coverage(Coverage(
-            venue=venue.id, status=status, endpoint="Alexandria index",
-            note="venue was not harvested into the selected Alexandria index",
-            source="none",
-        ))
+        evidence.add_coverage(Coverage(source="archive", **by_venue[venue_id]))
 
     for item in translated["gaps"]:
         evidence.add_gap(Gap(**item))
-    for coverage in evidence.coverage:
-        if coverage.status in ("unimplemented", "unconfigured", "error"):
-            subject = f"{coverage.venue} borrowing history"
-            if not any(gap.subject == subject for gap in evidence.gaps):
-                evidence.add_gap(Gap(
-                    subject=subject,
-                    reason=coverage.note or f"venue not checked ({coverage.status})",
-                ))
 
 
-def _write_evidence(args, evidence):
+def _write_evidence(args, evidence, routes):
     payload = evidence.to_json()
     if args.out == "-":
         sys.stdout.write(payload)
     else:
         with open(args.out, "w", encoding="utf-8") as handle:
             handle.write(payload)
-        checked = sum(1 for c in evidence.coverage if c.status in ("checked", "empty"))
+        # Counted over venues rather than rows. A union run holds more rows
+        # than venues, and "5 of 17 venue(s) checked" would understate the
+        # coverage by counting the same venue's two answers as two venues.
+        venues = {c.venue for c in evidence.coverage}
+        checked = {
+            c.venue for c in evidence.coverage if c.status in ("checked", "empty")
+        }
         print(
             f"probitas: wrote {args.out} -- {len(evidence.records)} record(s), "
-            f"{checked} of {len(evidence.coverage)} venue(s) checked",
+            f"{len(checked)} of {len(venues)} venue(s) checked "
+            f"over {len(evidence.coverage)} row(s); "
+            f"routes: {_routes_line(args, routes)}",
             file=sys.stderr,
         )
     return 0
+
+
+def _routes_line(args, routes):
+    """Name each route the run asked for and what backed it."""
+    backing = {
+        "live": "the network",
+        "fixtures": args.fixtures,
+        "archive": args.alexandria_index,
+    }
+    return ", ".join(f"{route} ({backing[route]})" for route in routes)
 
 
 def cmd_render(args):
@@ -231,16 +289,26 @@ def build_parser():
         help="an address suspected but not declared or provably linked; "
         "kept in its own section and never mixed with the declared ones",
     )
-    sources = collect.add_mutually_exclusive_group()
-    sources.add_argument(
+    # --fixtures and --live both name the adapter route's backing, so they
+    # contradict each other. --alexandria-index names a second route and
+    # combines with either; on its own it still suppresses the adapter route,
+    # so no invocation that works today starts reaching the network.
+    backing = collect.add_mutually_exclusive_group()
+    backing.add_argument(
         "--fixtures",
         metavar="DIR",
         help="read venue responses from this directory instead of the network",
     )
-    sources.add_argument(
+    backing.add_argument(
+        "--live",
+        action="store_true",
+        help="run the adapters against the network; needed beside "
+        "--alexandria-index, and the default when no index is given",
+    )
+    collect.add_argument(
         "--alexandria-index",
         metavar="SQLITE",
-        help="read verified archive-backed evidence instead of live or fixture adapters",
+        help="also read verified archive-backed evidence from this index",
     )
     collect.add_argument("--run-id", default=None)
     collect.add_argument(

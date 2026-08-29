@@ -115,6 +115,25 @@ class TestAdapterFailures(unittest.TestCase):
         with self.assertRaises(ValueError):
             run_adapter("wildcat", sloppy, {}, {})
 
+    def test_a_venue_no_route_reached_names_every_route_that_missed_it(self):
+        """"unconfigured" alone cannot say which route came up short."""
+        venue = registry.BY_ID["goldfinch"]
+        both = unchecked_coverage(venue, ("fixtures", "archive"))
+        self.assertEqual(both.source, "none")
+        self.assertIn("no adapter ships for it", both.note)
+        self.assertIn("not harvested into the selected Alexandria index", both.note)
+
+    def test_a_single_route_run_keeps_the_sentence_it_always_printed(self):
+        """An existing dossier's reader already knows these words."""
+        venue = registry.BY_ID["goldfinch"]
+        self.assertEqual(unchecked_coverage(venue, ("fixtures",)).note, venue.note)
+        self.assertEqual(unchecked_coverage(venue, ("live",)).note, venue.note)
+        archive_only = unchecked_coverage(venue, ("archive",))
+        self.assertEqual(
+            archive_only.note,
+            "venue was not harvested into the selected Alexandria index",
+        )
+
     def test_unknown_status_cannot_be_invented(self):
         with self.assertRaises(EvidenceError):
             Coverage("wildcat", "probably fine")

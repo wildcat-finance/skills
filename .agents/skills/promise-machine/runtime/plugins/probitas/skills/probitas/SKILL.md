@@ -91,22 +91,44 @@ python3 scripts/probitas.py verify dossier.md evidence.json
 evidence file. A record cannot enter that file without a transaction hash, a
 URL or a document reference, because the schema will not represent one.
 
-To use verified Alexandria releases instead of live or fixture adapters, pass
-an explicit disposable index:
+`collect` gathers from two routes. The adapter route queries the venues that
+ship an adapter, backed by the network or by a fixture directory. The archive
+route reads verified Alexandria releases through an explicit disposable index.
+Ask for both in one run:
 
 ```bash
 python3 scripts/probitas.py collect \
   --entity "<name>" --address 0x... \
-  --alexandria-index alexandria.sqlite --out evidence.json
+  --live --alexandria-index alexandria.sqlite --out evidence.json
 ```
 
-This path keeps Goldfinch and Clearpool as venue IDs and records Alexandria's
-release, component, capture, row and evidence identities. It combines
-per-chain coverage conservatively and leaves every unharvested registry venue
-visible as a gap. A zero-row venue is empty only when complete archive coverage
-includes every requested address, venue, chain and time boundary and the
-mapping has no unsupported records. It does not infer a person, default, full
-repayment or current balance.
+| Flags | Adapter route | Archive route |
+| --- | --- | --- |
+| none | live network | not run |
+| `--fixtures DIR` | fixture directory | not run |
+| `--alexandria-index X` | not run | archive |
+| `--fixtures DIR --alexandria-index X` | fixture directory | archive |
+| `--live --alexandria-index X` | live network | archive |
+| `--live` | live network | not run |
+| `--live --fixtures DIR` | refused, exit 2 | refused, exit 2 |
+
+An index on its own still suppresses the adapter route and reaches no network,
+so no invocation that worked before starts making requests. `--live` is how a
+run asks for the network beside an index, and it contradicts `--fixtures`.
+
+Every coverage row names the route that produced it: `live`, `fixtures`,
+`archive`, or `none` for a venue nobody reached. An archive row also names the
+Alexandria releases behind it. A venue some route answered for is not reported
+as a gap because another route had nothing to say about it; a route that failed
+still leaves one.
+
+The archive route keeps Goldfinch and Clearpool as venue IDs and records
+Alexandria's release, component, capture, row and evidence identities. It
+combines per-chain coverage conservatively and leaves every unharvested
+registry venue visible as a gap. A zero-row venue is empty only when complete
+archive coverage includes every requested address, venue, chain and time
+boundary and the mapping has no unsupported records. It does not infer a
+person, default, full repayment or current balance.
 
 The checked-in Alexandria `credit-history-v0` example exercises this explicit
 index path offline and checks the resulting evidence and dossier against fixed
