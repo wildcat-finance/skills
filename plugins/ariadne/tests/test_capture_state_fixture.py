@@ -341,14 +341,46 @@ class ReceiptFixtureTests(SkipUnlessReceiptFixture):
                 self.assertEqual(component_reads, [])
 
     def test_empty_directories_count_against_the_capture_tree_bound(self):
-        names = ["empty-%04d" % index for index in range(capture.tree.MAX_FILES + 1)]
+        class EmptyDirectory:
+            def __init__(self, root, index):
+                self.name = "empty-%04d" % index
+                self.path = os.path.join(root, self.name)
 
-        def too_many_entries(root, onerror):
-            yield root, names, []
-            raise AssertionError("capture descended after crossing the entry cap")
+            def is_dir(self, follow_symlinks=True):
+                return True
+
+            def is_symlink(self):
+                return False
+
+            def stat(self, follow_symlinks=True):
+                return os.stat_result((0o040755, 0, 0, 1, 0, 0, 0, 0, 0, 0))
+
+        class WideScan:
+            def __init__(self, root):
+                self.entries = iter(
+                    EmptyDirectory(root, index)
+                    for index in range(capture.tree.MAX_FILES + 1)
+                )
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                return next(self.entries)
+
+            def close(self):
+                pass
 
         with mock.patch.object(
-            capture.tree.os, "walk", side_effect=too_many_entries
+            capture.tree.os,
+            "scandir",
+            return_value=WideScan(RECEIPT_FIXTURE),
         ):
             with self.assertRaisesRegex(
                 capture.CaptureError,
@@ -536,7 +568,7 @@ class CopiedFixtureTests(SkipUnlessGoldfinch):
         call a document a Lazarus manifest on the strength of a key holding
         `{"a": 1}`."""
         for value in (None, "", "   ", 0, True, [], {}, {"a": 1}, "beef",
-                      "F" * 64, "0x" + "a" * 64):
+                      "F" * 64, "0x" + "a" * 64, "a" * 64 + "\n"):
             manifest = self.manifest()
             manifest["fixture_digest"] = value
             self.rewrite(manifest)
@@ -952,6 +984,21 @@ class WriteTests(unittest.TestCase):
             self.assertEqual(json.load(handle), {"second": True})
         leftovers = [n for n in os.listdir(directory) if n.startswith(".ariadne-")]
         self.assertEqual(leftovers, [])
+
+    def test_writer_pins_utf8_and_literal_lf(self):
+        directory = tempfile.mkdtemp(prefix="ariadne-write-")
+        self.addCleanup(shutil.rmtree, directory, True)
+        path = os.path.join(directory, "unicode.json")
+        with mock.patch.object(
+            capture.tempfile,
+            "NamedTemporaryFile",
+            wraps=tempfile.NamedTemporaryFile,
+        ) as temporary:
+            capture.write(path, '{"label": "caf\u00e9"}\n')
+        self.assertEqual(temporary.call_args.kwargs["encoding"], "utf-8")
+        self.assertEqual(temporary.call_args.kwargs["newline"], "\n")
+        with open(path, "rb") as handle:
+            self.assertEqual(handle.read(), b'{"label": "caf\xc3\xa9"}\n')
 
     def test_a_failed_write_leaves_no_temporary_file(self):
         directory = tempfile.mkdtemp(prefix="ariadne-write-")

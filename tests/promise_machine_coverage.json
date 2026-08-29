@@ -138,7 +138,7 @@
     "ariadne-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
       "path": "plugins/ariadne/tests/test_examples.py",
-      "selector": "test_both_examples_verify_with_nothing_unchecked"
+      "selector": "test_all_examples_verify_with_nothing_unchecked"
     },
     "ariadne-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
@@ -3050,10 +3050,10 @@
         "promise_id": "coverage key joined to the canonical promise heading",
         "scope": "recorded command, arguments and exact replay mode",
         "subject": "statement subject digest and replay project",
-        "transition": "allow-execution authority and replay exit joined to the canonical Authorises field",
-        "unknowns": "redacted arguments, unchecked predicates and non-deterministic records"
+        "transition": "allow-execution authority, registered predicate gates 2 and 5, and replay exit joined to the canonical Authorises field",
+        "unknowns": "redacted arguments, non-deterministic records and external effects of executed commands"
       },
-      "sha256": "ba45c1fcfba8a2bf9cafbcf09b97c752d3c756eee97cd5d4124da94bea359412",
+      "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     "ariadne-verify-statement": {
@@ -3062,12 +3062,12 @@
         "evidence_references": "predicate materials, claims and gate report",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading",
-        "scope": "predicate type and complete gate set",
+        "scope": "predicate type, gates actually run and explicit unchecked set",
         "subject": "in-toto subject name and digest",
-        "transition": "zero-exit gate result joined to the canonical Authorises field",
+        "transition": "zero-exit result for applicable gates actually run joined to the canonical Authorises field",
         "unknowns": "unchecked predicates, unsigned status and skipped records"
       },
-      "sha256": "ba45c1fcfba8a2bf9cafbcf09b97c752d3c756eee97cd5d4124da94bea359412",
+      "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
       "source": "plugins/ariadne/scripts/ariadne.py"
     },
     "berean-release-promotion": {
@@ -3305,7 +3305,7 @@
         "transition": "atomic scan write and zero exit joined to the canonical Authorises field",
         "unknowns": "omitted paths and fail-open unproven classifications"
       },
-      "sha256": "baffc31c6b40703361f05175d3c233b33f1abf1802a4139032094f58fb15aeae",
+      "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
       "source": "plugins/horos/skills/horos/scripts/horos.py"
     },
     "hypomnema-record-placement": {

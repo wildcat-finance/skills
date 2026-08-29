@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 14867049,
+    "bytes_blob": 15463567,
     "bytes_generated": 98
   },
   "entries": [
@@ -61,6 +61,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-391-unified-live-and-archive-collection.synopsis.md"
+    },
+    {
+      "bytes": 297271,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 148635 of 297271 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-402-implement-the-grounded-agent-predicate.md"
+    },
+    {
+      "bytes": 299247,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-402-implement-the-grounded-agent-predicate.synopsis.md"
     },
     {
       "bytes": 89662,

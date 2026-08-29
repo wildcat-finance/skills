@@ -10,15 +10,20 @@ Every shipped predicate needs a schema and a drift class. The completeness test
 at the bottom fails when one ships without them.
 """
 
+import ast
 import json
 import os
+import re
+import sys
 import unittest
+import unicodedata
 
 from . import support  # noqa: F401  (sets sys.path)
 
-from ariadne_lib import core_predicate  # noqa: E402
+from ariadne_lib import core_predicate, digests  # noqa: E402
 from ariadne_lib import registry  # noqa: E402
 from ariadne_lib.predicates import dataset  # noqa: E402
+from ariadne_lib.predicates import grounded_agent  # noqa: E402
 from ariadne_lib.predicates import solidity_release as release  # noqa: E402
 from ariadne_lib.predicates import state_fixture  # noqa: E402
 
@@ -29,12 +34,14 @@ SCHEMA = os.path.join(SCHEMAS, "solidity-release-v1.json")
 DATASET_SCHEMA = os.path.join(SCHEMAS, "dataset-v1.json")
 STATE_FIXTURE_SCHEMA = os.path.join(SCHEMAS, "state-fixture-v1.json")
 STATE_FIXTURE_V2_SCHEMA = os.path.join(SCHEMAS, "state-fixture-v2.json")
+GROUNDED_AGENT_SCHEMA = os.path.join(SCHEMAS, "grounded-agent-v1.json")
 
 SHIPPED = (
     (release, SCHEMA),
     (dataset, DATASET_SCHEMA),
     (state_fixture, STATE_FIXTURE_SCHEMA),
     (state_fixture.V2, STATE_FIXTURE_V2_SCHEMA),
+    (grounded_agent, GROUNDED_AGENT_SCHEMA),
 )
 """Each shipped predicate and its published schema."""
 
@@ -591,6 +598,549 @@ class StateFixtureV2SchemaDriftTests(unittest.TestCase):
                 "sha384": "^[0-9a-f]{96}$",
                 "sha512": "^[0-9a-f]{128}$",
             },
+        )
+
+
+class GroundedAgentSchemaDriftTests(unittest.TestCase):
+    def setUp(self):
+        self.schema = read_schema(GROUNDED_AGENT_SCHEMA)
+        self.properties = self.schema["properties"]
+
+    def test_the_schema_names_the_predicate_type(self):
+        self.assertIn(grounded_agent.TYPE, self.schema["$id"])
+        self.assertIn(grounded_agent.BEREAN_FORMAT, self.schema["description"])
+
+    def test_the_top_level_fields_match_the_module(self):
+        self.assertEqual(
+            sorted(self.properties), sorted(grounded_agent.PREDICATE_FIELDS)
+        )
+        self.assertEqual(
+            self.schema["required"], list(grounded_agent.REQUIRED_FIELDS)
+        )
+
+    def test_every_closed_nested_field_table_matches(self):
+        component = self.schema["$defs"]["component"]
+        cases = (
+            (self.properties["release"], grounded_agent.RELEASE_FIELDS),
+            (self.properties["given"], grounded_agent.GIVEN_FIELDS),
+            (
+                self.properties["given"]["properties"]["corpus"],
+                grounded_agent.CORPUS_FIELDS,
+            ),
+            (
+                self.properties["given"]["properties"]["reads"]["oneOf"][1],
+                grounded_agent.READS_FIELDS,
+            ),
+            (self.properties["produced"], grounded_agent.PRODUCED_FIELDS),
+            (
+                self.properties["produced"]["properties"]["evaluations"]["oneOf"][1],
+                grounded_agent.EVALUATIONS_FIELDS,
+            ),
+            (
+                self.properties["produced"]["properties"]["promotion"]["oneOf"][1],
+                grounded_agent.PROMOTION_FIELDS,
+            ),
+            (
+                self.properties["produced"]["properties"]["promotion"]["oneOf"][1]["properties"]["terminal"],
+                grounded_agent.PROMOTION_TERMINAL_FIELDS,
+            ),
+            (self.properties["policy"], grounded_agent.POLICY_FIELDS),
+            (
+                self.properties["policy"]["properties"]["rules"],
+                grounded_agent.RULES_FIELDS,
+            ),
+            (
+                self.properties["policy"]["properties"]["allowlists"],
+                grounded_agent.ALLOWLIST_FIELDS,
+            ),
+            (self.properties["adapter"], grounded_agent.ADAPTER_FIELDS),
+            (self.properties["comparison"], grounded_agent.COMPARISON_FIELDS),
+            (self.schema["$defs"]["comparisonSide"], grounded_agent.COMPARISON_SIDE_FIELDS),
+            (component, grounded_agent.COMPONENT_FIELDS),
+        )
+        for shape, fields in cases:
+            with self.subTest(fields=fields):
+                self.assertEqual(shape["required"], list(fields))
+                self.assertEqual(sorted(shape["properties"]), sorted(fields))
+                self.assertIs(shape["additionalProperties"], False)
+
+    def test_component_and_collection_bounds_match(self):
+        component = self.schema["$defs"]["component"]["properties"]
+        self.assertEqual(component["bytes"]["maximum"], grounded_agent.MAX_COMPONENT_BYTES)
+        self.assertEqual(self.schema["$defs"]["path"]["maxLength"], grounded_agent.MAX_PATH)
+        self.assertEqual(
+            self.schema["$defs"]["digest"].get("maxProperties"),
+            getattr(grounded_agent, "MAX_DIGEST_ALGORITHMS", 8),
+        )
+        corpus = self.properties["given"]["properties"]["corpus"]["properties"]["components"]
+        answers = self.properties["produced"]["properties"]["answers"]
+        self.assertEqual(corpus["maxItems"], grounded_agent.MAX_COMPONENTS)
+        self.assertEqual(answers["maxItems"], grounded_agent.MAX_COMPONENTS)
+
+    def test_structured_key_bounds_match_the_core_runtime(self):
+        maximum = core_predicate.MAX_STRUCTURED_KEY_CHARACTERS
+        definitions = self.schema["$defs"]
+        self.assertEqual(
+            definitions["digest"]["propertyNames"].get("maxLength"),
+            maximum,
+        )
+        self.assertEqual(
+            definitions["noBereanResults"]["allOf"][0]["then"][
+                "propertyNames"
+            ].get("maxLength"),
+            maximum,
+        )
+
+    def test_berean_fixed_component_paths_match_the_runtime(self):
+        release_document = self.properties["release"]["properties"]["document"]
+        promotion_component = self.properties["produced"]["properties"]["promotion"][
+            "oneOf"
+        ][1]["properties"]["component"]
+        self.assertEqual(
+            release_document,
+            {
+                "allOf": [
+                    {"$ref": "#/$defs/component"},
+                    {
+                        "properties": {
+                            "path": {"const": grounded_agent.BEREAN_RELEASE_DOCUMENT}
+                        }
+                    },
+                ]
+            },
+        )
+        self.assertEqual(
+            promotion_component,
+            {
+                "allOf": [
+                    {"$ref": "#/$defs/component"},
+                    {
+                        "properties": {
+                            "path": {"const": grounded_agent.BEREAN_PROMOTIONS_FILE}
+                        }
+                    },
+                ]
+            },
+        )
+
+    def test_digest_and_hash_tokens_are_bounded_through_their_absolute_end(self):
+        definitions = self.schema["$defs"]
+        for name, length in (("sha256", 64), ("hash32", 66)):
+            with self.subTest(shape=name):
+                self.assertEqual(definitions[name].get("minLength"), length)
+                self.assertEqual(definitions[name].get("maxLength"), length)
+
+        digest = definitions["digest"]
+        for algorithm, (_, length) in digests.ALGORITHMS.items():
+            with self.subTest(algorithm=algorithm):
+                shape = digest["properties"][algorithm]
+                self.assertEqual(shape.get("minLength"), length)
+                self.assertEqual(shape.get("maxLength"), length)
+        self.assertEqual(
+            digest["additionalProperties"].get("not"),
+            {"pattern": "[^0-9a-f]"},
+        )
+
+        contracts = self.properties["policy"]["properties"]["allowlists"][
+            "properties"
+        ]["contracts"]["items"]
+        self.assertEqual(contracts.get("minLength"), 42)
+        self.assertEqual(contracts.get("maxLength"), 42)
+
+    def test_portable_name_and_path_patterns_match_the_module(self):
+        import re
+
+        name_pattern = re.compile(self.schema["$defs"]["portableName"]["pattern"])
+        for value, expected in (
+            ("release-v1", True),
+            ("e\u0301 release", True),
+            ("x\u200b", True),
+            ("x\ue000", True),
+            ("\u200b", False),
+            ("\ue000", False),
+            (" leading", False),
+            ("trailing ", False),
+            ("line\nbreak", False),
+            ("line\u2028break", False),
+            ("paragraph\u2029break", False),
+            ("surrogate\ud800name", False),
+        ):
+            with self.subTest(kind="name", value=repr(value)):
+                self.assertEqual(bool(name_pattern.search(value)), expected)
+                self.assertEqual(grounded_agent.portable_name(value), expected)
+
+        path_pattern = re.compile(self.schema["$defs"]["path"]["pattern"])
+        for value, expected in (
+            ("corpus/terms.md", True),
+            ("corpus/e\u0301-terms.md", True),
+            ("corpus/x\u200b.json", True),
+            ("corpus/x\ue000.json", True),
+            ("corpus/ leading.json", False),
+            ("corpus/trailing.json ", False),
+            ("corpus/line\nbreak.json", False),
+            ("corpus/line\u2028break.json", False),
+            ("corpus/paragraph\u2029break.json", False),
+            ("corpus/surrogate\udfff.json", False),
+            ("corpus/\u200b", False),
+            ("corpus//terms.md", False),
+            ("corpus/terms.md\\", False),
+            ("../outside.json", False),
+            ("corpus\\outside.json", False),
+        ):
+            with self.subTest(kind="path", value=repr(value)):
+                self.assertEqual(bool(path_pattern.search(value)), expected)
+                self.assertEqual(grounded_agent.usable_path(value), expected)
+
+    def test_stated_pattern_uses_explicit_predicate_whitespace(self):
+        import re
+
+        stated_pattern = re.compile(self.schema["$defs"]["stated"]["pattern"])
+        for value, expected in (
+            ("ordinary reason", True),
+            ("\ufeff", False),
+            ("\u001c", False),
+            ("\u0085", False),
+            ("\u2028", False),
+            ("a\u2028b", True),
+        ):
+            with self.subTest(value=repr(value)):
+                self.assertEqual(bool(stated_pattern.search(value)), expected)
+                self.assertEqual(grounded_agent.stated(value), expected)
+
+    def test_policy_vocabularies_match_the_checked_copies(self):
+        rules = self.properties["policy"]["properties"]["rules"]["properties"]
+        self.assertEqual(
+            rules["source_classes"]["const"], list(grounded_agent.BEREAN_SOURCE_CLASSES)
+        )
+        self.assertEqual(
+            rules["evidence_classes"]["const"], list(grounded_agent.BEREAN_EVIDENCE_CLASSES)
+        )
+        self.assertEqual(
+            self.properties["policy"]["properties"]["retention"]["enum"],
+            list(grounded_agent.BEREAN_RETENTION),
+        )
+
+    def test_comparison_requires_explicit_absence_and_current(self):
+        self.assertEqual(
+            self.properties["comparison"]["required"],
+            list(grounded_agent.COMPARISON_FIELDS),
+        )
+        self.assertEqual(
+            self.schema["$defs"]["comparisonSide"]["required"],
+            list(grounded_agent.COMPARISON_SIDE_FIELDS),
+        )
+
+    def test_optional_blocks_pair_null_with_a_stated_reason(self):
+        given = self.properties["given"]
+        produced = self.properties["produced"]
+        expected = (
+            (given, "reads", "reads_absence_reason"),
+            (produced, "evaluations", "evaluations_absence_reason"),
+            (produced, "promotion", "promotion_absence_reason"),
+        )
+        for shape, block, reason in expected:
+            rules = shape["allOf"]
+            null_rules = [
+                rule
+                for rule in rules
+                if rule["if"]["properties"].get(block) == {"type": "null"}
+            ]
+            object_rules = [
+                rule
+                for rule in rules
+                if rule["if"]["properties"].get(block) == {"type": "object"}
+                and reason in rule["then"]["properties"]
+            ]
+            with self.subTest(block=block):
+                self.assertEqual(len(null_rules), 1)
+                self.assertEqual(
+                    null_rules[0]["then"]["properties"][reason],
+                    {"$ref": "#/$defs/stated"},
+                )
+                self.assertEqual(len(object_rules), 1)
+                self.assertEqual(
+                    object_rules[0]["then"]["properties"][reason],
+                    {"type": "null"},
+                )
+
+    def test_promotion_boundaries_match_the_checked_projection(self):
+        limit = getattr(grounded_agent, "BEREAN_MAX_PROMOTION_RECORDS", None)
+        self.assertEqual(limit, 1000)
+        produced = self.properties["produced"]
+        promotion = produced["properties"]["promotion"]["oneOf"][1]
+        terminal = promotion["properties"]["terminal"]
+        sequence = terminal["properties"]["sequence"]
+        self.assertEqual(sequence.get("minimum"), 1)
+        self.assertEqual(
+            sequence.get("maximum"), limit
+        )
+        rollback = terminal.get("allOf", [])
+        self.assertIn(
+            {
+                "if": {"properties": {"action": {"const": "rollback"}}},
+                "then": {"properties": {"sequence": {"minimum": 2}}},
+            },
+            rollback,
+        )
+        self.assertIn(
+            {
+                "if": {"properties": {"promotion": {"type": "object"}}},
+                "then": {"properties": {"evaluations": {"type": "object"}}},
+            },
+            produced["allOf"],
+        )
+
+    def test_core_vocabularies_match(self):
+        claim_shape = self.properties["claims"]["items"]
+        command_shape = self.properties["commands"]["items"]
+        claims = claim_shape["properties"]
+        commands = command_shape["properties"]
+        self.assertEqual(claims["disposition"]["enum"], list(core_predicate.DISPOSITIONS))
+        self.assertEqual(commands["determinism"]["enum"], list(core_predicate.DETERMINISM))
+        self.assertEqual(sorted(claims), sorted(core_predicate.CLAIM_FIELDS))
+        self.assertEqual(sorted(commands), sorted(core_predicate.COMMAND_FIELDS))
+        self.assertEqual(
+            claim_shape["required"],
+            list(
+                getattr(
+                    grounded_agent,
+                    "CLAIM_REQUIRED_FIELDS",
+                    ("name", "subject", "disposition"),
+                )
+            ),
+        )
+        self.assertEqual(
+            command_shape["required"],
+            list(
+                getattr(
+                    grounded_agent,
+                    "COMMAND_REQUIRED_FIELDS",
+                    ("name", "argv", "determinism"),
+                )
+            ),
+        )
+        self.assertEqual(
+            self.properties["claims"].get("maxItems"),
+            getattr(grounded_agent, "MAX_CLAIMS", 1024),
+        )
+        self.assertEqual(
+            self.properties["commands"].get("maxItems"),
+            getattr(grounded_agent, "MAX_COMMANDS", 1024),
+        )
+        self.assertEqual(
+            commands["argv"]["maxItems"], grounded_agent.MAX_COMMAND_WORDS
+        )
+        self.assertEqual(
+            getattr(grounded_agent, "CORE_LIMITS", None),
+            {
+                "subjects": grounded_agent.MAX_SUBJECTS,
+                "claims": grounded_agent.MAX_CLAIMS,
+                "commands": grounded_agent.MAX_COMMANDS,
+                "command_words": grounded_agent.MAX_COMMAND_WORDS,
+                "digest_algorithms": getattr(
+                    grounded_agent, "MAX_DIGEST_ALGORITHMS", 8
+                ),
+            },
+        )
+
+    def test_core_conditional_fields_match_the_verifier(self):
+        claim_rules = self.properties["claims"]["items"].get("allOf", [])
+        command_rules = self.properties["commands"]["items"].get("allOf", [])
+        self.assertIn(
+            {
+                "if": {
+                    "properties": {
+                        "disposition": {
+                            "enum": list(core_predicate.NEEDS_REASON)
+                        }
+                    }
+                },
+                "then": {
+                    "required": ["reason"],
+                    "properties": {"reason": {"$ref": "#/$defs/stated"}},
+                },
+            },
+            claim_rules,
+        )
+        self.assertIn(
+            {
+                "if": {"properties": {"determinism": {"const": "exact"}}},
+                "then": {"required": ["output_digest"]},
+            },
+            command_rules,
+        )
+
+    def test_open_core_details_recursively_refuse_berean_result_fields(self):
+        result_shape = self.schema["$defs"].get("noBereanResults")
+        self.assertIsNotNone(result_shape)
+        refused = list(
+            getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ())
+            + getattr(
+                grounded_agent, "BEREAN_EVALUATION_REPORT_ONLY_FIELDS", ()
+            )
+            + getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ())
+        )
+        self.assertEqual(
+            result_shape["allOf"][0]["then"]["propertyNames"]["not"],
+            {"$ref": "#/$defs/bereanResultKey"},
+        )
+        self.assertIn("failures", refused)
+        recursive = {"$ref": "#/$defs/noBereanResults"}
+        self.assertEqual(
+            result_shape["allOf"][0]["then"]["additionalProperties"], recursive
+        )
+        self.assertEqual(result_shape["allOf"][1]["then"]["items"], recursive)
+        for collection in ("claims", "commands"):
+            detail = self.properties[collection]["items"]["properties"]["detail"]
+            self.assertIn(recursive, detail["allOf"])
+
+        self.assertEqual(
+            self.schema["$defs"]["digest"]["propertyNames"].get("not"),
+            {"$ref": "#/$defs/bereanResultKey"},
+        )
+
+    def test_result_key_schema_matches_nfkc_casefold_runtime_boundary(self):
+        definition = self.schema["$defs"].get("bereanResultKey")
+        self.assertIsNotNone(definition)
+        pattern = definition.get("pattern")
+        self.assertIsInstance(pattern, str)
+
+        refused = tuple(
+            getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ())
+            + getattr(
+                grounded_agent, "BEREAN_EVALUATION_REPORT_ONLY_FIELDS", ()
+            )
+            + getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ())
+        )
+        substitutions = 0
+        for codepoint in range(sys.maxunicode + 1):
+            if 0xD800 <= codepoint <= 0xDFFF:
+                continue
+            source = chr(codepoint)
+            folded = unicodedata.normalize("NFKC", source).casefold()
+            if not folded:
+                continue
+            for canonical in refused:
+                start = canonical.find(folded)
+                while start >= 0:
+                    alias = (
+                        canonical[:start]
+                        + source
+                        + canonical[start + len(folded) :]
+                    )
+                    self.assertIsNotNone(
+                        re.fullmatch(pattern, alias),
+                        "%r normalises to %r" % (alias, canonical),
+                    )
+                    substitutions += 1
+                    start = canonical.find(folded, start + 1)
+        self.assertGreater(substitutions, 1000)
+
+        for canonical in refused:
+            fullwidth = "".join(
+                chr(ord(character) + 0xFEE0)
+                if "!" <= character <= "~"
+                else character
+                for character in canonical
+            )
+            for alias in (canonical, canonical.upper(), fullwidth):
+                with self.subTest(canonical=canonical, alias=repr(alias)):
+                    self.assertIsNotNone(re.fullmatch(pattern, alias))
+        self.assertIsNotNone(re.fullmatch(pattern, "\u3380\u00dfed"))
+
+        for neutral in (
+            "metadata",
+            "thre_sholds",
+            "pass_ed",
+            "failure_sallowed",
+            "prefixfailures",
+        ):
+            with self.subTest(neutral=neutral):
+                self.assertIsNone(re.fullmatch(pattern, neutral))
+
+    def test_the_schema_is_committed_as_readable_json(self):
+        with open(GROUNDED_AGENT_SCHEMA, "rb") as handle:
+            raw = handle.read()
+        self.assertTrue(raw.endswith(b"\n"))
+        self.assertEqual(
+            json.loads(raw.decode("utf-8"))["$schema"],
+            "https://json-schema.org/draft/2020-12/schema",
+        )
+
+
+def literal_assignments(path):
+    """Literal public constants from a sibling module, without importing it."""
+    with open(path, "rb") as handle:
+        tree = ast.parse(handle.read(), filename=path)
+    found = {}
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if not isinstance(target, ast.Name):
+            continue
+        try:
+            found[target.id] = ast.literal_eval(node.value)
+        except (ValueError, TypeError):
+            continue
+    return found
+
+
+class BereanPublicConstantDriftTests(unittest.TestCase):
+    def setUp(self):
+        repo = os.path.dirname(os.path.dirname(os.path.dirname(SCHEMAS)))
+        self.library = os.path.join(repo, "plugins", "berean", "scripts", "berean_lib")
+        if not os.path.isdir(self.library):
+            self.skipTest("the sibling Berean plugin is not installed")
+
+    def test_release_constants_match_without_a_runtime_import(self):
+        values = literal_assignments(os.path.join(self.library, "release.py"))
+        expected = {
+            "FORMAT": grounded_agent.BEREAN_FORMAT,
+            "FIELDS": grounded_agent.BEREAN_RELEASE_FIELDS,
+            "CORPUS_FIELDS": grounded_agent.BEREAN_CORPUS_FIELDS,
+            "READS_FIELDS": grounded_agent.BEREAN_READS_FIELDS,
+            "ANSWER_FIELDS": grounded_agent.BEREAN_ANSWER_FIELDS,
+            "RULES_FIELDS": grounded_agent.BEREAN_RULES_FIELDS,
+            "ALLOWLIST_FIELDS": grounded_agent.BEREAN_ALLOWLIST_FIELDS,
+            "EVALS_FIELDS": grounded_agent.BEREAN_EVALS_FIELDS,
+            "RETENTION": grounded_agent.BEREAN_RETENTION,
+            "RELEASE_DOCUMENT": grounded_agent.BEREAN_RELEASE_DOCUMENT,
+            "PROMOTIONS_FILE": grounded_agent.BEREAN_PROMOTIONS_FILE,
+        }
+        for name, copied in expected.items():
+            with self.subTest(name=name):
+                self.assertEqual(values[name], copied)
+
+    def test_evidence_and_promotion_vocabularies_match(self):
+        answers = literal_assignments(os.path.join(self.library, "answers.py"))
+        reads = literal_assignments(os.path.join(self.library, "reads.py"))
+        promotion = literal_assignments(os.path.join(self.library, "promote.py"))
+        limit = getattr(grounded_agent, "BEREAN_MAX_PROMOTION_RECORDS", None)
+        self.assertEqual(limit, 1000)
+        self.assertEqual(answers["SOURCE_CLASSES"], grounded_agent.BEREAN_SOURCE_CLASSES)
+        self.assertEqual(reads["EVIDENCE_CLASSES"], grounded_agent.BEREAN_EVIDENCE_CLASSES)
+        self.assertEqual(promotion["FORMAT"], grounded_agent.BEREAN_PROMOTION_FORMAT)
+        self.assertEqual(promotion["ACTIONS"], grounded_agent.BEREAN_PROMOTION_ACTIONS)
+        self.assertEqual(
+            promotion.get("MAX_RECORDS"), limit
+        )
+        self.assertEqual(
+            promotion["EVALS_FIELDS"][2:],
+            getattr(grounded_agent, "BEREAN_EVALUATION_RESULT_FIELDS", ()),
+        )
+        self.assertEqual(
+            tuple(
+                field
+                for field in promotion["REPORT_FIELDS"]
+                if field not in promotion["EVALS_FIELDS"]
+                and field not in ("format", "corpus_digest", "answers_digest")
+            ),
+            getattr(grounded_agent, "BEREAN_EVALUATION_REPORT_ONLY_FIELDS", ()),
+        )
+        self.assertEqual(
+            promotion["THRESHOLD_FIELDS"],
+            getattr(grounded_agent, "BEREAN_THRESHOLD_FIELDS", ()),
         )
 
 

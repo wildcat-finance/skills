@@ -1,6 +1,7 @@
 """Bounds on a document that arrived from somebody else."""
 
 import json
+from decimal import DecimalException
 import unittest
 
 from . import support  # noqa: F401  (sets sys.path)
@@ -58,6 +59,53 @@ class DuplicateKeyTests(unittest.TestCase):
     def test_the_same_key_in_two_different_objects_is_fine(self):
         data = b'{"one":{"name":"a"},"two":{"name":"b"}}'
         self.assertEqual(safejson.loads(data)["two"]["name"], "b")
+
+
+class JsonGrammarTests(unittest.TestCase):
+    def test_non_json_numeric_constants_are_refused(self):
+        for value in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(value=value):
+                with self.assertRaises(safejson.InputError):
+                    safejson.loads(('{"value": %s}' % value).encode("ascii"))
+
+    def test_exponent_overflow_is_refused_before_it_becomes_infinity(self):
+        for value in ("1e9999", "-1e9999"):
+            with self.subTest(value=value):
+                with self.assertRaises(safejson.InputError):
+                    safejson.loads(('{"value": %s}' % value).encode("ascii"))
+
+    def test_integral_json_number_forms_keep_integer_semantics(self):
+        for value, expected in (("1.0", 1), ("1e2", 100), ("-0.0", 0)):
+            with self.subTest(value=value):
+                parsed = safejson.loads(('{"value": %s}' % value).encode("ascii"))
+                self.assertIs(type(parsed["value"]), int)
+                self.assertEqual(parsed["value"], expected)
+        self.assertIs(type(safejson.loads(b'{"value": 1.5}')["value"]), float)
+
+    def test_an_oversized_integer_is_a_controlled_input_refusal(self):
+        try:
+            safejson.loads(('{"value": %s}' % ("9" * 5000)).encode("ascii"))
+        except safejson.InputError as error:
+            self.assertIn("integer", str(error))
+        except ValueError as error:
+            self.fail("raw ValueError escaped the input boundary: %s" % error)
+        else:
+            self.fail("oversized integer was accepted")
+
+    def test_extreme_decimal_exponents_are_controlled_input_refusals(self):
+        for value in (
+            "0e999999999999999999999999",
+            "1e-999999999999999999999999",
+        ):
+            with self.subTest(value=value):
+                try:
+                    safejson.loads(("{\"value\": %s}" % value).encode("ascii"))
+                except safejson.InputError as error:
+                    self.assertIn("decimal range", str(error))
+                except DecimalException as error:
+                    self.fail("raw decimal exception escaped the input boundary: %s" % error)
+                else:
+                    self.fail("an extreme decimal exponent was accepted")
 
 
 class ThroughTheReaderTests(unittest.TestCase):

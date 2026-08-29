@@ -14,6 +14,9 @@ Every gate returns rather than raises. A verifier's job is to report all five
 lines, not to stop at the first thing it disliked.
 """
 
+import re
+import unicodedata
+
 from . import core_predicate, digests
 
 CONCLUSION_KEYS = frozenset(
@@ -38,33 +41,315 @@ CONCLUSION_KEYS = frozenset(
 )
 """Gate 4. Normalised, so `risk_free` and `riskFree` are the same key."""
 
+CONCLUSION_COMPOUND_SUFFIXES = frozenset(
+    {"level", "outcome", "result", "state", "status", "value"}
+)
+CONCLUSION_COMPOUND_KEYS = frozenset(
+    root + suffix
+    for root in CONCLUSION_KEYS
+    for suffix in CONCLUSION_COMPOUND_SUFFIXES
+)
+CONCLUSION_CONTEXT_TOKENS = frozenset({"audit", "risk", "safety", "security"})
+
 AUTHORSHIP_KEYS = frozenset(
     {
+        "signed",
         "signedby",
+        "signer",
+        "signatory",
         "verifiedby",
+        "verifier",
         "attestedby",
+        "attester",
         "verified",
         "author",
         "authors",
+        "creator",
+        "publisher",
         "authenticated",
+        "authenticatedby",
+        "signatureverified",
+        "signaturevalid",
         "notarised",
+        "notarisedby",
         "notarized",
+        "notarizedby",
+        "notary",
     }
 )
 """Gate 7. Authorship comes from a signature somebody checked, or from nowhere."""
+
+AUTHORSHIP_COMPOUND_ROOTS = frozenset(
+    {
+        "author",
+        "authorship",
+        "authenticated",
+        "authentication",
+        "creator",
+        "publisher",
+        "signed",
+        "signer",
+        "signing",
+        "signature",
+        "signatory",
+        "verified",
+        "verifier",
+        "verification",
+        "attested",
+        "attester",
+        "attestation",
+        "notarised",
+        "notarisation",
+        "notarized",
+        "notarization",
+        "notary",
+    }
+)
+AUTHORSHIP_COMPOUND_SUFFIXES = ("identity", "status")
+AUTHORSHIP_COMPOUND_KEYS = frozenset(
+    root + suffix
+    for root in AUTHORSHIP_COMPOUND_ROOTS
+    for suffix in AUTHORSHIP_COMPOUND_SUFFIXES
+)
+"""Direct authorship and verification compounds after key normalisation.
+
+`signature_status` and `signerIdentity` make the same self-authentication claim
+as `signature_verified` and `signer`. The roots and suffixes stay finite so a
+generic business `status` or `identity` field is not reclassified by accident.
+"""
+
+AUTHORSHIP_DIRECT_TOKENS = frozenset(
+    {
+        "author",
+        "authors",
+        "authorship",
+        "authenticated",
+        "attested",
+        "attester",
+        "creator",
+        "notarised",
+        "notarized",
+        "notary",
+        "publisher",
+        "signed",
+        "signatory",
+        "signer",
+        "verified",
+        "verifier",
+    }
+)
+AUTHORSHIP_RELATION_TOKENS = frozenset(
+    {
+        "attestation",
+        "authentication",
+        "notarisation",
+        "notarization",
+        "signature",
+        "signing",
+        "verification",
+    }
+)
+AUTHORSHIP_ASSERTION_TOKENS = frozenset(
+    {"actor", "by", "identity", "name", "status", "valid", "validity", "verified"}
+)
+AUTHORSHIP_LINK_TOKENS = frozenset({"is", "validation"})
+KEY_TOKEN = re.compile(
+    r"[A-Z]+(?=[A-Z][a-z]|[0-9]|[^A-Za-z0-9]|$)|[A-Z]?[a-z]+|[0-9]+"
+)
+
+TOKEN_CONTEXT = 1
+TOKEN_CONCLUSION = 2
+TOKEN_SUFFIX = 4
+TOKEN_AUTHORSHIP_DIRECT = 1
+TOKEN_AUTHORSHIP_RELATION = 2
+TOKEN_AUTHORSHIP_ASSERTION = 4
+TOKEN_AUTHORSHIP_LINK = 8
+
+
+def compile_vocabulary(*groups):
+    """A finite ASCII vocabulary as bounded-memory trie tables."""
+    transitions = [{}]
+    terminals = [0]
+    for flag, words in groups:
+        for word in words:
+            node = 0
+            for character in word:
+                child = transitions[node].get(character)
+                if child is None:
+                    child = len(transitions)
+                    transitions[node][character] = child
+                    transitions.append({})
+                    terminals.append(0)
+                node = child
+            terminals[node] |= flag
+    return tuple(transitions), tuple(terminals)
+
+
+CONCLUSION_VOCABULARY = compile_vocabulary(
+    (TOKEN_CONTEXT, CONCLUSION_CONTEXT_TOKENS),
+    (TOKEN_CONCLUSION, CONCLUSION_KEYS),
+    (TOKEN_SUFFIX, CONCLUSION_COMPOUND_SUFFIXES),
+)
+AUTHORSHIP_VOCABULARY = compile_vocabulary(
+    (TOKEN_AUTHORSHIP_DIRECT, AUTHORSHIP_DIRECT_TOKENS),
+    (TOKEN_AUTHORSHIP_RELATION, AUTHORSHIP_RELATION_TOKENS),
+    (TOKEN_AUTHORSHIP_ASSERTION, AUTHORSHIP_ASSERTION_TOKENS),
+    (TOKEN_AUTHORSHIP_LINK, AUTHORSHIP_LINK_TOKENS),
+)
+
+
+def conclusion_chain(value):
+    """A whole finite-vocabulary conclusion chain with no separators.
+
+    The trie keeps work linear in the key length and memory bounded by the
+    vocabulary.  Requiring a complete chain avoids finding ``score`` inside an
+    unrelated key such as ``underscorestatus``.
+    """
+    transitions, terminals = CONCLUSION_VOCABULARY
+    # State zero accepts context words; state one accepts state suffixes after
+    # exactly one conclusion word. A root-trie entry marks a word boundary.
+    active = {(0, 0)}
+    for character in value:
+        following = set()
+        for node, state in active:
+            child = transitions[node].get(character)
+            if child is None:
+                continue
+            following.add((child, state))
+            flags = terminals[child]
+            if state == 0:
+                if flags & TOKEN_CONTEXT:
+                    following.add((0, 0))
+                if flags & TOKEN_CONCLUSION:
+                    following.add((0, 1))
+            elif flags & TOKEN_SUFFIX:
+                following.add((0, 1))
+        active = following
+        if not active:
+            return False
+    return (0, 1) in active
+
+
+def authorship_chain(value):
+    """A whole unseparated chain made only from finite authorship words."""
+    transitions, terminals = AUTHORSHIP_VOCABULARY
+    active = {(0, 0)}
+    for character in value:
+        following = set()
+        for node, claims in active:
+            child = transitions[node].get(character)
+            if child is None:
+                continue
+            following.add((child, claims))
+            flags = terminals[child]
+            if flags:
+                following.add((0, claims | flags))
+        active = following
+        if not active:
+            return False
+    return any(
+        node == 0
+        and (
+            claims & TOKEN_AUTHORSHIP_DIRECT
+            or (
+                claims & TOKEN_AUTHORSHIP_RELATION
+                and claims & TOKEN_AUTHORSHIP_ASSERTION
+            )
+        )
+        for node, claims in active
+    )
+
+
+def key_tokens(key):
+    """ASCII identifier words without confusing a substring for a claim."""
+    if (
+        not isinstance(key, str)
+        or len(key) > core_predicate.MAX_STRUCTURED_KEY_CHARACTERS
+    ):
+        return ()
+    key = unicodedata.normalize("NFKC", key)
+    return tuple(found.group(0).lower() for found in KEY_TOKEN.finditer(key))
+
+
+def tokenised_conclusion(tokens):
+    """A conclusion at the semantic end of a separated identifier."""
+    if not tokens:
+        return False
+    index = len(tokens) - 1
+    if tokens[index] in CONCLUSION_KEYS:
+        return True
+    if tokens[index] not in CONCLUSION_COMPOUND_SUFFIXES:
+        return False
+    while index >= 0 and tokens[index] in CONCLUSION_COMPOUND_SUFFIXES:
+        index -= 1
+    return index >= 0 and tokens[index] in CONCLUSION_KEYS
+
+
+def tokenised_authorship(tokens):
+    """An ordered separated authorship or verification assertion."""
+    relation = False
+    for token in tokens:
+        if token in AUTHORSHIP_DIRECT_TOKENS:
+            return True
+        if token in AUTHORSHIP_RELATION_TOKENS:
+            relation = True
+            continue
+        if token in AUTHORSHIP_LINK_TOKENS:
+            continue
+        if token in AUTHORSHIP_ASSERTION_TOKENS:
+            if relation:
+                return True
+            continue
+        relation = False
+    return False
+
+
+def conclusion_key(key):
+    """A direct conclusion key or a structured conclusion compound."""
+    try:
+        normal = core_predicate.normalise_key(key)
+    except (TypeError, ValueError):
+        return False
+    letters = "".join(character for character in normal if not character.isdigit())
+    if any(
+        candidate in CONCLUSION_KEYS
+        or candidate in CONCLUSION_COMPOUND_KEYS
+        or conclusion_chain(candidate)
+        for candidate in (normal, letters)
+    ):
+        return True
+    return tokenised_conclusion(key_tokens(key))
+
+
+def authorship_key(key):
+    try:
+        normal = core_predicate.normalise_key(key)
+    except (TypeError, ValueError):
+        return False
+    letters = "".join(character for character in normal if not character.isdigit())
+    if any(
+        candidate in AUTHORSHIP_KEYS
+        or candidate in AUTHORSHIP_COMPOUND_KEYS
+        or authorship_chain(candidate)
+        for candidate in (normal, letters)
+    ):
+        return True
+    return tokenised_authorship(key_tokens(key))
 
 
 def scanned(statement):
     """Every key inside a statement that a producer chooses the content of.
 
-    The predicate, and also each subject's annotations and other descriptor
-    fields. A verdict smuggled into `subject[0].annotations` is the same
-    smuggling as one in the predicate, and scanning only the predicate would
-    have left the shorter route open.
+    The predicate, and also each subject's digest algorithms, annotations and
+    other descriptor fields. A verdict smuggled into a subject digest or
+    `subject[0].annotations` is the same smuggling as one in the predicate, and
+    scanning only the predicate would have left the shorter route open.
     """
     for pair in core_predicate.walk(statement.predicate):
         yield pair
     for subject in statement.subjects:
+        for pair in core_predicate.walk(subject.digest):
+            yield pair
         for pair in core_predicate.walk(subject.extra):
             yield pair
 
@@ -79,7 +364,12 @@ class Gate(object):
     def line(self):
         mark = "pass" if self.passed else "FAIL"
         label = "gate %d" % self.number if self.number else "check"
-        return "%s %s: %s -- %s" % (label, self.name, mark, self.detail)
+        return "%s %s: %s -- %s" % (
+            label,
+            one_line(self.name),
+            mark,
+            one_line(self.detail),
+        )
 
     def to_dict(self):
         return {
@@ -90,23 +380,89 @@ class Gate(object):
         }
 
 
-def gate_1_subjects(statement):
+def one_line(value):
+    """Render an untrusted diagnostic value without terminal line injection."""
+    out = []
+    for character in str(value):
+        if character.isprintable():
+            out.append(character)
+        else:
+            out.append(character.encode("unicode_escape").decode("ascii"))
+    return "".join(out)
+
+
+def _limit(limits, name):
+    """One positive predicate-owned core-work limit, or no extra limit."""
+    if not isinstance(limits, dict):
+        return None
+    value = limits.get(name)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        return None
+    return value
+
+
+def gate_1_subjects(statement, limits=None):
     """Every claim names the exact digest it covers.
 
     A result tied to a repository or a branch is the thing this gate exists to
     refuse. Those move. A digest does not.
     """
+    faults = []
     found = core_predicate.claims(statement.predicate)
+    claim_limit = _limit(limits, "claims")
+    subject_limit = _limit(limits, "subjects")
+    digest_algorithm_limit = _limit(limits, "digest_algorithms")
+    if found is not None and claim_limit is not None and len(found) > claim_limit:
+        faults.append(
+            "claims has %d entries; this predicate reads at most %d"
+            % (len(found), claim_limit)
+        )
+    checked_claims = (
+        found[:claim_limit]
+        if found is not None and claim_limit is not None
+        else (found or [])
+    )
+    checked_subjects = (
+        statement.subjects[:subject_limit]
+        if subject_limit is not None
+        else statement.subjects
+    )
+    comparable_subjects = []
+    oversized_subjects = []
+    for index, entry in enumerate(checked_subjects):
+        if (
+            digest_algorithm_limit is not None
+            and len(entry.digest) > digest_algorithm_limit
+        ):
+            oversized_subjects.append((index, len(entry.digest)))
+        else:
+            comparable_subjects.append(entry)
+    if oversized_subjects:
+        first_index, first_count = oversized_subjects[0]
+        faults.append(
+            "%d statement subject digest set(s) exceed the %d-algorithm "
+            "limit; subject %d has %d"
+            % (
+                len(oversized_subjects),
+                digest_algorithm_limit,
+                first_index + 1,
+                first_count,
+            )
+        )
     if found is None:
         # Whether the block has to be there is gate 3's question. Failing here
         # as well would report one fault twice and tell a reader that two
-        # separate things went wrong.
+        # separate things went wrong. Predicate-owned subject bounds still
+        # apply because the subjects exist independently of the claims block.
+        if faults:
+            return Gate(1, "subject-naming", False, "; ".join(faults))
         return Gate(1, "subject-naming", True, "no claims block; gate 3 covers that")
     if not found:
+        if faults:
+            return Gate(1, "subject-naming", False, "; ".join(faults))
         return Gate(1, "subject-naming", True, "no claims recorded")
 
-    faults = []
-    for index, claim in enumerate(found):
+    for index, claim in enumerate(checked_claims):
         name = core_predicate.label(claim, index, "claim")
         if not isinstance(claim, dict):
             faults.append("%s is not an object" % name)
@@ -125,7 +481,18 @@ def gate_1_subjects(statement):
         except digests.DigestError as error:
             faults.append("%s: %s" % (name, error))
             continue
-        if not statement.covers(subject):
+        if (
+            digest_algorithm_limit is not None
+            and len(subject) > digest_algorithm_limit
+        ):
+            faults.append(
+                "%s digest set has %d algorithms; this predicate reads at most %d"
+                % (name, len(subject), digest_algorithm_limit)
+            )
+            continue
+        if not any(
+            digests.agree(entry.digest, subject) for entry in comparable_subjects
+        ):
             faults.append(
                 "%s names %s, which is not a subject of this statement"
                 % (name, digests.short(subject))
@@ -141,7 +508,7 @@ def gate_1_subjects(statement):
     )
 
 
-def gate_3_absence(statement):
+def gate_3_absence(statement, limits=None):
     """Skipped, failed, timed-out and redacted work stays in the record.
 
     The block itself is required. A predicate that omits `claims` has not
@@ -165,7 +532,15 @@ def gate_3_absence(statement):
 
     faults = []
     counts = {}
-    for index, claim in enumerate(predicate[core_predicate.CLAIMS]):
+    claims = predicate[core_predicate.CLAIMS]
+    claim_limit = _limit(limits, "claims")
+    if claim_limit is not None and len(claims) > claim_limit:
+        faults.append(
+            "claims has %d entries; this predicate reads at most %d"
+            % (len(claims), claim_limit)
+        )
+    checked_claims = claims[:claim_limit] if claim_limit is not None else claims
+    for index, claim in enumerate(checked_claims):
         name = core_predicate.label(claim, index, "claim")
         if not isinstance(claim, dict):
             faults.append("%s is not an object" % name)
@@ -213,20 +588,39 @@ def gate_4_conclusions(statement):
     cannot become a field another tool reads as structured data.
     """
     faults = []
+    budget = core_predicate.StructuredKeyBudget()
     for key, _ in scanned(statement):
-        if core_predicate.normalise_key(key) in CONCLUSION_KEYS:
+        if not budget.accept(key):
+            continue
+        elif conclusion_key(key):
             faults.append(key)
-    if faults:
+    if faults or budget.refused:
+        details = []
+        if budget.refused:
+            details.append(
+                "statement carries %d structured key(s) outside the %d-character "
+                "scan limit or %d-character aggregate scan budget"
+                % (
+                    budget.refused,
+                    core_predicate.MAX_STRUCTURED_KEY_CHARACTERS,
+                    core_predicate.MAX_STRUCTURED_KEY_CHARACTERS_TOTAL,
+                )
+            )
+        if faults:
+            details.append(
+                "statement carries verdict key(s): %s"
+                % ", ".join(sorted(set(faults)))
+            )
         return Gate(
             4,
             "no-conclusions",
             False,
-            "statement carries verdict key(s): %s" % ", ".join(sorted(set(faults))),
+            "; ".join(details),
         )
     return Gate(4, "no-conclusions", True, "no verdict keys in the statement")
 
 
-def gate_6_determinism(statement):
+def gate_6_determinism(statement, limits=None):
     """Replay separates what must match byte for byte from what cannot.
 
     Bytecode and unit-test output can require an exact match. Timing and fuzz
@@ -241,7 +635,15 @@ def gate_6_determinism(statement):
 
     faults = []
     counts = {}
-    for index, command in enumerate(found):
+    command_limit = _limit(limits, "commands")
+    word_limit = _limit(limits, "command_words")
+    if command_limit is not None and len(found) > command_limit:
+        faults.append(
+            "commands has %d entries; this predicate reads at most %d"
+            % (len(found), command_limit)
+        )
+    checked_commands = found[:command_limit] if command_limit is not None else found
+    for index, command in enumerate(checked_commands):
         name = core_predicate.label(command, index, "command")
         if not isinstance(command, dict):
             faults.append("%s is not an object" % name)
@@ -252,7 +654,15 @@ def gate_6_determinism(statement):
         argv = command.get("argv")
         if not isinstance(argv, list) or not argv:
             faults.append("%s has no argv; nobody else could run it" % name)
-        elif not all(isinstance(word, str) for word in argv):
+        elif word_limit is not None and len(argv) > word_limit:
+            faults.append(
+                "%s has %d argv entries; this predicate reads at most %d"
+                % (name, len(argv), word_limit)
+            )
+        elif not all(
+            isinstance(word, str)
+            for word in (argv[:word_limit] if word_limit is not None else argv)
+        ):
             faults.append("%s has an argv entry that is not a string" % name)
         determinism = command.get("determinism")
         if determinism is None:
@@ -292,16 +702,34 @@ def gate_7_authorship(statement):
     badge this whole project exists to replace.
     """
     faults = []
+    budget = core_predicate.StructuredKeyBudget()
     for key, _ in scanned(statement):
-        if core_predicate.normalise_key(key) in AUTHORSHIP_KEYS:
+        if not budget.accept(key):
+            continue
+        elif authorship_key(key):
             faults.append(key)
-    if faults:
+    if faults or budget.refused:
+        details = []
+        if budget.refused:
+            details.append(
+                "statement carries %d structured key(s) outside the %d-character "
+                "scan limit or %d-character aggregate scan budget"
+                % (
+                    budget.refused,
+                    core_predicate.MAX_STRUCTURED_KEY_CHARACTERS,
+                    core_predicate.MAX_STRUCTURED_KEY_CHARACTERS_TOTAL,
+                )
+            )
+        if faults:
+            details.append(
+                "statement asserts its own authorship or verification: %s"
+                % ", ".join(sorted(set(faults)))
+            )
         return Gate(
             7,
             "authorship",
             False,
-            "statement asserts its own authorship or verification: %s"
-            % ", ".join(sorted(set(faults))),
+            "; ".join(details),
         )
     return Gate(
         7,
@@ -323,6 +751,12 @@ PREDICATE_GATES = (2, 5)
 """Owned by a predicate: the environment is recoverable, deltas name both sides."""
 
 
-def run(statement):
+def run(statement, limits=None):
     """Every core gate, in order, whatever the predicate type."""
-    return [check(statement) for _, check in CORE_GATES]
+    return [
+        gate_1_subjects(statement, limits),
+        gate_3_absence(statement, limits),
+        gate_4_conclusions(statement),
+        gate_6_determinism(statement, limits),
+        gate_7_authorship(statement),
+    ]

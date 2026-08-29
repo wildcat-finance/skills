@@ -1,5 +1,6 @@
-"""The shipped examples, including the one that carries its gaps."""
+"""The shipped examples, including the ones that carry their gaps."""
 
+import hashlib
 import json
 import os
 import unittest
@@ -24,14 +25,36 @@ TAMPERED = os.path.join(EXAMPLES, "tampered")
 BREACHES = {
     "escrow-v1.1.0-claim-repointed.json": 1,
     "escrow-v1.1.0-with-gaps-reason-removed.json": 3,
+    "goldfinch-demo-v0-agent-policy-byte-changed.json": "release-digest",
     "goldfinch-v0-fixture-state-root-removed.json": "evidence",
 }
 """What each tampered copy is meant to breach: a gate number, or the name of a
 check that carries no number.
 
-The third is the rule the state-fixture predicate exists for. Its state root is
+The fourth is the rule the state-fixture predicate exists for. Its state root is
 gone and its proof-backed count is not, so the statement counts records with
 nothing to have proved them against."""
+
+TAMPER_PARENTS = {
+    "escrow-v1.1.0-claim-repointed.json": "escrow-v1.1.0.json",
+    "escrow-v1.1.0-with-gaps-reason-removed.json": (
+        "escrow-v1.1.0-with-gaps.json"
+    ),
+    "goldfinch-demo-v0-agent-policy-byte-changed.json": (
+        "goldfinch-demo-v0-agent.json"
+    ),
+    "goldfinch-v0-fixture-state-root-removed.json": "goldfinch-v0-fixture.json",
+}
+
+GROUNDED_STATEMENT = "goldfinch-demo-v0-agent.json"
+GROUNDED_TAMPER = "goldfinch-demo-v0-agent-policy-byte-changed.json"
+GROUNDED_BYTES = 7454
+GROUNDED_SHA256 = (
+    "03fb54176a417248447a5e92ce702acce229855b0378215fd68a4286130165bc"
+)
+GROUNDED_TAMPER_SHA256 = (
+    "aa735b158803934c3c00541dcf3b462769da872399aaa89af429321a8dc0b217"
+)
 
 
 def report_for(path):
@@ -47,9 +70,9 @@ def examples():
 
 
 class ExampleTests(unittest.TestCase):
-    def test_both_examples_verify_with_nothing_unchecked(self):
+    def test_all_examples_verify_with_nothing_unchecked(self):
         found = examples()
-        self.assertEqual(len(found), 3, found)
+        self.assertEqual(len(found), 4, found)
         for name in found:
             with self.subTest(example=name):
                 report = report_for(os.path.join(EXAMPLES, name))
@@ -58,6 +81,44 @@ class ExampleTests(unittest.TestCase):
                     "\n".join(g.line() for g in report.gates if not g.passed),
                 )
                 self.assertEqual(report.unchecked, [])
+
+    def test_grounded_agent_statement_has_frozen_bytes(self):
+        with open(os.path.join(EXAMPLES, GROUNDED_STATEMENT), "rb") as handle:
+            statement = handle.read()
+        self.assertEqual(len(statement), GROUNDED_BYTES)
+        self.assertEqual(hashlib.sha256(statement).hexdigest(), GROUNDED_SHA256)
+
+    def test_grounded_agent_statement_exposes_its_exact_topology(self):
+        with open(os.path.join(EXAMPLES, GROUNDED_STATEMENT), "rb") as handle:
+            predicate = json.loads(handle.read().decode("utf-8"))["predicate"]
+
+        self.assertEqual(len(predicate["produced"]["answers"]), 3)
+        terminal = predicate["produced"]["promotion"]["terminal"]
+        self.assertEqual(
+            terminal,
+            {
+                "sequence": 1,
+                "action": "promote",
+                "target_release_digest": predicate["release"]["release_digest"],
+            },
+        )
+        self.assertEqual(
+            predicate["adapter"]["command"],
+            [
+                "python3",
+                "plugins/berean/examples/goldfinch-demo-v0/rebuild.py",
+            ],
+        )
+
+    def test_grounded_agent_guide_matches_topology_and_guard_scope(self):
+        with open(os.path.join(EXAMPLES, "README.md"), encoding="utf-8") as handle:
+            guide = handle.read()
+
+        self.assertIn("three recorded answers", guide)
+        self.assertIn("promoted the complete release", guide)
+        self.assertNotIn("selected one answer", guide)
+        self.assertIn("blocks sockets in its parent\nprocess", guide)
+        self.assertIn("injects the same guard into each child command", guide)
 
     def test_the_unhappy_example_carries_its_timed_out_campaign(self):
         with open(os.path.join(EXAMPLES, "escrow-v1.1.0-with-gaps.json"), "rb") as f:
@@ -170,15 +231,12 @@ class TamperTests(unittest.TestCase):
                     if not gate.passed
                 ]
                 self.assertEqual(broken, [expected])
+                self.assertEqual(report.unchecked, [])
 
     def test_each_tampered_copy_differs_from_its_example_in_one_place(self):
         """A tamper that changed several things would pass for the wrong reason."""
-        for name in BREACHES:
-            source = (
-                name.replace("-claim-repointed", "")
-                .replace("-reason-removed", "")
-                .replace("-state-root-removed", "")
-            )
+        self.assertEqual(set(BREACHES), set(TAMPER_PARENTS))
+        for name, source in TAMPER_PARENTS.items():
             with open(os.path.join(EXAMPLES, source), "rb") as handle:
                 original = json.loads(handle.read().decode("utf-8"))
             with open(os.path.join(TAMPERED, name), "rb") as handle:
@@ -194,6 +252,24 @@ class TamperTests(unittest.TestCase):
                             original["predicate"][field],
                             changed["predicate"][field],
                         )
+
+    def test_grounded_agent_tamper_is_one_exact_byte_from_its_parent(self):
+        with open(os.path.join(EXAMPLES, GROUNDED_STATEMENT), "rb") as handle:
+            original = handle.read()
+        with open(os.path.join(TAMPERED, GROUNDED_TAMPER), "rb") as handle:
+            changed = handle.read()
+
+        self.assertEqual(len(original), GROUNDED_BYTES)
+        self.assertEqual(len(changed), GROUNDED_BYTES)
+        self.assertEqual(
+            hashlib.sha256(changed).hexdigest(), GROUNDED_TAMPER_SHA256
+        )
+        differences = [
+            (offset, left, right)
+            for offset, (left, right) in enumerate(zip(original, changed))
+            if left != right
+        ]
+        self.assertEqual(differences, [(6282, ord("u"), ord("v"))])
 
 
 if __name__ == "__main__":

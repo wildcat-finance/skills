@@ -80,9 +80,10 @@ GUARD_PATH_BY_OWNER = {
 # Keeping their identities here prevents the record and target from changing
 # together and then vouching for each other.
 # Current-main overlap dispositions for this rebind:
-# - tests/promise_machine_coverage.json is the sole current-main path overlap;
-#   the current map and rows are retained and only the reviewed reporter
-#   digest for the reconstructed runner is refreshed.
+# - tests/promise_machine_coverage.json was the first current-main path overlap;
+#   the current map and rows are retained and only reviewed bindings are
+#   refreshed.  The later #402 composition also rebinds the two Horos guards
+#   and the boundary-currency guard to their reviewed combined-tree bytes.
 # - The later #700 composition retains that map and adds the reviewed Phylax
 #   model-proxy promise digest without changing the archived source bytes.
 # - The live scheduling decision is physically renamed from the packet's
@@ -128,16 +129,16 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "242053e3fa14f1a4de435fb3e604647d01cc191e287db5c725cf8da6e4e7ed35"
     ),
     "plugins/horos/tests/test_scoped_entry.py": (
-        "2aba2ac960f89dc92a2f9450d7d66636613c80fe71b4deec4bf08ae0760b4477"
+        "cdf28f97708a2004df5f67a8182228d30d9c38f1a955fed7ef8a9fcfa9fde8f5"
     ),
     "plugins/horos/tests/test_universe.py": (
-        "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
+        "7cbfcacc8b3f989dd6204669da8479460c5f945e489a2066c6659ef2f39e0fda"
     ),
     "tests/promise_machine_coverage.json": (
-        "249af5ca93535e06f922800ff1311e493896b0bf85e672825119adac37145f62"
+        "1a22d4dcded5df725b5c3629fabf0329e2eb62d70e8687c7b045e229f491636e"
     ),
     "tests/test_boundary_currency.py": (
-        "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
+        "7a24d9d3433d2c87ff8bb5570de7b7a79fb285f0f85fe43747a1224b0d092c69"
     ),
 }
 ADDITIONAL_CURRENT_PATHS = frozenset({
@@ -183,22 +184,22 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "242053e3fa14f1a4de435fb3e604647d01cc191e287db5c725cf8da6e4e7ed35"
     ),
     "plugins/horos/tests/test_scoped_entry.py": (
-        "2aba2ac960f89dc92a2f9450d7d66636613c80fe71b4deec4bf08ae0760b4477"
+        "cdf28f97708a2004df5f67a8182228d30d9c38f1a955fed7ef8a9fcfa9fde8f5"
     ),
     "plugins/horos/tests/test_universe.py": (
-        "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
+        "7cbfcacc8b3f989dd6204669da8479460c5f945e489a2066c6659ef2f39e0fda"
     ),
     INOCULATION_GUARD_PATH: (
-        "46085b12fdac754fd73a50d972c273d82e83395af142b0fe69055f907e486a3f"
+        "9eb430d168659e96a813f45c0fb0636b985cec703ef93edcdb3e0a754649f53d"
     ),
     RECORD_PATH: (
-        "6c456d9dea4ac6e276f30b8db93465e92ea565e4fc337ac96d072099042c5af9"
+        "4f08c1af2b81d1dd9399e7c586062dc44bbfc00d5780d58e4168cb179df62bdd"
     ),
     "tests/promise_machine_coverage.json": (
-        "249af5ca93535e06f922800ff1311e493896b0bf85e672825119adac37145f62"
+        "1a22d4dcded5df725b5c3629fabf0329e2eb62d70e8687c7b045e229f491636e"
     ),
     "tests/test_boundary_currency.py": (
-        "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
+        "7a24d9d3433d2c87ff8bb5570de7b7a79fb285f0f85fe43747a1224b0d092c69"
     ),
     "docs/affected-scope-test-runner/replacement-study.md": (
         "2f04503d78b0631500c6bae1b8c82e5174c9c448c49075c6dbba4a68c29de917"
@@ -213,7 +214,7 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
 EXPECTED_GUARD_SHA256 = {
     PARALLEL_GUARD_PATH: EXPECTED_CHANGED_CURRENT_SHA256[PARALLEL_GUARD_PATH],
     INOCULATION_GUARD_PATH: (
-        "46085b12fdac754fd73a50d972c273d82e83395af142b0fe69055f907e486a3f"
+        "9eb430d168659e96a813f45c0fb0636b985cec703ef93edcdb3e0a754649f53d"
     ),
     SIGNING_GUARD_PATH: EXPECTED_CHANGED_CURRENT_SHA256[SIGNING_GUARD_PATH],
     DECISION_GUARD_PATH: (

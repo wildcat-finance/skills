@@ -658,6 +658,11 @@ class Issue622InoculationCase(unittest.TestCase):
         ):
             verifier.verify_cumulative_targets(ROOT, inventory)
 
+    def test_cumulative_rebinds_match_checked_in_tree(self):
+        inventory = dict(verifier.EXPECTED_CUMULATIVE_REBIND_SHA256)
+
+        verifier.verify_cumulative_targets(ROOT, inventory)
+
     def test_archive_reads_ignore_local_git_replace_objects(self):
         with tempfile.TemporaryDirectory(prefix="inoculation-replace-") as raw:
             root = Path(raw)
