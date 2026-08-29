@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.25;
 
+import {IRoleProviderCalls} from "./IRoleProvider.sol";
+
 /// @dev A stand-in for a Wildcat role provider, carrying only the two
 ///      credential entry points the shipped manifest names as permitted call
 ///      targets: `roleProvider.getCredential` and
@@ -18,7 +20,7 @@ pragma solidity 0.8.25;
 ///      registry, because this exists to be a call target with the right shape
 ///      and not to be the thing under test. `HonestAccessHook` holds the
 ///      credential behaviour the gates actually measure.
-contract MockRoleProvider {
+contract MockRoleProvider is IRoleProviderCalls {
   /// @dev Credential expiry per account, as a unix timestamp. Zero means no
   ///      credential, which is what an unknown account reads as.
   mapping(address => uint32) public expiryOf;
@@ -34,7 +36,7 @@ contract MockRoleProvider {
 
   /// @dev The read path. Returns the stored expiry without touching state, so
   ///      it is reachable under `staticcall`.
-  function getCredential(address account) external view returns (uint32 timestamp) {
+  function getCredential(address account) external view override returns (uint32 timestamp) {
     return expiryOf[account];
   }
 
@@ -44,7 +46,7 @@ contract MockRoleProvider {
   function validateCredential(
     address account,
     bytes calldata
-  ) external returns (uint32 timestamp) {
+  ) external override returns (uint32 timestamp) {
     validations++;
     return expiryOf[account];
   }

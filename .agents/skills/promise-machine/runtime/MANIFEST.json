@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 938,
-  "total_bytes": 20356926,
+  "file_count": 939,
+  "total_bytes": 20365393,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -45,7 +45,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "48ec952e1b1375cf7ab702ac97581d66e7619b1c8d34f065e59a4fbcd554960d",
+      "sha256": "09b656b047f267e52e2be28de6d6e0051cbb3c4894731a775de7f4a003bf973b",
       "source": null
     },
     {
@@ -3475,9 +3475,9 @@
       "source": "plugins/janus/harness/src/JanusBase.sol"
     },
     {
-      "bytes": 9517,
+      "bytes": 11031,
       "path": "plugins/janus/harness/src/JanusHarness.sol",
-      "sha256": "59d9d60dc896206fa03b5aa5acb29aade05d82154fc01f692fe96caa20f3d0c5",
+      "sha256": "60df28e4c926e5812924995c74d7d81f4c6ed829b1daec9c3fc086ab5dd7ef59",
       "source": "plugins/janus/harness/src/JanusHarness.sol"
     },
     {
@@ -3505,10 +3505,16 @@
       "source": "plugins/janus/harness/src/hostile/HostileHooks.sol"
     },
     {
-      "bytes": 2706,
+      "bytes": 4265,
       "path": "plugins/janus/harness/src/wildcat/HonestAccessHook.sol",
-      "sha256": "245cb03458c0cf7ce6538ffdd07876aa9b4b01b108670ccaeb0e0df96121ae89",
+      "sha256": "5c1f30a616c4d8c6a6dee40af5040c74850fbbc00b04c453ba7d89016c6e7ff3",
       "source": "plugins/janus/harness/src/wildcat/HonestAccessHook.sol"
+    },
+    {
+      "bytes": 1165,
+      "path": "plugins/janus/harness/src/wildcat/IRoleProvider.sol",
+      "sha256": "9b052ba7622f4628042eecef0e64e7ef8e7339b9da4e62110455a28079db580e",
+      "source": "plugins/janus/harness/src/wildcat/IRoleProvider.sol"
     },
     {
       "bytes": 1988,
@@ -3517,9 +3523,9 @@
       "source": "plugins/janus/harness/src/wildcat/IWildcatHook.sol"
     },
     {
-      "bytes": 2349,
+      "bytes": 2446,
       "path": "plugins/janus/harness/src/wildcat/MockRoleProvider.sol",
-      "sha256": "3d90d22a41254cdc230c5f36f71ab68a25237b1872605c183baca2c2968292a0",
+      "sha256": "cbb58d37a060a763dd0ea395da71b81e6f5f3665d310f066f81b0c7adc644313",
       "source": "plugins/janus/harness/src/wildcat/MockRoleProvider.sol"
     },
     {
@@ -3535,9 +3541,9 @@
       "source": "plugins/janus/harness/src/wildcat/WildcatHostModel.sol"
     },
     {
-      "bytes": 8482,
+      "bytes": 9780,
       "path": "plugins/janus/harness/test/HostileHooks.t.sol",
-      "sha256": "e280ec53d29ddca3a9ecc364830297a09baf0d3abf344e156fb6a3b5fa827baf",
+      "sha256": "df9935f5243171d8e44f5b6ab308b51718c120466a0078ba99eb04afaaf83cc3",
       "source": "plugins/janus/harness/test/HostileHooks.t.sol"
     },
     {
@@ -3565,9 +3571,9 @@
       "source": "plugins/janus/harness/test/WildcatAdapter.t.sol"
     },
     {
-      "bytes": 12067,
+      "bytes": 14901,
       "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
-      "sha256": "57538baf6c86a82c91ab8eb6490549c1a1d0f0cf0c0e0686caafeb786ca0d45f",
+      "sha256": "fbf81991a7568d1b16423aba56e0c2a9e19f78275bde47b71b18f6f301f94d04",
       "source": "plugins/janus/harness/test/WildcatConformance.t.sol"
     },
     {

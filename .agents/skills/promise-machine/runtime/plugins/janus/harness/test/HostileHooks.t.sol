@@ -6,6 +6,8 @@ import {JanusHarness} from "../src/JanusHarness.sol";
 import {Vm} from "../src/Vm.sol";
 import {WildcatHostModel, MockAsset} from "../src/wildcat/WildcatHostModel.sol";
 import {WildcatHostAdapter} from "../src/wildcat/WildcatHostAdapter.sol";
+import {MockRoleProvider} from "../src/wildcat/MockRoleProvider.sol";
+import {AccountResolver, ManifestReader, ResolvedThreshold} from "../src/ManifestReader.sol";
 import {
   ReentryHook,
   GasGriefHook,
@@ -21,17 +23,30 @@ contract HostileHooksTest is JanusBase, JanusHarness {
 
   MockAsset asset;
   WildcatHostModel model;
+  MockRoleProvider provider;
   WildcatHostAdapter adapter;
+  ManifestReader manifestReader;
   address lender = address(0xBEEF);
 
   function setUp() public {
     asset = new MockAsset();
     model = new WildcatHostModel(asset);
-    adapter = new WildcatHostAdapter(model, asset, address(0));
+    provider = new MockRoleProvider();
+    adapter = new WildcatHostAdapter(model, asset, address(provider));
+    manifestReader = new ManifestReader();
     model.setBorrower(address(adapter));
     asset.mint(lender, 1_000_000);
     vm.prank(lender);
     asset.approve(address(model), type(uint256).max);
+  }
+
+  /// @dev The manifest's threshold for one action, resolved through the host
+  ///      adapter. The hostile verdicts take their gate inputs from here for
+  ///      the same reason the honest ones do: a hostile hook caught by a
+  ///      hand-written set proves only that the literal was narrow enough, not
+  ///      that the manifest was.
+  function _threshold(string memory action) internal view returns (ResolvedThreshold memory) {
+    return manifestReader.resolveFile(MANIFEST, action, AccountResolver(address(adapter)));
   }
 
   function _deposit(uint256 amount) internal returns (DriveResult memory) {
@@ -52,7 +67,7 @@ contract HostileHooksTest is JanusBase, JanusHarness {
   function test_gas_grief_hook_caught_by_gate5() external {
     model.setHook(address(new GasGriefHook()));
     _deposit(100);
-    uint256 budget = vm.parseJsonUint(vm.readFile(MANIFEST), ".thresholds[0].gasBudget");
+    uint256 budget = _threshold("deposit").gasBudget;
     assertTrue(
       model.lastHookGasUsed() > budget,
       "gate5: the hook consumed more than the manifest budget"
@@ -85,19 +100,24 @@ contract HostileHooksTest is JanusBase, JanusHarness {
     DriveResult memory r = _deposit(100);
     assertTrue(!r.reverted, "the mutating deposit reports success");
 
-    address[] memory allowedCalls = new address[](0);
+    ResolvedThreshold memory t = _threshold("deposit");
     assertTrue(
-      !_gate1_hookCallsWithinAllowed(r.delta, address(hook), allowedCalls),
-      "gate1: the call to the external registry is caught"
+      !_gate1_hookCallsWithinAllowed(r.delta, address(hook), t.allowedCallTargets),
+      "gate1: the call to the external registry is caught against the manifest's own set"
     );
 
     // The registry's storage was written by the hook's subtree. The storage
     // scope check catches it independently of the call-target check: only the
     // hook's own storage is a permitted write scope here.
-    address[] memory allowedWrites = new address[](1);
-    allowedWrites[0] = address(hook);
+    // The manifest's deposit threshold permits hook-scope writes only, so the
+    // resolved write set is the hook's own address, resolved through the
+    // adapter rather than written here. The registry is not in it.
+    model.setHook(address(hook)); // the resolved `hook` symbol is this hook
+    ResolvedThreshold memory w = _threshold("deposit");
+    assertEq(w.allowedWriteAccounts.length, 2, "both hook-scope writes resolved");
+    assertEq(w.allowedWriteAccounts[0], address(hook), "and both name the hook itself");
     assertTrue(
-      !_gate1_hookStorageWithinScopes(r.delta, address(hook), allowedWrites),
+      !_gate1_hookStorageWithinScopes(r.delta, address(hook), w.allowedWriteAccounts),
       "gate1: the hook-caused write to external storage is caught"
     );
   }
