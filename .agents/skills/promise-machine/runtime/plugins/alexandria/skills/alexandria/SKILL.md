@@ -9,7 +9,7 @@ description: >
   offline demonstration, unsigned in-toto release statements and a bounded
   Compound v3 Phase 0 method proof are available.
 metadata:
-  version: "0.3.0"
+  version: "0.4.0"
 ---
 
 <p align="center">

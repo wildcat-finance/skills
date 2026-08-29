@@ -405,3 +405,111 @@ steps 3 and 4 are untouched by this amendment.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
 holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-29
+
+**What changed.** Complete replacement Files: Change
+`plugins/probitas/scripts/probitas.py`,
+`plugins/probitas/scripts/probitas_lib/adapters/__init__.py`,
+`plugins/probitas/tests/test_cli.py`,
+`plugins/probitas/tests/test_registry.py`,
+`plugins/alexandria/tests/test_index.py`,
+`tests/promise_machine_coverage.json`,
+`plugins/probitas/README.md`, `plugins/probitas/AGENTS.md`,
+`plugins/probitas/skills/probitas/SKILL.md`,
+`plugins/probitas/skills/probitas/references/venues.md`. Regenerate
+`.agents/skills/promise-machine/runtime/` and its `MANIFEST.json`. Permit the
+three `.horos` JSON files only where the deterministic scan changes them.
+
+**Why.** Two files this step has to touch were not on its list. Alexandria's
+`test_index.py` holds `test_probitas_refuses_fixture_and_archive_inputs_together`,
+which asserts the exact refusal this step removes; leaving it would fail the
+Alexandria suite, and it is also the natural home for an end-to-end union case
+because that file already builds an index and drives Probitas.
+`tests/promise_machine_coverage.json` pins a digest of
+`plugins/probitas/scripts/probitas.py` under
+`runtime.probitas-dossier-verification`, so every step that edits that file
+must repin it or leave the repository suite red on PM071 drift.
+
+**Steps touched.** Step 3's files only. No other field of step 3 changes, and
+step 4 is untouched by this amendment.
+
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-29
+
+**What changed.** Complete replacement Exit: All of the following hold.
+`plugins/probitas/tests/test_union.py` builds a disposable Alexandria index
+offline through that plugin's checked-in demonstration, runs `collect
+--fixtures tests/fixtures/demo --alexandria-index <index>`, then `render` and
+`verify`, and asserts that the evidence carries adapter records and archive
+records together, that both source classes appear in the coverage table, that
+an archive row names its releases, that an adapter row names none, that a
+venue some route answered is not also a gap, and that all five gates pass. The
+README documents that path.
+`plugins/probitas/skills/probitas/EVOLUTION.md` carries exactly one new
+`generation` row at `probitas-v0.2.0`, retaining frontier revision
+`morpho-midnight-coverage` and digest
+`5f66077a0c39a9ee647bd34233504b3891493f864fe4a16a9eb0c0337b3ee688` byte for
+byte, citing issue #391 and the committed study, and leaving `Next Fiat job`
+unchanged. `plugins/probitas/skills/probitas/SKILL.md` metadata reads
+`version: "0.2.0"`. The Probitas package version moves from `0.1.1` to
+`0.1.2` in both its manifests and `.claude-plugin/marketplace.json`.
+`plugins/alexandria/skills/alexandria/EVOLUTION.md` carries exactly one new
+`generation` row at `alexandria-v0.4.0`, retaining frontier revision
+`usdc-interval-collector` and its digest byte for byte, its `SKILL.md`
+metadata reads `version: "0.4.0"`, and the Alexandria package version moves
+from `0.3.0` to `0.3.1` in the same three places. `DELIVERY_PACKAGE_VERSIONS`
+in `tests/test_version_propagation.py` agrees with both. The
+`probitas-evidence-collection` promise in `SKILL.md` states the two source
+classes and the merge's refusals, keeping its promise identity so
+`tests/promise_machine_coverage.json` needs no new row.
+`plugins/probitas/tests/test_manifests.py` reads the skill version from the
+ledger rather than a literal, keeping its inverse invariant that the package
+version does not track the skill version. The README's stated test count and
+adapter list match what ships. Step 3's audited tip is merged into this branch,
+with the runtime mirror and the Horos boundary regenerated from the merged tree
+rather than resolved by keeping a side. Proved by:
+`python3 plugins/probitas/tests/run_tests.py --elenchus-report .elenchus/probitas-391-step-4.json` passing with at least 323 tests,
+`python3 -m unittest discover -s plugins/alexandria/tests -t .`,
+`python3 -m unittest discover -s tests`,
+`output="$(mktemp -d)/credit-history-v0"; python3 plugins/alexandria/examples/credit-history-v0/demo.py build --output "$output"` then `verify` on that output, both exiting 0,
+`python3 scripts/portable_promise_machine.py sync` then `check`,
+`python3 plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .`,
+`python3 plugins/horos/skills/horos/scripts/horos.py check .`,
+`python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/probitas/README.md plugins/probitas/skills/probitas/SKILL.md plugins/probitas/skills/probitas/EVOLUTION.md plugins/alexandria/skills/alexandria/EVOLUTION.md plugins/alexandria/skills/alexandria/SKILL.md`,
+and `git diff --check`. Complete replacement Files: Create
+`plugins/probitas/tests/test_union.py`. Change
+`plugins/probitas/skills/probitas/EVOLUTION.md`,
+`plugins/probitas/skills/probitas/SKILL.md`,
+`plugins/probitas/.claude-plugin/plugin.json`,
+`plugins/probitas/.codex-plugin/plugin.json`,
+`plugins/probitas/tests/test_manifests.py`, `plugins/probitas/README.md`,
+`plugins/alexandria/skills/alexandria/EVOLUTION.md`,
+`plugins/alexandria/skills/alexandria/SKILL.md`,
+`plugins/alexandria/.claude-plugin/plugin.json`,
+`plugins/alexandria/.codex-plugin/plugin.json`,
+`.claude-plugin/marketplace.json`, `tests/test_version_propagation.py`, and
+`docs/probitas-unified-collection-runbook.md` so the committed copy matches the
+receipted runbook byte for byte. Regenerate
+`.agents/skills/promise-machine/runtime/` and its `MANIFEST.json`, and the
+three `.horos` JSON files where the deterministic scan changes them.
+
+**Why.** The exit said Alexandria's ledger and package version were untouched
+because no Alexandria behaviour had changed. That stopped being true in step 2,
+whose own amendment recorded that this one would be owed: the Probitas bridge
+now returns a `releases` key, which is a change to an Alexandria script and
+earns that skill a generation row of its own. Three smaller corrections travel
+with it. `test_manifests.py` pinned the skill version as the literal `0.1.0`
+while asserting the inverse invariant that the package version does not track
+it, so a legitimate bump failed a test that was never about the number. The
+committed runbook copy has been one amendment stale since step 3, and no step
+could refresh it without this allowance. And the expected count and the merge
+of step 3's audited tip are recorded because they are what the step actually
+does.
+
+**Steps touched.** Step 4's exit and files. No other field of step 4 changes,
+and no earlier step is touched.
+
+**Still holding.** Step 4: entry holds; exit holds.

@@ -65,11 +65,11 @@ Gate 3 is the one that does the work. It rebuilds, from the evidence alone, ever
 ## What it ships
 
 - the executable [`probitas.py`](./scripts/probitas.py) collector, renderer and gate checker, standard library only;
-- adapters for [Wildcat](https://wildcat.finance) and Morpho Blue, and eleven further venues carried as named gaps rather than silence;
+- adapters for [Wildcat](https://wildcat.finance), Morpho Blue, Euler v1 and Euler v2, an archive route over verified Alexandria releases for Goldfinch and Clearpool, and eleven further venues carried as named gaps rather than silence;
 - nine synthetic borrower fixtures, including the cured delinquency that a hand-assembled writeup usually reads as a default;
 - a [committed example dossier](./docs/example-dossier.md) that the tests regenerate and compare, so it cannot drift;
 - [a guide to closing a coverage gap](./docs/adding-a-venue.md) that assumes no knowledge of Wildcat; and
-- 234 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
+- 323 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
 
 ## Day to day
 
@@ -128,6 +128,12 @@ python3 scripts/probitas.py collect --entity "Acme Trading Ltd" \
 | `--live --alexandria-index X` | live network | archive |
 | `--live` | live network | not run |
 | `--live --fixtures DIR` | refused, exit 2 | refused, exit 2 |
+
+An offline end-to-end run of both routes lives in
+[`tests/test_union.py`](./tests/test_union.py). It builds a disposable
+Alexandria index from that plugin's checked-in demonstration, collects over the
+fixture and archive routes together, renders, and puts the result through all
+five gates without reaching the network.
 
 `--live` exists because an index on its own still suppresses the adapter route,
 exactly as it always has. Making the index additive by default would have

@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 929,
-  "total_bytes": 20338674,
+  "total_bytes": 20341542,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -451,15 +451,15 @@
       "source": "plugins/alexandria/scripts/compound_v3_phase0.py"
     },
     {
-      "bytes": 1581,
+      "bytes": 2368,
       "path": "plugins/alexandria/skills/alexandria/EVOLUTION.md",
-      "sha256": "bd432c55e3f9e81746f5c2d587a8318c84d64ac729a771fa10d3d4608665e45c",
+      "sha256": "14b2f468db0fe680d6a8e2531c123736cbcbf58a3c87f94464042a6e3917b038",
       "source": "plugins/alexandria/skills/alexandria/EVOLUTION.md"
     },
     {
       "bytes": 16183,
       "path": "plugins/alexandria/skills/alexandria/SKILL.md",
-      "sha256": "948f67af993351e5abf80bbbe9a095bbcf1fea1da5c352f4fab9fc656cbfa542",
+      "sha256": "d1665f1b48fbe08656621e394285b509a45ae3e1aea664b06e775af1a992d78a",
       "source": "plugins/alexandria/skills/alexandria/SKILL.md"
     },
     {
@@ -4807,9 +4807,9 @@
       "source": "plugins/probitas/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 16291,
+      "bytes": 16712,
       "path": "plugins/probitas/README.md",
-      "sha256": "8bf1d33853f9c3ec6e2766e19c1686f7ac35268c493090dc0908496ca82179ab",
+      "sha256": "19fd4a6716de7a6d336db8c57cdcf96c0caf277bb39d2d9db958509fdee43c89",
       "source": "plugins/probitas/README.md"
     },
     {
@@ -4957,15 +4957,15 @@
       "source": "plugins/probitas/scripts/probitas_lib/sanitise.py"
     },
     {
-      "bytes": 991,
+      "bytes": 2117,
       "path": "plugins/probitas/skills/probitas/EVOLUTION.md",
-      "sha256": "713a6db4ed6d35332cd585e4e3afbac904d55284e8ae10229e099938932a9c97",
+      "sha256": "3e3427abeab425a728bc0bc96b1191c8178b812cc296cb5d497ae87f84ce6e29",
       "source": "plugins/probitas/skills/probitas/EVOLUTION.md"
     },
     {
-      "bytes": 12977,
+      "bytes": 13511,
       "path": "plugins/probitas/skills/probitas/SKILL.md",
-      "sha256": "6eb16a3d4c95d6331053962d2f19a66216c7d4fa9adbf6c4240eeef4b6e72df2",
+      "sha256": "bc1c9063269ab4aa0e6aa48d8c38c2dd908d46ad8b457ec7ab82c9bfe49430a0",
       "source": "plugins/probitas/skills/probitas/SKILL.md"
     },
     {
