@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 960,
-  "total_bytes": 20863712,
+  "file_count": 961,
+  "total_bytes": 20902366,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -59,7 +59,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "9664c9c525d4e1e4dfa7d9dc80d481e53b9fc6ac571115d42f259462a296189d",
+      "sha256": "4db012bc94935563f7c2455c1854ddbd2470fd2da79177c91ff1e36669fea9ea",
       "source": null
     },
     {
@@ -1869,6 +1869,12 @@
       "source": "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
     },
     {
+      "bytes": 6436,
+      "path": "plugins/hexaemeron/skills/fiat/references/checkpoint-identity.md",
+      "sha256": "bd97d5fad7c8c384a11f6ae5c6aaf5c6f29b922c4e70be9ba7693d9ade0b9216",
+      "source": "plugins/hexaemeron/skills/fiat/references/checkpoint-identity.md"
+    },
+    {
       "bytes": 10583,
       "path": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md",
       "sha256": "31911c2f6939e036c83c4dc05c7e10915fd173e4c03bbc170d0265d02f18ba35",
@@ -1917,9 +1923,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 422162,
+      "bytes": 454380,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "ebfb9ec21f1203208098e4ec5014d1e24ef23b6aaff25eecec07210a6c08ff38",
+      "sha256": "976b625cafd8dcd6c15aa86f8bbea0cc1ee13419b78b3bb9b077fcba4c8b3737",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {

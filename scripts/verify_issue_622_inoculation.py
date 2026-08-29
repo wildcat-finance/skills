@@ -134,7 +134,7 @@ EXPECTED_CHANGED_CURRENT_SHA256 = {
         "9d4b41e0c539e0edb8bda9b8a0cd9b2b9cebb46d6bc639894d727bbb6de804a7"
     ),
     "tests/promise_machine_coverage.json": (
-        "daf8100d3b6c6b7c9592e2b7e0e7f5fb1ad9daa89c1981faab05bc10b039925e"
+        "14f7636d73bc393e90cbac287687f1fbd57ffb36503ce337855cd23ef38060bc"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"
@@ -192,10 +192,10 @@ EXPECTED_CUMULATIVE_REBIND_SHA256 = {
         "46085b12fdac754fd73a50d972c273d82e83395af142b0fe69055f907e486a3f"
     ),
     RECORD_PATH: (
-        "6c456d9dea4ac6e276f30b8db93465e92ea565e4fc337ac96d072099042c5af9"
+        "7a7c9dd199aa320cddc9bcb8d9396bf203d4f2d32369f9cfd1fcb10943dbe7ab"
     ),
     "tests/promise_machine_coverage.json": (
-        "daf8100d3b6c6b7c9592e2b7e0e7f5fb1ad9daa89c1981faab05bc10b039925e"
+        "14f7636d73bc393e90cbac287687f1fbd57ffb36503ce337855cd23ef38060bc"
     ),
     "tests/test_boundary_currency.py": (
         "8e12caa36efec6779d918fb7988f41229b961b097c3a1747b4d8edddcbfa2ae5"

@@ -352,3 +352,133 @@ test actually exercises.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds.
+
+### Amendment -- 2026-08-29
+
+**What changed.** Complete replacement Tests: For Step 2, preserve a parent-red
+command guard, then implement the complete focused module including
+`test_identity_is_read_only_and_byte_stable`,
+`test_identity_refuses_legacy_symbolic_base`,
+`test_carrier_fields_do_not_change_snapshot_id`, and
+`test_semantic_inputs_each_change_snapshot_id`. Run:
+
+```bash
+mise exec node@26.6.0 python@3.14.6 -- python3 -m unittest plugins.hexaemeron.tests.test_hexctl_checkpoint_identity -v
+mise exec node@26.6.0 python@3.14.6 -- python3 plugins/hexaemeron/tests/run_tests.py
+mise exec python@3.14.6 -- python3 scripts/portable_promise_machine.py check
+mise exec node@26.6.0 python@3.14.6 -- python3 scripts/run_checks.py --jobs 1
+mise exec python@3.14.6 -- python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+mise exec python@3.14.6 -- python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+mise exec python@3.14.6 -- python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
+mise exec python@3.14.6 -- python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/scripts/hexctl.py plugins/hexaemeron/tests/test_hexctl_checkpoint_identity.py plugins/hexaemeron/skills/fiat/references/checkpoint-identity.md
+mise exec python@3.14.6 -- python3 plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+For every audit repair, use exactly:
+
+```text
+test command: mise exec node@26.6.0 python@3.14.6 -- python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}
+report format: unittest-json-v1
+expected report schema: elenchus.unittest.v1
+report file: .elenchus/fiat-560-step-2.json
+```
+
+The report path must be fresh. A missing, stale, empty, malformed, zero-test or
+infrastructure-failed report is `inconclusive`. Preserve as infrastructure
+evidence the two default-parallel checked-runner reproductions in which the
+root prose-pointer test raced a transient
+`tmp/check-runner/audit*/snapshot` created and removed by the concurrently
+running Hexaemeron check. The direct root suite passed 472 of 472. The serial
+runner must select and pass the same complete affected scope; no runner or
+root-test edit is admitted.
+
+**Why.** The default affected runner reproduced the same `FileNotFoundError`
+twice while checks shared its disposable snapshot. Direct root execution was
+green, and every product check completed green. Serial scheduling removes the
+snapshot lifetime race without omitting or accepting a failed check and keeps
+the framework repair outside this identity step.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-29
+
+**What changed.** Complete replacement Files: Amend
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py` and
+`plugins/hexaemeron/tests/test_hexctl_checkpoint_identity.py`; create the
+module's exact golden/hostile fixture and
+`plugins/hexaemeron/skills/fiat/references/checkpoint-identity.md`. Update
+`docs/fiat-checkpoint-identity-runbook.md` to remain byte-identical to the
+receipted runbook after its scheduling amendment. Deterministically sync the
+generated controller, generated reference and runtime manifest. Update only
+their exact issue-429, Promise coverage and issue-622 digest closures in
+`plugins/hexaemeron/tests/test_issue_429_recovery.py`,
+`tests/promise_machine_coverage.json`,
+`scripts/verify_issue_622_inoculation.py`, and
+`tests/fixtures/issue-622-inoculation-v1.json`; update
+`tests/test_promise_machine_contract.py` only if the new executable reference
+changes its fixed contract inventory. Regenerate Horos boundary/candidates
+only when prescribed, and append only this run's audit record/synopsis. Do not
+change native export/restore meaning, checkpoint boundaries, versions, public
+SKILL prose, CI, dependencies, archive bytes, publication or mutation policy.
+
+**Why.** The accepted runbook is the source-bound build and audit contract.
+Its tracked copy must carry the receipted scheduling correction so reviewers
+do not see an older Tests field than Mason and Warden receive from the
+controller.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds.
+
+### Amendment -- 2026-08-29
+
+**What changed.** Complete replacement Tests: For Step 2, preserve a parent-red
+command guard, then implement the complete focused module including
+`test_identity_is_read_only_and_byte_stable`,
+`test_identity_refuses_legacy_symbolic_base`,
+`test_carrier_fields_do_not_change_snapshot_id`, and
+`test_semantic_inputs_each_change_snapshot_id`. Run:
+
+```bash
+mise exec node@26.6.0 python@3.14.6 -- python3 -m unittest plugins.hexaemeron.tests.test_hexctl_checkpoint_identity -v
+mise exec node@26.6.0 python@3.14.6 -- python3 plugins/hexaemeron/tests/run_tests.py
+mise exec python@3.14.6 -- python3 scripts/portable_promise_machine.py check
+mise exec node@26.6.0 python@3.14.6 -- python3 scripts/run_checks.py --jobs 2
+mise exec python@3.14.6 -- python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py plugins tests
+mise exec python@3.14.6 -- python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py plugins tests
+mise exec python@3.14.6 -- python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py README.md AGENTS.md .agents/skills/promise-machine/SKILL.md .agents/skills/promise-machine/PORTABLE.md plugins docs
+mise exec python@3.14.6 -- python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py plugins/hexaemeron/skills/fiat/scripts/hexctl.py plugins/hexaemeron/tests/test_hexctl_checkpoint_identity.py plugins/hexaemeron/skills/fiat/references/checkpoint-identity.md
+mise exec python@3.14.6 -- python3 plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+For every audit repair, use exactly:
+
+```text
+test command: mise exec node@26.6.0 python@3.14.6 -- python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}
+report format: unittest-json-v1
+expected report schema: elenchus.unittest.v1
+report file: .elenchus/fiat-560-step-2.json
+```
+
+The report path must be fresh. A missing, stale, empty, malformed, zero-test or
+infrastructure-failed report is `inconclusive`. Preserve both default-parallel
+snapshot-race reproductions and the serial `--jobs 1` scheduler refusal as
+infrastructure evidence. The direct root suite passed 472 of 472. The two-slot
+runner must select and pass the same complete affected scope; no runner or
+root-test edit is admitted.
+
+**Why.** The runner reserves one process slot for Hexaemeron's nested
+coordinator and requires another for its child, so `--jobs 1` refused that
+check before launch. Two slots are the minimum configuration that can run the
+nested suite while preventing the original root/Hexaemeron snapshot overlap.
+
+**Steps touched.** Step 2.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit
+holds.

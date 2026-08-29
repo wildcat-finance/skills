@@ -271,6 +271,16 @@ CHECKPOINT_MANIFEST_BYTES_MAX = 1024 * 1024
 CHECKPOINT_PATH_BYTES_MAX = 1024
 CHECKPOINT_IO_CHUNK = 64 * 1024
 
+CHECKPOINT_IDENTITY_SCHEMA = "fiat-checkpoint-identity/v1"
+CHECKPOINT_IDENTITY_RESULT_SCHEMA = "fiat-checkpoint-identity-result/v1"
+CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA = "fiat-checkpoint-identity-evidence/v1"
+CHECKPOINT_IDENTITY_POLICY_SCHEMA = "fiat-checkpoint-behavior-policy/v1"
+CHECKPOINT_IDENTITY_OBSERVATIONS_SCHEMA = "fiat-checkpoint-observations/v1"
+CHECKPOINT_IDENTITY_DOMAIN = b"wildcat-fiat-checkpoint-identity/v1\0"
+CHECKPOINT_IDENTITY_LEDGER_ENTRIES_MAX = 100_000
+CHECKPOINT_IDENTITY_SKILLS_MAX = 32
+CHECKPOINT_IDENTITY_TEXT_BYTES_MAX = 128
+
 RUN_ANCHOR_SCHEMA = "fiat-run-anchor/v1"
 RUN_ANCHOR_RECEIPT = "run_anchor"
 RUN_ANCHOR_REPOSITORY_UNBOUND = {"status": "unbound"}
@@ -2898,7 +2908,9 @@ def cmd_observe(args) -> None:
     )
 
 
-def verify_observation_bindings(base_dir: str, state: dict) -> tuple[int, int]:
+def verify_observation_bindings(
+    base_dir: str, state: dict, *, allow_unavailable: bool = False
+) -> tuple[int, int]:
     bindings = state["receipts"].get("run_observations")
     if not isinstance(bindings, list) or not bindings:
         observation_error(
@@ -2976,17 +2988,50 @@ def verify_observation_bindings(base_dir: str, state: dict) -> tuple[int, int]:
                 1,
             )
         used_record_lines.add(record.get("_line"))
-        if (
-            binding.get("capture_status") != "accepted"
-            or binding.get("validation_status") != "passed"
-            or binding.get("redaction_status") != "passed"
-        ):
+        available = (
+            binding.get("capture_status") == "accepted"
+            and binding.get("validation_status") == "passed"
+            and binding.get("redaction_status") == "passed"
+        )
+        if not available and not allow_unavailable:
             observation_error(
                 "FOB005",
                 "the requested observation claim is unavailable or failed",
                 "capture, validate, and redact an accepted prefix before claiming it",
                 1,
             )
+        if not available:
+            if (
+                set(binding)
+                != {
+                    "schema",
+                    "observation_contract",
+                    "controller_run_id",
+                    "recorded_at",
+                    "capture_status",
+                    "redaction_status",
+                    "receipt",
+                    "validation_status",
+                    "reason_code",
+                }
+                or binding.get("capture_status") not in OBSERVATION_CAPTURE_STATUSES
+                or binding.get("capture_status") == "accepted"
+                or binding.get("validation_status") != "unknown"
+                or binding.get("redaction_status") not in ("failed", "unknown")
+                or not isinstance(binding.get("recorded_at"), str)
+                or not binding["recorded_at"].isascii()
+                or len(binding["recorded_at"].encode("ascii"))
+                > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+                or not isinstance(binding.get("reason_code"), str)
+                or OBSERVATION_REASON_RE.fullmatch(binding["reason_code"]) is None
+            ):
+                observation_error(
+                    "FOB003",
+                    "a non-available observation binding has an invalid closed shape",
+                    "restore the complete receipted binding and verify again",
+                    1,
+                )
+            continue
         artifact = binding.get("artifact")
         byte_count = binding.get("byte_count")
         event_count = binding.get("event_count")
@@ -8529,6 +8574,758 @@ def _checkpoint_ledger(data: bytes, state: dict) -> tuple[int, str]:
     return count, previous
 
 
+def _checkpoint_identity_sha256(value, label: str) -> str:
+    """Accept one lowercase SHA-256 without coercing another JSON type."""
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        die(f"checkpoint identity {label} is not a lowercase SHA-256")
+    return value
+
+
+def _checkpoint_identity_short_ascii(value, label: str) -> str:
+    """Accept one bounded printable ASCII token used by the closed language."""
+    if (
+        not isinstance(value, str)
+        or not value
+        or not value.isascii()
+        or len(value.encode("ascii")) > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+        or any(ord(character) < 33 or ord(character) > 126 for character in value)
+    ):
+        die(f"checkpoint identity {label} is not bounded printable ASCII")
+    return value
+
+
+def _checkpoint_identity_ledger(
+    data: bytes, state: dict
+) -> tuple[list[dict], int, str]:
+    """Verify the exact bounded appendable prefix used by semantic identity."""
+    if type(data) is not bytes:
+        die("checkpoint identity ledger input must be captured bytes")
+    if not data or len(data) > CHECKPOINT_FILE_BYTES_MAX:
+        die("checkpoint identity ledger exceeds its byte ceiling")
+    if not data.endswith(b"\n"):
+        die("checkpoint identity ledger is not an appendable exact prefix")
+
+    previous = "genesis"
+    entries = []
+    for raw_line in io.BytesIO(data):
+        if not raw_line.strip():
+            die("checkpoint identity ledger contains an empty record")
+        entry = _checkpoint_json(raw_line, "identity ledger")
+        if (
+            not isinstance(entry, dict)
+            or set(entry) != {"ts", "event", "data", "prev", "state", "hash"}
+            or not isinstance(entry.get("ts"), str)
+            or not entry["ts"].isascii()
+            or len(entry["ts"].encode("ascii"))
+            > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+            or not isinstance(entry.get("event"), str)
+            or not entry["event"]
+            or not entry["event"].isascii()
+            or len(entry["event"].encode("ascii"))
+            > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+            or not isinstance(entry.get("data"), dict)
+            or not isinstance(entry.get("prev"), str)
+            or not isinstance(entry.get("state"), str)
+            or not isinstance(entry.get("hash"), str)
+        ):
+            die("checkpoint identity ledger entry has an unsupported shape")
+        if entry["prev"] != previous:
+            die("checkpoint identity ledger chain is invalid")
+        _checkpoint_identity_sha256(entry["state"], "ledger state")
+        _checkpoint_identity_sha256(entry["hash"], "ledger hash")
+        if entry["prev"] != "genesis":
+            _checkpoint_identity_sha256(entry["prev"], "ledger predecessor")
+        body = {
+            key: entry[key] for key in ("ts", "event", "data", "prev", "state")
+        }
+        expected = hashlib.sha256(canonical(body).encode("utf-8")).hexdigest()
+        if entry["hash"] != expected:
+            die("checkpoint identity ledger chain is invalid")
+        previous = entry["hash"]
+        entries.append(entry)
+        if len(entries) > CHECKPOINT_IDENTITY_LEDGER_ENTRIES_MAX:
+            die("checkpoint identity ledger exceeds its entry ceiling")
+
+    if entries[-1]["state"] != state_fingerprint(state):
+        die("checkpoint identity state does not match its ledger tail")
+    return entries, len(entries), previous
+
+
+def _checkpoint_identity_policy(state: dict) -> dict:
+    """Project only the behavior settings named by the version-1 contract."""
+    config = state["config"]
+    skills = config["skills"]
+    audit = config["audit"]
+    git_config = config["git"]
+    if not isinstance(skills, dict) or set(skills) != {
+        "prose_lint",
+        "voice",
+        "security",
+    }:
+        die("checkpoint identity skills policy has an unsupported shape")
+    security = skills.get("security")
+    if (
+        not isinstance(security, list)
+        or not security
+        or len(security) > CHECKPOINT_IDENTITY_SKILLS_MAX
+        or any(not isinstance(item, str) for item in security)
+        or len(set(security)) != len(security)
+    ):
+        die("checkpoint identity security policy is malformed")
+    skill_names = [skills.get("prose_lint"), skills.get("voice"), *security]
+    for skill_name in skill_names:
+        _checkpoint_identity_short_ascii(skill_name, "skill name")
+        if re.fullmatch(
+            r"[A-Za-z0-9][A-Za-z0-9._-]*:[A-Za-z0-9][A-Za-z0-9._-]*",
+            skill_name,
+        ) is None:
+            die("checkpoint identity skill name is malformed")
+
+    max_rounds = audit.get("max_rounds")
+    if (
+        isinstance(max_rounds, bool)
+        or not isinstance(max_rounds, int)
+        or max_rounds < 1
+        or max_rounds > 1_000_000
+    ):
+        die("checkpoint identity audit round policy is malformed")
+    fold = audit.get("fold")
+    if not isinstance(fold, bool):
+        die("checkpoint identity audit fold policy is malformed")
+    suffix = _checkpoint_identity_short_ascii(
+        audit.get("stacked_suffix"), "audit stacked suffix"
+    )
+    if re.fullmatch(r"[A-Za-z0-9._/-]+", suffix) is None:
+        die("checkpoint identity audit stacked suffix is malformed")
+    draft_pr = git_config.get("draft_pr")
+    if not isinstance(draft_pr, bool):
+        die("checkpoint identity draft pull-request policy is malformed")
+    solidity = config.get("solidity")
+    if not solidity_mode(solidity):
+        die("checkpoint identity Solidity policy is malformed")
+
+    return {
+        "schema": CHECKPOINT_IDENTITY_POLICY_SCHEMA,
+        "skills": {
+            "prose_lint": skills["prose_lint"],
+            "voice": skills["voice"],
+            "security": list(security),
+        },
+        "audit": {
+            "max_rounds": max_rounds,
+            "fold": fold,
+            "stacked_suffix": suffix,
+        },
+        "git": {"draft_pr": draft_pr},
+        "solidity": solidity,
+    }
+
+
+def _checkpoint_identity_observation_shape(binding: dict, run_id: str) -> None:
+    """Validate the closed binding bytes before reducing them to one digest."""
+    common = {
+        "schema",
+        "observation_contract",
+        "controller_run_id",
+        "recorded_at",
+        "capture_status",
+        "redaction_status",
+        "receipt",
+        "validation_status",
+    }
+    available = {
+        *common,
+        "artifact",
+        "byte_count",
+        "event_count",
+        "sha256",
+        "interval",
+    }
+    unavailable = {*common, "reason_code"}
+    if not isinstance(binding, dict) or set(binding) not in (available, unavailable):
+        die("checkpoint identity observation binding has an unsupported shape")
+    if (
+        binding.get("schema") != OBSERVATION_BINDING_CONTRACT
+        or binding.get("observation_contract") != OBSERVATION_CONTRACT
+        or binding.get("controller_run_id") != run_id
+    ):
+        die("checkpoint identity observation binding names another contract or run")
+    recorded_at = binding.get("recorded_at")
+    if (
+        not isinstance(recorded_at, str)
+        or not recorded_at
+        or not recorded_at.isascii()
+        or len(recorded_at.encode("ascii"))
+        > CHECKPOINT_IDENTITY_TEXT_BYTES_MAX
+    ):
+        die("checkpoint identity observation timestamp is malformed")
+    receipt = binding.get("receipt")
+    if (
+        not isinstance(receipt, dict)
+        or set(receipt) != {"line", "event", "hash", "state"}
+        or isinstance(receipt.get("line"), bool)
+        or not isinstance(receipt.get("line"), int)
+        or receipt["line"] < 1
+    ):
+        die("checkpoint identity observation receipt has an unsupported shape")
+    _checkpoint_identity_short_ascii(receipt.get("event"), "observation event")
+    _checkpoint_identity_sha256(receipt.get("hash"), "observation receipt hash")
+    _checkpoint_identity_sha256(receipt.get("state"), "observation state")
+
+    if set(binding) == unavailable:
+        reason = binding.get("reason_code")
+        if (
+            binding.get("capture_status") not in OBSERVATION_CAPTURE_STATUSES
+            or binding.get("capture_status") == "accepted"
+            or binding.get("validation_status") != "unknown"
+            or binding.get("redaction_status") not in ("failed", "unknown")
+            or not isinstance(reason, str)
+            or OBSERVATION_REASON_RE.fullmatch(reason) is None
+        ):
+            die("checkpoint identity unavailable observation is malformed")
+        return
+
+    artifact = binding.get("artifact")
+    interval = binding.get("interval")
+    if (
+        binding.get("capture_status") != "accepted"
+        or binding.get("validation_status") != "passed"
+        or binding.get("redaction_status") != "passed"
+        or not isinstance(artifact, str)
+        or not artifact
+        or not artifact.isascii()
+        or len(artifact.encode("ascii")) > OBSERVATION_PATH_BYTES_MAX
+        or isinstance(binding.get("byte_count"), bool)
+        or not isinstance(binding.get("byte_count"), int)
+        or binding["byte_count"] < 1
+        or binding["byte_count"] > OBSERVATION_BYTES_MAX
+        or isinstance(binding.get("event_count"), bool)
+        or not isinstance(binding.get("event_count"), int)
+        or binding["event_count"] < 1
+        or not isinstance(interval, dict)
+        or set(interval)
+        != {
+            "first_sequence",
+            "last_sequence",
+            "first_event_id",
+            "last_event_id",
+        }
+    ):
+        die("checkpoint identity accepted observation is malformed")
+    _checkpoint_identity_sha256(binding.get("sha256"), "observation prefix")
+    first_sequence = interval.get("first_sequence")
+    last_sequence = interval.get("last_sequence")
+    if (
+        isinstance(first_sequence, bool)
+        or not isinstance(first_sequence, int)
+        or first_sequence < 0
+        or isinstance(last_sequence, bool)
+        or not isinstance(last_sequence, int)
+        or last_sequence < first_sequence
+    ):
+        die("checkpoint identity observation interval is malformed")
+    _checkpoint_identity_short_ascii(
+        interval.get("first_event_id"), "observation first event id"
+    )
+    _checkpoint_identity_short_ascii(
+        interval.get("last_event_id"), "observation last event id"
+    )
+
+
+def _checkpoint_identity_observations(state: dict, entries: list[dict]) -> dict:
+    """Reduce absent or already verified ordered bindings to path-free evidence."""
+    receipts = state["receipts"]
+    if "run_observations" not in receipts:
+        absent = {
+            "schema": CHECKPOINT_IDENTITY_OBSERVATIONS_SCHEMA,
+            "status": "absent",
+        }
+        return {
+            "status": "absent",
+            "bindings": 0,
+            "sha256": hashlib.sha256(canonical(absent).encode("utf-8")).hexdigest(),
+        }
+    bindings = receipts.get("run_observations")
+    if (
+        not isinstance(bindings, list)
+        or not bindings
+        or len(bindings) > OBSERVATION_BINDINGS_MAX
+    ):
+        die("checkpoint identity observation collection is malformed")
+    run_id = controller_run_id(state)
+    by_hash = {entry["hash"]: (line, entry) for line, entry in enumerate(entries, 1)}
+    observation_records = [
+        (line, entry)
+        for line, entry in enumerate(entries, 1)
+        if entry["event"] == "record:run-observation"
+    ]
+    if len(observation_records) != len(bindings):
+        die("checkpoint identity observation ledger count does not match state")
+    used_records = set()
+    previous_record_line = 0
+    for binding in bindings:
+        _checkpoint_identity_observation_shape(binding, run_id)
+        receipt = binding["receipt"]
+        selected_pair = by_hash.get(receipt["hash"])
+        binding_sha256 = hashlib.sha256(
+            canonical(binding).encode("utf-8")
+        ).hexdigest()
+        matches = [
+            (line, entry)
+            for line, entry in observation_records
+            if entry["data"].get("binding_sha256") == binding_sha256
+        ]
+        if selected_pair is None or len(matches) != 1:
+            die("checkpoint identity observation receipt is not joined to the ledger")
+        selected_line, selected = selected_pair
+        record_line, record = matches[0]
+        if (
+            selected["event"] == "record:run-observation"
+            or record_line in used_records
+            or record_line <= previous_record_line
+            or selected_line + 1 != record_line
+            or receipt
+            != {
+                "line": selected_line,
+                "event": selected["event"],
+                "hash": selected["hash"],
+                "state": selected["state"],
+            }
+            or record["data"].get("receipt_hash") != selected["hash"]
+            or record["data"].get("capture_status")
+            != binding["capture_status"]
+        ):
+            die("checkpoint identity observation receipt disagrees with the ledger")
+        used_records.add(record_line)
+        previous_record_line = record_line
+    return {
+        "status": "bound",
+        "bindings": len(bindings),
+        "sha256": hashlib.sha256(canonical(bindings).encode("utf-8")).hexdigest(),
+    }
+
+
+def _checkpoint_identity_working_commit(
+    state: dict, entries: list[dict]
+) -> tuple[str, int, str]:
+    """Derive the accepted boundary and its last receipted local commit."""
+    tail = entries[-1]
+    if tail["event"] not in ("done:push", "audit-round"):
+        die(
+            "checkpoint identity is allowed only immediately after done push or "
+            "at an active audit-verdict"
+        )
+    data = tail["data"]
+    step_number = data.get("step")
+    if (
+        isinstance(step_number, bool)
+        or not isinstance(step_number, int)
+        or step_number < 1
+    ):
+        die("checkpoint identity boundary has no positive step number")
+    matches = [step for step in state["steps"] if step.get("n") == step_number]
+    if len(matches) != 1:
+        die("checkpoint identity boundary step is not unique")
+    step = matches[0]
+
+    if tail["event"] == "done:push":
+        push = as_dict(as_dict(step.get("receipts")).get("push"))
+        verified = push.get("verified_commits")
+        if (
+            step.get("status") != "done"
+            or step.get("phase") != "done"
+            or not isinstance(verified, list)
+            or not verified
+            or len(verified) > GIT_PATHS_MAX
+            or any(
+                not isinstance(commit_sha, str)
+                or COMMIT_RE.fullmatch(commit_sha) is None
+                for commit_sha in verified
+            )
+            or data.get("verified_commits") != verified
+        ):
+            die("checkpoint identity post-push receipt is incomplete")
+        working = verified[-1]
+        if push.get("head_commit") != working or data.get("head_commit") != working:
+            die("checkpoint identity post-push working commit is not final")
+        kind = "post-push"
+    elif tail["event"] == "audit-round":
+        if (
+            state.get("phase") != "steps"
+            or state.get("current_step") != step_number
+            or step.get("status") != "open"
+            or step.get("phase") != "audit"
+            or _next_directive(state).get("do") != "audit-verdict"
+        ):
+            die("checkpoint identity audit-verdict boundary is not active")
+        rounds = as_dict(step.get("audit")).get("rounds")
+        if not isinstance(rounds, list) or not rounds:
+            die("checkpoint identity audit-verdict receipt is incomplete")
+        latest = rounds[-1]
+        latest_verified = as_dict(latest).get("verified_commits")
+        if (
+            not isinstance(latest, dict)
+            or not isinstance(latest_verified, list)
+            or len(latest_verified) > GIT_PATHS_MAX
+            or any(
+                not isinstance(commit_sha, str)
+                or COMMIT_RE.fullmatch(commit_sha) is None
+                for commit_sha in latest_verified
+            )
+            or data.get("round") != latest.get("round")
+            or data.get("findings") != latest.get("findings")
+            or data.get("verified_commits") != latest_verified
+        ):
+            die("checkpoint identity audit-verdict ledger tail disagrees with state")
+        working = last_local_commit(step)
+        kind = "audit-verdict"
+    if not isinstance(working, str) or COMMIT_RE.fullmatch(working) is None:
+        die("checkpoint identity working commit is not a full receipted SHA")
+    return kind, step_number, working
+
+
+def _checkpoint_identity_semantics(state_bytes: bytes, ledger_bytes: bytes) -> dict:
+    """Derive path-free semantics from two already captured bounded byte strings."""
+    if type(state_bytes) is not bytes:
+        die("checkpoint identity state input must be captured bytes")
+    if not state_bytes or len(state_bytes) > CHECKPOINT_FILE_BYTES_MAX:
+        die("checkpoint identity state exceeds its byte ceiling")
+    state = validate_state_shape(_checkpoint_json(state_bytes, "identity state"))
+    entries, ledger_count, ledger_tail = _checkpoint_identity_ledger(
+        ledger_bytes, state
+    )
+    if (
+        not isinstance(state.get("base"), str)
+        or COMMIT_RE.fullmatch(state["base"]) is None
+    ):
+        die("checkpoint identity requires an immutable full-SHA run base")
+
+    anchor = state["receipts"].get(RUN_ANCHOR_RECEIPT)
+    if anchor is None:
+        die("checkpoint identity requires an init-owned run anchor")
+    anchor = validate_run_anchor_shape(anchor)
+    if anchor.get("repository") == RUN_ANCHOR_REPOSITORY_UNBOUND:
+        die("checkpoint identity requires a bound repository in the run anchor")
+    controller_currency = as_dict(state["receipts"].get("controller_currency"))
+    expected_anchor = build_run_anchor(
+        state,
+        anchor["repository"],
+        {
+            "name": state.get("controller"),
+            "state_version": state.get("version"),
+            "version": controller_currency.get("ledger_version"),
+        },
+        exit_code=1,
+    )
+    if anchor != expected_anchor:
+        die("checkpoint identity run anchor does not match captured state")
+    anchor_sha256 = hashlib.sha256(canonical(anchor).encode("utf-8")).hexdigest()
+    initial = entries[0]
+    if (
+        initial.get("event") != "init"
+        or initial["data"].get("run_anchor_sha256") != anchor_sha256
+    ):
+        die("checkpoint identity run anchor does not match the initial ledger event")
+
+    study_sha256 = _checkpoint_identity_sha256(
+        as_dict(state["receipts"].get("study")).get("sha256"), "study receipt"
+    )
+    runbook_sha256 = _checkpoint_identity_sha256(
+        as_dict(state["receipts"].get("runbook")).get("sha256"),
+        "runbook receipt",
+    )
+    policy = _checkpoint_identity_policy(state)
+    observations = _checkpoint_identity_observations(state, entries)
+    boundary, step_number, working_commit = _checkpoint_identity_working_commit(
+        state, entries
+    )
+    return {
+        "state": state,
+        "anchor": anchor,
+        "anchor_sha256": anchor_sha256,
+        "boundary": boundary,
+        "step": step_number,
+        "working_commit_sha": working_commit,
+        "study_sha256": study_sha256,
+        "runbook_sha256": runbook_sha256,
+        "policy": policy,
+        "observations": observations,
+        "ledger_entries": ledger_count,
+        "ledger_tail": ledger_tail,
+        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+        "state_fingerprint": state_fingerprint(state),
+    }
+
+
+def _checkpoint_identity_validate_evidence(
+    semantics: dict, evidence: dict
+) -> None:
+    """Join the pure capture to one closed set of prevalidated external facts."""
+    if not isinstance(evidence, dict) or set(evidence) != {
+        "schema",
+        "git",
+        "sources",
+        "observations",
+    }:
+        die("checkpoint identity evidence has an unsupported shape")
+    if evidence.get("schema") != CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA:
+        die("checkpoint identity evidence has an unsupported schema")
+
+    git_evidence = evidence.get("git")
+    if not isinstance(git_evidence, dict) or set(git_evidence) != {
+        "repository",
+        "refs",
+        "initial_base_sha",
+        "working_commit_sha",
+        "ancestry",
+    }:
+        die("checkpoint identity Git evidence has an unsupported shape")
+    refs = git_evidence.get("refs")
+    expected_refs = _checkpoint_ref_names(semantics["state"])
+    if (
+        not isinstance(refs, dict)
+        or len(refs) != len(expected_refs)
+        or set(refs) != set(expected_refs)
+        or any(
+            not isinstance(value, str) or COMMIT_RE.fullmatch(value) is None
+            for value in refs.values()
+        )
+        or refs.get(semantics["anchor"]["initial_base_sha"])
+        != semantics["anchor"]["initial_base_sha"]
+    ):
+        die("checkpoint identity ref evidence is malformed or incomplete")
+    if (
+        git_evidence.get("repository") != semantics["anchor"]["repository"]
+        or git_evidence.get("initial_base_sha")
+        != semantics["anchor"]["initial_base_sha"]
+        or git_evidence.get("working_commit_sha")
+        != semantics["working_commit_sha"]
+        or git_evidence.get("ancestry") != "verified"
+    ):
+        die("checkpoint identity Git evidence does not match the captured run")
+
+    sources = evidence.get("sources")
+    if not isinstance(sources, dict) or set(sources) != {
+        "study_sha256",
+        "runbook_sha256",
+    }:
+        die("checkpoint identity source evidence has an unsupported shape")
+    if (
+        _checkpoint_identity_sha256(sources.get("study_sha256"), "study source")
+        != semantics["study_sha256"]
+        or _checkpoint_identity_sha256(
+            sources.get("runbook_sha256"), "runbook source"
+        )
+        != semantics["runbook_sha256"]
+    ):
+        die("checkpoint identity source evidence does not match the receipts")
+
+    observations = evidence.get("observations")
+    expected_observations = semantics["observations"]
+    if not isinstance(observations, dict) or set(observations) != {
+        "status",
+        "bindings",
+        "sha256",
+    }:
+        die("checkpoint identity observation evidence has an unsupported shape")
+    bindings = observations.get("bindings")
+    if (
+        observations.get("status") not in ("absent", "bound")
+        or isinstance(bindings, bool)
+        or not isinstance(bindings, int)
+        or bindings < 0
+        or _checkpoint_identity_sha256(
+            observations.get("sha256"), "observation evidence"
+        )
+        != expected_observations["sha256"]
+        or observations != expected_observations
+    ):
+        die("checkpoint identity observation evidence does not match captured state")
+
+
+def checkpoint_identity_from_captured(
+    state_bytes: bytes, ledger_bytes: bytes, evidence: dict
+) -> dict:
+    """Return one semantic identity without opening a path or changing state."""
+    semantics = _checkpoint_identity_semantics(state_bytes, ledger_bytes)
+    _checkpoint_identity_validate_evidence(semantics, evidence)
+    observations = semantics["observations"]
+    identity = {
+        "schema": CHECKPOINT_IDENTITY_SCHEMA,
+        "run": semantics["anchor"],
+        "boundary": {
+            "kind": semantics["boundary"],
+            "step": semantics["step"],
+            "working_commit_sha": semantics["working_commit_sha"],
+        },
+        "evidence": {
+            "ledger_entries": semantics["ledger_entries"],
+            "ledger_sha256": semantics["ledger_sha256"],
+            "ledger_tail": semantics["ledger_tail"],
+            "observation_bindings": observations["bindings"],
+            "observation_sha256": observations["sha256"],
+            "observation_status": observations["status"],
+            "policy_sha256": hashlib.sha256(
+                canonical(semantics["policy"]).encode("utf-8")
+            ).hexdigest(),
+            "run_anchor_sha256": semantics["anchor_sha256"],
+            "runbook_sha256": semantics["runbook_sha256"],
+            "state_fingerprint": semantics["state_fingerprint"],
+            "study_sha256": semantics["study_sha256"],
+        },
+    }
+    snapshot_id = hashlib.sha256(
+        CHECKPOINT_IDENTITY_DOMAIN + canonical(identity).encode("utf-8")
+    ).hexdigest()
+    return {
+        "schema": CHECKPOINT_IDENTITY_RESULT_SCHEMA,
+        "identity": identity,
+        "snapshot_id": snapshot_id,
+    }
+
+
+def _checkpoint_identity_source_evidence(
+    base_dir: str, state: dict
+) -> tuple[dict, tuple[tuple[str, str, str], ...]]:
+    """Verify current source receipts and return a stable-reread comparison token."""
+    sources = []
+    for name in ("study", "runbook"):
+        source = receipted_source(base_dir, state, name)
+        if source is None:
+            die(f"checkpoint identity requires a current {name} source receipt")
+        if name == "runbook":
+            _receipted_runbook_amendments(source)
+        sources.append((source["path"], source["sha256"], source["text"]))
+    evidence = {
+        "study_sha256": sources[0][1],
+        "runbook_sha256": sources[1][1],
+    }
+    return evidence, tuple(sources)
+
+
+def _checkpoint_identity_git_evidence(
+    base_dir: str, semantics: dict
+) -> dict:
+    """Resolve the fixed Git facts without admitting them into hashed identity."""
+    state = semantics["state"]
+    origin = configured_git_path(state, "origin")
+    if not isinstance(origin, str) or not origin:
+        die("checkpoint identity cannot verify the target repository")
+    repository = target_repository_binding(origin)
+    if repository == RUN_ANCHOR_REPOSITORY_UNBOUND:
+        die("checkpoint identity cannot verify a bound target repository")
+    refs = _checkpoint_refs(base_dir, state)
+    initial_base_sha = resolved_commit(
+        base_dir,
+        semantics["anchor"]["initial_base_sha"],
+        "checkpoint identity immutable base",
+    )
+    working_commit_sha = resolved_commit(
+        base_dir,
+        semantics["working_commit_sha"],
+        "checkpoint identity working commit",
+    )
+    if not commit_is_ancestor(
+        base_dir,
+        initial_base_sha,
+        working_commit_sha,
+        "checkpoint identity working commit",
+    ):
+        die("checkpoint identity working commit does not descend from its immutable base")
+    return {
+        "repository": repository,
+        "refs": refs,
+        "initial_base_sha": initial_base_sha,
+        "working_commit_sha": working_commit_sha,
+        "ancestry": "verified",
+    }
+
+
+def _checkpoint_identity_verify_observations(
+    base_dir: str, state: dict
+) -> tuple[tuple[str, int, str], ...]:
+    """Verify bound bytes and return an exact stable-reread comparison token."""
+    if "run_observations" not in state["receipts"]:
+        return ()
+    verify_observation_bindings(base_dir, state, allow_unavailable=True)
+    token = []
+    seen = set()
+    for binding in state["receipts"]["run_observations"]:
+        if binding.get("capture_status") != "accepted":
+            continue
+        artifact = binding["artifact"]
+        if artifact in seen:
+            continue
+        seen.add(artifact)
+        relative, current = read_observation_bytes(base_dir, artifact, exit_code=1)
+        recheck_observation_bytes(base_dir, artifact, current, exit_code=1)
+        token.append(
+            (relative, len(current), hashlib.sha256(current).hexdigest())
+        )
+    return tuple(token)
+
+
+def cmd_checkpoint_identity(args) -> None:
+    """Print one stable semantic checkpoint identity without taking a write lock."""
+    base_dir = os.path.abspath(args.dir)
+    if os.path.lexists(state_path(base_dir) + ".tmp"):
+        die("checkpoint identity refuses a pending controller transaction")
+    state_bytes = _checkpoint_read_staged(
+        state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+    )
+    ledger_bytes = _checkpoint_read_staged(
+        ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+    )
+
+    verify_run(base_dir)
+    if (
+        _checkpoint_read_staged(state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX)
+        != state_bytes
+        or _checkpoint_read_staged(
+            ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        != ledger_bytes
+    ):
+        die("checkpoint identity source changed during verification")
+
+    semantics = _checkpoint_identity_semantics(state_bytes, ledger_bytes)
+    state = semantics["state"]
+    source_evidence, source_token = _checkpoint_identity_source_evidence(
+        base_dir, state
+    )
+    observation_token = _checkpoint_identity_verify_observations(base_dir, state)
+    git_evidence = _checkpoint_identity_git_evidence(base_dir, semantics)
+    observation_evidence = semantics["observations"]
+    evidence = {
+        "schema": CHECKPOINT_IDENTITY_EVIDENCE_SCHEMA,
+        "git": git_evidence,
+        "sources": source_evidence,
+        "observations": observation_evidence,
+    }
+    result = checkpoint_identity_from_captured(state_bytes, ledger_bytes, evidence)
+
+    if _checkpoint_identity_verify_observations(base_dir, state) != observation_token:
+        die("checkpoint identity observation bytes changed before output")
+    _, final_source_token = _checkpoint_identity_source_evidence(base_dir, state)
+    if final_source_token != source_token:
+        die("checkpoint identity source changed before output")
+    if _checkpoint_identity_git_evidence(base_dir, semantics) != git_evidence:
+        die("checkpoint identity Git evidence changed before output")
+    if (
+        os.path.lexists(state_path(base_dir) + ".tmp")
+        or _checkpoint_read_staged(
+            state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        != state_bytes
+        or _checkpoint_read_staged(
+            ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        != ledger_bytes
+    ):
+        die("checkpoint identity source changed before output")
+    print(canonical(result))
+
+
 def _checkpoint_directory_still_at_path(path: str, descriptor: int) -> bool:
     """Return whether one no-follow path still names the opened directory."""
     current = None
@@ -10606,9 +11403,13 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(fn=cmd_resume)
 
     sp = sub.add_parser(
-        "checkpoint", help="export or restore portable controller state"
+        "checkpoint", help="identify, export or restore portable controller state"
     )
     checkpoint = sp.add_subparsers(dest="checkpoint_action", required=True)
+    identity = checkpoint.add_parser(
+        "identity", help="print one verified semantic checkpoint identity"
+    )
+    identity.set_defaults(fn=cmd_checkpoint_identity)
     export = checkpoint.add_parser(
         "export", help="write one deterministic controller capsule"
     )
