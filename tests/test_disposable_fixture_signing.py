@@ -71,7 +71,24 @@ CoveredSuite = namedtuple("CoveredSuite", ("label", "top_level", "test"))
 # is what fails when a construction site in that suite forgets the rule.
 # ``top_level`` is the unittest top-level directory, relative to the repository
 # root, that ``test`` is resolved from.
-COVERED_SUITES = ()
+COVERED_SUITES = (
+    CoveredSuite(
+        label="root suite",
+        top_level=".",
+        test=(
+            "tests.test_boundary_currency.GuardMutationTests"
+            ".test_a_new_generated_file_without_a_refresh_is_named"
+        ),
+    ),
+    CoveredSuite(
+        label="Horos suite",
+        top_level="plugins/horos",
+        test=(
+            "tests.test_universe.UniverseTests"
+            ".test_an_aggregated_directory_counts_only_universe_files"
+        ),
+    ),
+)
 
 # The two ways a configuration value arrives carrying `git -c` precedence,
 # which outranks the repository-local declaration. A caller sets the

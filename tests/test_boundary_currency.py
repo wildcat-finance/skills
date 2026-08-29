@@ -164,6 +164,9 @@ class GuardMutationTests(unittest.TestCase):
         self.root = self._tmp.name
         self.addCleanup(self._tmp.cleanup)
         git(self.root, "init", "-q")
+        # Fixture history is not signing evidence, so inherited signing must
+        # not decide whether the repository can be built.
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
         write(self.root, "src/app.py", "value = 1\n")
         write(self.root, "yarn.lock", "# lockfile\n")
         git(self.root, "add", ".")
