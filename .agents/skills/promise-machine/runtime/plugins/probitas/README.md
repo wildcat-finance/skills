@@ -69,7 +69,7 @@ Gate 3 is the one that does the work. It rebuilds, from the evidence alone, ever
 - nine synthetic borrower fixtures, including the cured delinquency that a hand-assembled writeup usually reads as a default;
 - a [committed example dossier](./docs/example-dossier.md) that the tests regenerate and compare, so it cannot drift;
 - [a guide to closing a coverage gap](./docs/adding-a-venue.md) that assumes no knowledge of Wildcat; and
-- 321 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
+- 323 tests and an audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) recording every round, including the fixes that were wrong the first time.
 
 ## Day to day
 
