@@ -740,7 +740,8 @@ def confine(root: Path, candidate: str) -> Path:
 
 
 def output_parts(root: Path, target: Path) -> tuple[str, ...]:
-    root = root.resolve(strict=True)
+    if not root.is_absolute():
+        raise Refusal("the repository root is not absolute")
     try:
         relative = target.relative_to(root)
     except ValueError as error:
@@ -764,14 +765,28 @@ def output_parts(root: Path, target: Path) -> tuple[str, ...]:
     return parts
 
 
-def open_output_directory(root: Path, parts: tuple[str, ...]) -> int:
+def open_repository_directory(root: Path) -> tuple[Path, int]:
     nofollow = getattr(os, "O_NOFOLLOW", None)
     directory_flag = getattr(os, "O_DIRECTORY", None)
     if nofollow is None or directory_flag is None:
         raise Refusal("this platform cannot open output directories without following links")
     flags = os.O_RDONLY | nofollow | directory_flag | getattr(os, "O_CLOEXEC", 0)
     try:
-        current_fd = os.open(root.resolve(strict=True), flags)
+        resolved_root = root.resolve(strict=True)
+        root_fd = os.open(resolved_root, flags)
+    except (OSError, RuntimeError) as error:
+        raise Refusal(f"the repository root cannot be opened safely: {error}") from error
+    return resolved_root, root_fd
+
+
+def open_output_directory(root_fd: int, parts: tuple[str, ...]) -> int:
+    nofollow = getattr(os, "O_NOFOLLOW", None)
+    directory_flag = getattr(os, "O_DIRECTORY", None)
+    if nofollow is None or directory_flag is None:
+        raise Refusal("this platform cannot open output directories without following links")
+    flags = os.O_RDONLY | nofollow | directory_flag | getattr(os, "O_CLOEXEC", 0)
+    try:
+        current_fd = os.dup(root_fd)
     except OSError as error:
         raise Refusal(f"the repository root cannot be opened safely: {error}") from error
     try:
@@ -835,8 +850,12 @@ def atomic_write(root: Path, target: Path, payload: str) -> None:
     encoded = payload.encode("utf-8")
     if len(encoded) > MAX_REPORT_BYTES:
         raise Refusal(f"report exceeds {MAX_REPORT_BYTES} bytes")
-    parts = output_parts(root, target)
-    directory_fd = open_output_directory(root, parts)
+    resolved_root, root_fd = open_repository_directory(root)
+    try:
+        parts = output_parts(resolved_root, target)
+        directory_fd = open_output_directory(root_fd, parts)
+    finally:
+        os.close(root_fd)
     temporary_name: str | None = None
     try:
         require_regular_target(directory_fd, parts[-1])
