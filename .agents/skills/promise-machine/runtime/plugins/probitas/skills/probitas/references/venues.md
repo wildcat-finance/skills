@@ -1,10 +1,10 @@
 # Venue coverage
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Probitas.** Probitas builds a sourced record of what a counterparty did across lending venues from addresses they declared, without identifying a person or issuing a Wildcat verdict. Use Alexandria for archived lending inputs and Tabularium when the job is publishing a reusable credit-event release rather than assessing one counterparty. **Current frontier:** Euler v1/v2 now ship; Morpho Midnight fixed-maturity coverage and curation remain unimplemented.
+> **Marketplace context: Probitas.** Probitas builds a sourced record of what a counterparty did across lending venues from addresses they declared, without identifying a person or issuing a Wildcat verdict. Use Alexandria for archived lending inputs and Tabularium when the job is publishing a reusable credit-event release rather than assessing one counterparty. **Current frontier:** Morpho Midnight fixed-maturity coverage now ships API-scoped on Base; secondary-market borrow exits stay refused as unattributable and Morpho curation remains uncollected.
 <!-- marketplace-context:end -->
 
-Fifteen venues in the registry, four of them with adapters. The other eleven
+Fifteen venues in the registry, five of them with adapters. The other ten
 still get a row in every dossier, saying plainly that nobody checked. That is
 gate 2 doing its job.
 
@@ -22,8 +22,9 @@ explains why it looks the way it does.
 | Morpho Blue | `blue-api.morpho.org/graphql`, Ethereum mainnet | none |
 | Euler v1 | Canonical proxy log through `mainnet.gateway.tenderly.co` | none |
 | Euler v2 | `v3.euler.finance`, Ethereum mainnet event ledger | none |
+| Morpho Midnight | `api.morpho.org/v0/midnight`, Base fixed-maturity markets | none |
 
-All four adapters name their chain in the coverage note. Wildcat is deployed on
+All five adapters name their chain in the coverage note. Wildcat is deployed on
 Plasma as well and Morpho on several chains, and a row that says only `checked`
 would let a reader take one chain's silence for all of them.
 
@@ -33,7 +34,6 @@ would let a reader take one chain's silence for all of them.
 | --- | --- |
 | MetaMorpho vaults | Same keyless API as Morpho Blue, not collected. A counterparty may appear here as a curator rather than a borrower |
 | Morpho Vaults V2 | Same, a separate surface with its own allocation transactions |
-| Morpho Midnight | A different keyless REST API on Base, `api.morpho.org/v0/midnight`. Fixed maturities |
 | Centrifuge | Keyless GraphQL at `api.centrifuge.io`, introspects cleanly, 24 mainnet pools. Needs only an adapter |
 | Aave v3 | Keyless at `api.aave.com/graphql`, carrying `userBorrows` and `userPositions`. Introspection is off but errors name fields |
 | Aave v4 | Live on Ethereum mainnet since March 2026, same first-party API. A v3 borrower and a v4 borrower are one counterparty |
@@ -43,10 +43,10 @@ would let a reader take one chain's silence for all of them.
 | Clearpool | Live, behind a bot challenge returning 403. An agreement is the way in, not a workaround |
 | TrueFi | Restructured through a token migration completing May 2026; no public endpoint answered |
 
-Six of the eleven need only an adapter. The rest are blocked on somebody else's
+Five of the ten need only an adapter. The rest are blocked on somebody else's
 key, bot protection or documentation.
 
-## The four venues read differently, and the dossier says so
+## The five venues read differently, and the dossier says so
 
 **Wildcat is undercollateralised.** Nothing stood between the lender and a loss
 except the borrower, so a missed reserve ratio is about conduct. This is the
@@ -71,10 +71,19 @@ owner and retains the touched subaccount. Interest accrual is omitted because
 it is not a new draw. Liquidations retain debt and collateral decimals and are
 not called defaults.
 
-**Morpho Midnight is fixed-maturity**, which is why it is worth building next.
-A maturity is a date by which the money was due, so it is the only venue
-outside Wildcat where repayment timeliness has an answer rather than a story
-about a price.
+**Morpho Midnight is fixed-maturity**, and it now ships. A maturity is a date
+by which the money was due, so it is the only venue outside Wildcat where
+repayment timeliness has an answer rather than a story about a price. Coverage
+is Base chain id 8453 through the keyless REST API alone: every cursor page is
+exhausted once, and the coverage row states the observation time and the
+returned index bound. The API's history lower bound is unpublished, so this is
+API-scoped history rather than archive-chain completeness. An incomplete,
+ambiguous or out-of-bounds response returns no records and a named gap instead
+of a partial answer, and a secondary-market borrow exit is refused outright
+because its account-attributed debt units are unproved. Obligation state and
+settlement conduct stay apart: an overdue maturity closed by liquidation reads
+as settled late through liquidation, never as voluntary repayment, and a zero
+balance now cannot rewrite an outstanding-at-maturity verdict.
 
 ## Wildcat, in detail
 
