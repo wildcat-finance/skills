@@ -9264,6 +9264,14 @@ HOST_PR_LOGINS = frozenset(
         "copilot[bot]",
     }
 )
+"""Runtime host accounts, which ADR-016 forbids as an author.
+
+Membership is a refusal, so this set holds runtime hosts and nothing else. A
+delivery agent that opens its own pull requests under a GitHub App identity is
+the contributing actor rather than a host, and belongs nowhere near this set:
+adding it would refuse every pull request it opens. `GITHUB_LOGIN_RE` already
+accepts a `[bot]` login for that reason.
+"""
 COAUTHOR_RE = re.compile(
     r"^Co-authored-by:\s*(?P<name>.+?)\s*<(?P<email>[^<>]+)>$",
     re.IGNORECASE,
