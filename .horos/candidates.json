@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 15463567,
+    "bytes_blob": 15747439,
     "bytes_generated": 98
   },
   "entries": [
@@ -145,6 +145,20 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-617-runtime-host-reinstates-the-byline-the-ident.synopsis.md"
+    },
+    {
+      "bytes": 141575,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 139527",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-621-isolate-disposable-fixture-signing.md"
+    },
+    {
+      "bytes": 142297,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-621-isolate-disposable-fixture-signing.synopsis.md"
     },
     {
       "bytes": 65312,
