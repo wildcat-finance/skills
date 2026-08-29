@@ -201,6 +201,26 @@ class HexctlCheckpointIdentityTests(unittest.TestCase):
             state["receipts"]["run_anchor"]["integration_branch"], "main"
         )
 
+    def test_status_keeps_the_named_integration_branch_visible(self):
+        worktree = self.init()
+        state = self.state(worktree)
+        result = subprocess.run(
+            [os.sys.executable, str(HEXCTL), "--dir", str(worktree), "status"],
+            cwd=worktree,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"base:  {state['base']}", result.stdout)
+        self.assertIn(
+            f"run:   {state['run_branch']} -> {state['config']['git']['base']}",
+            result.stdout,
+        )
+        self.assertNotIn(
+            f"run:   {state['run_branch']} -> {state['base']}",
+            result.stdout,
+        )
+
     def test_malformed_and_unsafe_starting_refs_leave_no_partial_run(self):
         for starting_ref in ("../main", "missing"):
             with self.subTest(starting_ref=starting_ref):

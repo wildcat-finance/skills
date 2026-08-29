@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 960,
-  "total_bytes": 20863549,
+  "total_bytes": 20863562,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1917,9 +1917,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 421999,
+      "bytes": 422012,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "c3f84e44b51129c84843c98f9ab98f67a3eb8809f270ad6b4a04dad0ff8c9b20",
+      "sha256": "01b47273d052197cfa4c0c8a04b99ef8d7e48a994e0fee2b9d0a09fc8408c74a",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {

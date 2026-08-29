@@ -10243,7 +10243,7 @@ def cmd_status(args) -> None:
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
     if state.get("run_branch"):
-        print(f"run:   {state['run_branch']} -> {state['base']}")
+        print(f"run:   {state['run_branch']} -> {integration_base_of(state)}")
     print(f"observe: {controller_run_id(state)}")
     if state.get("halted"):
         print(f"HALTED: {state['halted']['reason']}")
