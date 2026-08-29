@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compile a digest-bound accepted job into a credential-free proxy policy."""
+"""Check the credential-free model proxy policy and framing boundaries."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from model_proxy_lib import (
     compile_policy_file,
     verify_golden,
 )
+from model_proxy_lib.framing import check_framing_manifest
 
 
 class _DiagnosticArgumentParser(argparse.ArgumentParser):
@@ -33,6 +34,12 @@ def _parser() -> argparse.ArgumentParser:
     )
     compile_command.add_argument("--accepted-job", required=True, metavar="PATH")
     compile_command.add_argument("--expect", metavar="PATH")
+    frame_command = commands.add_parser(
+        "check-frames",
+        help="check bounded request and response frame vectors",
+        allow_abbrev=False,
+    )
+    frame_command.add_argument("--manifest", required=True, metavar="PATH")
     return parser
 
 
@@ -58,11 +65,31 @@ def _compile(arguments: argparse.Namespace) -> int:
     return 0
 
 
+def _check_frames(arguments: argparse.Namespace) -> int:
+    result = check_framing_manifest(arguments.manifest)
+    sys.stdout.buffer.write(
+        canonical_json(
+            {
+                "schema": DIAGNOSTIC_SCHEMA,
+                "outcome": "frames_checked",
+                "manifest_schema": "model-proxy-framing-cases/v1",
+                "cases": result.cases,
+                "requests": result.requests,
+                "policy_sha256": result.policy_sha256,
+            }
+        )
+        + b"\n"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     try:
         arguments = _parser().parse_args(argv)
         if arguments.command == "compile-policy":
             return _compile(arguments)
+        if arguments.command == "check-frames":
+            return _check_frames(arguments)
     except PolicyError as error:
         _write_diagnostic(error.diagnostic())
         return 2

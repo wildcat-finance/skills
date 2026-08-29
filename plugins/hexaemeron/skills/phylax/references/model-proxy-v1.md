@@ -2,10 +2,10 @@
 
 ## Status and scope
 
-This reference is normative for `model-proxy-policy/v1` and its synthetic
-accepted-job adapter. It fixes policy compilation only. Guest framing,
-provider transport, runtime accounting, receipts, cancellation, and the final
-hostile-conformance manifest are later boundaries.
+This reference is normative for `model-proxy-policy/v1`, its synthetic
+accepted-job adapter, and the provider-independent version-1 guest framing
+grammar. Provider transport, runtime accounting, receipts, cancellation, and
+the final hostile-conformance manifest are later boundaries.
 
 The implementation is the standard-library CLI at `../scripts/model_proxy.py`
 and the library under `../scripts/model_proxy_lib/`. Golden and refusing
@@ -102,6 +102,84 @@ their Unicode scalar sequence. JSON is encoded as UTF-8 with no insignificant
 whitespace, no ASCII escaping for ordinary Unicode, and no trailing newline.
 Arrays preserve their declared order.
 
+## Guest frame grammar
+
+The guest sends an ordered byte stream. Each frame is a four-byte unsigned
+big-endian length followed by exactly that many payload bytes. A zero length
+refuses. A length above the compiled `max_request_bytes` refuses as soon as the
+fourth prefix byte arrives, before the core creates a payload buffer. The
+compiled policy bytes, digest, profile mapping, and every limit ceiling are
+rechecked before the core accepts any stream bytes. The compiler result keeps
+the exact bounded accepted-job evidence as non-rendered activation material;
+framing replays the compiler from those bytes and requires every projected
+policy field and digest to match. Self-consistent replacement fields in a
+public compiler result therefore do not substitute for the accepted evidence.
+
+A feed call can split any prefix or payload byte. One call can also contain
+several complete frames. Chunk boundaries have no protocol meaning. Complete
+frames are returned in byte-stream order. Finishing the input refuses a
+partial prefix or payload, so extra bytes cannot be accepted as harmless
+trailing data. A malformed request poisons the core; later input cannot resume
+from an ambiguous offset.
+
+The framing core assigns sequence numbers from 1 in admission order. It also
+uses the compiled `max_requests` value as a parser and event-memory ceiling.
+Step 4 adds atomic runtime accounting and lifecycle enforcement; the framing
+ceiling does not claim those later controls.
+
+## Closed text request
+
+The payload is strict JSON under the compiled `max_json_depth`,
+`max_json_members`, `max_string_bytes`, `max_request_bytes`, and
+`max_input_tokens` limits. Scalar count uses `max_json_members` as its tighter
+frame ceiling because version 1 has no separate scalar policy field. The
+payload is one object with exactly three fields:
+
+| Field | JSON type | Version-1 rule |
+| --- | --- | --- |
+| `schema` | string | Exactly `model-request/v1` |
+| `operation` | string | Exactly `text.generate` |
+| `input` | string | Text under the string, byte, and input-token ceilings |
+
+The synthetic profile's `unicode-codepoint-fixture/v1` counter counts one
+Python Unicode scalar per input token. This is a fixture rule, not a claim
+about a live provider tokenizer.
+
+No request field selects provider authority. Guest job or request identities,
+sequence numbers, URLs, origins, paths, methods, models, headers,
+authorisation, credentials, tools, uploads, files, remote references, images,
+storage, expiry, retention, cancellation, or timeout fields refuse with a
+fixed code. The same applies to every disabled feature name from the compiled
+profile. `stream`, `streaming`, `channel`, `multiplex`, and `batch` are absent,
+so version 1 offers neither streaming nor multiplexing. Another unknown field
+also refuses; it does not become provider input.
+
+## Closed text response
+
+The trusted core accepts a normalised output string only for the exact,
+unconsumed `TextRequest` object issued next by that same core. A copied,
+foreign, already-consumed, or later request refuses even when it repeats an
+admitted sequence. Responses therefore remain in admission order rather than
+multiplexing issued requests. The core checks the compiled output-token,
+string-byte, and response-byte ceilings, then emits one length-prefixed
+canonical JSON object with exactly
+`schema=model-response/v1`, the core-assigned `sequence`, and `output`. The
+guest cannot submit a response object or choose its sequence.
+
+Response object names are sorted by the canonical JSON rule, making equal
+sequence and output values byte-identical. A response carries no provider id,
+request id, model, usage claim, header, URL, raw error, or lifecycle field.
+
+## Content-free frame events
+
+The core retains at most `2 * max_requests + 2` fixed
+`model-proxy-frame-event/v1` records. Each has exactly `schema`, `stage`,
+`outcome`, and `code`. Stages come from the closed set `length`, `request`,
+`response`, and `stream`; outcomes are `accepted` or `refused`. The event has
+no payload, input, output, path, guest identity, sequence, exception text, or
+free-form field name. This answers which framing stage stopped without
+turning request content into telemetry.
+
 ## Policy vocabulary
 
 The policy root has exactly `schema`, `compiler`, `job`, `provider`,
@@ -190,6 +268,14 @@ one `model-proxy-diagnostic/v1` line on standard error. The diagnostic has only
 `schema`, `outcome`, `policy_schema`, `profile`, `jobspec_sha256`, and
 `policy_sha256`.
 
+Successful `check-frames` emits one `model-proxy-diagnostic/v1` line with only
+`outcome=frames_checked`, the fixed manifest schema, case and request counts,
+and the policy digest. The checked manifest is bounded, has a closed shape,
+uses lowercase hexadecimal chunks, resolves only its sibling
+`accepted-job.json`, and carries exact response bytes. A manifest path with the
+wrong scalar type refuses through the same content-free diagnostic boundary.
+The command is component-vector evidence rather than a live guest transport.
+
 Refusal diagnostics have exactly `schema`, `outcome=refused`, `code`, and
 `field`. `field` is a code-owned schema location, never an input value. CLI
 argument errors use the same value-free shape and accept no abbreviated option
@@ -198,6 +284,7 @@ JobSpec bytes, job id, or exception text.
 
 | Code | Fixed outcome | Stage |
 | --- | --- | --- |
+| `MP000` | Accepted content-free frame event | Request, response, or stream |
 | `MP100` | Input path or stability refusal | File read |
 | `MP101` | Size, count, or collection ceiling refusal | Read or parse |
 | `MP102` | Input is not strict UTF-8 | Parse |
@@ -222,6 +309,25 @@ JobSpec bytes, job id, or exception text.
 | `MP121` | Old or future version of a recognised family | Version gate |
 | `MP122` | Missing, unknown, or abbreviated CLI argument | CLI boundary |
 | `MP199` | Unexpected internal exception, with no exception text retained | CLI boundary |
+| `MP200` | Zero frame length | Frame length |
+| `MP201` | Frame length exceeds the compiled byte ceiling | Frame length |
+| `MP202` | Incomplete trailing length prefix | Stream finish |
+| `MP203` | Incomplete trailing payload | Stream finish |
+| `MP204` | Accepted evidence replay, compiled policy identity, mapping, or ceiling mismatch | Frame activation |
+| `MP205` | Request is not an object | Request shape |
+| `MP206` | Required request field is absent | Request shape |
+| `MP207` | Guest supplied an authority, feature, or lifecycle field | Request authority |
+| `MP208` | Request has another unknown field | Request shape |
+| `MP209` | Request field or stream chunk has the wrong scalar type | Request value |
+| `MP210` | Request schema is not exactly version 1 | Request version |
+| `MP211` | Operation is not exactly `text.generate` | Request operation |
+| `MP212` | Input exceeds the compiled token ceiling | Request input |
+| `MP213` | Response request was not the exact unconsumed issue from this core | Response authority |
+| `MP214` | Response output has the wrong type or encoding | Response value |
+| `MP215` | Response output exceeds a compiled ceiling | Response value |
+| `MP216` | Input resumed after finish or refusal | Stream state |
+| `MP217` | Request count exceeds the compiled safety ceiling | Request count |
+| `MP218` | Framing manifest path, shape, or expected bytes disagree | Manifest check |
 
 ## Golden command
 
@@ -236,3 +342,14 @@ mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/mod
 sibling `policy.sha256` file. A match establishes the checked component vector
 only. It does not establish a live credential boundary, provider behaviour,
 provider non-retention, or provider non-exfiltration.
+
+Check the framing vectors with:
+
+```bash
+mise exec python@3.13.15 -- python3 plugins/hexaemeron/skills/phylax/scripts/model_proxy.py check-frames --manifest plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json
+```
+
+The two cases exercise a one-byte-fragmented request and two concatenated
+requests with exact closed responses. The unittest surface carries the
+hostile, incomplete, oversized, duplicate, forbidden-authority, and
+content-free diagnostic cases.

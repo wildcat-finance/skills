@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import re
 from typing import Any
@@ -79,13 +79,14 @@ LIMIT_FIELDS = (
 
 @dataclass(frozen=True, slots=True)
 class CompiledPolicy:
-    """The checked policy document and the exact bytes bound by its digest."""
+    """The checked policy and captured activation bytes used to replay it."""
 
     document: dict[str, Any]
     policy_bytes: bytes
     policy_sha256: str
     jobspec_sha256: str
     profile: str
+    accepted_job_bytes: bytes = field(repr=False)
 
 
 def _object(value: Any, field: str) -> dict[str, Any]:
@@ -292,6 +293,7 @@ def compile_policy(data: bytes) -> CompiledPolicy:
         policy_sha256=sha256_bytes(policy_bytes),
         jobspec_sha256=digest,
         profile=profile,
+        accepted_job_bytes=bytes(data),
     )
 
 

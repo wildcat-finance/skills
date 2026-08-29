@@ -1,16 +1,17 @@
-"""Cause-level guards for the version-1 model proxy policy compiler."""
+"""Cause-level guards for the version-1 model proxy policy and framing core."""
 
 from __future__ import annotations
 
 import base64
 from copy import deepcopy
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 import hashlib
 import importlib.util
 import json
 import os
 from pathlib import Path
 import subprocess
+import struct
 import sys
 import tempfile
 import unittest
@@ -38,6 +39,15 @@ from model_proxy_lib import (  # noqa: E402
     resolve_profile,
     sha256_bytes,
     verify_golden,
+)
+from model_proxy_lib.framing import (  # noqa: E402
+    FRAME_EVENT_SCHEMA,
+    FRAMING_MANIFEST_SCHEMA,
+    REQUEST_SCHEMA,
+    RESPONSE_SCHEMA,
+    TEXT_OPERATION,
+    FramingCore,
+    check_framing_manifest,
 )
 
 
@@ -105,6 +115,35 @@ def leaf_variants(value, path=()):
         yield value + 1, path
     elif isinstance(value, str):
         yield value + "-digest-variant", path
+
+
+def request_frame(
+    input_text: object = "hello",
+    *,
+    schema: object = REQUEST_SCHEMA,
+    operation: object = TEXT_OPERATION,
+    extra: dict[str, object] | None = None,
+) -> bytes:
+    document: dict[str, object] = {
+        "schema": schema,
+        "operation": operation,
+        "input": input_text,
+    }
+    if extra:
+        document.update(extra)
+    payload = json.dumps(
+        document,
+        ensure_ascii=True,
+        allow_nan=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("ascii")
+    return struct.pack(">I", len(payload)) + payload
+
+
+def raw_frame(payload: bytes, *, declared: int | None = None) -> bytes:
+    length = len(payload) if declared is None else declared
+    return struct.pack(">I", length) + payload
 
 
 class PolicyCompilerTests(unittest.TestCase):
@@ -667,6 +706,440 @@ class PolicyCompilerTests(unittest.TestCase):
                 max_bytes=MAX_ACCEPTED_JOB_BYTES,
                 max_members=2_000,
             )
+
+
+class FramingTests(unittest.TestCase):
+    maxDiff = None
+
+    def setUp(self):
+        self.policy = compile_policy((FIXTURES / "accepted-job.json").read_bytes())
+
+    def assert_frame_refused(
+        self, core: FramingCore, data: bytes, code: str
+    ) -> PolicyError:
+        with self.assertRaises(PolicyError) as caught:
+            core.feed(data)
+        self.assertEqual(code, caught.exception.code)
+        self.assertEqual(
+            {"schema", "outcome", "code", "field"},
+            set(caught.exception.diagnostic()),
+        )
+        return caught.exception
+
+    def test_one_byte_fragmentation_and_every_prefix_split(self):
+        frame = request_frame("fragmented")
+        core = FramingCore(self.policy)
+        requests = []
+        for byte in frame:
+            requests.extend(core.feed(bytes((byte,))))
+        core.finish()
+        self.assertEqual(
+            [(1, "fragmented")],
+            [(request.sequence, request.input_text) for request in requests],
+        )
+
+        for split in range(1, 4):
+            with self.subTest(prefix_split=split):
+                core = FramingCore(self.policy)
+                first = core.feed(frame[:split])
+                second = core.feed(frame[split:])
+                core.finish()
+                self.assertEqual((), first)
+                self.assertEqual(
+                    [(1, "fragmented")],
+                    [(request.sequence, request.input_text) for request in second],
+                )
+
+    def test_concatenated_frames_preserve_order_and_assign_sequence(self):
+        core = FramingCore(self.policy)
+        requests = core.feed(request_frame("first") + request_frame("second"))
+        core.finish()
+        self.assertEqual(
+            [(1, "first"), (2, "second")],
+            [(request.sequence, request.input_text) for request in requests],
+        )
+
+    def test_incomplete_prefix_payload_and_trailing_bytes_refuse(self):
+        core = FramingCore(self.policy)
+        core.feed(b"\x00\x00\x00")
+        with self.assertRaisesRegex(PolicyError, "MP202"):
+            core.finish()
+
+        payload = canonical_json(
+            {"schema": REQUEST_SCHEMA, "operation": TEXT_OPERATION, "input": "x"}
+        )
+        core = FramingCore(self.policy)
+        core.feed(raw_frame(payload, declared=len(payload) + 1))
+        with self.assertRaisesRegex(PolicyError, "MP203"):
+            core.finish()
+
+        core = FramingCore(self.policy)
+        self.assertEqual(1, len(core.feed(request_frame("complete") + b"\x01")))
+        with self.assertRaisesRegex(PolicyError, "MP202"):
+            core.finish()
+
+    def test_declared_and_actual_payload_length_must_agree(self):
+        payload = canonical_json(
+            {"schema": REQUEST_SCHEMA, "operation": TEXT_OPERATION, "input": "x"}
+        )
+        self.assert_frame_refused(
+            FramingCore(self.policy),
+            raw_frame(payload, declared=len(payload) - 1),
+            "MP103",
+        )
+        core = FramingCore(self.policy)
+        core.feed(raw_frame(payload, declared=len(payload) + 1))
+        with self.assertRaisesRegex(PolicyError, "MP203"):
+            core.finish()
+
+    def test_zero_and_over_cap_lengths_refuse_before_payload_buffering(self):
+        core = FramingCore(self.policy)
+        self.assert_frame_refused(core, b"\x00\x00\x00\x00", "MP200")
+        self.assertEqual(0, core.buffered_bytes)
+
+        maximum = self.policy.document["limits"]["max_request_bytes"]
+        core = FramingCore(self.policy)
+        self.assert_frame_refused(core, struct.pack(">I", maximum + 1), "MP201")
+        self.assertEqual(0, core.buffered_bytes)
+
+    def test_invalid_utf8_lone_surrogate_and_duplicate_names_refuse(self):
+        invalid_utf8 = (
+            b'{"schema":"model-request/v1","operation":"text.generate",'
+            b'"input":"\xff"}'
+        )
+        lone_surrogate = (
+            b'{"schema":"model-request/v1","operation":"text.generate",'
+            b'"input":"\\ud800"}'
+        )
+        duplicate = (
+            b'{"schema":"model-request/v1","operation":"text.generate",'
+            b'"input":"one","input":"two"}'
+        )
+        cases = (
+            (invalid_utf8, "MP102"),
+            (lone_surrogate, "MP106"),
+            (duplicate, "MP105"),
+        )
+        for payload, code in cases:
+            with self.subTest(code=code):
+                self.assert_frame_refused(
+                    FramingCore(self.policy), raw_frame(payload), code
+                )
+
+    def test_depth_collection_string_and_scalar_caps_refuse(self):
+        excessive_depth = (
+            b'{"schema":"model-request/v1","operation":"text.generate",'
+            b'"input":"x","unknown":'
+            + b"[" * 9
+            + b"0"
+            + b"]" * 9
+            + b"}"
+        )
+        collection_flood = canonical_json(
+            {
+                "schema": REQUEST_SCHEMA,
+                "operation": TEXT_OPERATION,
+                "input": "x",
+                "unknown": [[] for _ in range(61)],
+            }
+        )
+        scalar_flood = canonical_json(
+            {
+                "schema": REQUEST_SCHEMA,
+                "operation": TEXT_OPERATION,
+                "input": "x",
+                "unknown": [0 for _ in range(61)],
+            }
+        )
+        long_string = request_frame("x" * 8_193)
+        cases = (
+            (raw_frame(excessive_depth), "MP104"),
+            (raw_frame(collection_flood), "MP101"),
+            (raw_frame(scalar_flood), "MP101"),
+            (long_string, "MP101"),
+        )
+        for frame, code in cases:
+            with self.subTest(code=code, size=len(frame)):
+                self.assert_frame_refused(FramingCore(self.policy), frame, code)
+
+    def test_closed_request_schema_refuses_missing_unknown_and_coercion(self):
+        for missing in ("schema", "operation", "input"):
+            with self.subTest(missing=missing):
+                document = {
+                    "schema": REQUEST_SCHEMA,
+                    "operation": TEXT_OPERATION,
+                    "input": "x",
+                }
+                del document[missing]
+                payload = canonical_json(document)
+                self.assert_frame_refused(
+                    FramingCore(self.policy), raw_frame(payload), "MP206"
+                )
+
+        self.assert_frame_refused(
+            FramingCore(self.policy),
+            request_frame(extra={"temperature": 0}),
+            "MP208",
+        )
+        wrong_inputs = (
+            (1, "MP209"),
+            (True, "MP209"),
+            (None, "MP209"),
+            (1.5, "MP109"),
+        )
+        for value, code in wrong_inputs:
+            with self.subTest(input_value=value):
+                self.assert_frame_refused(
+                    FramingCore(self.policy), request_frame(value), code
+                )
+
+    def test_alternate_schema_versions_and_operations_refuse(self):
+        schemas = (
+            "model-request/v0",
+            "model-request/v2",
+            "provider-request/v1",
+        )
+        for schema in schemas:
+            with self.subTest(schema=schema):
+                self.assert_frame_refused(
+                    FramingCore(self.policy), request_frame(schema=schema), "MP210"
+                )
+        for operation in ("text.stream", "chat.completions", "text.generate.batch"):
+            with self.subTest(operation=operation):
+                self.assert_frame_refused(
+                    FramingCore(self.policy),
+                    request_frame(operation=operation),
+                    "MP211",
+                )
+
+    def test_guest_authority_and_every_provider_feature_refuse(self):
+        forbidden = {
+            "job_id",
+            "sequence",
+            "url",
+            "method",
+            "model",
+            "headers",
+            "remote_reference",
+            "image",
+            "lifecycle",
+            "stream",
+            "channel",
+            *FEATURE_NAMES,
+        }
+        sentinel = "fiat-700-frame-secret-canary"
+        for field in sorted(forbidden):
+            with self.subTest(field=field):
+                error = self.assert_frame_refused(
+                    FramingCore(self.policy),
+                    request_frame(extra={field: sentinel}),
+                    "MP207",
+                )
+                self.assertNotIn(field, str(error))
+                self.assertNotIn(sentinel, str(error))
+
+    def test_input_tokens_and_request_count_are_bounded(self):
+        self.assert_frame_refused(
+            FramingCore(self.policy), request_frame("x" * 2_049), "MP212"
+        )
+        maximum = self.policy.document["limits"]["max_requests"]
+        core = FramingCore(self.policy)
+        combined = request_frame("x") * (maximum + 1)
+        self.assert_frame_refused(core, combined, "MP217")
+
+    def test_response_bytes_are_deterministic_and_closed(self):
+        core = FramingCore(self.policy)
+        request = core.feed(request_frame("ping"))[0]
+        response = core.encode_response(request, "pong")
+        payload = canonical_json(
+            {"schema": RESPONSE_SCHEMA, "sequence": 1, "output": "pong"}
+        )
+        self.assertEqual(struct.pack(">I", len(payload)) + payload, response)
+        self.assertEqual(len(payload), struct.unpack(">I", response[:4])[0])
+        self.assertEqual(
+            {"schema", "sequence", "output"},
+            set(json.loads(response[4:])),
+        )
+
+        other = FramingCore(self.policy)
+        other_request = other.feed(request_frame("ping"))[0]
+        self.assertEqual(response, other.encode_response(other_request, "pong"))
+
+    def test_response_type_token_unicode_and_sequence_refusals_are_bounded(self):
+        core = FramingCore(self.policy)
+        request = core.feed(request_frame("ping"))[0]
+        with self.assertRaisesRegex(PolicyError, "MP214"):
+            core.encode_response(request, 1)
+
+        core = FramingCore(self.policy)
+        request = core.feed(request_frame("ping"))[0]
+        with self.assertRaisesRegex(PolicyError, "MP215"):
+            core.encode_response(request, "x" * 1_025)
+
+        core = FramingCore(self.policy)
+        request = core.feed(request_frame("ping"))[0]
+        with self.assertRaisesRegex(PolicyError, "MP106"):
+            core.encode_response(request, "line\nbreak")
+
+        core = FramingCore(self.policy)
+        with self.assertRaisesRegex(PolicyError, "MP213"):
+            core.encode_response(object(), "pong")
+
+        first = FramingCore(self.policy)
+        second = FramingCore(self.policy)
+        foreign_request = first.feed(request_frame("ping"))[0]
+        second.feed(request_frame("ping"))
+        with self.assertRaisesRegex(PolicyError, "MP213"):
+            second.encode_response(foreign_request, "pong")
+
+    def test_response_requires_the_exact_unconsumed_issued_request(self):
+        core = FramingCore(self.policy)
+        request = core.feed(request_frame("ping"))[0]
+        forged = replace(request, input_text="forged")
+        with self.assertRaisesRegex(PolicyError, "MP213"):
+            core.encode_response(forged, "pong")
+
+        core = FramingCore(self.policy)
+        request = core.feed(request_frame("ping"))[0]
+        core.encode_response(request, "pong")
+        with self.assertRaisesRegex(PolicyError, "MP213"):
+            core.encode_response(request, "again")
+
+    def test_responses_remain_in_admission_order_without_multiplexing(self):
+        core = FramingCore(self.policy)
+        first, second = core.feed(request_frame("first") + request_frame("second"))
+        with self.assertRaisesRegex(PolicyError, "MP213"):
+            core.encode_response(second, "SECOND")
+
+        core = FramingCore(self.policy)
+        first, second = core.feed(request_frame("first") + request_frame("second"))
+        core.encode_response(first, "FIRST")
+        core.encode_response(second, "SECOND")
+
+    def test_frame_events_are_fixed_content_free_and_bounded(self):
+        sentinel = "fiat-700-event-secret-canary"
+        core = FramingCore(self.policy)
+        core.feed(request_frame("ordinary-content"))
+        with self.assertRaisesRegex(PolicyError, "MP207"):
+            core.feed(request_frame(extra={"authorization": sentinel}))
+        events = [event.document() for event in core.events]
+        self.assertEqual("MP000", events[0]["code"])
+        self.assertEqual("MP207", events[-1]["code"])
+        for event in events:
+            self.assertEqual(
+                {"schema", "stage", "outcome", "code"}, set(event)
+            )
+            self.assertEqual(FRAME_EVENT_SCHEMA, event["schema"])
+        rendered = canonical_json(events)
+        self.assertNotIn(sentinel.encode("ascii"), rendered)
+        self.assertNotIn(b"ordinary-content", rendered)
+        self.assertEqual(0, core.buffered_bytes)
+
+    def test_compiled_policy_identity_and_hard_caps_are_rechecked(self):
+        document = deepcopy(self.policy.document)
+        document["limits"]["max_request_bytes"] = 65_537
+        policy_bytes = canonical_json(document)
+        broken = replace(
+            self.policy,
+            document=document,
+            policy_bytes=policy_bytes,
+            policy_sha256=sha256_bytes(policy_bytes),
+        )
+        with self.assertRaisesRegex(PolicyError, "MP204"):
+            FramingCore(broken)
+
+        forged = replace(self.policy, policy_sha256="0" * 64)
+        with self.assertRaisesRegex(PolicyError, "MP204"):
+            FramingCore(forged)
+
+    def test_framing_replays_compiler_input_before_accepting_policy(self):
+        document = deepcopy(self.policy.document)
+        forged_digest = "f" * 64
+        document["job"]["jobspec_sha256"] = forged_digest
+        policy_bytes = canonical_json(document)
+        forged = replace(
+            self.policy,
+            document=document,
+            policy_bytes=policy_bytes,
+            policy_sha256=sha256_bytes(policy_bytes),
+            jobspec_sha256=forged_digest,
+        )
+        with self.assertRaisesRegex(PolicyError, "MP204"):
+            FramingCore(forged)
+
+    def test_framing_manifest_vectors_and_cli_are_exact(self):
+        manifest = FIXTURES / "framing-cases.json"
+        result = check_framing_manifest(manifest)
+        self.assertEqual(FRAMING_MANIFEST_SCHEMA, "model-proxy-framing-cases/v1")
+        self.assertEqual((2, 3), (result.cases, result.requests))
+        self.assertEqual(
+            (FIXTURES / "policy.sha256").read_text("ascii").strip(),
+            result.policy_sha256,
+        )
+        process = subprocess.run(  # phylax: allow subprocess: fixed local Python argv
+            [
+                sys.executable,
+                str(CLI),
+                "check-frames",
+                "--manifest",
+                str(manifest),
+            ],
+            check=False,
+            capture_output=True,
+        )
+        self.assertEqual(0, process.returncode, process.stderr)
+        self.assertEqual(b"", process.stderr)
+        self.assertEqual(
+            {
+                "schema": "model-proxy-diagnostic/v1",
+                "outcome": "frames_checked",
+                "manifest_schema": FRAMING_MANIFEST_SCHEMA,
+                "cases": 2,
+                "requests": 3,
+                "policy_sha256": result.policy_sha256,
+            },
+            json.loads(process.stdout),
+        )
+
+    def test_manifest_refusal_does_not_echo_free_form_bytes(self):
+        sentinel = "fiat-700-manifest-secret-canary"
+        document = json.loads((FIXTURES / "framing-cases.json").read_text("utf-8"))
+        document["credential"] = sentinel
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "framing-cases.json"
+            manifest.write_bytes(encode_document(document))
+            (root / "accepted-job.json").write_bytes(
+                (FIXTURES / "accepted-job.json").read_bytes()
+            )
+            process = subprocess.run(  # phylax: allow fixed local Python argv
+                [
+                    sys.executable,
+                    str(CLI),
+                    "check-frames",
+                    "--manifest",
+                    str(manifest),
+                ],
+                check=False,
+                capture_output=True,
+            )
+        self.assertEqual(2, process.returncode)
+        self.assertEqual(b"", process.stdout)
+        self.assertNotIn(sentinel.encode("ascii"), process.stderr)
+        self.assertEqual("MP218", json.loads(process.stderr)["code"])
+
+    def test_manifest_path_type_refuses_with_a_bounded_error(self):
+        try:
+            check_framing_manifest(None)
+        except Exception as error:  # The assertion keeps the parent report causal.
+            self.assertIsInstance(error, PolicyError)
+            self.assertEqual("MP218", error.code)
+            self.assertEqual(
+                {"schema", "outcome", "code", "field"},
+                set(error.diagnostic()),
+            )
+        else:
+            self.fail("an invalid manifest path was accepted")
 
 
 if __name__ == "__main__":
