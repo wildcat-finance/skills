@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 936,
-  "total_bytes": 20274306,
+  "total_bytes": 20281272,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3427,15 +3427,15 @@
       "source": "plugins/janus/examples/findings.sample.json"
     },
     {
-      "bytes": 12684,
+      "bytes": 15918,
       "path": "plugins/janus/harness/adapters/ManifestFuzz.sol",
-      "sha256": "ab70ed9f3a6cb16450da2e9aab90e90c79c88000b5e65d373bd684fe54b103e2",
+      "sha256": "d8faad085aed743c50d0f275fad8b124f1690aa97c32cbd02913626716573854",
       "source": "plugins/janus/harness/adapters/ManifestFuzz.sol"
     },
     {
       "bytes": 2000,
       "path": "plugins/janus/harness/adapters/echidna/echidna.yaml",
-      "sha256": "6954e890972976dae384a05918441aa1489bdf36e6e279a3f85c1ab6246b1371",
+      "sha256": "16abefa50ba8db250762ac121bb265d49fdc4d27779574692cf71763f9711322",
       "source": "plugins/janus/harness/adapters/echidna/echidna.yaml"
     },
     {
@@ -3481,9 +3481,9 @@
       "source": "plugins/janus/harness/src/JanusHarness.sol"
     },
     {
-      "bytes": 13359,
+      "bytes": 14343,
       "path": "plugins/janus/harness/src/ManifestReader.sol",
-      "sha256": "f5af0297167b0c384da22a39f8b36a425295db19e78377eb0a79d60d392942f0",
+      "sha256": "0113a9aac7909bd9b5a81d2c11115bbedf0600c1226b17a49db5ab0789a8f16f",
       "source": "plugins/janus/harness/src/ManifestReader.sol"
     },
     {
@@ -3535,9 +3535,9 @@
       "source": "plugins/janus/harness/test/HostileHooks.t.sol"
     },
     {
-      "bytes": 21422,
+      "bytes": 24171,
       "path": "plugins/janus/harness/test/ManifestReader.t.sol",
-      "sha256": "a5598198e6ab1579bfe56644efaa11e166c77c39016fed4be8cba95de27da666",
+      "sha256": "73e8e2b49e8cc5ca320a8e411d2fa505640751ac5fc097e70f9eb9f093847deb",
       "source": "plugins/janus/harness/test/ManifestReader.t.sol"
     },
     {
@@ -3571,9 +3571,9 @@
       "source": "plugins/janus/scripts/run_forge_tests.py"
     },
     {
-      "bytes": 5164,
+      "bytes": 5163,
       "path": "plugins/janus/scripts/run_fuzz_campaigns.py",
-      "sha256": "63c717c75c2509983e0f22f27b07e2b7ce46a6d8233fdf5c26d93bee66cbd25d",
+      "sha256": "61b1aac6560597a22663523718392355efa7ae04a8df3a5555192f755a809eac",
       "source": "plugins/janus/scripts/run_fuzz_campaigns.py"
     },
     {

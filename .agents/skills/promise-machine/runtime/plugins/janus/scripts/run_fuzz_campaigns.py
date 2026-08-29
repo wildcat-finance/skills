@@ -33,9 +33,9 @@ A non-zero exit is expected here, and it is not a regression. Neither Echidna
 address carries code under both, but a call to `keyExistsJson(string,string)`
 fails, so every manifest the suite generates reverts with empty return data
 before the reader resolves anything. Property `GL00` in the suite says exactly
-that and fails, which is the point -- `GL01` to `GL08` are negated ghost flags
+that and fails, which is the point -- `GL01` to `GL09` are negated ghost flags
 set only after a successful resolve, so without GL00 a campaign that resolves
-nothing reports eight green ticks and no evidence. The properties are asserted
+nothing reports nine green ticks and no evidence. The properties are asserted
 where they can actually fail by `ManifestFuzzInvariantTest` in
 `harness/test/ManifestReader.t.sol`, under Foundry's invariant engine, which
 does carry the cheatcodes. Run these campaigns to see whether either engine

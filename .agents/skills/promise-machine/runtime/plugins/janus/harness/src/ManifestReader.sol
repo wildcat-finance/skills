@@ -41,6 +41,10 @@ struct ResolvedThreshold {
 ///      symbol `host`, both through the adapter; scope `external` resolves
 ///      the symbol prefix of its slot string.
 ///
+///      The grammar stops there. A value movement's `asset` and `recipient`
+///      carry no suffix in the schema, so their whole string is the name and
+///      the dot is part of it: `USDC.e` is the bridged token, not `USDC`.
+///
 ///      Staticcall reading: a `staticcall` kind entry never admits a
 ///      state-changing call to its target. Only kinds `call` and
 ///      `delegatecall` enter the state-changing allowed set; gate 1 never
@@ -213,12 +217,15 @@ contract ManifestReader {
     recipients = new address[](length);
     for (uint256 i = 0; i < length; i++) {
       string memory entry = _indexed(base, i);
-      assets[i] = _resolveSymbol(
-        _symbolOf(vm.parseJsonString(json, string.concat(entry, ".asset"))),
-        resolver
-      );
+      // No `_symbolOf` here. The schema gives `asset` and `recipient` no
+      // suffix to strip -- unlike a call target's function name and an
+      // external slot's expression, both of which the schema documents -- so
+      // a dot in one of these is part of the name. Splitting `USDC.e` bound
+      // the permit to canonical `USDC` instead: an asset the manifest did not
+      // name, chosen by the reader.
+      assets[i] = _resolveSymbol(vm.parseJsonString(json, string.concat(entry, ".asset")), resolver);
       recipients[i] = _resolveSymbol(
-        _symbolOf(vm.parseJsonString(json, string.concat(entry, ".recipient"))),
+        vm.parseJsonString(json, string.concat(entry, ".recipient")),
         resolver
       );
     }
@@ -243,16 +250,21 @@ contract ManifestReader {
   }
 
   /// @dev True for a symbol that is not a name at all: no bytes, or nothing
-  ///      but ASCII space, tab, carriage return or line feed. Multi-byte
-  ///      whitespace is deliberately not folded in. No UTF-8 continuation
-  ///      byte is one of these four, so this decides on bytes without
-  ///      decoding, and a symbol carrying any other byte is a name the
-  ///      adapter is entitled to answer about or to refuse.
+  ///      above ASCII space. That covers the empty string, runs of spaces, and
+  ///      every C0 control byte -- tab, line feed, vertical tab, form feed,
+  ///      carriage return and NUL among them, each of which a JSON escape can
+  ///      put into a manifest and none of which a manifest author writes as a
+  ///      name. Enumerating four of them was not enough: 0x0B, 0x0C and 0x00
+  ///      all reached the adapter as names under the narrower test.
+  ///
+  ///      Multi-byte whitespace is deliberately not folded in. Every byte of a
+  ///      multi-byte UTF-8 sequence is at least 0xC0 or between 0x80 and 0xBF,
+  ///      so this decides on bytes without decoding, and a symbol carrying any
+  ///      byte above 0x20 is a name the adapter may answer about or refuse.
   function _isBlank(string memory s) private pure returns (bool) {
     bytes memory b = bytes(s);
     for (uint256 i = 0; i < b.length; i++) {
-      bytes1 c = b[i];
-      if (c != 0x20 && c != 0x09 && c != 0x0D && c != 0x0A) return false;
+      if (uint8(b[i]) > 0x20) return false;
     }
     return true;
   }

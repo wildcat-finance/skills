@@ -3,20 +3,24 @@ pragma solidity 0.8.25;
 
 import {AccountResolver, ManifestReader, ResolvedThreshold} from "../src/ManifestReader.sol";
 
-/// @dev The stub adapter the campaign resolves through. It answers to the
-///      five manifest names, and -- deliberately -- to the empty name as
-///      well.
+/// @dev The stub adapter the campaign resolves through. Its table is chosen so
+///      that every refusal the reader owns is the reader's to get right.
 ///
-///      The empty name matters. GL07 asserts that a manifest carrying an
-///      empty account symbol never resolves, and that refusal is meant to be
-///      the *reader's*: S2-R1-03 was raised precisely because leaving it to
-///      the adapter makes fail-closed behaviour the adapter's decision. An
-///      adapter that does not know the empty name refuses it first, so the
-///      reader's own guard is never the thing under test and GL07 holds even
-///      with that guard deleted. Answering to the empty name with a live
-///      address puts the guard back under test.
+///      Five ordinary names, one it does not know, and three it answers to on
+///      purpose even though the reader must refuse them first: the empty name,
+///      a whitespace-only name, and `ghost`, which it claims to know while
+///      resolving it to the zero address.
+///
+///      Each of those three exists because a property that only the adapter
+///      enforces is not a property of the reader. GL07 held with the reader's
+///      blank guard deleted while the adapter did not answer to the empty
+///      name; GL02 held with the reader's zero-address guard deleted while no
+///      name could resolve to zero. `asset.e` is here for the same reason on
+///      the value path: it is a name that contains a dot, so a reader that
+///      splits it resolves the wrong asset.
 contract FuzzResolver is AccountResolver {
   mapping(bytes32 => address) private t;
+
   constructor() {
     t[keccak256("hook")] = address(0xA1);
     t[keccak256("host")] = address(0xA2);
@@ -25,8 +29,13 @@ contract FuzzResolver is AccountResolver {
     t[keccak256("someAccount")] = address(0xA5);
     t[keccak256("")] = address(0xA6);
     t[keccak256(" ")] = address(0xA7);
+    t[keccak256("asset.e")] = address(0xA8);
   }
+
   function resolveAccount(string calldata n) external view returns (bool, address) {
+    // A name known to resolve to nothing. Without it `ok` and "non-zero" are
+    // the same predicate and the reader's zero-address refusal is untestable.
+    if (keccak256(bytes(n)) == keccak256("ghost")) return (true, address(0));
     address a = t[keccak256(bytes(n))];
     return (a != address(0), a);
   }
@@ -47,6 +56,7 @@ contract ManifestFuzz {
   bool public sawUnresolvableAccepted;
   bool public sawDuplicateActionAccepted;
   bool public sawBlankSymbolAccepted;
+  bool public sawWrongAddress;
 
   uint256 internal _expectedCalls;
   uint256 internal _expectedDelegates;
@@ -55,18 +65,26 @@ contract ManifestFuzz {
   bool internal _duplicateAction;
   bool internal _anyBlankSymbol;
 
+  // The address each entry must resolve to, in the order the reader emits it.
+  // Cardinality alone cannot tell a correct set from a set of the right size
+  // holding the wrong addresses: a reader writing one constant into every
+  // admitted slot satisfied every other property here.
+  address[] internal _expCall;
+  address[] internal _expDelegate;
+  address[] internal _expWrite;
+  address[] internal _expAsset;
+  address[] internal _expRecipient;
+
   constructor() {
     reader = new ManifestReader();
     resolver = new FuzzResolver();
   }
 
-  /// @dev Eight symbol choices: five the resolver knows, one it does not,
-  ///      and two the reader's own grammar must refuse before the resolver is
-  ///      ever asked -- the empty name and a whitespace-only name. The
-  ///      resolver answers to both of those with a live address, so refusing
-  ///      them is the reader's decision to get right, not the adapter's.
+  /// @dev Nine symbol choices: five the resolver knows, one it does not, two
+  ///      the reader's grammar must refuse before the resolver is asked, and
+  ///      one the resolver claims to know while resolving it to zero.
   function _sym(uint8 i) internal pure returns (string memory) {
-    uint8 k = i % 8;
+    uint8 k = i % 9;
     if (k == 0) return "hook";
     if (k == 1) return "host";
     if (k == 2) return "asset";
@@ -74,10 +92,27 @@ contract ManifestFuzz {
     if (k == 4) return "someAccount";
     if (k == 5) return "unknown";
     if (k == 6) return "";
-    return " ";
+    if (k == 7) return " ";
+    return "ghost";
   }
-  function _symKnown(uint8 i) internal pure returns (bool) { return (i % 8) < 5; }
-  function _symBlank(uint8 i) internal pure returns (bool) { return (i % 8) >= 6; }
+
+  /// @dev The address the resolver holds for a symbol the reader will accept.
+  ///      Zero for every choice that must refuse, which cannot appear in a
+  ///      comparison because a refusal never reaches `_check`.
+  function _addrOf(uint8 i) internal pure returns (address) {
+    uint8 k = i % 9;
+    if (k == 0) return address(0xA1);
+    if (k == 1) return address(0xA2);
+    if (k == 2) return address(0xA3);
+    if (k == 3) return address(0xA4);
+    if (k == 4) return address(0xA5);
+    return address(0);
+  }
+
+  function _symKnown(uint8 i) internal pure returns (bool) { return (i % 9) < 5; }
+  function _symBlank(uint8 i) internal pure returns (bool) { uint8 k = i % 9; return k == 6 || k == 7; }
+  function _symZero(uint8 i) internal pure returns (bool) { return (i % 9) == 8; }
+
   function _kind(uint8 i) internal pure returns (string memory) {
     uint8 k = i % 4;
     if (k == 0) return "call";
@@ -109,24 +144,19 @@ contract ManifestFuzz {
       uint8 s = uint8(uint256(keccak256(abi.encode(symSeed, i, "c"))));
       uint8 k = uint8(uint256(keccak256(abi.encode(kindSeed, i, "c"))));
       // `valid` folds each seed into the subrange the reader accepts: symbol
-      // choices 0 to 4 are the names the resolver knows, kinds 0 to 2 are the
-      // three the reader admits. `fuzzResolve` says why every fourth draw is
-      // built this way.
+      // choices 0 to 4 are the names that resolve, kinds 0 to 2 are the three
+      // the reader admits. `fuzzResolve` says why every fourth draw is built
+      // this way.
       if (valid) { s = s % 5; k = k % 3; }
-      // A dotted suffix on an EMPTY symbol yields a leading dot, the
+      // A dotted suffix on a blank symbol yields a leading dot, the
       // malformed-grammar case the reader must refuse itself.
       string memory target = dots ? string.concat(_sym(s), ".someFunction") : _sym(s);
       out = string.concat(out, i == 0 ? "" : ",", '{"target":"', target, '","kind":"', _kind(k), '"}');
-      // Both shapes of the empty case reduce to the empty symbol: a bare
-      // empty target, and an empty target carrying a dotted suffix, whose
-      // symbol is the text before the first `.`. Now that the resolver
-      // answers to the empty name, "empty" and "unresolvable" are disjoint
-      // and each must be flagged as itself.
       if (_symBlank(s)) _anyBlankSymbol = true;
-      else if (!_symKnown(s)) _anyUnresolvable = true;
+      else if (_symZero(s) || !_symKnown(s)) _anyUnresolvable = true;
       if ((k % 4) == 3) _anyBogus = true;
-      else if ((k % 4) == 0) _expectedCalls++;
-      else if ((k % 4) == 1) _expectedDelegates++;
+      else if ((k % 4) == 0) { _expectedCalls++; _expCall.push(_addrOf(s)); }
+      else if ((k % 4) == 1) { _expectedDelegates++; _expDelegate.push(_addrOf(s)); }
     }
     out = string.concat(out, "]");
   }
@@ -141,24 +171,51 @@ contract ManifestFuzz {
       if (valid) { s = s % 5; sc = sc % 3; }
       string memory slot = dots ? string.concat(_sym(s), ".field[key]") : _sym(s);
       out = string.concat(out, i == 0 ? "" : ",", '{"scope":"', _scope(sc), '","slot":"', slot, '"}');
-      if ((sc % 4) == 3) _anyBogus = true;
-      else if ((sc % 4) == 2) {
+      if ((sc % 4) == 3) {
+        _anyBogus = true;
+      } else if ((sc % 4) == 2) {
         if (_symBlank(s)) _anyBlankSymbol = true;
-        else if (!_symKnown(s)) _anyUnresolvable = true;
+        else if (_symZero(s) || !_symKnown(s)) _anyUnresolvable = true;
+        _expWrite.push(_addrOf(s));
+      } else {
+        // Scope `hook` and scope `host` ignore the slot's own symbol and
+        // resolve the fixed name, so the expected address is fixed too.
+        _expWrite.push((sc % 4) == 0 ? address(0xA1) : address(0xA2));
       }
     }
     out = string.concat(out, "]");
   }
 
-  function _buildMoves(uint256 nm, uint8 symSeed, bool valid) internal returns (string memory out) {
+  function _buildMoves(uint256 nm, uint8 symSeed, bool dots, bool valid)
+    internal returns (string memory out)
+  {
     out = "[";
     for (uint256 i = 0; i < nm; i++) {
       uint8 sa = uint8(uint256(keccak256(abi.encode(symSeed, i, "ma"))));
       uint8 sr = uint8(uint256(keccak256(abi.encode(symSeed, i, "mr"))));
       if (valid) { sa = sa % 5; sr = sr % 5; }
-      out = string.concat(out, i == 0 ? "" : ",", '{"asset":"', _sym(sa), '","recipient":"', _sym(sr), '"}');
-      if (_symBlank(sa) || _symBlank(sr)) _anyBlankSymbol = true;
-      else if (!_symKnown(sa) || !_symKnown(sr)) _anyUnresolvable = true;
+      // The value path has no dot grammar: an asset symbol is a whole name,
+      // and `asset.e` is a name the resolver holds separately from `asset`. A
+      // reader that splits at the dot here resolves the wrong asset, which is
+      // a mismatch only an address comparison catches.
+      if (dots) { sa = 2; sr = 2; }
+      string memory assetName = dots ? "asset.e" : _sym(sa);
+      string memory recipientName = dots ? "asset.e" : _sym(sr);
+      out = string.concat(
+        out, i == 0 ? "" : ",",
+        '{"asset":"', assetName, '","recipient":"', recipientName, '"}'
+      );
+      if (dots) {
+        _expAsset.push(address(0xA8));
+        _expRecipient.push(address(0xA8));
+      } else {
+        if (_symBlank(sa) || _symBlank(sr)) _anyBlankSymbol = true;
+        else if (_symZero(sa) || _symZero(sr) || !_symKnown(sa) || !_symKnown(sr)) {
+          _anyUnresolvable = true;
+        }
+        _expAsset.push(_addrOf(sa));
+        _expRecipient.push(_addrOf(sr));
+      }
     }
     out = string.concat(out, "]");
   }
@@ -182,12 +239,14 @@ contract ManifestFuzz {
     _expectedCalls = 0; _expectedDelegates = 0;
     _anyUnresolvable = false; _anyBogus = false; _anyBlankSymbol = false;
     _duplicateAction = duplicate;
+    delete _expCall; delete _expDelegate; delete _expWrite;
+    delete _expAsset; delete _expRecipient;
 
     string memory threshold = string.concat(
       '{"action":"deposit","gasBudget":', _u(budget),
       ',"permittedCalls":', _buildCalls(nc, symSeed, kindSeed, dots, valid),
       ',"permittedStorageWrites":', _buildWrites(nw, symSeed, scopeSeed, dots, valid),
-      ',"permittedValueMovements":', _buildMoves(nm, symSeed, valid), '}'
+      ',"permittedValueMovements":', _buildMoves(nm, symSeed, dots, valid), '}'
     );
     // A second threshold naming the same action. Selection is by name, so a
     // manifest that states one action twice has no single answer and must
@@ -213,44 +272,53 @@ contract ManifestFuzz {
     if (_anyBlankSymbol) sawBlankSymbolAccepted = true;
     if (_duplicateAction) sawDuplicateActionAccepted = true;
 
-    for (uint256 i = 0; i < t.allowedCallTargets.length; i++) {
-      if (t.allowedCallTargets[i] == address(0)) sawZeroAddress = true;
-    }
-    for (uint256 i = 0; i < t.allowedDelegateTargets.length; i++) {
-      if (t.allowedDelegateTargets[i] == address(0)) sawZeroAddress = true;
-    }
-    for (uint256 i = 0; i < t.allowedWriteAccounts.length; i++) {
-      if (t.allowedWriteAccounts[i] == address(0)) sawZeroAddress = true;
-    }
-    for (uint256 i = 0; i < t.valueAssets.length; i++) {
-      if (t.valueAssets[i] == address(0) || t.valueRecipients[i] == address(0)) sawZeroAddress = true;
-    }
-
+    // Length checks first. The value loops below read both value arrays at one
+    // index, so a reader returning them at different lengths would panic here
+    // and roll the whole draw back, which would leave GL03 permanently green.
     if (t.allowedCallTargets.length > nc) sawWidenedSet = true;
     if (t.allowedDelegateTargets.length > nc) sawWidenedSet = true;
     if (t.allowedCallTargets.length + t.allowedDelegateTargets.length > nc) sawWidenedSet = true;
     if (t.allowedWriteAccounts.length > nw) sawWidenedSet = true;
     if (t.valueAssets.length > nm) sawWidenedSet = true;
-
     if (t.valueAssets.length != t.valueRecipients.length) sawPairMismatch = true;
 
-    // The kind carried through: each set holds exactly its own kind's entries.
     if (t.allowedCallTargets.length != _expectedCalls) sawKindConfusion = true;
     if (t.allowedDelegateTargets.length != _expectedDelegates) sawKindConfusion = true;
+    if (t.allowedWriteAccounts.length != _expWrite.length) sawWidenedSet = true;
 
     if (t.gasBudget != budget) sawBudgetDrift = true;
+
+    if (sawPairMismatch || sawKindConfusion) return; // lengths already disagree
+
+    for (uint256 i = 0; i < t.allowedCallTargets.length; i++) {
+      if (t.allowedCallTargets[i] == address(0)) sawZeroAddress = true;
+      if (t.allowedCallTargets[i] != _expCall[i]) sawWrongAddress = true;
+    }
+    for (uint256 i = 0; i < t.allowedDelegateTargets.length; i++) {
+      if (t.allowedDelegateTargets[i] == address(0)) sawZeroAddress = true;
+      if (t.allowedDelegateTargets[i] != _expDelegate[i]) sawWrongAddress = true;
+    }
+    for (uint256 i = 0; i < t.allowedWriteAccounts.length && i < _expWrite.length; i++) {
+      if (t.allowedWriteAccounts[i] == address(0)) sawZeroAddress = true;
+      if (t.allowedWriteAccounts[i] != _expWrite[i]) sawWrongAddress = true;
+    }
+    for (uint256 i = 0; i < t.valueAssets.length && i < _expAsset.length; i++) {
+      if (t.valueAssets[i] == address(0) || t.valueRecipients[i] == address(0)) sawZeroAddress = true;
+      if (t.valueAssets[i] != _expAsset[i]) sawWrongAddress = true;
+      if (t.valueRecipients[i] != _expRecipient[i]) sawWrongAddress = true;
+    }
   }
 
   /// @dev GL00 is the anti-vacuity guard, and it is the property to read
   ///      first. Every other property here is the negation of a ghost flag
   ///      that `_check` sets, and `_check` runs only when `resolveJson`
   ///      returns. A campaign whose every manifest reverts therefore satisfies
-  ///      GL01 to GL07 without ever resolving anything -- which is exactly
+  ///      GL01 to GL09 without ever resolving anything -- which is exactly
   ///      what Echidna 2.3.3 and Medusa 1.5.1 produce, because neither
   ///      implements the `keyExistsJson`, `parseJsonUint` and
   ///      `parseJsonString` cheatcodes the reader is built on, so the first
   ///      cheatcode call reverts with empty return data. GL00 makes that
-  ///      state a failure instead of eight green ticks.
+  ///      state a failure instead of nine green ticks.
   ///
   ///      The threshold is not a sampling argument. Every fourth draw is
   ///      constructed inside the subrange the reader accepts, so among any
@@ -272,4 +340,5 @@ contract ManifestFuzz {
   function echidna_GL06_unresolvable_fails_closed() public view returns (bool) { return !sawUnresolvableAccepted; }
   function echidna_GL07_blank_symbol_fails_closed() public view returns (bool) { return !sawBlankSymbolAccepted; }
   function echidna_GL08_duplicate_action_fails_closed() public view returns (bool) { return !sawDuplicateActionAccepted; }
+  function echidna_GL09_every_entry_resolved_to_its_own_name() public view returns (bool) { return !sawWrongAddress; }
 }

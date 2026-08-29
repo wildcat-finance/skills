@@ -9,12 +9,12 @@
 #     --config adapters/echidna/echidna.yaml --format text
 #
 # testMode is `property`, so Echidna reads functions prefixed `echidna_` and
-# nothing else. GL00 to GL08 carry that prefix for this reason.
+# nothing else. GL00 to GL09 carry that prefix for this reason.
 #
 # GL00 is expected to FAIL under this engine, and that is the honest result
 # rather than a regression: Echidna 2.3.3 does not implement the JSON
 # cheatcodes the reader is built on, so every generated manifest reverts
-# before resolution and GL01 to GL08 -- all negated ghost flags -- hold
+# before resolution and GL01 to GL09 -- all negated ghost flags -- hold
 # without being tested. See run_fuzz_campaigns.py.
 testMode: property
 
