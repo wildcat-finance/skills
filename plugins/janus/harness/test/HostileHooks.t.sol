@@ -137,9 +137,23 @@ contract HostileHooksTest is JanusBase, JanusHarness {
     ResolvedThreshold memory w = _threshold("deposit");
     assertEq(w.allowedWriteAccounts.length, 2, "both hook-scope writes resolved");
     assertEq(w.allowedWriteAccounts[0], address(hook), "and both name the hook itself");
+    // Both assertions below read one local, so a set swapped in here is
+    // swapped in both. Rejection alone does not say the resolved set was the
+    // one used -- any set missing the registry rejects, including a wrong one
+    // -- and the pair is what pins it: this exact set rejects, and this exact
+    // set plus the registry accepts. A different set fails the second half.
+    address[] memory scopes = w.allowedWriteAccounts;
     assertTrue(
-      !_gate1_hookStorageWithinScopes(r.delta, address(hook), w.allowedWriteAccounts),
+      !_gate1_hookStorageWithinScopes(r.delta, address(hook), scopes),
       "gate1: the hook-caused write to external storage is caught"
+    );
+
+    address[] memory widened = new address[](scopes.length + 1);
+    for (uint256 i; i < scopes.length; ++i) widened[i] = scopes[i];
+    widened[scopes.length] = address(registry);
+    assertTrue(
+      _gate1_hookStorageWithinScopes(r.delta, address(hook), widened),
+      "gate1: the registry is the only account the resolved scopes are missing"
     );
   }
 
