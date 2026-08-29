@@ -10,12 +10,20 @@ interface AccountResolver {
   function resolveAccount(string calldata name) external view returns (bool ok, address addr);
 }
 
-/// @dev One manifest threshold resolved to concrete gate inputs: the
-///      state-changing call targets the hook may reach, the accounts whose
-///      storage it may write, the (asset, recipient) pairs it may move value
-///      along, and the gas budget of the named action.
+/// @dev One manifest threshold resolved to concrete gate inputs: the targets
+///      the hook may reach with a plain `call`, the separate targets it may
+///      reach with a `delegatecall`, the accounts whose storage it may write,
+///      the (asset, recipient) pairs it may move value along, and the gas
+///      budget of the named action.
+///
+///      The two call sets are deliberately not merged. A `delegatecall` runs
+///      the target's code in the hook's own storage context, so admitting one
+///      because the manifest permitted a plain `call` to the same address
+///      would hand that address the hook's entire state -- a strictly wider
+///      permit than the manifest wrote.
 struct ResolvedThreshold {
   address[] allowedCallTargets;
+  address[] allowedDelegateTargets;
   address[] allowedWriteAccounts;
   address[] valueAssets;
   address[] valueRecipients;
@@ -41,14 +49,27 @@ struct ResolvedThreshold {
 ///      said. Every entry's symbol, staticcall included, must still resolve,
 ///      so a misnamed entry aborts instead of vanishing.
 ///
-///      Fail-closed posture: an action the manifest does not carry, a symbol
-///      the adapter cannot resolve, and a resolution to the zero address each
-///      revert with a named error. The reader never returns a default,
-///      shrunken, or widened set.
+///      Fail-closed posture: an action the manifest does not carry, a
+///      duplicated action name, a symbol the adapter cannot resolve, an empty
+///      account symbol, and a resolution to the zero address each revert with
+///      a named error. The reader never returns a default or shrunken set,
+///      and never admits an entry the manifest did not write.
+///
+///      Granularity boundary, stated because the header would otherwise read
+///      stricter than the reader is: resolution is account-granular. A slot
+///      expression such as `lenderStatus[lender]` contributes only its
+///      account, and a target's function suffix contributes only its account,
+///      so a permit the manifest wrote at slot or function granularity is
+///      enforced at whole-account granularity. Gate 1 compares accounts and
+///      never `StorageWriteObs.slot`, which is the stated non-goal this
+///      matches. Call *kind* is the one dimension that is carried through,
+///      because `call` and `delegatecall` differ in whose storage changes.
 contract ManifestReader {
   Vm private constant vm = Vm(0x7109709ECfa91a80626fF3989D68f67F5b1DD12D);
 
   error ActionNotInManifest(string action);
+  error DuplicateActionInManifest(string action);
+  error EmptyAccountSymbol(string name);
   error UnresolvableSymbol(string symbol);
   error SymbolResolvesToZero(string symbol);
   error UnknownStorageScope(string scope);
@@ -81,7 +102,7 @@ contract ManifestReader {
   ) private view returns (ResolvedThreshold memory t) {
     string memory prefix = _thresholdByAction(json, action);
     t.gasBudget = vm.parseJsonUint(json, string.concat(prefix, ".gasBudget"));
-    t.allowedCallTargets = _resolveCalls(json, prefix, resolver);
+    (t.allowedCallTargets, t.allowedDelegateTargets) = _resolveCalls(json, prefix, resolver);
     t.allowedWriteAccounts = _resolveStorageWrites(json, prefix, resolver);
     (t.valueAssets, t.valueRecipients) = _resolveValueMovements(json, prefix, resolver);
   }
@@ -89,42 +110,63 @@ contract ManifestReader {
   /// @dev Select a threshold by action name, never by position. A manifest
   ///      without the named action refuses; nothing falls back to
   ///      `.thresholds[0]`.
+  ///
+  ///      The scan does not stop at the first match. Two thresholds carrying
+  ///      the same action name are accepted by the schema and by
+  ///      `janus.py validate`, and returning the first would let array
+  ///      position decide which permission set is in force -- position being
+  ///      exactly what selection by name exists to avoid. A manifest that
+  ///      states an action twice has no single answer, so it refuses.
   function _thresholdByAction(
     string memory json,
     string memory action
   ) private view returns (string memory prefix) {
+    bool found = false;
     for (uint256 i = 0; vm.keyExistsJson(json, _indexed(".thresholds", i)); i++) {
-      prefix = _indexed(".thresholds", i);
-      if (_eq(vm.parseJsonString(json, string.concat(prefix, ".action")), action)) {
-        return prefix;
+      string memory candidate = _indexed(".thresholds", i);
+      if (_eq(vm.parseJsonString(json, string.concat(candidate, ".action")), action)) {
+        if (found) revert DuplicateActionInManifest(action);
+        found = true;
+        prefix = candidate;
       }
     }
-    revert ActionNotInManifest(action);
+    if (!found) revert ActionNotInManifest(action);
   }
 
+  /// @dev Resolve `permittedCalls` into two disjoint sets, one per admitting
+  ///      kind. Folding them together would make a `call` permit stand in for
+  ///      a `delegatecall` permit, and those are not the same grant: a plain
+  ///      call changes the target's storage, a delegatecall changes the
+  ///      hook's. The manifest distinguishes them, so the resolved threshold
+  ///      does too.
   function _resolveCalls(
     string memory json,
     string memory prefix,
     AccountResolver resolver
-  ) private view returns (address[] memory targets) {
+  ) private view returns (address[] memory targets, address[] memory delegateTargets) {
     string memory base = string.concat(prefix, ".permittedCalls");
     uint256 length = _arrayLength(json, base);
     targets = new address[](length);
+    delegateTargets = new address[](length);
     uint256 admitted = 0;
+    uint256 delegated = 0;
     for (uint256 i = 0; i < length; i++) {
       string memory entry = _indexed(base, i);
       string memory symbol = _symbolOf(vm.parseJsonString(json, string.concat(entry, ".target")));
       address addr = _resolveSymbol(symbol, resolver);
       string memory kind = vm.parseJsonString(json, string.concat(entry, ".kind"));
-      if (_eq(kind, "call") || _eq(kind, "delegatecall")) {
+      if (_eq(kind, "call")) {
         targets[admitted++] = addr;
+      } else if (_eq(kind, "delegatecall")) {
+        delegateTargets[delegated++] = addr;
       } else if (!_eq(kind, "staticcall")) {
         revert UnknownCallKind(kind);
       }
       // A staticcall entry resolves (so a misnamed one aborts) but admits
-      // nothing into the state-changing allowed set.
+      // nothing into either state-changing allowed set.
     }
     targets = _shrink(targets, admitted);
+    delegateTargets = _shrink(delegateTargets, delegated);
   }
 
   function _resolveStorageWrites(
@@ -178,6 +220,11 @@ contract ManifestReader {
     string memory symbol,
     AccountResolver resolver
   ) private view returns (address addr) {
+    // An empty symbol is not a name the adapter should be asked about. It
+    // arises from a malformed target or slot whose first character is `.`,
+    // and whether it then fails closed would be the adapter's decision, not
+    // the reader's. The reader owns its own grammar, so it refuses here.
+    if (bytes(symbol).length == 0) revert EmptyAccountSymbol(symbol);
     bool ok;
     (ok, addr) = resolver.resolveAccount(symbol);
     if (!ok) revert UnresolvableSymbol(symbol);

@@ -28,6 +28,18 @@ contract ZeroResolver is AccountResolver {
   }
 }
 
+/// @dev A stub adapter that answers to every name, including the empty one,
+///      with a live address. It exists so the empty-symbol and staticcall
+///      refusals are shown to be the reader's own, not something the reader
+///      is delegating to a well-behaved adapter.
+contract OmniResolver is AccountResolver {
+  address public constant ANY = address(0xBEEF);
+
+  function resolveAccount(string calldata) external pure returns (bool ok, address addr) {
+    return (true, ANY);
+  }
+}
+
 /// @dev The manifest reader's contract: thresholds are selected by action
 ///      name, the symbol grammar is the text before the first `.`, staticcall
 ///      entries admit nothing state-changing, and everything unresolvable
@@ -196,5 +208,99 @@ contract ManifestReaderTest is JanusBase {
       abi.encodeWithSelector(ManifestReader.SymbolResolvesToZero.selector, "roleProvider")
     );
     reader.resolveFile(MANIFEST, "deposit", zero);
+  }
+
+  // -- Guards added by the step 2 round 1 audit ----------------------------
+
+  /// @dev S2-R1-01. A `call` permit must not stand in for a `delegatecall`
+  ///      permit: a delegatecall runs the target's code in the hook's own
+  ///      storage context, so folding the two kinds into one address set
+  ///      would grant the target the hook's entire state. Without the split
+  ///      this fails, because roleProvider appears in the delegate set.
+  function test_call_permit_does_not_admit_a_delegatecall() external view {
+    ResolvedThreshold memory t = reader.resolveFile(MANIFEST, "deposit", stub);
+    assertEq(t.allowedCallTargets.length, 1, "the call entry is admitted as a call");
+    assertEq(t.allowedCallTargets[0], PROVIDER, "and resolves to the provider");
+    assertEq(t.allowedDelegateTargets.length, 0, "no delegatecall was permitted, so none is admitted");
+  }
+
+  /// @dev S2-R1-01, the mirror: a `delegatecall` permit must not admit a
+  ///      plain call either. The two sets are disjoint in both directions.
+  function test_delegatecall_permit_does_not_admit_a_plain_call() external view {
+    ResolvedThreshold memory t = reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"roleProvider","kind":"delegatecall"}]}]}',
+      "deposit",
+      stub
+    );
+    assertEq(t.allowedDelegateTargets.length, 1, "the delegatecall entry is admitted as one");
+    assertEq(t.allowedDelegateTargets[0], PROVIDER, "and resolves to the provider");
+    assertEq(t.allowedCallTargets.length, 0, "no plain call was permitted, so none is admitted");
+  }
+
+  /// @dev S2-R1-01. A staticcall entry still admits nothing to either set.
+  function test_staticcall_admits_nothing_to_either_call_set() external view {
+    ResolvedThreshold memory t = reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"roleProvider.getCredential","kind":"staticcall"}]}]}',
+      "deposit",
+      stub
+    );
+    assertEq(t.allowedCallTargets.length, 0, "staticcall admits no plain call");
+    assertEq(t.allowedDelegateTargets.length, 0, "staticcall admits no delegatecall");
+  }
+
+  /// @dev S2-R1-02. A manifest that names one action twice has no single
+  ///      answer. Selection is by name, so letting array position decide
+  ///      which of two same-named thresholds wins would reintroduce exactly
+  ///      the positional dependence `_thresholdByAction` exists to remove.
+  ///      Without the fix this fails: the first, permissive entry is returned.
+  function test_duplicate_action_name_reverts() external {
+    vm.expectRevert(
+      abi.encodeWithSelector(ManifestReader.DuplicateActionInManifest.selector, "deposit")
+    );
+    reader.resolveJson(
+      '{"thresholds":['
+      '{"action":"deposit","gasBudget":30000000,"permittedStorageWrites":[],'
+      '"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":"roleProvider","kind":"call"}]},'
+      '{"action":"deposit","gasBudget":1,"permittedStorageWrites":[],'
+      '"permittedValueMovements":[],"permittedCalls":[]}]}',
+      "deposit",
+      stub
+    );
+  }
+
+  /// @dev S2-R1-03. A target whose first character is `.` has an empty
+  ///      account symbol. The reader owns its symbol grammar, so it refuses
+  ///      rather than asking the adapter about the empty name. Driven with an
+  ///      adapter that answers to every name including the empty one, so
+  ///      without the fix this fails by admitting 0xBEEF.
+  function test_empty_account_symbol_reverts() external {
+    OmniResolver omni = new OmniResolver();
+    vm.expectRevert(abi.encodeWithSelector(ManifestReader.EmptyAccountSymbol.selector, ""));
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[],"permittedValueMovements":[],'
+      '"permittedCalls":[{"target":".getCredential","kind":"call"}]}]}',
+      "deposit",
+      omni
+    );
+  }
+
+  /// @dev S2-R1-03, the storage path: an `external` scope whose slot string
+  ///      begins with `.` has the same empty symbol and refuses the same way.
+  function test_empty_symbol_in_an_external_slot_reverts() external {
+    OmniResolver omni = new OmniResolver();
+    vm.expectRevert(abi.encodeWithSelector(ManifestReader.EmptyAccountSymbol.selector, ""));
+    reader.resolveJson(
+      '{"thresholds":[{"action":"deposit","gasBudget":7,'
+      '"permittedStorageWrites":[{"scope":"external","slot":".counter[market]"}],'
+      '"permittedValueMovements":[],"permittedCalls":[]}]}',
+      "deposit",
+      omni
+    );
   }
 }
