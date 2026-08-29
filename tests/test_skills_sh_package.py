@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -11,6 +12,16 @@ import subprocess
 import sys
 import tempfile
 import unittest
+
+
+# The model proxy's receipt path refuses symlinked components by design.
+# macOS resolves TMPDIR under /var, a symlink to /private/var, so every
+# temporary directory built here -- and every child process that inherits
+# TMPDIR -- would trip that refusal before a test began.  Canonicalising the
+# temporary root hands the runtime a real path and leaves the refusal itself
+# untouched.
+tempfile.tempdir = os.path.realpath(tempfile.gettempdir())
+os.environ["TMPDIR"] = tempfile.tempdir
 
 
 ROOT = Path(__file__).resolve().parents[1]

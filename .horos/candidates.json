@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16096350,
+    "bytes_blob": 16130331,
     "bytes_generated": 98
   },
   "entries": [
@@ -145,6 +145,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-510-reuse-source-bound-x-ray-analysis-across-fia.synopsis.md"
+    },
+    {
+      "bytes": 33981,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-556-resolve-runbook-target-versions-at-integrate.synopsis.md"
     },
     {
       "bytes": 52994,

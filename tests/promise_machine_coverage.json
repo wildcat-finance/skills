@@ -635,6 +635,31 @@
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "selector": "test_sync_supersession_refuses_stale_or_malformed_subject_evidence"
     },
+    "fiat-version-resolution-m": {
+      "claim": "A run without a receipted relation block cannot manufacture version-resolution authority.",
+      "path": "plugins/hexaemeron/tests/test_version_relations.py",
+      "selector": "test_literal_only_run_cannot_manufacture_a_resolution_receipt"
+    },
+    "fiat-version-resolution-o": {
+      "claim": "The resolution promise stays at consequence two and does not claim a reservation or product edit.",
+      "path": "plugins/hexaemeron/tests/test_fiat_skill.py",
+      "selector": "test_version_resolution_has_a_narrow_consequence_two_promise"
+    },
+    "fiat-version-resolution-p": {
+      "claim": "One stable all-target result appends one event and state receipt without changing product bytes.",
+      "path": "plugins/hexaemeron/tests/test_version_relations.py",
+      "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit"
+    },
+    "fiat-version-resolution-r": {
+      "claim": "A ledger-durable interrupted resolution completes state once through its labelled pending record.",
+      "path": "plugins/hexaemeron/tests/test_version_relations.py",
+      "selector": "test_pending_resolution_after_ledger_completes_state_once"
+    },
+    "fiat-version-resolution-s": {
+      "claim": "A receipt whose candidate head no longer matches the run ref cannot authorise integration.",
+      "path": "plugins/hexaemeron/tests/test_version_relations.py",
+      "selector": "test_active_resolution_refuses_stale_head_evidence"
+    },
     "hermes-corpus-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
@@ -1175,6 +1200,81 @@
       "path": "plugins/sapheneia/tests/test_promise_machine_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
     },
+    "synkrisis-cohort-m": {
+      "claim": "A missing or failed upstream validation result is refused rather than treated as success.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_missing_validation_status_is_refused"
+    },
+    "synkrisis-cohort-o": {
+      "claim": "The nearest tempting overclaim, an unknown observer counted as data, remains unavailable.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_cohort_keeps_the_unknown_run_out_of_every_sample"
+    },
+    "synkrisis-cohort-p": {
+      "claim": "Positive evidence exercises cohort construction inside its declared boundary.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_example_cohort_recomputes_deterministically"
+    },
+    "synkrisis-cohort-r": {
+      "claim": "A refusal names its recovery and the repaired declared universe reruns clean.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_refusal_names_recovery_and_reruns_clean"
+    },
+    "synkrisis-cohort-s": {
+      "claim": "Replaced record bytes are refused against the declared digest rather than silently reread.",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "selector": "test_replaced_record_bytes_are_refused"
+    },
+    "synkrisis-diagnose-m": {
+      "claim": "A rule whose minimum sample counts are not met is refused visibly rather than matched thinly.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_rule_below_minimum_samples_is_refused"
+    },
+    "synkrisis-diagnose-o": {
+      "claim": "Findings stay at the inferred evidence class; the stronger classes remain unavailable.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_findings_never_strengthen_evidence_class"
+    },
+    "synkrisis-diagnose-p": {
+      "claim": "Positive evidence recomputes both shipped rule kinds from the checked example cohort.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_example_findings_recompute_exactly"
+    },
+    "synkrisis-diagnose-r": {
+      "claim": "A refused catalogue reruns clean after the named rule is repaired.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_diagnose_recovers_after_rule_repair"
+    },
+    "synkrisis-diagnose-s": {
+      "claim": "A record changed after cohort construction is refused against the cohort's digests.",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "selector": "test_record_changed_after_cohort_is_refused"
+    },
+    "synkrisis-verify-m": {
+      "claim": "A missing artefact is refused rather than reported as verified.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_missing_report_is_refused"
+    },
+    "synkrisis-verify-o": {
+      "claim": "Verification emits digests and one status; it never blesses the suggested handoff.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_verify_result_carries_digests_and_no_action"
+    },
+    "synkrisis-verify-p": {
+      "claim": "Positive evidence recomputes cohort, findings and report byte for byte from the original inputs.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_full_example_verifies"
+    },
+    "synkrisis-verify-r": {
+      "claim": "Verification reruns clean after the named artefact is restored.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_verify_recovers_after_artifact_restoration"
+    },
+    "synkrisis-verify-s": {
+      "claim": "A stale rule digest is refused rather than verified against newer rules.",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "selector": "test_stale_rule_digest_is_refused"
+    },
     "tabularium-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/tabularium/tests/test_verify.py",
@@ -1229,81 +1329,6 @@
       "evidence_class": "inferred",
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
-    },
-    "synkrisis-cohort-p": {
-      "claim": "Positive evidence exercises cohort construction inside its declared boundary.",
-      "path": "plugins/synkrisis/tests/test_cohort.py",
-      "selector": "test_example_cohort_recomputes_deterministically"
-    },
-    "synkrisis-cohort-m": {
-      "claim": "A missing or failed upstream validation result is refused rather than treated as success.",
-      "path": "plugins/synkrisis/tests/test_cohort.py",
-      "selector": "test_missing_validation_status_is_refused"
-    },
-    "synkrisis-cohort-s": {
-      "claim": "Replaced record bytes are refused against the declared digest rather than silently reread.",
-      "path": "plugins/synkrisis/tests/test_cohort.py",
-      "selector": "test_replaced_record_bytes_are_refused"
-    },
-    "synkrisis-cohort-o": {
-      "claim": "The nearest tempting overclaim, an unknown observer counted as data, remains unavailable.",
-      "path": "plugins/synkrisis/tests/test_cohort.py",
-      "selector": "test_cohort_keeps_the_unknown_run_out_of_every_sample"
-    },
-    "synkrisis-cohort-r": {
-      "claim": "A refusal names its recovery and the repaired declared universe reruns clean.",
-      "path": "plugins/synkrisis/tests/test_cohort.py",
-      "selector": "test_refusal_names_recovery_and_reruns_clean"
-    },
-    "synkrisis-diagnose-p": {
-      "claim": "Positive evidence recomputes both shipped rule kinds from the checked example cohort.",
-      "path": "plugins/synkrisis/tests/test_diagnose.py",
-      "selector": "test_example_findings_recompute_exactly"
-    },
-    "synkrisis-diagnose-m": {
-      "claim": "A rule whose minimum sample counts are not met is refused visibly rather than matched thinly.",
-      "path": "plugins/synkrisis/tests/test_diagnose.py",
-      "selector": "test_rule_below_minimum_samples_is_refused"
-    },
-    "synkrisis-diagnose-s": {
-      "claim": "A record changed after cohort construction is refused against the cohort's digests.",
-      "path": "plugins/synkrisis/tests/test_diagnose.py",
-      "selector": "test_record_changed_after_cohort_is_refused"
-    },
-    "synkrisis-diagnose-o": {
-      "claim": "Findings stay at the inferred evidence class; the stronger classes remain unavailable.",
-      "path": "plugins/synkrisis/tests/test_diagnose.py",
-      "selector": "test_findings_never_strengthen_evidence_class"
-    },
-    "synkrisis-diagnose-r": {
-      "claim": "A refused catalogue reruns clean after the named rule is repaired.",
-      "path": "plugins/synkrisis/tests/test_diagnose.py",
-      "selector": "test_diagnose_recovers_after_rule_repair"
-    },
-    "synkrisis-verify-p": {
-      "claim": "Positive evidence recomputes cohort, findings and report byte for byte from the original inputs.",
-      "path": "plugins/synkrisis/tests/test_verify.py",
-      "selector": "test_full_example_verifies"
-    },
-    "synkrisis-verify-m": {
-      "claim": "A missing artefact is refused rather than reported as verified.",
-      "path": "plugins/synkrisis/tests/test_verify.py",
-      "selector": "test_missing_report_is_refused"
-    },
-    "synkrisis-verify-s": {
-      "claim": "A stale rule digest is refused rather than verified against newer rules.",
-      "path": "plugins/synkrisis/tests/test_verify.py",
-      "selector": "test_stale_rule_digest_is_refused"
-    },
-    "synkrisis-verify-o": {
-      "claim": "Verification emits digests and one status; it never blesses the suggested handoff.",
-      "path": "plugins/synkrisis/tests/test_verify.py",
-      "selector": "test_verify_result_carries_digests_and_no_action"
-    },
-    "synkrisis-verify-r": {
-      "claim": "Verification reruns clean after the named artefact is restored.",
-      "path": "plugins/synkrisis/tests/test_verify.py",
-      "selector": "test_verify_recovers_after_artifact_restoration"
     }
   },
   "handoffs": [
@@ -1615,52 +1640,6 @@
     },
     {
       "cases": {
-        "M": "brevitas-evidence-m",
-        "O": "brevitas-evidence-o",
-        "P": "brevitas-evidence-p",
-        "R": "brevitas-evidence-r",
-        "S": "brevitas-evidence-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/brevitas/tests/test_brevitas.py",
-        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
-        "model": "not-applicable: deterministic checker",
-        "prompt": "Check protected source evidence with the selected Brevitas mode.",
-        "status": "recorded"
-      },
-      "group": "prompt",
-      "promise_id": "brevitas-evidence-preservation",
-      "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "brevitas-structure-m",
-        "O": "brevitas-structure-o",
-        "P": "brevitas-structure-p",
-        "R": "brevitas-structure-r",
-        "S": "brevitas-structure-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/brevitas/tests/test_brevitas.py",
-        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
-        "model": "not-applicable: deterministic checker",
-        "prompt": "Check a draft against the selected Brevitas structure mode.",
-        "status": "recorded"
-      },
-      "group": "prompt",
-      "promise_id": "brevitas-structure-check",
-      "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
-    },
-    {
-      "cases": {
         "M": "elenchus-m",
         "O": "elenchus-o",
         "P": "elenchus-p",
@@ -1709,6 +1688,22 @@
     },
     {
       "cases": {
+        "M": "fiat-checkpoint-m",
+        "O": "fiat-checkpoint-o",
+        "P": "fiat-checkpoint-p",
+        "R": "fiat-checkpoint-r",
+        "S": "fiat-checkpoint-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-controller-checkpoint",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "fiat-sync-m",
         "O": "fiat-o",
         "P": "fiat-sync-p",
@@ -1741,34 +1736,18 @@
     },
     {
       "cases": {
-        "M": "fiat-amendment-m",
-        "O": "fiat-amendment-o",
-        "P": "fiat-amendment-p",
-        "R": "fiat-amendment-r",
-        "S": "fiat-amendment-s",
+        "M": "fiat-m",
+        "O": "fiat-o",
+        "P": "fiat-p",
+        "R": "fiat-r",
+        "S": "fiat-s",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
       },
       "group": "executable",
-      "promise_id": "fiat-study-amendment",
-      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "fiat-runbook-amendment-m",
-        "O": "fiat-runbook-amendment-o",
-        "P": "fiat-runbook-amendment-p",
-        "R": "fiat-runbook-amendment-r",
-        "S": "fiat-runbook-amendment-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "group": "executable",
-      "promise_id": "fiat-runbook-amendment",
+      "promise_id": "fiat-receipted-delivery",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1789,34 +1768,50 @@
     },
     {
       "cases": {
-        "M": "fiat-checkpoint-m",
-        "O": "fiat-checkpoint-o",
-        "P": "fiat-checkpoint-p",
-        "R": "fiat-checkpoint-r",
-        "S": "fiat-checkpoint-s",
+        "M": "fiat-runbook-amendment-m",
+        "O": "fiat-runbook-amendment-o",
+        "P": "fiat-runbook-amendment-p",
+        "R": "fiat-runbook-amendment-r",
+        "S": "fiat-runbook-amendment-s",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
       },
       "group": "executable",
-      "promise_id": "fiat-controller-checkpoint",
+      "promise_id": "fiat-runbook-amendment",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
       "cases": {
-        "M": "fiat-m",
-        "O": "fiat-o",
-        "P": "fiat-p",
-        "R": "fiat-r",
-        "S": "fiat-s",
+        "M": "fiat-amendment-m",
+        "O": "fiat-amendment-o",
+        "P": "fiat-amendment-p",
+        "R": "fiat-amendment-r",
+        "S": "fiat-amendment-s",
         "X": {
           "not_applicable": true,
           "reason": "The canonical declaration supports no exception for this promise."
         }
       },
       "group": "executable",
-      "promise_id": "fiat-receipted-delivery",
+      "promise_id": "fiat-study-amendment",
+      "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "fiat-version-resolution-m",
+        "O": "fiat-version-resolution-o",
+        "P": "fiat-version-resolution-p",
+        "R": "fiat-version-resolution-r",
+        "S": "fiat-version-resolution-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "fiat-version-resolution",
       "skill_path": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1833,6 +1828,22 @@
       },
       "group": "executable",
       "promise_id": "hermes-baseline-promotion",
+      "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hermes-m",
+        "O": "hermes-o",
+        "P": "hermes-p",
+        "R": "hermes-r",
+        "S": "hermes-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "hermes-candidate-acceptance",
       "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
     },
     {
@@ -1864,139 +1875,8 @@
         }
       },
       "group": "executable",
-      "promise_id": "hermes-candidate-acceptance",
-      "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "hermes-m",
-        "O": "hermes-o",
-        "P": "hermes-p",
-        "R": "hermes-r",
-        "S": "hermes-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "group": "executable",
       "promise_id": "hermes-sealed-baseline",
       "skill_path": "plugins/hermes/skills/hermes/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "hex-eval-m",
-        "O": "hex-eval-o",
-        "P": "hex-eval-p",
-        "R": "hex-eval-r",
-        "S": "hex-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no conversion result is claimed.",
-        "model": "not-run",
-        "prompt": "Classify a Fizz Convert result under its digest-bound overlay.",
-        "status": "recorded"
-      },
-      "group": "vendored",
-      "promise_id": "hexaemeron-fizz-convert-properties",
-      "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "hex-eval-m",
-        "O": "hex-eval-o",
-        "P": "hex-eval-p",
-        "R": "hex-eval-r",
-        "S": "hex-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no harness campaign is claimed.",
-        "model": "not-run",
-        "prompt": "Classify a Fizz harness and campaign result under its digest-bound overlay.",
-        "status": "recorded"
-      },
-      "group": "vendored",
-      "promise_id": "hexaemeron-fizz-harness-campaign",
-      "skill_path": "plugins/hexaemeron/skills/fizz/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "hex-eval-m",
-        "O": "hex-eval-o",
-        "P": "hex-eval-p",
-        "R": "hex-eval-r",
-        "S": "hex-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no harness sync is claimed.",
-        "model": "not-run",
-        "prompt": "Classify a Fizz Sync result under its digest-bound overlay.",
-        "status": "recorded"
-      },
-      "group": "vendored",
-      "promise_id": "hexaemeron-fizz-sync-drift",
-      "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "hex-eval-m",
-        "O": "hex-eval-o",
-        "P": "hex-eval-p",
-        "R": "hex-eval-r",
-        "S": "hex-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no audit report is claimed.",
-        "model": "not-run",
-        "prompt": "Classify a Solidity Auditor result under its digest-bound overlay.",
-        "status": "recorded"
-      },
-      "group": "vendored",
-      "promise_id": "hexaemeron-solidity-audit-report",
-      "skill_path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "hex-eval-m",
-        "O": "hex-eval-o",
-        "P": "hex-eval-p",
-        "R": "hex-eval-r",
-        "S": "hex-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; no pre-audit result is claimed.",
-        "model": "not-run",
-        "prompt": "Classify an X-Ray result under its digest-bound overlay.",
-        "status": "recorded"
-      },
-      "group": "vendored",
-      "promise_id": "hexaemeron-x-ray-preaudit",
-      "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
     },
     {
       "cases": {
@@ -2061,75 +1941,6 @@
       "group": "executable",
       "promise_id": "horos-skeleton-map",
       "skill_path": "plugins/horos/skills/horos/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "hypomnema-pointer-m",
-        "O": "hypomnema-pointer-o",
-        "P": "hypomnema-pointer-p",
-        "R": "hypomnema-pointer-r",
-        "S": "hypomnema-pointer-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/test_hypomnema_checker.py",
-        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
-        "model": "not-applicable: deterministic checker",
-        "prompt": "Check first-party record pointers under the Hypomnema parser boundary.",
-        "status": "recorded"
-      },
-      "group": "prompt",
-      "promise_id": "hypomnema-pointer-gate",
-      "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "hex-eval-m",
-        "O": "hex-eval-o",
-        "P": "hex-eval-p",
-        "R": "hex-eval-r",
-        "S": "hex-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; forward model behaviour remains unknown.",
-        "model": "not-run",
-        "prompt": "Review record placement against the canonical Hypomnema contract.",
-        "status": "recorded"
-      },
-      "group": "prompt",
-      "promise_id": "hypomnema-record-placement",
-      "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "imprimatur-m",
-        "O": "imprimatur-o",
-        "P": "imprimatur-p",
-        "R": "imprimatur-r",
-        "S": "imprimatur-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/skills/imprimatur/evals/labelled-prose-v1",
-        "disposition": "Mechanical cases pass; the provisional holdout failed its recorded agreement and structural-coverage gates.",
-        "model": "labelled-prose-v1 mixed human and model-assisted corpus",
-        "prompt": "Run the exact prose through the selected Imprimatur mode and thresholds.",
-        "status": "recorded"
-      },
-      "group": "prompt",
-      "promise_id": "imprimatur-prose-gate",
-      "skill_path": "plugins/hexaemeron/skills/imprimatur/SKILL.md"
     },
     {
       "cases": {
@@ -2198,75 +2009,6 @@
       ],
       "promise_id": "janus-report-rendering",
       "skill_path": "plugins/janus/skills/janus/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "hex-eval-m",
-        "O": "hex-eval-o",
-        "P": "hex-eval-p",
-        "R": "hex-eval-r",
-        "S": "hex-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
-        "disposition": "Labelled P/M/S/O/R cases recorded; user authority remains external evidence.",
-        "model": "not-run",
-        "prompt": "Decide whether a ranked Kronos job may enter Fiat under the authority boundary.",
-        "status": "recorded"
-      },
-      "group": "prompt",
-      "promise_id": "kronos-fiat-dispatch",
-      "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "kronos-rank-m",
-        "O": "kronos-rank-o",
-        "P": "kronos-rank-p",
-        "R": "kronos-rank-r",
-        "S": "kronos-rank-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
-        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
-        "model": "not-applicable: deterministic scoreboard checker",
-        "prompt": "Record and inspect a complete Kronos ranking pass.",
-        "status": "recorded"
-      },
-      "group": "prompt",
-      "promise_id": "kronos-frontier-ranking",
-      "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "kronos-park-m",
-        "O": "kronos-park-o",
-        "P": "kronos-park-p",
-        "R": "kronos-park-r",
-        "S": "kronos-park-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
-        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
-        "model": "not-applicable: deterministic parked-state checker",
-        "prompt": "Record and replay a Kronos park or unpark event.",
-        "status": "recorded"
-      },
-      "group": "prompt",
-      "promise_id": "kronos-parked-lane",
-      "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
     },
     {
       "cases": {
@@ -2606,75 +2348,6 @@
     },
     {
       "cases": {
-        "M": "sapheneia-eval-m",
-        "O": "sapheneia-eval-o",
-        "P": "sapheneia-eval-p",
-        "R": "sapheneia-eval-r",
-        "S": "sapheneia-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
-        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model behaviour remains unknown.",
-        "model": "not-run",
-        "prompt": "Decide whether Sapheneia may deactivate under its canonical stop contract.",
-        "status": "unknown"
-      },
-      "group": "prompt",
-      "promise_id": "sapheneia-deactivation",
-      "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "sapheneia-eval-m",
-        "O": "sapheneia-eval-o",
-        "P": "sapheneia-eval-p",
-        "R": "sapheneia-eval-r",
-        "S": "sapheneia-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
-        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model behaviour remains unknown.",
-        "model": "not-run",
-        "prompt": "Shape one named durable record while preserving its evidence inventory and host structure.",
-        "status": "unknown"
-      },
-      "group": "prompt",
-      "promise_id": "sapheneia-durable-record-shape",
-      "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
-    },
-    {
-      "cases": {
-        "M": "sapheneia-eval-m",
-        "O": "sapheneia-eval-o",
-        "P": "sapheneia-eval-p",
-        "R": "sapheneia-eval-r",
-        "S": "sapheneia-eval-s",
-        "X": {
-          "not_applicable": true,
-          "reason": "The canonical declaration supports no exception for this promise."
-        }
-      },
-      "evaluation": {
-        "corpus": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
-        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model behaviour remains unknown.",
-        "model": "not-run",
-        "prompt": "Shape an active Sapheneia reply under the canonical interaction contract.",
-        "status": "unknown"
-      },
-      "group": "prompt",
-      "promise_id": "sapheneia-session-shape",
-      "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
-    },
-    {
-      "cases": {
         "M": "synkrisis-diagnose-m",
         "O": "synkrisis-diagnose-o",
         "P": "synkrisis-diagnose-p",
@@ -2771,6 +2444,259 @@
     },
     {
       "cases": {
+        "M": "brevitas-evidence-m",
+        "O": "brevitas-evidence-o",
+        "P": "brevitas-evidence-p",
+        "R": "brevitas-evidence-r",
+        "S": "brevitas-evidence-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/brevitas/tests/test_brevitas.py",
+        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
+        "model": "not-applicable: deterministic checker",
+        "prompt": "Check protected source evidence with the selected Brevitas mode.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "brevitas-evidence-preservation",
+      "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "brevitas-structure-m",
+        "O": "brevitas-structure-o",
+        "P": "brevitas-structure-p",
+        "R": "brevitas-structure-r",
+        "S": "brevitas-structure-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/brevitas/tests/test_brevitas.py",
+        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
+        "model": "not-applicable: deterministic checker",
+        "prompt": "Check a draft against the selected Brevitas structure mode.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "brevitas-structure-check",
+      "skill_path": "plugins/brevitas/skills/brevitas/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hypomnema-pointer-m",
+        "O": "hypomnema-pointer-o",
+        "P": "hypomnema-pointer-p",
+        "R": "hypomnema-pointer-r",
+        "S": "hypomnema-pointer-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/test_hypomnema_checker.py",
+        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
+        "model": "not-applicable: deterministic checker",
+        "prompt": "Check first-party record pointers under the Hypomnema parser boundary.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "hypomnema-pointer-gate",
+      "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hex-eval-m",
+        "O": "hex-eval-o",
+        "P": "hex-eval-p",
+        "R": "hex-eval-r",
+        "S": "hex-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+        "disposition": "Labelled P/M/S/O/R cases recorded; forward model behaviour remains unknown.",
+        "model": "not-run",
+        "prompt": "Review record placement against the canonical Hypomnema contract.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "hypomnema-record-placement",
+      "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "imprimatur-m",
+        "O": "imprimatur-o",
+        "P": "imprimatur-p",
+        "R": "imprimatur-r",
+        "S": "imprimatur-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/skills/imprimatur/evals/labelled-prose-v1",
+        "disposition": "Mechanical cases pass; the provisional holdout failed its recorded agreement and structural-coverage gates.",
+        "model": "labelled-prose-v1 mixed human and model-assisted corpus",
+        "prompt": "Run the exact prose through the selected Imprimatur mode and thresholds.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "imprimatur-prose-gate",
+      "skill_path": "plugins/hexaemeron/skills/imprimatur/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hex-eval-m",
+        "O": "hex-eval-o",
+        "P": "hex-eval-p",
+        "R": "hex-eval-r",
+        "S": "hex-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+        "disposition": "Labelled P/M/S/O/R cases recorded; user authority remains external evidence.",
+        "model": "not-run",
+        "prompt": "Decide whether a ranked Kronos job may enter Fiat under the authority boundary.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "kronos-fiat-dispatch",
+      "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "kronos-rank-m",
+        "O": "kronos-rank-o",
+        "P": "kronos-rank-p",
+        "R": "kronos-rank-r",
+        "S": "kronos-rank-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
+        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
+        "model": "not-applicable: deterministic scoreboard checker",
+        "prompt": "Record and inspect a complete Kronos ranking pass.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "kronos-frontier-ranking",
+      "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "kronos-park-m",
+        "O": "kronos-park-o",
+        "P": "kronos-park-p",
+        "R": "kronos-park-r",
+        "S": "kronos-park-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
+        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
+        "model": "not-applicable: deterministic parked-state checker",
+        "prompt": "Record and replay a Kronos park or unpark event.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "kronos-parked-lane",
+      "skill_path": "plugins/hexaemeron/skills/kronos/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "sapheneia-eval-m",
+        "O": "sapheneia-eval-o",
+        "P": "sapheneia-eval-p",
+        "R": "sapheneia-eval-r",
+        "S": "sapheneia-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
+        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model behaviour remains unknown.",
+        "model": "not-run",
+        "prompt": "Decide whether Sapheneia may deactivate under its canonical stop contract.",
+        "status": "unknown"
+      },
+      "group": "prompt",
+      "promise_id": "sapheneia-deactivation",
+      "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "sapheneia-eval-m",
+        "O": "sapheneia-eval-o",
+        "P": "sapheneia-eval-p",
+        "R": "sapheneia-eval-r",
+        "S": "sapheneia-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
+        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model behaviour remains unknown.",
+        "model": "not-run",
+        "prompt": "Shape one named durable record while preserving its evidence inventory and host structure.",
+        "status": "unknown"
+      },
+      "group": "prompt",
+      "promise_id": "sapheneia-durable-record-shape",
+      "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "sapheneia-eval-m",
+        "O": "sapheneia-eval-o",
+        "P": "sapheneia-eval-p",
+        "R": "sapheneia-eval-r",
+        "S": "sapheneia-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
+        "disposition": "Labelled P/M/S/O/R expectations recorded; cross-model behaviour remains unknown.",
+        "model": "not-run",
+        "prompt": "Shape an active Sapheneia reply under the canonical interaction contract.",
+        "status": "unknown"
+      },
+      "group": "prompt",
+      "promise_id": "sapheneia-session-shape",
+      "skill_path": "plugins/sapheneia/skills/sapheneia/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "vulgate-eval-m",
         "O": "vulgate-eval-o",
         "P": "vulgate-eval-p",
@@ -2791,6 +2717,121 @@
       "group": "prompt",
       "promise_id": "vulgate-register-rewrite",
       "skill_path": "plugins/hexaemeron/skills/vulgate/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hex-eval-m",
+        "O": "hex-eval-o",
+        "P": "hex-eval-p",
+        "R": "hex-eval-r",
+        "S": "hex-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+        "disposition": "Labelled P/M/S/O/R cases recorded; no conversion result is claimed.",
+        "model": "not-run",
+        "prompt": "Classify a Fizz Convert result under its digest-bound overlay.",
+        "status": "recorded"
+      },
+      "group": "vendored",
+      "promise_id": "hexaemeron-fizz-convert-properties",
+      "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-convert/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hex-eval-m",
+        "O": "hex-eval-o",
+        "P": "hex-eval-p",
+        "R": "hex-eval-r",
+        "S": "hex-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+        "disposition": "Labelled P/M/S/O/R cases recorded; no harness campaign is claimed.",
+        "model": "not-run",
+        "prompt": "Classify a Fizz harness and campaign result under its digest-bound overlay.",
+        "status": "recorded"
+      },
+      "group": "vendored",
+      "promise_id": "hexaemeron-fizz-harness-campaign",
+      "skill_path": "plugins/hexaemeron/skills/fizz/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hex-eval-m",
+        "O": "hex-eval-o",
+        "P": "hex-eval-p",
+        "R": "hex-eval-r",
+        "S": "hex-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+        "disposition": "Labelled P/M/S/O/R cases recorded; no harness sync is claimed.",
+        "model": "not-run",
+        "prompt": "Classify a Fizz Sync result under its digest-bound overlay.",
+        "status": "recorded"
+      },
+      "group": "vendored",
+      "promise_id": "hexaemeron-fizz-sync-drift",
+      "skill_path": "plugins/hexaemeron/skills/fizz/skills/fizz-sync/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hex-eval-m",
+        "O": "hex-eval-o",
+        "P": "hex-eval-p",
+        "R": "hex-eval-r",
+        "S": "hex-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+        "disposition": "Labelled P/M/S/O/R cases recorded; no audit report is claimed.",
+        "model": "not-run",
+        "prompt": "Classify a Solidity Auditor result under its digest-bound overlay.",
+        "status": "recorded"
+      },
+      "group": "vendored",
+      "promise_id": "hexaemeron-solidity-audit-report",
+      "skill_path": "plugins/hexaemeron/skills/solidity-auditor/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "hex-eval-m",
+        "O": "hex-eval-o",
+        "P": "hex-eval-p",
+        "R": "hex-eval-r",
+        "S": "hex-eval-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
+        "disposition": "Labelled P/M/S/O/R cases recorded; no pre-audit result is claimed.",
+        "model": "not-run",
+        "prompt": "Classify an X-Ray result under its digest-bound overlay.",
+        "status": "recorded"
+      },
+      "group": "vendored",
+      "promise_id": "hexaemeron-x-ray-preaudit",
+      "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
     }
   ],
   "run_observation": {
@@ -2885,7 +2926,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728"
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -3123,7 +3164,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -3137,7 +3178,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work and any unrun external check"
       },
-      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -3151,7 +3192,7 @@
         "transition": "local archive, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -3165,7 +3206,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -3179,7 +3220,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -3193,7 +3234,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -3207,7 +3248,21 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf",
+      "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+    },
+    "fiat-version-resolution": {
+      "bindings": {
+        "evidence_classes": "stable exact-object checks and append-only recorded receipt joined to the canonical Evidence classes field",
+        "evidence_references": "runbook and relation digests, stable base and run refs, native ledger and skill blobs, exact history rows, signed sync and path revalidation when required, pending subject and done:version-resolution event",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to done:version-resolution and the canonical promise heading",
+        "scope": "one relation-bearing run, one coherent base and candidate pair, and every declared target",
+        "subject": "exact runbook, relation source, base ref and commit, candidate head, target rows and skill metadata",
+        "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
+        "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
+      },
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {

@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.36.1"
+  version: "5.37.1"
 ---
 
 <p align="center">
@@ -344,6 +344,7 @@ Act on the single directive it prints, then receipt it. The directory:
 | `push` | Stage and commit final changes, push the step branch, open its stacked PR against `pr_base`, and leave it open | [push-discipline.md](references/push-discipline.md) | `done push --pr-url <url> --head-commit <sha> --pr-base <ref>` |
 | `merge-step` | Merge the named step's PR into the run branch, bottom of the stack first | [push-discipline.md](references/push-discipline.md) | `done merge-step --step <n> --merge-commit <sha>` |
 | `sync-run` | When the base advanced and the integration PR conflicts, preserve the completed product evidence and receipt a signed two-parent merge plus bounded integration revalidation; supersede a failed composition receipt only with the exact active SHA, a reason and fresh evidence | [push-discipline.md](references/push-discipline.md) | `done sync-run --commit <sha> --base-commit <sha> --revalidation .hexaemeron/integration-revalidation.json [--supersede-sync <sha> --reason <text>]` |
+| `resolve-versions` | For a relation-bearing runbook, check every declared generation against one stable exact base and candidate head without editing the product | [push-discipline.md](references/push-discipline.md) | `done resolve-versions` |
 | `integrate` | Open and merge one PR from the run branch into the base, name what the run leaves unfinished in `.hexaemeron/run-pr.md`, require a recognised closing reference in that PR when the run records a GitHub task issue, then clean up and close any recorded task issue | [push-discipline.md](references/push-discipline.md) | `done integrate --pr-url <url> --merge-commit <sha> [--closed-issue-url <url>]` |
 | `audit-verdict` | Max rounds hit with findings open | ask the user | `done audit --no-further-leads --reason ...` or `halt --reason ...` |
 | `blocked` | A receipted study or runbook amendment broke the current step; inspect it, halt, or use the runbook repair below | below | -- |
@@ -371,6 +372,46 @@ list with one entry per step in order, as strings or `{"title": ...}` objects.
 Run the `imprimatur` lint on each artefact before receipting it, and pass the
 skills that ran to the receipt. Repo copies are committed later, in step 1 of
 the runbook, after the prose pass.
+
+A runbook may carry Protasis's optional closed `version-relations` block.
+`init` records the exact commit created in the run worktree in its hash-chained
+initial event without adding it to controller state or worker packets. When a
+block is present, `done runbook` requires that init evidence to match the
+stable local branch point and reads each declared `EVOLUTION.md` and sibling
+`SKILL.md` as a bounded regular Git blob at that commit. It records one
+all-target `fiat-version-relations/v1` anchor: the exact block and runbook
+digests, commit, version counters, frontier tuple digests, ledger blob, and
+matching skill metadata blob. The generation-plus-one value shown in status
+and delegated packets is a projection from that anchor. It is not a reservation
+and does not authorise a product edit. Relation-bearing Mason, Warden, and
+Scribe packets carry the same anchor, exact commit, projection, and an explicit
+null resolution until a later transition has produced one.
+
+After the step stack closes, `done resolve-versions` reads the remote base and
+run refs twice around bounded exact-object reads. It accepts only generation
+drift under the anchored frontier tuple. The candidate must extend the exact
+base history by one matching generation row per declared target and carry the
+same version in each sibling `SKILL.md`. A base advance requires the existing
+signed `[product, base]` sync and complete path revalidation before the check.
+The all-target `fiat-version-resolution/v1` receipt is append-only, keeps at
+most eight observations, and uses a subject-labelled pending record across the
+ledger and state write windows. It observes product bytes and never changes
+them.
+
+`next` withholds integration until the newest receipt still matches the exact
+runbook, base, candidate, ledgers, rows, and skill metadata. A literal-only
+run keeps the earlier path and performs none of these reads. At terminal
+receipt, the actual integration merge must replay the resolved
+`[base, candidate]` parents in that order. Fiat then refuses if the base moved
+again; GitHub does not offer an atomic expected-base lock.
+
+An absent block takes the pre-existing literal path: the runbook receipt and
+worker directive shapes stay unchanged, no version target is inferred, and no
+Git version evidence is read. A malformed stored anchor, changed source block,
+missing or non-regular object, metadata mismatch, or reconstructed digest
+fault refuses status, `next`, and verification. Recovery is to restore the
+exact receipted source and anchor objects or halt; editing state or accepting a
+partial target set is not recovery.
 
 **Amending receipted specifications.** After the study and runbook receipts exist,
 and only while build steps are active, append one final dated Protasis
@@ -554,6 +595,13 @@ SHA with a bounded reason and fresh revalidation. Publish the sibling merge
 only with a force-with-lease pinned to that active SHA; bare force and any
 other rewritten ref remain forbidden. Fiat retains the failed sync and permits
 only the replacement to integrate.
+For a runbook carrying `version-relations`, resolve all declared targets after
+the active sync, if any, and before asking GitHub to merge. If a later base or
+run-head observation makes that receipt stale, sync and revalidate the changed
+composition as required, then append a fresh resolution. Do not replace or
+evict the earlier receipt. Use a merge commit: a squash or rebase cannot carry
+the checked `[base, candidate]` parent pair. The terminal receipt replays that
+actual pair and refuses a post-check base move.
 Then name everything the run
 left unfinished in its body under `## Carried forward`, wait for its gates,
 merge it without bypassing them, require GitHub to report `verified: true` and
@@ -704,7 +752,7 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-receipted-delivery
 
 - Promise: A successful `hexctl verify` establishes that the controller state has the required version-1 container shape, the state and append-only ledger agree, and every recorded phase transition occurred in the required order with the required receipt shape.
-- Evidence: The ordered state-container check, post-init configuration write allowlist, exact study and runbook receipts, step branches and locally verified commit ranges, GitHub-verified pushed commits and merge SHAs, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
+- Evidence: The ordered state-container check, hash-chained init event with its exact run-worktree starting commit, post-init configuration write allowlist, exact study and runbook receipts, step branches and locally verified commit ranges, GitHub-verified pushed commits and merge SHAs, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
 - Evidence classes: checked, recorded
 - Boundary: Controller verification proves the required container shape, receipt order, integrity, checked audit-entry structure, the recorded receipt-time synopsis check, and the recorded local and GitHub signature checks; it does not establish current working-tree currency, establish that audit prose or coverage judgements are true, make the lossy synopsis authoritative, validate other heterogeneous leaf values, prove a test summary, implementation claim, signer authority beyond those checks, or user authority merely written into a receipt.
 - Authorises: Advancing only to the single next controller directive and reporting the recorded workflow state without strengthening any underlying receipt.
@@ -725,14 +773,26 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 - Recovery: Keep the active state and worktree available, inspect `hexctl status` and `hexctl verify`, repair the failed evidence without editing ledger history, then rerun `hexctl reset`; if the tree holds work, inspect the retained path named by the command.
 - Exceptions: none
 
+### fiat-version-resolution
+
+- Promise: A successful `hexctl done resolve-versions` establishes that every target declared by one receipted `version-relations` block satisfied `next-generation-after-integration-base` against one stable exact integration base and candidate head, and that Fiat recorded the all-target result once under `fiat-version-resolution/v1`.
+- Evidence: The exact runbook and relation digests, starting-commit compatibility anchor, stable remote base and run-ref rereads, bounded native Git objects, exact anchor/base/head ledger histories, matching final generation rows and `SKILL.md` metadata, active signed `[product, base]` sync and complete green target-path revalidation when the base advanced, append-only history, subject-labelled pending record, `done:version-resolution` ledger event, focused collision, drift, race, cap and interruption tests, and zero command exit.
+- Evidence classes: checked, recorded
+- Boundary: The receipt establishes one closed relation over the named exact objects. It does not reserve a label, establish source-level compatibility, prove the checks sufficient, prevent GitHub moving the base later, authorise an evolution or epoch change, or edit the product tree.
+- Authorises: Carrying the newest still-current receipt into the integration directive and asking GitHub for one merge commit whose ordered parents are the checked base and candidate.
+- Consequence: 2
+- Refuses: No, malformed, partial, stale or ninth resolution; rewritten history; non-generation compatibility drift; missing or oversized objects; mismatched row or metadata; changing refs; an unsigned, wrong-parent or wrong-head sync; uncovered or failed target-path revalidation; an unrelated or corrupt pending transition; or any attempt to resolve a literal-only run.
+- Recovery: Restore stable exact evidence and rerun; when a compatible base generation moved the answer, make the concrete correction only in the existing signed `[product, base]` sync with complete affected-path revalidation, then append a new resolution. Repair a named pending write window by rerunning the same command. Halt on incompatible drift or an eight-entry history rather than rewriting evidence.
+- Exceptions: none
+
 ### fiat-final-integration
 
-- Promise: A successful integration receipt establishes that every stacked step was merged in controller order, the run branch passed its required gates, any completed product evidence remained bound to its exact product head across the active signed base-sync merge, every superseded failed composition remained recorded and unavailable for integration, and the computed product/base overlap received bounded green composition checks. Version 1 requires exact individual coverage. Version 2 requires exact individual coverage outside every selected source-registered prefix and exact manifest, blob, digest and Git-tree evidence for each complete final aggregate. Every identity the push receipts recorded remains attributable from the recorded merge, and exactly one recorded merge landed the run on the named base under the user's delivery authority.
-- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, computed product, upstream, overlap and product-to-sync composition paths, and a digest-bound integration-revalidation artefact. A version-1 artefact names every affected path and the green checks that cover it. A version-2 artefact adds source-registered aggregate identities, exact final manifest and Git-object evidence, aggregate file and tree digests, the final Git tree id, exact outside paths, and green checks covering both classes. The receipt also carries stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each identity, final controller state and verified ledger.
+- Promise: A successful integration receipt establishes that every stacked step was merged in controller order, the run branch passed its required gates, any completed product evidence remained bound to its exact product head across the active signed base-sync merge, every superseded failed composition remained recorded and unavailable for integration, and the computed product/base overlap received bounded green composition checks. Version 1 requires exact individual coverage. Version 2 requires exact individual coverage outside every selected source-registered prefix and exact manifest, blob, digest and Git-tree evidence for each complete final aggregate. A relation-bearing run replayed its newest exact resolution from the actual `[base, candidate]` merge parents without a later base move. Every identity the push receipts recorded remains attributable from the recorded merge, and exactly one recorded merge landed the run on the named base under the user's delivery authority.
+- Evidence: The user's explicit Fiat request, green step checks, exact product receipt digests, the active signed sync merge with the final product head as first parent and exact remote base as second parent when the base advanced, any superseded sync identities and bounded reasons, computed product, upstream, overlap and product-to-sync composition paths, and a digest-bound integration-revalidation artefact. A version-1 artefact names every affected path and the green checks that cover it. A version-2 artefact adds source-registered aggregate identities, exact final manifest and Git-object evidence, aggregate file and tree digests, the final Git tree id, exact outside paths, and green checks covering both classes. The receipt also carries the active `fiat-version-resolution/v1` receipt when declared, actual integration parents with the base first and candidate second, exact-object relation replay and post-merge base-tip read, stacked PR URLs, exact GitHub-verified pushed ranges, GitHub-verified merge-step and integration SHAs, the recorded attribution mechanism for each identity, final controller state and verified ledger.
 - Evidence classes: checked, recorded
 - Boundary: Exact-tree implementation and audit evidence remains evidence about the recorded product head when the base advances; it does not automatically apply to bytes changed while composing that head with the new base. The revalidation receipt establishes only the named checks over the computed and declared integration surface. Integration establishes the recorded repository transition; it does not prove the software defect-free, make audit judgements independent or authorise a deployment, financial action or another repository. The attribution result establishes that the base carries each recorded identity by ancestry or by a recorded merge's author or trailer; it does not establish that GitHub will resolve that identity to an account or list it as a contributor.
 - Authorises: Publication of the complete run to the named base and a final report limited to the merged artefacts and recorded evidence.
 - Consequence: 3
-- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync receipt, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a merge that leaves a recorded identity carried by nothing, or integration without explicit delivery authority.
-- Recovery: Leave the stack open; if only the base advanced, merge the exact remote base into the completed run with the recorded product head as first parent, determine the affected surface, rerun its integration-sensitive checks, and receipt that revalidation without rebuilding or re-auditing unchanged product bytes. If that composition later fails a required check, repair the affected surface, reproduce the signed two-parent merge, rerun bounded revalidation and supersede the exact active sync with a reason; the old receipt remains in the ledger. Restore another required branch or check, retarget and merge in controller order, or halt with the exact blocker before any base mutation.
+- Refuses: Direct step merges to the base, bypassed gates, a second base merge, deletion that closes a stacked PR prematurely, treating base advancement alone as product-evidence invalidation or authority for a carryover, a sync whose first parent is not the recorded product head, silent replacement of a sync receipt, an affected-path manifest that differs from the computed composition surface plus overlap, an unknown or widened aggregate owner, final aggregate bytes that differ from the manifest or Git tree, a failed or uncovered integration check, a missing or stale declared version resolution, integration parents other than the resolved `[base, candidate]` pair, a later base move, a merge that leaves a recorded identity carried by nothing, or integration without explicit delivery authority.
+- Recovery: Leave the stack open; if only the base advanced, merge the exact remote base into the completed run with the recorded product head as first parent, determine the affected surface, rerun its integration-sensitive checks, receipt that revalidation, then resolve declared versions without rebuilding or re-auditing unchanged product bytes. If that composition later fails a required check, repair the affected surface, reproduce the signed two-parent merge, rerun bounded revalidation and supersede the exact active sync with a reason; the old sync and version-resolution receipts remain in the ledger. Restore another required branch or check, retarget and merge in controller order, or halt with the exact blocker before any base mutation.
 - Exceptions: none

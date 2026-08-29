@@ -473,6 +473,46 @@ changed or a surface whose bounded revalidation failed. Carryover remains the
 recovery for an exhausted audit or a substantive product change, not for the
 passage of unrelated commits on the base branch.
 
+### Resolve declared versions against the integration pair
+
+A runbook with a receipted `version-relations` block has one more gate after
+the stack and any active sync are settled:
+
+```text
+hexctl done resolve-versions
+```
+
+The command changes no product file, branch, index, commit, pull request, or
+remote ref. It reads the named base and run refs twice around bounded native
+Git-object reads. For every declared target, the exact base ledger must extend
+the starting anchor by generation rows only, and the candidate must extend
+that exact base by one matching generation row and `SKILL.md` version. All
+targets pass or none are recorded.
+
+If the base advanced, make any concrete version correction only in the signed
+`[product, base]` sync above. Every changed target ledger and `SKILL.md` path
+belongs in `fiat-integration-revalidation/v1` and needs a green covering
+check. A one-parent fix after the stack, a controller-authored edit, or a
+literal replacement outside that composition is not a resolution.
+
+Fiat retains up to eight `fiat-version-resolution/v1` receipts. A moved base,
+run head, runbook, ledger blob, row, or metadata blob makes the newest one
+stale; append a fresh result after repairing its owning boundary. Do not
+rewrite or evict an earlier result. The ninth refuses. An interrupted receipt
+is recovered only through the subject-labelled pending record and the exact
+same evidence.
+
+`next` does not expose the integration action until the newest receipt is
+current. Use a merge commit for the final pull request. The terminal receipt
+requires the actual merge parents to be `[checked base, checked candidate]` in
+that order, replays the relation from those exact objects, and then requires
+the remote base to point to that merge. A squash or rebase has no such parent
+pair. GitHub offers no expected-base compare-and-swap, so a later base move is
+a named refusal, not a race this receipt claims to prevent.
+
+A runbook without the block keeps the literal path. It owes no resolution and
+performs none of these version reads.
+
 **Carry the unfinished forward.** The run-level body lives at
 `.hexaemeron/run-pr.md`, written in the prose phase, and the integration pull
 request is opened from it. Before the receipt will take it, that file has to

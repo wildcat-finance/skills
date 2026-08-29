@@ -35,6 +35,18 @@ FIAT_NEXT_JOB = (
     "post-compaction reconstruction preserve them, and an executable regression "
     "rejects stale reuse."
 )
+PROTASIS_FRONTIER = (
+    "The amendment contract fixes a dated block with four fields for a mid-run "
+    "change, and no study exercises it yet: nothing enumerates whether an "
+    "appended amendment carries its date or its fields, so the first live use is "
+    "checked only by the person who writes it."
+)
+PROTASIS_NEXT_JOB = (
+    "Ship a check that fails a study whose amendment block lacks the dated "
+    "heading or one of the four fields. Accepted when it catches each omission "
+    "in fixture studies, passes over a study whose amendments carry every field, "
+    "leaves a study with no amendment untouched, and both suites pass."
+)
 
 
 def field(text, name):
@@ -108,27 +120,32 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.36.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.37.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "fiat-v5.36.1")
+        self.assertEqual(latest["version"], "fiat-v5.37.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("skills/issues/774", latest["evidence"])
-        self.assertIn("ADR-049", latest["evidence"])
-        self.assertIn("fiat-integration-path-bound-study.md", latest["evidence"])
-        self.assertIn("fiat-integration-path-bound-runbook.md", latest["evidence"])
-        self.assertIn("INTEGRATION_PATHS_MAX", latest["change"])
-        self.assertIn("GIT_PATHS_MAX", latest["change"])
-        self.assertIn("held issue 363 job is untouched", latest["change"])
-        capsule = history_rows(ledger)[-2]
+        self.assertIn("skills#556", latest["evidence"])
+        self.assertIn("ADR-006", latest["evidence"])
+        self.assertIn("fiat-version-relations", latest["evidence"])
+        bound = history_rows(ledger)[-2]
+        self.assertEqual(bound["version"], "fiat-v5.36.1")
+        self.assertIn("skills/issues/774", bound["evidence"])
+        self.assertIn("ADR-049", bound["evidence"])
+        self.assertIn("fiat-integration-path-bound-study.md", bound["evidence"])
+        self.assertIn("fiat-integration-path-bound-runbook.md", bound["evidence"])
+        self.assertIn("INTEGRATION_PATHS_MAX", bound["change"])
+        self.assertIn("GIT_PATHS_MAX", bound["change"])
+        self.assertIn("held issue 363 job is untouched", bound["change"])
+        capsule = history_rows(ledger)[-3]
         self.assertEqual(capsule["version"], "fiat-v5.35.1")
         self.assertIn("skills/issues/557", capsule["evidence"])
         self.assertIn("ADR-028", capsule["evidence"])
@@ -137,35 +154,56 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("checkpoint export", capsule["change"])
         self.assertIn("checkpoint restore", capsule["change"])
         self.assertIn("same ledger", capsule["change"])
-        predecessor = history_rows(ledger)[-3]
+        predecessor = history_rows(ledger)[-4]
         self.assertEqual(predecessor["version"], "fiat-v5.34.1")
         self.assertIn("Creator direction, 2026-08-29", predecessor["evidence"])
         self.assertIn("audit.max_rounds", predecessor["evidence"])
-        earlier = history_rows(ledger)[-4]
+        earlier = history_rows(ledger)[-5]
         self.assertEqual(earlier["version"], "fiat-v5.33.1")
         self.assertIn("Creator direction, 2026-08-28", earlier["evidence"])
         self.assertIn("completed run", earlier["evidence"])
-        integrated = history_rows(ledger)[-5]
+        integrated = history_rows(ledger)[-6]
         self.assertEqual(integrated["version"], "fiat-v5.32.1")
         self.assertIn("skills/issues/710", integrated["evidence"])
         self.assertIn("issuecomment-5451995033", integrated["evidence"])
-        base_fix = history_rows(ledger)[-6]
+        base_fix = history_rows(ledger)[-7]
         self.assertEqual(base_fix["version"], "fiat-v5.31.1")
         self.assertIn("skills/issues/710", base_fix["evidence"])
         self.assertIn("ADR-044", base_fix["evidence"])
-        published = history_rows(ledger)[-7]
+        published = history_rows(ledger)[-8]
         self.assertEqual(published["version"], "fiat-v5.30.1")
         self.assertIn("skills/issues/622", published["evidence"])
         self.assertIn("Creator direction, 2026-08-27", published["evidence"])
-        checkpoint = history_rows(ledger)[-8]
+        checkpoint = history_rows(ledger)[-9]
         self.assertEqual(checkpoint["version"], "fiat-v5.29.1")
         self.assertIn("issuecomment-5435028801", checkpoint["evidence"])
         self.assertIn("issuecomment-5435304048", checkpoint["evidence"])
-        base_head = history_rows(ledger)[-9]
+        base_head = history_rows(ledger)[-10]
         self.assertEqual(base_head["version"], "fiat-v5.28.1")
         self.assertIn("skills/issues/608", base_head["evidence"])
         self.assertIn("fiat-integrate-base-head-study.md", base_head["evidence"])
         self.assertIn("fiat-integrate-base-head-runbook.md", base_head["evidence"])
+
+    def test_protasis_amendment_frontier_holds_the_declared_relation_generation(self):
+        ledger = (
+            PLUGINS / "hexaemeron" / "skills" / "protasis" / "EVOLUTION.md"
+        ).read_text(encoding="utf-8")
+        self.assertEqual(field(ledger, "Current version"), "protasis-v4.9.0")
+        self.assertEqual(field(ledger, "Frontier status"), "open")
+        self.assertEqual(field(ledger, "Frontier revision"), "amendment-block-check")
+        self.assertEqual(field(ledger, "Current frontier"), PROTASIS_FRONTIER)
+        self.assertEqual(field(ledger, "Next Fiat job"), PROTASIS_NEXT_JOB)
+        latest = history_rows(ledger)[-1]
+        self.assertEqual(latest["version"], "protasis-v4.9.0")
+        self.assertEqual(latest["axis"], "generation")
+        self.assertEqual(latest["revision"], "amendment-block-check")
+        self.assertEqual(
+            latest["digest"],
+            "1014071026a149d38e7d79c222dfcfc25dd061d825fac9e7813a3a46b184cd29",
+        )
+        self.assertIn("skills#556", latest["evidence"])
+        self.assertIn("ADR-006", latest["evidence"])
+        self.assertIn("fiat-version-relations", latest["evidence"])
 
     def test_history_rows_accept_compact_list(self):
         digest = "a" * 64

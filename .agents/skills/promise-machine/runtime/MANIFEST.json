@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 981,
-  "total_bytes": 21249658,
+  "file_count": 982,
+  "total_bytes": 21392672,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -59,7 +59,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "9f6060e6d6877e5c57ed18892bf705ce3f6d7e95c88937cc1a0bdd6142f62c82",
+      "sha256": "8d3a839e5ab8e78ce1f5c4decf6cd3d4429d3456fd3a0329ed5cb39264df9c9f",
       "source": null
     },
     {
@@ -1761,6 +1761,12 @@
       "source": "plugins/hexaemeron/docs/fiat-per-run-audit-log/study.md"
     },
     {
+      "bytes": 24258,
+      "path": "plugins/hexaemeron/docs/fiat-version-relations/runbook.md",
+      "sha256": "49318dc8abcc517dbee5429197e2b8ec40badb6581fbae2e8a0e61882ee4b63f",
+      "source": "plugins/hexaemeron/docs/fiat-version-relations/runbook.md"
+    },
+    {
       "bytes": 13003,
       "path": "plugins/hexaemeron/docs/imprimatur-source-prose-extraction/proof.md",
       "sha256": "f20c1bbd08b1d6f0c2e363a5b8ebdddbea3ab73e03d8371e5e1f9b137eb8c0a6",
@@ -1893,15 +1899,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 46147,
+      "bytes": 47464,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "b6429e5d8fd5aec834e22d84ac7deb2d4235f814a942134ffdc66ee19a0d9322",
+      "sha256": "14c65b0057013d1b1a8db3e3185b9980d9b7a42e711cf2c8f1587c8fb3c9763d",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 55151,
+      "bytes": 61346,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "102ad0612f4989bf479b2488e21d42b4131b908bf501df6823a16f3edffccc8c",
+      "sha256": "23ec19093794e14a9a8e44a32f334f0f061c7bb096a375a0d6d2ec1a10781342",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1935,9 +1941,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/prose-pass.md"
     },
     {
-      "bytes": 29099,
+      "bytes": 31149,
       "path": "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
-      "sha256": "817e5872e54110d9e645480600b2da0c6deaaeb6f377cec5ab4063c7ea0895de",
+      "sha256": "e89ada33205cf447beec685211cb5d0a7887bff7bab697d452f185c2719b1118",
       "source": "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
     },
     {
@@ -1965,9 +1971,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 410761,
+      "bytes": 508898,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "4150fecc5dc1b4e31ec4a2c34afde39f9f4932a053e217a71411a959fa9ac728",
+      "sha256": "734136ed8be02ef6283f4c7f18f1fe6f09b97f72f935a039d2980bd4406042cf",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
@@ -2709,15 +2715,15 @@
       "source": "plugins/hexaemeron/skills/phylax/scripts/phylax.py"
     },
     {
-      "bytes": 11306,
+      "bytes": 12164,
       "path": "plugins/hexaemeron/skills/protasis/EVOLUTION.md",
-      "sha256": "0a1496879d49ab341953fccb5dca6cc3888eeb976a40e3eb3bb49b51138515f6",
+      "sha256": "cb9d334817d343b2a1b3e4228fbb51979e196ee3715caec9bcf4eb5651ccdf89",
       "source": "plugins/hexaemeron/skills/protasis/EVOLUTION.md"
     },
     {
-      "bytes": 25040,
+      "bytes": 26742,
       "path": "plugins/hexaemeron/skills/protasis/SKILL.md",
-      "sha256": "95a5fa7f10d56d18c40939414ac8006bfc0de18ef075ee7231754aab7025dde2",
+      "sha256": "0f83579ead5fe6a7a472e076fa8bbdf4df16b170bf7ca5852833212df07702cf",
       "source": "plugins/hexaemeron/skills/protasis/SKILL.md"
     },
     {
@@ -2727,9 +2733,9 @@
       "source": "plugins/hexaemeron/skills/protasis/agents/openai.yaml"
     },
     {
-      "bytes": 23630,
+      "bytes": 32127,
       "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
-      "sha256": "c2a026a6fbb58d4cb51ae8dfb512fddbfaf02e4f6c2e534f376cd18648b3c3bd",
+      "sha256": "9e7f90f52abd2626f260665635f8653a30478f7c25a40e2b371a5c637aeaad4d",
       "source": "plugins/hexaemeron/skills/protasis/scripts/protasis.py"
     },
     {

@@ -18,6 +18,15 @@ import tempfile
 import tracemalloc
 import unittest
 
+# The capsule refuses a symlinked output parent by design.  macOS resolves
+# TMPDIR under /var, a symlink to /private/var, so every temporary
+# directory built here -- and every child process that inherits TMPDIR --
+# would trip that refusal before a test began.  Canonicalising the
+# temporary root hands the controller a real path and leaves the refusal
+# itself untouched.
+tempfile.tempdir = os.path.realpath(tempfile.gettempdir())
+os.environ["TMPDIR"] = tempfile.tempdir
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from test_hexctl import HEXCTL, LINTS_CLEAN, HexctlCase, hexctl_module

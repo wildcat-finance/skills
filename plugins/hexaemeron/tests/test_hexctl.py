@@ -359,7 +359,19 @@ import re
 import sys
 import time
 
-args = sys.argv[1:]
+raw_args = sys.argv[1:]
+args = raw_args
+candidate = raw_args[1:] if raw_args[:1] == ["--no-replace-objects"] else raw_args
+while len(candidate) >= 2 and candidate[0] == "-c":
+    candidate = candidate[2:]
+if candidate and candidate[0] in (
+    "verify-commit",
+    "show",
+    "diff",
+    "merge-base",
+    "ls-remote",
+):
+    args = candidate
 mode = os.environ.get("FAKE_GIT_MODE", "valid")
 if args and args[0] == "rev-parse" and "--show-toplevel" not in args:
     if mode == "missing-commit":
@@ -643,6 +655,7 @@ print(json.dumps(payload))
     def state(self):
         payload = json.loads(self.run_ctl("status", "--json").stdout)
         payload.pop("observation_run_id", None)
+        payload.pop("version_resolution_status", None)
         return payload
 
     def record_legacy_config(self, path, value):
@@ -1822,16 +1835,21 @@ class TestStudyAmendments(HexctlCase):
 
 try:
     from .host_identity_cases import build_host_identity_cases
+    from .replacement_object_cases import build_replacement_object_cases
 except ImportError:
     from host_identity_cases import build_host_identity_cases
+    from replacement_object_cases import build_replacement_object_cases
 
 
 HostIdentityRefusalCases, FooterReappearanceCases = build_host_identity_cases(
     globals()
 )
+(ReplacementObjectCases,) = build_replacement_object_cases(globals())
 
 
-class TestCommitVerification(HostIdentityRefusalCases, HexctlCase):
+class TestCommitVerification(
+    HostIdentityRefusalCases, ReplacementObjectCases, HexctlCase
+):
     def test_local_fake_git_negative_matrix_is_fail_closed_and_secret_safe(self):
         module = hexctl_module()
         module.GIT_TIMEOUT = 0.05

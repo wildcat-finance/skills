@@ -34,6 +34,9 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parents[1]
 FIAT = ROOT / "skills" / "fiat" / "SKILL.md"
 PROTASIS = ROOT / "skills" / "protasis" / "SKILL.md"
+FIAT_LEDGER = ROOT / "skills" / "fiat" / "EVOLUTION.md"
+PROTASIS_LEDGER = ROOT / "skills" / "protasis" / "EVOLUTION.md"
+ADR_006 = ROOT.parents[1] / "docs" / "decisions" / "ADR-006-skill-ledgers-are-not-semver.md"
 MARKETPLACE = ROOT / "skills" / "fiat" / "references" / "wildcat-marketplace.md"
 CONTRIBUTOR_CHECK = ROOT / "skills" / "fiat" / "scripts" / "check_wildcat_contributor.py"
 PUSH_DISCIPLINE = ROOT / "skills" / "fiat" / "references" / "push-discipline.md"
@@ -387,6 +390,78 @@ class FiatSkillContractTests(unittest.TestCase):
             for rule, clause in required.items():
                 with self.subTest(passage=passage_name, rule=rule):
                     self.assertIn(clause, flat)
+
+    def test_protasis_owns_the_closed_version_relation_and_p006_boundary(self):
+        flat = " ".join(self.protasis.split())
+        self.assertIn("```version-relations", self.protasis)
+        self.assertIn("next-generation-after-integration-base", self.protasis)
+        self.assertIn("P006", self.protasis)
+        self.assertIn("Prose, examples, commands and amendments all count", flat)
+        self.assertIn("It does not open the ledger", flat)
+        self.assertIn("allocate a version", flat)
+
+    def test_fiat_owns_the_exact_anchor_without_calling_it_a_reservation(self):
+        flat = " ".join(self.fiat.split())
+        self.assertIn("`fiat-version-relations/v1` anchor", flat)
+        self.assertIn("bounded regular Git blob", flat)
+        self.assertIn("The generation-plus-one value", flat)
+        self.assertIn("It is not a reservation", flat)
+        self.assertIn("an explicit null resolution", flat)
+        self.assertIn("worker directive shapes stay unchanged", flat)
+        self.assertIn("no Git version evidence is read", flat)
+
+    def test_version_resolution_has_a_narrow_consequence_two_promise(self):
+        promise = self.fiat.split("### fiat-version-resolution", 1)[1]
+        promise = promise.split("### ", 1)[0]
+        self.assertIn("- Consequence: 2", promise)
+        self.assertIn("- Authorises:", promise)
+        self.assertIn("newest still-current receipt", promise)
+        self.assertIn("does not reserve a label", promise)
+        self.assertIn("subject-labelled pending record", promise)
+        self.assertIn("ninth resolution", promise)
+
+    def test_resolution_transition_and_final_replay_are_explicit(self):
+        flat = " ".join(self.fiat.split())
+        push = " ".join(self.push_discipline.split())
+        self.assertIn("`resolve-versions`", self.fiat)
+        self.assertIn("`done resolve-versions`", self.fiat)
+        for text in (flat, push):
+            self.assertIn("subject-labelled pending", text)
+            self.assertIn("eight", text)
+        self.assertIn("[base, candidate]", flat)
+        self.assertIn("[checked base, checked candidate]", push)
+        self.assertIn("All targets pass or none are recorded", push)
+        self.assertIn("performs none of these version reads", push)
+
+    def test_issue_556_generation_records_use_the_declared_relation(self):
+        ledgers = {
+            "fiat-v5.37.1": FIAT_LEDGER.read_text(encoding="utf-8"),
+            "protasis-v4.9.0": PROTASIS_LEDGER.read_text(encoding="utf-8"),
+        }
+        for version, ledger in ledgers.items():
+            with self.subTest(version=version):
+                self.assertIn(f"- Current version: `{version}`", ledger)
+                latest = next(
+                    line
+                    for line in reversed(ledger.splitlines())
+                    if line.startswith("| `")
+                )
+                self.assertIn(f"| `{version}` | generation |", latest)
+                self.assertIn("skills#556", latest)
+                self.assertIn("ADR-006", latest)
+                self.assertIn("next-generation-after-integration-base", latest)
+
+    def test_issue_556_addendum_separates_relation_from_resolution(self):
+        record = ADR_006.read_text(encoding="utf-8")
+        addendum = record.split("## Issue 556 addendum", 1)[1]
+        self.assertIn("Accepted, 2026-08-28", addendum)
+        self.assertIn("skills#556", addendum)
+        self.assertIn("next-generation-after-integration-base", addendum)
+        self.assertIn("does not reserve a label", addendum)
+        self.assertIn("exact integration base", addendum)
+        self.assertIn("signed two-parent", addendum)
+        self.assertIn("fiat-integration-revalidation/v1", addendum)
+        self.assertIn("self-hosted", addendum)
 
     def test_observation_binding_is_optional_and_non_authorising(self):
         flat = " ".join(self.fiat.split())

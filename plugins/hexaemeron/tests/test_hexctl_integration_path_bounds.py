@@ -201,14 +201,23 @@ class IntegrationBoundTests(unittest.TestCase):
         at_limit = [f"runtime/file-{number:05d}.py" for number in range(limit)]
         over_limit = at_limit + [f"runtime/file-{limit:05d}.py"]
 
+        # The integration reader deliberately does not go through `bounded_git`:
+        # it reads native objects with rename detection and replacement off, so
+        # a repository's own configuration cannot shrink the surface a
+        # revalidation has to cover. The transport it does use is the
+        # substitution point here; the bound under test is unchanged.
         with mock.patch.object(
-            self.module, "bounded_git", return_value=self.diff_bytes(at_limit)
+            self.module,
+            "_native_relation_git",
+            return_value=self.diff_bytes(at_limit),
         ):
             accepted = self.module.git_diff_paths(str(ROOT), "a" * 40, "b" * 40)
         self.assertEqual(len(accepted), limit)
 
         with mock.patch.object(
-            self.module, "bounded_git", return_value=self.diff_bytes(over_limit)
+            self.module,
+            "_native_relation_git",
+            return_value=self.diff_bytes(over_limit),
         ):
             message = self.refusal(
                 self.module.git_diff_paths, str(ROOT), "a" * 40, "b" * 40

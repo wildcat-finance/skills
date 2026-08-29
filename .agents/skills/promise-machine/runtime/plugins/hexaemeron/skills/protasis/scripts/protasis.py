@@ -15,6 +15,8 @@ Runbook mode (the default):
   P004  more steps than the check will track, so the tail went unchecked
   P005  an appended runbook amendment is not one final dated four-field block
         carrying at least one complete replacement field
+  P006  an optional version-relations declaration is malformed, ambiguous, or
+        contradicted by a concrete version token elsewhere in the runbook
 
 Study mode (`--study`):
 
@@ -41,7 +43,10 @@ answer is any good: a Disciplines line naming the wrong gates and an Exit whose
 command proves nothing both pass. Judging an answer is the reviewer's job, and
 the study's non-goals say so. P002 is the closest to a judgement, and it is
 still only presence: a step carrying no code at all cannot have named a command,
-while a step carrying one may still have named the wrong one. The study mode
+while a step carrying one may still have named the wrong one. P006 settles the
+closed declaration shape and lexical target identity; it neither opens the
+declared ledgers nor decides whether the relation is suitable or which version
+it will resolve to. The study mode
 holds the same line: S002 refuses silence and a bare none, never a weak reason,
 and items 1 through 7 are checked for presence only, because "none, and here is
 why" is a complete answer solely for items 8 through 12. The register codes
@@ -134,6 +139,9 @@ COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 # A runbook is a document somebody handed over. Bound both axes.
 MAX_BYTES = 2 * 1024 * 1024
 MAX_STEPS = 500
+MAX_VERSION_RELATIONS = 32
+VERSION_RELATIONS_INFO = "version-relations"
+VERSION_RELATION = "next-generation-after-integration-base"
 
 
 class Finding:
@@ -310,6 +318,205 @@ def _replacement_fields(value: str) -> tuple[list[str], str | None]:
     return fields, None
 
 
+def _version_relation_blocks(
+    lines: list[str],
+) -> list[tuple[int, int, int, bool, bool]]:
+    """Return candidate relation blocks without accepting nested decoys.
+
+    Each tuple is opening line, first body line, last body line, exact info
+    string, and closed. A near declaration such as ``version-relations extra``
+    is retained so the checker refuses it instead of treating it as legacy
+    prose with no declaration. Two candidates are enough: the second proves
+    the closed one-block contract failed, so retaining further bodies would
+    turn an already bounded refusal into attacker-chosen memory use.
+    """
+    blocks: list[tuple[int, int, int, bool, bool]] = []
+    open_mark: str | None = None
+    open_length: int | None = None
+    relation_open: tuple[int, bool] | None = None
+    for number, line in enumerate(lines, start=1):
+        match = FENCE.match(line)
+        if match is None:
+            continue
+        sequence = match.group("mark")
+        mark = sequence[0]
+        tail = line[match.end():].strip()
+        if open_mark is None:
+            open_mark = mark
+            open_length = len(sequence)
+            words = tail.split()
+            relation_open = (
+                (number, tail == VERSION_RELATIONS_INFO)
+                if words and words[0] == VERSION_RELATIONS_INFO
+                else None
+            )
+            continue
+        if (
+            mark == open_mark
+            and len(sequence) >= open_length
+            and not tail
+        ):
+            if relation_open is not None:
+                opening, exact_info = relation_open
+                if len(blocks) < 2:
+                    blocks.append((
+                        opening, opening + 1, number - 1, exact_info, True,
+                    ))
+            open_mark = None
+            open_length = None
+            relation_open = None
+    if relation_open is not None:
+        opening, exact_info = relation_open
+        if len(blocks) < 2:
+            blocks.append((opening, opening + 1, len(lines), exact_info, False))
+    return blocks
+
+
+def _contains_nonprinting_character(value: str) -> bool:
+    """Cover C0, C1, and Unicode format controls at the text boundary."""
+    return any(not character.isprintable() for character in value)
+
+
+def _safe_relation_path(value: str, skill_id: str) -> str | None:
+    """Return a lexical path fault without opening a runbook-controlled path."""
+    parts = value.split("/")
+    if (
+        not value
+        or value.startswith(("/", "\\"))
+        or re.match(r"^[A-Za-z]:", value)
+        or "\\" in value
+        or any(part in ("", ".", "..") for part in parts)
+        or _contains_nonprinting_character(value)
+    ):
+        return "relation path is not a safe repository-relative path"
+    if len(parts) < 2 or parts[-1] != "EVOLUTION.md":
+        return "relation path must name an EVOLUTION.md file"
+    if parts[-2] != skill_id:
+        return "relation target id must match the skill directory before EVOLUTION.md"
+    return None
+
+
+def _version_relation_findings(path: Path, lines: list[str]) -> list[Finding]:
+    """Check the optional closed version relation declaration."""
+    blocks = _version_relation_blocks(lines)
+    if not blocks:
+        return []
+
+    findings: list[Finding] = []
+    if len(blocks) > 1:
+        findings.append(Finding(
+            path, blocks[1][0], "P006",
+            "runbook carries more than one version-relations block",
+        ))
+
+    first_step = next((
+        number for number, line, in_fence in _scan(lines)
+        if not in_fence and STEP.match(line)
+    ), None)
+    declared: set[str] = set()
+    seen_ids: set[str] = set()
+    seen_paths: set[str] = set()
+    inside_relation_block = bytearray(len(lines) + 1)
+
+    for opening, body_start, body_end, exact_info, closed in blocks[:1]:
+        last_block_line = body_end + (1 if closed else 0)
+        for number in range(opening, last_block_line + 1):
+            inside_relation_block[number] = 1
+        if not exact_info:
+            findings.append(Finding(
+                path, opening, "P006",
+                "version-relations fence must carry only that exact info string",
+            ))
+        if not closed:
+            findings.append(Finding(
+                path, opening, "P006", "version-relations block is not closed",
+            ))
+            continue
+        if first_step is not None and opening >= first_step:
+            findings.append(Finding(
+                path, opening, "P006",
+                "version-relations block must occur before Step 1",
+            ))
+
+        rows = lines[body_start - 1:body_end]
+        if not rows:
+            findings.append(Finding(
+                path, opening, "P006", "version-relations block carries no row",
+            ))
+            continue
+        if len(rows) > MAX_VERSION_RELATIONS:
+            findings.append(Finding(
+                path, opening, "P006",
+                f"version-relations block exceeds {MAX_VERSION_RELATIONS} rows",
+            ))
+        for offset, text in enumerate(rows[:MAX_VERSION_RELATIONS], start=body_start):
+            if not text.strip():
+                findings.append(Finding(
+                    path, offset, "P006", "version-relations row must not be blank",
+                ))
+                continue
+            if _contains_nonprinting_character(text):
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version-relations row contains a control character",
+                ))
+                continue
+            fields = [field.strip() for field in text.split("|")]
+            if len(fields) != 3 or any(not field for field in fields):
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version-relations row must carry three non-empty fields "
+                    "(skill id | EVOLUTION.md path | relation)",
+                ))
+                continue
+            skill_id, ledger_path, relation = fields
+            if not KEBAB.fullmatch(skill_id):
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version relation target id is not kebab-case",
+                ))
+                continue
+            if skill_id in seen_ids:
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version relation target id appears more than once",
+                ))
+            else:
+                seen_ids.add(skill_id)
+            if ledger_path in seen_paths:
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version relation path appears more than once",
+                ))
+            else:
+                seen_paths.add(ledger_path)
+            path_fault = _safe_relation_path(ledger_path, skill_id)
+            if path_fault:
+                findings.append(Finding(path, offset, "P006", path_fault))
+            if relation != VERSION_RELATION:
+                findings.append(Finding(
+                    path, offset, "P006",
+                    f"unknown version relation; expected {VERSION_RELATION!r}",
+                ))
+            if path_fault is None and relation == VERSION_RELATION:
+                declared.add(skill_id)
+
+    for skill_id in sorted(declared):
+        concrete = re.compile(
+            rf"(?<![A-Za-z0-9-]){re.escape(skill_id)}-v"
+            rf"\d+\.\d+\.\d+(?![A-Za-z0-9-])"
+        )
+        for number, line in enumerate(lines, start=1):
+            if not inside_relation_block[number] and concrete.search(line):
+                findings.append(Finding(
+                    path, number, "P006",
+                    "declared target has a concrete version token outside the "
+                    "version-relations block",
+                ))
+                break
+    return findings
+
+
 def _runbook_amendment_findings(path: Path, lines: list[str]) -> list[Finding]:
     """Check every real appended amendment without reading fenced decoys."""
     headings = [
@@ -381,10 +588,14 @@ def check(path: Path) -> list[Finding]:
     if lines is None:
         return [Finding(path, 1, "P000", "cannot be read as a runbook")]
 
-    findings: list[Finding] = _runbook_amendment_findings(path, lines)
+    findings: list[Finding] = _version_relation_findings(path, lines)
+    findings.extend(_runbook_amendment_findings(path, lines))
     spans, dropped = _spans(lines)
     if not spans:
-        return [Finding(path, 1, "P003", "no step found; expected a '## Step N: title' heading")]
+        findings.append(Finding(
+            path, 1, "P003", "no step found; expected a '## Step N: title' heading",
+        ))
+        return findings
     if dropped:
         findings.append(Finding(
             path, 1, "P004",

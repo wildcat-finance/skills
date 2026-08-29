@@ -60,9 +60,13 @@ def controller_module():
     return module
 
 
-def git_paths(before: str, after: str) -> list[str]:
+def git_paths(before: str, after: str, *, renames: bool = True) -> list[str]:
     raw = subprocess.run(
-        ["git", "diff", "--name-only", "-z", f"{before}..{after}", "--"],
+        [
+            "git", "diff", "--name-only", "-z",
+            *([] if renames else ["--no-renames"]),
+            f"{before}..{after}", "--",
+        ],
         cwd=ROOT,
         check=True,
         capture_output=True,
@@ -175,9 +179,23 @@ class IncidentAggregateTests(unittest.TestCase):
         aggregate accounting and its 1,024-file and 32 MiB ceilings, which is
         what the remaining acceptances exercise.
         """
+        # The version-1 reader disables rename detection, so a repository's
+        # own `diff.renames` cannot shrink the surface a revalidation has to
+        # cover. This delta carries one rename, so v1 sees the old path too and
+        # the artefact has to name it. The v2 aggregate reader still detects
+        # renames, which is why acceptance 2 keeps 1,095; that difference is
+        # recorded as a lead rather than settled here.
+        strict_composition = git_paths(
+            self.fixture["product_merge"],
+            self.fixture["sync_commit"],
+            renames=False,
+        )
+        strict_required = sorted(
+            set(strict_composition) | set(self.overlap_paths)
+        )
         artifact = {
             "schema": "fiat-integration-revalidation/v1",
-            "affected_paths": self.required_paths,
+            "affected_paths": strict_required,
             "checks": [],
         }
         error = self.refusal(artifact)
@@ -185,7 +203,7 @@ class IncidentAggregateTests(unittest.TestCase):
             self.fixture["entry_v1_refusal"]["stderr"],
             "hexctl: error: integration path delta exceeds 500 paths",
         )
-        self.assertLess(len(self.required_paths), self.module.INTEGRATION_PATHS_MAX)
+        self.assertLess(len(strict_required), self.module.INTEGRATION_PATHS_MAX)
         self.assertNotIn("exceeds 500 paths", error)
         self.assertIn("checks must be a non-empty array", error)
 
