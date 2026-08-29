@@ -273,6 +273,37 @@ class TestTheWholeSequence(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("not a probitas evidence file", result.stderr)
 
+    def test_evidence_the_renderer_refuses_exits_two(self):
+        # The load-time twin above guards the same contract. Rendering refuses
+        # later than loading does, so the caller has to hold both to the
+        # bounded diagnostic rather than letting one become a traceback.
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        path = os.path.join(directory.name, "empty-entity.json")
+        with open(path, "w", encoding="utf-8") as handle:
+            json.dump(
+                {
+                    "schema": 1,
+                    "subject": {
+                        "entity": "",
+                        "addresses": [
+                            {
+                                "address": "0x" + "11" * 20,
+                                "provenance": "declared",
+                            }
+                        ],
+                    },
+                    "records": [],
+                    "coverage": [],
+                    "gaps": [],
+                },
+                handle,
+            )
+        result = run("render", path, "--out", "-")
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn("subject entity is empty", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
     def test_the_dossier_puts_the_gaps_before_the_summary(self):
         _, dossier, _ = self.pipeline()
         with open(dossier, encoding="utf-8") as handle:
