@@ -5770,7 +5770,13 @@ def done_push(args, state: dict) -> None:
         merge_verified = verify_github_commits(args.dir, [args.merge_commit])
     step["receipts"]["push"] = {
         "pr_url": args.pr_url,
-        "head_commit": args.head_commit,
+        # The resolved identity, not the argument. `--head-commit` accepts any
+        # ref git resolves, including an abbreviated SHA, and the merge-order
+        # check at integration compares this value to a full branch tip. Storing
+        # what was typed lets a short SHA read as a rewritten branch five steps
+        # later, with no way back: `done push` refuses once the run has left the
+        # steps phase, and the ledger is append-only.
+        "head_commit": supplied_head,
         "pr_base": args.pr_base,
         "merge_commit": args.merge_commit,
         "closed_issue_url": args.closed_issue_url,
@@ -6951,6 +6957,21 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
         except SystemExit:
             unreadable.append(f"step {number} ('{branch}')")
             continue
+        if tip != recorded and len(recorded) < 40:
+            # An abbreviated receipt is an older receipt format, not a moved
+            # branch: `--head-commit` accepts any ref git resolves, and receipts
+            # written before that value was stored resolved hold whatever was
+            # passed. Resolve and ask again, so the check answers whether this
+            # is the commit that was pushed rather than whether two strings
+            # match. Only reached when they differ, so a full-length receipt
+            # never shells out.
+            try:
+                recorded = resolved_commit(
+                    base_dir, recorded, f"step {number} recorded push head"
+                )
+            except SystemExit:
+                unreadable.append(f"step {number} ('{branch}', recorded {recorded})")
+                continue
         if tip != recorded:
             moved.append(
                 f"step {number} ('{branch}') is at {tip} and its push receipt "
