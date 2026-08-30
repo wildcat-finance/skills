@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.40.1"
+  version: "5.41.1"
 ---
 
 <p align="center">
@@ -563,6 +563,14 @@ upload the step checkpoint the `Step checkpoint` section of
 export command's manifest SHA-256 outside the capsule for checked restore.
 
 **Integrate.** Once every step is pushed, the stack comes down in order.
+Before each merge, an unchanged waiting head passes without a relation process.
+An unequal waiting tip passes topology only when a bounded native
+`merge-base --is-ancestor` says its receipted head remains in history; a
+non-ancestor or an unanswered relation refuses without asserting an unobserved
+cause. The current step still earns complete live-range local signature,
+provenance, GitHub verification, author, and committer evidence under
+`effective_push`. Ancestry supplies none of it and never rewrites the original
+push receipt.
 Before the run is recorded as integrated, every primary author its push
 receipts recorded has to remain attributable from the recorded merge, and the
 receipt records which mechanism carried it. The separately recorded committer
@@ -763,9 +771,9 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-receipted-delivery
 
 - Promise: A successful `hexctl verify` establishes that the controller state has the required version-1 container shape, the state and append-only ledger agree, and every recorded phase transition occurred in the required order with the required receipt shape.
-- Evidence: The ordered state-container check, hash-chained init event with its exact run-worktree starting commit, post-init configuration write allowlist, exact study and runbook receipts, step branches and locally verified commit ranges, GitHub-verified pushed commits and merge SHAs, separately recorded GitHub author and committer identities for pushed commits, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
+- Evidence: The ordered state-container check, hash-chained init event with its exact run-worktree starting commit, post-init configuration write allowlist, exact study and runbook receipts, step branches and locally verified commit ranges, bounded native waiting-head ancestry admission, merge-time `effective_push` evidence for a changed live range, GitHub-verified pushed commits and merge SHAs, separately recorded GitHub author and committer identities for pushed commits, preserved product-receipt digests and the bounded integration-revalidation receipt when a completed run syncs with an advanced base, audit rounds, prose and push receipts, hash-chained ledger, controller version and zero-exit verification result.
 - Evidence classes: checked, recorded
-- Boundary: Controller verification proves the required container shape, receipt order, integrity, checked audit-entry structure, the recorded receipt-time synopsis check, the recorded local and GitHub signature checks, and the author and committer identities GitHub returned; it does not establish current working-tree currency, establish that audit prose or coverage judgements are true, make the lossy synopsis authoritative, validate other heterogeneous leaf values, prove a test summary, implementation claim, signer or publisher authority beyond those checks, identify the actor who pushed the bytes, or turn user authority merely written into a receipt into evidence.
+- Boundary: Controller verification proves the required container shape, receipt order, integrity, checked audit-entry structure, the recorded receipt-time synopsis check, the recorded local and GitHub signature checks, and the author and committer identities GitHub returned. Waiting-head ancestry establishes topology only; it does not establish a signature, trailer, GitHub identity, author, committer, publisher, or cause for a moved branch. Verification also does not establish current working-tree currency, establish that audit prose or coverage judgements are true, make the lossy synopsis authoritative, validate other heterogeneous leaf values, prove a test summary, implementation claim, signer or publisher authority beyond those checks, identify the actor who pushed the bytes, or turn user authority merely written into a receipt into evidence.
 - Authorises: Advancing only to the single next controller directive and reporting the recorded workflow state without strengthening any underlying receipt.
 - Consequence: 2
 - Refuses: Skipping a phase, rewriting post-init configuration outside `audit.log_path` and `git`, reconstructing progress from chat, accepting a malformed or missing receipt, or describing an unrun check as complete.
