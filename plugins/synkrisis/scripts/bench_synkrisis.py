@@ -31,6 +31,12 @@ import synkrisis  # noqa: E402  (sibling module, loaded by fixed path)
 SPEC_SCHEMA = "synkrisis-scale-fixture/v1"
 
 
+def peak_rss_mib(raw_peak: int, platform_name: str) -> int:
+    """Normalise getrusage's platform-dependent maximum RSS unit to MiB."""
+    divisor = 1024 * 1024 if platform_name == "darwin" else 1024
+    return raw_peak // divisor
+
+
 def load_spec(path: Path):
     document = json.loads(path.read_text(encoding="utf-8"))
     expected = {"schema", "runs", "events_per_run", "seed"}
@@ -229,7 +235,10 @@ def main(argv=None):
             started = time.monotonic()
             run_path(workspace, rules)
             durations.append(time.monotonic() - started)
-    peak_rss_mib = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss // 1024
+    observed_peak_rss_mib = peak_rss_mib(
+        resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,
+        sys.platform,
+    )
 
     result = {
         "fixture_spec_sha256": spec_digest,
@@ -240,11 +249,14 @@ def main(argv=None):
         "repetitions": len(durations),
         "max_seconds_observed": round(max(durations), 3),
         "max_seconds_budget": arguments.max_seconds,
-        "peak_rss_mib": peak_rss_mib,
+        "peak_rss_mib": observed_peak_rss_mib,
         "max_rss_mib_budget": arguments.max_rss_mib,
     }
     print(json.dumps(result, sort_keys=True, separators=(",", ":")))
-    if max(durations) > arguments.max_seconds or peak_rss_mib > arguments.max_rss_mib:
+    if (
+        max(durations) > arguments.max_seconds
+        or observed_peak_rss_mib > arguments.max_rss_mib
+    ):
         print("refused: the recorded budget was exceeded")
         return 1
     return 0

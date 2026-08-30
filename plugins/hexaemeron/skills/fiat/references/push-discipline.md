@@ -436,7 +436,9 @@ rebase or rewrite the signed stack. Fetch the exact remote base tip, merge it
 into the run branch once with `--no-ff`, resolve only the reported conflicts,
 and sign that merge with the two exact provenance trailers. Its first parent
 must be the final recorded step merge and its second parent the supplied base
-tip. Push it, require GitHub `verified: true` with `reason: valid`, then record
+tip. Never settle a shared registry by taking the complete `ours` or `theirs`
+side. Inspect its product and base entries and preserve the intended union.
+Push it, require GitHub `verified: true` with `reason: valid`, then record
 the exact topology and bounded composition checks before the integration pull
 request merges:
 
@@ -445,6 +447,13 @@ hexctl done sync-run --commit <signed merge sha> \
   --base-commit <remote base sha> \
   --revalidation .hexaemeron/integration-revalidation.json
 ```
+
+The controller compares the product, base and sync tree entries for every path
+both parents changed. If the sync takes either complete parent entry, it names
+the path and refuses until the operator repeats
+`--acknowledge-sync-path <path>` for the exact sorted set. This is an inspection
+receipt, not proof that one side was correct; revalidation still has to cover
+the path.
 
 The controller compares both remote tips, reads the two parents, verifies the
 local signature and trailers, and checks GitHub's result. One active sync is
@@ -476,6 +485,13 @@ hexctl done sync-run --commit <replacement signed merge sha> \
   --supersede-sync <active sync sha> \
   --reason "<failed composition check and repair>"
 ```
+
+A rebuild has a second mandatory review set. Fiat intersects the paths the old
+composition changed with the paths changed by the old-base to current-base
+advance. Repeat `--acknowledge-sync-path` for every path it names, even when the
+new tree is a semantic union: the old merge may have carried a manual repair
+that exists in neither parent. Missing, extra, duplicate or unsorted flags
+refuse before a receipt is written.
 
 Fiat requires the exact active SHA, a bounded reason, fresh topology,
 signatures, GitHub verification and revalidation. It retains every superseded

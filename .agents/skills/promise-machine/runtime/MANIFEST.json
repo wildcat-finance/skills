@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 994,
-  "total_bytes": 21518329,
+  "total_bytes": 21551971,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1911,15 +1911,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 50352,
+      "bytes": 53576,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "4f1efc513e7d200fa2554273d1be00a04ff4a22e67fc4a50da72d6a635b4b413",
+      "sha256": "741a35ddc00cc032ea6a0eb375cbe5732558bb456555b6b5abf9f880daa90e4b",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 63009,
+      "bytes": 64094,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "2bf5e819f4c3695ae9ad0f2e8d6a541ad77ba50b8f171051a5130c19039b9086",
+      "sha256": "f8c03136c846618daf2baf725abb9cb954a35e3bea543cadba521065cf5d6130",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1953,9 +1953,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/prose-pass.md"
     },
     {
-      "bytes": 33246,
+      "bytes": 34195,
       "path": "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
-      "sha256": "cc0c5a9d9fd1ec169037e3b59ec19e135b1551c8888cd3da0ac3e5bf96b5ae8e",
+      "sha256": "c648de4b406df0e0685c527435191ccd7d8ba548f02d297a95d3ecb9303b4b0b",
       "source": "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
     },
     {
@@ -1971,9 +1971,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/xray-reuse.md"
     },
     {
-      "bytes": 46770,
+      "bytes": 46847,
       "path": "plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py",
-      "sha256": "2972258d0c363bee0cc7e97668da96bcbb5ea19421fc278eefdae60ddcde9d75",
+      "sha256": "34e639a4f14856b16c27c382117b25191e357b249e5e3373f975c939d3c41c1b",
       "source": "plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py"
     },
     {
@@ -1983,9 +1983,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 514533,
+      "bytes": 525712,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "a9a28e3e22cb99ddb0f25a90aff0b8b3286d7734f590a281c498ee8b2e2bf4a1",
+      "sha256": "0f43cb71f03d2333642ed279c04db3c5d392422800e06788d1242c31ef3dbd7e",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
@@ -2619,15 +2619,15 @@
       "source": "plugins/hexaemeron/skills/metron/scripts/metron.py"
     },
     {
-      "bytes": 2983,
+      "bytes": 3500,
       "path": "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
-      "sha256": "0ebd24ade9b2db09fa5992370e3cb60b2c2193154181dd36c54ea2c4c0cad67a",
+      "sha256": "5bcc5d1e3846f64ad0ea89177eeb309a989a8918f4c68726b7534d3ef551904c",
       "source": "plugins/hexaemeron/skills/phylax/EVOLUTION.md"
     },
     {
-      "bytes": 23458,
+      "bytes": 24141,
       "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-      "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d",
+      "sha256": "945c6d103fb333cba8436d860f94aca67f3903083ed6ff79067b96a0c15669f8",
       "source": "plugins/hexaemeron/skills/phylax/SKILL.md"
     },
     {
@@ -2721,9 +2721,9 @@
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py"
     },
     {
-      "bytes": 31593,
+      "bytes": 46574,
       "path": "plugins/hexaemeron/skills/phylax/scripts/phylax.py",
-      "sha256": "52a77227d9489039ec0c85b4deea7eb66c82998a2a26336c99a2668a426102fa",
+      "sha256": "a8c998c586ebc0d3d7ac59fc1867a4b54b5d482f34e1b96aea75a0e4d41cafda",
       "source": "plugins/hexaemeron/skills/phylax/scripts/phylax.py"
     },
     {
@@ -5589,9 +5589,9 @@
       "source": "plugins/synkrisis/references/rules-v1.json"
     },
     {
-      "bytes": 8766,
+      "bytes": 9094,
       "path": "plugins/synkrisis/scripts/bench_synkrisis.py",
-      "sha256": "36654fe2369fda03188c1e8be18d91c5a576377966da7f48264518ecf45de518",
+      "sha256": "966e79a020edf89dcf72175f4228c5ac1937abf9fdc4a427e982d1b082c7bf54",
       "source": "plugins/synkrisis/scripts/bench_synkrisis.py"
     },
     {
@@ -5601,15 +5601,15 @@
       "source": "plugins/synkrisis/scripts/synkrisis.py"
     },
     {
-      "bytes": 6096,
+      "bytes": 6715,
       "path": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md",
-      "sha256": "e0a66fb126a60cbc2ba86eb9eda4366150a80ecfcbbd4607ef8174786be71013",
+      "sha256": "5d42111c26d7debb2ff496b5514b82a16f3d3e951545c986955907473b64d97d",
       "source": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md"
     },
     {
       "bytes": 13283,
       "path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-      "sha256": "c7554b77521df9fefeb63f2cc13443bb7924edd9cd5d2107722f94114c932398",
+      "sha256": "5b6e0c65644de57f87c16d6e4520ed5112f0a917f1c751cf8d3c690cf78f15eb",
       "source": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {

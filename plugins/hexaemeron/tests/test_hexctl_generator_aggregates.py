@@ -1,7 +1,8 @@
 """Issue 710: one checked sync transition across a generator-owned payload.
 
-The incident fixture is a deterministic reconstruction from the reachable Git
-objects. The original ignored operator artefact is not treated as evidence.
+The incident's counts and ownership topology are reconstructed without relying
+on unreachable repository objects. The aggregate validator still consumes 887
+real in-memory file records and their manifest, blob and tree digests.
 """
 
 from __future__ import annotations
@@ -11,11 +12,10 @@ import hashlib
 import importlib.util
 import json
 import os
-import subprocess
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stderr
+from contextlib import contextmanager, redirect_stderr
 from io import StringIO
 from pathlib import Path
 from types import SimpleNamespace
@@ -60,42 +60,174 @@ def controller_module():
     return module
 
 
-def git_paths(before: str, after: str, *, renames: bool = True) -> list[str]:
-    raw = subprocess.run(
-        [
-            "git", "diff", "--name-only", "-z",
-            *([] if renames else ["--no-renames"]),
-            f"{before}..{after}", "--",
-        ],
-        cwd=ROOT,
-        check=True,
-        capture_output=True,
-    ).stdout
-    return sorted(value.decode("utf-8") for value in raw.split(b"\0") if value)
-
-
 def inventory_digest(paths: list[str]) -> str:
     return hashlib.sha256("".join(path + "\n" for path in paths).encode()).hexdigest()
 
 
+def incident_topology(prefix: str) -> dict[str, list[str]]:
+    overlap = [f"incident/shared-{index:04d}.txt" for index in range(5)]
+    product = sorted(
+        overlap + [f"incident/product-{index:04d}.txt" for index in range(48)]
+    )
+    upstream = sorted(
+        overlap + [f"incident/upstream-{index:04d}.txt" for index in range(1082)]
+    )
+    owned = sorted(
+        [prefix + "MANIFEST.json"]
+        + [prefix + f"payload/{index:04d}.txt" for index in range(886)]
+    )
+    outside = sorted(
+        overlap + [f"incident/outside-{index:04d}.txt" for index in range(203)]
+    )
+    composition = sorted(owned + outside)
+    return {
+        "product_paths": product,
+        "upstream_paths": upstream,
+        "overlap_paths": overlap,
+        "composition_paths": composition,
+        "required_paths": sorted(set(composition) | set(overlap)),
+        "aggregate_owned_paths": owned,
+        "outside_paths": outside,
+    }
+
+
+def incident_aggregate(module, prefix: str) -> tuple[str, list[dict], dict[str, bytes], dict]:
+    payload = []
+    blobs = {}
+    for index in range(886):
+        relative = f"payload/{index:04d}.txt"
+        data = f"payload-{index:04d}\n".encode()
+        blobs[prefix + relative] = data
+        payload.append(
+            {
+                "bytes": len(data),
+                "path": relative,
+                "sha256": hashlib.sha256(data).hexdigest(),
+                "source": "incident-structure",
+            }
+        )
+    document = {
+        "schema": "promise-machine-portable-runtime/v1",
+        "contract": "promise-machine/v1",
+        "generated_by": "scripts/portable_promise_machine.py",
+        "file_count": len(payload),
+        "total_bytes": sum(item["bytes"] for item in payload),
+        "omissions": [],
+        "files": payload,
+    }
+    manifest = (
+        json.dumps(document, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode()
+    blobs[prefix + "MANIFEST.json"] = manifest
+    rows = [
+        {
+            "path": path,
+            "mode": "100644",
+            "object": hashlib.sha1(blobs[path], usedforsecurity=False).hexdigest(),
+        }
+        for path in sorted(blobs)
+    ]
+    tree_id = hashlib.sha1(
+        "".join(
+            f"{row['mode']} {row['object']} {row['path']}\n" for row in rows
+        ).encode(),
+        usedforsecurity=False,
+    ).hexdigest()
+    file_digests = []
+    for row in rows:
+        data = blobs[row["path"]]
+        digest = hashlib.sha256(data).hexdigest()
+        file_digests.append(
+            hashlib.sha256(
+                module.GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN
+                + row["path"].encode()
+                + b"\0"
+                + row["mode"].encode()
+                + b"\0"
+                + str(len(data)).encode()
+                + b"\0"
+                + digest.encode()
+            ).digest()
+        )
+    tree_digest = hashlib.sha256(
+        module.GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN + b"".join(file_digests)
+    ).hexdigest()
+    aggregate = {
+        "manifest_sha256": hashlib.sha256(manifest).hexdigest(),
+        "file_count": len(rows),
+        "tree_sha256": tree_digest,
+        "git_tree": tree_id,
+        "payload_file_count": len(payload),
+        "payload_total_bytes": sum(item["bytes"] for item in payload),
+        "total_bytes": sum(len(data) for data in blobs.values()),
+    }
+    return tree_id, rows, blobs, aggregate
+
+
 class IncidentAggregateTests(unittest.TestCase):
-    """The five issue acceptance groups, using the exact reachable topology."""
+    """The five issue acceptance groups, using the recorded incident topology."""
 
     @classmethod
     def setUpClass(cls):
         cls.module = controller_module()
         cls.fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
         fixture = cls.fixture
-        cls.product_paths = git_paths(fixture["merge_base"], fixture["product_merge"])
-        cls.upstream_paths = git_paths(fixture["merge_base"], fixture["base_head"])
-        cls.overlap_paths = sorted(set(cls.product_paths) & set(cls.upstream_paths))
-        cls.composition_paths = git_paths(
-            fixture["product_merge"], fixture["sync_commit"]
+        topology = incident_topology(fixture["aggregate"]["prefix"])
+        cls.product_paths = topology["product_paths"]
+        cls.upstream_paths = topology["upstream_paths"]
+        cls.overlap_paths = topology["overlap_paths"]
+        cls.composition_paths = topology["composition_paths"]
+        cls.strict_composition_paths = sorted(
+            cls.composition_paths + ["incident/renamed-source.txt"]
         )
-        cls.required_paths = sorted(set(cls.composition_paths) | set(cls.overlap_paths))
-        prefix = fixture["aggregate"]["prefix"]
-        cls.owned_paths = [path for path in cls.required_paths if path.startswith(prefix)]
-        cls.outside_paths = sorted(set(cls.required_paths) - set(cls.owned_paths))
+        cls.required_paths = topology["required_paths"]
+        cls.owned_paths = topology["aggregate_owned_paths"]
+        cls.outside_paths = topology["outside_paths"]
+        (
+            cls.aggregate_tree_id,
+            cls.aggregate_rows,
+            cls.aggregate_blobs,
+            cls.computed_aggregate,
+        ) = incident_aggregate(cls.module, fixture["aggregate"]["prefix"])
+
+    @contextmanager
+    def incident_repository(self):
+        with (
+            mock.patch.object(
+                self.module,
+                "merge_base_commit",
+                return_value=self.fixture["merge_base"],
+            ),
+            mock.patch.object(
+                self.module,
+                "git_diff_paths_for_aggregates",
+                side_effect=[
+                    list(self.product_paths),
+                    list(self.upstream_paths),
+                    list(self.composition_paths),
+                ],
+            ),
+            mock.patch.object(
+                self.module,
+                "git_diff_paths",
+                side_effect=[
+                    list(self.product_paths),
+                    list(self.upstream_paths),
+                    list(self.strict_composition_paths),
+                ],
+            ),
+            mock.patch.object(
+                self.module,
+                "_git_aggregate_tree",
+                return_value=(self.aggregate_tree_id, self.aggregate_rows),
+            ),
+            mock.patch.object(
+                self.module,
+                "_git_batch_blobs",
+                return_value=self.aggregate_blobs,
+            ),
+        ):
+            yield
 
     def aggregate(self):
         return {
@@ -131,13 +263,14 @@ class IncidentAggregateTests(unittest.TestCase):
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
                 json.dump(artifact, handle)
-            record = self.module.integration_revalidation_record(
-                str(ROOT),
-                os.path.relpath(path, ROOT),
-                self.fixture["product_merge"],
-                self.fixture["base_head"],
-                self.fixture["sync_commit"],
-            )
+            with self.incident_repository():
+                record = self.module.integration_revalidation_record(
+                    str(ROOT),
+                    os.path.relpath(path, ROOT),
+                    self.fixture["product_merge"],
+                    self.fixture["base_head"],
+                    self.fixture["sync_commit"],
+                )
             return record
         finally:
             Path(path).unlink(missing_ok=True)
@@ -167,6 +300,8 @@ class IncidentAggregateTests(unittest.TestCase):
             self.fixture["inventory_sha256"],
             {name: inventory_digest(paths) for name, paths in inventories.items()},
         )
+        for key, value in self.computed_aggregate.items():
+            self.assertEqual(self.fixture["aggregate"][key], value)
 
     def test_acceptance_1_v1_no_longer_refuses_the_incident_on_its_count(self):
         """Issue 774 moved this. The fixture keeps what the entry controller did.
@@ -185,13 +320,8 @@ class IncidentAggregateTests(unittest.TestCase):
         # the artefact has to name it. The v2 aggregate reader still detects
         # renames, which is why acceptance 2 keeps 1,095; that difference is
         # recorded as a lead rather than settled here.
-        strict_composition = git_paths(
-            self.fixture["product_merge"],
-            self.fixture["sync_commit"],
-            renames=False,
-        )
         strict_required = sorted(
-            set(strict_composition) | set(self.overlap_paths)
+            set(self.strict_composition_paths) | set(self.overlap_paths)
         )
         artifact = {
             "schema": "fiat-integration-revalidation/v1",
@@ -222,6 +352,12 @@ class IncidentAggregateTests(unittest.TestCase):
 
     def test_acceptance_2_v2_sync_receipt_survives_done_integrate(self):
         artifact = self.v2_artifact()
+        resolution_guard = {
+            "schema": "fiat-sync-resolution-guard/v1",
+            "side_selected_paths": [],
+            "superseded_intersection_paths": [],
+            "acknowledged_paths": [],
+        }
         descriptor, path = scratch_directory(".fiat-710-transition-")
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
@@ -257,6 +393,7 @@ class IncidentAggregateTests(unittest.TestCase):
             )
             events = []
             with (
+                self.incident_repository(),
                 mock.patch.object(self.module, "verify_run"),
                 mock.patch.object(
                     self.module, "_integrate_directive", return_value={"do": "integrate"}
@@ -268,10 +405,21 @@ class IncidentAggregateTests(unittest.TestCase):
                 ),
                 mock.patch.object(
                     self.module,
-                    "commit_parents",
+                    "_native_relation_repository_identity",
+                    return_value="incident-repository",
+                ),
+                mock.patch.object(self.module, "_require_native_relation_history"),
+                mock.patch.object(
+                    self.module,
+                    "_native_relation_parents",
                     return_value=[self.fixture["product_merge"], self.fixture["base_head"]],
                 ),
                 mock.patch.object(self.module, "verify_local_commit"),
+                mock.patch.object(
+                    self.module,
+                    "sync_resolution_guard_record",
+                    return_value=resolution_guard,
+                ),
                 mock.patch.object(
                     self.module,
                     "verify_github_commits",
@@ -290,6 +438,9 @@ class IncidentAggregateTests(unittest.TestCase):
             self.assertEqual(
                 state["integrate"]["sync"]["revalidation"]["required_path_count"],
                 1095,
+            )
+            self.assertEqual(
+                state["integrate"]["sync"]["resolution_guard"], resolution_guard
             )
 
             integrate_args = SimpleNamespace(
@@ -316,6 +467,11 @@ class IncidentAggregateTests(unittest.TestCase):
                 mock.patch.object(
                     self.module, "verify_github_commits", return_value=["a" * 40]
                 ),
+                mock.patch.object(
+                    self.module,
+                    "sync_resolution_guard_record",
+                    return_value=resolution_guard,
+                ),
                 mock.patch.object(self.module, "merged_attribution", return_value={}),
                 mock.patch.object(self.module, "carried_forward_record", return_value=[]),
                 mock.patch.object(self.module, "commit"),
@@ -325,6 +481,10 @@ class IncidentAggregateTests(unittest.TestCase):
             self.assertEqual(
                 state["receipts"]["integrate"]["sync"]["revalidation"]["schema"],
                 "fiat-integration-revalidation/v2",
+            )
+            self.assertEqual(
+                state["receipts"]["integrate"]["sync"]["resolution_guard"],
+                resolution_guard,
             )
         finally:
             Path(path).unlink(missing_ok=True)

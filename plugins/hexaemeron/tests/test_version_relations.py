@@ -459,6 +459,14 @@ class VersionRelationTests(HexctlCase):
                     }
                 ],
             },
+            "resolution_guard": module.sync_resolution_guard_record(
+                self.target,
+                product_head,
+                concurrent_base,
+                sync_head,
+                current_sync=None,
+                acknowledgements=[],
+            ),
         }
         with mock.patch.object(
             module, "verify_local_commit", return_value=sync_head
@@ -1132,6 +1140,12 @@ class VersionRelationTests(HexctlCase):
                     }
                 ],
             },
+            "resolution_guard": {
+                "schema": module.SYNC_RESOLUTION_GUARD_SCHEMA,
+                "side_selected_paths": [],
+                "superseded_intersection_paths": [],
+                "acknowledged_paths": [],
+            },
         }
         return module, state, relation, sync, product_head, base_commit, sync_head
 
@@ -1160,6 +1174,11 @@ class VersionRelationTests(HexctlCase):
             mock.patch.object(module, "verify_local_commit", return_value=sync_head),
             mock.patch.object(
                 module, "_native_relation_diff_paths", return_value=paths
+            ),
+            mock.patch.object(
+                module,
+                "_require_sync_resolution_guard",
+                return_value=sync["resolution_guard"],
             ),
         ):
             module._require_resolution_sync(
@@ -1262,6 +1281,11 @@ class VersionRelationTests(HexctlCase):
             mock.patch.object(
                 module, "verify_local_commit", return_value=sync_head
             ) as verify,
+            mock.patch.object(
+                module,
+                "_require_sync_resolution_guard",
+                return_value=sync["resolution_guard"],
+            ),
         ):
             module._require_resolution_sync(
                 self.target,

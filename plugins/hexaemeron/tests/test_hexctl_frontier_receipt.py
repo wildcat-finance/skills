@@ -284,6 +284,7 @@ class FrontierReceiptCase(HexctlCase):
                 "github_verified",
                 "product_evidence",
                 "revalidation",
+                "resolution_guard",
             },
         )
 
