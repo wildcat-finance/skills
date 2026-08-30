@@ -641,6 +641,26 @@ class RenderingTests(TemporaryRepositoryTestCase):
         with self.assertRaisesRegex(dead_code.Refusal, "unreported analyser"):
             dead_code.validate_report(report)
 
+    def test_boolean_record_telemetry_is_not_an_integer(self):
+        base = self._report()
+        status = dead_code.AnalyserStatus(
+            "repository",
+            "ran",
+            "repository-graph/1",
+            "done",
+            (
+                dead_code.AnalyserRecord(
+                    "fixture",
+                    "family",
+                    "parsed",
+                    "done",
+                    True,
+                ),
+            ),
+        )
+        with self.assertRaisesRegex(dead_code.Refusal, "invalid record"):
+            dead_code.validate_report(dead_code.Report(base.universe, (status,), ()))
+
     def test_candidate_count_does_not_change_the_report_exit_contract(self):
         base = self._report()
         status = dead_code.AnalyserStatus("python", "ran", "1", "done")
@@ -1203,6 +1223,482 @@ class PythonAnalyserTests(TemporaryRepositoryTestCase):
             }
         )
         self.assertFalse(any(item.symbol == "values.item@2" for item in findings))
+
+
+class RepositoryAnalyserTests(TemporaryRepositoryTestCase):
+    @staticmethod
+    def _check_map(*, checks=None, scopes=None):
+        return json.dumps(
+            {
+                "schema": "wildcat.check-map.v1",
+                "checks": {} if checks is None else checks,
+                "groups": {},
+                "scopes": {} if scopes is None else scopes,
+            },
+            sort_keys=True,
+        ) + NL
+
+    def _analyse(self, files):
+        build_repository(self.root, files=files)
+        universe = dead_code.discover(self.root)
+        return universe, dead_code.analyse_repository(self.root, universe)
+
+    @staticmethod
+    def _family_findings(findings, family):
+        return [item for item in findings if item.symbol and item.symbol.startswith(f"{family}:")]
+
+    def test_unreferenced_fixture_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"tests/fixtures/orphan.json": "{}" + NL, "README.md": "root" + NL}
+        )
+        self.assertEqual(
+            [item.path for item in self._family_findings(findings, "fixture")],
+            ["tests/fixtures/orphan.json"],
+        )
+
+    def test_literal_fixture_reference_retains_it(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "tests/fixtures/live.json": "{}" + NL,
+                "tests/test_live.py": "FIXTURE = 'tests/fixtures/live.json'" + NL,
+            }
+        )
+        self.assertFalse(self._family_findings(findings, "fixture"))
+
+    def test_unreferenced_schema_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"schemas/orphan.schema.json": "{}" + NL, "README.md": "root" + NL}
+        )
+        self.assertEqual(
+            [item.path for item in self._family_findings(findings, "schema")],
+            ["schemas/orphan.schema.json"],
+        )
+
+    def test_markdown_schema_link_retains_it(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "schemas/live.schema.json": "{}" + NL,
+                "README.md": "[schema](schemas/live.schema.json)" + NL,
+            }
+        )
+        self.assertFalse(self._family_findings(findings, "schema"))
+
+    def test_unreferenced_document_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"docs/orphan.md": "# orphan" + NL, "README.md": "root" + NL}
+        )
+        self.assertEqual(
+            [item.path for item in self._family_findings(findings, "document")],
+            ["docs/orphan.md"],
+        )
+
+    def test_markdown_document_link_retains_it(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "docs/live.md": "# live" + NL,
+                "README.md": "[live](docs/live.md)" + NL,
+            }
+        )
+        self.assertFalse(self._family_findings(findings, "document"))
+
+    def test_unreferenced_cli_target_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"scripts/orphan.py": "print('orphan')" + NL, "README.md": "root" + NL}
+        )
+        self.assertEqual(
+            [item.path for item in self._family_findings(findings, "cli")],
+            ["scripts/orphan.py"],
+        )
+
+    def test_check_map_cli_declaration_retains_target(self):
+        check_map = self._check_map(
+            checks={"live": {"argv": ["python3", "scripts/live.py"]}},
+            scopes={"root": {"checks": ["live"]}},
+        )
+        _universe, (_status, findings) = self._analyse(
+            {"scripts/live.py": "print('live')" + NL, "tests/check-map-v1.json": check_map}
+        )
+        self.assertFalse(self._family_findings(findings, "cli"))
+
+    def test_unreferenced_generated_copy_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "copies/law.md": "<!-- canonical=PROMISE_MACHINE.md; copies=generated -->" + NL,
+                "PROMISE_MACHINE.md": "law" + NL,
+            }
+        )
+        self.assertEqual(
+            [item.path for item in self._family_findings(findings, "generated-copy")],
+            ["copies/law.md"],
+        )
+
+    def test_canonical_generated_copy_reference_retains_it(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "copies/law.md": "<!-- canonical=PROMISE_MACHINE.md; copies=generated -->" + NL,
+                "PROMISE_MACHINE.md": "[copy](copies/law.md)" + NL,
+            }
+        )
+        self.assertFalse(self._family_findings(findings, "generated-copy"))
+
+    def test_unreferenced_router_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                ".agents/skills/orphan/SKILL.md": "---" + NL + "name: orphan" + NL + "---" + NL,
+                "README.md": "root" + NL,
+            }
+        )
+        self.assertEqual(
+            [item.path for item in self._family_findings(findings, "router")],
+            [".agents/skills/orphan/SKILL.md"],
+        )
+
+    def test_portable_promise_machine_router_is_an_external_root(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                ".agents/skills/promise-machine/SKILL.md": "---" + NL + "name: promise-machine" + NL + "---" + NL,
+                "README.md": "root" + NL,
+            }
+        )
+        self.assertFalse(self._family_findings(findings, "router"))
+
+    def test_unreferenced_manifest_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"orphan/plugin.json": "{}" + NL, "README.md": "root" + NL}
+        )
+        self.assertEqual(
+            [item.path for item in self._family_findings(findings, "manifest")],
+            ["orphan/plugin.json"],
+        )
+
+    def test_host_manifest_is_an_external_root(self):
+        _universe, (_status, findings) = self._analyse(
+            {".codex-plugin/plugin.json": "{}" + NL, "README.md": "root" + NL}
+        )
+        self.assertFalse(self._family_findings(findings, "manifest"))
+
+    def test_unscoped_check_map_object_is_reported(self):
+        check_map = self._check_map(
+            checks={"orphan": {"argv": ["python3", "-V"]}},
+            scopes={"root": {"checks": []}},
+        )
+        _universe, (_status, findings) = self._analyse(
+            {"tests/check-map-v1.json": check_map, "README.md": "root" + NL}
+        )
+        self.assertEqual(
+            [item.symbol for item in self._family_findings(findings, "check-map")],
+            ["check-map:check:orphan"],
+        )
+
+    def test_scoped_check_map_object_is_retained(self):
+        check_map = self._check_map(
+            checks={"live": {"argv": ["python3", "-V"]}},
+            scopes={"root": {"checks": ["live"]}},
+        )
+        _universe, (_status, findings) = self._analyse(
+            {"tests/check-map-v1.json": check_map, "README.md": "root" + NL}
+        )
+        self.assertFalse(self._family_findings(findings, "check-map"))
+
+    def test_computed_reference_lowers_confidence_and_names_boundary(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "tests/fixtures/orphan.json": "{}" + NL,
+                "tests/test_dynamic.py": "target = Path('tests/fixtures') / name" + NL,
+            }
+        )
+        candidate = self._family_findings(findings, "fixture")[0]
+        self.assertEqual(candidate.confidence, "low")
+        self.assertIn("computed-path", candidate.false_positive_boundary)
+        self.assertIn("tests/test_dynamic.py", candidate.false_positive_boundary)
+
+    def test_family_record_names_parsed_edge_set_and_computed_boundary_count(self):
+        _universe, (status, _findings) = self._analyse(
+            {
+                "tests/fixtures/live.json": "{}" + NL,
+                "tests/test_live.py": "FIXTURE = 'tests/fixtures/live.json'" + NL,
+                "tests/test_dynamic.py": "target = Path('tests/fixtures') / name" + NL,
+            }
+        )
+        record = next(item for item in status.records if item.record_id == "fixture")
+        self.assertRegex(record.detail, r"edge_set=sha256:[0-9a-f]{64}")
+        self.assertIn("computed_boundaries=1", record.detail)
+        self.assertGreaterEqual(record.evidence_count, 1)
+
+    def test_f_string_reference_is_a_named_dynamic_boundary(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "tests/fixtures/orphan.json": "{}" + NL,
+                "tests/test_dynamic.py": "target = f'tests/fixtures/{name}.json'" + NL,
+            }
+        )
+        candidate = self._family_findings(findings, "fixture")[0]
+        self.assertEqual(candidate.confidence, "low")
+        self.assertIn("computed-path:f-string", candidate.false_positive_boundary)
+
+    def test_malformed_check_map_degrades_only_its_family(self):
+        _universe, (status, findings) = self._analyse(
+            {"tests/check-map-v1.json": "{not json" + NL, "README.md": "root" + NL}
+        )
+        self.assertEqual(status.state, "degraded")
+        record = next(item for item in status.records if item.record_id == "check-map")
+        self.assertEqual(record.state, "parse-error")
+        self.assertIsNotNone(record.reason)
+        self.assertFalse(self._family_findings(findings, "check-map"))
+
+    def test_empty_object_discovery_is_a_visible_zero_not_a_clean_claim(self):
+        _universe, (status, findings) = self._analyse({"a.txt": "plain" + NL})
+        self.assertEqual(status.state, "ran")
+        self.assertEqual(findings, ())
+        self.assertEqual(len(status.records), len(dead_code.REPOSITORY_FAMILIES))
+        self.assertTrue(all(item.evidence_count == 0 for item in status.records))
+
+    def test_repository_finding_survives_report_rendering(self):
+        universe, (status, findings) = self._analyse(
+            {"docs/orphan.md": "# orphan" + NL, "README.md": "root" + NL}
+        )
+        report = dead_code.Report(universe, (status,), findings)
+        dead_code.validate_report(report)
+        document = json.loads(dead_code.render_json(report))
+        self.assertEqual(document["findings"][0]["id"], findings[0].identity)
+        self.assertIn(findings[0].identity, dead_code.render_text(report))
+
+
+class SolidityAnalyserTests(TemporaryRepositoryTestCase):
+    @staticmethod
+    def _slither_document(detectors=None):
+        return json.dumps(
+            {
+                "success": True,
+                "error": None,
+                "results": {"detectors": [] if detectors is None else detectors},
+            }
+        ).encode()
+
+    @staticmethod
+    def _forge_summary(percent="100.00", covered="1", total="1"):
+        return (
+            "| File | % Lines | % Statements | % Branches | % Funcs |" + NL
+            + f"| src/Dead.sol | {percent}% ({covered}/{total}) | {percent}% ({covered}/{total}) | {percent}% ({covered}/{total}) | {percent}% ({covered}/{total}) |" + NL
+        ).encode()
+
+    def _project(self, prefix=""):
+        stem = f"{prefix}/" if prefix else ""
+        return {
+            f"{stem}foundry.toml": "[profile.default]" + NL + "src = 'src'" + NL,
+            f"{stem}src/Dead.sol": "pragma solidity ^0.8.20; contract Dead { uint256 value; }" + NL,
+        }
+
+    def _universe(self, files=None):
+        build_repository(self.root, files=self._project() if files is None else files)
+        return dead_code.discover(self.root)
+
+    def _successful_runner(self, calls, *, detectors=None, forge_summary=None):
+        slither = self._slither_document(detectors)
+        forge = self._forge_summary() if forge_summary is None else forge_summary
+
+        def run(argv, **kwargs):
+            calls.append((tuple(argv), kwargs["cwd"]))
+            if argv == ["slither", "--version"]:
+                return b"0.11.4\n", b"", 0
+            if argv == ["forge", "--version"]:
+                return b"forge 1.7.1\n", b"", 0
+            if argv == ["slither", ".", "--detect", "dead-code,unused-state", "--json", "-"]:
+                return slither, b"", 0
+            if argv == ["forge", "coverage", "--report", "summary"]:
+                return forge, b"", 0
+            self.fail(f"unexpected argv: {argv!r}")
+
+        return run
+
+    def test_multiple_foundry_projects_are_discovered_from_tracked_configs(self):
+        files = {**self._project("one"), **self._project("two")}
+        universe = self._universe(files)
+        calls = []
+        with mock.patch.object(dead_code, "run_process", side_effect=self._successful_runner(calls)):
+            status, _findings = dead_code.analyse_solidity(self.root, universe)
+        projects = {item.record_id.split(":", 1)[0] for item in status.records}
+        self.assertEqual(projects, {"one", "two"})
+
+    def test_absent_slither_is_degraded_not_zero_findings(self):
+        universe = self._universe()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[0] == "slither":
+                raise dead_code.Refusal("slither is not available on PATH")
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, findings = dead_code.analyse_solidity(self.root, universe)
+        self.assertEqual(status.state, "degraded")
+        slither = next(item for item in status.records if item.record_id.endswith(":slither"))
+        self.assertEqual(slither.state, "unavailable")
+        self.assertEqual(findings, ())
+
+    def test_absent_forge_is_degraded_not_zero_findings(self):
+        universe = self._universe()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[0] == "forge":
+                raise dead_code.Refusal("forge is not available on PATH")
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, findings = dead_code.analyse_solidity(self.root, universe)
+        self.assertEqual(status.state, "degraded")
+        forge = next(item for item in status.records if item.record_id.endswith(":forge"))
+        self.assertEqual(forge.state, "unavailable")
+        self.assertEqual(findings, ())
+
+    def test_both_tools_absent_is_not_available(self):
+        universe = self._universe()
+        with mock.patch.object(
+            dead_code,
+            "run_process",
+            side_effect=dead_code.Refusal("tool is not available on PATH"),
+        ):
+            status, findings = dead_code.analyse_solidity(self.root, universe)
+        self.assertEqual(status.state, "not-available")
+        self.assertEqual(findings, ())
+
+    def test_non_zero_tool_exit_degrades_project(self):
+        universe = self._universe()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] == ["slither", "."]:
+                return b"", b"compile failed", 1
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, findings = dead_code.analyse_solidity(self.root, universe)
+        self.assertEqual(status.state, "degraded")
+        self.assertEqual(findings, ())
+        self.assertIn("exit 1", next(item for item in status.records if item.record_id.endswith(":slither")).reason)
+
+    def test_tool_timeout_degrades_project(self):
+        universe = self._universe()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] == ["slither", "."]:
+                raise dead_code.Refusal("slither timed out after 600s")
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, _findings = dead_code.analyse_solidity(self.root, universe)
+        record = next(item for item in status.records if item.record_id.endswith(":slither"))
+        self.assertEqual(record.state, "failed")
+        self.assertIn("timed out", record.reason)
+
+    def test_oversized_tool_output_degrades_project(self):
+        universe = self._universe()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] == ["forge", "coverage"]:
+                raise dead_code.Refusal("forge output exceeded 1024 bytes")
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, _findings = dead_code.analyse_solidity(self.root, universe)
+        record = next(item for item in status.records if item.record_id.endswith(":forge"))
+        self.assertEqual(record.state, "failed")
+        self.assertIn("exceeded", record.reason)
+
+    def test_malformed_slither_json_degrades_without_absence_findings(self):
+        universe = self._universe()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] == ["slither", "."]:
+                return b"not-json", b"", 0
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, findings = dead_code.analyse_solidity(self.root, universe)
+        self.assertEqual(status.state, "degraded")
+        self.assertEqual(findings, ())
+        self.assertEqual(
+            next(item for item in status.records if item.record_id.endswith(":slither")).state,
+            "parse-error",
+        )
+
+    def test_fixed_argv_and_project_cwd_are_used(self):
+        universe = self._universe()
+        calls = []
+        with mock.patch.object(dead_code, "run_process", side_effect=self._successful_runner(calls)):
+            dead_code.analyse_solidity(self.root, universe)
+        self.assertIn(
+            (("slither", ".", "--detect", "dead-code,unused-state", "--json", "-"), self.root),
+            calls,
+        )
+        self.assertIn((("forge", "coverage", "--report", "summary"), self.root), calls)
+
+    def test_slither_detector_maps_to_project_attributed_finding(self):
+        universe = self._universe()
+        detector = {
+            "check": "unused-state",
+            "confidence": "High",
+            "elements": [
+                {
+                    "type": "variable",
+                    "name": "value",
+                    "source_mapping": {"filename_relative": "src/Dead.sol", "lines": [1]},
+                }
+            ],
+        }
+        with mock.patch.object(
+            dead_code,
+            "run_process",
+            side_effect=self._successful_runner([], detectors=[detector]),
+        ):
+            status, findings = dead_code.analyse_solidity(self.root, universe)
+        self.assertEqual(status.state, "ran")
+        candidate = next(item for item in findings if "unused-state" in item.evidence)
+        self.assertEqual(candidate.path, "src/Dead.sol")
+        self.assertEqual(candidate.symbol, "unused-state:variable:value@1")
+        self.assertEqual(candidate.confidence, "high")
+
+    def test_uncovered_forge_summary_row_maps_to_low_confidence_finding(self):
+        universe = self._universe()
+        with mock.patch.object(
+            dead_code,
+            "run_process",
+            side_effect=self._successful_runner(
+                [], forge_summary=self._forge_summary("0.00", "0", "1")
+            ),
+        ):
+            _status, findings = dead_code.analyse_solidity(self.root, universe)
+        candidate = next(item for item in findings if item.symbol and item.symbol.startswith("forge-coverage:"))
+        self.assertEqual(candidate.path, "src/Dead.sol")
+        self.assertEqual(candidate.confidence, "low")
+
+    def test_solidity_finding_survives_report_rendering(self):
+        universe = self._universe()
+        detector = {
+            "check": "dead-code",
+            "confidence": "Medium",
+            "elements": [
+                {
+                    "type": "function",
+                    "name": "spare",
+                    "source_mapping": {"filename_relative": "src/Dead.sol", "lines": [1]},
+                }
+            ],
+        }
+        with mock.patch.object(
+            dead_code,
+            "run_process",
+            side_effect=self._successful_runner([], detectors=[detector]),
+        ):
+            status, findings = dead_code.analyse_solidity(self.root, universe)
+        report = dead_code.Report(universe, (status,), findings)
+        dead_code.validate_report(report)
+        document = json.loads(dead_code.render_json(report))
+        self.assertEqual(document["findings"][0]["id"], findings[0].identity)
 
 
 class CoverageAggregationTests(unittest.TestCase):
@@ -1788,6 +2284,21 @@ class ShippedSurfaceTests(unittest.TestCase):
             "finding",
         ):
             self.assertFalse(schema["$defs"][name]["additionalProperties"])
+        record = dead_code.AnalyserRecord(
+            "fixture",
+            "family",
+            "parsed",
+            "fixture record",
+            1,
+            "repository-graph/1",
+            2,
+            3,
+            None,
+        ).as_dict()
+        self.assertEqual(
+            set(record),
+            set(schema["$defs"]["analyserRecord"]["required"]),
+        )
 
     def test_check_map_declares_the_focused_dead_code_scope(self):
         check_map = json.loads(CHECK_MAP_PATH.read_text(encoding="utf-8"))
