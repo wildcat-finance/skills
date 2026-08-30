@@ -1,0 +1,44 @@
+name: plugins
+
+# This is the required aggregate plugin gate. It has no path filter because a
+# required context must exist on every pull request, and the declared full graph
+# itself decides what complete coverage means.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  plugins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+          cache: pip
+          cache-dependency-path: plugins/lazarus/requirements.lock
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+      - name: Install locked Lazarus dependencies
+        run: python3 -m pip install --requirement plugins/lazarus/requirements.lock
+      - name: Complete declared check graph
+        run: python3 scripts/run_checks.py --full --report tmp/checks/plugins.json
+      - name: Preserve the bounded check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-check-report
+          path: tmp/checks/plugins.json
+          if-no-files-found: error
+          retention-days: 14

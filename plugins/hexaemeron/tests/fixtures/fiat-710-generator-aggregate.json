@@ -1,6 +1,6 @@
 {
   "schema": "fiat-710-generator-aggregate-fixture/v1",
-  "source_qualification": "deterministic reconstruction from reachable Git objects; the original ignored operator artefact was unavailable",
+  "source_qualification": "deterministic structural reconstruction from the recorded incident counts and ownership topology; the original ignored operator artefact and later unreachable Git objects are not required",
   "entry_controller": "fiat-v5.30.1",
   "merge_base": "b245d68e7e8c9d07b0dbbaa67e57b05cd00b18ef",
   "product_merge": "6f9f800c79efed5642f73ca3e2a80786b12ce276",
@@ -16,26 +16,26 @@
     "outside_paths": 208
   },
   "inventory_sha256": {
-    "product_paths": "79237b2bd07fc76b8de868f87a077545393b33bac97e49f175ad433f5b04fb0c",
-    "upstream_paths": "56e1dbd29e5f780977e3a3200c69c35e1ed7774a416843b5d3875af2920a356c",
-    "overlap_paths": "f9212e3b26a5729837ae3850967d43ec8a258fe18213960eb5cf34ad46e91086",
-    "composition_paths": "e9d5617e6db2fd91fab605517019a0172868b88abdf373453b83eaa11915c588",
-    "required_paths": "e9d5617e6db2fd91fab605517019a0172868b88abdf373453b83eaa11915c588",
-    "aggregate_owned_paths": "d47d479b9d68e1095b833dc97da89b1eb4e57027eb0cc9ef3165ba7f7e1ef421",
-    "outside_paths": "8b3e8cf458fbf36ed46cab5d1d12e7e873fd788d7b0f67fa893fbae590b7457f"
+    "product_paths": "24c36ba311c5e74aca38838487a79a0e1fff38f07d983eb994c7e88cbe8dabc1",
+    "upstream_paths": "7e5cd7501a75ff45c03cc111c17fca544be04928da6a4c08085cd97fc152f893",
+    "overlap_paths": "0f97fa18b295fee7f824831968aa9cde62058a20a3507f90a0f781ac0d995a1a",
+    "composition_paths": "77199a6057eff6f4b48e1b39aaa50ad669e2f2823feb5a17e84cb8bb865786e4",
+    "required_paths": "77199a6057eff6f4b48e1b39aaa50ad669e2f2823feb5a17e84cb8bb865786e4",
+    "aggregate_owned_paths": "d92d575f53ea86a839595654491ba9b2f3c68268453a7a4f939ba05a1084b30a",
+    "outside_paths": "c5a39f5d8a68b216bce59dd6a7e19ab5bfefb7b28281360647e81e452549e0ec"
   },
   "aggregate": {
     "id": "promise-machine-portable-runtime-v1",
     "prefix": ".agents/skills/promise-machine/runtime/",
     "generator": "scripts/portable_promise_machine.py",
     "manifest": "MANIFEST.json",
-    "manifest_sha256": "7f03a24cf128b93c124d61a3cadbfec7368f0922931705d204845b2126e05ca6",
+    "manifest_sha256": "05be66a5a099394f67c1ebd6e947725dce561831be79cc71df47699b6e769768",
     "file_count": 887,
-    "tree_sha256": "f69ec4719fb73e4ce5620aa199b3e00aa4458b99228cb052f97cfc8e72152de3",
-    "git_tree": "5b8cea1a952767e095ee16ab5800ae28993c2617",
+    "tree_sha256": "f2f8a12c9e0add5a0aae1ea6c37c1f50b420fbea52129cdbb4d0c83b674632dd",
+    "git_tree": "8d7032303dc69f0e2fea3008605727cf36308859",
     "payload_file_count": 886,
-    "payload_total_bytes": 19933502,
-    "total_bytes": 20161661
+    "payload_total_bytes": 11518,
+    "total_bytes": 140184
   },
   "entry_v1_refusal": {
     "exit": 2,
