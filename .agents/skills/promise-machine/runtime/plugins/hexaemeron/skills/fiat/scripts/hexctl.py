@@ -329,6 +329,7 @@ CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
         "fiat-v5.41.1",
         "fiat-v5.42.1",
         "fiat-v5.43.1",
+        "fiat-v5.44.1",
     }
 )
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
@@ -13235,7 +13236,7 @@ def cmd_reset(args) -> None:
         suffix += 1
     os.makedirs(destination)
 
-    preserved = {".gitignore", "archive", "lock"}
+    preserved = {".gitignore", "archive", "checkpoints", "lock"}
     for entry in os.listdir(root):
         if entry in preserved:
             continue

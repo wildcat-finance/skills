@@ -3,8 +3,8 @@
 This reference specifies the controller-owned capsule accepted by
 [ADR-028](https://github.com/wildcat-finance/skills/blob/main/docs/decisions/ADR-028-use-cumulative-portable-checkpoints-rooted-at-an-immutable-fiat-base.md).
 The capsule moves exact `.hexaemeron` bytes. It does not replace the standing
-Git bundle, signature proof, checkpoint archive, outer sidecar, Drive object or
-issue note.
+Git bundle, signature proof, local checkpoint archive, outer sidecar or direct
+agent hand-off.
 
 ## Export command
 
@@ -213,8 +213,10 @@ new or interrupted publication.
 ## Outer recovery boundary
 
 These commands do not create or verify the Git bundle, package an archive,
-publish to GitHub or Drive, handle keys or mint a semantic checkpoint
-identity. ADR-028 retains those jobs in the standing manual outer procedure.
-Restore accepts a directory already obtained and verified by that procedure;
-it does not extract an archive or fetch a remote object. Continuation means
-the imported ledger plus its one relocation entry, never a fresh Fiat ledger.
+handle keys or mint a semantic checkpoint identity. ADR-028 retains those jobs
+in the mandatory local outer procedure. That procedure writes to the fixed
+checkpoint store under the origin checkout and publishes nothing remotely.
+Restore accepts a directory already extracted and verified from the local
+archive handed over by another agent; it does not extract an archive or fetch a
+remote object. Continuation means the imported ledger plus its one relocation
+entry, never a fresh Fiat ledger.

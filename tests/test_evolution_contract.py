@@ -114,7 +114,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.43.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.44.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -122,16 +122,21 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.43.1")
+        self.assertEqual(latest["version"], "fiat-v5.44.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("skills#909", latest["evidence"])
-        self.assertIn("portable relative paths", latest["change"])
-        self.assertIn("fiat-v5.37.1", latest["change"])
+        self.assertIn("retiring the Google Drive", latest["evidence"])
+        self.assertIn("fixed local store", latest["change"])
+        self.assertIn("former waiver", latest["change"])
+        self.assertIn("directly to one another", latest["change"])
+        compatibility = by_version["fiat-v5.43.1"]
+        self.assertIn("skills#909", compatibility["evidence"])
+        self.assertIn("portable relative paths", compatibility["change"])
+        self.assertIn("fiat-v5.37.1", compatibility["change"])
         amendment_check = by_version["fiat-v5.42.1"]
         self.assertIn("skills#497", amendment_check["evidence"])
         self.assertIn(

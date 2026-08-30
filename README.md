@@ -56,9 +56,12 @@ The friendly hand-off looks like: **Aye, here you go - #123.**
 > [!WARNING]
 > Fiat now keeps its run in a dedicated worktree with durable, verified state,
 > so the same local run can be resumed and reconstructed after context loss.
-> Keep using the worktree and state path the controller prints. Do not move an
-> unfinished run between machines, infer progress from chat, or accept a reused
-> worker handle whose visible issue, step, or role belongs to an older run.
+> After every completed step it saves a verified archive in the origin
+> checkout's fixed local checkpoint store before continuing. Agents pass that
+> local path and its digests directly to one another; there is no Drive upload,
+> waiver, or destination question for the user. Do not move an unfinished run
+> between machines, infer progress from chat, or accept a reused worker handle
+> whose visible issue, step, or role belongs to an older run.
 
 This route is for an external human contributor, not Shoggoth. Keep your own
 Git author, valid signing identity and GitHub account. The required Shoggoth

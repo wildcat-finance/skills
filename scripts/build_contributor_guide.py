@@ -273,7 +273,7 @@ def draw_number_page(c: canvas.Canvas) -> None:
     label(c, "Verified step hand-off", 64, 438, GOLD)
     para(
         c,
-        "After a completed step, another machine may resume from the portable checkpoint, but it must verify that checkpoint before doing anything else. Mid-step state is not portable.",
+        "After every completed step, Fiat saves a verified checkpoint in its fixed local store before the next directive. Agents hand over the local path and digests directly; this is not a user choice. Mid-step state is not portable.",
         64,
         370,
         545,

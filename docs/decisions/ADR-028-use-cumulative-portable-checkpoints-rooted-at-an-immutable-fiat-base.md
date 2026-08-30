@@ -14,6 +14,11 @@ Amended, 2026-08-29: Fiat owns a checked controller-state capsule and
 same-ledger relocation. The standing outer transport and semantic identity
 remain separate concerns.
 
+Amended, 2026-08-30: every accepted boundary now produces an unconditional
+local archive in the origin checkout. Drive publication, issue-note publication
+and the checkpoint waiver are retired. Until a distributed transport is
+accepted, agents pass the local path and digests directly to one another.
+
 ## Context
 
 Fiat's controller state and receipt ledger live under the run worktree's
@@ -59,18 +64,32 @@ The checkpoint preserves:
 - the public key and bounded proof needed to verify signed run commits; and
 - a sorted recursive SHA-256 inventory of the copied controller state.
 
-When Drive is available, one checkpoint archive and its outer SHA-256 sidecar
-go in the HexaemeronCheckpoints parent folder. The run's issue receives the
-archive digest, state and ledger digests, ref boundary, expected directive and
-restore rule. The issue note is the trust anchor; the sidecars support local
-verification.
+Every accepted boundary is packaged locally under the origin checkout:
 
-When Drive is unavailable and continuation will happen on the same machine,
-copy the literal `.hexaemeron` directory outside the live worktree, omit the
-transient lock, write the sorted recursive SHA-256 sidecar beside it, and keep
-both untouched. Preserve the exact Git worktree and its object store. Put that
-copy back into the next agent's room before any controller action. This is the
-authorised local fallback, not an evidence-only substitute and not a new run.
+```text
+<origin>/.hexaemeron/checkpoints/<run-worktree-name>/
+  step-<n>-<full-head-sha>/
+  audit-verdict-step-<n>-loop-<loop>-<full-head-sha>/
+```
+
+The path is derived from controller state. It is not chosen by the user. Each
+new boundary directory holds the checkpoint zip and its outer SHA-256 sidecar;
+the zip holds the controller capsule, Git bundle, outer manifest, public key,
+signature proof, member sidecars and restore README. The final directory is
+exposed only after the archive and sidecar verify, and an existing checkpoint
+is never replaced.
+
+Checkpointing is unconditional. No run direction waives it, and an agent never
+asks the user whether to save it, where it should go, or whether it should be
+kept. A failed save blocks the next directive until the same boundary is
+preserved successfully. Checkpointing performs no upload, issue comment,
+commit or push.
+
+Until a distributed checkpoint framework is accepted, transfer is a direct
+local agent-to-agent hand-off. The producer passes the absolute archive path,
+outer and controller-manifest digests, run and boundary identity, full head SHA
+and expected directive. The receiver verifies those values, the archive,
+bundle, signatures and controller capsule before restoring the same ledger.
 
 Every restore starts inside the preserved run worktree with:
 
@@ -125,13 +144,10 @@ semantic checkpoint identity, acceptance receipt or deterministic outer
 archive proposed by the remaining Wave Delta work. Those meanings stay
 separate from controller relocation.
 
-The manual outer transport remains in force. A contributor still prepares and
-verifies the Git bundle, commit-signature proof, checkpoint archive and outer
-sidecar, publishes the archive and sidecar to Drive, and records the digests,
-ref boundary and restore rule in the issue note. Fiat's native commands neither
-build nor publish those objects. This retained manual procedure is the accepted
-trade for closing the path-relocation gap without combining controller state,
-credentials, archive parsing and network writes in one operation.
+At this amendment's acceptance, the manual outer transport still published the
+archive and sidecar to Drive and recorded the digests in an issue note. The
+mandatory-local amendment below supersedes that transport. Fiat's native
+commands still do not build the outer bundle or archive.
 
 ### Compatibility repair (2026-08-30)
 
@@ -149,12 +165,33 @@ siblings, traversal and malformed roots still refuse before mutation. This is
 the sole exception to the 2026-08-29 statement that relocation changes only
 the origin and worktree fields.
 
+## Amendment: Mandatory local checkpoint hand-off (2026-08-30)
+
+The outer checkpoint remains complete, but its current home is always the fixed
+local checkpoint store under `<origin>/.hexaemeron/checkpoints/`. Drive and the
+task issue are no longer checkpoint transports or trust anchors. The former
+waiver is removed. These clauses supersede the Drive, issue-note and optional
+same-machine fallback language above wherever that historical language
+describes the then-current transport.
+
+The producing agent owns the save after every successful `done push` and at an
+exhausted `audit-verdict` boundary. It does not turn destination, retention or
+whether to save into a user decision. It passes the verified absolute path and
+digests directly to the next local agent. Failure leaves the controller at the
+same accepted boundary and blocks dependent work until the archive exists and
+verifies.
+
+This is an interim transport rule, not the distributed checkpoint framework.
+Adopting a remote or distributed transport later requires another accepted
+change. Until then, no checkpoint operation uploads, posts, commits or pushes
+the archive or its digests.
+
 ## Alternatives
 
-- **Complete standing-checkpoint automation.** Rejected because one controller
-  command would join credentials, archive parsing, GitHub and Drive writes,
-  key handling and work reserved for the unresolved outer-archive and identity
-  designs.
+- **Complete standing-checkpoint automation.** Rejected for this controller
+  generation because one command would join controller mutation, archive
+  parsing and key handling. The mandatory agent-side save supplies the current
+  invariant without claiming that `hexctl` built the outer archive.
 - **Git-only controller state.** Rejected because a branch does not carry the
   ignored controller tree, bind its receipt prefix or remove the absolute-path
   fields that prevent relocation.
@@ -192,10 +229,10 @@ keeping open findings, the eight-round boundary and user authority visible.
 One step may therefore carry several audit loops on one ledger without
 pretending they form one unbounded sequence of rounds.
 
-The same-machine fallback is intentionally path-bound. A Drive package can
-carry the bytes and Git objects to another machine, but current controller
-state still records local worktree paths; no claim of native relocation is made
-until the controller has a checked export-and-restore transition for it.
+The local store is the only current transport. Its fixed path makes a completed
+boundary discoverable without asking the user, while native export and restore
+keep the controller ledger relocatable between clean local checkouts. It makes
+no claim of remote durability or distributed availability.
 
 Checkpoint archives can be large, and every exhausted loop creates another
 one. That cost is accepted in exchange for never pretending a reconstructed

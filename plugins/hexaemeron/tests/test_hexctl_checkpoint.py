@@ -38,7 +38,7 @@ FIAT_SKILL = Path(__file__).resolve().parents[1] / "skills" / "fiat" / "SKILL.md
 class HexctlCheckpointTests(HexctlCase):
     def test_public_recovery_routes_checkpoint_arrivals_before_fresh_init(self):
         fiat = FIAT_SKILL.read_text(encoding="utf-8")
-        checkpoint = fiat.index("checkpoint zip")
+        checkpoint = fiat.index("local checkpoint path")
         active_state = fiat.index("If `.hexaemeron/state.json` exists")
         fresh_init = fiat.index("Otherwise: say exactly `Let there be light.`")
         self.assertLess(
