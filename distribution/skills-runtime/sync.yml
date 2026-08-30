@@ -1,0 +1,76 @@
+name: Rebuild the published package
+
+# This file is generated nowhere. Its canonical copy is
+# distribution/skills-runtime/sync.yml in wildcat-finance/skills, and the job
+# below refuses to run when the two differ.
+#
+# The job cannot update itself. GitHub rejects any push that creates or updates
+# a file under .github/workflows/ unless the token holds the Workflows
+# permission, and GITHUB_TOKEN can never hold it. A change to this file
+# therefore needs a person with `workflow` scope to push it here. Everything
+# else the package carries is written by the job.
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild-published-package
+  cancel-in-progress: false
+
+jobs:
+  rebuild:
+    if: github.repository == 'wildcat-finance/skills-runtime'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out this repository
+        uses: actions/checkout@v4
+
+      - name: Clone the public source
+        run: git clone --depth=1 https://github.com/wildcat-finance/skills.git source
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: "source/.python-version"
+
+      - name: Refuse a workflow that has drifted from its canonical copy
+        run: |
+          if ! diff -u source/distribution/skills-runtime/sync.yml \
+                     .github/workflows/sync.yml; then
+            echo "::error::this workflow differs from its canonical copy upstream;" \
+                 "a person with workflow scope must push the updated file here"
+            exit 1
+          fi
+
+      - name: Generate the package
+        run: |
+          python3 source/scripts/portable_promise_machine.py package \
+            --out "${RUNNER_TEMP}/package"
+
+      - name: Verify the package before publishing it
+        working-directory: ${{ runner.temp }}/package
+        run: python3 .agents/skills/promise-machine/scripts/verify_runtime.py
+
+      - name: Replace the published tree
+        run: |
+          find . -mindepth 1 -maxdepth 1 \
+            ! -name .git ! -name .github ! -name source -exec rm -rf {} +
+          cp -R "${RUNNER_TEMP}/package/." .
+          rm -rf source
+
+      - name: Commit only when the bytes changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "published package already matches the source; nothing to commit"
+            exit 0
+          fi
+          commit=$(sed -n 's/^This package was generated from commit `\(.*\)` by$/\1/p' README.md)
+          git commit -m "Rebuild from wildcat-finance/skills@${commit}"
+          git push
