@@ -26,8 +26,6 @@ os.environ["TMPDIR"] = tempfile.tempdir
 
 ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = ROOT / "scripts" / "portable_promise_machine.py"
-CONFIG = ROOT / "skills.sh.json"
-PAYLOAD_ROOT = ROOT / ".agents"
 DISTRIBUTION = ROOT / "distribution" / "skills-runtime" / "sync.yml"
 
 # The eight package guarantees below are asserted against a tree the generator
@@ -78,13 +76,6 @@ CONTRACT = "promise-machine/v1"
 MAX_FILES = 1_000
 MAX_BYTES = 25 * 1024 * 1024
 
-# The per-clone cost ADR-054 accepted and recorded, plus deliberate headroom.
-# This binds before MAX_BYTES does, so payload growth is refused against the
-# recorded figure rather than against a CLI limit that does not apply here.
-RECORDED_TRACKED_FILES = 999
-RECORDED_TRACKED_BYTES = 21_789_732
-TRACKED_FILES_CEILING = 1_010
-TRACKED_BYTES_CEILING = 22_500_000
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
@@ -115,26 +106,6 @@ def load_manifest():
 
 
 class SkillsShPackageTests(unittest.TestCase):
-    def test_skills_sh_groups_only_the_supported_collective_install(self):
-        config = json.loads(CONFIG.read_text(encoding="utf-8"))
-        self.assertEqual(
-            config["$schema"], "https://skills.sh/schemas/skills.sh.schema.json"
-        )
-        self.assertEqual(config["notGrouped"], "bottom")
-        self.assertEqual(
-            [skill for group in config["groupings"] for skill in group["skills"]],
-            ["promise-machine"],
-        )
-
-    def test_generated_runtime_is_current(self):
-        result = subprocess.run(  # phylax: allow subprocess: fixed local checker
-            [sys.executable, str(GENERATOR), "check"],
-            cwd=ROOT,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-
     def test_manifest_binds_every_runtime_file_to_source_bytes(self):
         manifest = load_manifest()
         self.assertEqual(manifest["schema"], SCHEMA)
@@ -196,23 +167,6 @@ class SkillsShPackageTests(unittest.TestCase):
             ).read_bytes(),
             (PACKAGE / "SKILL.md").read_bytes(),
         )
-
-    def test_no_manifested_runtime_file_is_gitignored(self):
-        paths = [
-            (
-                Path(".agents/skills/promise-machine/runtime") / row["path"]
-            ).as_posix()
-            for row in load_manifest()["files"]
-        ]
-        result = subprocess.run(  # phylax: allow subprocess: fixed git ignore query
-            ["git", "-C", str(ROOT), "check-ignore", "--no-index", "--stdin"],
-            input="\n".join(paths) + "\n",
-            capture_output=True,
-            text=True,
-        )
-        ignored = result.stdout.splitlines()
-        self.assertIn(result.returncode, (0, 1), result.stderr)
-        self.assertEqual(ignored, [])
 
     def test_runtime_contracts_reach_every_copied_canonical_skill(self):
         plugins = RUNTIME / "plugins"
@@ -348,32 +302,6 @@ class SkillsShPackageTests(unittest.TestCase):
             )
 
 
-    def test_payload_footprint_stays_within_the_recorded_ceiling(self):
-        """The payload's per-clone cost is the one ADR-054 accepted.
-
-        Growth is not wrong, but it is not free and it is not silent: this
-        fails with the new figure so the record can be updated deliberately.
-        """
-        files = sorted(path for path in PAYLOAD_ROOT.rglob("*") if path.is_file())
-        total = sum(path.stat().st_size for path in files)
-        self.assertLessEqual(
-            len(files),
-            TRACKED_FILES_CEILING,
-            f"payload holds {len(files)} files, ceiling is "
-            f"{TRACKED_FILES_CEILING}; ADR-054 recorded "
-            f"{RECORDED_TRACKED_FILES}. Update ADR-054 and this ceiling "
-            f"together, or reduce what the generator copies.",
-        )
-        self.assertLessEqual(
-            total,
-            TRACKED_BYTES_CEILING,
-            f"payload holds {total} bytes, ceiling is "
-            f"{TRACKED_BYTES_CEILING}; ADR-054 recorded "
-            f"{RECORDED_TRACKED_BYTES}. Update ADR-054 and this ceiling "
-            f"together, or reduce what the generator copies.",
-        )
-
-
     def test_package_action_writes_a_complete_installable_tree(self):
         """A generated package carries its own grouping, README and runtime."""
         config = json.loads((GENERATED / "skills.sh.json").read_text(encoding="utf-8"))
@@ -496,6 +424,46 @@ class SkillsShPackageTests(unittest.TestCase):
         # An unparsed README would otherwise commit "…/skills@" and read as a
         # successful rebuild of nothing identifiable.
         self.assertIn("the generated README names no source commit", text)
+
+
+    def test_the_generated_runtime_is_not_tracked_here(self):
+        """The payload is published elsewhere; a local sync must not re-add it."""
+        tracked = subprocess.run(  # phylax: allow subprocess: fixed git listing
+            ["git", "-C", str(ROOT), "ls-files", ".agents"],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.split()
+        self.assertEqual(
+            sorted(tracked),
+            [
+                ".agents/plugins/marketplace.json",
+                ".agents/skills/promise-machine/PORTABLE.md",
+                ".agents/skills/promise-machine/SKILL.md",
+                ".agents/skills/promise-machine/scripts/verify_runtime.py",
+            ],
+        )
+        ignored = subprocess.run(  # phylax: allow subprocess: fixed git ignore query
+            [
+                "git",
+                "-C",
+                str(ROOT),
+                "check-ignore",
+                ".agents/skills/promise-machine/runtime/MANIFEST.json",
+            ],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(ignored.returncode, 0, "the generated runtime is not ignored")
+
+    def test_this_repository_advertises_no_skills_sh_install(self):
+        """It cannot serve one: the runtime it would need is not carried here."""
+        self.assertFalse((ROOT / "skills.sh.json").exists())
+        for document in (ROOT / "INSTALL.md", ROOT / "README.md"):
+            text = document.read_text(encoding="utf-8")
+            for line in text.splitlines():
+                if "npx skills add" in line:
+                    self.assertIn("wildcat-finance/skills-runtime", line, document.name)
 
 
 if __name__ == "__main__":

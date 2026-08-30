@@ -1,4 +1,0 @@
-interface:
-  display_name: "Pandects"
-  short_description: "Executable credit laws with broken specimens and reduced counterexamples."
-  default_prompt: "Use Pandects to select, run or add executable credit laws without claiming more than the recorded search established."

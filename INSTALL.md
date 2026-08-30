@@ -122,17 +122,18 @@ the keys are documented in Anthropic's
 
 ### Local agents
 
-Install the collective from skills.sh by selecting the single
-[Promise Machine router](./.agents/skills/promise-machine/SKILL.md):
+Install the collective from skills.sh by selecting the single Promise Machine
+router, which is published from
+[wildcat-finance/skills-runtime](https://github.com/wildcat-finance/skills-runtime):
 
 ```bash
-npx skills add wildcat-finance/skills --skill promise-machine
+npx skills add wildcat-finance/skills-runtime --skill promise-machine
 ```
 
 For a non-interactive project-local Codex install:
 
 ```bash
-npx skills add wildcat-finance/skills \
+npx skills add wildcat-finance/skills-runtime \
   --skill promise-machine --agent codex --copy -y
 python3 .agents/skills/promise-machine/scripts/verify_runtime.py
 ```
@@ -140,16 +141,21 @@ python3 .agents/skills/promise-machine/scripts/verify_runtime.py
 The installer copies only the selected directory. This router therefore ships
 a generated runtime containing the suite law, plugin contracts, canonical
 skills, and their operational files. It verifies those bytes before routing
-and carries no separate behavioural version. The skills.sh page places
-canonical specialist source entries below the supported collective installer;
-do not install one of those entries alone when its scripts or parent contract
-are required.
+and carries no separate behavioural version.
+
+That runtime is generated from this repository rather than committed to it. A
+scheduled job in the distribution repository rebuilds the package hourly and
+publishes it only when it verifies, so an install can be up to an hour behind
+this repository's `main`. ADR-055 records that trade, and
+[the publication guide](./skills-runtime-publication.md) records how to check
+which source commit the published package was built from.
 
 The portable package omits host manifests, development suites, historical
 audit records, and Alexandria's 16 MB Compound v3 Phase 0 offline trace
 inputs and built release. Use a full source checkout when an operation needs
 one of those surfaces. To use a checkout directly, point the agent at this
-repository and include `.agents/skills` in its project skill search path.
+repository; the router detects a source checkout and reads the real tree rather
+than a bundled runtime.
 
 A file-reading agent without automatic skill discovery should begin with
 [AGENTS.md](./AGENTS.md). That file identifies the entrypoints, path rules, and
