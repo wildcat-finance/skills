@@ -91,6 +91,14 @@ scope, a source span whose end is not greater than its start, an uncovered
 governed node, or two bindings that claim the same source bytes for different
 nodes without an exact declared nesting relation.
 
+A `scope` expression declares its id beneath its containing directive or named
+scope. An `exception` expression may target only that containing directive or
+one named scope on its ancestor chain. Governed nodes are the document,
+sections, directives, named scopes, promises, and structured promise
+exceptions. Each needs at least one binding. A binding reviewer is an
+`identifier` literal; this makes its canonical tuple order exact rather than
+dependent on a display rendering.
+
 ## Compact document
 
 The compact magic is `WAI1`. A document is UTF-8, begins with that line, uses
@@ -195,7 +203,7 @@ descending further:
 | object members | 32 |
 | identifier | 128 UTF-8 bytes |
 | repository-relative path | 512 UTF-8 bytes |
-| one decoded literal | 65,536 UTF-8 bytes |
+| one decoded literal | 65,000 UTF-8 bytes |
 | all decoded literals | 786,432 UTF-8 bytes |
 | sources | 64 |
 | sections | 128 |
@@ -206,8 +214,10 @@ descending further:
 | promise exceptions | 1,024 |
 
 Schema `maxLength` values count code points and are an early shape check. The
-byte limits in this table still apply. A count at the limit is accepted when
-all other rules pass; limit plus one refuses.
+byte limits in this table still apply. The literal limit leaves room for record
+framing when its bytes need no escape expansion; escapes and additional fields
+remain subject to the fixed 65,536-byte physical-line bound. A count at the
+limit is accepted when all other rules pass; limit plus one refuses.
 
 Paths are relative ASCII strings with no empty, `.`, or `..` component, no
 leading slash, backslash, control, or bidirectional-control character. Every
@@ -218,10 +228,13 @@ then atomic replace. The codec runs no shell and resolves no includes.
 
 ## Validation result and refusal codes
 
-A command emits one bounded result containing schema id, input digest, outcome,
-stable code, and node path. It does not echo an unbounded source fragment. A
-successful decode or format also records the canonical-model and compact
-digests.
+A command emits one JSON line with result schema
+`wildcat-agent-instruction-result/v1`, event `validation` or `roundtrip`, input
+digest, outcome, stable code, and node path. It does not echo an unbounded
+source fragment. A successful decode or format also records the
+canonical-model and compact digests. The reference CLI exposes `validate`,
+`format`, `decode`, `roundtrip`, and the in-memory `self-test`; its file commands
+take a selected root plus relative input and output paths.
 
 Version 1 reserves these stable refusal families:
 
