@@ -147,7 +147,7 @@ That runtime is generated from this repository rather than committed to it. A
 scheduled job in the distribution repository rebuilds the package hourly and
 publishes it only when it verifies, so an install can be up to an hour behind
 this repository's `main`. ADR-055 records that trade, and
-[the publication guide](./skills-runtime-publication.md) records how to check
+[the publication guide](./docs/skills-runtime-publication.md) records how to check
 which source commit the published package was built from.
 
 The portable package omits host manifests, development suites, historical
