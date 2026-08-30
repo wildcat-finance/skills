@@ -14,6 +14,7 @@ import stat
 import sys
 import unicodedata
 import zipfile
+import zlib
 
 
 CONTRACT = "noema/v1"
@@ -395,7 +396,13 @@ def verify_seed(archive_path: Path, inventory_path: Path) -> dict[str, object]:
                 seen_files.add(relative)
     except Refusal:
         raise
-    except (OSError, RuntimeError, zipfile.BadZipFile, zipfile.LargeZipFile):
+    except (
+        OSError,
+        RuntimeError,
+        zipfile.BadZipFile,
+        zipfile.LargeZipFile,
+        zlib.error,
+    ):
         refuse("NOE-E-SYNTAX.ZIP", "archive", "archive is malformed or failed integrity checking")
 
     if not saw_root:
