@@ -1412,11 +1412,14 @@ def _build_registry(
 def _term_children(value: object) -> list[object]:
     if not isinstance(value, list) or not value:
         return []
-    if value[0] in {"$", "%", ":"}:
+    tag = value[0]
+    if not isinstance(tag, str):
+        return value[1:]
+    if tag in {"$", "%", ":"}:
         return []
-    if value[0] == "{}":
+    if tag == "{}":
         return value[2:]
-    if value[0] in {"all", "any", "one"}:
+    if tag in {"all", "any", "one"}:
         return value[2:]
     return value[1:]
 
@@ -1592,7 +1595,12 @@ def _preflight_records(records: list[object]) -> tuple[list[tuple[str, str]], li
         "exception": 9,
     }
     for index, item in enumerate(records):
-        if not isinstance(item, list) or not item or item[0] not in lengths:
+        if (
+            not isinstance(item, list)
+            or not item
+            or not isinstance(item[0], str)
+            or item[0] not in lengths
+        ):
             refuse("NOE-E-TYPE.RECORD", f"source.record[{index}]", "unknown record form")
         record = _exact_list(item, lengths[item[0]], f"source.record[{index}]")
         key = _record_key(record, f"source.record[{index}]")

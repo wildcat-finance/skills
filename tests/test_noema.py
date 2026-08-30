@@ -913,6 +913,27 @@ class CanonicalSourceTests(unittest.TestCase):
 
 
 class GraphValidationTests(unittest.TestCase):
+    def test_container_record_and_term_tags_refuse_without_raw_type_errors(self):
+        cases = (
+            ([[[]]], "NOE-E-TYPE.RECORD"),
+            (
+                base_records(
+                    definitions=[["definition", "local.bad", [], [[]]]]
+                ),
+                "NOE-E-TYPE.TERM",
+            ),
+        )
+        for records, code in cases:
+            with self.subTest(code=code):
+                try:
+                    compile_records(records)
+                except noema.Refusal as raised:
+                    self.assertEqual(raised.code, code)
+                except TypeError:
+                    self.fail("container tag escaped the refusal channel")
+                else:
+                    self.fail("container tag compiled")
+
     def test_structural_results_cannot_be_minted_by_typed_atoms(self):
         for directive in (
             [":", "directive", "anything"],
