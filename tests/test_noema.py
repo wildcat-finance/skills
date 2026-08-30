@@ -2009,6 +2009,63 @@ class SliceTests(unittest.TestCase):
         )
         self.assertEqual(manifest["included_ids"], ["rule.test"])
 
+    def test_macro_hidden_prohibition_remains_reachable(self):
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "definition",
+                "local.hidden_prohibition",
+                [],
+                [
+                    "core.authorized",
+                    [":", "actor", "admin"],
+                    [":", "effect", "hidden"],
+                ],
+            ],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", "hidden"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.deny",
+                ["-", ["local.hidden_prohibition"]],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("hidden"),
+        )
+        self.assertIn("rule.deny", manifest["included_ids"])
+        result = noema.check_runtime("hidden", [], manifest)
+        self.assertEqual(result["output"]["reason"], "prohibition")
+
+    def test_composite_guard_needs_one_exact_fact_before_omission(self):
+        first = ["core.checked", [":", "evidence", "guard.first"]]
+        second = ["core.checked", [":", "evidence", "guard.second"]]
+        facts = sorted(
+            (
+                checked_fact(first, "false", "guard-first"),
+                checked_fact(second, "false", "guard-second"),
+            ),
+            key=lambda item: item["id"],
+        )
+        _build, manifest, _projection = select_records(
+            base_records(
+                ["?", ["|", first, second], ["+", [":", "effect", "guarded"]]]
+            ),
+            runtime_selection("guarded", facts=facts),
+        )
+        self.assertIn("rule.test", manifest["included_ids"])
+
 
 class PolicyCheckTests(unittest.TestCase):
     def test_allowed_consequence_zero_case_permits(self):
@@ -2153,6 +2210,67 @@ class PolicyCheckTests(unittest.TestCase):
         result = noema.check_runtime("nested", selection["facts"], manifest)
         self.assertEqual(result["output"]["decision"], "unknown")
 
+    def test_requirement_alone_never_permits_an_effect(self):
+        proposition = [
+            "core.authorized",
+            [":", "actor", "operator"],
+            [":", "effect", "require.only"],
+        ]
+        fact = checked_fact(proposition, "true", "require-only")
+        directive = [
+            "^",
+            [":", "actor", "operator"],
+            ["!", proposition],
+        ]
+        selection = runtime_selection(
+            "require.only",
+            authority=("operator",),
+            facts=(fact,),
+        )
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            selection,
+        )
+        result = noema.check_runtime("require.only", selection["facts"], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "default-deny"),
+        )
+
+    def test_closed_truth_refuses_a_contradictory_checked_fact(self):
+        proposition = [
+            "=",
+            [":", "effect", "fact.bypass"],
+            [":", "effect", "fact.bypass"],
+        ]
+        fact = checked_fact(proposition, "false", "contradictory")
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", "fact.bypass"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.deny",
+                ["?", proposition, ["-", [":", "effect", "fact.bypass"]]],
+                source_binding(1, 2),
+            ],
+        ]
+        with self.assertRaises(noema.Refusal) as raised:
+            select_records(
+                records,
+                runtime_selection("fact.bypass", facts=(fact,)),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-POLICY.FACT_CONFLICT")
+
 
 class TransitionTests(unittest.TestCase):
     def test_established_transition_returns_ordered_effects(self):
@@ -2210,6 +2328,48 @@ class TransitionTests(unittest.TestCase):
         with self.assertRaises(noema.Refusal) as raised:
             noema.next_runtime("machine", "idle", "go", [], manifest)
         self.assertEqual(raised.exception.code, "NOE-E-POLICY.TRANSITION")
+
+    def test_established_transition_stops_for_an_unknown_competitor(self):
+        established = ["=", [":", "state", "idle"], [":", "state", "idle"]]
+        unknown = ["core.checked", [":", "evidence", "transition.maybe"]]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.move",
+                ["+", [":", "effect", "move"]],
+                source_binding(0, 1),
+            ],
+            [
+                "transition",
+                "transition.established",
+                [":", "state", "machine"],
+                [":", "state", "idle"],
+                [":", "event", "go"],
+                established,
+                [":", "state", "state.one"],
+                ["+", [":", "effect", "step.one"]],
+            ],
+            [
+                "transition",
+                "transition.unknown",
+                [":", "state", "machine"],
+                [":", "state", "idle"],
+                [":", "event", "go"],
+                unknown,
+                [":", "state", "state.two"],
+                ["+", [":", "effect", "step.two"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("move", state="idle"),
+        )
+        result = noema.next_runtime("machine", "idle", "go", [], manifest)
+        self.assertEqual(
+            (result["output"]["status"], result["output"]["reason"]),
+            ("stop", "unestablished-guard"),
+        )
 
     def test_receipts_must_be_sorted(self):
         _build, _selection, manifest, _projection = runtime_fixture()

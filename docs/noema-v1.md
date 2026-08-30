@@ -248,15 +248,17 @@ authority inputs and checked facts. An operation or effect match and a
 transition from the selected state are primary roots. Target or tool matches
 are secondary roots when no primary root exists. If neither class resolves,
 the safe fallback is the full selectable graph rather than an empty slice.
-Closure follows shared typed effect, operation, state, event, artifact, action,
-claim and command identities, then retains each connected promise, handoff,
-exception, prohibition, authority constraint, order edge, refusal and recovery.
-An order or override edge pulls both named rules into the slice.
+Closure expands locked pure definitions before following shared typed effect,
+operation, state, event, artifact, action, claim and command identities, then
+retains each connected promise, handoff, exception, prohibition, authority
+constraint, order edge, refusal and recovery. An order or override edge pulls
+both named rules into the slice; a macro cannot hide one of those links.
 
 A checked-true guard retains its dependent rule. A checked-false guard may omit
-it only when the manifest carries the exact fact and evidence identity. An
-unknown guard retains it. Any rule that can forbid, constrain, order or recover
-a reachable effect remains reachable.
+it only when the manifest carries one checked fact for that exact full guard
+and its evidence identity. Facts for proper subexpressions do not establish an
+omission. An unknown guard retains its rule. Any rule that can forbid,
+constrain, order or recover a reachable effect remains reachable.
 
 Facts are addressed as `fact.` followed by SHA-256 over the canonical
 proposition bytes. A fact has exactly that id, `true`, `false` or `unknown`, and
@@ -325,19 +327,21 @@ separately authorised boundary. A prior manifest is optional comparison input;
 when supplied, the result states whether the exact manifest identity changed.
 
 Policy evaluation first expands only locked pure definitions. A checked fact
-can settle any exact proposition. Otherwise the runtime evaluates the closed
-three-valued Boolean operators, finite quantifiers, typed equality,
-membership, containment and unsigned comparisons; an opaque predicate remains
-unknown. A self-identical closed term is true without external evidence.
-Unknown guards retain their dependent directive and yield unknown rather than
-permission.
+can settle any exact proposition whose closed evaluation is unknown; a fact
+that contradicts a closed result or an equivalent expanded proposition
+refuses. Otherwise the runtime evaluates the closed three-valued Boolean
+operators, finite quantifiers, typed equality, membership, containment and
+unsigned comparisons; an opaque predicate remains unknown. A self-identical
+closed term is true without external evidence. Unknown guards retain their
+dependent directive and yield unknown rather than permission.
 
 `check` evaluates applicable `+`, `-` and `!` intents in authored `;` order
 under their `?`, `/`, `@` and `^` wrappers. A prohibition or failed requirement
-refuses before any permission is considered. Opposed requirements refuse
-unless one included `override` names the higher and lower rules and its typed
-authority, scope and `core.checked(evidence)` fact all hold. Precedence alone
-does not resolve that conflict. A rule carries at most one
+refuses before any permission is considered; a satisfied `!` is a gate, never
+a permission. Opposed requirements refuse unless one included `override` names
+the higher and lower rules and its typed authority, scope and
+`core.checked(evidence)` fact all hold. Precedence alone does not resolve that
+conflict. A rule carries at most one
 `core.consequence` atom with value `0` through `3`; disagreement refuses and an
 absent marker defaults to consequence 3. Consequence 2 and 3 default deny
 without an applicable `^` authority and satisfied gates. An exception is
@@ -345,11 +349,12 @@ retained as policy and recovery context but cannot by itself cancel a
 prohibition or mint authority in this shadow runtime.
 
 `next` matches one machine, from-state and event. Zero established matches
-stop, an unknown guard stops unknown, and more than one established match
-refuses. A successful result returns the next state and the exact ordered
-directive terms without applying them. `literal` returns the kind, byte count,
-digest and exact reachable value; even `command`, `path` and `url` values stay
-inert. `explain` returns canonical record JSON under
+stop, an unknown guard stops unknown even beside one established competitor,
+and more than one established match refuses. A successful result returns the
+next state and the exact ordered directive terms without applying them.
+`literal` returns the kind, byte count, digest and exact reachable value; even
+`command`, `path` and `url` values stay inert. `explain` returns canonical
+record JSON under
 `noema-explanation/v1` with `authoritative:false`.
 
 ## Resource limits

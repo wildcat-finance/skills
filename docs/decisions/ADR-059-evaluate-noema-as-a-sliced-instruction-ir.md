@@ -62,6 +62,11 @@ permission, and opposed requirements need one checked typed override. These
 choices are prototype controls, not authority to replace Markdown or wire the
 runtime into an agent.
 
+The Step 3 audit hardens that boundary further: definition expansion precedes
+slice link discovery, closed truth rejects contradictory supplied facts,
+requirements cannot stand in for permission, and an unknown competing
+transition stops the state machine.
+
 ## Alternatives
 
 ### Extend `wildcat-agent-instruction/v1`
