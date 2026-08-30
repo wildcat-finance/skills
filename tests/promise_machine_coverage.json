@@ -74,6 +74,46 @@
     },
     "transition": "place every Skills contributor row and every merged supplemental pull-request author in exactly one of ranked, excluded with a named reason, or refused, then render both artefacts from that one computation without strengthening what either count means"
   },
+  "dead_code": {
+    "contract": "dead-code-baseline/v1",
+    "documentation": {
+      "path": "docs/promise-machine/dead-code-v1.md",
+      "sha256": "ff65defb8d95a04264601865ed2c31cd22501db6aceea672fa7c7fa40960a82c"
+    },
+    "fixtures": [
+      {
+        "path": ".dead-code/suppressions.json",
+        "sha256": "42fd6b5814135ce396027b5087bec10dcb00bc5736d05be0929065c022b1a8ae"
+      }
+    ],
+    "promise_id": "promise-machine-dead-code-baseline",
+    "runtime": {
+      "path": "scripts/dead_code.py",
+      "sha256": "143d45838048ab2f5219f584d2ee00809894af140aa2226a19e14f953edc32c3"
+    },
+    "schema_source": {
+      "path": "schemas/dead-code-report-v1.schema.json",
+      "sha256": "7d67503a3ea6c15233a709d40e3ed86800c6113248a4d4087419ab90562c4ab2"
+    },
+    "suppression_schema": {
+      "path": "schemas/dead-code-suppressions-v1.schema.json",
+      "sha256": "d3cbb6d10ed842f1cb29a38fd88ead74e842ef57b8f8d553b6aa113a6bf5b65b"
+    },
+    "tests": {
+      "path": "tests/test_dead_code.py",
+      "selectors": [
+        "test_one_exact_suppression_is_accepted",
+        "test_broad_suppression_identity_refuses",
+        "test_baseline_record_cannot_retain_a_repository_candidate",
+        "test_failed_analyser_cannot_be_written_to_a_baseline",
+        "test_source_change_after_publication_is_stale",
+        "test_write_then_check_uses_two_commit_publication",
+        "test_workflow_and_operator_guide_carry_the_exact_four_command_demo"
+      ],
+      "sha256": "311d100ae93b013e72cd0af1c6409783507970793b2da863c64a42efe29396db"
+    },
+    "transition": "record and verify one report-only static candidate baseline over an exact clean source commit, with only exact current suppressions accepted and no finding count treated as deletion or merge authority"
+  },
   "evidence": {
     "alexandria-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",

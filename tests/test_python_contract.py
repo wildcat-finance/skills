@@ -32,6 +32,7 @@ REQUIRED_MINOR = "==3.14.*"
 EXACT_VERSION = "3.14.6"
 PYTHON_WORKFLOWS = {
     "contributors.yml",
+    "dead-code.yml",
     "janus.yml",
     "lazarus.yml",
     "pandects.yml",

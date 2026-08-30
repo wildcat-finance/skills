@@ -49,7 +49,7 @@ Elenchus old-parent reports for the behavioural repairs.
 inputs. ephoros: none in this step; it adds no unattended service. metron: no
 performance claim; retain the measured full-suite duration. elenchus: every
 observed baseline defect needs a parent-red, repaired-green guard. hypomnema:
-ADR-053 owns the durable hosted-gate choice; fixture qualifications stay beside
+ADR-054 owns the durable hosted-gate choice; fixture qualifications stay beside
 the specimens.
 
 ## Step 2: Publish one unconditional aggregate gate
@@ -73,7 +73,7 @@ successful `invariants` and `plugins` checks.
 ### Files and tests
 
 **Files.** `.github/workflows/plugins.yml`, workflow contract tests, this study
-and runbook, and ADR-053.
+and runbook, and ADR-054.
 
 **Tests.** Parse the workflow as text under the repository's dependency-free
 root suite and assert its trigger, permissions, stable job name, fixed command,
@@ -88,7 +88,7 @@ first push.
 event interpolation. ephoros: the job and uploaded report answer commit, plan,
 terminal result and failure-class questions. metron: no optimisation claim.
 elenchus: a workflow contract mutation must turn its test red. hypomnema:
-ADR-053 and the workflow are the decision and operational homes.
+ADR-054 and the workflow are the decision and operational homes.
 
 ## Step 3: Require the observed contexts on current main
 
@@ -124,5 +124,5 @@ strictness field or ref differs.
 fresh full read and preserves fields outside the authorised change. ephoros:
 the hosted check rollup and post-write ruleset document are the receipts.
 metron: none. elenchus: a missing context or false strictness value is a hard
-stop. hypomnema: ADR-053 names why both contexts are required; live GitHub owns
+stop. hypomnema: ADR-054 names why both contexts are required; live GitHub owns
 the enforcement record.

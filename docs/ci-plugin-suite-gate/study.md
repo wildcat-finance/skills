@@ -210,7 +210,7 @@ write and publication stops if either required context or strictness differs.
 ## 12. Decisions and their homes
 
 Hypomnema places the hosted-gate decision in
-`docs/decisions/ADR-053-require-the-complete-plugin-graph.md`. The executable
+`docs/decisions/ADR-054-require-the-complete-plugin-graph.md`. The executable
 graph remains `tests/check-map-v1.json`; workflow procedure lives in
 `.github/workflows/plugins.yml`; graph and workflow invariants live in tests;
 the checkpoint depth boundary lives beside the other Fiat checkpoint ceilings;
