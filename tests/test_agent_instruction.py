@@ -1850,6 +1850,28 @@ class MutationTests(RefusalAssertions, unittest.TestCase):
     def test_mutations_cover_every_required_risk_class(self):
         self.assertEqual({item["risk"] for _, item in self.mutation_records()}, set(AI.RISK_CLASSES))
 
+    def test_risk_class_must_match_the_mutated_target(self):
+        fixture_id = "promise-machine-router-selection"
+        model = fixture_model(fixture_id)
+        record = artifact_record(fixture_id, "mutations")
+        mutation = next(item for item in record["mutations"] if item["risk"] == "evidence-class")
+        mutation["operation"] = {
+            "kind": "replace",
+            "path": "/document/title/value",
+            "value": "unrelated title change",
+        }
+        questions = AI._validate_questions(artifact_record(fixture_id, "questions"), fixture_id)
+        self.assertRefusal(
+            "WAI-E-MUTATION.RISK_TARGET",
+            AI._validate_mutations,
+            record,
+            fixture_id,
+            model,
+            AI.canonical_json_bytes(model),
+            6,
+            questions,
+        )
+
     def test_mutation_ids_are_unique(self):
         ids = [item["id"] for _, item in self.mutation_records()]
         self.assertEqual(len(ids), len(set(ids)))
@@ -1880,6 +1902,27 @@ class MutationTests(RefusalAssertions, unittest.TestCase):
                 mutation["expected"].get("value"),
                 questions[mutation["expected"]["question"]],
             )
+
+    def test_answer_change_must_name_a_declared_answer(self):
+        fixture_id, mutation = mutation_by_id("fiat-negation-001")
+        model = fixture_model(fixture_id)
+        record = {
+            "schema": "wildcat-agent-instruction-mutations/v1",
+            "fixture": fixture_id,
+            "mutations": [copy.deepcopy(mutation)],
+        }
+        record["mutations"][0]["expected"]["value"] = "never-declared-answer"
+        questions = AI._validate_questions(artifact_record(fixture_id, "questions"), fixture_id)
+        self.assertRefusal(
+            "WAI-E-MUTATION.EXPECTED",
+            AI._validate_mutations,
+            record,
+            fixture_id,
+            model,
+            AI.canonical_json_bytes(model),
+            1,
+            questions,
+        )
 
     def test_exact_literal_mutations_cover_each_used_class(self):
         expected = {"identifier", "path", "sha256", "command", "number", "text"}
@@ -1926,8 +1969,12 @@ class MutationTests(RefusalAssertions, unittest.TestCase):
             "fixture": fixture_id,
             "mutations": [{
                 "id": "noop-001",
-                "risk": "negation",
-                "operation": {"kind": "replace", "path": "/document/title/value", "value": model["document"]["title"]["value"]},
+                "risk": "evidence-class",
+                "operation": {
+                    "kind": "replace",
+                    "path": "/sections/0/directives/0/promise/evidence_classes",
+                    "value": model["sections"][0]["directives"][0]["promise"]["evidence_classes"],
+                },
                 "expected": {"kind": "model-digest", "value": "different"},
             }],
         }

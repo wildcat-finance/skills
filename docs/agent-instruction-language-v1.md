@@ -310,9 +310,15 @@ pointer to a copy of the canonical model. The manifest freezes the seven risk
 classes `negation`, `precedence`, `scope`, `evidence-class`, `authorisation`,
 `recovery`, and `exact-literal`. A mutation must produce its declared exact
 structural refusal, a different valid canonical-model digest, or a declared
-answer change linked to one closed question. Each fixture has exactly one
-negation mutation with an answer-change expectation. The complete corpus has
-one checked exact-literal mutation for every literal class it uses:
+answer change linked to one closed question. The changed answer must already
+belong to that question's accepted or refusal set and must differ from its
+required answer. Risk labels are checked against their targets: precedence
+changes a relation; scope changes a scope or exception expression; evidence
+class, authorisation, and recovery change their matching Promise fields;
+negation changes directive content and declares an answer change; and an
+exact-literal target must match its declared literal class. Each fixture has
+exactly one negation mutation with an answer-change expectation. The complete
+corpus has one checked exact-literal mutation for every literal class it uses:
 `identifier`, `path`, `sha256`, `command`, `number`, and `text`. A no-op,
 missing pointer, unexpected refusal, unknown class, incomplete literal-class
 inventory, or stale mutation record refuses as silent acceptance rather than

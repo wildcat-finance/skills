@@ -1633,6 +1633,67 @@ def _mutation_literal_class(model: Mapping[str, Any], operation: Mapping[str, An
     refuse("WAI-E-MUTATION.LITERAL_CLASS", "$.mutation.operation.path")
 
 
+def _validate_mutation_risk_target(
+    model: Mapping[str, Any],
+    risk: str,
+    operation: Any,
+    expected_kind: str,
+    path: str,
+) -> None:
+    if not isinstance(operation, dict):
+        refuse("WAI-E-SHAPE.OBJECT", f"{path}.operation")
+    tokens = _pointer_tokens(operation.get("path"), f"{path}.operation.path")
+    directive_target = (
+        len(tokens) >= 4
+        and tokens[0] == "sections"
+        and DECIMAL_RE.fullmatch(tokens[1]) is not None
+        and tokens[2] == "directives"
+        and DECIMAL_RE.fullmatch(tokens[3]) is not None
+    )
+    if risk == "exact-literal":
+        return
+    if risk == "negation":
+        matches = directive_target and expected_kind == "answer-change"
+    elif risk == "precedence":
+        matches = (
+            len(tokens) >= 2
+            and tokens[0] == "relations"
+            and DECIMAL_RE.fullmatch(tokens[1]) is not None
+        )
+    elif risk == "scope":
+        matches = (
+            directive_target
+            and len(tokens) >= 6
+            and tokens[4] == "expressions"
+            and DECIMAL_RE.fullmatch(tokens[5]) is not None
+        )
+        if matches:
+            try:
+                expression = model["sections"][int(tokens[1])]["directives"][int(tokens[3])]["expressions"][
+                    int(tokens[5])
+                ]
+            except (IndexError, KeyError, TypeError):
+                matches = False
+            else:
+                matches = isinstance(expression, dict) and expression.get("kind") in ("scope", "exception")
+    elif risk in ("evidence-class", "authorisation", "recovery"):
+        field = {
+            "evidence-class": "evidence_classes",
+            "authorisation": "authorises",
+            "recovery": "recovery",
+        }[risk]
+        matches = (
+            directive_target
+            and len(tokens) >= 6
+            and tokens[4] == "promise"
+            and tokens[5] == field
+        )
+    else:
+        matches = False
+    if not matches:
+        refuse("WAI-E-MUTATION.RISK_TARGET", f"{path}.operation.path")
+
+
 def _validate_mutations(
     record: Any,
     fixture_id: str,
@@ -1679,6 +1740,7 @@ def _validate_mutations(
         expected_fields = ("kind", "question", "value") if expected_kind == "answer-change" else ("kind", "value")
         expected = _object(raw_expected, expected_fields, f"{path}.expected")
         expected_value = _string(expected["value"], f"{path}.expected.value")
+        _validate_mutation_risk_target(model, risk, mutation["operation"], expected_kind, path)
         literal_class = None
         if risk == "exact-literal":
             literal_class = _string(mutation["literal_class"], f"{path}.literal_class")
@@ -1715,7 +1777,11 @@ def _validate_mutations(
             question_id = _identifier(expected["question"], f"{path}.expected.question")
             changed_answer = _identifier(expected_value, f"{path}.expected.value")
             question = question_answers.get(question_id)
-            if question is None or changed_answer == question["required"]:
+            if (
+                question is None
+                or changed_answer not in question["answers"]
+                or changed_answer == question["required"]
+            ):
                 refuse("WAI-E-MUTATION.EXPECTED", f"{path}.expected")
             mutated_bytes = canonical_json_bytes(mutated)
             if _digest(mutated_bytes) == _digest(model_bytes):
