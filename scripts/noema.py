@@ -4376,6 +4376,12 @@ def runtime_self_test() -> dict[str, object]:
     explanation = explain_runtime("rule.inspect", manifest)
     if explanation["output"]["authoritative"] is not False:
         refuse("NOE-E-SELF_TEST.EXPLAIN", "runtime-self-test", "explanation acquired authority")
+    demonstrations = [
+        {"case": "permit", "result_sha256": _value_sha256(permit)},
+        {"case": "transition", "result_sha256": _value_sha256(transition)},
+        {"case": "literal", "result_sha256": _value_sha256(literal)},
+        {"case": "explanation", "result_sha256": _value_sha256(explanation)},
+    ]
     build, _raw, artifacts = load_build(
         fixture / "build.json",
         fixture / "modules",
@@ -4401,22 +4407,39 @@ def runtime_self_test() -> dict[str, object]:
             if not any(item["reason"] == "checked-false-guard" for item in case_manifest["omitted"]):
                 refuse("NOE-E-SELF_TEST.OMISSION", "runtime-self-test", "false guard lacked omission proof")
             outcomes.append("omitted")
+            demonstrations.append(
+                {
+                    "case": name,
+                    "manifest_sha256": _value_sha256(case_manifest),
+                    "outcome": "omitted",
+                }
+            )
         else:
             case_selection = case_manifest["selection"]
             assert isinstance(case_selection, dict)
             decision = check_runtime(effect, case_selection["facts"], case_manifest)
             outcomes.append(str(decision["output"]["decision"]))
+            demonstrations.append(
+                {
+                    "case": name,
+                    "manifest_sha256": _value_sha256(case_manifest),
+                    "result_sha256": _value_sha256(decision),
+                }
+            )
     if outcomes != ["refuse", "unknown", "omitted"]:
         refuse("NOE-E-SELF_TEST.POLICY", "runtime-self-test", "runtime policy demonstration changed")
+    manifest_digest = _value_sha256(manifest)
+    cases_digest = _value_sha256(demonstrations)
     return _result(
         "runtime-self-test",
         "ok",
         "NOE-OK",
-        correlation_values=(str(manifest["graph_sha256"]), str(manifest["selection_sha256"])),
+        correlation_values=(manifest_digest, cases_digest),
         message="slice, policy, transition, literal and explanation demonstrations passed",
         digests={
+            "cases": cases_digest,
             "graph": str(manifest["graph_sha256"]),
-            "manifest": _value_sha256(manifest),
+            "manifest": manifest_digest,
             "projection": str(manifest["projection_sha256"]),
         },
         counts={"cases": 7, "included": len(manifest["included_ids"]), "omitted": len(manifest["omitted"])},
@@ -4498,15 +4521,16 @@ def _diff_command(arguments: argparse.Namespace) -> dict[str, object]:
 def _verify_command(arguments: argparse.Namespace) -> dict[str, object]:
     if arguments.manifest is not None:
         manifest, projection = _verify_manifest_path(arguments.manifest)
+        manifest_digest = _value_sha256(manifest)
         return _result(
             "verify",
             "ok",
             "NOE-OK",
-            correlation_values=(str(manifest["graph_sha256"]), str(manifest["selection_sha256"])),
+            correlation_values=(manifest_digest,),
             message="runtime manifest, tape, projection and locked inputs match",
             digests={
                 "graph": str(manifest["graph_sha256"]),
-                "manifest": _value_sha256(manifest),
+                "manifest": manifest_digest,
                 "projection": sha256(str(projection["text"]).encode("utf-8")).hexdigest(),
             },
             counts={

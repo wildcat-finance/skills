@@ -459,6 +459,9 @@ maps name that manifest and the exact output; `check` also names selected facts,
 while `next` names selected facts and additional receipts separately. A
 `select` comparison binds its prior and current manifest identities as `before`
 and `after`; an invocation without a prior manifest has no comparison digests.
+Manifest verification correlates to the exact verified manifest. The runtime
+self-test additionally reports one `cases` digest over all seven exact case
+results, including receipt and alternate-selection evidence.
 Malformed argument vectors use the same line with `NOE-E-TYPE.ARGUMENTS` and
 never echo argument bytes; `command` is the recognised operation or `invalid`.
 

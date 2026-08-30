@@ -478,6 +478,9 @@
         "build": {
           "$ref": "#/$defs/sha256"
         },
+        "cases": {
+          "$ref": "#/$defs/sha256"
+        },
         "lock": {
           "$ref": "#/$defs/sha256"
         },
