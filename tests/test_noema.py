@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -34,6 +35,7 @@ KERNEL_FIXTURE = NOEMA_FIXTURES / "profiles" / "kernel.noe"
 CORE_DIGEST = "df97b7f39b31fcad8d75fe6d7079b12ee7c8326bd4ec1758a6577764ad1b6b76"
 BOUND_SOURCE = NOEMA_FIXTURES / "codec" / "bound-source.txt"
 SOURCE_DIGEST = "34a6411e347aa461190a71ceaa666418923ac947101c4d6db2f5e62f2b386dac"
+RUNTIME_FIXTURE = NOEMA_FIXTURES / "runtime"
 
 
 def load_noema():
@@ -83,6 +85,66 @@ def base_records(directive=None, *, literals=None, definitions=None):
 def compile_records(records):
     raw = noema._canonical_source(records)
     return noema.compile_source(raw, MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
+
+
+def checked_fact(proposition, value="true", label="fact"):
+    return {
+        "id": noema.fact_id(proposition),
+        "value": value,
+        "evidence_sha256": sha256(label.encode()).hexdigest(),
+    }
+
+
+def runtime_selection(
+    operation,
+    *,
+    state="blocked",
+    target="repository",
+    tools=(),
+    authority=(),
+    facts=(),
+):
+    return {
+        "operation": operation,
+        "state": state,
+        "target": target,
+        "tools": sorted(tools),
+        "authority": sorted(authority),
+        "facts": sorted(facts, key=lambda item: item["id"]),
+    }
+
+
+def select_records(records, selection):
+    build, artifacts = compile_records(records)
+    profile = noema._decode_json(artifacts["profile"], "profile", canonical=True)
+    manifest, projection = noema.select_runtime(
+        build,
+        profile,
+        sha256(artifacts["profile"]).hexdigest(),
+        selection,
+    )
+    return build, manifest, projection
+
+
+def runtime_fixture(selection_name="selection.json"):
+    build, _raw, artifacts = noema.load_build(
+        RUNTIME_FIXTURE / "build.json",
+        RUNTIME_FIXTURE / "modules",
+        RUNTIME_FIXTURE / "profile.json",
+        RUNTIME_FIXTURE / "kernel.noe",
+    )
+    selection, _raw = noema._read_canonical_json(
+        RUNTIME_FIXTURE / selection_name,
+        "selection",
+    )
+    profile = noema._decode_json(artifacts["profile"], "profile", canonical=True)
+    manifest, projection = noema.select_runtime(
+        build,
+        profile,
+        sha256(artifacts["profile"]).hexdigest(),
+        selection,
+    )
+    return build, selection, manifest, projection
 
 
 def write_bytes(path: Path, payload: bytes) -> None:
@@ -256,7 +318,8 @@ class NoemaScaffoldTests(unittest.TestCase):
         )
         public_records = {
             "seedInventory", "module", "profile", "build", "projection",
-            "semanticDiff", "lock", "manifest", "result", "evidence",
+            "semanticDiff", "lock", "manifest", "sliceProjection", "result",
+            "evidence",
         }
         self.assertEqual(
             public_records,
@@ -344,7 +407,8 @@ class NoemaScaffoldTests(unittest.TestCase):
         count_dimensions = set(definitions["countSet"]["properties"])
         self.assertTrue(
             {"archive", "inventory", "source", "graph", "build", "profile",
-             "projection", "before", "after", "diff"} <= digest_dimensions
+             "projection", "manifest", "facts", "receipts", "output",
+             "before", "after", "diff", "cases"} <= digest_dimensions
         )
         self.assertTrue(
             {"bytes", "members", "records", "modules", "aliases", "entries"}
@@ -389,6 +453,21 @@ class NoemaScaffoldTests(unittest.TestCase):
         self.assertEqual(result["code"], "NOE-I-ABOUT")
         self.assertEqual(result["verdict"], "ok")
         self.assertRegex(result["correlation_id"], r"^[0-9a-f]{64}$")
+
+    def test_public_contract_names_every_emitted_refusal_family(self):
+        emitted = set(
+            re.findall(
+                r'''["'](NOE-E-[A-Z_]+)(?:\.[A-Z0-9_]+)?["']''',
+                SCRIPT.read_text(encoding="utf-8"),
+            )
+        )
+        declared = set(
+            re.findall(
+                r"\| `(NOE-E-[A-Z_]+)` \|",
+                (ROOT / "docs" / "noema-v1.md").read_text(encoding="utf-8"),
+            )
+        )
+        self.assertLessEqual(emitted, declared)
 
     def test_cli_help_names_only_scaffold_and_reserved_operations(self):
         completed = subprocess.run(
@@ -1785,6 +1864,2304 @@ class SemanticDiffTests(unittest.TestCase):
         self.assertLessEqual(len(node), maximum)
 
 
+class SliceTests(unittest.TestCase):
+    def test_relation_closure_materializes_the_selectable_index_once(self):
+        effect = "relation.index"
+        records = [["import", "core", CORE_DIGEST]]
+        for index in range(5):
+            records.append(
+                [
+                    "rule",
+                    f"rule.relation.{index}",
+                    ["+", [":", "effect", effect]],
+                    source_binding(index, index + 1),
+                ]
+            )
+        for index in range(4):
+            records.append(
+                [
+                    "precedence",
+                    f"rule.relation.{index}",
+                    f"rule.relation.{index + 1}",
+                    [":", "actor", "reviewer"],
+                    [":", "scope", "repository"],
+                    [":", "evidence", f"relation.{index}"],
+                ]
+            )
+        build, artifacts = compile_records(records)
+        profile = noema._decode_json(
+            artifacts["profile"],
+            "profile",
+            canonical=True,
+        )
+        real_set = set
+        selectable_materializations = 0
+
+        def indexed_set(value=()):
+            nonlocal selectable_materializations
+            if isinstance(value, dict) and any(
+                str(key).startswith("rule.relation.") for key in value
+            ):
+                selectable_materializations += 1
+            return real_set(value)
+
+        with mock.patch.object(noema, "set", indexed_set, create=True):
+            noema.select_runtime(
+                build,
+                profile,
+                sha256(artifacts["profile"]).hexdigest(),
+                runtime_selection(effect),
+            )
+        self.assertEqual(selectable_materializations, 1)
+
+    def test_selection_rules_share_one_truth_expansion_budget(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.guard.a",
+                [
+                    "?",
+                    ["core.checked", [":", "evidence", "guard.a"]],
+                    ["+", [":", "effect", "guard.a"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.guard.b",
+                [
+                    "?",
+                    ["core.checked", [":", "evidence", "guard.b"]],
+                    ["+", [":", "effect", "guard.b"]],
+                ],
+                source_binding(1, 2),
+            ],
+        ]
+        with mock.patch.object(
+            noema,
+            "MAX_TRUTH_EXPANSION_NODES",
+            8,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                select_records(
+                    records,
+                    runtime_selection("absent", target="nowhere"),
+                )
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_manifest_omission_validation_uses_an_included_index(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.included",
+                ["+", [":", "effect", "included"]],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.omitted",
+                ["+", [":", "effect", "omitted"]],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("included"),
+        )
+        original = noema._validate_node_id_set
+
+        class NoLinearMembership(list):
+            def __contains__(self, item):
+                raise AssertionError("omission validation searched the included list")
+
+        def indexed_nodes(value, field):
+            result = original(value, field)
+            if field == "manifest.included_ids":
+                return NoLinearMembership(result)
+            return result
+
+        with mock.patch.object(noema, "_validate_node_id_set", indexed_nodes):
+            noema._validate_manifest_value(manifest)
+
+    def test_unsealed_runtime_objects_refuse_before_deep_validation(self):
+        class TraversalTrap(dict):
+            def __iter__(self):
+                raise AssertionError("unsealed data was traversed")
+
+        with self.assertRaises(noema.Refusal) as build_raised:
+            noema._runtime_build(TraversalTrap())
+        self.assertEqual(build_raised.exception.code, "NOE-E-DIGEST.BUILD")
+        with self.assertRaises(noema.Refusal) as manifest_raised:
+            noema._runtime_manifest(TraversalTrap())
+        self.assertEqual(
+            manifest_raised.exception.code,
+            "NOE-E-DIGEST.MANIFEST",
+        )
+
+    def test_slice_closure_has_a_closed_scan_budget(self):
+        records = [["import", "core", CORE_DIGEST]]
+        links = [f"link.{index}" for index in range(4)]
+        for index in range(4):
+            left = "root" if index == 0 else f"step.{index}"
+            directives = [
+                [
+                    "!",
+                    [
+                        "core.effect_on",
+                        [":", "effect", left],
+                        [":", "artifact", links[index]],
+                    ],
+                ]
+            ]
+            if index:
+                directives.append(
+                    [
+                        "!",
+                        [
+                            "core.effect_on",
+                            [":", "effect", left],
+                            [":", "artifact", links[index - 1]],
+                        ],
+                    ]
+                )
+            records.append(
+                [
+                    "rule",
+                    f"rule.chain.{index}",
+                    [";", *directives],
+                    source_binding(index, index + 1),
+                ]
+            )
+        with mock.patch.object(noema, "MAX_SLICE_SCANS", 5, create=True):
+            with self.assertRaises(noema.Refusal) as raised:
+                select_records(records, runtime_selection("root"))
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.SLICE")
+
+    def test_transition_root_matches_only_the_selected_from_state(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.inspect",
+                ["+", [":", "effect", "inspect"]],
+                source_binding(0, 1),
+            ],
+            [
+                "transition",
+                "transition.unrelated",
+                [":", "state", "other.machine"],
+                [":", "state", "other.from"],
+                [":", "event", "other.event"],
+                ["=", [":", "state", "other.from"], [":", "state", "other.from"]],
+                [":", "state", "idle"],
+                ["+", [":", "effect", "other.effect"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("inspect", state="idle"),
+        )
+        self.assertNotIn("transition.unrelated", manifest["included_ids"])
+
+    def test_structurally_valid_forged_build_cannot_mint_a_sealed_manifest(self):
+        effect = "forged.build"
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.deny",
+                ["-", [":", "effect", effect]],
+                source_binding(1, 2),
+            ],
+        ]
+        build, artifacts = compile_records(records)
+        forged = json.loads(json.dumps(build))
+        forged["graph"]["records"] = [
+            record
+            for record in forged["graph"]["records"]
+            if not (record[0] == "rule" and record[1] == "rule.deny")
+        ]
+        forged["lock"]["graph_sha256"] = noema._value_sha256(forged["graph"])
+        profile = noema._decode_json(artifacts["profile"], "profile", canonical=True)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.select_runtime(
+                forged,
+                profile,
+                sha256(artifacts["profile"]).hexdigest(),
+                runtime_selection(effect),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.BUILD")
+
+    def test_profile_value_must_match_the_locked_profile_digest(self):
+        build, artifacts = compile_records(base_records())
+        profile = noema._decode_json(artifacts["profile"], "profile", canonical=True)
+        profile["tokenizer"] = "forged-tokenizer"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.select_runtime(
+                build,
+                profile,
+                build["lock"]["profile_sha256"],
+                runtime_selection("ready"),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.PROFILE")
+
+    def test_checked_in_manifest_recomputes_exactly(self):
+        manifest, projection = noema._verify_manifest_path(
+            RUNTIME_FIXTURE / "manifest.json"
+        )
+        self.assertEqual(manifest["projection_sha256"], sha256(projection["text"].encode()).hexdigest())
+
+    def test_same_inputs_return_identical_manifest_and_projection(self):
+        _build, _selection, first_manifest, first_projection = runtime_fixture()
+        _build, _selection, second_manifest, second_projection = runtime_fixture()
+        self.assertEqual(first_manifest, second_manifest)
+        self.assertEqual(first_projection, second_projection)
+
+    def test_included_and_omitted_ids_partition_selectable_graph(self):
+        build, _selection, manifest, _projection = runtime_fixture()
+        selectable = {
+            noema._runtime_record_id(record)
+            for record in build["graph"]["records"]
+            if record[0] in noema.SELECTABLE_FORMS
+        }
+        omitted = {item["id"] for item in manifest["omitted"]}
+        self.assertEqual(set(manifest["included_ids"]) | omitted, selectable)
+        self.assertFalse(set(manifest["included_ids"]) & omitted)
+
+    def test_primary_slice_closes_support_records_and_governance(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        self.assertTrue(
+            {
+                "promise.inspect",
+                "handoff.inspect",
+                "exception.deploy",
+                "override.deploy",
+                "precedence:rule.deploy.prohibit>rule.deploy.permit",
+            }
+            <= set(manifest["included_ids"])
+        )
+
+    def test_secondary_relation_root_closes_both_named_rules(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.alpha",
+                ["+", [":", "effect", "alpha"]],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.beta",
+                ["+", [":", "effect", "beta"]],
+                source_binding(1, 2),
+            ],
+            [
+                "precedence",
+                "rule.alpha",
+                "rule.beta",
+                [":", "actor", "reviewer"],
+                [":", "scope", "selected"],
+                [":", "evidence", "order"],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("absent", target="selected"),
+        )
+        self.assertEqual(
+            set(manifest["included_ids"]),
+            {
+                "rule.alpha",
+                "rule.beta",
+                "precedence:rule.alpha>rule.beta",
+            },
+        )
+
+    def test_secondary_relation_with_an_inactive_endpoint_falls_back_safely(self):
+        guard = ["core.checked", [":", "evidence", "beta.active"]]
+        fact = checked_fact(guard, "false", "beta-inactive")
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.alpha",
+                ["+", [":", "effect", "alpha"]],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.beta",
+                ["?", guard, ["+", [":", "effect", "beta"]]],
+                source_binding(1, 2),
+            ],
+            [
+                "precedence",
+                "rule.alpha",
+                "rule.beta",
+                [":", "actor", "reviewer"],
+                [":", "scope", "selected"],
+                [":", "evidence", "order"],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("absent", target="selected", facts=(fact,)),
+        )
+        self.assertEqual(manifest["included_ids"], ["rule.alpha"])
+        omissions = {item["id"]: item["reason"] for item in manifest["omitted"]}
+        self.assertEqual(omissions["rule.beta"], "checked-false-guard")
+        self.assertEqual(
+            omissions["precedence:rule.alpha>rule.beta"],
+            "not-reachable",
+        )
+
+    def test_recovery_directive_survives_support_closure(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        promise = next(item for item in manifest["tape"] if item[0] == "promise")
+        self.assertIn(["+", [":", "effect", "recover"]], promise)
+
+    def test_macro_dependency_is_reachable(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        self.assertEqual(manifest["definitions"], ["local.operator_authorized"])
+
+    def test_only_reachable_literals_enter_the_tape(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        self.assertEqual(manifest["literals"], ["lit.instruction", "lit.note"])
+        self.assertNotIn("lit.unreachable", manifest["literals"])
+
+    def test_unknown_guard_retains_its_rule(self):
+        _build, _selection, manifest, _projection = runtime_fixture(
+            "selection-unknown.json"
+        )
+        self.assertIn("rule.review", manifest["included_ids"])
+
+    def test_checked_false_guard_carries_exact_proof(self):
+        _build, selection, manifest, _projection = runtime_fixture(
+            "selection-false.json"
+        )
+        omission = next(item for item in manifest["omitted"] if item["id"] == "rule.beta")
+        self.assertEqual(omission["reason"], "checked-false-guard")
+        self.assertEqual(omission["fact"], selection["facts"][0]["id"])
+        self.assertEqual(omission["evidence_sha256"], selection["facts"][0]["evidence_sha256"])
+
+    def test_changed_fact_changes_manifest_identity(self):
+        build, selection, manifest, _projection = runtime_fixture("selection-false.json")
+        changed = json.loads(json.dumps(selection))
+        changed["facts"][0]["value"] = "true"
+        profile = json.loads((RUNTIME_FIXTURE / "profile.json").read_text())
+        other, _projection = noema.select_runtime(
+            build,
+            profile,
+            build["lock"]["profile_sha256"],
+            changed,
+        )
+        self.assertNotEqual(noema._value_sha256(manifest), noema._value_sha256(other))
+
+    def test_changed_operation_changes_manifest_identity(self):
+        build, selection, manifest, _projection = runtime_fixture()
+        changed = dict(selection)
+        changed["operation"] = "review"
+        profile = json.loads((RUNTIME_FIXTURE / "profile.json").read_text())
+        other, _projection = noema.select_runtime(
+            build,
+            profile,
+            build["lock"]["profile_sha256"],
+            changed,
+        )
+        self.assertNotEqual(manifest["selection_sha256"], other["selection_sha256"])
+
+    def test_manifest_tape_digest_is_exact(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        self.assertEqual(manifest["tape_sha256"], noema._value_sha256(manifest["tape"]))
+
+    def test_slice_projection_recovers_exact_tape(self):
+        _build, _selection, manifest, projection = runtime_fixture()
+        profile = json.loads((RUNTIME_FIXTURE / "profile.json").read_text())
+        self.assertEqual(noema._validate_slice_projection(projection, manifest, profile), projection)
+
+    def test_omission_evidence_mismatch_refuses(self):
+        _build, _selection, manifest, _projection = runtime_fixture("selection-false.json")
+        hostile = json.loads(json.dumps(manifest))
+        omission = next(item for item in hostile["omitted"] if item["id"] == "rule.beta")
+        omission["evidence_sha256"] = "0" * 64
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_manifest_value(hostile)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.OMISSION")
+
+    def test_tape_digest_mismatch_refuses(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        hostile = json.loads(json.dumps(manifest))
+        hostile["tape_sha256"] = "0" * 64
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_manifest_value(hostile)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.TAPE")
+
+    def test_unsorted_facts_refuse(self):
+        _build, selection, _manifest, _projection = runtime_fixture()
+        hostile = json.loads(json.dumps(selection))
+        hostile["facts"] = list(reversed(hostile["facts"]))
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_selection(hostile)
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.ORDER")
+
+    def test_arbitrary_fact_identity_refuses(self):
+        fact = {"id": "fact.claimed", "value": "true", "evidence_sha256": "0" * 64}
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_facts([fact], "facts")
+        self.assertEqual(raised.exception.code, "NOE-E-TYPE.FACT_ID")
+
+    def test_artifact_path_escape_refuses(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        hostile = json.loads(json.dumps(manifest))
+        hostile["artifacts"]["build"] = "../build.json"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_manifest_value(hostile)
+        self.assertEqual(raised.exception.code, "NOE-E-PATH.LEAF")
+
+    def test_stale_selection_artifact_refuses_manifest_verification(self):
+        with scratch_directory("noema-runtime-stale-") as temporary:
+            root = Path(temporary)
+            (root / "modules").mkdir()
+            for name in ("build.json", "profile.json", "kernel.noe", "projection.json", "manifest.json"):
+                write_bytes(root / name, (RUNTIME_FIXTURE / name).read_bytes())
+            write_bytes(root / "modules" / "core.json", (RUNTIME_FIXTURE / "modules" / "core.json").read_bytes())
+            selection = json.loads((RUNTIME_FIXTURE / "selection.json").read_text())
+            selection["operation"] = "review"
+            write_bytes(root / "selection.json", noema._canonical_json(selection))
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._verify_manifest_path(root / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MANIFEST")
+
+    def test_absent_root_falls_back_to_full_conservative_slice(self):
+        records = base_records(["+", [":", "effect", "known"]])
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("absent", target="nowhere"),
+        )
+        self.assertEqual(manifest["included_ids"], ["rule.test"])
+
+    def test_macro_hidden_prohibition_remains_reachable(self):
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "definition",
+                "local.hidden_prohibition",
+                [],
+                [
+                    "core.authorized",
+                    [":", "actor", "admin"],
+                    [":", "effect", "hidden"],
+                ],
+            ],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", "hidden"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.deny",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["-", ["local.hidden_prohibition"]],
+                ],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("hidden"),
+        )
+        self.assertIn("rule.deny", manifest["included_ids"])
+        result = noema.check_runtime("hidden", [], manifest)
+        self.assertEqual(result["output"]["reason"], "prohibition")
+
+    def test_composite_guard_needs_one_exact_fact_before_omission(self):
+        first = ["core.checked", [":", "evidence", "guard.first"]]
+        second = ["core.checked", [":", "evidence", "guard.second"]]
+        facts = sorted(
+            (
+                checked_fact(first, "false", "guard-first"),
+                checked_fact(second, "false", "guard-second"),
+            ),
+            key=lambda item: item["id"],
+        )
+        _build, manifest, _projection = select_records(
+            base_records(
+                ["?", ["|", first, second], ["+", [":", "effect", "guarded"]]]
+            ),
+            runtime_selection("guarded", facts=facts),
+        )
+        self.assertIn("rule.test", manifest["included_ids"])
+
+
+class PolicyCheckTests(unittest.TestCase):
+    def test_policy_rules_share_one_directive_expansion_budget(self):
+        effect = "directive.aggregate"
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.directive.a",
+                ["+", [":", "effect", effect]],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.directive.b",
+                ["+", [":", "effect", effect]],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        with mock.patch.object(
+            noema,
+            "MAX_DIRECTIVE_EXPANSION_NODES",
+            5,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_policy_rules_share_one_truth_expansion_budget(self):
+        effect = "truth.aggregate"
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.truth.a",
+                [
+                    "?",
+                    ["core.checked", [":", "evidence", "truth.a"]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.truth.b",
+                [
+                    "?",
+                    ["core.checked", [":", "evidence", "truth.b"]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        with mock.patch.object(
+            noema,
+            "MAX_TRUTH_EXPANSION_NODES",
+            5,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_high_consequence_controller_supplies_the_authority(self):
+        effect = "authority.controller"
+        consequence = [":", "core.consequence", "3"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.early.unwrapped",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.late.authorized",
+                [
+                    "^",
+                    [":", "actor", "operator"],
+                    [
+                        ";",
+                        ["!", ["=", consequence, consequence]],
+                        ["+", [":", "effect", effect]],
+                    ],
+                ],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect, authority=("operator",)),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+        self.assertEqual(
+            result["output"]["controlling_node"],
+            "rule.late.authorized",
+        )
+
+    def test_allowed_consequence_zero_case_permits(self):
+        _build, selection, manifest, _projection = runtime_fixture()
+        result = noema.check_runtime("inspect", selection["facts"], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_consequence_three_prohibition_refuses(self):
+        _build, selection, manifest, _projection = runtime_fixture(
+            "selection-deploy.json"
+        )
+        result = noema.check_runtime("deploy", selection["facts"], manifest)
+        self.assertEqual((result["output"]["decision"], result["output"]["consequence"]), ("refuse", 3))
+
+    def test_unknown_guard_returns_unknown(self):
+        _build, selection, manifest, _projection = runtime_fixture(
+            "selection-unknown.json"
+        )
+        result = noema.check_runtime("review", selection["facts"], manifest)
+        self.assertEqual(result["output"]["decision"], "unknown")
+
+    def test_permission_never_cancels_prohibition(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", "rule.allow", ["+", [":", "effect", "conflict"]], source_binding(0, 1)],
+            ["rule", "rule.deny", ["-", [":", "effect", "conflict"]], source_binding(1, 2)],
+        ]
+        _build, manifest, _projection = select_records(records, runtime_selection("conflict"))
+        result = noema.check_runtime("conflict", [], manifest)
+        self.assertEqual((result["output"]["decision"], result["output"]["reason"]), ("refuse", "prohibition"))
+
+    def test_missing_policy_refuses(self):
+        _build, _selection, manifest, _projection = runtime_fixture("selection-unknown.json")
+        result = noema.check_runtime("absent", [], manifest)
+        self.assertEqual(result["output"]["reason"], "no-applicable-policy")
+
+    def test_fact_set_must_match_manifest(self):
+        _build, selection, manifest, _projection = runtime_fixture()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime("inspect", selection["facts"][:-1], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.FACTS")
+
+    def test_scope_mismatch_keeps_high_consequence_default_deny(self):
+        consequence = [":", "core.consequence", "3"]
+        directive = [
+            "@",
+            [":", "scope", "other"],
+            ["^", [":", "actor", "operator"], [";", ["!", ["=", consequence, consequence]], ["+", [":", "effect", "scoped"]]]],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection("scoped", authority=("operator",)),
+        )
+        result = noema.check_runtime("scoped", [], manifest)
+        self.assertEqual(result["output"]["reason"], "default-deny")
+
+    def test_inactive_nested_low_consequence_permission_does_not_default_permit(self):
+        gate = ["core.checked", [":", "evidence", "disabled"]]
+        fact = checked_fact(gate, "false", "disabled")
+        consequence = [":", "core.consequence", "0"]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", gate, ["+", [":", "effect", "inactive.low"]]],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection("inactive.low", facts=(fact,)),
+        )
+        result = noema.check_runtime("inactive.low", [fact], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "no-applicable-policy"),
+        )
+
+    def test_out_of_scope_low_consequence_permission_does_not_default_permit(self):
+        consequence = [":", "core.consequence", "0"]
+        directive = [
+            "@",
+            [":", "scope", "other"],
+            [
+                ";",
+                ["!", ["=", consequence, consequence]],
+                ["+", [":", "effect", "scoped.low"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection("scoped.low", target="repository"),
+        )
+        result = noema.check_runtime("scoped.low", [], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "no-applicable-policy"),
+        )
+
+    def test_nested_authority_wrappers_accumulate(self):
+        consequence = [":", "core.consequence", "3"]
+        directive = [
+            "^",
+            [":", "actor", "outer"],
+            [
+                "^",
+                [":", "actor", "inner"],
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", "nested.authority"]],
+                ],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection("nested.authority", authority=("inner",)),
+        )
+        result = noema.check_runtime("nested.authority", [], manifest)
+        self.assertEqual(result["output"]["decision"], "refuse")
+
+    def test_nested_scope_wrappers_accumulate(self):
+        consequence = [":", "core.consequence", "3"]
+        directive = [
+            "^",
+            [":", "actor", "operator"],
+            [
+                "@",
+                [":", "scope", "other"],
+                [
+                    "@",
+                    [":", "scope", "repository"],
+                    [
+                        ";",
+                        ["!", ["=", consequence, consequence]],
+                        ["+", [":", "effect", "nested.scope"]],
+                    ],
+                ],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(
+                "nested.scope",
+                target="repository",
+                authority=("operator",),
+            ),
+        )
+        result = noema.check_runtime("nested.scope", [], manifest)
+        self.assertEqual(result["output"]["decision"], "refuse")
+
+    def test_all_nested_authorities_and_scopes_can_apply_together(self):
+        consequence = [":", "core.consequence", "3"]
+        directive = [
+            "^",
+            [":", "actor", "outer"],
+            [
+                "^",
+                [":", "actor", "inner"],
+                [
+                    "@",
+                    [":", "scope", "repository"],
+                    [
+                        "@",
+                        [":", "scope", "target"],
+                        [
+                            ";",
+                            ["!", ["=", consequence, consequence]],
+                            ["+", [":", "effect", "nested.all"]],
+                        ],
+                    ],
+                ],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(
+                "nested.all",
+                target="target",
+                authority=("inner", "outer"),
+            ),
+        )
+        result = noema.check_runtime("nested.all", [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_authority_wrapper_mismatch_refuses(self):
+        directive = ["^", [":", "actor", "admin"], ["+", [":", "effect", "owned"]]]
+        _build, manifest, _projection = select_records(
+            base_records(directive), runtime_selection("owned", authority=("operator",))
+        )
+        result = noema.check_runtime("owned", [], manifest)
+        self.assertEqual(result["output"]["reason"], "authority-mismatch")
+
+    def test_false_requirement_refuses(self):
+        proposition = ["core.authorized", [":", "actor", "operator"], [":", "effect", "required"]]
+        fact = checked_fact(proposition, "false", "required-false")
+        directive = [";", ["!", proposition], ["+", [":", "effect", "required"]]]
+        _build, manifest, _projection = select_records(
+            base_records(directive), runtime_selection("required", facts=(fact,))
+        )
+        result = noema.check_runtime("required", [fact], manifest)
+        self.assertEqual(result["output"]["reason"], "failed-requirement")
+
+    def test_opposed_requirements_need_typed_override(self):
+        proposition = ["core.authorized", [":", "actor", "operator"], [":", "effect", "opposed"]]
+        consequence = [":", "core.consequence", "0"]
+        fact = checked_fact(proposition, "true", "opposed")
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", "rule.high", [";", ["!", ["=", consequence, consequence]], ["!", proposition]], source_binding(0, 1)],
+            ["rule", "rule.low", [";", ["!", ["=", consequence, consequence]], ["!", ["~", proposition]]], source_binding(1, 2)],
+        ]
+        _build, manifest, _projection = select_records(records, runtime_selection("opposed", facts=(fact,)))
+        result = noema.check_runtime("opposed", [fact], manifest)
+        self.assertEqual(result["output"]["reason"], "conflicting-requirements")
+
+    def test_checked_higher_authority_override_resolves_requirements(self):
+        proposition = ["core.authorized", [":", "actor", "operator"], [":", "effect", "opposed"]]
+        consequence = [":", "core.consequence", "0"]
+        evidence = [":", "evidence", "override"]
+        facts = (
+            checked_fact(proposition, "true", "opposed"),
+            checked_fact(["core.checked", evidence], "true", "override"),
+        )
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", "rule.high", [";", ["!", ["=", consequence, consequence]], ["!", proposition]], source_binding(0, 1)],
+            ["rule", "rule.low", [";", ["!", ["=", consequence, consequence]], ["!", ["~", proposition]]], source_binding(1, 2)],
+            ["override", "override.opposed", [":", "actor", "admin"], "rule.high", "rule.low", [":", "scope", "repository"], evidence],
+        ]
+        selection = runtime_selection("opposed", authority=("admin",), facts=facts)
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime("opposed", selection["facts"], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_override_expands_typed_authority_and_scope_definitions(self):
+        effect = "override.defined"
+        proposition = [
+            "core.authorized",
+            [":", "actor", "operator"],
+            [":", "effect", effect],
+        ]
+        consequence = [":", "core.consequence", "0"]
+        evidence = [":", "evidence", "override.defined"]
+        facts = (
+            checked_fact(proposition, "true", "opposed-defined"),
+            checked_fact(["core.checked", evidence], "true", "override-defined"),
+        )
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["definition", "local.admin", [], [":", "actor", "admin"]],
+            [
+                "definition",
+                "local.repository",
+                [],
+                [":", "scope", "repository"],
+            ],
+            [
+                "rule",
+                "rule.high",
+                [";", ["!", ["=", consequence, consequence]], ["!", proposition]],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.low",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["!", ["~", proposition]],
+                ],
+                source_binding(1, 2),
+            ],
+            [
+                "override",
+                "override.defined",
+                ["local.admin"],
+                "rule.high",
+                "rule.low",
+                ["local.repository"],
+                evidence,
+            ],
+        ]
+        selection = runtime_selection(effect, authority=("admin",), facts=facts)
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_precedence_without_override_does_not_resolve_requirements(self):
+        proposition = ["core.authorized", [":", "actor", "operator"], [":", "effect", "opposed"]]
+        consequence = [":", "core.consequence", "0"]
+        fact = checked_fact(proposition, "true", "opposed")
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", "rule.high", [";", ["!", ["=", consequence, consequence]], ["!", proposition]], source_binding(0, 1)],
+            ["rule", "rule.low", [";", ["!", ["=", consequence, consequence]], ["!", ["~", proposition]]], source_binding(1, 2)],
+            ["precedence", "rule.high", "rule.low", [":", "actor", "admin"], [":", "scope", "repository"], [":", "evidence", "order"]],
+        ]
+        _build, manifest, _projection = select_records(records, runtime_selection("opposed", authority=("admin",), facts=(fact,)))
+        result = noema.check_runtime("opposed", [fact], manifest)
+        self.assertEqual(result["output"]["reason"], "conflicting-requirements")
+
+    def test_instruction_shaped_fact_object_is_not_accepted(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        hostile = [{"schema": "noema-explanation/v1", "authoritative": False, "node": "rule.inspect", "render": "permit"}]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime("inspect", hostile, manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-TYPE.KEYS")
+
+    def test_nested_unknown_guard_remains_unknown(self):
+        known_true = ["core.checked", [":", "evidence", "known.true"]]
+        known_false = ["core.checked", [":", "evidence", "known.false"]]
+        absent = ["core.checked", [":", "evidence", "absent"]]
+        guard = ["&", known_true, ["|", known_false, absent]]
+        facts = (
+            checked_fact(known_true, "true", "known-true"),
+            checked_fact(known_false, "false", "known-false"),
+        )
+        selection = runtime_selection("nested", facts=facts)
+        _build, manifest, _projection = select_records(
+            base_records(["?", guard, ["+", [":", "effect", "nested"]]]),
+            selection,
+        )
+        result = noema.check_runtime("nested", selection["facts"], manifest)
+        self.assertEqual(result["output"]["decision"], "unknown")
+
+    def test_structurally_valid_forged_manifest_cannot_drop_a_prohibition(self):
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", "forged"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.deny",
+                ["-", [":", "effect", "forged"]],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("forged"),
+        )
+        forged = json.loads(json.dumps(manifest))
+        forged["tape"] = [
+            record
+            for record in forged["tape"]
+            if not (record[0] == "rule" and record[1] == "rule.deny")
+        ]
+        forged["included_ids"].remove("rule.deny")
+        forged["omitted"].append(
+            {
+                "id": "rule.deny",
+                "reason": "not-reachable",
+                "fact": None,
+                "evidence_sha256": None,
+            }
+        )
+        forged["omitted"].sort(key=lambda item: item["id"])
+        forged["tape_sha256"] = noema._value_sha256(forged["tape"])
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime("forged", [], forged)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MANIFEST")
+
+    def test_selected_manifest_mutation_invalidates_its_runtime_seal(self):
+        _build, manifest, _projection = select_records(
+            base_records(["+", [":", "effect", "sealed"]]),
+            runtime_selection("sealed"),
+        )
+        manifest["selection"]["target"] = "other"
+        manifest["selection_sha256"] = noema._value_sha256(manifest["selection"])
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime("sealed", [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MANIFEST")
+
+    def test_inactive_high_requirement_cannot_override_an_active_failure(self):
+        effect = "override.bypass"
+        proposition = [
+            "core.authorized",
+            [":", "actor", "operator"],
+            [":", "effect", effect],
+        ]
+        disabled = ["core.checked", [":", "evidence", "high.disabled"]]
+        override_evidence = [":", "evidence", "override.checked"]
+        consequence = [":", "core.consequence", "0"]
+        facts = sorted(
+            (
+                checked_fact(proposition, "false", "requirement-false"),
+                checked_fact(disabled, "false", "high-disabled"),
+                checked_fact(
+                    ["core.checked", override_evidence],
+                    "true",
+                    "override-checked",
+                ),
+            ),
+            key=lambda item: item["id"],
+        )
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.high",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["?", disabled, ["!", ["~", proposition]]],
+                ],
+                source_binding(1, 2),
+            ],
+            [
+                "rule",
+                "rule.low",
+                [";", ["!", ["=", consequence, consequence]], ["!", proposition]],
+                source_binding(2, 3),
+            ],
+            [
+                "override",
+                "override.bypass",
+                [":", "actor", "admin"],
+                "rule.high",
+                "rule.low",
+                [":", "scope", "repository"],
+                override_evidence,
+            ],
+        ]
+        selection = runtime_selection(
+            effect,
+            authority=("admin",),
+            facts=facts,
+        )
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "failed-requirement"),
+        )
+
+    def test_expired_exception_refuses_beside_a_low_consequence_permission(self):
+        effect = "exception.bypass"
+        evidence = [":", "evidence", "exception.checked"]
+        gate = ["core.checked", evidence]
+        fact = checked_fact(gate, "true", "exception-checked")
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "exception",
+                "exception.expired",
+                [":", "actor", "admin"],
+                gate,
+                [":", "effect", effect],
+                [":", "scope", "repository"],
+                evidence,
+                [":", "value", "expired"],
+                ["+", [":", "effect", "recover"]],
+            ],
+        ]
+        selection = runtime_selection(
+            effect,
+            authority=("admin",),
+            facts=(fact,),
+        )
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "invalid-exception"),
+        )
+
+    def test_exception_recovery_effect_is_not_its_policy_subject(self):
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.recover",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", "recover"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "exception",
+                "exception.deploy",
+                [":", "actor", "admin"],
+                ["core.checked", [":", "evidence", "emergency"]],
+                [":", "effect", "deploy"],
+                [":", "scope", "repository"],
+                [":", "evidence", "emergency"],
+                [":", "value", "expired"],
+                ["+", [":", "effect", "recover"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("recover"),
+        )
+        self.assertIn("exception.deploy", manifest["included_ids"])
+        result = noema.check_runtime("recover", [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_valid_exception_cannot_mint_permission(self):
+        effect = "exception.valid"
+        evidence = [":", "evidence", "exception.valid"]
+        gate = ["core.checked", evidence]
+        fact = checked_fact(gate, "true", "exception-valid")
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "exception",
+                "exception.valid",
+                [":", "actor", "admin"],
+                gate,
+                [":", "effect", effect],
+                [":", "scope", "repository"],
+                evidence,
+                [":", "value", "active"],
+                ["+", [":", "effect", "recover"]],
+            ],
+        ]
+        selection = runtime_selection(effect, authority=("admin",), facts=(fact,))
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "no-applicable-policy"),
+        )
+
+    def test_exception_expands_typed_field_definitions(self):
+        effect = "exception.defined"
+        evidence = [":", "evidence", "exception.defined"]
+        gate = ["core.checked", evidence]
+        fact = checked_fact(gate, "true", "exception-defined")
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["definition", "local.active", [], [":", "value", "active"]],
+            ["definition", "local.admin", [], [":", "actor", "admin"]],
+            [
+                "definition",
+                "local.repository",
+                [],
+                [":", "scope", "repository"],
+            ],
+            [
+                "exception",
+                "exception.defined",
+                ["local.admin"],
+                gate,
+                [":", "effect", effect],
+                ["local.repository"],
+                evidence,
+                ["local.active"],
+                ["+", [":", "effect", "recover"]],
+            ],
+        ]
+        selection = runtime_selection(effect, authority=("admin",), facts=(fact,))
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(result["output"]["reason"], "no-applicable-policy")
+
+    def test_missing_consequence_marker_is_not_masked_by_an_explicit_zero(self):
+        effect = "mixed.consequence"
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.explicit",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.missing",
+                ["+", [":", "effect", effect]],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-POLICY.CONSEQUENCE")
+
+    def test_out_of_range_consequence_marker_refuses(self):
+        effect = "invalid.consequence"
+        consequence = [":", "core.consequence", "4"]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["+", [":", "effect", effect]],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(effect, authority=("operator",)),
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-POLICY.CONSEQUENCE")
+
+    def test_requirement_pair_work_has_a_closed_runtime_budget(self):
+        effect = "policy.budget"
+        records = [["import", "core", CORE_DIGEST]]
+        for index in range(4):
+            records.append(
+                [
+                    "rule",
+                    f"rule.budget.{index}",
+                    [
+                        "!",
+                        [
+                            "core.authorized",
+                            [":", "actor", f"actor.{index}"],
+                            [":", "effect", effect],
+                        ],
+                    ],
+                    source_binding(index, index + 1),
+                ]
+            )
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        with mock.patch.object(noema, "MAX_POLICY_PAIRS", 4, create=True):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.POLICY")
+
+    def test_quantified_truth_shares_one_expansion_budget(self):
+        effect = "truth.budget"
+        consequence = [":", "core.consequence", "0"]
+        members = [
+            [":", "actor", "actor.five"],
+            [":", "actor", "actor.four"],
+            [":", "actor", "actor.one"],
+            [":", "actor", "actor.three"],
+            [":", "actor", "actor.two"],
+        ]
+        proposition = [
+            "all",
+            ["item", "actor"],
+            ["{}", "actor", *members],
+            ["=", ["%", "item"], ["%", "item"]],
+        ]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", proposition, ["+", [":", "effect", effect]]],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(effect),
+        )
+        with mock.patch.object(
+            noema,
+            "MAX_TRUTH_EXPANSION_NODES",
+            45,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_nested_directives_share_one_expansion_budget(self):
+        effect = "directive.budget"
+        consequence = [":", "core.consequence", "0"]
+        guard = ["=", [":", "state", "ready"], [":", "state", "ready"]]
+        nested = ["+", [":", "effect", effect]]
+        for _index in range(6):
+            nested = ["?", guard, nested]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            nested,
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(effect),
+        )
+        with mock.patch.object(
+            noema,
+            "MAX_DIRECTIVE_EXPANSION_NODES",
+            80,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_requirement_alone_never_permits_an_effect(self):
+        proposition = [
+            "core.authorized",
+            [":", "actor", "operator"],
+            [":", "effect", "require.only"],
+        ]
+        fact = checked_fact(proposition, "true", "require-only")
+        directive = [
+            "^",
+            [":", "actor", "operator"],
+            ["!", proposition],
+        ]
+        selection = runtime_selection(
+            "require.only",
+            authority=("operator",),
+            facts=(fact,),
+        )
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            selection,
+        )
+        result = noema.check_runtime("require.only", selection["facts"], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "default-deny"),
+        )
+
+    def test_unsigned_comparison_does_not_depend_on_host_integer_limit(self):
+        effect = "large.decimal"
+        consequence = [":", "core.consequence", "0"]
+        left = "1" + ("0" * 5_000)
+        right = "9" * 5_000
+        guard = ["gt", [":", "value", left], [":", "value", right]]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", guard, ["+", [":", "effect", effect]]],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(effect),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_finite_set_count_is_a_numeric_comparison_operand(self):
+        effect = "count.numeric"
+        consequence = [":", "core.consequence", "0"]
+        collection = [
+            "{}",
+            "actor",
+            [":", "actor", "alpha"],
+            [":", "actor", "beta"],
+        ]
+        guard = ["gt", ["count", collection], [":", "value", "1"]]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", guard, ["+", [":", "effect", effect]]],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(effect),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_number_literal_is_a_numeric_comparison_operand(self):
+        effect = "literal.numeric"
+        consequence = [":", "core.consequence", "0"]
+        guard = ["lt", ["$", "lit.one"], [":", "value", "2"]]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", guard, ["+", [":", "effect", effect]]],
+        ]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["literal", "lit.one", "number", "1", "1"],
+            ["rule", "rule.literal.numeric", directive, source_binding()],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_literal_references_are_distinct_finite_set_scalars(self):
+        effect = "literal.set"
+        consequence = [":", "core.consequence", "0"]
+        collection = [
+            "{}",
+            "literal",
+            ["$", "lit.alpha"],
+            ["$", "lit.beta"],
+        ]
+        singleton = ["{}", "literal", ["$", "lit.alpha"]]
+        guard = [
+            "&",
+            ["=", ["count", collection], [":", "value", "2"]],
+            ["in", ["$", "lit.alpha"], collection],
+            ["subset", singleton, collection],
+        ]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", guard, ["+", [":", "effect", effect]]],
+        ]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["literal", "lit.alpha", "text", "12", "same-payload"],
+            ["literal", "lit.beta", "text", "12", "same-payload"],
+            ["rule", "rule.literal.set", directive, source_binding()],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_expanded_set_aliases_do_not_inflate_cardinality(self):
+        effect = "set.cardinality"
+        consequence = [":", "core.consequence", "0"]
+        collection = [
+            "{}",
+            "actor",
+            [":", "actor", "zeta"],
+            ["local.actor_zeta"],
+        ]
+        guard = ["=", ["count", collection], [":", "value", "2"]]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", guard, ["+", [":", "effect", effect]]],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(
+                directive,
+                definitions=[
+                    [
+                        "definition",
+                        "local.actor_zeta",
+                        [],
+                        [":", "actor", "zeta"],
+                    ]
+                ],
+            ),
+            runtime_selection(effect),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "no-applicable-policy"),
+        )
+
+    def test_expanded_set_equality_is_order_independent(self):
+        effect = "set.equality"
+        consequence = [":", "core.consequence", "0"]
+        left = [
+            "{}",
+            "actor",
+            [":", "actor", "beta"],
+            ["local.actor_alpha"],
+        ]
+        right = [
+            "{}",
+            "actor",
+            [":", "actor", "alpha"],
+            [":", "actor", "beta"],
+        ]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", ["=", left, right], ["+", [":", "effect", effect]]],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(
+                directive,
+                definitions=[
+                    [
+                        "definition",
+                        "local.actor_alpha",
+                        [],
+                        [":", "actor", "alpha"],
+                    ]
+                ],
+            ),
+            runtime_selection(effect),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_exactly_one_is_false_after_two_established_truths(self):
+        effect = "one.decisive"
+        consequence = [":", "core.consequence", "0"]
+        members = [
+            [":", "actor", "alpha"],
+            [":", "actor", "beta"],
+            [":", "actor", "gamma"],
+        ]
+        body = [
+            "core.authorized",
+            ["%", "item"],
+            [":", "effect", effect],
+        ]
+        quantified = [
+            "one",
+            ["item", "actor"],
+            ["{}", "actor", *members],
+            body,
+        ]
+        facts = tuple(
+            sorted(
+                (
+                    checked_fact(
+                        ["core.authorized", members[0], [":", "effect", effect]],
+                        "true",
+                        "one-alpha",
+                    ),
+                    checked_fact(
+                        ["core.authorized", members[1], [":", "effect", effect]],
+                        "true",
+                        "one-beta",
+                    ),
+                ),
+                key=lambda item: item["id"],
+            )
+        )
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["/", quantified, ["+", [":", "effect", effect]]],
+        ]
+        selection = runtime_selection(effect, facts=facts)
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            selection,
+        )
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_nested_quantifier_binders_do_not_capture_outer_values(self):
+        effect = "quantifier.shadow"
+        consequence = [":", "core.consequence", "0"]
+        outer = [":", "actor", "alpha"]
+        inner = [":", "actor", "beta"]
+        proposition = [
+            "all",
+            ["item", "actor"],
+            ["{}", "actor", outer],
+            [
+                "any",
+                ["item", "actor"],
+                ["{}", "actor", inner],
+                ["=", ["%", "item"], outer],
+            ],
+        ]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", proposition, ["+", [":", "effect", effect]]],
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(effect),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "no-applicable-policy"),
+        )
+
+    def test_closed_truth_refuses_a_contradictory_checked_fact(self):
+        proposition = [
+            "=",
+            [":", "effect", "fact.bypass"],
+            [":", "effect", "fact.bypass"],
+        ]
+        fact = checked_fact(proposition, "false", "contradictory")
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", "fact.bypass"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.deny",
+                ["?", proposition, ["-", [":", "effect", "fact.bypass"]]],
+                source_binding(1, 2),
+            ],
+        ]
+        with self.assertRaises(noema.Refusal) as raised:
+            select_records(
+                records,
+                runtime_selection("fact.bypass", facts=(fact,)),
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-POLICY.FACT_CONFLICT")
+
+    def test_composite_truth_preserves_authored_subfact_identity(self):
+        effect = "subfact.conflict"
+        consequence = [":", "core.consequence", "0"]
+        call = ["local.always"]
+        fact = checked_fact(call, "false", "subfact-false")
+        guard = [
+            "&",
+            call,
+            ["=", [":", "state", "ready"], [":", "state", "ready"]],
+        ]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", guard, ["+", [":", "effect", effect]]],
+        ]
+        selection = runtime_selection(effect, facts=(fact,))
+        _build, manifest, _projection = select_records(
+            base_records(
+                directive,
+                definitions=[
+                    [
+                        "definition",
+                        "local.always",
+                        [],
+                        [
+                            "=",
+                            [":", "state", "ready"],
+                            [":", "state", "ready"],
+                        ],
+                    ]
+                ],
+            ),
+            selection,
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-POLICY.FACT_CONFLICT")
+
+
+class TransitionTests(unittest.TestCase):
+    def test_transitions_share_one_truth_expansion_budget(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.move",
+                ["+", [":", "effect", "move"]],
+                source_binding(0, 1),
+            ],
+            [
+                "transition",
+                "transition.budget.a",
+                [":", "state", "machine"],
+                [":", "state", "idle"],
+                [":", "event", "go"],
+                ["core.checked", [":", "evidence", "transition.a"]],
+                [":", "state", "ready.a"],
+                ["+", [":", "effect", "step.a"]],
+            ],
+            [
+                "transition",
+                "transition.budget.b",
+                [":", "state", "machine"],
+                [":", "state", "idle"],
+                [":", "event", "go"],
+                ["core.checked", [":", "evidence", "transition.b"]],
+                [":", "state", "ready.b"],
+                ["+", [":", "effect", "step.b"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("move", state="idle"),
+        )
+        with mock.patch.object(
+            noema,
+            "MAX_TRUTH_EXPANSION_NODES",
+            5,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.next_runtime("machine", "idle", "go", [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_transition_expands_its_typed_state_definition(self):
+        gate = ["=", [":", "state", "idle"], [":", "state", "idle"]]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["definition", "local.ready", [], [":", "state", "ready"]],
+            [
+                "rule",
+                "rule.move",
+                ["+", [":", "effect", "move"]],
+                source_binding(0, 1),
+            ],
+            [
+                "transition",
+                "transition.defined",
+                [":", "state", "machine"],
+                [":", "state", "idle"],
+                [":", "event", "go"],
+                gate,
+                ["local.ready"],
+                ["+", [":", "effect", "move"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("move", state="idle"),
+        )
+        result = noema.next_runtime("machine", "idle", "go", [], manifest)
+        self.assertEqual(result["output"]["next_state"], "ready")
+
+    def test_established_transition_returns_ordered_effects(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        receipts = noema._read_fact_array(RUNTIME_FIXTURE / "receipts.json", "receipts")
+        result = noema.next_runtime("workflow", "idle", "requested", receipts, manifest)
+        self.assertEqual(result["output"]["status"], "transition")
+        self.assertEqual([item[1][2] for item in result["output"]["effects"]], ["inspect", "record"])
+
+    def test_wrong_event_stops(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        result = noema.next_runtime("workflow", "idle", "other", [], manifest)
+        self.assertEqual((result["output"]["status"], result["output"]["reason"]), ("stop", "no-enabled-transition"))
+
+    def test_wrong_machine_stops(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        result = noema.next_runtime("other", "idle", "requested", [], manifest)
+        self.assertEqual(result["output"]["controlling_node"], "default.stop")
+
+    def test_wrong_state_refuses_outside_the_selected_slice(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.next_runtime("workflow", "ready", "requested", [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-POLICY.TRANSITION")
+
+    def test_omitted_state_transition_cannot_be_reported_as_a_clean_stop(self):
+        gate = ["=", [":", "state", "ready"], [":", "state", "ready"]]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.seed",
+                ["+", [":", "effect", "seed"]],
+                source_binding(0, 1),
+            ],
+            [
+                "transition",
+                "transition.ready",
+                [":", "state", "machine"],
+                [":", "state", "ready"],
+                [":", "event", "go"],
+                gate,
+                [":", "state", "done"],
+                ["+", [":", "effect", "finish"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("seed", state="idle"),
+        )
+        self.assertNotIn("transition.ready", manifest["included_ids"])
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.next_runtime("machine", "ready", "go", [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-POLICY.TRANSITION")
+
+    def test_unknown_transition_guard_stops_unknown(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        result = noema.next_runtime("workflow", "idle", "requested", [], manifest)
+        self.assertEqual((result["verdict"], result["output"]["reason"]), ("unknown", "unestablished-guard"))
+
+    def test_false_transition_guard_stops(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        proposition = ["core.checked", [":", "evidence", "receipt"]]
+        receipt = checked_fact(proposition, "false", "receipt-false")
+        result = noema.next_runtime("workflow", "idle", "requested", [receipt], manifest)
+        self.assertEqual(result["output"]["reason"], "no-enabled-transition")
+
+    def test_contradictory_receipt_refuses(self):
+        build, selection, manifest, projection = runtime_fixture()
+        proposition = ["core.ready", [":", "state", "idle"]]
+        conflict = checked_fact(proposition, "false", "different-evidence")
+        conflict["id"] = selection["facts"][0]["id"]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.next_runtime("workflow", "idle", "requested", [conflict], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.FACTS")
+
+    def test_multiple_enabled_transitions_refuse(self):
+        gate = ["=", [":", "state", "idle"], [":", "state", "idle"]]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", "rule.move", ["+", [":", "effect", "move"]], source_binding(0, 1)],
+            ["transition", "transition.a", [":", "state", "machine"], [":", "state", "idle"], [":", "event", "go"], gate, [":", "state", "state.one"], ["+", [":", "effect", "step.one"]]],
+            ["transition", "transition.b", [":", "state", "machine"], [":", "state", "idle"], [":", "event", "go"], gate, [":", "state", "state.two"], ["+", [":", "effect", "step.two"]]],
+        ]
+        _build, manifest, _projection = select_records(records, runtime_selection("move", state="idle"))
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.next_runtime("machine", "idle", "go", [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-POLICY.TRANSITION")
+
+    def test_established_transition_stops_for_an_unknown_competitor(self):
+        established = ["=", [":", "state", "idle"], [":", "state", "idle"]]
+        unknown = ["core.checked", [":", "evidence", "transition.maybe"]]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.move",
+                ["+", [":", "effect", "move"]],
+                source_binding(0, 1),
+            ],
+            [
+                "transition",
+                "transition.established",
+                [":", "state", "machine"],
+                [":", "state", "idle"],
+                [":", "event", "go"],
+                established,
+                [":", "state", "state.one"],
+                ["+", [":", "effect", "step.one"]],
+            ],
+            [
+                "transition",
+                "transition.unknown",
+                [":", "state", "machine"],
+                [":", "state", "idle"],
+                [":", "event", "go"],
+                unknown,
+                [":", "state", "state.two"],
+                ["+", [":", "effect", "step.two"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("move", state="idle"),
+        )
+        result = noema.next_runtime("machine", "idle", "go", [], manifest)
+        self.assertEqual(
+            (result["output"]["status"], result["output"]["reason"]),
+            ("stop", "unestablished-guard"),
+        )
+
+    def test_receipts_must_be_sorted(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        first = checked_fact(["core.ready", [":", "state", "x"]], label="x")
+        second = checked_fact(["core.ready", [":", "state", "y"]], label="y")
+        receipts = sorted([first, second], key=lambda item: item["id"], reverse=True)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.next_runtime("workflow", "idle", "requested", receipts, manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.ORDER")
+
+    def test_transition_is_deterministic(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        receipts = noema._read_fact_array(RUNTIME_FIXTURE / "receipts.json", "receipts")
+        first = noema.next_runtime("workflow", "idle", "requested", receipts, manifest)
+        second = noema.next_runtime("workflow", "idle", "requested", receipts, manifest)
+        self.assertEqual(first, second)
+
+    def test_transition_does_not_execute_instruction_literal(self):
+        marker = Path("/tmp/noema-owned")
+        marker.unlink(missing_ok=True)
+        _build, _selection, manifest, _projection = runtime_fixture()
+        receipts = noema._read_fact_array(RUNTIME_FIXTURE / "receipts.json", "receipts")
+        noema.next_runtime("workflow", "idle", "requested", receipts, manifest)
+        self.assertFalse(marker.exists())
+
+
+class LiteralTests(unittest.TestCase):
+    def test_reachable_literal_returns_exact_bytes(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        result = noema.literal_runtime("lit.instruction", manifest)
+        self.assertEqual(result["output"]["value"], "$(touch /tmp/noema-owned)")
+
+    def test_reachable_literal_retains_kind(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        result = noema.literal_runtime("lit.instruction", manifest)
+        self.assertEqual(result["output"]["kind"], "command")
+
+    def test_literal_digest_covers_exact_utf8(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        result = noema.literal_runtime("lit.note", manifest)
+        self.assertEqual(result["output"]["sha256"], sha256(b"inspect only").hexdigest())
+
+    def test_unreachable_literal_refuses(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.literal_runtime("lit.unreachable", manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.LITERAL")
+
+    def test_literal_is_inert_even_when_command_shaped(self):
+        marker = Path("/tmp/noema-owned")
+        marker.unlink(missing_ok=True)
+        _build, _selection, manifest, _projection = runtime_fixture()
+        noema.literal_runtime("lit.instruction", manifest)
+        self.assertFalse(marker.exists())
+
+    def test_malformed_literal_id_refuses_without_echo(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.literal_runtime("$(touch bad)", manifest)
+        self.assertEqual(raised.exception.field, "literal")
+        self.assertNotIn("touch", raised.exception.message)
+
+    def test_unsealed_literal_manifest_refuses_before_inventory_validation(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        hostile = json.loads(json.dumps(manifest))
+        hostile["literals"] = []
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.literal_runtime("lit.instruction", hostile)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MANIFEST")
+
+
+class ExplainTests(unittest.TestCase):
+    def test_explanation_is_explicitly_non_authoritative(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        result = noema.explain_runtime("rule.inspect", manifest)
+        self.assertEqual((result["code"], result["output"]["authoritative"]), ("NOE-I-NON_AUTHORITATIVE", False))
+
+    def test_explanation_render_is_canonical_record_json(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        result = noema.explain_runtime("rule.inspect", manifest)
+        record = next(item for item in manifest["tape"] if item[0] == "rule" and item[1] == "rule.inspect")
+        self.assertEqual(result["output"]["render"], noema._canonical_json(record).decode().rstrip("\n"))
+
+    def test_missing_node_refuses(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.explain_runtime("rule.absent", manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.NODE")
+
+    def test_precedence_node_can_be_explained(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        node = "precedence:rule.deploy.prohibit>rule.deploy.permit"
+        result = noema.explain_runtime(node, manifest)
+        self.assertEqual(result["output"]["node"], node)
+
+    def test_explanation_cannot_be_consumed_as_facts(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        explanation = noema.explain_runtime("rule.inspect", manifest)["output"]
+        with self.assertRaises(noema.Refusal):
+            noema.check_runtime("inspect", [explanation], manifest)
+
+    def test_unsealed_explanation_cannot_be_consumed_as_manifest(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        explanation = noema.explain_runtime("rule.inspect", manifest)["output"]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.explain_runtime("rule.inspect", explanation)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MANIFEST")
+
+    def test_explanation_is_deterministic(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        self.assertEqual(
+            noema.explain_runtime("rule.inspect", manifest),
+            noema.explain_runtime("rule.inspect", manifest),
+        )
+
+
+class RuntimeResultTests(unittest.TestCase):
+    def run_main(self, arguments):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            status = noema.main(arguments)
+        lines = output.getvalue().splitlines()
+        self.assertEqual(len(lines), 1)
+        return status, json.loads(lines[0])
+
+    def test_runtime_self_test_cli_passes(self):
+        status, result = self.run_main(["runtime-self-test"])
+        self.assertEqual((status, result["counts"]["cases"]), (0, 7))
+        self.assertEqual(
+            result["correlation_id"],
+            noema._correlation(
+                "runtime-self-test",
+                result["digests"]["manifest"],
+                result["digests"]["cases"],
+            ),
+        )
+
+    def test_manifest_verify_cli_passes(self):
+        status, result = self.run_main(["verify", "--manifest", str(RUNTIME_FIXTURE / "manifest.json")])
+        self.assertEqual((status, result["verdict"]), (0, "ok"))
+        self.assertEqual(
+            result["correlation_id"],
+            noema._correlation("verify", result["digests"]["manifest"]),
+        )
+
+    def test_runtime_self_test_binds_receipts_and_case_selections(self):
+        with scratch_directory("noema-self-test-evidence-") as temporary:
+            root = Path(temporary)
+            fixture = root / "tests" / "fixtures" / "noema-v1" / "runtime"
+            shutil.copytree(RUNTIME_FIXTURE, fixture)
+            script = root / "scripts" / "noema.py"
+            script.parent.mkdir()
+            shutil.copy2(SCRIPT, script)
+            with mock.patch.object(noema, "__file__", str(script)):
+                baseline = noema.runtime_self_test()
+
+                receipts_path = fixture / "receipts.json"
+                receipts = json.loads(receipts_path.read_text(encoding="utf-8"))
+                receipts[0]["evidence_sha256"] = "f" * 64
+                receipts_path.write_bytes(noema._canonical_json(receipts))
+                changed_receipts = noema.runtime_self_test()
+
+                selection_path = fixture / "selection-deploy.json"
+                selection = json.loads(selection_path.read_text(encoding="utf-8"))
+                selection["facts"][0]["evidence_sha256"] = "e" * 64
+                selection_path.write_bytes(noema._canonical_json(selection))
+                changed_selection = noema.runtime_self_test()
+
+        self.assertNotEqual(
+            baseline["digests"]["cases"], changed_receipts["digests"]["cases"]
+        )
+        self.assertNotEqual(
+            baseline["correlation_id"], changed_receipts["correlation_id"]
+        )
+        self.assertNotEqual(
+            changed_receipts["digests"]["cases"],
+            changed_selection["digests"]["cases"],
+        )
+        self.assertNotEqual(
+            changed_receipts["correlation_id"],
+            changed_selection["correlation_id"],
+        )
+
+    def test_check_cli_returns_policy_data(self):
+        status, result = self.run_main([
+            "check", "--manifest", str(RUNTIME_FIXTURE / "manifest.json"),
+            "--effect", "inspect", "--facts", str(RUNTIME_FIXTURE / "facts.json"),
+        ])
+        self.assertEqual((status, result["output"]["decision"]), (0, "permit"))
+
+    def test_next_cli_returns_ordered_data(self):
+        status, result = self.run_main([
+            "next", "--manifest", str(RUNTIME_FIXTURE / "manifest.json"),
+            "--machine", "workflow", "--state", "idle", "--event", "requested",
+            "--receipts", str(RUNTIME_FIXTURE / "receipts.json"),
+        ])
+        self.assertEqual((status, len(result["output"]["effects"])), (0, 2))
+
+    def test_literal_cli_returns_data(self):
+        status, result = self.run_main([
+            "literal", "--manifest", str(RUNTIME_FIXTURE / "manifest.json"),
+            "--id", "lit.note",
+        ])
+        self.assertEqual((status, result["output"]["value"]), (0, "inspect only"))
+
+    def test_explain_cli_labels_render(self):
+        status, result = self.run_main([
+            "explain", "--manifest", str(RUNTIME_FIXTURE / "manifest.json"),
+            "--node", "rule.inspect",
+        ])
+        self.assertEqual((status, result["output"]["authoritative"]), (0, False))
+
+    def test_runtime_commands_expose_no_output_path(self):
+        help_actions = {
+            action.dest
+            for action in noema.parser()._subparsers._group_actions[0].choices["check"]._actions
+        }
+        self.assertNotIn("output", help_actions)
+
+    def test_policy_refusal_is_a_successful_command_result(self):
+        _build, selection, manifest, _projection = runtime_fixture("selection-deploy.json")
+        result = noema.check_runtime("deploy", selection["facts"], manifest)
+        self.assertEqual((result["verdict"], result["code"]), ("refuse", "NOE-I-POLICY_REFUSE"))
+
+    def test_unknown_is_distinct_from_refusal(self):
+        _build, selection, manifest, _projection = runtime_fixture("selection-unknown.json")
+        result = noema.check_runtime("review", selection["facts"], manifest)
+        self.assertEqual((result["verdict"], result["code"]), ("unknown", "NOE-I-POLICY_UNKNOWN"))
+
+    def test_every_runtime_result_has_bounded_correlation(self):
+        _build, selection, manifest, _projection = runtime_fixture()
+        results = [
+            noema.check_runtime("inspect", selection["facts"], manifest),
+            noema.next_runtime("workflow", "idle", "other", [], manifest),
+            noema.literal_runtime("lit.note", manifest),
+            noema.explain_runtime("rule.inspect", manifest),
+        ]
+        for result in results:
+            with self.subTest(command=result["command"]):
+                self.assertRegex(result["correlation_id"], r"^[0-9a-f]{64}$")
+                self.assertLessEqual(len(result["message"]), 512)
+
+    def test_runtime_results_bind_the_slice_inputs_and_exact_output(self):
+        _build, selection, manifest, _projection = runtime_fixture()
+        receipts = noema._read_fact_array(
+            RUNTIME_FIXTURE / "receipts.json",
+            "receipts",
+        )
+        check = noema.check_runtime("inspect", selection["facts"], manifest)
+        transition = noema.next_runtime(
+            "workflow",
+            "idle",
+            "requested",
+            receipts,
+            manifest,
+        )
+        literal = noema.literal_runtime("lit.note", manifest)
+        explanation = noema.explain_runtime("rule.inspect", manifest)
+        manifest_digest = noema._value_sha256(manifest)
+        receipts_digest = noema._value_sha256(receipts)
+        correlations = {
+            "check": noema._correlation(
+                "check",
+                manifest_digest,
+                manifest["facts_sha256"],
+                "inspect",
+            ),
+            "next": noema._correlation(
+                "next",
+                manifest_digest,
+                "workflow",
+                "idle",
+                "requested",
+                receipts_digest,
+            ),
+            "literal": noema._correlation("literal", manifest_digest, "lit.note"),
+            "explain": noema._correlation("explain", manifest_digest, "rule.inspect"),
+        }
+        for result in (check, transition, literal, explanation):
+            with self.subTest(command=result["command"]):
+                self.assertEqual(
+                    result["correlation_id"],
+                    correlations[result["command"]],
+                )
+                self.assertEqual(result["digests"]["manifest"], manifest_digest)
+                self.assertEqual(
+                    result["digests"]["output"],
+                    noema._value_sha256(result["output"]),
+                )
+        self.assertEqual(check["digests"]["facts"], manifest["facts_sha256"])
+        self.assertEqual(transition["digests"]["facts"], manifest["facts_sha256"])
+        self.assertEqual(transition["digests"]["receipts"], receipts_digest)
+        self.assertEqual(
+            transition["digests"]["output"],
+            noema._value_sha256(transition["output"]),
+        )
+
+    def test_select_result_binds_the_manifest_and_exact_output(self):
+        arguments = [
+            "select",
+            "--build", str(RUNTIME_FIXTURE / "build.json"),
+            "--modules", str(RUNTIME_FIXTURE / "modules"),
+            "--profile", str(RUNTIME_FIXTURE / "profile.json"),
+            "--kernel", str(RUNTIME_FIXTURE / "kernel.noe"),
+            "--selection", str(RUNTIME_FIXTURE / "selection.json"),
+        ]
+        status, result = self.run_main(arguments)
+        self.assertEqual(status, 0)
+        self.assertEqual(
+            result["correlation_id"],
+            noema._correlation("select", result["digests"]["manifest"], "none"),
+        )
+        self.assertEqual(
+            result["digests"]["output"],
+            noema._value_sha256(result["output"]),
+        )
+
+    def test_select_comparison_names_its_baseline(self):
+        status, result = self.run_main([
+            "select",
+            "--build", str(RUNTIME_FIXTURE / "build.json"),
+            "--modules", str(RUNTIME_FIXTURE / "modules"),
+            "--profile", str(RUNTIME_FIXTURE / "profile.json"),
+            "--kernel", str(RUNTIME_FIXTURE / "kernel.noe"),
+            "--selection", str(RUNTIME_FIXTURE / "selection.json"),
+            "--previous-manifest", str(RUNTIME_FIXTURE / "manifest.json"),
+        ])
+        self.assertEqual(status, 0)
+        self.assertFalse(result["output"]["changed"])
+        self.assertEqual(
+            result["digests"]["before"],
+            result["digests"]["manifest"],
+        )
+        self.assertEqual(
+            result["digests"]["after"],
+            result["digests"]["manifest"],
+        )
+        self.assertEqual(
+            result["correlation_id"],
+            noema._correlation(
+                "select",
+                result["digests"]["manifest"],
+                result["digests"]["before"],
+            ),
+        )
+
+    def test_invalid_effect_is_redacted(self):
+        status, result = self.run_main([
+            "check", "--manifest", str(RUNTIME_FIXTURE / "manifest.json"),
+            "--effect", "$(touch /tmp/noema-bad)", "--facts", str(RUNTIME_FIXTURE / "facts.json"),
+        ])
+        self.assertEqual(status, 2)
+        self.assertNotIn("touch", result["message"])
+
+    def test_result_schema_closes_runtime_output(self):
+        definitions = json.loads(SCHEMA.read_text())["$defs"]
+        self.assertEqual(
+            {item["$ref"].rsplit("/", 1)[-1] for item in definitions["runtimeOutput"]["oneOf"]},
+            {"selectOutput", "checkOutput", "nextOutput", "literalOutput", "explainOutput"},
+        )
+        for name in ("selectOutput", "checkOutput", "nextOutput", "literalOutput", "explainOutput"):
+            self.assertFalse(definitions[name]["additionalProperties"])
+
+
 class PathBoundaryTests(unittest.TestCase):
     def test_non_scalar_output_leaf_refuses_through_cli(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -1936,6 +4313,204 @@ class PathBoundaryTests(unittest.TestCase):
             with mock.patch.object(noema.tempfile, "mkstemp", side_effect=capture):
                 noema._atomic_write(Path(temporary) / "secret-target-name", b"x")
         self.assertEqual(observed, [".noema-write-"])
+
+
+def _runtime_consequence_test(level, authorised):
+    def test(self):
+        effect = f"consequence{level}{'a' if authorised else 'u'}"
+        consequence = [":", "core.consequence", str(level)]
+        directive = [";", ["!", ["=", consequence, consequence]], ["+", [":", "effect", effect]]]
+        authority = ()
+        if authorised:
+            directive = ["^", [":", "actor", "operator"], directive]
+            authority = ("operator",)
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(effect, authority=authority),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        expected = "permit" if level < 2 or authorised else "refuse"
+        self.assertEqual((result["output"]["decision"], result["output"]["consequence"]), (expected, level))
+
+    return test
+
+
+for _level in range(4):
+    for _authorised in (False, True):
+        setattr(
+            PolicyCheckTests,
+            f"test_consequence_{_level}_{'authorised' if _authorised else 'unowned'}",
+            _runtime_consequence_test(_level, _authorised),
+        )
+
+
+def _runtime_guard_test(operator, truth, expected):
+    def test(self):
+        effect = f"guard{operator == '/'}{truth}"
+        proposition = ["core.checked", [":", "evidence", effect]]
+        fact = checked_fact(proposition, truth, effect)
+        consequence = [":", "core.consequence", "0"]
+        directive = [
+            operator,
+            proposition,
+            [";", ["!", ["=", consequence, consequence]], ["+", [":", "effect", effect]]],
+        ]
+        selection = runtime_selection(effect, facts=(fact,))
+        _build, manifest, _projection = select_records(base_records(directive), selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(result["output"]["decision"], expected)
+
+    return test
+
+
+for _operator, _truth, _expected in (
+    ("?", "true", "permit"),
+    ("?", "false", "refuse"),
+    ("?", "unknown", "unknown"),
+    ("/", "true", "refuse"),
+    ("/", "false", "permit"),
+    ("/", "unknown", "unknown"),
+):
+    setattr(
+        PolicyCheckTests,
+        f"test_{'when' if _operator == '?' else 'unless'}_{_truth}",
+        _runtime_guard_test(_operator, _truth, _expected),
+    )
+
+
+def _exception_cannot_authorize_test(expiry, scope, checked):
+    def test(self):
+        evidence = [":", "evidence", "exception"]
+        gate = ["core.checked", evidence]
+        facts = (checked_fact(gate, "true", "exception"),) if checked else ()
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "exception",
+                "exception.only",
+                [":", "actor", "admin"],
+                gate,
+                [":", "effect", "exceptional"],
+                [":", "scope", scope],
+                evidence,
+                [":", "value", expiry],
+                ["+", [":", "effect", "recover"]],
+            ],
+        ]
+        selection = runtime_selection("exceptional", authority=("admin",), facts=facts)
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime("exceptional", selection["facts"], manifest)
+        self.assertEqual((result["output"]["decision"], result["output"]["reason"]), ("refuse", "invalid-exception"))
+
+    return test
+
+
+for _name, _expiry, _scope, _checked in (
+    ("missing_evidence", "active", "repository", False),
+    ("expired", "expired", "repository", True),
+    ("over_broad", "active", "other", True),
+):
+    setattr(
+        PolicyCheckTests,
+        f"test_exception_{_name}_cannot_mint_authority",
+        _exception_cannot_authorize_test(_expiry, _scope, _checked),
+    )
+
+
+def _separation_fact_test(label):
+    def test(self):
+        effect = f"separate.{label}"
+        consequence = [":", "core.consequence", "3"]
+        directive = [";", ["!", ["=", consequence, consequence]], ["+", [":", "effect", effect]]]
+        if label == "authority":
+            proposition = ["core.authorized", [":", "actor", "operator"], [":", "effect", effect]]
+        else:
+            proposition = ["core.checked", [":", "evidence", label]]
+        fact = checked_fact(proposition, "true", label)
+        selection = runtime_selection(effect, authority=("operator",), facts=(fact,))
+        _build, manifest, _projection = select_records(base_records(directive), selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual((result["output"]["decision"], result["output"]["reason"]), ("refuse", "default-deny"))
+
+    return test
+
+
+for _separation in ("capability", "authority", "done", "receipt", "verification"):
+    setattr(
+        PolicyCheckTests,
+        f"test_{_separation}_does_not_imply_effect_authority",
+        _separation_fact_test(_separation),
+    )
+
+
+def _runtime_literal_kind_test(kind, value):
+    def test(self):
+        encoded = value.encode("utf-8")
+        literal = ["literal", f"lit.{kind}", kind, str(len(encoded)), value]
+        directive = [
+            ";",
+            ["!", ["=", ["$", f"lit.{kind}"], ["$", f"lit.{kind}"]]],
+            ["+", [":", "effect", f"read.{kind}"]],
+        ]
+        records = base_records(directive, literals=[literal])
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(f"read.{kind}"),
+        )
+        result = noema.literal_runtime(f"lit.{kind}", manifest)
+        self.assertEqual((result["output"]["kind"], result["output"]["value"]), (kind, value))
+
+    return test
+
+
+for _runtime_kind, _runtime_value in {
+    "id": "alpha",
+    "path": "a/b",
+    "sha256": "0" * 64,
+    "command": "printf inert",
+    "number": "123",
+    "date": "2026-08-30",
+    "url": "https://example.invalid/x",
+    "quote": "say 'x'",
+    "text": "plain text",
+    "bytes": "00ff",
+}.items():
+    setattr(
+        LiteralTests,
+        f"test_runtime_literal_kind_{_runtime_kind}",
+        _runtime_literal_kind_test(_runtime_kind, _runtime_value),
+    )
+
+
+def _transition_truth_test(truth, expected_status, expected_verdict):
+    def test(self):
+        proposition = ["core.checked", [":", "evidence", "gate"]]
+        fact = checked_fact(proposition, truth, f"transition-{truth}")
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", "rule.move", ["+", [":", "effect", "move"]], source_binding()],
+            ["transition", "transition.move", [":", "state", "machine"], [":", "state", "idle"], [":", "event", "go"], proposition, [":", "state", "ready"], ["+", [":", "effect", "move"]]],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("move", state="idle"),
+        )
+        result = noema.next_runtime("machine", "idle", "go", [fact], manifest)
+        self.assertEqual((result["output"]["status"], result["verdict"]), (expected_status, expected_verdict))
+
+    return test
+
+
+for _truth, _status, _verdict in (
+    ("true", "transition", "ok"),
+    ("false", "stop", "ok"),
+    ("unknown", "stop", "unknown"),
+):
+    setattr(
+        TransitionTests,
+        f"test_three_valued_guard_{_truth}",
+        _transition_truth_test(_truth, _status, _verdict),
+    )
 
 
 def _literal_test(kind, value):

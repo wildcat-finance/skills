@@ -28,6 +28,9 @@
       "$ref": "#/$defs/manifest"
     },
     {
+      "$ref": "#/$defs/sliceProjection"
+    },
+    {
       "$ref": "#/$defs/result"
     },
     {
@@ -45,6 +48,18 @@
       "maxLength": 128,
       "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
       "not": { "pattern": "\\.\\." }
+    },
+    "nodeId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280,
+      "pattern": "^(?:[A-Za-z][A-Za-z0-9_.-]{0,127}|precedence:[A-Za-z][A-Za-z0-9_.-]{0,127}>[A-Za-z][A-Za-z0-9_.-]{0,127})$"
+    },
+    "artifactLeaf": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
     },
     "relativePath": {
       "type": "string",
@@ -142,7 +157,8 @@
       ],
       "properties": {
         "id": {
-          "$ref": "#/$defs/identifier"
+          "type": "string",
+          "pattern": "^fact\\.[0-9a-f]{64}$"
         },
         "sha256": {
           "$ref": "#/$defs/sha256"
@@ -200,7 +216,8 @@
       ],
       "properties": {
         "id": {
-          "$ref": "#/$defs/identifier"
+          "type": "string",
+          "pattern": "^fact\\.[0-9a-f]{64}$"
         },
         "value": {
           "enum": [
@@ -220,17 +237,40 @@
       "required": [
         "id",
         "reason",
-        "fact"
+        "fact",
+        "evidence_sha256"
       ],
       "properties": {
         "id": {
-          "$ref": "#/$defs/identifier"
+          "$ref": "#/$defs/nodeId"
         },
         "reason": {
-          "const": "checked-false-guard"
+          "enum": [
+            "not-reachable",
+            "checked-false-guard",
+            "checked-true-guard"
+          ]
         },
         "fact": {
-          "$ref": "#/$defs/identifier"
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^fact\\.[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_sha256": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/sha256"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       }
     },
@@ -292,11 +332,16 @@
         "kernel_sha256",
         "profile_sha256",
         "selection",
+        "selection_sha256",
+        "facts_sha256",
         "included_ids",
         "omitted",
         "definitions",
         "literals",
-        "projection_sha256"
+        "tape",
+        "tape_sha256",
+        "projection_sha256",
+        "artifacts"
       ],
       "properties": {
         "schema": {
@@ -320,12 +365,18 @@
         "selection": {
           "$ref": "#/$defs/selection"
         },
+        "selection_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "facts_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
         "included_ids": {
           "type": "array",
           "maxItems": 16384,
           "uniqueItems": true,
           "items": {
-            "$ref": "#/$defs/identifier"
+            "$ref": "#/$defs/nodeId"
           }
         },
         "omitted": {
@@ -352,9 +403,60 @@
             "$ref": "#/$defs/identifier"
           }
         },
+        "tape": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sourceRecord"
+          }
+        },
+        "tape_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
         "projection_sha256": {
           "$ref": "#/$defs/sha256"
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "build",
+            "modules",
+            "profile",
+            "kernel",
+            "selection",
+            "projection"
+          ],
+          "properties": {
+            "build": { "$ref": "#/$defs/artifactLeaf" },
+            "modules": { "$ref": "#/$defs/artifactLeaf" },
+            "profile": { "$ref": "#/$defs/artifactLeaf" },
+            "kernel": { "$ref": "#/$defs/artifactLeaf" },
+            "selection": { "$ref": "#/$defs/artifactLeaf" },
+            "projection": { "$ref": "#/$defs/artifactLeaf" }
+          }
         }
+      }
+    },
+    "sliceProjection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "graph_sha256",
+        "profile_sha256",
+        "selection_sha256",
+        "aliases_sha256",
+        "text"
+      ],
+      "properties": {
+        "schema": { "const": "noema-slice-projection/v1" },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "selection_sha256": { "$ref": "#/$defs/sha256" },
+        "aliases_sha256": { "$ref": "#/$defs/sha256" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1048576 }
       }
     },
     "digestSet": {
@@ -376,6 +478,9 @@
         "build": {
           "$ref": "#/$defs/sha256"
         },
+        "cases": {
+          "$ref": "#/$defs/sha256"
+        },
         "lock": {
           "$ref": "#/$defs/sha256"
         },
@@ -389,6 +494,12 @@
           "$ref": "#/$defs/sha256"
         },
         "manifest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "facts": {
+          "$ref": "#/$defs/sha256"
+        },
+        "receipts": {
           "$ref": "#/$defs/sha256"
         },
         "output": {
@@ -461,6 +572,151 @@
         }
       }
     },
+    "selectOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "manifest_sha256",
+        "projection_sha256",
+        "included_ids",
+        "omitted_ids",
+        "changed"
+      ],
+      "properties": {
+        "schema": { "const": "noema-select/v1" },
+        "manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "projection_sha256": { "$ref": "#/$defs/sha256" },
+        "included_ids": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nodeId" }
+        },
+        "omitted_ids": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/nodeId" }
+        },
+        "changed": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "checkOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "decision",
+        "effect",
+        "consequence",
+        "controlling_node",
+        "reason"
+      ],
+      "properties": {
+        "schema": { "const": "noema-check/v1" },
+        "decision": { "enum": ["permit", "refuse", "unknown"] },
+        "effect": { "$ref": "#/$defs/identifier" },
+        "consequence": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "controlling_node": { "$ref": "#/$defs/nodeId" },
+        "reason": {
+          "enum": [
+            "prohibition",
+            "failed-requirement",
+            "conflicting-requirements",
+            "authority-mismatch",
+            "invalid-exception",
+            "unestablished-guard",
+            "default-deny",
+            "applicable-policy",
+            "low-consequence-default",
+            "no-applicable-policy"
+          ]
+        }
+      }
+    },
+    "nextOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "status",
+        "transition",
+        "state",
+        "next_state",
+        "effects",
+        "controlling_node",
+        "reason"
+      ],
+      "properties": {
+        "schema": { "const": "noema-next/v1" },
+        "status": { "enum": ["transition", "stop"] },
+        "transition": {
+          "oneOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "state": { "$ref": "#/$defs/identifier" },
+        "next_state": {
+          "oneOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "effects": {
+          "type": "array",
+          "maxItems": 16384,
+          "items": { "$ref": "#/$defs/term" }
+        },
+        "controlling_node": { "$ref": "#/$defs/nodeId" },
+        "reason": {
+          "enum": [
+            "established-transition",
+            "unestablished-guard",
+            "no-enabled-transition"
+          ]
+        }
+      }
+    },
+    "literalOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "kind", "bytes", "sha256", "value"],
+      "properties": {
+        "schema": { "const": "noema-literal/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["id", "path", "sha256", "command", "number", "date", "url", "quote", "text", "bytes"] },
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 65000 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "value": { "type": "string", "maxLength": 65000 }
+      }
+    },
+    "explainOutput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "authoritative", "node", "render"],
+      "properties": {
+        "schema": { "const": "noema-explanation/v1" },
+        "authoritative": { "const": false },
+        "node": { "$ref": "#/$defs/nodeId" },
+        "render": { "type": "string", "minLength": 1, "maxLength": 1048576 }
+      }
+    },
+    "runtimeOutput": {
+      "oneOf": [
+        { "$ref": "#/$defs/selectOutput" },
+        { "$ref": "#/$defs/checkOutput" },
+        { "$ref": "#/$defs/nextOutput" },
+        { "$ref": "#/$defs/literalOutput" },
+        { "$ref": "#/$defs/explainOutput" }
+      ]
+    },
     "result": {
       "type": "object",
       "additionalProperties": false,
@@ -530,6 +786,9 @@
         },
         "counts": {
           "$ref": "#/$defs/countSet"
+        },
+        "output": {
+          "$ref": "#/$defs/runtimeOutput"
         }
       }
     },

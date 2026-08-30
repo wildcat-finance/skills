@@ -85,15 +85,27 @@ unknown. Negation maps true to false, false to true and unknown to unknown.
 Conjunction returns false if any member is false, unknown if none is false and
 one is unknown, and true otherwise. Disjunction is the dual. A guard containing
 unknown blocks its dependent effect unless a rule explicitly handles an
-unknown-valued predicate.
+unknown-valued predicate. Finite sets use their expanded scalar members, so
+definition aliases neither duplicate a member nor impose an order. `one` is
+false as soon as two members are established true; an unknown member matters
+only while it could still change the exactly-one result. Quantifier binders
+shadow same-named outer variables during capture-avoiding substitution.
+Recursive truth evaluation preserves both authored and expanded proposition
+identities, so a checked subfact cannot disappear when its parent expands.
 
 Capability, authority, execution, receipt and verification are separate typed
 relations. None implies another. Consequence-2 and consequence-3 effects
 default deny unless an applicable authority fact and every named gate are
 checked. Permission does not cancel prohibition. Conflicting requirements
-refuse unless one closed override record names the higher rule, authority,
-scope and evidence. Precedence and override edges form one acyclic governing
-relation; a cycle within or across the two record forms refuses.
+refuse unless one closed override record names an active, applicable higher
+rule, the lower rule, authority, scope and evidence. Precedence and override
+edges form one acyclic governing relation; a cycle within or across the two
+record forms refuses.
+
+Literal references remain distinct scalar identities inside finite sets even
+when their payload bytes match. A reachable `number` literal supplies its exact
+canonical decimal bytes to `lt`, `le`, `gt` and `ge`; no other literal kind is
+coerced for numeric comparison.
 
 An exception cannot assert absent evidence, strengthen an evidence class,
 change a source binding or operate outside its subject and scope. Missing,
@@ -244,21 +256,44 @@ kinds expose changes that do not collapse honestly into the nine rule facets.
 ## Conservative slicing
 
 `select` receives graph and lock identity, operation, state, target, tools,
-authority inputs and checked facts. Roots are the requested operation, its
-possible effects and output type plus every applicable higher-precedence rule.
-Closure retains referenced definitions, literals, promises, handoffs,
-exceptions, prohibitions, authority constraints, ordering, refusal and
-recovery.
+authority inputs and checked facts. An operation or effect match and a
+transition from the selected state are primary roots. Target or tool matches
+are secondary roots when no primary root exists. If neither class resolves,
+the safe fallback is the full selectable graph rather than an empty slice.
+Closure expands locked pure definitions before following shared typed effect,
+operation, state, event, artifact, action, claim and command identities, then
+retains each connected promise, handoff, exception, prohibition, authority
+constraint, order edge, refusal and recovery. An order or override edge pulls
+both named rules into the slice even when the edge itself is a secondary root;
+an edge with an inactive endpoint cannot survive alone, and a macro cannot hide
+one of those links.
 
 A checked-true guard retains its dependent rule. A checked-false guard may omit
-it only when the manifest carries the exact fact and evidence identity. An
-unknown guard retains it. Any rule that can forbid, constrain, order or recover
-a reachable effect remains reachable.
+it only when the manifest carries one checked fact for that exact full guard
+and its evidence identity. Facts for proper subexpressions do not establish an
+omission. An unknown guard retains its rule. Any rule that can forbid,
+constrain, order or recover a reachable effect remains reachable.
+
+Facts are addressed as `fact.` followed by SHA-256 over the canonical
+proposition bytes. A fact has exactly that id, `true`, `false` or `unknown`, and
+the SHA-256 identity of its evidence. A caller cannot attach truth to a free
+name, and an explanation object does not fit the fact shape.
 
 `noema-manifest/v1` commits to the complete graph and lock, compiler, profile,
 kernel, selection inputs, checked facts, included ids, omitted ids with reasons,
-reachable definitions and literals, projection and every digest. Included and
-omitted ids form an exact partition of the full graph's selectable ids.
+reachable definitions and literals, the complete runtime tape, the slice
+projection and every digest. The tape contains the included selectable records
+plus normalized reachable definition and literal records. Included and omitted
+ids form an exact partition of the full graph's selectable ids. A
+checked-inactive omission repeats the exact fact and evidence digest; an
+ordinary unreachable omission carries null fact fields.
+
+The manifest's `artifacts` object names six plain sibling leaves: build,
+module directory, profile, kernel, selection and projection. `verify
+--manifest` rereads those bytes, recompiles the build, recomputes the selection
+and recovers the projection before accepting the manifest. The leaf-only rule
+is intentional: a portable fixture cannot smuggle path traversal or a linked
+dependency into verification.
 
 ## Local codec interface
 
@@ -266,10 +301,11 @@ omitted ids form an exact partition of the full graph's selectable ids.
 kernel and output paths. It validates everything before atomically writing one
 `noema-build/v1` object containing the graph and lock. `format` recovers the
 canonical source; `project` writes one `noema-projection/v1` bundle;
-`semantic-diff` compares two builds; and `verify` rereads every dependency and
-lock identity. Those four commands take the same module, profile and kernel
-paths. `self-test` performs the checked-in complete-fixture round trip without
-writing a file.
+`semantic-diff` compares two builds; and `verify --build` rereads every
+dependency and lock identity. Those four commands take the same module,
+profile and kernel paths. `verify --manifest` instead checks the self-described
+runtime corpus above. `self-test` performs the checked-in complete-fixture
+round trip without writing a file.
 
 All input leaves must be regular files; module resolution is confined to one
 real directory and never scans it. An output leaf must be Unicode-scalar UTF-8
@@ -297,6 +333,73 @@ labels its output and no policy operation may consume that render as evidence.
 The runtime has no operation for subprocess, network, Git, GitHub, file
 mutation, publication or deployment.
 
+All five operations consume data and return data. Their CLI forms accept only
+input paths and identifiers; none exposes an output path. `select` reports the
+manifest and projection identities and exact partitions. The in-process
+operation returns those two derived objects so a caller can preserve them at a
+separately authorised boundary. A prior manifest is optional comparison input;
+when supplied, the result states whether the exact manifest identity changed.
+In-process policy operations accept only a freshly selected manifest or the
+fully rederived result of artifact verification. Deserialized manifest data
+must cross that verifier; structural validity alone does not establish its
+provenance, so an unsealed in-process value refuses before deep validation and
+mutation after verification invalidates the manifest. Artifact verification
+validates omission membership and fact evidence through precomputed indexes.
+Slice selection likewise accepts only a locally compiled or fully
+artifact-verified build, and hashes the complete validated profile value
+against its locked digest before deriving a manifest.
+
+Policy evaluation first expands only locked pure definitions. A checked fact
+can settle any exact proposition whose closed evaluation is unknown; a fact
+that contradicts a closed result or an equivalent expanded proposition
+refuses. Otherwise the runtime evaluates the closed three-valued Boolean
+operators, finite quantifiers, typed equality, membership, containment and
+unsigned comparisons; an opaque predicate remains unknown. A self-identical
+closed term is true without external evidence. Unknown guards retain their
+dependent directive and yield unknown rather than permission.
+
+`check` evaluates applicable `+`, `-` and `!` intents in authored `;` order
+under their `?`, `/`, `@` and `^` wrappers. Nested authority and scope wrappers
+accumulate; an inner wrapper cannot discard an outer constraint. A prohibition
+or failed requirement refuses before any permission is considered; a satisfied
+`!` is a gate, never a permission. Opposed requirements refuse unless one
+included `override` names the higher and lower rules and its typed authority,
+scope and
+`core.checked(evidence)` fact all hold. Precedence alone does not resolve that
+conflict, and an inactive or inapplicable higher rule cannot resolve it. A rule
+carries at most one `core.consequence` atom with value `0` through `3`; each
+relevant rule without a marker defaults independently to consequence 3, and
+any invalid value or resulting disagreement refuses. Consequence 0 and 1 can
+default permit only when at least one directive is active and applicable;
+otherwise no policy applies. Consequence 2 and 3 default deny without an
+applicable `^` authority and satisfied gates. An exception is
+retained as policy and recovery context but cannot by itself cancel a
+prohibition or mint authority in this shadow runtime. Any relevant exception
+without applicable authority and scope, established gate and record evidence,
+and an active expiry refuses before permission can be granted.
+Relevance is determined by the exception's declared effect subject. Its
+recovery directive remains slice context and does not make the exception a
+policy constraint on that recovery effect.
+For a permitted consequence-2 or consequence-3 effect, the reported
+controlling node is one applicable permission that supplied that authority,
+not an earlier unwrapped permission.
+
+Pure definitions are expanded before runtime code reads typed fields as well
+as directive bodies. Defined actors and scopes therefore govern overrides and
+exceptions exactly like direct atoms, and defined machine, state and event
+values govern transition matching and returned next state.
+
+`next` matches one machine, from-state and event. A manifest is complete only
+for its selected from-state, so a different state refuses and the caller must
+reselect after a transition. Zero established matches stop, an unknown guard
+stops unknown even beside one established competitor, and more than one
+established match refuses. A successful result returns the next state and the
+exact ordered directive terms without applying them.
+`literal` returns the kind, byte count, digest and exact reachable value; even
+`command`, `path` and `url` values stay inert. `explain` returns canonical
+record JSON under
+`noema-explanation/v1` with `authoritative:false`.
+
 ## Resource limits
 
 Version 1 applies every limit before returning a partial graph or result:
@@ -312,6 +415,10 @@ Version 1 applies every limit before returning a partial graph or result:
 | one literal | 65,000 decoded UTF-8 bytes |
 | all decoded literal occurrences | 786,432 bytes |
 | expanded macro graph | 65,536 nodes |
+| slice fixed-point scans | 65,536 records |
+| one policy directive pass | 65,536 expanded nodes |
+| one selection, policy or transition truth pass | 65,536 expanded nodes |
+| policy requirement pairs | 65,536 |
 | one finite quantifier set | 4,096 members |
 | one derived output | 1,048,576 bytes |
 
@@ -322,6 +429,15 @@ levels respectively; every embedded source record and module document remains
 subject to the 64-level limit.
 Expanded-macro accounting substitutes an argument at every occurrence of its
 formal parameter; the macro-call node itself is absent from the expanded graph.
+Slice closure refuses before repeated fixed-point passes inspect more than
+65,536 record entries in aggregate.
+One shared directive counter covers every rule and every nested guard,
+authority, scope or sequence child visited by one `check` operation. One shared
+truth counter covers every proposition and recursively evaluated Boolean or
+quantified child visited by one `select`, `check` or `next` operation, so
+record boundaries and quantifier substitution cannot reset the work budget.
+Policy evaluation expands each requirement once, indexes override edges and
+refuses before comparing more than 65,536 requirement pairs.
 
 The seed archive verifier separately accepts at most 1,048,576 archive bytes,
 64 members, 1,048,576 uncompressed bytes in aggregate, 1,048,576 bytes for one
@@ -335,7 +451,17 @@ exact alphabets published in the seed-inventory schema.
 Each command writes at most one `noema-result/v1` JSON line to standard output.
 It names command, deterministic correlation id, verdict, stable code, input and
 output digests and bounded counts that exist for that command. It never carries
-source text, literal payloads, prompts, model output or credentials.
+source text, prompts, model output or credentials. The sole payload exception
+is a successful `literal` result, whose purpose is to return one exact reachable
+inert value with its kind, byte count and digest.
+Every runtime correlation binds the exact manifest identity. Runtime digest
+maps name that manifest and the exact output; `check` also names selected facts,
+while `next` names selected facts and additional receipts separately. A
+`select` comparison binds its prior and current manifest identities as `before`
+and `after`; an invocation without a prior manifest has no comparison digests.
+Manifest verification correlates to the exact verified manifest. The runtime
+self-test additionally reports one `cases` digest over all seven exact case
+results, including receipt and alternate-selection evidence.
 Malformed argument vectors use the same line with `NOE-E-TYPE.ARGUMENTS` and
 never echo argument bytes; `command` is the recognised operation or `invalid`.
 
@@ -353,6 +479,8 @@ Stable refusal families are:
 | `NOE-E-AUTHORITY` | missing, conflicting or over-broad authority | supply applicable checked authority or refuse the effect |
 | `NOE-E-PATH` | unsafe, escaping, linked or special path | select a confined regular path |
 | `NOE-E-IO` | read, write, sync or atomic replacement uncertainty | inspect complete old/new state and rerun safely |
+| `NOE-E-POLICY` | contradictory facts, consequence declarations or transition state | repair the inconsistent policy input or graph and reselect |
+| `NOE-E-SELF_TEST` | checked-in demonstration no longer satisfies its fixed outcome | repair or regenerate the fixture before relying on the prototype |
 | `NOE-E-EVALUATION` | packet, profile, family, case or answer mismatch | restore the exact isolated cohort and retally |
 | `NOE-E-UNIMPLEMENTED` | operation reserved for a later prototype step | finish and verify its declared step |
 

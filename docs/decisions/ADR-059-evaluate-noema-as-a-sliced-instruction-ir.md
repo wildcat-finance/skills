@@ -47,6 +47,55 @@ keeps the governing layer structural and provider-neutral while retaining Git
 review, byte recovery and ordinary standard-library parsing. The text carrier
 is not the semantics; the recovered typed graph is.
 
+The Step 3 runtime uses digest-addressed checked propositions rather than
+free-named facts. Its manifest contains a self-contained canonical tape of the
+included policy records and reachable dictionary, while binding the complete
+graph, lock, facts and derived slice projection. Unknown guards remain in that
+tape. A rule can disappear for a checked guard only when the omission repeats
+the exact fact and evidence digest.
+
+The callable runtime is read-only. It returns a policy decision, transition
+terms, one inert literal or a labelled explanation; it has no subprocess,
+network, repository, publication, deployment or file-mutation operation.
+Consequence-2 and consequence-3 effects default deny, prohibition dominates
+permission, and opposed requirements need one checked typed override. These
+choices are prototype controls, not authority to replace Markdown or wire the
+runtime into an agent.
+
+The Step 3 audit hardens that boundary further: definition expansion precedes
+slice link discovery, closed truth rejects contradictory supplied facts,
+requirements cannot stand in for permission, and an unknown competing
+transition stops the state machine. Runtime calls accept only locally derived
+or fully artifact-verified manifests and reject later mutation. Overrides need
+an active applicable higher requirement, invalid exceptions refuse before
+permission, and a missing consequence marker defaults per relevant rule.
+Selection also requires an attested build and an exactly hashed profile.
+Nested authority and scope wrappers accumulate, low-consequence defaulting
+requires an active applicable directive, and runtime typed fields expand their
+locked pure definitions before comparison. Requirement conflict work has a
+fixed pair budget and indexed override lookup, while recursive and quantified
+truth evaluation shares one expansion-work counter.
+Slice fixed-point closure likewise has one aggregate record-scan budget, and
+nested directive traversal shares one expansion-work counter. A transition is
+a selection root only when its declared from-state matches the selected state;
+`next` refuses any other state because its transitions may have been omitted.
+Runtime substitution respects nested binder shadowing, expanded finite sets
+have set rather than multiset semantics, and decimal order is independent of
+the host interpreter's integer conversion ceiling. Recursive evaluation keeps
+authored subfact identities beside their expanded terms.
+Runtime work counters span complete operations rather than resetting at rule
+or transition boundaries. Selection and manifest validation precompute their
+membership indexes, and unsealed in-process policy inputs refuse before a deep
+walk. A high-consequence permit reports the permission that supplied its
+applicable authority as the controlling node. Exception recovery remains
+reachable context without becoming the exception's checked policy subject.
+Secondary-rooted governing edges close over both active endpoints, literal
+references retain set identity while number literals remain comparable, and
+runtime receipts bind the exact slice, inputs and output they describe.
+Manifest verification correlates to the exact manifest identity, while the
+runtime self-test binds all seven exact case results, including receipts and
+alternate selections, under one reported digest.
+
 ## Alternatives
 
 ### Extend `wildcat-agent-instruction/v1`
