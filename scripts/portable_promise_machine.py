@@ -407,8 +407,14 @@ def _package_bytes(root: Path, commit: str) -> dict[str, bytes]:
     return files
 
 
+# A directory this generator wrote carries its manifest at this path. Anything
+# else that is not empty belongs to somebody, and writing a package replaces the
+# whole directory, so an occupied destination is refused rather than cleared.
+PACKAGE_MARKER = PACKAGE_ROOT / "runtime" / "MANIFEST.json"
+
+
 def _checked_output(raw: str) -> Path:
-    """Resolve the output directory, refusing a symlink or a missing parent."""
+    """Resolve the output directory, refusing a symlink, a bad parent, or work."""
     out = Path(raw)
     if out.is_symlink():
         raise PackageError(f"output directory is a symlink: {out}")
@@ -416,10 +422,17 @@ def _checked_output(raw: str) -> Path:
     parent = resolved.parent
     if not parent.is_dir():
         raise PackageError(f"output parent is not a directory: {parent}")
-    if parent.resolve() != parent:
-        raise PackageError(f"output parent resolves elsewhere: {parent}")
-    if resolved.exists() and not resolved.is_dir():
+    if not resolved.exists():
+        return resolved
+    if not resolved.is_dir():
         raise PackageError(f"output path is not a directory: {resolved}")
+    if not any(resolved.iterdir()):
+        return resolved
+    if not (resolved / PACKAGE_MARKER).is_file():
+        raise PackageError(
+            f"output directory is not empty and is not a generated package: {resolved}; "
+            "remove it or name an empty directory"
+        )
     return resolved
 
 

@@ -440,5 +440,28 @@ class SkillsShPackageTests(unittest.TestCase):
             self.assertEqual(sorted(path.name for path in real.iterdir()), [])
 
 
+    def test_package_refuses_to_clear_a_directory_it_did_not_write(self):
+        """--out replaces the whole directory, so an occupied one is refused."""
+        with tempfile.TemporaryDirectory() as raw:
+            occupied = Path(raw) / "occupied"
+            (occupied / "precious").mkdir(parents=True)
+            keep = occupied / "precious" / "data.txt"
+            keep.write_text("irreplaceable", encoding="utf-8")
+            result = subprocess.run(  # phylax: allow subprocess: fixed local generator argv
+                [sys.executable, str(GENERATOR), "package", "--out", str(occupied)],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("not a generated package", result.stdout + result.stderr)
+            self.assertEqual(keep.read_text(encoding="utf-8"), "irreplaceable")
+
+            empty = Path(raw) / "empty"
+            empty.mkdir()
+            self.assertEqual(build_package(empty), empty)
+            self.assertEqual(build_package(empty), empty)
+
+
 if __name__ == "__main__":
     unittest.main()
