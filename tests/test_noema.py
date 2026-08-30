@@ -551,6 +551,39 @@ class NoemaScaffoldTests(unittest.TestCase):
             error = refusal(archive_path, inventory_path)
             self.assertEqual(error.code, "NOE-E-TYPE.KEYS")
 
+    def test_lone_surrogate_inventory_string_refuses(self):
+        files = [("a.txt", b"alpha")]
+        payload = archive_bytes(files)
+        record = inventory_for(payload, files)
+        record["archive"]["url"] = "https://example.invalid/\ud800"
+        with tempfile.TemporaryDirectory() as temporary:
+            archive_path, inventory_path = write_case(
+                Path(temporary), files, payload=payload, inventory=record
+            )
+            error = refusal(archive_path, inventory_path)
+            self.assertEqual(error.code, "NOE-E-SYNTAX.UNICODE")
+
+    def test_invalid_utf8_archive_name_refuses(self):
+        files = [("a.txt", b"alpha")]
+        payload = bytearray(archive_bytes(files))
+        local = payload.index(b"PK\x03\x04")
+        central = payload.index(b"PK\x01\x02")
+        for header, flag_offset, name_offset in (
+            (local, 6, 30),
+            (central, 8, 46),
+        ):
+            flags = int.from_bytes(payload[header + flag_offset:header + flag_offset + 2], "little")
+            payload[header + flag_offset:header + flag_offset + 2] = (flags | 0x800).to_bytes(2, "little")
+            payload[header + name_offset] = 0xFF
+        malformed = bytes(payload)
+        record = inventory_for(malformed, files)
+        with tempfile.TemporaryDirectory() as temporary:
+            archive_path, inventory_path = write_case(
+                Path(temporary), files, payload=malformed, inventory=record
+            )
+            error = refusal(archive_path, inventory_path)
+            self.assertEqual(error.code, "NOE-E-SYNTAX.ZIP")
+
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
     def test_symbolic_link_archive_path_refuses(self):
         files = [("a.txt", b"alpha")]
