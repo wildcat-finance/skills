@@ -84,6 +84,7 @@ CORE_TYPES = frozenset(
     "actor artifact action claim command effect event evidence literal operation "
     "path predicate promise repository rule scope state transition type value".split()
 )
+STRUCTURAL_TYPES = frozenset({"proposition", "directive", "relation"})
 LITERAL_KINDS = frozenset(
     {"id", "path", "sha256", "command", "number", "date", "url", "quote", "text", "bytes"}
 )
@@ -1062,6 +1063,12 @@ class _TypeContext:
         if tag == ":":
             term = _exact_list(value, 3, field)
             type_name = self.type_name(term[1], f"{field}.type")
+            if type_name in STRUCTURAL_TYPES:
+                refuse(
+                    "NOE-E-TYPE.STRUCTURAL_ATOM",
+                    field,
+                    "structural result types cannot be minted by typed atoms",
+                )
             text = _safe_text(term[2], f"{field}.value", MAX_ATOM_BYTES)
             if type_name == "value" and len(text) > MAX_LITERAL_BYTES:
                 refuse("NOE-E-BOUNDS.STRING", field, "typed atom exceeds its byte limit")
@@ -1295,7 +1302,7 @@ def _build_registry(
     budget: _Budget,
 ) -> _TypeContext:
     known_types = {name: name for name in CORE_TYPES}
-    known_types.update({name: name for name in ("proposition", "directive", "relation")})
+    known_types.update({name: name for name in STRUCTURAL_TYPES})
     type_owners: dict[str, str] = {}
     module_closures = _module_closures(modules)
 
@@ -1348,6 +1355,12 @@ def _build_registry(
                 allowed_modules,
                 f"module.{module_id}.signatures[{index}].result",
             )
+            if result == "directive":
+                refuse(
+                    "NOE-E-TYPE.SIGNATURE_RESULT",
+                    f"module.{module_id}.signatures[{index}].result",
+                    "module signatures cannot construct directives",
+                )
             previous = name
             signatures[name] = (parameters, result)
             symbol_owners[name] = module_id

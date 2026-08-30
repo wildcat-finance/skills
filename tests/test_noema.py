@@ -913,6 +913,20 @@ class CanonicalSourceTests(unittest.TestCase):
 
 
 class GraphValidationTests(unittest.TestCase):
+    def test_structural_results_cannot_be_minted_by_typed_atoms(self):
+        for directive in (
+            [":", "directive", "anything"],
+            ["+", [":", "proposition", "anything"]],
+            ["+", ["=", [":", "relation", "anything"], [":", "relation", "anything"]]],
+        ):
+            with self.subTest(directive=directive):
+                try:
+                    compile_records(base_records(directive))
+                except noema.Refusal as raised:
+                    self.assertEqual(raised.code, "NOE-E-TYPE.STRUCTURAL_ATOM")
+                else:
+                    self.fail("typed atom minted a structural result")
+
     def test_source_bindings_require_utf8_and_scalar_boundaries(self):
         modules = noema._load_modules(MODULES_FIXTURE, [("core", CORE_DIGEST)])
         for payload, end, code in (
@@ -1271,7 +1285,12 @@ class ModuleLockTests(unittest.TestCase):
             write_bytes(directory / "a.json", module)
             records = [
                 ["import", "a", sha256(module).hexdigest()],
-                ["definition", "local.helper", [], [":", "proposition", "yes"]],
+                [
+                    "definition",
+                    "local.helper",
+                    [],
+                    ["=", [":", "state", "ready"], [":", "state", "ready"]],
+                ],
                 ["rule", "rule.test", ["+", ["a.ready"]], source_binding()],
             ]
             try:
@@ -1296,7 +1315,11 @@ class ModuleLockTests(unittest.TestCase):
                 module = self.module_bytes(
                     module_id,
                     definitions=[
-                        [f"{module_id}.ready", [], [":", "proposition", "yes"]]
+                        [
+                            f"{module_id}.ready",
+                            [],
+                            ["=", [":", "state", "ready"], [":", "state", "ready"]],
+                        ]
                     ],
                 )
                 write_bytes(directory / f"{module_id}.json", module)
@@ -1323,6 +1346,30 @@ class ModuleLockTests(unittest.TestCase):
                     )
                 else:
                     self.fail("module captured the source-local namespace")
+
+    def test_module_signature_cannot_construct_a_directive(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            module = self.module_bytes(
+                "m",
+                signatures=[["m.make", [], "directive"]],
+            )
+            write_bytes(directory / "m.json", module)
+            records = [
+                ["import", "m", sha256(module).hexdigest()],
+                ["rule", "rule.test", ["m.make"], source_binding()],
+            ]
+            try:
+                noema.compile_source(
+                    noema._canonical_source(records),
+                    directory,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )
+            except noema.Refusal as raised:
+                self.assertEqual(raised.code, "NOE-E-TYPE.SIGNATURE_RESULT")
+            else:
+                self.fail("module signature constructed a directive")
 
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
     def test_linked_module_refuses(self):

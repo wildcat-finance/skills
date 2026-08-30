@@ -26,6 +26,10 @@ path predicate promise repository rule scope state transition type value
 Modules may define nominal subtypes, qualified predicate signatures and pure
 graph macros. They cannot add a core operator, change an operator's arity or
 meaning, shadow a qualified name, introduce ambient state or execute code.
+Typed atoms name only nominal core types or module subtypes. `proposition`,
+`directive` and `relation` are structural results, never atom labels. A module
+signature cannot return `directive`; directives originate only in the closed
+operators below.
 
 The closed structural operators and their meanings are:
 
