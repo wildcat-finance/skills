@@ -3222,6 +3222,21 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]
         self.assert_bound_paths(records)
 
+    def test_specialised_coverage_binds_focused_tests(self):
+        record = self.coverage()["tests"]
+        self.assertEqual(set(record), {"path", "sha256", "selectors"})
+        self.assertEqual(record["path"], "tests/test_agent_instruction.py")
+        self.assert_bound_paths([{"path": record["path"], "sha256": record["sha256"]}])
+        selectors = record["selectors"]
+        self.assertIsInstance(selectors, list)
+        self.assertTrue(selectors)
+        self.assertEqual(len(selectors), len(set(selectors)))
+        source = (ROOT / record["path"]).read_text(encoding="utf-8")
+        for selector in selectors:
+            with self.subTest(selector=selector):
+                self.assertIsInstance(selector, str)
+                self.assertIn(f"def {selector}(", source)
+
     def test_specialised_coverage_binds_all_fixture_artifacts(self):
         coverage = self.coverage()
         manifest = manifest_record()

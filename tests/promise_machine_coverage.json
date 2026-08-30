@@ -110,12 +110,13 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "cabbbbf1aa6cbb901665c8c88070ecb679bc66555697b156b7d796db0012da30",
+      "sha256": "d5c37c5d887234b17bd2e7c1406a1c093c3399aae77ba03e8716576e9b076dc5",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
         "test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets",
         "test_specialised_coverage_binds_runtime_documentation_and_manifest",
+        "test_specialised_coverage_binds_focused_tests",
         "test_specialised_coverage_binds_all_fixture_artifacts",
         "test_specialised_coverage_binds_all_evidence_records",
         "test_bound_manifest_runs_complete_clean_demonstration",
