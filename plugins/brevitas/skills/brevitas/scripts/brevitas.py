@@ -67,6 +67,29 @@ QUALIFIER_RE = re.compile(
 )
 TX_HASH_RE = re.compile(r"\b0x[a-fA-F0-9]{64}\b")
 ADDRESS_RE = re.compile(r"\b0x[a-fA-F0-9]{40}\b")
+SELECTOR_RE = re.compile(r"(?<![a-fA-F0-9])0x[a-fA-F0-9]{8}(?![a-fA-F0-9])")
+DIGEST_RE = re.compile(
+    r"(?<!0x)(?<!0X)(?<![a-fA-F0-9])[a-fA-F0-9]{64}(?![a-fA-F0-9])"
+)
+GIT_FULL_OID_RE = re.compile(
+    r"(?<!0x)(?<!0X)(?<![a-fA-F0-9])[a-fA-F0-9]{40}(?![a-fA-F0-9])"
+)
+GIT_CODE_OID_RE = re.compile(
+    r"(?P<ticks>`{1,3})(?P<oid>[a-fA-F0-9]{7,39})(?P=ticks)"
+)
+GIT_LABEL_OID_RE = re.compile(
+    r"(?<![A-Za-z0-9_-])"
+    r"(?:git|commit|sha(?:-1)?|oid|ref|head|base|parent|tree)"
+    r"(?![A-Za-z0-9_-])(?:[ \t]*[:=][ \t]*|[ \t]+)"
+    r"(?P<oid>[a-fA-F0-9]{7,39})(?![a-fA-F0-9])",
+    re.IGNORECASE,
+)
+GIT_REPOSITORY_OID_RE = re.compile(
+    r"(?<![A-Za-z0-9_.-])"
+    r"[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,98}[A-Za-z0-9])?/"
+    r"[A-Za-z0-9](?:[A-Za-z0-9_.-]{0,98}[A-Za-z0-9])?@"
+    r"(?P<oid>[a-fA-F0-9]{7,39})(?![a-fA-F0-9])"
+)
 FILE_LINE_RE = re.compile(
     r"(?<![A-Za-z0-9_])(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\."
     r"[A-Za-z0-9]+:\d+(?:-\d+)?"
@@ -96,10 +119,18 @@ class Finding:
 def protected_tokens(text: str) -> dict[str, set[str]]:
     """Return evidence tokens whose literal survival can be checked mechanically."""
     tx_hashes = set(TX_HASH_RE.findall(text))
-    addresses = {token for token in ADDRESS_RE.findall(text) if token not in tx_hashes}
+    addresses = set(ADDRESS_RE.findall(text))
+    selectors = set(SELECTOR_RE.findall(text))
+    digests = set(DIGEST_RE.findall(text))
+    git_oids = set(GIT_FULL_OID_RE.findall(text))
+    for pattern in (GIT_CODE_OID_RE, GIT_LABEL_OID_RE, GIT_REPOSITORY_OID_RE):
+        git_oids.update(match.group("oid") for match in pattern.finditer(text))
     return {
         "transaction hash": tx_hashes,
         "address": addresses,
+        "selector": selectors,
+        "digest": digests,
+        "Git object id": git_oids,
         "file:line reference": set(FILE_LINE_RE.findall(text)),
         "numeric token": set(NUMBER_RE.findall(text)),
     }

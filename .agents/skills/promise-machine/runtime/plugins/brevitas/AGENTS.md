@@ -28,7 +28,7 @@ before applying it. The canonical skill is the only behaviour contract.
 - `$brevitas`, `/brevitas:brevitas`, `use Brevitas`, and any audit, security-review, gas, invariant, diff-review, or protocol-commentary answer select the skill.
 - Resolve relative paths from `skills/brevitas/`.
 - Run `scripts/brevitas.py` on a file or stdin. A non-zero exit rejects the draft.
-- When compressing existing prose, pass `--source`; missing addresses, transaction hashes, `file:line` references, or numeric tokens reject the draft.
+- When compressing existing prose, pass `--source`; missing transaction hashes, addresses, 4-byte selectors, bare SHA-256-shaped digests, contextual Git object ids, `file:line` references, or numeric tokens reject the draft.
 - Run the checker with the exact interpreter in the suite
   [pin](https://github.com/wildcat-finance/skills/blob/main/.python-version); it
   needs no third-party package.

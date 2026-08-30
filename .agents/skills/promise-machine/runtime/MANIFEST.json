@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 994,
-  "total_bytes": 21529549,
+  "total_bytes": 21532278,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1119,9 +1119,9 @@
       "source": "plugins/berean/skills/berean/agents/openai.yaml"
     },
     {
-      "bytes": 2231,
+      "bytes": 2305,
       "path": "plugins/brevitas/AGENTS.md",
-      "sha256": "4f93d4a26a277f85407341c5a89dca84d8ca03cd8ee2e597ccda9bf06570e613",
+      "sha256": "f161cdc1491b4b4d3d123ec54175e0bd72bf7d9812d9fff97b94949fdec77c6b",
       "source": "plugins/brevitas/AGENTS.md"
     },
     {
@@ -1137,9 +1137,9 @@
       "source": "plugins/brevitas/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 4586,
+      "bytes": 4921,
       "path": "plugins/brevitas/README.md",
-      "sha256": "0f2b9b3bd972c62bfe4ba9577e96b54e3c6aeebece8cc2cc802375b9b6406803",
+      "sha256": "514b80dace6625d3286c6593dcf75e7f8166d6ba62be4d05042d0ef626117eac",
       "source": "plugins/brevitas/README.md"
     },
     {
@@ -1149,9 +1149,9 @@
       "source": "plugins/brevitas/assets/characters/brevitas.png"
     },
     {
-      "bytes": 2947,
+      "bytes": 3654,
       "path": "plugins/brevitas/skills/brevitas/EVOLUTION.md",
-      "sha256": "fd3101e081161dd160d04764dbf7c455f91b9015b80f9296847fd1fad660f445",
+      "sha256": "512b1c012b30a762b3f69a3a11b488f9a490d2967f8a918c9206f026de8b3c11",
       "source": "plugins/brevitas/skills/brevitas/EVOLUTION.md"
     },
     {
@@ -1161,9 +1161,9 @@
       "source": "plugins/brevitas/skills/brevitas/Makefile"
     },
     {
-      "bytes": 7425,
+      "bytes": 7855,
       "path": "plugins/brevitas/skills/brevitas/SKILL.md",
-      "sha256": "e651ef3027cb76f40c0de5d89f9ffdef2925d86f3a9508c275ea87df38483120",
+      "sha256": "da70dbf3585dbcbb9d169e09ec6549464dc77d33a9b5aff4d9b82114eb7d73fa",
       "source": "plugins/brevitas/skills/brevitas/SKILL.md"
     },
     {
@@ -1359,9 +1359,9 @@
       "source": "plugins/brevitas/skills/brevitas/evals/corpus.json"
     },
     {
-      "bytes": 16709,
+      "bytes": 17892,
       "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
-      "sha256": "f3e7bff6570a379b0c06e19de00eaef7a359ec8a9caf18d69132baf382cc7249",
+      "sha256": "3eb8de46cd205f27b850af6f7734d19788d9937d9af928cb57ab0c2e7fcdbd06",
       "source": "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
     },
     {

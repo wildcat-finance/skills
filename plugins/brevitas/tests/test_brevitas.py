@@ -27,10 +27,32 @@ Impact: Funds can be lost.
 Fix: Reject the state.
 """
 
+DIGEST_LOWER = "d" * 64
+DIGEST_UPPER = "E" * 64
+GIT_FULL_LOWER = "a" * 40
+GIT_FULL_UPPER = "B" * 40
+GIT_SHORT_LOWER = "c0ffee7"
+GIT_SHORT_UPPER = "DEADBEEF"
+SELECTOR_LOWER = "0xa9059cbb"
+SELECTOR_UPPER = "0xDEADBEEF"
+
 
 class BrevitasTests(unittest.TestCase):
     def codes(self, text: str, **kwargs) -> set[str]:
         return {issue.code for issue in brevitas.lint_text(text, **kwargs)}
+
+    def protected(self, text: str) -> dict[str, set[str]]:
+        return brevitas.protected_tokens(text)
+
+    def category(self, text: str, name: str) -> set[str]:
+        return self.protected(text).get(name, set())
+
+    def missing_messages(self, source: str, draft: str = "Evidence omitted.\n") -> set[str]:
+        return {
+            issue.message
+            for issue in brevitas.lint_text(draft, source_text=source)
+            if issue.code == "B030"
+        }
 
     def test_valid_finding(self) -> None:
         self.assertEqual(self.codes(VALID_FINDING), set())
@@ -111,6 +133,171 @@ class BrevitasTests(unittest.TestCase):
         source = "At `src/Foo.sol:42`, 17 calls reach the boundary."
         self.assertIn("B030", self.codes("The path is unsafe.\n", source_text=source))
         self.assertNotIn("B030", self.codes(source, source_text=source))
+
+    def test_source_evidence_protects_new_hex_token_families(self) -> None:
+        source = (
+            f"digest {DIGEST_LOWER}; commit {GIT_SHORT_LOWER}; "
+            f"object {GIT_FULL_LOWER}; selector {SELECTOR_LOWER}."
+        )
+        messages = self.missing_messages(source)
+        self.assertIn(f"missing protected digest: {DIGEST_LOWER}", messages)
+        self.assertIn(f"missing protected Git object id: {GIT_SHORT_LOWER}", messages)
+        self.assertIn(f"missing protected Git object id: {GIT_FULL_LOWER}", messages)
+        self.assertIn(f"missing protected selector: {SELECTOR_LOWER}", messages)
+
+    def test_new_hex_token_families_recover_when_restored(self) -> None:
+        source = (
+            f"digest {DIGEST_LOWER}; `" + GIT_SHORT_LOWER + "`; "
+            f"object {GIT_FULL_LOWER}; selector {SELECTOR_LOWER}."
+        )
+        self.assertIn("B030", self.codes("Evidence omitted.\n", source_text=source))
+        self.assertNotIn("B030", self.codes(source, source_text=source))
+
+    def test_new_hex_token_literals_remain_case_sensitive(self) -> None:
+        source = (
+            f"digest {DIGEST_UPPER}; SHA {GIT_SHORT_UPPER}; "
+            f"object {GIT_FULL_UPPER}; selector {SELECTOR_UPPER}."
+        )
+        draft = source.lower()
+        messages = self.missing_messages(source, draft)
+        self.assertIn(f"missing protected digest: {DIGEST_UPPER}", messages)
+        self.assertIn(f"missing protected Git object id: {GIT_SHORT_UPPER}", messages)
+        self.assertIn(f"missing protected Git object id: {GIT_FULL_UPPER}", messages)
+        self.assertIn(f"missing protected selector: {SELECTOR_UPPER}", messages)
+
+    def test_git_object_ids_are_admitted_only_in_closed_contexts(self) -> None:
+        tokens = self.category(
+            f"{GIT_FULL_LOWER} `" + GIT_SHORT_LOWER + "` "
+            f"commit: {GIT_SHORT_UPPER} owner/repository@abc1234",
+            "Git object id",
+        )
+        self.assertEqual(
+            tokens,
+            {GIT_FULL_LOWER, GIT_SHORT_LOWER, GIT_SHORT_UPPER, "abc1234"},
+        )
+
+    def test_each_explicit_git_label_admits_an_abbreviation(self) -> None:
+        labels = ("git", "commit", "sha", "sha-1", "oid", "ref", "head", "base", "parent", "tree")
+        source = " ".join(f"{label}: {index:07x}" for index, label in enumerate(labels, start=1))
+        self.assertEqual(
+            self.category(source, "Git object id"),
+            {f"{index:07x}" for index in range(1, len(labels) + 1)},
+        )
+
+    def test_full_git_object_ids_survive_in_every_admitted_context(self) -> None:
+        one = "1" * 40
+        two = "2" * 40
+        three = "3" * 40
+        four = "4" * 40
+        source = f"{one} `{two}` commit: {three} owner/repository@{four}"
+        self.assertEqual(self.category(source, "Git object id"), {one, two, three, four})
+
+    def test_digest_length_boundary_is_exact(self) -> None:
+        short = "a" * 63
+        exact = "b" * 64
+        long = "c" * 65
+        self.assertEqual(self.category(f"{short} {exact} {long}", "digest"), {exact})
+
+    def test_git_length_boundaries_are_exact(self) -> None:
+        six = "1" * 6
+        seven = "2" * 7
+        thirty_nine = "3" * 39
+        forty = "4" * 40
+        forty_one = "5" * 41
+        source = f"commit {six}; commit {seven}; commit {thirty_nine}; {forty}; commit {forty_one}"
+        self.assertEqual(
+            self.category(source, "Git object id"),
+            {seven, thirty_nine, forty},
+        )
+
+    def test_selector_length_boundary_is_exact(self) -> None:
+        seven = "0x" + "1" * 7
+        eight = "0x" + "2" * 8
+        nine = "0x" + "3" * 9
+        self.assertEqual(self.category(f"{seven} {eight} {nine}", "selector"), {eight})
+
+    def test_hexadecimal_adjacency_refuses_partial_tokens(self) -> None:
+        source = " ".join(
+            (
+                "a" + DIGEST_LOWER,
+                DIGEST_LOWER + "b",
+                "a" + GIT_FULL_LOWER,
+                GIT_FULL_LOWER + "b",
+                "a" + SELECTOR_LOWER,
+                SELECTOR_LOWER + "b",
+                f"commit a{GIT_SHORT_LOWER}",
+                f"commit {GIT_SHORT_LOWER}b",
+            )
+        )
+        tokens = self.protected(source)
+        self.assertEqual(tokens.get("digest", set()), set())
+        self.assertEqual(tokens.get("Git object id", set()), {"a" + GIT_SHORT_LOWER, GIT_SHORT_LOWER + "b"})
+        self.assertNotIn(GIT_SHORT_LOWER, tokens.get("Git object id", set()))
+        self.assertEqual(tokens.get("selector", set()), set())
+
+    def test_punctuation_delimits_new_hex_tokens(self) -> None:
+        source = (
+            f"({DIGEST_LOWER}),[{GIT_FULL_LOWER}];`{GIT_SHORT_LOWER}`;"
+            f"<{SELECTOR_LOWER}>"
+        )
+        tokens = self.protected(source)
+        self.assertEqual(tokens.get("digest", set()), {DIGEST_LOWER})
+        self.assertEqual(tokens.get("Git object id", set()), {GIT_FULL_LOWER, GIT_SHORT_LOWER})
+        self.assertEqual(tokens.get("selector", set()), {SELECTOR_LOWER})
+
+    def test_protected_token_category_precedence_is_explicit(self) -> None:
+        transaction = "0x" + "1" * 64
+        address = "0x" + "2" * 40
+        selector = "0x" + "3" * 8
+        digest = "a" * 64
+        git_oid = "b" * 40
+        file_line = "src/Foo.sol:42"
+        source = f"{transaction} {address} {selector} {digest} {git_oid} {file_line} 17"
+        tokens = self.protected(source)
+        self.assertEqual(tokens["transaction hash"], {transaction})
+        self.assertEqual(tokens["address"], {address})
+        self.assertEqual(tokens.get("selector", set()), {selector})
+        self.assertEqual(tokens.get("digest", set()), {digest})
+        self.assertEqual(tokens.get("Git object id", set()), {git_oid})
+        self.assertEqual(tokens["file:line reference"], {file_line})
+        self.assertEqual(tokens["numeric token"], {"42", "17"})
+
+    def test_new_hex_categories_preserve_existing_numeric_extraction(self) -> None:
+        numeric_digest = "6" * 64
+        numeric_git_oid = "7" * 40
+        source = f"{numeric_digest} {numeric_git_oid} commit 0000008 src/Foo.sol:42 17"
+        tokens = self.protected(source)
+        self.assertEqual(tokens["digest"], {numeric_digest})
+        self.assertEqual(tokens["Git object id"], {numeric_git_oid, "0000008"})
+        self.assertEqual(
+            tokens["numeric token"],
+            {numeric_digest, numeric_git_oid, "0000008", "42", "17"},
+        )
+
+    def test_duplicate_new_evidence_uses_presence_only_semantics(self) -> None:
+        source = f"{DIGEST_LOWER} {DIGEST_LOWER} commit {GIT_SHORT_LOWER} commit {GIT_SHORT_LOWER}"
+        draft = f"{DIGEST_LOWER} commit {GIT_SHORT_LOWER}"
+        self.assertNotIn("B030", self.codes(draft, source_text=source))
+
+    def test_unlabelled_abbreviated_hex_words_are_not_git_evidence(self) -> None:
+        source = "deadbee feedface cafe1234 a1b2c3d4e5f60718"
+        self.assertEqual(self.category(source, "Git object id"), set())
+
+    def test_near_miss_git_labels_and_repository_forms_are_rejected(self) -> None:
+        source = " ".join(
+            (
+                "hash: abc1234",
+                "commitment: bcd2345",
+                "sha-2: cde3456",
+                "sha256: def4567",
+                "owner@aaa1111",
+                "owner/repository#bbb2222",
+                "owner//repository@ccc3333",
+                "owner/repository@ddd444",
+                "owner/repository@" + "e" * 40 + "f",
+            )
+        )
+        self.assertEqual(self.category(source, "Git object id"), set())
 
     def test_clean_structure_does_not_establish_factual_accuracy(self) -> None:
         draft = VALID_FINDING.replace("Claim.", "The Moon is made of cheese.")

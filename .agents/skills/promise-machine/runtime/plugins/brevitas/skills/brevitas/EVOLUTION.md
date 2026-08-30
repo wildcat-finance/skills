@@ -4,7 +4,7 @@ Policy: [../../../hexaemeron/skills/VERSIONING.md](../../../hexaemeron/skills/VE
 
 ## Frontier
 
-- Current version: `brevitas-v0.2.0`
+- Current version: `brevitas-v0.3.0`
 - Frontier status: `open`
 - Frontier revision: `held-engineering-corpus`
 - Current frontier: The linter has not been forward-tested across a held cross-model corpus of engineering reviews, and preservation of counterexamples and reproduction steps remains agent-checked.
@@ -34,3 +34,4 @@ field or history row.
 
 - `brevitas-v0.1.0` | baseline | `held-engineering-corpus` | `dcff4f6b1397570468dedb18a1ebaa5f45377272bcd2f71cd69ad6818eeb0b62` | [README marketplace-context](../../README.md) | Versioning starts with the executable linter and three audit-derived corpus cases.
 - `brevitas-v0.2.0` | generation | `held-engineering-corpus` | `dcff4f6b1397570468dedb18a1ebaa5f45377272bcd2f71cd69ad6818eeb0b62` | Maintainer report: the per-point fence rule fired only on reference documents and the fence cap flagged command lists a reader is meant to copy whole | The one-fence-per-point rule is removed and the fence cap widens from 15 to 40 content lines. In one day of running the linter across this repository the per-point rule produced eight findings, none of which survived review, and obeying one duplicated ten headings. The cap keeps catching pasted dumps, including the 116-line tree it found. Frontier unchanged.
+- `brevitas-v0.3.0` | generation | `held-engineering-corpus` | `dcff4f6b1397570468dedb18a1ebaa5f45377272bcd2f71cd69ad6818eeb0b62` | Issue #372 focused boundary, precedence, casing, duplicate, near-miss and B030 tests | Protect exact boundary-delimited bare 64-hex digests, `0x` plus 8-hex selectors, full 40-hex Git object ids, and 7-to-39-hex Git abbreviations only in Markdown code, explicit-label or `owner/repository@oid` contexts. A broad hexadecimal regex was rejected because it captures ordinary hex-like prose; Git subprocess resolution was rejected because it makes an offline text check repository-dependent. This establishes literal survival only, not validity or existence. Frontier unchanged.
