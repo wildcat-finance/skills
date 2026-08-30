@@ -2,9 +2,10 @@
 """Build a report-only dead-code inventory for one clean Git tree.
 
 The command discovers tracked paths, applies hard Horos classifications and
-renders one deterministic model as text or JSON. Step 1 registers no analyser,
-so the report says that no reachability result was established. It never
-deletes source and a finding count is never an exit gate.
+renders one model as text or JSON. Callers select bounded Python, repository,
+coverage and optional Solidity signals explicitly; selecting none records that
+no reachability result was established. It never deletes source and a finding
+count is never an exit gate.
 """
 
 from __future__ import annotations
@@ -12,15 +13,20 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import io
 import json
 import os
+import posixpath
 import re
 import selectors
 import signal
 import stat
 import subprocess
 import sys
+import tarfile
+import tempfile
 import time
+import tomllib
 import uuid
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -45,6 +51,9 @@ MAX_TRACKED_PATHS = 100_000
 MAX_PATH_BYTES = 4096
 MAX_PYTHON_FILE_BYTES = 4 * 1024 * 1024
 MAX_PYTHON_TOTAL_BYTES = 96 * 1024 * 1024
+MAX_REPOSITORY_FILE_BYTES = 4 * 1024 * 1024
+MAX_REPOSITORY_TOTAL_BYTES = 128 * 1024 * 1024
+MAX_REPOSITORY_ARCHIVE_BYTES = 160 * 1024 * 1024
 MAX_COVERAGE_BYTES = 32 * 1024 * 1024
 MAX_COVERAGE_PROCESS_BYTES = 16 * 1024 * 1024
 MAX_COVERAGE_PROCESSES = 4096
@@ -59,9 +68,27 @@ COVERAGE_OUTPUT_ENV = "WILDCAT_DEAD_CODE_COVERAGE_OUTPUT"
 CHECK_CONTAINMENT_ENV = "WILDCAT_CHECK_CONTAINMENT"
 PYTHON_ANALYSER_VERSION = "1"
 COVERAGE_ANALYSER_VERSION = "sys.monitoring/3.14"
+REPOSITORY_ANALYSER_VERSION = "repository-graph/1"
+SOLIDITY_ANALYSER_VERSION = "slither+forge/1"
+SOLIDITY_VERSION_TIMEOUT_SECONDS = 30
+SOLIDITY_TOOL_TIMEOUT_SECONDS = 600
+MAX_SOLIDITY_VERSION_BYTES = 64 * 1024
+MAX_SOLIDITY_OUTPUT_BYTES = 32 * 1024 * 1024
+MAX_SOLIDITY_PROJECT_BYTES = 160 * 1024 * 1024
+MAX_SOLIDITY_PROJECT_FILES = 20_000
+REPOSITORY_FAMILIES = (
+    "check-map",
+    "cli",
+    "document",
+    "fixture",
+    "generated-copy",
+    "manifest",
+    "router",
+    "schema",
+)
 ANALYSER_STATES = frozenset({"ran", "not-available", "degraded", "failed"})
 CONFIDENCE_LEVELS = frozenset({"high", "medium", "low"})
-ANALYSER_RECORD_KINDS = frozenset({"file", "check"})
+ANALYSER_RECORD_KINDS = frozenset({"file", "check", "family", "project"})
 ANALYSER_RECORD_STATES = frozenset(
     {"parsed", "parse-error", "skipped", "passed", "failed", "unavailable"}
 )
@@ -154,6 +181,10 @@ class AnalyserRecord:
     state: str
     detail: str
     bytes_count: int
+    version: str | None = None
+    duration_ms: int = 0
+    evidence_count: int = 0
+    reason: str | None = None
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -162,6 +193,10 @@ class AnalyserRecord:
             "state": self.state,
             "detail": self.detail,
             "bytes": self.bytes_count,
+            "version": self.version,
+            "duration_ms": self.duration_ms,
+            "evidence_count": self.evidence_count,
+            "reason": self.reason,
         }
 
 
@@ -1236,6 +1271,1133 @@ def analyse_python(root: Path, universe: Universe) -> tuple[AnalyserStatus, tupl
     )
 
 
+@dataclass(frozen=True)
+class RepositorySource:
+    path: str
+    text: str | None
+    bytes_count: int
+    error: str | None = None
+
+
+@dataclass(frozen=True)
+class RepositoryNode:
+    family: str
+    path: str
+    logical_id: str | None = None
+
+    @property
+    def key(self) -> str:
+        return self.path if self.logical_id is None else f"{self.path}#{self.logical_id}"
+
+    @property
+    def symbol(self) -> str:
+        return f"{self.family}:{self.logical_id or 'file'}"
+
+
+@dataclass(frozen=True)
+class RepositoryEdge:
+    source: str
+    target: str
+    parser: str
+
+    def as_dict(self) -> dict[str, str]:
+        return {"source": self.source, "target": self.target, "parser": self.parser}
+
+
+@dataclass(frozen=True)
+class ComputedBoundary:
+    source: str
+    prefix: str
+    boundary: str
+
+
+REPOSITORY_SOURCE_SUFFIXES = frozenset(
+    {".json", ".md", ".py", ".sh", ".toml", ".txt", ".yaml", ".yml"}
+)
+REPOSITORY_PATH_TOKEN = re.compile(
+    r"(?<![A-Za-z0-9_.@+-])(?:\.{0,2}/)?[A-Za-z0-9_.@+-]+"
+    r"(?:/[A-Za-z0-9_.@+:-]+)+"
+)
+MARKDOWN_LINK = re.compile(r"\]\(([^)\s]+)(?:\s+[^)]*)?\)")
+COMPUTED_PATH_PATTERNS = (
+    (re.compile(r"\bPath\(\s*['\"]([^'\"]+)['\"]\s*\)\s*/"), "computed-path:path-join"),
+    (re.compile(r"\b(?:join|joinpath)\(\s*['\"]([^'\"]+)['\"]\s*,"), "computed-path:path-join"),
+    (re.compile(r"\b(?:glob|rglob)\(\s*['\"]([^'\"]+)['\"]"), "computed-path:glob"),
+    (re.compile(r"\bf['\"]([^'\"]*/[^'\"]*)\{"), "computed-path:f-string"),
+    (re.compile(r"['\"]([^'\"]+/)\*"), "computed-path:glob"),
+    (re.compile(r"['\"]([^'\"]*/[^'\"]*)\$\{"), "computed-path:template"),
+    (re.compile(r"['\"]([^'\"]*/[^'\"]*)\{\{"), "computed-path:template"),
+)
+
+
+def _repository_source_paths(universe: Universe) -> tuple[str, ...]:
+    return tuple(
+        path
+        for path in universe.analysed
+        if PurePosixPath(path).suffix.lower() in REPOSITORY_SOURCE_SUFFIXES
+        or PurePosixPath(path).name in {"SKILL.md", "AGENTS.md", "PROMISE_MACHINE.md"}
+    )
+
+
+def _archive_sources(root: Path, universe: Universe) -> dict[str, RepositorySource]:
+    """Read bounded declaration text from the recorded tree without checkout races."""
+    selected = _repository_source_paths(universe)
+    sources: dict[str, RepositorySource] = {}
+    total_bytes = 0
+    total_archive_bytes = 0
+    root_fd = open_repository_directory(root)
+    try:
+        for offset in range(0, len(selected), 128):
+            chunk = selected[offset : offset + 128]
+            stdout, stderr, returncode = run_process(
+                ["git", "archive", "--format=tar", universe.commit, "--", *chunk],
+                cwd=root,
+                timeout_seconds=GIT_TIMEOUT_SECONDS,
+                output_limit=MAX_REPOSITORY_ARCHIVE_BYTES,
+                cwd_fd=root_fd,
+            )
+            total_archive_bytes += len(stdout) + len(stderr)
+            if total_archive_bytes > MAX_REPOSITORY_ARCHIVE_BYTES:
+                raise Refusal(
+                    f"repository declaration archive exceeded {MAX_REPOSITORY_ARCHIVE_BYTES} bytes"
+                )
+            if returncode != 0:
+                detail = decode_output(stderr, "git archive stderr").strip() or f"exit {returncode}"
+                raise Refusal(f"git archive failed: {detail}")
+            requested = set(chunk)
+            seen: set[str] = set()
+            try:
+                with tarfile.open(fileobj=io.BytesIO(stdout), mode="r:") as archive:
+                    for member in archive:
+                        if member.isdir():
+                            continue
+                        path = validate_repository_path(member.name, "repository archive path")
+                        if path not in requested or path in seen:
+                            raise Refusal(f"repository archive returned unexpected or repeated path {path}")
+                        seen.add(path)
+                        if not member.isfile() or member.size < 0:
+                            raise Refusal(f"repository archive member {path} is not a regular file")
+                        if member.size > MAX_REPOSITORY_FILE_BYTES:
+                            sources[path] = RepositorySource(
+                                path,
+                                None,
+                                member.size,
+                                f"file exceeds {MAX_REPOSITORY_FILE_BYTES} bytes",
+                            )
+                            continue
+                        handle = archive.extractfile(member)
+                        if handle is None:
+                            raise Refusal(f"repository archive member {path} cannot be read")
+                        payload = handle.read(MAX_REPOSITORY_FILE_BYTES + 1)
+                        if len(payload) != member.size or len(payload) > MAX_REPOSITORY_FILE_BYTES:
+                            raise Refusal(f"repository archive member {path} changed size while read")
+                        total_bytes += len(payload)
+                        if total_bytes > MAX_REPOSITORY_TOTAL_BYTES:
+                            raise Refusal(
+                                f"repository declarations exceeded {MAX_REPOSITORY_TOTAL_BYTES} bytes"
+                            )
+                        try:
+                            text = payload.decode("utf-8")
+                        except UnicodeDecodeError:
+                            sources[path] = RepositorySource(
+                                path,
+                                None,
+                                len(payload),
+                                "file is not UTF-8",
+                            )
+                        else:
+                            sources[path] = RepositorySource(path, text, len(payload))
+            except (tarfile.TarError, OSError, EOFError) as error:
+                raise Refusal(f"repository declaration archive is malformed: {error}") from error
+            missing = sorted(requested - seen)
+            if missing:
+                raise Refusal(
+                    "repository archive omitted tracked declaration(s): " + ", ".join(missing[:5])
+                )
+    finally:
+        os.close(root_fd)
+    return sources
+
+
+def _path_families(path: str, source: RepositorySource | None) -> set[str]:
+    pure = PurePosixPath(path)
+    parts = pure.parts
+    families: set[str] = set()
+    if "fixtures" in parts:
+        families.add("fixture")
+    if (parts and parts[0] == "schemas") or path.endswith(".schema.json"):
+        families.add("schema")
+    if parts and parts[0] == "docs" and path.endswith(".md"):
+        families.add("document")
+    if parts and parts[0] in {"bin", "scripts"} and pure.suffix in {".py", ".sh"}:
+        families.add("cli")
+    if (
+        len(parts) == 4
+        and parts[:2] == (".agents", "skills")
+        and parts[-1] == "SKILL.md"
+    ):
+        families.add("router")
+    if pure.name in {"plugin.json", "marketplace.json", "package.json", "pyproject.toml"}:
+        families.add("manifest")
+    if source is not None and source.text is not None:
+        prefix = source.text[:4096].lower()
+        if "copies=generated" in prefix or "generated from" in prefix:
+            families.add("generated-copy")
+    return families
+
+
+def _external_repository_roots(nodes: Iterable[RepositoryNode]) -> set[str]:
+    roots: set[str] = set()
+    for node in nodes:
+        if node.family == "router" and node.path == ".agents/skills/promise-machine/SKILL.md":
+            roots.add(node.key)
+        if node.family == "manifest" and any(
+            part in {".claude-plugin", ".codex-plugin", ".cursor-plugin"}
+            for part in PurePosixPath(node.path).parts
+        ):
+            roots.add(node.key)
+        if node.family == "manifest" and node.path in {"package.json", "pyproject.toml"}:
+            roots.add(node.key)
+    return roots
+
+
+def _walk_string_values(value: object) -> Iterable[str]:
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, list):
+        for item in value:
+            yield from _walk_string_values(item)
+    elif isinstance(value, dict):
+        for key, item in value.items():
+            yield key
+            yield from _walk_string_values(item)
+
+
+def _normalise_reference(source: str, value: str, tracked: set[str]) -> str | None:
+    candidate = value.strip().strip("'\"`<>")
+    if not candidate or "://" in candidate or any(token in candidate for token in ("${", "{{", "*")):
+        return None
+    candidate = candidate.split("#", 1)[0].split("?", 1)[0].rstrip(".,;:")
+    if candidate.startswith("/"):
+        candidate = candidate[1:]
+    if candidate in tracked:
+        return candidate
+    relative = posixpath.normpath(posixpath.join(posixpath.dirname(source), candidate))
+    if relative in tracked and not relative.startswith("../"):
+        return relative
+    if "/" not in candidate and "." in candidate and candidate.replace(".", "").isidentifier():
+        module_path = candidate.replace(".", "/") + ".py"
+        package_path = candidate.replace(".", "/") + "/__init__.py"
+        if module_path in tracked:
+            return module_path
+        if package_path in tracked:
+            return package_path
+    return None
+
+
+def _computed_boundaries(
+    source: RepositorySource,
+    tracked: set[str],
+) -> tuple[ComputedBoundary, ...]:
+    if source.text is None:
+        return ()
+    found: set[tuple[str, str]] = set()
+    for pattern, name in COMPUTED_PATH_PATTERNS:
+        for match in pattern.finditer(source.text):
+            prefix = match.group(1).strip().rstrip("/")
+            if prefix.startswith("./"):
+                prefix = prefix[2:]
+            if prefix.startswith("/"):
+                prefix = prefix[1:]
+            relative = (
+                prefix
+                if any(path == prefix or path.startswith(prefix + "/") for path in tracked)
+                else posixpath.normpath(posixpath.join(posixpath.dirname(source.path), prefix))
+            )
+            if relative and not relative.startswith("../"):
+                found.add((relative, name))
+    return tuple(
+        ComputedBoundary(source.path, prefix, name)
+        for prefix, name in sorted(found)
+    )
+
+
+def _repository_values(source: RepositorySource) -> tuple[tuple[str, str], ...]:
+    if source.text is None:
+        return ()
+    values: list[tuple[str, str]] = []
+    suffix = PurePosixPath(source.path).suffix.lower()
+    if suffix == ".json":
+        document = _json_document(source.text, source.path)
+        values.extend((value, "json-string") for value in _walk_string_values(document))
+    elif suffix == ".toml":
+        try:
+            document = tomllib.loads(source.text)
+        except tomllib.TOMLDecodeError as error:
+            raise Refusal(f"{source.path} is not valid TOML: {error}") from error
+        values.extend((value, "toml-string") for value in _walk_string_values(document))
+    elif suffix == ".py":
+        try:
+            tree = ast.parse(source.text, filename=source.path, type_comments=True)
+        except (SyntaxError, ValueError, MemoryError):
+            tree = None
+        if tree is not None:
+            values.extend(
+                (node.value, "python-string")
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Constant) and isinstance(node.value, str)
+            )
+    if suffix == ".md" or source.path.endswith("SKILL.md"):
+        values.extend((match.group(1), "markdown-link") for match in MARKDOWN_LINK.finditer(source.text))
+    values.extend((match.group(0), "path-token") for match in REPOSITORY_PATH_TOKEN.finditer(source.text))
+    return tuple(values)
+
+
+def _check_map_graph(
+    source: RepositorySource,
+) -> tuple[tuple[RepositoryNode, ...], tuple[RepositoryEdge, ...]]:
+    if source.text is None:
+        raise Refusal(source.error or "check-map source is unavailable")
+    document = _json_document(source.text, source.path)
+    if document.get("schema") != "wildcat.check-map.v1":
+        raise Refusal(f"{source.path} does not declare wildcat.check-map.v1")
+    checks = document.get("checks")
+    scopes = document.get("scopes")
+    groups = document.get("groups")
+    if not isinstance(checks, dict) or not isinstance(scopes, dict) or not isinstance(groups, dict):
+        raise Refusal(f"{source.path} omits checks, scopes or groups objects")
+    nodes: list[RepositoryNode] = []
+    for identifier, body in checks.items():
+        if not isinstance(identifier, str) or not identifier or not isinstance(body, dict):
+            raise Refusal(f"{source.path} carries a malformed check declaration")
+        nodes.append(RepositoryNode("check-map", source.path, f"check:{identifier}"))
+    node_keys = {node.logical_id: node.key for node in nodes}
+    edges: set[RepositoryEdge] = set()
+    for scope_id, body in scopes.items():
+        if not isinstance(scope_id, str) or not isinstance(body, dict):
+            raise Refusal(f"{source.path} carries a malformed scope declaration")
+        selected = body.get("checks", [])
+        if not isinstance(selected, list) or not all(isinstance(item, str) for item in selected):
+            raise Refusal(f"{source.path} scope {scope_id} has no string checks list")
+        for check_id in selected:
+            target = node_keys.get(f"check:{check_id}")
+            if target is not None:
+                edges.add(RepositoryEdge(f"{source.path}#scope:{scope_id}", target, "check-map-scope"))
+    for group_id, body in groups.items():
+        if not isinstance(group_id, str) or not isinstance(body, dict):
+            raise Refusal(f"{source.path} carries a malformed group declaration")
+        ordered = body.get("ordered", [])
+        if not isinstance(ordered, list) or not all(isinstance(item, str) for item in ordered):
+            raise Refusal(f"{source.path} group {group_id} has no string ordered list")
+        for check_id in ordered:
+            target = node_keys.get(f"check:{check_id}")
+            if target is not None:
+                edges.add(RepositoryEdge(f"{source.path}#group:{group_id}", target, "check-map-group"))
+    return tuple(nodes), tuple(sorted(edges, key=lambda edge: (edge.source, edge.target, edge.parser)))
+
+
+def _nearest_boundary(path: str, boundaries: Iterable[ComputedBoundary]) -> ComputedBoundary | None:
+    matches = [
+        item
+        for item in boundaries
+        if path == item.prefix or path.startswith(item.prefix.rstrip("/") + "/")
+    ]
+    if not matches:
+        return None
+    return sorted(matches, key=lambda item: (-len(PurePosixPath(item.prefix).parts), item.source, item.boundary))[0]
+
+
+def analyse_repository(
+    root: Path,
+    universe: Universe,
+) -> tuple[AnalyserStatus, tuple[Finding, ...]]:
+    started = time.monotonic_ns()
+    try:
+        sources = _archive_sources(root, universe)
+    except Refusal as error:
+        record = AnalyserRecord(
+            "repository-input",
+            "family",
+            "failed",
+            "recorded-tree declaration read failed",
+            0,
+            REPOSITORY_ANALYSER_VERSION,
+            max(0, (time.monotonic_ns() - started) // 1_000_000),
+            0,
+            str(error),
+        )
+        return (
+            AnalyserStatus("repository", "failed", REPOSITORY_ANALYSER_VERSION, str(error), (record,)),
+            (),
+        )
+
+    objects: dict[str, list[RepositoryNode]] = {family: [] for family in REPOSITORY_FAMILIES}
+    family_errors: dict[str, set[str]] = {family: set() for family in REPOSITORY_FAMILIES}
+    unreadable_sources = sorted(
+        f"{source.path}: {source.error}"
+        for source in sources.values()
+        if source.error is not None
+    )
+    if unreadable_sources:
+        visible = unreadable_sources[:5]
+        if len(unreadable_sources) > len(visible):
+            visible.append(f"and {len(unreadable_sources) - len(visible)} more")
+        reason = "unreadable declaration source(s): " + "; ".join(visible)
+        for family in REPOSITORY_FAMILIES:
+            family_errors[family].add(reason)
+    analysed = set(universe.analysed)
+    for path in universe.analysed:
+        source = sources.get(path)
+        for family in _path_families(path, source):
+            objects[family].append(RepositoryNode(family, path))
+            if source is not None and source.error is not None:
+                family_errors[family].add(f"{path}: {source.error}")
+
+    check_map_path = "tests/check-map-v1.json"
+    logical_edges: list[RepositoryEdge] = []
+    if check_map_path in analysed:
+        source = sources.get(check_map_path)
+        if source is None:
+            family_errors["check-map"].add("tracked check-map was not read as declaration text")
+        else:
+            try:
+                check_nodes, check_edges = _check_map_graph(source)
+            except Refusal as error:
+                family_errors["check-map"].add(str(error))
+            else:
+                objects["check-map"].extend(check_nodes)
+                logical_edges.extend(check_edges)
+
+    nodes = tuple(
+        sorted(
+            (node for family in REPOSITORY_FAMILIES for node in objects[family]),
+            key=lambda node: (node.family, node.path, node.logical_id or ""),
+        )
+    )
+    path_targets = {node.path for node in nodes if node.logical_id is None}
+    tracked = set(universe.analysed) | {entry.path for entry in universe.excluded}
+    edges: set[RepositoryEdge] = set(logical_edges)
+    boundaries: list[ComputedBoundary] = []
+    for source in sources.values():
+        boundaries.extend(_computed_boundaries(source, tracked))
+        try:
+            values = _repository_values(source)
+        except Refusal as error:
+            affected = _path_families(source.path, source) & {"schema", "manifest"}
+            for family in affected:
+                family_errors[family].add(str(error))
+            values = tuple(
+                (match.group(0), "path-token")
+                for match in REPOSITORY_PATH_TOKEN.finditer(source.text or "")
+            )
+        for value, parser in values:
+            target = _normalise_reference(source.path, value, tracked)
+            if target is None or target == source.path or target not in path_targets:
+                continue
+            edges.add(RepositoryEdge(source.path, target, parser))
+
+    ordered_edges = tuple(sorted(edges, key=lambda edge: (edge.source, edge.target, edge.parser)))
+    edge_set = digest_json([edge.as_dict() for edge in ordered_edges])
+    incoming = {edge.target for edge in ordered_edges}
+    roots = _external_repository_roots(nodes)
+    elapsed_ms = max(0, (time.monotonic_ns() - started) // 1_000_000)
+    findings: list[Finding] = []
+    records: list[AnalyserRecord] = []
+    excluded_generated = sum(item.category == "generated" for item in universe.excluded)
+    for family in REPOSITORY_FAMILIES:
+        family_nodes = tuple(objects[family])
+        family_edges = tuple(
+            edge for edge in ordered_edges if any(node.key == edge.target for node in family_nodes)
+        )
+        family_boundaries = {
+            (boundary.source, boundary.prefix, boundary.boundary)
+            for boundary in boundaries
+            if any(_nearest_boundary(node.path, (boundary,)) is not None for node in family_nodes)
+        }
+        candidates = [node for node in family_nodes if node.key not in incoming and node.key not in roots]
+        errors = sorted(family_errors[family])
+        if not errors:
+            for node in candidates:
+                boundary = _nearest_boundary(node.path, boundaries)
+                if boundary is None:
+                    confidence = "medium"
+                    false_positive_boundary = (
+                        "literal declaration parsers cannot resolve runtime-computed or external references"
+                    )
+                else:
+                    confidence = "low"
+                    false_positive_boundary = (
+                        f"nearest {boundary.boundary} boundary is {boundary.source} "
+                        f"for prefix {boundary.prefix}"
+                    )
+                findings.append(
+                    _candidate(
+                        node.path,
+                        node.symbol,
+                        (
+                            f"edge-set {edge_set} contains {len(ordered_edges)} parsed edge(s); "
+                            f"none reaches repository object {node.key}"
+                        ),
+                        confidence,
+                        false_positive_boundary,
+                        analyser_id="repository",
+                    )
+                )
+        object_bytes = sum(sources[node.path].bytes_count for node in family_nodes if node.path in sources)
+        reason = "; ".join(errors) if errors else None
+        visible_objects = len(family_nodes) + (excluded_generated if family == "generated-copy" else 0)
+        detail = (
+            f"objects={visible_objects}; roots={sum(node.key in roots for node in family_nodes)}; "
+            f"candidates={0 if errors else len(candidates)}; edges={len(family_edges)}; "
+            f"computed_boundaries={len(family_boundaries)}; edge_set={edge_set}"
+        )
+        records.append(
+            AnalyserRecord(
+                family,
+                "family",
+                "parse-error" if errors else "parsed",
+                detail,
+                object_bytes,
+                REPOSITORY_ANALYSER_VERSION,
+                elapsed_ms,
+                len(family_edges),
+                reason,
+            )
+        )
+    findings.sort(key=lambda item: (item.path, item.symbol or "", item.evidence))
+    degraded = any(family_errors[family] for family in REPOSITORY_FAMILIES)
+    detail = (
+        f"parsed {len(nodes)} repository object(s) and {len(ordered_edges)} literal edge(s); "
+        "consumed the Horos universe and check-map declarations while Promise Machine and "
+        "Hypomnema retain their authoritative validators"
+    )
+    if degraded:
+        detail += "; one or more declaration families were incomplete"
+    return (
+        AnalyserStatus(
+            "repository",
+            "degraded" if degraded else "ran",
+            REPOSITORY_ANALYSER_VERSION,
+            detail,
+            tuple(records),
+        ),
+        tuple(findings),
+    )
+
+
+@dataclass(frozen=True)
+class ToolInvocation:
+    state: str
+    stdout: bytes
+    stderr: bytes
+    duration_ms: int
+    reason: str | None
+
+
+def _invoke_optional_tool(
+    argv: list[str],
+    *,
+    cwd: Path,
+    timeout_seconds: int,
+    output_limit: int,
+    env: dict[str, str] | None = None,
+) -> ToolInvocation:
+    started = time.monotonic_ns()
+    try:
+        stdout, stderr, returncode = run_process(
+            argv,
+            cwd=cwd,
+            timeout_seconds=timeout_seconds,
+            output_limit=output_limit,
+            env=env,
+        )
+    except Refusal as error:
+        state = "unavailable" if "not available on PATH" in str(error) else "failed"
+        return ToolInvocation(
+            state,
+            b"",
+            b"",
+            max(0, (time.monotonic_ns() - started) // 1_000_000),
+            str(error),
+        )
+    duration_ms = max(0, (time.monotonic_ns() - started) // 1_000_000)
+    if returncode != 0:
+        details: list[str] = []
+        for label, payload in (("stderr", stderr), ("stdout", stdout)):
+            if not payload:
+                continue
+            try:
+                text = decode_output(payload, f"{argv[0]} {label}").strip()
+            except Refusal:
+                text = f"non-UTF-8 {label}"
+            if text:
+                details.append(f"{label}: {text}")
+        detail = "; ".join(details)
+        if len(detail) > 512:
+            detail = detail[:96] + " ... " + detail[-411:]
+        return ToolInvocation(
+            "failed",
+            stdout,
+            stderr,
+            duration_ms,
+            f"exit {returncode}" + (f": {detail}" if detail else ""),
+        )
+    return ToolInvocation("passed", stdout, stderr, duration_ms, None)
+
+
+def _tool_version(invocation: ToolInvocation, tool: str) -> str:
+    if invocation.state != "passed":
+        raise Refusal(invocation.reason or f"{tool} version unavailable")
+    combined = invocation.stdout + invocation.stderr
+    text = decode_output(combined, f"{tool} version").strip()
+    if not text:
+        raise Refusal(f"{tool} version output is empty")
+    first = text.splitlines()[0].strip()
+    return _bounded_tool_identity(first, f"{tool} version identity")
+
+
+def _project_repository_path(
+    project: str,
+    path: str,
+    tracked: set[str] | None = None,
+) -> str:
+    supplied = path.strip().replace(chr(92), "/")
+    if not supplied or supplied.startswith("/"):
+        raise Refusal("tool finding path is not repository-relative")
+    if tracked is not None and supplied in tracked:
+        return validate_repository_path(supplied, "tool finding path")
+    combined = posixpath.normpath(posixpath.join("" if project == "." else project, supplied))
+    return validate_repository_path(combined, "tool finding path")
+
+
+def _bounded_tool_identity(value: object, label: str) -> str:
+    if not isinstance(value, str) or not value or len(value.encode("utf-8")) > 256:
+        raise Refusal(f"{label} is absent or exceeds 256 bytes")
+    if any(ord(character) < 32 or ord(character) == 127 for character in value):
+        raise Refusal(f"{label} contains a control character")
+    return value
+
+
+def _slither_findings(
+    payload: bytes,
+    *,
+    project: str,
+    universe: Universe,
+) -> tuple[tuple[Finding, ...], int]:
+    document = _json_document(payload, f"Slither JSON for {project}")
+    if document.get("success") is not True:
+        raise Refusal(f"Slither JSON for {project} does not report success")
+    results = document.get("results")
+    if not isinstance(results, dict):
+        raise Refusal(f"Slither JSON for {project} omits results object")
+    detectors = results.get("detectors", [])
+    if not isinstance(detectors, list):
+        raise Refusal(f"Slither JSON for {project} omits detector results")
+    tracked = set(universe.analysed)
+    findings: list[Finding] = []
+    evidence_count = 0
+    for detector in detectors:
+        if not isinstance(detector, dict):
+            raise Refusal(f"Slither detector for {project} is not an object")
+        check = _bounded_tool_identity(detector.get("check"), "Slither detector identity")
+        if check not in {"dead-code", "unused-state"}:
+            raise Refusal(f"Slither returned undeclared detector {check}")
+        confidence_value = _bounded_tool_identity(
+            detector.get("confidence", "Low"),
+            "Slither detector confidence",
+        ).lower()
+        confidence = confidence_value if confidence_value in CONFIDENCE_LEVELS else "low"
+        elements = detector.get("elements")
+        if not isinstance(elements, list):
+            raise Refusal(f"Slither detector {check} omits elements")
+        for element in elements:
+            if not isinstance(element, dict):
+                raise Refusal(f"Slither detector {check} carries a malformed element")
+            kind = _bounded_tool_identity(element.get("type"), "Slither element type")
+            name = _bounded_tool_identity(element.get("name"), "Slither element name")
+            mapping = element.get("source_mapping")
+            if not isinstance(mapping, dict):
+                raise Refusal(f"Slither detector {check} omits source mapping")
+            path = _project_repository_path(
+                project,
+                _bounded_tool_identity(
+                    mapping.get("filename_relative"),
+                    "Slither relative filename",
+                ),
+                tracked,
+            )
+            lines = mapping.get("lines")
+            if (
+                not isinstance(lines, list)
+                or not lines
+                or not all(isinstance(line, int) and not isinstance(line, bool) and line > 0 for line in lines)
+            ):
+                raise Refusal(f"Slither detector {check} has malformed source lines")
+            if path not in tracked:
+                raise Refusal(f"Slither detector {check} names path outside the report universe: {path}")
+            evidence_count += 1
+            findings.append(
+                _candidate(
+                    path,
+                    f"{check}:{kind}:{name}@{lines[0]}",
+                    f"Slither {check} detector reported {kind} {name} in Foundry project {project}",
+                    confidence,
+                    "Slither detector output is advisory and may not model dynamic or external execution",
+                    analyser_id="solidity",
+                )
+            )
+    findings.sort(key=lambda item: (item.path, item.symbol or "", item.evidence))
+    return tuple(findings), evidence_count
+
+
+FORGE_METRIC = re.compile(r"^(\d+(?:\.\d+)?)%\s*\((\d+)/(\d+)\)$")
+FORGE_COVERAGE_HEADER = ("file", "% lines", "% statements", "% branches", "% funcs")
+
+
+def _forge_metrics(cells: Sequence[str], project: str) -> tuple[tuple[int, int], ...]:
+    if len(cells) != 5:
+        raise Refusal(f"Forge coverage for {project} has a malformed table row")
+    metrics: list[tuple[int, int]] = []
+    for cell in cells[1:5]:
+        match = FORGE_METRIC.fullmatch(cell)
+        if match is None:
+            raise Refusal(f"Forge coverage for {project} has a malformed metric row")
+        covered = int(match.group(2))
+        total = int(match.group(3))
+        if covered > total:
+            raise Refusal(f"Forge coverage for {project} has an impossible metric")
+        metrics.append((covered, total))
+    return tuple(metrics)
+
+
+def _forge_findings(
+    payload: bytes,
+    *,
+    project: str,
+    universe: Universe,
+) -> tuple[tuple[Finding, ...], int]:
+    text = decode_output(payload, f"Forge coverage for {project}")
+    tracked = set(universe.analysed)
+    rows: list[tuple[str, tuple[tuple[int, int], ...]]] = []
+    seen_paths: set[str] = set()
+    saw_header = False
+    saw_total = False
+    reading_coverage = False
+    total_metrics: tuple[tuple[int, int], ...] | None = None
+    for line in text.splitlines():
+        stripped = re.sub(r"\x1b\[[0-9;]*m", "", line).strip()
+        if not stripped.startswith("|") or not stripped.endswith("|"):
+            continue
+        separator = stripped[1:-1]
+        if separator and "-" in separator and set(separator) <= {"-", "+", ":", " "}:
+            continue
+        cells = tuple(cell.strip() for cell in stripped.strip("|").split("|"))
+        lowered = tuple(cell.lower() for cell in cells)
+        if lowered == FORGE_COVERAGE_HEADER:
+            if saw_header:
+                raise Refusal(f"Forge coverage for {project} repeats its coverage table")
+            saw_header = True
+            reading_coverage = True
+            continue
+        if not reading_coverage:
+            continue
+        metrics = _forge_metrics(cells, project)
+        if cells[0].lower() == "total":
+            if not rows:
+                raise Refusal(f"Forge coverage for {project} has a total before source rows")
+            saw_total = True
+            reading_coverage = False
+            total_metrics = metrics
+            continue
+        path = _project_repository_path(project, cells[0], tracked)
+        if path not in tracked or not path.endswith(".sol"):
+            raise Refusal(f"Forge coverage for {project} names path outside the report universe: {path}")
+        if path in seen_paths:
+            raise Refusal(f"Forge coverage for {project} repeats source row {path}")
+        seen_paths.add(path)
+        rows.append((path, metrics))
+    if not saw_header:
+        raise Refusal(f"Forge coverage for {project} has no coverage table")
+    if reading_coverage or not saw_total or total_metrics is None:
+        raise Refusal(f"Forge coverage for {project} has an incomplete coverage table")
+    if not rows:
+        raise Refusal(f"Forge coverage for {project} has no parseable source rows")
+    expected_total = tuple(
+        (
+            sum(metrics[index][0] for _path, metrics in rows),
+            sum(metrics[index][1] for _path, metrics in rows),
+        )
+        for index in range(4)
+    )
+    if total_metrics != expected_total:
+        raise Refusal(f"Forge coverage for {project} has inconsistent total metrics")
+    findings: list[Finding] = []
+    for path, metrics in rows:
+        lines, _statements, _branches, functions = metrics
+        if all(covered == total for covered, total in metrics):
+            continue
+        findings.append(
+            _candidate(
+                path,
+                f"forge-coverage:lines={lines[0]}/{lines[1]}:functions={functions[0]}/{functions[1]}",
+                (
+                    f"Forge coverage in project {project} observed {lines[0]}/{lines[1]} lines "
+                    f"and {functions[0]}/{functions[1]} functions"
+                ),
+                "low",
+                "Forge coverage names only the project's executed tests and cannot prove other entry points absent",
+                analyser_id="solidity",
+            )
+        )
+    findings.sort(key=lambda item: (item.path, item.symbol or ""))
+    return tuple(findings), len(rows)
+
+
+def _materialise_solidity_project(
+    root: Path,
+    universe: Universe,
+    project: str,
+    destination: Path,
+) -> Path:
+    prefix = "" if project == "." else project.rstrip("/") + "/"
+    allowed = {
+        path
+        for path in universe.analysed
+        if project == "." or path.startswith(prefix)
+    }
+    config = "foundry.toml" if project == "." else prefix + "foundry.toml"
+    if config not in allowed:
+        raise Refusal(f"Foundry project {project} has no analysed foundry.toml")
+    if len(allowed) > MAX_SOLIDITY_PROJECT_FILES:
+        raise Refusal(
+            f"Foundry project {project} exceeds {MAX_SOLIDITY_PROJECT_FILES} tracked files"
+        )
+    argv = ["git", "archive", "--format=tar", universe.commit]
+    if project != ".":
+        argv.extend(["--", project])
+    root_fd = open_repository_directory(root)
+    try:
+        stdout, stderr, returncode = run_process(
+            argv,
+            cwd=root,
+            timeout_seconds=GIT_TIMEOUT_SECONDS,
+            output_limit=MAX_SOLIDITY_PROJECT_BYTES,
+            cwd_fd=root_fd,
+        )
+    finally:
+        os.close(root_fd)
+    if returncode != 0:
+        detail = decode_output(stderr, "git archive stderr").strip() or f"exit {returncode}"
+        raise Refusal(f"Foundry project {project} snapshot failed: {detail}")
+
+    destination.mkdir(mode=0o700)
+    seen: set[str] = set()
+    total_bytes = 0
+    try:
+        with tarfile.open(fileobj=io.BytesIO(stdout), mode="r:") as archive:
+            for member in archive:
+                if member.isdir():
+                    continue
+                path = validate_repository_path(member.name, "Foundry snapshot path")
+                if path not in allowed:
+                    continue
+                if path in seen:
+                    raise Refusal(f"Foundry project {project} snapshot repeats {path}")
+                if not member.isfile() or member.size < 0:
+                    raise Refusal(f"Foundry project {project} path {path} is not a regular file")
+                if member.size > MAX_REPOSITORY_FILE_BYTES:
+                    raise Refusal(
+                        f"Foundry project {project} path {path} exceeds "
+                        f"{MAX_REPOSITORY_FILE_BYTES} bytes"
+                    )
+                handle = archive.extractfile(member)
+                if handle is None:
+                    raise Refusal(f"Foundry project {project} path {path} cannot be read")
+                payload = handle.read(MAX_REPOSITORY_FILE_BYTES + 1)
+                if len(payload) != member.size or len(payload) > MAX_REPOSITORY_FILE_BYTES:
+                    raise Refusal(f"Foundry project {project} path {path} changed size while read")
+                total_bytes += len(payload)
+                if total_bytes > MAX_SOLIDITY_PROJECT_BYTES:
+                    raise Refusal(
+                        f"Foundry project {project} snapshot exceeded "
+                        f"{MAX_SOLIDITY_PROJECT_BYTES} bytes"
+                    )
+                target = destination.joinpath(*PurePosixPath(path).parts)
+                target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+                mode = 0o700 if member.mode & 0o111 else 0o600
+                try:
+                    descriptor = os.open(target, flags, mode)
+                    with os.fdopen(descriptor, "wb") as output:
+                        output.write(payload)
+                except OSError as error:
+                    raise Refusal(
+                        f"Foundry project {project} path {path} cannot be materialised: {error}"
+                    ) from error
+                seen.add(path)
+    except (tarfile.TarError, OSError, EOFError) as error:
+        raise Refusal(f"Foundry project {project} snapshot is malformed: {error}") from error
+    missing = sorted(allowed - seen)
+    if missing:
+        raise Refusal(
+            f"Foundry project {project} snapshot omitted analysed path(s): "
+            + ", ".join(missing[:5])
+        )
+    project_root = destination if project == "." else destination.joinpath(*PurePosixPath(project).parts)
+    if not (project_root / "foundry.toml").is_file():
+        raise Refusal(f"Foundry project {project} snapshot omitted foundry.toml")
+    return project_root
+
+
+def _solidity_project_tool(
+    tool: str,
+    *,
+    project: str,
+    repository_root: Path,
+    project_root: Path,
+    universe: Universe,
+) -> tuple[AnalyserRecord, tuple[Finding, ...]]:
+    version_run = _invoke_optional_tool(
+        [tool, "--version"],
+        cwd=project_root,
+        timeout_seconds=SOLIDITY_VERSION_TIMEOUT_SECONDS,
+        output_limit=MAX_SOLIDITY_VERSION_BYTES,
+    )
+    if version_run.state != "passed":
+        return (
+            AnalyserRecord(
+                f"{project}:{tool}",
+                "project",
+                version_run.state,
+                f"project={project}; fixed version argv did not complete",
+                len(version_run.stdout) + len(version_run.stderr),
+                None,
+                version_run.duration_ms,
+                0,
+                version_run.reason,
+            ),
+            (),
+        )
+    try:
+        version = _tool_version(version_run, tool)
+    except Refusal as error:
+        return (
+            AnalyserRecord(
+                f"{project}:{tool}",
+                "project",
+                "parse-error",
+                f"project={project}; tool version output was not usable",
+                len(version_run.stdout) + len(version_run.stderr),
+                None,
+                version_run.duration_ms,
+                0,
+                str(error),
+            ),
+            (),
+        )
+    argv = (
+        ["slither", ".", "--detect", "dead-code,unused-state", "--json", "-"]
+        if tool == "slither"
+        else ["forge", "coverage", "--report", "summary"]
+    )
+    with tempfile.TemporaryDirectory(
+        prefix=f"dead-code-{tool}-",
+        ignore_cleanup_errors=True,
+    ) as temporary:
+        temporary_root = Path(temporary).resolve(strict=True)
+        snapshot_started = time.monotonic_ns()
+        try:
+            snapshot_project_root = _materialise_solidity_project(
+                repository_root,
+                universe,
+                project,
+                temporary_root / "repository",
+            )
+            for name in ("out", "cache", "broadcast"):
+                try:
+                    (snapshot_project_root / name).mkdir(mode=0o700, exist_ok=True)
+                except OSError as error:
+                    raise Refusal(
+                        f"Foundry project {project} disposable {name} directory failed: {error}"
+                    ) from error
+        except Refusal as error:
+            snapshot_duration = max(
+                0,
+                (time.monotonic_ns() - snapshot_started) // 1_000_000,
+            )
+            return (
+                AnalyserRecord(
+                    f"{project}:{tool}",
+                    "project",
+                    "failed",
+                    f"project={project}; disposable tracked snapshot could not be materialised",
+                    len(version_run.stdout) + len(version_run.stderr),
+                    version,
+                    version_run.duration_ms + snapshot_duration,
+                    0,
+                    str(error),
+                ),
+                (),
+            )
+        snapshot_duration = max(
+            0,
+            (time.monotonic_ns() - snapshot_started) // 1_000_000,
+        )
+        environment = dict(os.environ)
+        environment.update(
+            {
+                "TMPDIR": str(temporary_root / "tmp"),
+                "FOUNDRY_OUT": str(temporary_root / "out"),
+                "FOUNDRY_CACHE_PATH": str(temporary_root / "cache"),
+                "FOUNDRY_BROADCAST": str(temporary_root / "broadcast"),
+                "FOUNDRY_FUZZ_FAILURE_PERSIST_DIR": str(temporary_root / "fuzz"),
+                "FOUNDRY_INVARIANT_FAILURE_PERSIST_DIR": str(temporary_root / "invariant"),
+            }
+        )
+        for name in ("tmp", "out", "cache", "broadcast", "fuzz", "invariant"):
+            (temporary_root / name).mkdir(mode=0o700)
+        run = _invoke_optional_tool(
+            argv,
+            cwd=snapshot_project_root,
+            timeout_seconds=SOLIDITY_TOOL_TIMEOUT_SECONDS,
+            output_limit=MAX_SOLIDITY_OUTPUT_BYTES,
+            env=environment,
+        )
+    total_duration = version_run.duration_ms + snapshot_duration + run.duration_ms
+    total_bytes = (
+        len(version_run.stdout)
+        + len(version_run.stderr)
+        + len(run.stdout)
+        + len(run.stderr)
+    )
+    if run.state != "passed":
+        if tool == "slither" and run.state == "failed" and run.stdout:
+            try:
+                findings, evidence_count = _slither_findings(
+                    run.stdout,
+                    project=project,
+                    universe=universe,
+                )
+            except Refusal:
+                pass
+            else:
+                return (
+                    AnalyserRecord(
+                        f"{project}:{tool}",
+                        "project",
+                        "failed",
+                        (
+                            f"project={project}; non-zero exit supplied "
+                            f"{evidence_count} parseable positive evidence record(s)"
+                        ),
+                        total_bytes,
+                        version,
+                        total_duration,
+                        evidence_count,
+                        run.reason,
+                    ),
+                    findings,
+                )
+        return (
+            AnalyserRecord(
+                f"{project}:{tool}",
+                "project",
+                run.state,
+                f"project={project}; fixed analysis argv did not complete",
+                total_bytes,
+                version,
+                total_duration,
+                0,
+                run.reason,
+            ),
+            (),
+        )
+    try:
+        findings, evidence_count = (
+            _slither_findings(run.stdout, project=project, universe=universe)
+            if tool == "slither"
+            else _forge_findings(run.stdout, project=project, universe=universe)
+        )
+    except Refusal as error:
+        return (
+            AnalyserRecord(
+                f"{project}:{tool}",
+                "project",
+                "parse-error",
+                f"project={project}; bounded tool output was not usable",
+                total_bytes,
+                version,
+                total_duration,
+                0,
+                str(error),
+            ),
+            (),
+        )
+    return (
+        AnalyserRecord(
+            f"{project}:{tool}",
+            "project",
+            "passed",
+            f"project={project}; fixed argv completed with {evidence_count} evidence record(s)",
+            total_bytes,
+            version,
+            total_duration,
+            evidence_count,
+            None,
+        ),
+        findings,
+    )
+
+
+def analyse_solidity(
+    root: Path,
+    universe: Universe,
+) -> tuple[AnalyserStatus, tuple[Finding, ...]]:
+    configs = tuple(
+        path for path in universe.analysed if PurePosixPath(path).name == "foundry.toml"
+    )
+    projects = tuple(
+        "." if PurePosixPath(path).parent == PurePosixPath(".") else PurePosixPath(path).parent.as_posix()
+        for path in configs
+    )
+    records: list[AnalyserRecord] = []
+    findings: list[Finding] = []
+    for project in projects:
+        project_root = root if project == "." else root.joinpath(*PurePosixPath(project).parts)
+        for tool in ("forge", "slither"):
+            record, produced = _solidity_project_tool(
+                tool,
+                project=project,
+                repository_root=root,
+                project_root=project_root,
+                universe=universe,
+            )
+            records.append(record)
+            findings.extend(produced)
+    records.sort(key=lambda item: (item.kind, item.record_id))
+    findings.sort(key=lambda item: (item.path, item.symbol or "", item.evidence))
+    states = {record.state for record in records}
+    if records and states == {"unavailable"}:
+        state = "not-available"
+        detail = f"discovered {len(projects)} Foundry project(s); Slither and Forge were unavailable"
+    elif any(record.state != "passed" for record in records):
+        state = "degraded"
+        detail = f"discovered {len(projects)} Foundry project(s); one or more bounded tool signals were incomplete"
+    else:
+        state = "ran"
+        detail = f"discovered {len(projects)} Foundry project(s); every available bounded tool signal completed"
+    return (
+        AnalyserStatus(
+            "solidity",
+            state,
+            SOLIDITY_ANALYSER_VERSION,
+            detail,
+            tuple(records),
+        ),
+        tuple(findings),
+    )
+
+
 def _json_document(payload: bytes | str, label: str) -> dict[str, object]:
     try:
         document = json.loads(payload, object_pairs_hook=reject_duplicate_keys)
@@ -2018,7 +3180,13 @@ def analyse_coverage(
     )
 
 
-ANALYSERS["python"] = analyse_python
+ANALYSERS.update(
+    {
+        "python": analyse_python,
+        "repository": analyse_repository,
+        "solidity": analyse_solidity,
+    }
+)
 
 
 def collect(
@@ -2098,8 +3266,26 @@ def validate_report(report: Report) -> None:
                 raise Refusal(f"analyser {item.analyser_id} has unknown record kind {record.kind}")
             if record.state not in ANALYSER_RECORD_STATES:
                 raise Refusal(f"analyser {item.analyser_id} has unknown record state {record.state}")
-            if not record.detail or record.bytes_count < 0:
+            if (
+                not record.detail
+                or not isinstance(record.bytes_count, int)
+                or isinstance(record.bytes_count, bool)
+                or record.bytes_count < 0
+            ):
                 raise Refusal(f"analyser {item.analyser_id} has an invalid record")
+            if record.version is not None and not record.version:
+                raise Refusal(f"analyser {item.analyser_id} has an empty record version")
+            if (
+                not isinstance(record.duration_ms, int)
+                or isinstance(record.duration_ms, bool)
+                or record.duration_ms < 0
+                or not isinstance(record.evidence_count, int)
+                or isinstance(record.evidence_count, bool)
+                or record.evidence_count < 0
+            ):
+                raise Refusal(f"analyser {item.analyser_id} has invalid record telemetry")
+            if record.reason is not None and not record.reason:
+                raise Refusal(f"analyser {item.analyser_id} has an empty refusal reason")
             record_ids.add(identity)
         if item.records != tuple(sorted(item.records, key=lambda record: (record.kind, record.record_id))):
             raise Refusal(f"analyser {item.analyser_id} records are not sorted")
@@ -2165,6 +3351,11 @@ def render_json(report: Report) -> str:
     ) + chr(10)
 
 
+def _text_field(value: object) -> str:
+    rendered = json.dumps(str(value), ensure_ascii=False)[1:-1]
+    return rendered.replace("\u2028", r"\u2028").replace("\u2029", r"\u2029")
+
+
 def render_text(report: Report) -> str:
     document = report.as_dict()
     tree = document["tree"]
@@ -2180,27 +3371,32 @@ def render_text(report: Report) -> str:
             f"{universe['analysed_count']} analysed, "
             f"{universe['excluded_count']} excluded"
         ),
-        f"status    {status['state']}  {status['detail']}",
+        f"status    {_text_field(status['state'])}  {_text_field(status['detail'])}",
     ]
     by_category = universe["excluded_by_category"]
     if by_category:
         summary = ", ".join(
-            f"{name} {by_category[name]}" for name in sorted(by_category)
+            f"{_text_field(name)} {by_category[name]}" for name in sorted(by_category)
         )
         lines.append(f"excluded  {summary}")
     lines.extend(["", "analysers"])
     if not document["analysers"]:
         lines.append("  none ran; no reachability result was established")
     for analyser in document["analysers"]:
-        version = f" {analyser['version']}" if analyser["version"] else ""
+        version = f" {_text_field(analyser['version'])}" if analyser["version"] else ""
         lines.append(
-            f"  {analyser['id']}{version}  {analyser['state']}  "
-            f"{analyser['detail']}"
+            f"  {_text_field(analyser['id'])}{version}  "
+            f"{_text_field(analyser['state'])}  {_text_field(analyser['detail'])}"
         )
         for record in analyser["records"]:
+            version = _text_field(record["version"] or "unknown")
+            reason = f"  reason={_text_field(record['reason'])}" if record["reason"] else ""
             lines.append(
-                f"    {record['kind']} {record['id']}  {record['state']}  "
-                f"{record['bytes']} byte(s)  {record['detail']}"
+                f"    {_text_field(record['kind'])} {_text_field(record['id'])}  "
+                f"{_text_field(record['state'])}  "
+                f"{record['bytes']} byte(s)  version={version}  "
+                f"duration_ms={record['duration_ms']}  "
+                f"evidence={record['evidence_count']}  {_text_field(record['detail'])}{reason}"
             )
 
     findings = document["findings"]
@@ -2208,13 +3404,13 @@ def render_text(report: Report) -> str:
     if not findings:
         lines.append("  none reported")
     for finding in findings:
-        symbol = f" {finding['symbol']}" if finding["symbol"] else ""
+        symbol = f" {_text_field(finding['symbol'])}" if finding["symbol"] else ""
         lines.append(
             f"  [{finding['confidence']}] {finding['id']}  "
-            f"{finding['analyser_id']}  {finding['path']}{symbol}"
+            f"{_text_field(finding['analyser_id'])}  {_text_field(finding['path'])}{symbol}"
         )
-        lines.append(f"      saw     {finding['evidence']}")
-        lines.append(f"      but     {finding['false_positive_boundary']}")
+        lines.append(f"      saw     {_text_field(finding['evidence'])}")
+        lines.append(f"      but     {_text_field(finding['false_positive_boundary'])}")
     return chr(10).join(lines) + chr(10)
 
 

@@ -208,14 +208,24 @@
     "analyserRecord": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "kind", "state", "detail", "bytes"],
+      "required": [
+        "id",
+        "kind",
+        "state",
+        "detail",
+        "bytes",
+        "version",
+        "duration_ms",
+        "evidence_count",
+        "reason"
+      ],
       "properties": {
         "id": {
           "type": "string",
           "minLength": 1
         },
         "kind": {
-          "enum": ["file", "check"]
+          "enum": ["file", "check", "family", "project"]
         },
         "state": {
           "enum": ["parsed", "parse-error", "skipped", "passed", "failed", "unavailable"]
@@ -227,6 +237,22 @@
         "bytes": {
           "type": "integer",
           "minimum": 0
+        },
+        "version": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reason": {
+          "type": ["string", "null"],
+          "minLength": 1
         }
       }
     },

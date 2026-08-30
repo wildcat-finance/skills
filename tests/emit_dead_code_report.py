@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the dead-code surface and emit one fresh Elenchus report.
+"""Run the Python, repository-graph and Solidity dead-code surface.
 
 The confined report writer lives in `tests/emit_run_observation_report.py` and
 is imported rather than copied. That writer is the product of the issue #434
@@ -28,12 +28,25 @@ REQUIRED_SURFACE = (
     Path("scripts/dead_code_monitoring/sitecustomize.py"),
     Path("tests/test_dead_code.py"),
 )
+REQUIRED_ANALYSER_DECLARATIONS = (
+    "def analyse_python(",
+    "def analyse_repository(",
+    "def analyse_solidity(",
+)
 MODULES = ("tests.test_dead_code",)
 
 
 def missing_surface_suite(root):
     """A suite that fails by name when the surface under test is not there."""
     missing = [path.as_posix() for path in REQUIRED_SURFACE if not (root / path).is_file()]
+    script = root / "scripts" / "dead_code.py"
+    if not missing:
+        source = script.read_text(encoding="utf-8")
+        missing.extend(
+            declaration
+            for declaration in REQUIRED_ANALYSER_DECLARATIONS
+            if declaration not in source
+        )
     if not missing:
         return None
 
