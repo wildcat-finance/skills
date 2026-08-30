@@ -2780,13 +2780,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:a6a6bd94a89a93a65f0b620c00ff83cf1adc29bce704460fbc3ca128cbe27b50",
-      "path": "scripts/build_child_or_golden_retriever_primer.py",
-      "suppressed": false,
-      "symbol": "annotations@4"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:c25db2ebff090885999e653716e7235eb161c51b8a9e7cb85a0ee11062833abf",
       "path": "scripts/build_contributor_guide.py",
       "suppressed": false,
@@ -2948,13 +2941,6 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:b2fba0e86a88aae0dd2811a61f8fedc325ba08a31dae4d5fc7422c554e9a289c",
-      "path": "tests/test_child_or_golden_retriever_primer.py",
-      "suppressed": false,
-      "symbol": "annotations@3"
-    },
-    {
-      "analyser_id": "python",
       "id": "sha256:4f0b837327d1ff85c5c33532f506a53ddbc8b483744987f9d8f6feac3727ca2e",
       "path": "tests/test_commit_identity.py",
       "suppressed": false,
@@ -3104,10 +3090,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "8cc8568673eecdf81557926ea1e21c6f3ec66fe9",
-    "git_tree": "47cc7ea3ac6ba25ea6221c00f5c63b90f4818cb1"
+    "commit": "6dff9da9c9228b27fdb957fb8022499fe769969a",
+    "git_tree": "bfc43127ef76c996baa46cc97a4c1d155080bc98"
   },
   "universe": {
-    "id": "sha256:4335e3d154e962cdf8d04578d56d70095c2531f1dd5bbec598b4e45b48990aae"
+    "id": "sha256:1edf5238f7f2d5d12807aedf6c1fc2877bb3c1b80bd434bba2188f01a505093c"
   }
 }
