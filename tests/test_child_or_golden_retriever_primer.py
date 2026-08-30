@@ -50,9 +50,9 @@ CONTRIBUTOR_PDF = ROOT / "docs" / "pdf" / "how-to-help-shoggoth.pdf"
 
 KIT_DIGEST = "e09eb107921ab52e467bae54e3e605f2e01fa258df7c12529be44fc486d71218"
 COVER_DIGEST = "5763ab9da93a3bd3420d2e905eef9525dbeb2e642f3121d8ad76c38d9f9cc32a"
-HEX_VERSION = "1.6.16"
+HEX_VERSION = "1.6.17"
 STUDY_HEX_VERSION = "1.6.9"
-FIAT_VERSION = "5.42.1"
+FIAT_VERSION = "5.43.1"
 STUDY_FIAT_VERSION = "5.34.1"
 PROMPT_DIGESTS = (
     "5e2c721d2ac5fb76106aa9047f0e3b887d6b66c0c14f44f287a6584b2022b157",
@@ -136,13 +136,13 @@ EXPECTED_BINARY_DIGESTS = {
         "6bcbab3534c69e06134e2b404ac765e2a1a859eaff4019a791ce862b2e3b13f5"
     ),
     "docs/assets/a-child-or-a-golden-retriever-whos-who.png": (
-        "0aa924e981e5a07a5f5a288184fbacda31082f12ba6b9f2b1f9cb10aa8f7716e"
+        "a3c0099987b0eeee6b97747f1e40ee41e74e02a297d06ae18333d484bfa8a636"
     ),
     "docs/assets/a-child-or-a-golden-retriever-fiat-flow.png": (
-        "5fa9dd3da85d34721a2d35debdb4e299d2ae281a4dafc42ea903cb8f649bf2d3"
+        "bef8f8ae7b063dc2b51185eefc4e0a2d7d60e35e7f58b8603098db2528687ad7"
     ),
     "docs/pdf/a-child-or-a-golden-retriever.pdf": (
-        "914f597f12bb9b95ba4420204df4b1e945bb05eefe109489d452e08321527755"
+        "b3877cfdb389612fab2e403b03e825b8ad8fc2990a5cbb9d45c07814475dd2bd"
     ),
     "docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf": (
         "094472325b38d5bac46d16c7d510a261ba17447044c2d9ba46b1aa19c1164463"

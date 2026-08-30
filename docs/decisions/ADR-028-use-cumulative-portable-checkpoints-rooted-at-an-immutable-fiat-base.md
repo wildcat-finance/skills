@@ -133,6 +133,22 @@ build nor publish those objects. This retained manual procedure is the accepted
 trade for closing the path-relocation gap without combining controller state,
 credentials, archive parsing and network writes in one operation.
 
+### Compatibility repair (2026-08-30)
+
+Restore accepts the explicit controller generations that have emitted
+`fiat-controller-checkpoint/v1`, rather than requiring the producer to equal
+the currently installed Fiat version. An unknown or pre-checkpoint version
+still refuses before marker creation.
+
+New study and runbook receipts use portable paths relative to the run
+worktree. A capsule with an older absolute source receipt is admitted only when
+the recorded old origin, derived worktree and run branch agree and the source
+is an exact safe descendant of that worktree. Restore verifies the same bytes
+and writes the relative form into relocated state; arbitrary absolute paths,
+siblings, traversal and malformed roots still refuse before mutation. This is
+the sole exception to the 2026-08-29 statement that relocation changes only
+the origin and worktree fields.
+
 ## Alternatives
 
 - **Complete standing-checkpoint automation.** Rejected because one controller
