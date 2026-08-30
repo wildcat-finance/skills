@@ -17,6 +17,33 @@ file or introduce a package dependency.
 [ADR-051](decisions/ADR-051-encode-a-closed-agent-instruction-model.md) records
 why the source remains authoritative and why a closed model was selected.
 
+## Run the bounded demonstration
+
+This prototype asks one narrow question: can three reviewed instruction
+fragments use a smaller deterministic representation without changing their
+canonical models or the declared answers to nine closed questions? It does not
+translate arbitrary English and it is not a migration tool.
+
+From the repository root, run:
+
+```bash
+python3 scripts/agent_instruction.py check --manifest tests/fixtures/agent-instruction-v1/manifest.json
+python3 scripts/agent_instruction.py measure --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tmp/agent-instruction-v1-measurement.json
+python3 scripts/agent_instruction.py parity --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tmp/agent-instruction-v1-parity.json
+```
+
+The checked 2026-08-30 run binds three round trips, 15 reviewed source
+bindings, nine questions, and 14 hostile mutations. The source corpus is
+11,025 bytes and 2,499 tokens. The compact corpus is 6,060 bytes and 2,170
+tokens; its complete 932-byte, 277-token decoder bootstrap makes the compared
+total 6,992 bytes and 2,447 tokens, saving 4,033 bytes and 52 tokens on this
+three-document cohort. Both recorded model families returned the required
+answer for all 18 source-versus-compact pairs, across 36 isolated calls.
+
+Those figures apply only to the bound files, profiles, prompt, runtimes, and
+date. They do not establish losslessness for arbitrary English, better general
+model behaviour, repository-wide migration safety, or Shoggoth readiness.
+
 ## What version 1 carries
 
 One model carries one ordered document with:
@@ -117,9 +144,10 @@ magic        = "WAI1"
 indent       = *("  ")
 record       = indent opcode *(SP field) LF
 opcode       = %x21-7E
-field        = fixed-token / literal
+field        = fixed-token / literal / binding-offset
 literal      = literal-kind byte-count ":" escaped-data
 byte-count   = "0" / (%x31-39 *DIGIT)
+binding-offset = "0" / (%x31-39 *DIGIT)
 ```
 
 `escaped-data` is scanned until exactly `byte-count` decoded UTF-8 bytes have
@@ -147,6 +175,11 @@ control bytes and DEL. Hex digits are uppercase. A byte that must be escaped
 cannot appear raw; a printable scalar that need not be escaped cannot use an
 escape. Non-ASCII scalar values appear as their original UTF-8 sequence. Empty
 literals use length zero, for example `t0:`.
+
+The `B` record's `start` and `end` positions are bare `binding-offset` fields.
+Their record positions already fix the model kind as a canonical non-negative
+decimal, so a number-kind tag and byte-count would repeat information. Every
+other model number remains an `n` literal.
 
 Records occur only in this order and at these depths:
 
@@ -177,14 +210,14 @@ Records occur only in this order and at these depths:
 | `<` | 1 | `before` source and target ids |
 | `>` | 1 | `after` source and target ids |
 | `^` | 1 | `overrides` source and target ids |
-| `B` | 1 | source id, node id, start, end, reviewer |
+| `B` | 1 | source id, node id, bare decimal start, bare decimal end, reviewer |
 
-Every id, reference, path, digest, decimal span, and free value is represented
-by the literal kind the schema assigns. Fixed enums such as evidence classes
-and consequences are bare tokens. Repeated `V`, `K`, `A`, `J`, `Z`, and `I`
-records preserve their corresponding array order. Exactly one `G` and `Q` are
-required in each `M`; its claim is required; and at least one `V`, `K`, `A`,
-`J`, and `Z` is required.
+Every id, reference, path, digest, and free value is represented by the literal
+kind the schema assigns. Binding spans use the type-fixed bare decimals above.
+Fixed enums such as evidence classes and consequences are bare tokens.
+Repeated `V`, `K`, `A`, `J`, `Z`, and `I` records preserve their corresponding
+array order. Exactly one `G` and `Q` are required in each `M`; its claim is
+required; and at least one `V`, `K`, `A`, `J`, and `Z` is required.
 
 The formatter emits sources, sections, directives, expressions, promises,
 relations, and bindings in canonical-model order. The decoder accepts no
@@ -364,6 +397,10 @@ profile, write one canonical report by atomic replacement, and emit its bounded
 `run.summary`. A refusal still writes the complete bounded report when the
 failure occurs after report construction. Counts and answers are observations;
 they do not change source, canonical-model, or compact instruction authority.
+Each generator verifies the manifest digest of every existing evidence file,
+but does not require the old measurement or parity report to describe the new
+bound inputs before producing its replacement. The ordinary `check` command
+does require both reports to be current and internally consistent.
 
 ### Token measurement
 
@@ -385,23 +422,23 @@ model manifest, blob, vocabulary, model name, non-integer count, or negative
 count refuses.
 
 The baseline is the three source spans under that profile. The comparison then
-counts the canonical models, compact documents, and the complete 893-byte
+counts the canonical models, compact documents, and the complete 932-byte
 decoder bootstrap under the same profile. The checked report records:
 
 | material | bytes | tokens |
 | --- | ---: | ---: |
 | source corpus | 11,025 | 2,499 |
-| canonical-model corpus | 8,563 | 2,068 |
-| compact corpus | 6,150 | 2,228 |
-| decoder bootstrap | 893 | 270 |
-| compact corpus plus bootstrap | 7,043 | 2,498 |
-| compact-plus-bootstrap minus source | -3,982 | -1 |
+| canonical-model corpus | 8,563 | 2,070 |
+| compact corpus | 6,060 | 2,170 |
+| decoder bootstrap | 932 | 277 |
+| compact corpus plus bootstrap | 6,992 | 2,447 |
+| compact-plus-bootstrap minus source | -4,033 | -52 |
 
-The strict three-document gate passes because `2,498 < 2,499`. The report also
+The strict three-document gate passes because `2,447 < 2,499`. The report also
 keeps each document and the bootstrap-amortised prefixes. A one-document run is
-not assumed to save tokens: the Fiat fixture reports `-44`, Horos reports
-`+740`, and Promise Machine reports `-157` after adding the entire bootstrap.
-The two-document prefix reports `+426`; only the declared three-document cohort
+not assumed to save tokens: the Fiat fixture reports `-65`, Horos reports
+`+731`, and Promise Machine reports `-164` after adding the entire bootstrap.
+The two-document prefix reports `+389`; only the declared three-document cohort
 is the acceptance cohort.
 
 ### Isolated family parity

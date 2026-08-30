@@ -145,6 +145,14 @@ The machine checks the contracts, identities, installation copies, host
 manifests, evidence coverage, and first-party licence boundary. It does not
 turn a passing structural check into proof that a domain claim is true.
 
+The bounded [agent instruction language prototype](./docs/agent-instruction-language-v1.md)
+shows one derived compact view over three reviewed source fragments. Its
+checked demonstration preserves 15 source bindings and 14 hostile mutations,
+saves 52 bootstrap-inclusive tokens on the declared three-document cohort, and
+records 18 of 18 source-versus-compact answer pairs across two local model
+families. It does not translate arbitrary English or establish Shoggoth
+readiness.
+
 ## Meet the Shoggoth
 
 ### Evidence, credit, and protocol specialists

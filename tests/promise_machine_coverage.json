@@ -1,4 +1,132 @@
 {
+  "agent_instruction": {
+    "contract": "wildcat-agent-instruction/v1",
+    "promise_id": "promise-machine-agent-instruction-prototype",
+    "checker": {
+      "path": "scripts/agent_instruction.py",
+      "sha256": "fdca40191bf01241807c706fde87075529ac662e8997a16b824851acc81834b2"
+    },
+    "manifest": {
+      "path": "tests/fixtures/agent-instruction-v1/manifest.json",
+      "sha256": "b6cabdad0eb772eb3319578798fbaf43990c7274052ac25e172d9cf0a2b9b9d4"
+    },
+    "documentation": [
+      {
+        "path": "docs/agent-instruction-language-v1.md",
+        "sha256": "6591334e00abea510071ea0bd02a1df54dbc86995fb7b9f2fa80743026fdfb58"
+      },
+      {
+        "path": "docs/decisions/ADR-051-encode-a-closed-agent-instruction-model.md",
+        "sha256": "50496cfde16d1c0fad65444ec24afc38ea42cd2c0783d09bf02b6781e38893de"
+      }
+    ],
+    "fixtures": [
+      {
+        "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai",
+        "sha256": "d27f4c80093d1cf7fda1a4373be6c96c4c1d4f46099099552683d74ffb08c197"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json",
+        "sha256": "e57b79fe189c49bbd3b1effcc5a5a88958abd2491ac106321455d3d58c36abb8"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/mutations.json",
+        "sha256": "007c57e4d6e6250dc1b491350a1c035545172ea1cb65171862b61f20cfa8fac9"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json",
+        "sha256": "d25e2d0201416d51ca7e36102f88c30b8cffca6701d4789351b99c75f9148948"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json",
+        "sha256": "b7881383978435a65a92136c7bc6df47768d63cfca1b747dbaf021bb5cf05460"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/compact.wai",
+        "sha256": "3a10bf37816af363a4c31fd97d4c1eed798f5f770acf89347057d82cfde15db0"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/model.json",
+        "sha256": "ce55af0f70c169f9dad7e6583dbf51896fadf16ed9fb7acd6e28bb1e2e4108c2"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/mutations.json",
+        "sha256": "8a954c2251d4f3ab535e647ec0489c186bd040142690d0d9d3c493e3acd2c3d6"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/questions.json",
+        "sha256": "bf94f18f22b196c42a36248bfdb5c7946e9dc17183a216034dc326139569a3f3"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/horos-boundary-check/source-spans.json",
+        "sha256": "7033c70d3ca81b03b0ead87db328583f4a19f4806394f1ab7442b1c9a5bb74da"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/compact.wai",
+        "sha256": "6db496456ac98c2fc3fe217d362b2e1968aaabc07ab739a5823a35f3acfae7b5"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/model.json",
+        "sha256": "327194a5438eab25bbcdbe04d08f36c2b9a04560d04ad607f3fcd572ad88e062"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/mutations.json",
+        "sha256": "6cfc7dc7b619359723c4b62da50fe2bb5e7c23c43f91d8ba5cdae299a9a13d9c"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/questions.json",
+        "sha256": "777f26c1d25ce76de2fc5548ec499dda24742f5865c1a433d1a77c10cde9c8b6"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/promise-machine-router-selection/source-spans.json",
+        "sha256": "2c9c92f563abde3991a76b50e0bba1c557734c1e806259d5f6003c298e315ca8"
+      }
+    ],
+    "evidence": [
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/decoder-bootstrap.txt",
+        "sha256": "9a9a51494ab444727ec6982ab7f8cb846d073bb8d8023e40bffd211a7ba0fab0"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/family-profiles.json",
+        "sha256": "58de5185a641d4f5dd3dfe61b9dff3e2a5928e978ce9dfac2bd93546f5d54703"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/measurement.json",
+        "sha256": "9cc06c2c7dcf77c4dfcb2a84f4920562d5a80c9331888ede8b530e4e77ac9bb5"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/parity-prompt.txt",
+        "sha256": "11bfeb4cc690fc845999d24ea689d70dff086b809452d90d3ed54e7e77551e87"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json",
+        "sha256": "e61f073aab3e3f2ce42b72b1132a639314d8c2565a7d6f79f41ee967ddc54d49"
+      },
+      {
+        "path": "tests/fixtures/agent-instruction-v1/evidence/tokenizer-profile.json",
+        "sha256": "99e4c3b013b9bcc9770e434143c84b671ad57124d59affc13caf809607c3a0bd"
+      }
+    ],
+    "tests": {
+      "path": "tests/test_agent_instruction.py",
+      "sha256": "c07a5caaaf04a5f5e68bdabb5d6815e2b82466f484d04d382a2e5baea0fb1e68",
+      "selectors": [
+        "test_root_promise_has_complete_exact_field_inventory",
+        "test_specialised_coverage_binds_promise_and_contract",
+        "test_specialised_coverage_binds_runtime_documentation_and_manifest",
+        "test_specialised_coverage_binds_all_fixture_artifacts",
+        "test_specialised_coverage_binds_all_evidence_records",
+        "test_bound_manifest_runs_complete_clean_demonstration",
+        "test_compact_documents_reproduce_from_bound_models",
+        "test_plugin_promise_machine_copies_are_current",
+        "test_portable_promise_machine_runtime_is_current",
+        "test_stale_measurement_report_refuses",
+        "test_stale_parity_report_refuses"
+      ]
+    },
+    "transition": "treat only the exact checked compact documents as derived views of their bound canonical models and report the recorded structural, mutation, measurement, and isolated-family results without widening their limits"
+  },
   "contract": "promise-machine/v1",
   "contributor_ranking": {
     "contract": "promise-machine-contributor-ranking/v2",
