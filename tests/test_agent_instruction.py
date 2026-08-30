@@ -534,6 +534,14 @@ def total_literal_limit_model(extra: int = 0) -> dict:
     return model
 
 
+def decimal_span_literal_limit_model(extra: int = 0) -> dict:
+    model = minimal_model()
+    outer_end = "2" + "0" * (AI.MAX_LITERAL_BYTES - 1 + extra)
+    model["bindings"][0]["end"] = outer_end
+    model["bindings"][1]["end"] = outer_end
+    return model
+
+
 class RefusalAssertions:
     def assertRefusal(self, code: str, function, *arguments):
         with self.assertRaises(AI.CodecError) as raised:
@@ -732,6 +740,19 @@ class CanonicalModelTests(RefusalAssertions, unittest.TestCase):
         decoded, canonical = AI.decode_compact(compact)
         self.assertEqual(decoded, model)
         self.assertEqual(canonical, AI.canonical_json_bytes(model))
+
+    def test_decimal_span_at_literal_limit_round_trips(self):
+        model = decimal_span_literal_limit_model()
+        compact = AI.format_compact(model)
+        self.assertEqual(AI.decode_compact(compact)[0], model)
+
+    def test_decimal_span_literal_limit_plus_one_refuses(self):
+        model = decimal_span_literal_limit_model(extra=1)
+        self.assertRefusal("WAI-E-BOUNDS.LITERAL", AI.validate_model, model)
+
+    def test_decimal_schema_cap_matches_runtime(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        self.assertEqual(schema["$defs"]["decimal"].get("maxLength"), AI.MAX_LITERAL_BYTES)
 
     def test_unrelated_binding_overlap_refuses(self):
         model = complete_model()

@@ -194,7 +194,10 @@ class ValidationState:
         """Count one value that the compact form carries as a literal field."""
 
         _scalar(text, path)
-        self.total_literal_bytes += len(text.encode("utf-8"))
+        size = len(text.encode("utf-8"))
+        if size > MAX_LITERAL_BYTES:
+            refuse("WAI-E-BOUNDS.LITERAL", path)
+        self.total_literal_bytes += size
         if self.total_literal_bytes > MAX_TOTAL_LITERAL_BYTES:
             refuse("WAI-E-BOUNDS.LITERALS", path)
 
