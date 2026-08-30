@@ -1476,11 +1476,17 @@ class PromiseSemanticGateTests(unittest.TestCase):
         document["unknowns"] = ["unresolved"] * 65
         self.assertEqual(semantic_codes(self.evaluate(document)), ["PM090"])
 
-    def test_unknown_evidence_status_cannot_authorise(self):
+    def test_unknown_or_malformed_evidence_cannot_authorise(self):
         document = self.transition(0)
         document["obligation_id"] = "law-unknowns-non-authorising"
         document["evidence"][0]["status"] = "unknown"
         self.assertEqual(semantic_codes(self.evaluate(document)), ["PM091"])
+
+        for field, value in (("class", []), ("status", {})):
+            with self.subTest(field=field):
+                malformed = self.transition(0)
+                malformed["evidence"][0][field] = value
+                self.assertEqual(semantic_codes(self.evaluate(malformed)), ["PM090"])
 
     def test_not_run_evidence_status_cannot_authorise(self):
         document = self.transition(0)
@@ -1801,7 +1807,7 @@ class PromiseSemanticGateTests(unittest.TestCase):
         self.assertIn(f"blocked={payload['blocked_transition']!r}", rendered)
         self.assertIn(f"recovery={payload['recovery']!r}", rendered)
 
-    def test_complete_free_form_exception_labels_are_not_an_exception_record(self):
+    def test_declared_exceptions_require_structured_canonical_records(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)
             plugin = make_plugin(target)
@@ -1825,6 +1831,44 @@ class PromiseSemanticGateTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM038", [item["code"] for item in report["findings"]])
+
+        for field in ("id", "gate", "subject", "scope", "recovery"):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                copy_semantic_fixtures(target)
+                exception = self.valid_exception()
+                exception[field] = f" {exception[field]} "
+                if field in {"gate", "subject", "scope"}:
+                    authority_path = target / exception["authority"]["reference"]["path"]
+                    authority = json.loads(authority_path.read_text(encoding="utf-8"))
+                    authority[field] = exception[field]
+                    authority_path.write_text(
+                        json.dumps(authority, indent=2) + "\n", encoding="utf-8"
+                    )
+                    exception["authority"]["reference"]["sha256"] = hashlib.sha256(
+                        authority_path.read_bytes()
+                    ).hexdigest()
+                exception_path = (
+                    target
+                    / "tests/fixtures/promise-machine/exceptions/declared-padded.json"
+                )
+                exception_path.write_text(
+                    json.dumps(exception, indent=2) + "\n", encoding="utf-8"
+                )
+                reference = json.dumps(
+                    {
+                        "path": exception_path.relative_to(target).as_posix(),
+                        "sha256": hashlib.sha256(exception_path.read_bytes()).hexdigest(),
+                    },
+                    separators=(",", ":"),
+                )
+                error = promise_machine_module.declared_exception_error(
+                    target, reference, "fixture-promise"
+                )
+                self.assertEqual(
+                    error,
+                    "exception record has an unsupported shape or promise identity",
+                )
 
 
 class PromiseLicenceTests(unittest.TestCase):

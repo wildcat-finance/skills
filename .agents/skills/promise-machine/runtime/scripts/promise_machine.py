@@ -1778,7 +1778,9 @@ def evaluate_transition_record(
             not isinstance(role, str)
             or not role
             or role in roles
+            or not isinstance(evidence_class, str)
             or evidence_class not in SUPPORTED_EVIDENCE_CLASSES
+            or not isinstance(status, str)
             or status not in POSITIVE_EVIDENCE_STATES | NON_AUTHORISING_EVIDENCE_STATES
             or entry.get("subject") != document["subject"]
             or entry.get("scope") != document["scope"]
@@ -2166,7 +2168,9 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
         set(exception) != keys
         or exception.get("schema") != EXCEPTION_SCHEMA
         or any(
-            not isinstance(exception.get(key), str) or not exception[key].strip()
+            not isinstance(exception.get(key), str)
+            or not exception[key].strip()
+            or exception[key] != exception[key].strip()
             for key in scalars
         )
         or exception.get("promise_id") != promise_id
