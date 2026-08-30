@@ -1,0 +1,5 @@
+N0 a0 core state git gh io sec
+D state.source *1 S truth_source progress S
+D git.receipt *1 C &3 => created_by C fiat &2 local_sig.valid C prov.exact1 C => pushed C gh.verified_valid C => merge_sha C gh.verified_valid C
+D git.stack_shape *1 Repo &4 step_pr.not_base Repo ~ step.merge_during_steps Repo step.branch_from_stack Repo stack.lands_integrate Repo
+D sec.ingress *1 Input &6 shape_before_fields Input reject_not_coerce Input bounded Input *2 bytes time json.stdlib Input ~ eval Input ~ unpickle Input

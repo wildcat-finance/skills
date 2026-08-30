@@ -1,0 +1,27 @@
+NOEMA/0 tape is direct instruction, not prose or compressed text to expand.
+Parse each LF record as fixed-arity prefix terms. Imported `module.name`
+predicates have the arity, types, and graph definition in the verified module
+dictionary. Unqualified names are local values; `$x` is an exact typed literal;
+`*n` is an ordered n-item list.
+
+`!p` requires p. `-p` forbids p. `+p` permits p and never requires it.
+`?g d` applies directive d only when g is established. `/g d` applies d unless
+g is established. `@s d` limits d to scope s. `^a e` gives actor a exclusive
+authority for effect e. `;n` applies n directives. `&n`,`|n`,`~`,`=` are
+and/or/not/equal; `=>a b` is implication. `<a b` orders a before b. `O authority
+high low scope evidence` overrides one rule. `all`,`any`,
+`one` quantify over finite typed sets. `D f *n args body` defines pure graph
+macro f. projected tapes may omit stable `R id` wrappers committed by manifest.
+
+`> id m from event guard to effects` is a checked state transition. `P id subject claim
+evidence classes boundary grants refuses recovery level` is a promise. `H
+id producer consumer subject scope evidence classes time transform gaps` is a
+handoff. `X` is an attributed/scoped/recorded/expiring exception. Missing,
+stale, mismatched, or absent facts are `unknown`, never false; an unknown guard
+blocks its dependent effect. Preserve lists and exact literals byte-for-byte.
+
+Capability, authority, execution, receipt, and verification are distinct. Do
+not infer one from another. A failed gate blocks only its dependent effect;
+inspection, repair, rerun, rollback, and safe exit remain unless explicitly
+forbidden. Higher-priority host and repository rules remain in force. Execute
+only the emitted slice; omitted nodes carry no authority.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 from hashlib import sha256
 import importlib.util
 import io
@@ -36,6 +37,10 @@ CORE_DIGEST = "df97b7f39b31fcad8d75fe6d7079b12ee7c8326bd4ec1758a6577764ad1b6b76"
 BOUND_SOURCE = NOEMA_FIXTURES / "codec" / "bound-source.txt"
 SOURCE_DIGEST = "34a6411e347aa461190a71ceaa666418923ac947101c4d6db2f5e62f2b386dac"
 RUNTIME_FIXTURE = NOEMA_FIXTURES / "runtime"
+CORPUS_MANIFEST = NOEMA_FIXTURES / "manifest.json"
+SPECIMEN_FIXTURES = NOEMA_FIXTURES / "specimens"
+SEED_REFERENCE = NOEMA_FIXTURES / "seed-reference"
+SPECIMEN_NAMES = ("brevitas", "fiat", "phylax", "sapheneia")
 
 
 def load_noema():
@@ -151,6 +156,40 @@ def write_bytes(path: Path, payload: bytes) -> None:
     """Write one test-owned file below its disposable directory."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
+
+
+@contextlib.contextmanager
+def copied_corpus():
+    """Yield one disposable copy of the complete Noema fixture tree."""
+    with scratch_directory("noema-corpus-") as temporary:
+        target = Path(temporary) / "noema-v1"
+        shutil.copytree(NOEMA_FIXTURES, target)
+        yield target
+
+
+def read_json(path: Path):
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_canonical_json(path: Path, value: object) -> None:
+    write_bytes(path, noema._canonical_json(value))
+
+
+def specimen_directory(name: str, root: Path = NOEMA_FIXTURES) -> Path:
+    return root / "specimens" / name
+
+
+def mutation_index(root: Path = NOEMA_FIXTURES):
+    values = {}
+    for name in SPECIMEN_NAMES:
+        directory = specimen_directory(name, root)
+        plan = read_json(directory / "mutation-plan.json")
+        results = read_json(directory / "mutation-results.json")
+        for planned, outcome in zip(
+            plan["mutations"], results["results"], strict=True
+        ):
+            values[planned["category"]] = (planned, outcome)
+    return values
 
 
 def nested_proposition(wrappers):
@@ -319,7 +358,9 @@ class NoemaScaffoldTests(unittest.TestCase):
         public_records = {
             "seedInventory", "module", "profile", "build", "projection",
             "semanticDiff", "lock", "manifest", "sliceProjection", "result",
-            "evidence",
+            "evidence", "sourceIdentity", "sourceSpans", "literalSet",
+            "questionSet", "answerSet", "mutationPlan", "mutationResults",
+            "specimenCorpus",
         }
         self.assertEqual(
             public_records,
@@ -4313,6 +4354,571 @@ class PathBoundaryTests(unittest.TestCase):
             with mock.patch.object(noema.tempfile, "mkstemp", side_effect=capture):
                 noema._atomic_write(Path(temporary) / "secret-target-name", b"x")
         self.assertEqual(observed, [".noema-write-"])
+
+
+class SourceBindingTests(unittest.TestCase):
+    def test_corpus_verifier_binds_four_specimens(self):
+        verified = noema.verify_specimen_corpus(CORPUS_MANIFEST)
+        self.assertEqual(verified["counts"]["specimens"], 4)
+        self.assertEqual(verified["counts"]["members"], 17)
+
+    def test_seed_reference_names_match_the_closed_inventory(self):
+        inventory = read_json(INVENTORY)
+        expected = [item["path"] for item in inventory["files"]]
+        self.assertEqual(expected, sorted(path.name for path in SEED_REFERENCE.iterdir()))
+
+    def test_seed_reference_bytes_match_every_inventory_digest(self):
+        inventory = read_json(INVENTORY)
+        for item in inventory["files"]:
+            raw = (SEED_REFERENCE / item["path"]).read_bytes()
+            self.assertEqual((len(raw), sha256(raw).hexdigest()), (item["bytes"], item["sha256"]))
+
+    def test_seed_reference_files_are_regular_and_non_executable(self):
+        for path in SEED_REFERENCE.iterdir():
+            mode = path.stat(follow_symlinks=False).st_mode
+            self.assertTrue(stat.S_ISREG(mode))
+            self.assertFalse(mode & 0o111)
+
+    def test_seed_reference_aggregate_digest_is_manifest_bound(self):
+        inventory = read_json(INVENTORY)
+        evidence = [
+            {"path": item["path"], "bytes": item["bytes"], "sha256": item["sha256"]}
+            for item in inventory["files"]
+        ]
+        corpus = read_json(CORPUS_MANIFEST)
+        self.assertEqual(corpus["seed"]["reference_sha256"], noema._value_sha256(evidence))
+
+    def test_reference_can_rebuild_a_verified_seed_archive(self):
+        inventory = read_json(INVENTORY)
+        files = [
+            (item["path"], (SEED_REFERENCE / item["path"]).read_bytes())
+            for item in inventory["files"]
+        ]
+        payload = archive_bytes(files, root=inventory["archive"]["root"])
+        with scratch_directory("noema-seed-rebuild-") as temporary:
+            archive = Path(temporary) / "noema-v0-evidence.zip"
+            rebuilt_inventory = copy.deepcopy(inventory)
+            rebuilt_inventory["archive"]["bytes"] = len(payload)
+            rebuilt_inventory["archive"]["sha256"] = sha256(payload).hexdigest()
+            archive.write_bytes(payload)
+            inventory_path = Path(temporary) / "inventory.json"
+            inventory_path.write_text(json.dumps(rebuilt_inventory), encoding="utf-8")
+            result = noema.verify_seed(archive, inventory_path)
+        self.assertEqual((result["verdict"], result["counts"]["members"]), ("ok", 17))
+
+    def test_source_span_maps_form_complete_byte_partitions(self):
+        for name in SPECIMEN_NAMES:
+            spans = read_json(specimen_directory(name) / "source-spans.json")
+            cursor = 0
+            for item in spans["spans"]:
+                self.assertEqual(item["start"], cursor)
+                cursor = item["end"]
+            self.assertEqual(cursor, spans["governed"]["end"])
+
+    def test_unsupported_remainders_never_name_nodes_or_authority(self):
+        for name in SPECIMEN_NAMES:
+            spans = read_json(specimen_directory(name) / "source-spans.json")
+            for item in spans["spans"]:
+                if item["kind"] == "unsupported-remainder":
+                    self.assertIsNone(item["node"])
+                    self.assertEqual(item["reason"], "unsupported-by-noema-v1")
+
+    def test_each_specimen_remains_explicitly_shadow_only(self):
+        corpus = read_json(CORPUS_MANIFEST)
+        self.assertTrue(all(item["shadow"] for item in corpus["specimens"]))
+        self.assertEqual(sum(item["unsupported_remainders"] for item in corpus["specimens"]), 44)
+
+    def test_source_digest_tamper_refuses(self):
+        with copied_corpus() as root:
+            path = specimen_directory("fiat", root) / "source.json"
+            value = read_json(path)
+            value["sha256"] = "0" * 64
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.SOURCE")
+
+    def test_source_span_gap_refuses(self):
+        with copied_corpus() as root:
+            path = specimen_directory("fiat", root) / "source-spans.json"
+            value = read_json(path)
+            value["spans"][1]["start"] += 1
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.SPAN_GAP")
+
+    def test_source_span_overlap_refuses(self):
+        with copied_corpus() as root:
+            path = specimen_directory("phylax", root) / "source-spans.json"
+            value = read_json(path)
+            value["spans"][1]["start"] -= 1
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.SPAN_OVERLAP")
+
+    def test_remainder_cannot_mint_a_node(self):
+        with copied_corpus() as root:
+            path = specimen_directory("sapheneia", root) / "source-spans.json"
+            value = read_json(path)
+            remainder = next(item for item in value["spans"] if item["kind"] == "unsupported-remainder")
+            remainder["node"] = "rule.inject"
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-AUTHORITY.REMAINDER")
+
+    def test_shadow_flag_cannot_hide_remainders(self):
+        with copied_corpus() as root:
+            path = specimen_directory("brevitas", root) / "source-spans.json"
+            value = read_json(path)
+            value["shadow"] = False
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-AUTHORITY.SHADOW")
+
+    def test_extra_seed_reference_member_refuses(self):
+        with copied_corpus() as root:
+            (root / "seed-reference/extra.txt").write_bytes(b"extra")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.EXTRA_MEMBER")
+
+    def test_executable_seed_reference_member_refuses(self):
+        with copied_corpus() as root:
+            path = next((root / "seed-reference").iterdir())
+            path.chmod(0o755)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-AUTHORITY.SEED")
+
+    def test_symlinked_seed_reference_member_refuses(self):
+        with copied_corpus() as root:
+            path = root / "seed-reference/bootstrap.txt"
+            path.unlink()
+            path.symlink_to(root / "seed-reference/coverage.md")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-PATH.CONFINEMENT")
+
+    def test_noncanonical_corpus_manifest_refuses(self):
+        with copied_corpus() as root:
+            path = root / "manifest.json"
+            value = read_json(path)
+            path.write_text(json.dumps(value, indent=2), encoding="utf-8")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(path)
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.CANONICAL")
+
+
+class SpecimenRoundTripTests(unittest.TestCase):
+    def test_corpus_manifest_records_distinct_derived_objects(self):
+        corpus = read_json(CORPUS_MANIFEST)
+        keys = (
+            "source_sha256", "canonical_sha256", "graph_sha256",
+            "full_projection_sha256", "manifest_sha256", "projection_sha256",
+            "literals_sha256", "kernel_sha256", "definitions_sha256",
+        )
+        for specimen in corpus["specimens"]:
+            self.assertEqual(len({specimen[key] for key in keys}), len(keys))
+
+    def test_corpus_uses_all_ten_literal_kinds(self):
+        values = read_json(specimen_directory("brevitas") / "literals.json")
+        self.assertEqual({item["kind"] for item in values["literals"]}, set(noema.LITERAL_KINDS))
+
+    def test_literal_payloads_do_not_mint_nodes_aliases_or_effects(self):
+        directory = specimen_directory("brevitas")
+        literals = read_json(directory / "literals.json")["literals"]
+        graph = read_json(directory / "build.json")["graph"]
+        profile = read_json(directory / "profile.json")
+        nodes = {item[1] for item in graph["records"] if item[0] != "import"}
+        aliases = {value for pair in profile["aliases"] for value in pair}
+        effects = set()
+        for record in graph["records"]:
+            if record[0] == "rule":
+                effects.update(value for kind, value in noema._typed_atoms(record[2]) if kind == "effect")
+        for item in literals:
+            self.assertNotIn(item["value"], nodes)
+            self.assertNotIn(item["value"], aliases)
+            self.assertNotIn(item["value"], effects)
+
+    def test_question_sets_cover_all_three_policy_decisions(self):
+        for name in SPECIMEN_NAMES:
+            questions = read_json(specimen_directory(name) / "questions.json")
+            self.assertEqual(
+                {item["expected"]["decision"] for item in questions["questions"]},
+                {"permit", "refuse", "unknown"},
+            )
+
+    def test_corpus_outputs_are_deterministic_across_two_verifications(self):
+        first = noema.verify_specimen_corpus(CORPUS_MANIFEST)
+        second = noema.verify_specimen_corpus(CORPUS_MANIFEST)
+        self.assertEqual(first, second)
+
+    def test_top_level_verify_dispatches_to_the_specimen_corpus(self):
+        completed = subprocess.run(
+            [sys.executable, str(SCRIPT), "verify", "--manifest", str(CORPUS_MANIFEST)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        result = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 0)
+        self.assertEqual((result["verdict"], result["counts"]["specimens"]), ("ok", 4))
+
+    def test_specimen_output_inventory_is_closed(self):
+        inputs = {
+            "kernel.noe", "mutation-plan.json", "profile.json", "questions.json",
+            "selection.json", "source.json", "source.noe", "modules", "mutations",
+        }
+        for name in SPECIMEN_NAMES:
+            actual = {path.name for path in specimen_directory(name).iterdir()}
+            self.assertEqual(actual, inputs | set(noema.SPECIMEN_OUTPUTS))
+
+    def test_unreachable_hostile_literals_remain_out_of_the_operation_slice(self):
+        directory = specimen_directory("brevitas")
+        manifest = read_json(directory / "manifest.json")
+        self.assertEqual(manifest["literals"], ["lit.command"])
+        self.assertNotIn("lit.url", manifest["literals"])
+
+    def test_full_projection_and_slice_are_separate_objects(self):
+        for name in SPECIMEN_NAMES:
+            directory = specimen_directory(name)
+            self.assertNotEqual(
+                sha256((directory / "full-projection.json").read_bytes()).hexdigest(),
+                sha256((directory / "projection.json").read_bytes()).hexdigest(),
+            )
+
+    def test_stored_answer_tamper_refuses(self):
+        with copied_corpus() as root:
+            path = specimen_directory("fiat", root) / "answers.json"
+            value = read_json(path)
+            value["answers"][0]["result"]["output"]["decision"] = "refuse"
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.ANSWER")
+
+
+class MutationTests(unittest.TestCase):
+    def test_corpus_contains_each_hostile_category_exactly_once(self):
+        self.assertEqual(set(mutation_index()), set(noema.MUTATION_CATEGORIES))
+        self.assertEqual(len(mutation_index()), 13)
+
+    def test_mutations_command_reports_all_thirteen(self):
+        result = noema.mutations_command(CORPUS_MANIFEST)
+        self.assertEqual((result["verdict"], result["counts"]["mutations"]), ("ok", 13))
+
+    def test_mutation_artifacts_are_confined_to_their_specimens(self):
+        for planned, _outcome in mutation_index().values():
+            suffix = ".json" if planned["kind"] == "profile" else ".noe"
+            self.assertEqual(planned["artifact"], f"mutations/{planned['id']}{suffix}")
+
+    def test_changed_mutations_change_both_graph_and_observation(self):
+        for _planned, outcome in mutation_index().values():
+            if outcome["status"] == "changed":
+                self.assertNotEqual(outcome["diff"]["before_graph_sha256"], outcome["graph_sha256"])
+                self.assertNotEqual(outcome["baseline_answer_sha256"], outcome["answer_sha256"])
+
+    def test_refused_mutations_retain_a_checked_baseline(self):
+        for _planned, outcome in mutation_index().values():
+            self.assertEqual(
+                outcome["baseline_answer_sha256"],
+                noema._value_sha256(outcome["baseline_answer"]),
+            )
+
+    def test_unchanged_mutation_refuses_before_a_result_can_pass(self):
+        with copied_corpus() as root:
+            directory = specimen_directory("brevitas", root)
+            (directory / "mutations/brevitas.changed-exact-literal.noe").write_bytes(
+                (directory / "source.noe").read_bytes()
+            )
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._derive_specimen(directory, ROOT)
+        self.assertEqual(raised.exception.code, "NOE-E-MUTATION.UNCHANGED")
+
+    def test_wrong_mutation_query_refuses_the_fixed_contract(self):
+        plan = read_json(specimen_directory("fiat") / "mutation-plan.json")
+        plan["mutations"][0]["query"]["effect"] = "authorized"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._mutation_plan(plan, "fiat")
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.MUTATION_CONTRACT")
+
+    def test_wrong_mutation_artifact_name_refuses(self):
+        plan = read_json(specimen_directory("fiat") / "mutation-plan.json")
+        plan["mutations"][0]["artifact"] = "mutations/other.noe"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._mutation_plan(plan, "fiat")
+        self.assertEqual(raised.exception.code, "NOE-E-PATH.MUTATION")
+
+    def test_mutation_baseline_digest_tamper_refuses(self):
+        directory = specimen_directory("fiat")
+        plan = noema._mutation_plan(read_json(directory / "mutation-plan.json"), "fiat")
+        results = read_json(directory / "mutation-results.json")
+        results["results"][0]["baseline_answer_sha256"] = "0" * 64
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_mutation_results(results, "fiat", plan)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.ANSWER")
+
+    def test_mutation_facet_tamper_refuses(self):
+        directory = specimen_directory("fiat")
+        plan = noema._mutation_plan(read_json(directory / "mutation-plan.json"), "fiat")
+        results = read_json(directory / "mutation-results.json")
+        outcome = results["results"][0]
+        outcome["diff"]["entries"][0]["kind"] = "literal"
+        outcome["diff_sha256"] = noema._value_sha256(outcome["diff"])
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_mutation_results(results, "fiat", plan)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.MUTATION_FACETS")
+
+    def test_ordering_mutation_is_an_exact_two_effect_swap(self):
+        _planned, outcome = mutation_index()["reordered-effects"]
+        before = json.loads(outcome["baseline_answer"]["output"]["render"])
+        after = json.loads(outcome["answer"]["output"]["render"])
+        self.assertEqual(after[2], [before[2][0], before[2][1], before[2][3], before[2][2]])
+
+    def test_exact_literal_mutation_preserves_kind_and_changes_bytes(self):
+        _planned, outcome = mutation_index()["changed-exact-literal"]
+        before = outcome["baseline_answer"]["output"]
+        after = outcome["answer"]["output"]
+        self.assertEqual((before["id"], before["kind"]), (after["id"], after["kind"]))
+        self.assertNotEqual((before["bytes"], before["sha256"]), (after["bytes"], after["sha256"]))
+
+
+class CriticalVectorTests(unittest.TestCase):
+    def test_critical_vector_inventory_is_complete_and_sorted(self):
+        vectors = read_json(CORPUS_MANIFEST)["critical_vectors"]
+        self.assertEqual([item["id"] for item in vectors], sorted(noema.CRITICAL_VECTORS))
+
+    def test_every_critical_mutation_has_a_checked_outcome(self):
+        outcomes = {planned["id"]: outcome for planned, outcome in mutation_index().values()}
+        vectors = read_json(CORPUS_MANIFEST)["critical_vectors"]
+        for vector in vectors:
+            for identifier in vector["mutations"]:
+                self.assertIn(outcomes[identifier]["status"], {"changed", "refused"})
+
+    def test_wrong_category_under_a_critical_vector_refuses(self):
+        with copied_corpus() as root:
+            path = root / "manifest.json"
+            value = read_json(path)
+            authority = next(item for item in value["critical_vectors"] if item["id"] == "authority")
+            authority["mutations"] = ["fiat.dropped-negation"]
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(path)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.CRITICAL")
+
+    def test_missing_critical_vector_refuses(self):
+        with copied_corpus() as root:
+            path = root / "manifest.json"
+            value = read_json(path)
+            value["critical_vectors"].pop()
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(path)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.CRITICAL")
+
+    def test_duplicate_critical_mutation_refuses(self):
+        with copied_corpus() as root:
+            path = root / "manifest.json"
+            value = read_json(path)
+            value["critical_vectors"][0]["mutations"] *= 2
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(path)
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.ORDER")
+
+    def test_critical_vector_count_is_reported_as_seven(self):
+        result = noema.verify_specimen_corpus(CORPUS_MANIFEST)
+        self.assertEqual(result["counts"]["critical"], 7)
+
+
+def _source_specimen_test(name, assertion):
+    expected_paths = {
+        "brevitas": "plugins/brevitas/skills/brevitas/SKILL.md",
+        "fiat": "plugins/hexaemeron/skills/fiat/SKILL.md",
+        "phylax": "plugins/hexaemeron/skills/phylax/SKILL.md",
+        "sapheneia": "plugins/sapheneia/skills/sapheneia/SKILL.md",
+    }
+
+    def test(self):
+        directory = specimen_directory(name)
+        identity = read_json(directory / "source.json")
+        raw = (ROOT / identity["path"]).read_bytes()
+        spans = read_json(directory / "source-spans.json")
+        graph = read_json(directory / "build.json")["graph"]
+        if assertion == "path":
+            self.assertEqual(identity["path"], expected_paths[name])
+        elif assertion == "digest":
+            self.assertEqual((identity["bytes"], identity["sha256"]), (len(raw), sha256(raw).hexdigest()))
+        elif assertion == "governed":
+            self.assertEqual(identity["governed"], {"start": 0, "end": len(raw)})
+            self.assertEqual(spans["governed"], identity["governed"])
+        elif assertion == "nodes":
+            nodes = [item["node"] for item in spans["spans"] if item["kind"] == "node"]
+            self.assertEqual(len(nodes), 10)
+            self.assertEqual(len(set(nodes)), 10)
+        elif assertion == "bindings":
+            by_node = {
+                record[1]: record[3]
+                for record in graph["records"]
+                if record[0] == "rule"
+            }
+            for item in spans["spans"]:
+                if item["kind"] != "node":
+                    continue
+                binding = by_node[item["node"]]
+                self.assertEqual((item["start"], item["end"]), (int(binding[3]), int(binding[4])))
+                self.assertTrue(raw[item["start"]:item["end"]].decode("utf-8"))
+        else:
+            self.fail(f"unknown source assertion {assertion}")
+
+    return test
+
+
+for _specimen_name in SPECIMEN_NAMES:
+    for _source_assertion in ("path", "digest", "governed", "nodes", "bindings"):
+        setattr(
+            SourceBindingTests,
+            f"test_{_specimen_name}_{_source_assertion}",
+            _source_specimen_test(_specimen_name, _source_assertion),
+        )
+
+
+def _specimen_round_trip_test(name, assertion):
+    def test(self):
+        directory = specimen_directory(name)
+        build, _raw, artifacts = noema.load_build(
+            directory / "build.json",
+            directory / "modules",
+            directory / "profile.json",
+            directory / "kernel.noe",
+        )
+        profile = noema._decode_json(artifacts["profile"], "profile", canonical=True)
+        if assertion == "source":
+            self.assertEqual(
+                (directory / "source.noe").read_bytes(),
+                noema._canonical_source(build["graph"]["records"]),
+            )
+        elif assertion == "full_projection":
+            projection = read_json(directory / "full-projection.json")
+            self.assertEqual(noema.recover_projection(projection, profile), build["graph"])
+        elif assertion == "slice":
+            manifest, projection = noema._verify_manifest_path(directory / "manifest.json")
+            self.assertEqual(manifest["projection_sha256"], sha256(projection["text"].encode()).hexdigest())
+        elif assertion == "regeneration":
+            outputs, _record, _plan, _results = noema._derive_specimen(directory, ROOT)
+            for filename, payload in outputs.items():
+                self.assertEqual((directory / filename).read_bytes(), payload)
+        elif assertion == "answers":
+            questions = read_json(directory / "questions.json")["questions"]
+            answers = read_json(directory / "answers.json")["answers"]
+            self.assertEqual(
+                [(item["id"], item["expected"]) for item in questions],
+                [(item["id"], item["result"]["output"]) for item in answers],
+            )
+        elif assertion == "rules":
+            manifest = read_json(directory / "manifest.json")
+            expected = {f"rule.{value}" for value in (
+                "authorized", "blocked", "default", "defined", "exact",
+                "negated", "ordered", "permit", "scoped", "unknown",
+            )}
+            self.assertTrue(expected <= set(manifest["included_ids"]))
+        elif assertion == "lock":
+            lock = read_json(directory / "lock.json")
+            self.assertEqual(lock, build["lock"])
+            self.assertEqual(lock["graph_sha256"], noema._value_sha256(build["graph"]))
+        else:
+            self.fail(f"unknown round-trip assertion {assertion}")
+
+    return test
+
+
+for _specimen_name in SPECIMEN_NAMES:
+    for _round_trip_assertion in (
+        "source", "full_projection", "slice", "regeneration", "answers", "rules", "lock",
+    ):
+        setattr(
+            SpecimenRoundTripTests,
+            f"test_{_specimen_name}_{_round_trip_assertion}_round_trip",
+            _specimen_round_trip_test(_specimen_name, _round_trip_assertion),
+        )
+
+
+def _hostile_literal_test(kind):
+    def test(self):
+        directory = specimen_directory("brevitas")
+        item = next(
+            value
+            for value in read_json(directory / "literals.json")["literals"]
+            if value["kind"] == kind
+        )
+        self.assertEqual(item["bytes"], len(item["value"].encode("utf-8")))
+        self.assertEqual(item["sha256"], sha256(item["value"].encode("utf-8")).hexdigest())
+        manifest, _projection = noema._verify_manifest_path(directory / "manifest.json")
+        if kind == "command":
+            result = noema.literal_runtime(item["id"], manifest)
+            self.assertEqual(result["output"]["value"], item["value"])
+        else:
+            self.assertNotIn(item["id"], manifest["literals"])
+
+    return test
+
+
+for _hostile_kind in sorted(noema.LITERAL_KINDS):
+    setattr(
+        SpecimenRoundTripTests,
+        f"test_hostile_{_hostile_kind}_literal_is_inert",
+        _hostile_literal_test(_hostile_kind),
+    )
+
+
+def _mutation_category_test(category):
+    def test(self):
+        planned, outcome = mutation_index()[category]
+        contract = noema.MUTATION_CONTRACTS[category]
+        self.assertEqual((planned["kind"], planned["query"]), (contract["kind"], contract["query"]))
+        self.assertEqual(outcome["status"], contract["status"])
+        noema._validate_mutation_semantics(outcome, planned, f"test.{category}")
+
+    return test
+
+
+for _mutation_category in sorted(noema.MUTATION_CATEGORIES):
+    setattr(
+        MutationTests,
+        f"test_category_{_mutation_category.replace('-', '_')}",
+        _mutation_category_test(_mutation_category),
+    )
+
+
+def _critical_vector_test(identifier):
+    def test(self):
+        vectors = {
+            item["id"]: item
+            for item in read_json(CORPUS_MANIFEST)["critical_vectors"]
+        }
+        by_id = {
+            planned["id"]: (planned, outcome)
+            for planned, outcome in mutation_index().values()
+        }
+        represented = {by_id[value][0]["category"] for value in vectors[identifier]["mutations"]}
+        self.assertTrue(represented)
+        self.assertLessEqual(represented, set(noema.CRITICAL_VECTORS[identifier]))
+        for value in vectors[identifier]["mutations"]:
+            noema._validate_mutation_semantics(by_id[value][1], by_id[value][0], f"critical.{identifier}")
+
+    return test
+
+
+for _critical_identifier in sorted(noema.CRITICAL_VECTORS):
+    setattr(
+        CriticalVectorTests,
+        f"test_vector_{_critical_identifier.replace('-', '_')}",
+        _critical_vector_test(_critical_identifier),
+    )
 
 
 def _runtime_consequence_test(level, authorised):

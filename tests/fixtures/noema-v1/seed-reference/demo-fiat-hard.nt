@@ -1,0 +1,26 @@
+N0 a0 core state git gh pm fiat
+? receipt.fail Phase - advance Phase
+? config.change Cfg / allowed_config Cfg - config.change Cfg
+! state.source *2 status next
+? ~ occurred Run - claim_occurred Run
+! git.receipt Commit
+- git.force_over_foreign
+- git.bypass_gate
+! git.stack_shape Run
+- git.base_merges_gt Run 1
+^ C branch.name
+- branch.number_only
+- issue.attach_after init
+- branch.rename_stored
+? routine_left Work - claim_complete Work
+- issue.create workflow_satisfaction
+? contributor_check *3 st.failed st.unavailable st.inconclusive - disclose contrib_check
+< study.receipt plugin.install_wider
+? |2 fiat.frontier_mature ~ material_improvement ;2 - frontier.run - frontier.recommend
+< status.final reset
+< verify.ok reset
+< handoff.captured reset
+? terminal.verified ! reset
+? generation.update - frontier.next_change
+? epoch.reopen / reopening.evidence - frontier.next_replace
+? |5 next.audit_verdict next.blocked push.rejected secsuite.unresolved verify.failed ;3 ! halt.ledger ! fiat.ask_user ! stop

@@ -96,6 +96,16 @@ Manifest verification correlates to the exact manifest identity, while the
 runtime self-test binds all seven exact case results, including receipts and
 alternate selections, under one reported digest.
 
+The Step 4 corpus binds complete current-tree Markdown bytes for Fiat, Phylax,
+Sapheneia and Brevitas while mapping ten reviewed rule spans per source. Every
+unmapped byte is an explicit authority-free remainder, so all four specimens
+remain shadow-only. Questions carry complete expected policy outputs rather
+than accepting whatever the runtime returns. Thirteen fixed hostile mutations
+bind their input kind, query, baseline, semantic facets and exact changed or
+refused result; the seven critical vectors accept only their named categories.
+The supplied 17-file seed is copied byte-identically as non-executable
+reference evidence and no seed Python enters the implementation process.
+
 ## Alternatives
 
 ### Extend `wildcat-agent-instruction/v1`
@@ -145,6 +155,13 @@ not permit native skill authorship, a plugin registration, a repository-wide
 conversion or migration. A rejected result stays useful: it records which
 semantic, compression or transfer gate failed without moving the gate after
 observation.
+
+The Step 4 evidence establishes deterministic provenance, regeneration and
+counterexample behavior for these four reviewed mappings. It does not establish
+that a mapping captured every meaning in its Markdown remainder, generalize to
+another skill revision, satisfy any compression gate or predict model
+comprehension. Source drift requires a reviewed rebind before the corpus can be
+called current.
 
 This run stops after its final prototype checkpoint. Fiat integration, merging
 the run branch, closing #942 or adopting Noema anywhere is outside this ADR and

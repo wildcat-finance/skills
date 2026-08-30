@@ -295,6 +295,54 @@ and recovers the projection before accepting the manifest. The leaf-only rule
 is intentional: a portable fixture cannot smuggle path traversal or a linked
 dependency into verification.
 
+## Source-bound specimen corpus
+
+`noema-specimen-corpus/v1` binds exactly four sorted shadow specimens:
+Brevitas, Fiat, Phylax and Sapheneia. Each specimen owns canonical source,
+modules, profile, kernel, selection, questions and hostile mutation inputs.
+Deterministic regeneration produces its build and lock, full projection,
+operation slice and manifest, literal evidence, policy answers, source-span map
+and mutation results. The top manifest records a separate digest for every one
+of those objects; source, canonical graph, full projection, slice, literals,
+kernel and reachable definitions cannot alias one identity.
+
+`noema-source-identity/v1` names one repository-relative Markdown path, exact
+byte count and SHA-256, and governs its complete byte range. Every rule source
+binding must name that same path and digest. `noema-source-spans/v1` forms one
+ordered, gapless and non-overlapping partition over the whole file. A mapped
+span names exactly one rule node. Every other byte is
+`unsupported-by-noema-v1`, names no node or authority, and forces `shadow:
+true`. Complete byte coverage is evidence about provenance, not evidence that
+the reviewed mapping understood the prose correctly.
+
+Each closed question records an effect and the complete expected
+`noema-check/v1` output. Regeneration executes the checked slice and refuses if
+decision, consequence, controlling node or reason differs. The committed
+answer retains the full result and digests. Every specimen must demonstrate
+permit, refuse and unknown.
+
+The mutation plan admits exactly the thirteen fixed hostile categories. Each
+category fixes its input kind and runtime query. A changed mutation records
+the exact semantic diff, changed graph, baseline answer and changed answer;
+all four digests are rederived. A refusing mutation records its exact stable
+code plus the checked baseline. Category contracts additionally require the
+declared semantic facets and behavior transition: negation, authority,
+permission/prohibition, scope, unknown guard and consequence-3 mutations must
+change their named policy outcome; an exact literal preserves id and kind but
+changes bytes; ordering performs one exact two-effect swap; stale module,
+missing dependency, unknown opcode and alias collision refuse under their
+specific code. An unchanged graph or unchanged declared observation refuses.
+
+The top manifest also binds the verified 17-file seed copy as
+`non-executable-reference-evidence`. Its inventory, archive digest, per-file
+size and digest, aggregate reference digest, flat closed member set and
+non-executable regular-file mode are checked. Seed Python is evidence bytes;
+the verifier never imports or executes it. Seven complete, sorted critical
+vectors cover permission/prohibition, authority, negation, unknown guard,
+ordering, exact literal and consequence-3. A vector passes only when every
+named mutation belongs to its fixed category and satisfies that category's
+outcome contract.
+
 ## Local codec interface
 
 `scripts/noema.py parse` accepts named source, module-directory, profile,
@@ -303,9 +351,11 @@ kernel and output paths. It validates everything before atomically writing one
 canonical source; `project` writes one `noema-projection/v1` bundle;
 `semantic-diff` compares two builds; and `verify --build` rereads every
 dependency and lock identity. Those four commands take the same module,
-profile and kernel paths. `verify --manifest` instead checks the self-described
-runtime corpus above. `self-test` performs the checked-in complete-fixture
-round trip without writing a file.
+profile and kernel paths. `verify --manifest` checks either one self-described
+runtime manifest or the source-bound specimen corpus by its schema identity.
+`mutations --manifest` accepts only the specimen corpus and rechecks all fixed
+hostile and critical-vector outcomes. `self-test` performs the checked-in
+complete-fixture round trip without writing a file.
 
 All input leaves must be regular files; module resolution is confined to one
 real directory and never scans it. An output leaf must be Unicode-scalar UTF-8
@@ -480,6 +530,7 @@ Stable refusal families are:
 | `NOE-E-PATH` | unsafe, escaping, linked or special path | select a confined regular path |
 | `NOE-E-IO` | read, write, sync or atomic replacement uncertainty | inspect complete old/new state and rerun safely |
 | `NOE-E-POLICY` | contradictory facts, consequence declarations or transition state | repair the inconsistent policy input or graph and reselect |
+| `NOE-E-MUTATION` | a declared hostile input leaves its graph or checked observation unchanged | repair the counterexample so it exercises the named semantic boundary |
 | `NOE-E-SELF_TEST` | checked-in demonstration no longer satisfies its fixed outcome | repair or regenerate the fixture before relying on the prototype |
 | `NOE-E-EVALUATION` | packet, profile, family, case or answer mismatch | restore the exact isolated cohort and retally |
 | `NOE-E-UNIMPLEMENTED` | operation reserved for a later prototype step | finish and verify its declared step |

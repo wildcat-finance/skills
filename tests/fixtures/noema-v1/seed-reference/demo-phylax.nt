@@ -1,0 +1,17 @@
+N0 a0 core io sec pm
+! sec.ingress Ext
+! argv.list Sub
+! dep.pin_exact Dep
+! secret.env Cred
+? check.unavailable Check - continue Check
+^ U *6 dep.add trust.widen host.new state.outside tool.grant proof.relax
+- secret.commit *3 key mnemonic rpc_cred
+- secret.log Cred
+- argv.has Sub Cred
+? derived Shell Ext - shell.exec Shell
+? source Any ModelOut ;4 - shell.exec ModelOut - eval ModelOut - query ModelOut - path.use ModelOut
+? purpose bypass Check - verify.weaken Check
+? ingest.new Item ! test.equiv Item ingress_profile
+! url.guard SuppliedUrl *4 https allowhost globalip pin_connect
+? dns_rebind_risk SuppliedUrl ! resolve_once SuppliedUrl
+P boundary Ext secured_by ingress_profile *2 controls tests *2 checked inferred sec.near_overclaim *2 consume audit *4 unbounded secretleak shellreach proofclaim *3 repair retest review 2
