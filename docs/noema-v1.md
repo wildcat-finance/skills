@@ -308,7 +308,7 @@ Version 1 applies every limit before returning a partial graph or result:
 | source records | 16,384 |
 | graph nodes | 16,384 |
 | imports | 64 |
-| nesting depth | 64 |
+| source-record or module-document nesting depth | 64 |
 | one literal | 65,000 decoded UTF-8 bytes |
 | all decoded literal occurrences | 786,432 bytes |
 | expanded macro graph | 65,536 nodes |
@@ -317,6 +317,9 @@ Version 1 applies every limit before returning a partial graph or result:
 
 The graph-node count includes source records, term nodes, each embedded module
 and every module import, subtype, signature and definition declaration.
+Derived graph and build envelopes add at most three and four fixed container
+levels respectively; every embedded source record and module document remains
+subject to the 64-level limit.
 
 The seed archive verifier separately accepts at most 1,048,576 archive bytes,
 64 members, 1,048,576 uncompressed bytes in aggregate, 1,048,576 bytes for one

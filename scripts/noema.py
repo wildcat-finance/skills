@@ -608,7 +608,13 @@ def _json_pairs(field: str):
     return pairs_hook
 
 
-def _decode_json(raw: bytes, field: str, *, canonical: bool) -> object:
+def _decode_json(
+    raw: bytes,
+    field: str,
+    *,
+    canonical: bool,
+    maximum_depth: int = MAX_DEPTH,
+) -> object:
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError:
@@ -627,17 +633,22 @@ def _decode_json(raw: bytes, field: str, *, canonical: bool) -> object:
         raise
     except (ValueError, RecursionError):
         refuse("NOE-E-SYNTAX.JSON", field, "input is not bounded JSON")
-    _bounded_value_depth(value, field)
+    _bounded_value_depth(value, field, maximum=maximum_depth)
     if canonical and raw != _canonical_json(value):
         refuse("NOE-E-SYNTAX.CANONICAL", field, "JSON bytes are not the singular canonical spelling")
     return value
 
 
-def _bounded_value_depth(value: object, field: str) -> None:
+def _bounded_value_depth(
+    value: object,
+    field: str,
+    *,
+    maximum: int = MAX_DEPTH,
+) -> None:
     stack: list[tuple[object, int]] = [(value, 1)]
     while stack:
         current, depth = stack.pop()
-        if depth > MAX_DEPTH:
+        if depth > maximum:
             refuse("NOE-E-BOUNDS.DEPTH", field, "value nesting exceeds the graph depth limit")
         if isinstance(current, dict):
             stack.extend((item, depth + 1) for item in current.values())
@@ -751,9 +762,19 @@ def _literal_value(kind: str, value: object, field: str) -> str:
     return text
 
 
-def _read_canonical_json(path: Path, field: str) -> tuple[object, bytes]:
+def _read_canonical_json(
+    path: Path,
+    field: str,
+    *,
+    maximum_depth: int = MAX_DEPTH,
+) -> tuple[object, bytes]:
     raw = _read_regular(path, field, MAX_INPUT_BYTES)
-    return _decode_json(raw, field, canonical=True), raw
+    return _decode_json(
+        raw,
+        field,
+        canonical=True,
+        maximum_depth=maximum_depth,
+    ), raw
 
 
 def _module_path(directory: Path, module_id: str) -> Path:
@@ -1851,7 +1872,11 @@ def load_build(
     profile_path: Path,
     kernel_path: Path,
 ) -> tuple[dict[str, object], bytes, dict[str, object]]:
-    value, raw = _read_canonical_json(path, "build")
+    value, raw = _read_canonical_json(
+        path,
+        "build",
+        maximum_depth=MAX_DEPTH + 4,
+    )
     build, artifacts = _verify_build_value(value, modules_directory, profile_path, kernel_path)
     return build, raw, artifacts
 
@@ -2122,12 +2147,38 @@ def recover_projection(bundle_value: object, profile: dict[str, object]) -> dict
         refuse("NOE-E-SYNTAX.PROJECTION", "projection", "projection header is malformed")
     if header[1] != manifest["profile_sha256"] or header[2] != manifest["graph_sha256"]:
         refuse("NOE-E-DIGEST.PROJECTION", "projection", "projection header and manifest differ")
-    projected = _decode_json(lines[1] + b"\n", "projection.graph", canonical=True)
+    projected = _decode_json(
+        lines[1] + b"\n",
+        "projection.graph",
+        canonical=True,
+        maximum_depth=MAX_DEPTH + 3,
+    )
     inverse = {item[1]: item[0] for item in aliases}
     graph = _replace_strings(projected, inverse)
     graph_object = _exact_keys(graph, {"schema", "source_sha256", "records", "modules"}, "projection.graph")
     if graph_object["schema"] != GRAPH_SCHEMA:
         refuse("NOE-E-TYPE.GRAPH", "projection.graph", "projection recovered an unknown graph")
+    _digest(graph_object["source_sha256"], "projection.graph.source_sha256")
+    records = graph_object["records"]
+    modules = graph_object["modules"]
+    if not isinstance(records, list) or len(records) > MAX_RECORDS:
+        refuse("NOE-E-TYPE.GRAPH", "projection.graph.records", "projection graph records are invalid")
+    if not isinstance(modules, list) or len(modules) > MAX_IMPORTS:
+        refuse("NOE-E-TYPE.GRAPH", "projection.graph.modules", "projection graph modules are invalid")
+    for index, record in enumerate(records):
+        _bounded_value_depth(record, f"projection.graph.records[{index}]")
+    for index, module_value in enumerate(modules):
+        module = _exact_keys(
+            module_value,
+            {"id", "sha256", "value"},
+            f"projection.graph.modules[{index}]",
+        )
+        _identifier(module["id"], f"projection.graph.modules[{index}].id")
+        _digest(module["sha256"], f"projection.graph.modules[{index}].sha256")
+        _bounded_value_depth(
+            module["value"],
+            f"projection.graph.modules[{index}].value",
+        )
     if sha256(_canonical_json(graph_object)).hexdigest() != manifest["graph_sha256"]:
         refuse("NOE-E-DIGEST.RECOVERY", "projection", "recovered graph digest differs")
     return graph_object

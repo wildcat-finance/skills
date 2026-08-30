@@ -91,6 +91,61 @@ def write_bytes(path: Path, payload: bytes) -> None:
     path.write_bytes(payload)
 
 
+def nested_proposition(wrappers):
+    proposition = [
+        "=",
+        [":", "state", "ready"],
+        [":", "state", "ready"],
+    ]
+    for _index in range(wrappers):
+        proposition = ["~", proposition]
+    return proposition
+
+
+def assert_build_and_projection_round_trip(test, build, artifacts, modules):
+    profile = noema._decode_json(
+        artifacts["profile"],
+        "profile",
+        canonical=True,
+    )
+    with tempfile.TemporaryDirectory() as temporary:
+        build_path = Path(temporary) / "build.json"
+        write_bytes(build_path, artifacts["build"])
+        actions = (
+            (
+                "build",
+                lambda: noema.load_build(
+                    build_path,
+                    modules,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )[0],
+                build,
+            ),
+            (
+                "projection",
+                lambda: noema.recover_projection(
+                    noema.project_build(
+                        build,
+                        profile,
+                        build["lock"]["profile_sha256"],
+                    ),
+                    profile,
+                ),
+                build["graph"],
+            ),
+        )
+        for name, action, expected in actions:
+            with test.subTest(name=name):
+                try:
+                    recovered = action()
+                except noema.Refusal as raised:
+                    test.fail(
+                        f"maximum-depth {name} round trip refused: {raised.code}"
+                    )
+                test.assertEqual(recovered, expected)
+
+
 def zip_info(name: str, kind: int = stat.S_IFREG, compression: int = zipfile.ZIP_DEFLATED):
     """Return one Unix-attributed ZipInfo for a hostile fixture."""
     info = zipfile.ZipInfo(name)
@@ -913,6 +968,26 @@ class CanonicalSourceTests(unittest.TestCase):
 
 
 class GraphValidationTests(unittest.TestCase):
+    def test_maximum_depth_source_build_and_projection_round_trip(self):
+        records = base_records(
+            ["+", nested_proposition(noema.MAX_DEPTH - 5)]
+        )
+        build, artifacts = compile_records(records)
+        assert_build_and_projection_round_trip(
+            self,
+            build,
+            artifacts,
+            MODULES_FIXTURE,
+        )
+
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(
+                base_records(
+                    ["+", nested_proposition(noema.MAX_DEPTH - 4)]
+                )
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.DEPTH")
+
     def test_container_record_and_term_tags_refuse_without_raw_type_errors(self):
         cases = (
             ([[[]]], "NOE-E-TYPE.RECORD"),
@@ -1212,6 +1287,49 @@ class ModuleLockTests(unittest.TestCase):
         raw = noema._canonical_json(value)
         (directory / "m.json").write_bytes(raw)
         return sha256(raw).hexdigest()
+
+    def test_maximum_depth_module_build_and_projection_round_trip(self):
+        def module_at(wrappers):
+            return self.module_bytes(
+                "m",
+                definitions=[["m.deep", [], nested_proposition(wrappers)]],
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            module = module_at(noema.MAX_DEPTH - 6)
+            write_bytes(directory / "m.json", module)
+            records = [
+                ["import", "m", sha256(module).hexdigest()],
+                ["rule", "rule.test", ["+", ["m.deep"]], source_binding()],
+            ]
+            build, artifacts = noema.compile_source(
+                noema._canonical_source(records),
+                directory,
+                PROFILE_FIXTURE,
+                KERNEL_FIXTURE,
+            )
+            assert_build_and_projection_round_trip(
+                self,
+                build,
+                artifacts,
+                directory,
+            )
+
+            too_deep = module_at(noema.MAX_DEPTH - 5)
+            write_bytes(directory / "m.json", too_deep)
+            too_deep_records = [
+                ["import", "m", sha256(too_deep).hexdigest()],
+                ["rule", "rule.test", ["+", ["m.deep"]], source_binding()],
+            ]
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.compile_source(
+                    noema._canonical_source(too_deep_records),
+                    directory,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )
+            self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.DEPTH")
 
     def test_lock_binds_every_dependency_byte_string(self):
         build, artifacts = noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
