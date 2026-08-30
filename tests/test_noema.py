@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 from hashlib import sha256
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -331,6 +333,34 @@ class NoemaScaffoldTests(unittest.TestCase):
                 self.assertEqual(result["code"], "NOE-E-UNIMPLEMENTED")
                 self.assertEqual(result["command"], command)
                 self.assertEqual(result["verdict"], "refuse")
+
+    def test_malformed_cli_is_bounded_json_without_argument_echo(self):
+        hostile = "x" * 200_000
+        for arguments, expected_command in (
+            (["about", hostile], "about"),
+            ([hostile], "invalid"),
+        ):
+            with self.subTest(expected_command=expected_command):
+                stdout = io.StringIO()
+                stderr = io.StringIO()
+                try:
+                    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                        status = noema.main(arguments)
+                except SystemExit as error:
+                    status = error.code
+                self.assertEqual(status, 2)
+                self.assertEqual(stderr.getvalue(), "")
+                self.assertNotIn(hostile, stdout.getvalue())
+                self.assertLess(len(stdout.getvalue().encode("utf-8")), 1_024)
+                lines = stdout.getvalue().splitlines()
+                self.assertEqual(len(lines), 1)
+                result = json.loads(lines[0])
+                self.assertEqual(result["command"], expected_command)
+                self.assertEqual(result["code"], "NOE-E-TYPE.ARGUMENTS")
+                self.assertEqual(result["verdict"], "refuse")
+
+        commands = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]["result"]["properties"]["command"]["enum"]
+        self.assertIn("invalid", commands)
 
     def test_committed_seed_inventory_has_exact_public_shape(self):
         inventory, raw = noema.load_inventory(INVENTORY)

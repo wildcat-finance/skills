@@ -321,6 +321,8 @@ Each command writes at most one `noema-result/v1` JSON line to standard output.
 It names command, deterministic correlation id, verdict, stable code, input and
 output digests and bounded counts that exist for that command. It never carries
 source text, literal payloads, prompts, model output or credentials.
+Malformed argument vectors use the same line with `NOE-E-TYPE.ARGUMENTS` and
+never echo argument bytes; `command` is the recognised operation or `invalid`.
 
 Stable refusal families are:
 

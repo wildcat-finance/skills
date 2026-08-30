@@ -67,6 +67,17 @@ UNIMPLEMENTED = (
     "tally-evaluation",
     "runtime-self-test",
 )
+IMPLEMENTED = (
+    "about",
+    "verify-seed",
+    "parse",
+    "format",
+    "project",
+    "semantic-diff",
+    "verify",
+    "self-test",
+)
+KNOWN_COMMANDS = frozenset((*IMPLEMENTED, *UNIMPLEMENTED))
 ALLOWED_COMPRESSION = {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}
 
 CORE_TYPES = frozenset(
@@ -129,6 +140,17 @@ class Refusal(ValueError):
 
 def refuse(code: str, field: str, message: str) -> None:
     raise Refusal(code, field, message)
+
+
+class _BoundedArgumentParser(argparse.ArgumentParser):
+    """Turn malformed argument vectors into the same bounded refusal channel."""
+
+    def error(self, _message: str) -> None:
+        refuse(
+            "NOE-E-TYPE.ARGUMENTS",
+            "command",
+            "command arguments do not match the closed interface",
+        )
 
 
 def _correlation(command: str, *values: str) -> str:
@@ -2185,7 +2207,7 @@ def unimplemented(command: str) -> dict[str, object]:
 
 
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(description=__doc__)
+    root = _BoundedArgumentParser(description=__doc__)
     subparsers = root.add_subparsers(dest="command", required=True)
     subparsers.add_parser("about", help="print the bounded contract identity")
     seed = subparsers.add_parser("verify-seed", help="verify an archive against its exact inventory")
@@ -2219,9 +2241,15 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    arguments = parser().parse_args(argv)
-    command = arguments.command
+    raw_arguments = list(sys.argv[1:] if argv is None else argv)
+    command = (
+        raw_arguments[0]
+        if raw_arguments and raw_arguments[0] in KNOWN_COMMANDS
+        else "invalid"
+    )
     try:
+        arguments = parser().parse_args(raw_arguments)
+        command = arguments.command
         if command == "about":
             payload = about()
         elif command == "verify-seed":
