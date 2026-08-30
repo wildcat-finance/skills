@@ -85,7 +85,13 @@ unknown. Negation maps true to false, false to true and unknown to unknown.
 Conjunction returns false if any member is false, unknown if none is false and
 one is unknown, and true otherwise. Disjunction is the dual. A guard containing
 unknown blocks its dependent effect unless a rule explicitly handles an
-unknown-valued predicate.
+unknown-valued predicate. Finite sets use their expanded scalar members, so
+definition aliases neither duplicate a member nor impose an order. `one` is
+false as soon as two members are established true; an unknown member matters
+only while it could still change the exactly-one result. Quantifier binders
+shadow same-named outer variables during capture-avoiding substitution.
+Recursive truth evaluation preserves both authored and expanded proposition
+identities, so a checked subfact cannot disappear when its parent expands.
 
 Capability, authority, execution, receipt and verification are separate typed
 relations. None implies another. Consequence-2 and consequence-3 effects
@@ -368,10 +374,12 @@ as directive bodies. Defined actors and scopes therefore govern overrides and
 exceptions exactly like direct atoms, and defined machine, state and event
 values govern transition matching and returned next state.
 
-`next` matches one machine, from-state and event. Zero established matches
-stop, an unknown guard stops unknown even beside one established competitor,
-and more than one established match refuses. A successful result returns the
-next state and the exact ordered directive terms without applying them.
+`next` matches one machine, from-state and event. A manifest is complete only
+for its selected from-state, so a different state refuses and the caller must
+reselect after a transition. Zero established matches stop, an unknown guard
+stops unknown even beside one established competitor, and more than one
+established match refuses. A successful result returns the next state and the
+exact ordered directive terms without applying them.
 `literal` returns the kind, byte count, digest and exact reachable value; even
 `command`, `path` and `url` values stay inert. `explain` returns canonical
 record JSON under

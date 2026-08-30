@@ -1094,6 +1094,8 @@ class _TypeContext:
                 return self.literals[term[1]][0] == "number"
             if term[0] == ":" and len(term) == 3 and term[1] == "value":
                 return isinstance(term[2], str) and DECIMAL_RE.fullmatch(term[2]) is not None
+            if term[0] == "count" and len(term) == 2:
+                return True
         return False
 
     def term(
@@ -2613,6 +2615,21 @@ def _substitute_term(value: object, bindings: dict[str, object]) -> object:
         return value
     if value[0] == "%" and len(value) == 2 and isinstance(value[1], str):
         return bindings.get(value[1], value)
+    if (
+        value[0] in {"all", "any", "one"}
+        and len(value) == 4
+        and isinstance(value[1], list)
+        and len(value[1]) == 2
+        and isinstance(value[1][0], str)
+    ):
+        nested_bindings = dict(bindings)
+        nested_bindings.pop(value[1][0], None)
+        return [
+            value[0],
+            value[1],
+            _substitute_term(value[2], bindings),
+            _substitute_term(value[3], nested_bindings),
+        ]
     return [value[0], *[_substitute_term(item, bindings) for item in value[1:]]]
 
 
@@ -2692,7 +2709,10 @@ def _resolved_scalar(value: object) -> tuple[str, object] | None:
         members = [_resolved_scalar(item) for item in value[2:]]
         if any(item is None for item in members):
             return None
-        return f"set:{value[1]}", tuple(item for item in members)
+        resolved_members = {item for item in members if item is not None}
+        return f"set:{value[1]}", tuple(
+            sorted(resolved_members, key=_canonical_json)
+        )
     if value[0] == "count" and len(value) == 2:
         collection = _resolved_scalar(value[1])
         if collection is not None and collection[0].startswith("set:"):
@@ -2702,6 +2722,7 @@ def _resolved_scalar(value: object) -> tuple[str, object] | None:
 
 def _evaluate_derived_truth(
     expanded: object,
+    authored: object,
     facts: dict[str, dict[str, object]],
     definitions: dict[str, tuple[list[list[object]], object]],
     expansion_nodes: list[int],
@@ -2709,6 +2730,15 @@ def _evaluate_derived_truth(
     if not isinstance(expanded, list) or not expanded:
         return "unknown", set()
     tag = expanded[0]
+    source = (
+        authored
+        if isinstance(authored, list)
+        and len(authored) == len(expanded)
+        and authored
+        and authored[0] == tag
+        else expanded
+    )
+    assert isinstance(source, list)
     if tag in {"&", "|"}:
         evaluated = [
             _evaluate_truth(
@@ -2717,14 +2747,14 @@ def _evaluate_derived_truth(
                 definitions,
                 expansion_nodes=expansion_nodes,
             )
-            for item in expanded[1:]
+            for item in source[1:]
         ]
         values = [item[0] for item in evaluated]
         used = set().union(*(item[1] for item in evaluated))
         return (_truth_and(values) if tag == "&" else _truth_or(values)), used
     if tag == "~" and len(expanded) == 2:
         value, used = _evaluate_truth(
-            expanded[1],
+            source[1],
             facts,
             definitions,
             expansion_nodes=expansion_nodes,
@@ -2732,13 +2762,13 @@ def _evaluate_derived_truth(
         return _truth_not(value), used
     if tag == "=>" and len(expanded) == 3:
         left, left_used = _evaluate_truth(
-            expanded[1],
+            source[1],
             facts,
             definitions,
             expansion_nodes=expansion_nodes,
         )
         right, right_used = _evaluate_truth(
-            expanded[2],
+            source[2],
             facts,
             definitions,
             expansion_nodes=expansion_nodes,
@@ -2755,16 +2785,24 @@ def _evaluate_derived_truth(
         left = _resolved_scalar(expanded[1])
         right = _resolved_scalar(expanded[2])
         if left is not None and right is not None and left[0] == right[0] == "value":
-            try:
-                left_number = int(str(left[1]))
-                right_number = int(str(right[1]))
-            except ValueError:
+            left_number = str(left[1])
+            right_number = str(right[1])
+            if (
+                DECIMAL_RE.fullmatch(left_number) is None
+                or DECIMAL_RE.fullmatch(right_number) is None
+            ):
                 return "unknown", set()
+            ordering = (
+                (len(left_number) > len(right_number))
+                - (len(left_number) < len(right_number))
+            )
+            if ordering == 0:
+                ordering = (left_number > right_number) - (left_number < right_number)
             comparisons = {
-                "lt": left_number < right_number,
-                "le": left_number <= right_number,
-                "gt": left_number > right_number,
-                "ge": left_number >= right_number,
+                "lt": ordering < 0,
+                "le": ordering <= 0,
+                "gt": ordering > 0,
+                "ge": ordering >= 0,
             }
             return ("true" if comparisons[str(tag)] else "false"), set()
     if tag in {"in", "subset"} and len(expanded) == 3:
@@ -2786,14 +2824,26 @@ def _evaluate_derived_truth(
             and len(collection) >= 2
             and collection[0] == "{}"
         ):
+            members: list[object] = []
+            seen_members: set[tuple[str, object]] = set()
+            for member in collection[2:]:
+                resolved_member = _resolved_scalar(member)
+                identity: tuple[str, object] = (
+                    ("scalar", resolved_member)
+                    if resolved_member is not None
+                    else ("term", _canonical_json(member))
+                )
+                if identity not in seen_members:
+                    seen_members.add(identity)
+                    members.append(member)
             evaluated = [
                 _evaluate_truth(
-                    _substitute_term(expanded[3], {binder[0]: member}),
+                    _substitute_term(source[3], {binder[0]: member}),
                     facts,
                     definitions,
                     expansion_nodes=expansion_nodes,
                 )
-                for member in collection[2:]
+                for member in members
             ]
             values = [item[0] for item in evaluated]
             used = set().union(*(item[1] for item in evaluated))
@@ -2801,6 +2851,8 @@ def _evaluate_derived_truth(
                 return _truth_and(values), used
             if tag == "any":
                 return _truth_or(values), used
+            if values.count("true") > 1:
+                return "false", used
             if "unknown" in values:
                 return "unknown", used
             return ("true" if values.count("true") == 1 else "false"), used
@@ -2840,6 +2892,7 @@ def _evaluate_truth(
         )
     derived, derived_used = _evaluate_derived_truth(
         expanded,
+        proposition,
         facts,
         definitions,
         expansion_nodes,
@@ -3420,11 +3473,20 @@ def _directive_intents(
     if not isinstance(expanded, list) or not expanded:
         refuse("NOE-E-TYPE.DIRECTIVE", "runtime", "runtime tape contains a malformed directive")
     tag = expanded[0]
+    source = (
+        directive
+        if isinstance(directive, list)
+        and len(directive) == len(expanded)
+        and directive
+        and directive[0] == tag
+        else expanded
+    )
+    assert isinstance(source, list)
     if tag in {"?", "/"} and len(expanded) == 3:
-        guard, used = _evaluate_truth(expanded[1], facts, definitions)
+        guard, used = _evaluate_truth(source[1], facts, definitions)
         gated = guard if tag == "?" else _truth_not(guard)
         return _directive_intents(
-            expanded[2],
+            source[2],
             facts,
             definitions,
             activity=_combine_activity(activity, gated),
@@ -3437,7 +3499,7 @@ def _directive_intents(
         scope_value = _atom_value(expanded[1], "scope")
         assert scope_value is not None
         return _directive_intents(
-            expanded[2],
+            source[2],
             facts,
             definitions,
             activity=activity,
@@ -3450,7 +3512,7 @@ def _directive_intents(
         authority_value = _atom_value(expanded[1], "actor")
         assert authority_value is not None
         return _directive_intents(
-            expanded[2],
+            source[2],
             facts,
             definitions,
             activity=activity,
@@ -3461,7 +3523,7 @@ def _directive_intents(
         )
     if tag == ";" and len(expanded) >= 2:
         intents: list[dict[str, object]] = []
-        for child in expanded[1:]:
+        for child in source[1:]:
             intents.extend(
                 _directive_intents(
                     child,
@@ -3478,10 +3540,15 @@ def _directive_intents(
     if tag not in {"+", "-", "!"} or len(expanded) != 2:
         refuse("NOE-E-TYPE.DIRECTIVE", "runtime", "runtime tape contains an unknown directive")
     subject = expanded[1]
+    authored_subject = source[1]
     proposition_truth = "true"
     used: set[str] = set()
     if tag == "!" and _atom_value(subject, "effect") is None:
-        proposition_truth, used = _evaluate_truth(subject, facts, definitions)
+        proposition_truth, used = _evaluate_truth(
+            authored_subject,
+            facts,
+            definitions,
+        )
     effects = sorted(value for kind, value in _typed_atoms(subject) if kind == "effect")
     position = order[0]
     order[0] += 1
@@ -3784,6 +3851,12 @@ def next_runtime(
     receipts = _validate_facts(receipts_value, "receipts")
     selection = manifest["selection"]
     assert isinstance(selection, dict)
+    if state_id != selection["state"]:
+        refuse(
+            "NOE-E-POLICY.TRANSITION",
+            "state",
+            "transition state differs from the state selected into this slice",
+        )
     combined: dict[str, dict[str, object]] = {
         str(item["id"]): item
         for item in selection["facts"]
