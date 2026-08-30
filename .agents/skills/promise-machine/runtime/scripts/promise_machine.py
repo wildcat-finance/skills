@@ -10,6 +10,7 @@ import os
 from dataclasses import asdict, dataclass
 from pathlib import Path
 import re
+import stat
 import tempfile
 
 
@@ -39,6 +40,9 @@ REQUIRED_HEADINGS = (
     "## Exceptions",
     "## Conformance",
     "## First-party licence promise",
+    "## Run observation promise",
+    "## Contributor ranking promise",
+    "## Router selection promise",
     "## Installation copies",
 )
 REQUIRED_FIELDS = (
@@ -81,8 +85,10 @@ OBLIGATION_MARKER = re.compile(
 )
 OBLIGATION_MARKER_PREFIX = "<!-- promise-machine-obligation:"
 OBLIGATION_CLAUSE_PREFIX = "> Obligation:"
+OPEN_SUPPORTS_DIR_FD = os.open in os.supports_dir_fd
 OBLIGATION_ROW_KEYS = {
     "id",
+    "clause_sha256",
     "gate",
     "specimen",
     "finding",
@@ -90,12 +96,32 @@ OBLIGATION_ROW_KEYS = {
     "blocked_transition",
     "recovery",
 }
-OBLIGATION_GATE_CODES = {
-    "law.generated-copy-marker": "PM005",
-    "law.required-sections": "PM006",
-    "law.contract-identity": "PM007",
-    "law.declaration-fields": "PM008",
-    "law.governing-principle": "PM009",
+OBLIGATION_GATES = {
+    "law-contract-identity": (
+        "law.contract-identity",
+        "PM007",
+        "1e4cfcd2d01bc9bbfc4e5b6e93f58867114a3191b488ffba3a627aa1247d4be1",
+    ),
+    "law-declaration-fields": (
+        "law.declaration-fields",
+        "PM008",
+        "d1c8a438b81fb26b5643574b201a7170cb7b557ccb62cb7ff03a0ff05ff58ca4",
+    ),
+    "law-generated-copy-identity": (
+        "law.generated-copy-marker",
+        "PM005",
+        "b9da0367e1cda2d739a42d611a2e0c111121cf71aea0e6597ce21a439399461b",
+    ),
+    "law-governing-principle": (
+        "law.governing-principle",
+        "PM009",
+        "f8cd9cdd6129e69f588f81143bc5f4f597246fb3b3e6ae5b9a7ced9c1911d07b",
+    ),
+    "law-required-sections": (
+        "law.required-sections",
+        "PM006",
+        "111257083c3195d5592f77815bf2b7f963ea57ee682f21cedd7c4b35172336e8",
+    ),
 }
 COVERAGE_CODES = ("P", "M", "S", "O", "R", "X")
 EVALUATION_KEYS = {"status", "model", "prompt", "corpus", "disposition"}
@@ -244,10 +270,74 @@ def bounded_sha256(path: Path, limit: int):
     return digest.hexdigest(), None
 
 
-def bounded_read_bytes(path: Path, limit: int):
-    """Read at most one byte beyond a declared input boundary."""
-    with path.open("rb") as source:
-        return source.read(limit + 1)
+def bounded_read_bytes(path: Path, root: Path, limit: int):
+    """Read a bounded regular file through a no-follow descriptor walk."""
+    try:
+        relative_path = path.relative_to(root)
+    except ValueError as exc:
+        raise OSError("input path is outside the repository root") from exc
+    parts = relative_path.parts
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        raise OSError("input path is not a safe repository-relative path")
+    if (
+        not hasattr(os, "O_DIRECTORY")
+        or not hasattr(os, "O_NOFOLLOW")
+        or not OPEN_SUPPORTS_DIR_FD
+    ):
+        raise OSError("platform lacks no-follow descriptor reads")
+
+    directory_flags = (
+        os.O_RDONLY
+        | os.O_DIRECTORY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+    )
+    file_flags = (
+        os.O_RDONLY
+        | os.O_NOFOLLOW
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+    )
+    current = os.open(root, directory_flags)
+    descriptor = None
+    try:
+        if not stat.S_ISDIR(os.fstat(current).st_mode):
+            raise OSError("repository root is not a directory")
+        for part in parts[:-1]:
+            following = os.open(part, directory_flags, dir_fd=current)
+            if not stat.S_ISDIR(os.fstat(following).st_mode):
+                os.close(following)
+                raise OSError(f"input path component is not a directory: {part}")
+            os.close(current)
+            current = following
+
+        descriptor = os.open(parts[-1], file_flags, dir_fd=current)
+        opened = os.fstat(descriptor)
+        if not stat.S_ISREG(opened.st_mode):
+            raise OSError("input path is not a regular file")
+        body = bytearray()
+        while len(body) <= limit:
+            chunk = os.read(descriptor, min(64 * 1024, limit + 1 - len(body)))
+            if not chunk:
+                break
+            body.extend(chunk)
+        finished = os.fstat(descriptor)
+        identity = lambda item: (
+            item.st_dev,
+            item.st_ino,
+            item.st_mode,
+            item.st_nlink,
+            item.st_size,
+            item.st_mtime_ns,
+            item.st_ctime_ns,
+        )
+        if identity(opened) != identity(finished):
+            raise OSError("input changed while it was read")
+        return bytes(body)
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(current)
 
 
 def read_markdown(path: Path, root: Path, *, missing_code: str, unsafe_code: str):
@@ -276,7 +366,7 @@ def read_markdown(path: Path, root: Path, *, missing_code: str, unsafe_code: str
         )
         return None, findings
     try:
-        payload = bounded_read_bytes(path, MAX_MARKDOWN_BYTES)
+        payload = bounded_read_bytes(path, root, MAX_MARKDOWN_BYTES)
     except OSError as exc:
         findings.append(
             Finding(
@@ -347,7 +437,7 @@ def read_json(
             )
         ]
     try:
-        payload = bounded_read_bytes(path, max_bytes)
+        payload = bounded_read_bytes(path, root, max_bytes)
     except OSError as exc:
         return None, [
             Finding(
@@ -472,7 +562,7 @@ def validate_law_document(payload: bytes, text: str, shown: str):
                 )
             )
     principle = (
-        "No skill may claim more than its evidence establishes, or authorise a more\n"
+        "> No skill may claim more than its evidence establishes, or authorise a more\n"
         "> consequential transition than that evidence warrants."
     )
     if principle not in text:
@@ -495,6 +585,7 @@ def discover_obligations(text: str):
     markers: dict[str, int] = {}
     marker_lines: dict[int, str] = {}
     clause_markers: set[int] = set()
+    clause_digests: dict[str, str] = {}
 
     for index, line in enumerate(lines):
         if OBLIGATION_MARKER_PREFIX not in line:
@@ -546,6 +637,11 @@ def discover_obligations(text: str):
             )
             continue
         clause_markers.add(previous)
+        end = index + 1
+        while end < len(lines) and lines[end].startswith(">"):
+            end += 1
+        clause = "\n".join(lines[index:end]).encode("utf-8")
+        clause_digests[obligation_id] = hashlib.sha256(clause).hexdigest()
 
     for index, obligation_id in marker_lines.items():
         if index in clause_markers:
@@ -560,7 +656,7 @@ def discover_obligations(text: str):
                 obligation_id=obligation_id,
             )
         )
-    return set(markers), findings
+    return set(markers), clause_digests, findings
 
 
 def obligation_finding(code: str, path: str, message: str, remedy: str, row=None):
@@ -722,7 +818,7 @@ def check_obligations(root: Path, law: bytes | None):
     if law is None:
         return 0, findings
     law_text = law.decode("utf-8")
-    marker_ids, marker_findings = discover_obligations(law_text)
+    marker_ids, clause_digests, marker_findings = discover_obligations(law_text)
     findings.extend(marker_findings)
     registry_path = root / OBLIGATION_PATH
     document, registry_findings = read_json(
@@ -777,13 +873,21 @@ def check_obligations(root: Path, law: bytes | None):
                     "PM084",
                     path,
                     "registry row does not have the exact required fields",
-                    "restore id, gate, specimen, finding, consequence, blocked_transition, and recovery",
+                    "restore id, clause_sha256, gate, specimen, finding, consequence, blocked_transition, and recovery",
                     row,
                 )
             )
             continue
         obligation_id = row["id"]
-        strings = ("id", "gate", "specimen", "finding", "blocked_transition", "recovery")
+        strings = (
+            "id",
+            "clause_sha256",
+            "gate",
+            "specimen",
+            "finding",
+            "blocked_transition",
+            "recovery",
+        )
         if any(
             not isinstance(row[key], str)
             or not row[key]
@@ -796,6 +900,17 @@ def check_obligations(root: Path, law: bytes | None):
                     path,
                     "registry row has an invalid or empty scalar field",
                     "use a stable kebab-case id and non-empty exact string fields",
+                    row,
+                )
+            )
+            continue
+        if re.fullmatch(r"[0-9a-f]{64}", row["clause_sha256"]) is None:
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry clause digest is not a lowercase SHA-256 value",
+                    "record the SHA-256 of the exact marked obligation clause",
                     row,
                 )
             )
@@ -847,27 +962,69 @@ def check_obligations(root: Path, law: bytes | None):
             )
         )
 
+    selector_ids: dict[str, str] = {}
+    for obligation_id, (selector, _code, _clause) in sorted(OBLIGATION_GATES.items()):
+        prior = selector_ids.get(selector)
+        if prior is not None:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    "scripts/promise_machine.py",
+                    f"production gate selector is bound to both {prior} and {obligation_id}: {selector}",
+                    "bind every production gate selector to one stable obligation id",
+                    {"id": obligation_id},
+                )
+            )
+        else:
+            selector_ids[selector] = obligation_id
+    for obligation_id in sorted(set(OBLIGATION_GATES) - marker_ids):
+        findings.append(
+            obligation_finding(
+                "PM086",
+                "scripts/promise_machine.py",
+                f"production gate has no authored law marker: {obligation_id}",
+                "restore the matching explicit law clause or remove the stale selector",
+                {"id": obligation_id},
+            )
+        )
+
     for obligation_id in sorted(row_ids & marker_ids):
         row = valid_rows[obligation_id]
-        expected_code = OBLIGATION_GATE_CODES.get(row["gate"])
-        if expected_code is None:
+        expected_gate = OBLIGATION_GATES.get(obligation_id)
+        if expected_gate is None:
             findings.append(
                 obligation_finding(
                     "PM086",
                     OBLIGATION_PATH.as_posix(),
-                    f"obligation gate selector is unknown: {row['gate']}",
-                    "bind the row to a production Promise Machine gate",
+                    f"obligation id has no production gate selector: {obligation_id}",
+                    "register the stable obligation id and its production gate together",
                     row,
                 )
             )
             continue
-        if row["finding"] != expected_code:
+        expected_selector, expected_code, expected_clause = expected_gate
+        if (
+            row["gate"] != expected_selector
+            or row["finding"] != expected_code
+            or row["clause_sha256"] != expected_clause
+        ):
             findings.append(
                 obligation_finding(
                     "PM086",
                     OBLIGATION_PATH.as_posix(),
-                    f"gate {row['gate']} emits {expected_code}, not {row['finding']}",
-                    "record the selected production gate's stable finding code",
+                    f"obligation {obligation_id} does not match its registered clause, selector, and finding code",
+                    "restore the stable id's exact clause digest, production selector, and finding code",
+                    row,
+                )
+            )
+            continue
+        if clause_digests.get(obligation_id) != expected_clause:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    OBLIGATION_PATH.as_posix(),
+                    f"obligation {obligation_id} clause digest does not match its authored marker",
+                    "restore the marker to its owned clause or update the row with the reviewed clause change",
                     row,
                 )
             )
@@ -3051,7 +3208,21 @@ def sync_copies(root: Path, law: bytes, plugins: list[Path]):
                 )
             )
             continue
-        current = destination.read_bytes() if destination.is_file() else None
+        current = None
+        if destination.is_file():
+            try:
+                current = bounded_read_bytes(destination, root, MAX_MARKDOWN_BYTES)
+            except OSError as exc:
+                findings.append(
+                    Finding(
+                        "PM013",
+                        "identity",
+                        relative(destination, root),
+                        f"copy could not be read safely: {exc}",
+                        "restore a readable regular copy inside the plugin directory",
+                    )
+                )
+                continue
         if current == law:
             continue
         try:
@@ -3145,9 +3316,10 @@ def report(
                 if item.blocked_transition
                 else ""
             )
+            recovery = f" recovery={item.recovery!r}" if item.recovery else ""
             print(
                 f"{item.code} fault={item.fault} path={item.path}{promise}"
-                f"{obligation}{consequence}{blocked}: "
+                f"{obligation}{consequence}{blocked}{recovery}: "
                 f"{item.message}; repair: {item.remedy}"
             )
         print(f"refused: {len(findings)} finding(s)")

@@ -33,19 +33,26 @@ it has one stable id and owns the next explicit clause. An explicit clause
 without a marker, an orphan or malformed marker, and a repeated id all refuse.
 
 `tests/promise_machine_obligations.json` maps each discovered id to exactly one
-production gate selector, negative specimen, expected stable finding code,
-consequence, blocked transition, and recovery. Registry-only and marker-only
-ids refuse. A specimen is bounded, duplicate-key-rejecting JSON at a confined
-fixed path. It applies one exact in-memory replacement to the law and runs the
-same production law validator used by `check`; it passes only when that
-mutation returns its one expected finding. The specimen does not execute code,
-write the law, fetch data, or define a fixture-only validator.
+marked-clause digest, production gate selector, negative specimen, expected
+stable finding code, consequence, blocked transition, and recovery.
+Registry-only and marker-only ids refuse. The clause digest prevents valid
+markers from exchanging clauses. The checker's closed selector registry
+independently binds each stable id to its one selector and finding code, so
+rows cannot exchange or share a gate. A specimen is bounded,
+duplicate-key-rejecting JSON at a confined fixed path. It applies one exact
+in-memory replacement to the law and runs the same production law validator
+used by `check`; it passes only when that mutation returns its one expected
+finding. The specimen does not execute code, write the law, fetch data, or
+define a fixture-only validator.
 
 Step 1 converts the structural clauses whose production gates already exist.
 It does not claim that every natural-language rule in the law has moved into
-the explicit grammar. Each later semantic step must add its marker, registry
-row, real selector, and red specimen atomically. A semantic rule is not counted
-merely because a fixture mentions it.
+the explicit grammar. The generated-copy marker and law field inventory do not
+claim byte equality across copies or per-skill declaration completeness; those
+broader rules retain their existing prose until their own evaluators join.
+Each later semantic step must add its marker, registry row, real selector, and
+red specimen atomically. A semantic rule is not counted merely because a
+fixture mentions it.
 
 The accepted study and runbook live under
 `docs/promise-machine/obligation-gates/`. They are the build contract for this

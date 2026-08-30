@@ -331,26 +331,60 @@ class PromiseObligationTests(unittest.TestCase):
         self.assertEqual(report["counts"]["obligations"], 5)
         self.assertEqual(report["findings"], [])
 
+    def test_marked_structural_claims_match_their_production_gates(self):
+        text = LAW.read_text(encoding="utf-8")
+        expected = {
+            "law-contract-identity": (
+                "> Obligation: This authored law names only `promise-machine/v1` as its\n"
+                "> contract identity."
+            ),
+            "law-generated-copy-identity": (
+                "> Obligation: This authored law header carries the fixed\n"
+                "> `promise-machine/v1` canonical and generated-copy identity marker."
+            ),
+            "law-governing-principle": (
+                "> Obligation: This authored law carries the settled governing-principle\n"
+                "> sentence exactly."
+            ),
+            "law-declaration-fields": (
+                "> Obligation: This authored law contains each of the nine required promise\n"
+                "> declaration-field tokens."
+            ),
+        }
+        for obligation_id, clause in expected.items():
+            with self.subTest(obligation_id=obligation_id):
+                marker = (
+                    f"<!-- promise-machine-obligation: id={obligation_id} -->"
+                )
+                self.assertIn(f"{marker}\n{clause}", text)
+
+    def test_each_normative_root_promise_section_is_required(self):
+        headings = (
+            "## First-party licence promise",
+            "## Run observation promise",
+            "## Contributor ranking promise",
+            "## Router selection promise",
+        )
+        for heading in headings:
+            with self.subTest(heading=heading), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                shutil.copy2(LAW, target / LAW.name)
+                law = target / LAW.name
+                law.write_text(
+                    law.read_text(encoding="utf-8").replace(
+                        heading, f"{heading} changed", 1
+                    ),
+                    encoding="utf-8",
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "law", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn("PM006", [item["code"] for item in report["findings"]])
+
     def test_law_and_registry_reads_are_capped_before_loading_payload(self):
-        class ReadProbe:
-            def __init__(self, payload, limit, calls):
-                self.payload = payload
-                self.limit = limit
-                self.calls = calls
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *_args):
-                return False
-
-            def read(self, size=-1):
-                self.calls.append(size)
-                if size < 0 or size > self.limit + 1:
-                    raise AssertionError("input reader requested unbounded bytes")
-                return self.payload[:size]
-
-        real_open = Path.open
+        real_read = os.read
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)
             cases = (
@@ -377,16 +411,90 @@ class PromiseObligationTests(unittest.TestCase):
                     path.write_bytes(payload)
                     calls = []
 
-                    def guarded_open(candidate, *args, **kwargs):
-                        if candidate == path:
-                            return ReadProbe(payload, limit, calls)
-                        return real_open(candidate, *args, **kwargs)
+                    def guarded_read(descriptor, size):
+                        calls.append(size)
+                        if size < 0 or size > min(64 * 1024, limit + 1):
+                            raise AssertionError("input reader requested unbounded bytes")
+                        return real_read(descriptor, size)
 
-                    with mock.patch.object(Path, "open", guarded_open):
+                    with mock.patch.object(os, "read", guarded_read):
                         loaded, findings = load(path)
                     self.assertIsNotNone(loaded)
                     self.assertEqual(findings, [])
-                    self.assertEqual(calls, [limit + 1])
+                    self.assertTrue(calls)
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symlinks unavailable")
+    def test_open_time_symlink_swap_is_refused_without_reading_outside(self):
+        with tempfile.TemporaryDirectory() as directory:
+            base = Path(directory)
+            target_root = base / "repo"
+            target_root.mkdir()
+            target = target_root / "registry.json"
+            outside = base / "outside.json"
+            target.write_text('{"inside": true}\n', encoding="utf-8")
+            outside.write_text('{"outside": true}\n', encoding="utf-8")
+
+            real_path_open = Path.open
+            real_os_open = os.open
+            swapped = False
+
+            def swap_target():
+                nonlocal swapped
+                if swapped:
+                    return
+                swapped = True
+                target.unlink()
+                target.symlink_to(outside)
+
+            def swap_before_path_open(candidate, *args, **kwargs):
+                if candidate == target:
+                    swap_target()
+                return real_path_open(candidate, *args, **kwargs)
+
+            def swap_before_os_open(candidate, flags, mode=0o777, *, dir_fd=None):
+                if candidate == target.name and dir_fd is not None:
+                    swap_target()
+                return real_os_open(candidate, flags, mode, dir_fd=dir_fd)
+
+            with (
+                mock.patch.object(Path, "open", swap_before_path_open),
+                mock.patch.object(os, "open", swap_before_os_open),
+            ):
+                document, findings = promise_machine_module.read_json(
+                    target, target_root, noun="race specimen"
+                )
+
+        self.assertTrue(swapped)
+        self.assertIsNone(document)
+        self.assertEqual([finding.code for finding in findings], ["PM021"])
+
+    def test_sync_comparison_does_not_load_an_unbounded_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target_root = Path(directory)
+            plugin = target_root / "plugins" / "example"
+            plugin.mkdir(parents=True)
+            destination = plugin / LAW.name
+            destination.write_bytes(
+                b"x" * (promise_machine_module.MAX_MARKDOWN_BYTES + 1)
+            )
+            law = LAW.read_bytes()
+            real_read_bytes = Path.read_bytes
+            unbounded_reads = []
+
+            def record_unbounded_copy_read(candidate):
+                if candidate == destination:
+                    unbounded_reads.append(candidate)
+                return real_read_bytes(candidate)
+
+            with mock.patch.object(Path, "read_bytes", record_unbounded_copy_read):
+                written, findings = promise_machine_module.sync_copies(
+                    target_root, law, [plugin]
+                )
+
+            self.assertEqual(unbounded_reads, [])
+            self.assertEqual(written, 1)
+            self.assertEqual(findings, [])
+            self.assertEqual(destination.read_bytes(), law)
 
     def test_unmarked_explicit_obligation_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -440,6 +548,79 @@ class PromiseObligationTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM081", [item["code"] for item in report["findings"]])
+
+    def test_obligation_markers_cannot_swap_their_owned_clauses(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            write_obligation_fixture(target)
+            law = target / LAW.name
+            contract_marker = (
+                "<!-- promise-machine-obligation: id=law-contract-identity -->"
+            )
+            principle_marker = (
+                "<!-- promise-machine-obligation: id=law-governing-principle -->"
+            )
+            text = law.read_text(encoding="utf-8")
+            text = text.replace(contract_marker, "<!-- marker-swap -->", 1)
+            text = text.replace(principle_marker, contract_marker, 1)
+            text = text.replace("<!-- marker-swap -->", principle_marker, 1)
+            law.write_text(text, encoding="utf-8")
+            completed = run_cli(
+                "check", "--root", target, "--only", "obligations", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        mismatches = [
+            item
+            for item in report["findings"]
+            if item["code"] == "PM086"
+            and item["obligation_id"]
+            in {"law-contract-identity", "law-governing-principle"}
+        ]
+        self.assertEqual(len(mismatches), 2)
+
+    def test_marker_and_registry_clause_digests_cannot_move_as_a_pair(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            registry = write_obligation_fixture(target)
+            law = target / LAW.name
+            contract_marker = (
+                "<!-- promise-machine-obligation: id=law-contract-identity -->"
+            )
+            principle_marker = (
+                "<!-- promise-machine-obligation: id=law-governing-principle -->"
+            )
+            text = law.read_text(encoding="utf-8")
+            text = text.replace(contract_marker, "<!-- marker-swap -->", 1)
+            text = text.replace(principle_marker, contract_marker, 1)
+            text = text.replace("<!-- marker-swap -->", principle_marker, 1)
+            law.write_text(text, encoding="utf-8")
+
+            def swap_clause_digests(document):
+                rows = {row["id"]: row for row in document["obligations"]}
+                contract_digest = rows["law-contract-identity"].get(
+                    "clause_sha256", ""
+                )
+                principle_digest = rows["law-governing-principle"].get(
+                    "clause_sha256", ""
+                )
+                rows["law-contract-identity"]["clause_sha256"] = principle_digest
+                rows["law-governing-principle"]["clause_sha256"] = contract_digest
+
+            rewrite_registry(registry, swap_clause_digests)
+            completed = run_cli(
+                "check", "--root", target, "--only", "obligations", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        mismatches = [
+            item
+            for item in report["findings"]
+            if item["code"] == "PM086"
+            and item["obligation_id"]
+            in {"law-contract-identity", "law-governing-principle"}
+        ]
+        self.assertEqual(len(mismatches), 2)
 
     def test_orphan_obligation_marker_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -519,12 +700,82 @@ class PromiseObligationTests(unittest.TestCase):
                 "check", "--root", target, "--only", "obligations", "--json"
             )
         report = json.loads(completed.stdout)
-        finding = next(item for item in report["findings"] if item["code"] == "PM086")
         self.assertEqual(completed.returncode, 1)
+        matches = [item for item in report["findings"] if item["code"] == "PM086"]
+        self.assertEqual(len(matches), 1)
+        finding = matches[0]
         self.assertEqual(finding["obligation_id"], "law-contract-identity")
         self.assertEqual(finding["consequence"], 3)
         self.assertTrue(finding["blocked_transition"])
         self.assertTrue(finding["recovery"])
+
+    def test_obligation_refusal_text_preserves_the_structured_action_fields(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            registry = write_obligation_fixture(target)
+            rewrite_registry(
+                registry,
+                lambda doc: doc["obligations"][0].update(gate="law.not-a-gate"),
+            )
+            structured = run_cli(
+                "check", "--root", target, "--only", "obligations", "--json"
+            )
+            rendered = run_cli(
+                "check", "--root", target, "--only", "obligations"
+            )
+        matches = [
+            item for item in json.loads(structured.stdout)["findings"]
+            if item["code"] == "PM086"
+        ]
+        self.assertEqual(structured.returncode, 1)
+        self.assertEqual(rendered.returncode, 1)
+        self.assertEqual(len(matches), 1)
+        finding = matches[0]
+        self.assertIn(f"obligation={finding['obligation_id']}", rendered.stdout)
+        self.assertIn(f"consequence={finding['consequence']}", rendered.stdout)
+        self.assertIn(
+            f"blocked={finding['blocked_transition']!r}", rendered.stdout
+        )
+        self.assertIn(f"recovery={finding['recovery']!r}", rendered.stdout)
+
+    def test_obligation_id_cannot_be_rebound_to_another_production_gate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            registry = write_obligation_fixture(target)
+            rewrite_registry(
+                registry,
+                lambda doc: doc["obligations"][0].update(
+                    gate="law.governing-principle", finding="PM009"
+                ),
+            )
+            specimen = (
+                target
+                / "tests"
+                / "fixtures"
+                / "promise-machine"
+                / "obligations"
+                / "law-contract-identity.json"
+            )
+            document = json.loads(specimen.read_text(encoding="utf-8"))
+            document["mutation"]["old"] = (
+                "No skill may claim more than its evidence establishes"
+            )
+            document["mutation"]["new"] = (
+                "No skill may claim more than its evidence records"
+            )
+            specimen.write_text(json.dumps(document) + "\n", encoding="utf-8")
+            completed = run_cli(
+                "check", "--root", target, "--only", "obligations", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        rebound = [
+            item
+            for item in report["findings"]
+            if item["code"] == "PM086"
+            and item["obligation_id"] == "law-contract-identity"
+        ]
+        self.assertEqual(len(rebound), 1)
 
     def test_missing_specimen_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:

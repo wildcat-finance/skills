@@ -7,17 +7,22 @@
 # Promise Machine contract
 
 <!-- promise-machine-obligation: id=law-generated-copy-identity -->
-> Obligation: This document is the normative contract for every skill
-> distributed as part of Wildcat Labs Skills. Plugin-local files with this name
-> are generated, byte-identical installation copies. They are not separate
-> laws.
+> Obligation: This authored law header carries the fixed
+> `promise-machine/v1` canonical and generated-copy identity marker.
+
+This document is the normative contract for every skill distributed as part of
+Wildcat Labs Skills. Plugin-local files with this name are generated,
+byte-identical installation copies. They are not separate laws.
 
 ## Contract identity
 
 <!-- promise-machine-obligation: id=law-contract-identity -->
-> Obligation: The shared contract identity is `promise-machine/v1`. It
-> identifies this law's format and semantics. It is neither a plugin package
-> version nor a skill evolution version.
+> Obligation: This authored law names only `promise-machine/v1` as its
+> contract identity.
+
+The shared contract identity is `promise-machine/v1`. It identifies this law's
+format and semantics. It is neither a plugin package version nor a skill
+evolution version.
 
 <!-- promise-machine-obligation: id=law-required-sections -->
 > Obligation: Every required normative section of this authored law appears
@@ -26,7 +31,10 @@
 ## Governing principle
 
 <!-- promise-machine-obligation: id=law-governing-principle -->
-> Obligation: No skill may claim more than its evidence establishes, or authorise a more
+> Obligation: This authored law carries the settled governing-principle
+> sentence exactly.
+
+> No skill may claim more than its evidence establishes, or authorise a more
 > consequential transition than that evidence warrants.
 
 This principle applies to every answer, artefact, repository change,
@@ -85,7 +93,10 @@ Every governed first-party canonical skill has exactly one `## Promise Machine
 contract` section. It contains one or more stable `### <promise-id>` blocks.
 
 <!-- promise-machine-obligation: id=law-declaration-fields -->
-> Obligation: Each block carries these fields exactly once:
+> Obligation: This authored law contains each of the nine required promise
+> declaration-field tokens.
+
+Each block carries these fields exactly once:
 
 - `Promise`
 - `Evidence`
