@@ -30,3 +30,20 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: round 1's three leads stand unchanged and for the same reasons. Round 1's fix was re-driven rather than reread, and so were the two guards beside it. Three mutations were driven against the fixed tree and each failed, naming its case: disabling the manifest-marker test failed one case, disabling the symlink test failed two, and disabling the non-directory test failed one. The module was restored byte-for-byte after each and `git status` reports it unmodified. `generator-output-escape` is therefore reviewed against driven failures rather than against a reading. The three lints exit 0 and the runner contract reports 741 of 741.
+
+## Step 2, round 1 -- 2026-08-30T06:50:42Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: token-scope=reviewed; publish-unverified=reviewed; workflow-drift=reviewed; stale-destination=reviewed; broken-install-window=reviewed; generator-output-escape=reviewed; authored-file-loss=not-applicable; suite-coverage-loss=not-applicable
+
+Not checked: whether the scheduled job runs green. Its drift step compares the destination's workflow against `source/distribution/skills-runtime/sync.yml` cloned from `main`, and that canonical copy reaches `main` only when this run integrates, so a dispatch before then fails by design. No scheduled or dispatched run has therefore been observed. Also not checked: the published `README.md` names the step-2 branch commit it was generated from rather than a commit on `main`; that is the commit that built it, and the first post-merge rebuild replaces it.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | medium | `distribution/skills-runtime/sync.yml` | `actions/checkout@v4` persists a push-capable token in `.git/config` by default. The job then executes `portable_promise_machine.py` from a clone of a different repository, so code under execution sat beside a credential able to push to the destination. The source is the same organisation and public, so this is reach the job did not need rather than an observed compromise. | fixed and guarded in dda3330f8c46e4df5b14d55e886531147c4e2a83 |
+| S2-R1-02 | low | `distribution/skills-runtime/sync.yml` | The commit message extracted the source SHA from the generated `README.md` with `sed`. A non-match yielded an empty value and committed `Rebuild from wildcat-finance/skills@`, recording a rebuild of nothing identifiable as a success. | fixed in the same commit |
+
+Leads not pursued: the job trusts whatever `portable_promise_machine.py` the cloned source carries, which is the same trust boundary as the repository itself and is not narrowed by pinning a commit, because the point of the job is to track the tip. `cp -R "/package/." .` copies over a tree the preceding `find` already emptied of everything but `.git`, `.github` and `source`, so a file dropped from the package is removed rather than left behind; that ordering is load-bearing and untested, and testing it needs a runner. The published package carries no signature, so it cannot prove which commit produced it against a hostile publisher; the destination is written only by its own job, and publisher authenticity sits outside ADR-040's boundary and this run. The three lints exit 0 and the runner contract reports 742 of 742.
