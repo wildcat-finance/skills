@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16134137,
+    "bytes_blob": 16156164,
     "bytes_generated": 98
   },
   "entries": [
@@ -236,6 +236,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
+    },
+    {
+      "bytes": 22027,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-975-remove-the-child-or-golden-retriever-primer.synopsis.md"
     },
     {
       "bytes": 59394,
