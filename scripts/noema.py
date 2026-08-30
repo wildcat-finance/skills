@@ -1247,6 +1247,13 @@ def _compile_records(
     source_raw: bytes,
 ) -> dict[str, object]:
     budget = _Budget()
+    for module_id in sorted(modules):
+        budget.node(f"module.{module_id}")
+        module_value = modules[module_id]["value"]
+        assert isinstance(module_value, dict)
+        for collection in ("imports", "types", "signatures", "definitions"):
+            for index, _item in enumerate(module_value[collection]):
+                budget.node(f"module.{module_id}.{collection}[{index}]")
     literals: dict[str, tuple[str, str]] = {}
     rules: set[str] = set()
     node_ids: set[str] = set()
@@ -1254,6 +1261,7 @@ def _compile_records(
     precedence_edges: dict[str, set[str]] = {}
     source_spans: dict[str, tuple[str, list[tuple[int, int]]]] = {}
     source_payloads: dict[str, bytes] = {}
+    source_boundaries: dict[str, set[int]] = {}
     source_identities: dict[tuple[int, int], str] = {}
     repository_root = Path(__file__).resolve().parents[1]
 
@@ -1330,9 +1338,21 @@ def _compile_records(
                 source_identities[identity] = path
                 if sha256(payload).hexdigest() != digest:
                     refuse("NOE-E-DIGEST.SOURCE", field, "bound source digest differs from repository bytes")
+                try:
+                    source_text = payload.decode("utf-8")
+                except UnicodeDecodeError:
+                    refuse("NOE-E-SYNTAX.SOURCE_UTF8", field, "bound source must be valid UTF-8")
+                boundaries = {0}
+                offset = 0
+                for character in source_text:
+                    offset += len(character.encode("utf-8"))
+                    boundaries.add(offset)
                 source_payloads[path] = payload
+                source_boundaries[path] = boundaries
             if end > len(source_payloads[path]):
                 refuse("NOE-E-REFERENCE.SPAN", field, "source span exceeds the bound file")
+            if start not in source_boundaries[path] or end not in source_boundaries[path]:
+                refuse("NOE-E-REFERENCE.SPAN_UTF8", field, "source span splits one UTF-8 scalar value")
             if any(start < old_end and old_start < end for old_start, old_end in spans):
                 refuse("NOE-E-REFERENCE.SPAN", field, "source spans overlap")
             spans.append((start, end))

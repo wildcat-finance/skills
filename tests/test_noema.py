@@ -779,6 +779,21 @@ class CanonicalSourceTests(unittest.TestCase):
 
 
 class GraphValidationTests(unittest.TestCase):
+    def test_source_bindings_require_utf8_and_scalar_boundaries(self):
+        modules = noema._load_modules(MODULES_FIXTURE, [("core", CORE_DIGEST)])
+        for payload, end, code in (
+            (b"\xff", 1, "NOE-E-SYNTAX.SOURCE_UTF8"),
+            ("é".encode("utf-8"), 1, "NOE-E-REFERENCE.SPAN_UTF8"),
+        ):
+            records = base_records()
+            records[-1][3][2] = sha256(payload).hexdigest()
+            records[-1][3][4] = str(end)
+            source = noema._canonical_source(records)
+            with self.subTest(payload=payload):
+                with mock.patch.object(noema, "_read_regular", return_value=payload), self.assertRaises(noema.Refusal) as raised:
+                    noema._compile_records(records, modules, source)
+                self.assertEqual(raised.exception.code, code)
+
     def test_finite_set_members_are_unique_and_canonically_ordered(self):
         duplicate = ["+", ["in", [":", "actor", "a"], ["{}", "actor", [":", "actor", "a"], [":", "actor", "a"]]]]
         reversed_members = ["+", ["in", [":", "actor", "a"], ["{}", "actor", [":", "actor", "b"], [":", "actor", "a"]]]]
@@ -879,6 +894,21 @@ class ModuleLockTests(unittest.TestCase):
             root_digest = child_digest
         return root_digest
 
+    def _signature_module(self, directory, count):
+        value = {
+            "schema": noema.MODULE_SCHEMA,
+            "id": "m",
+            "imports": [],
+            "types": [],
+            "signatures": [
+                [f"m.p{index:05d}", [], "value"] for index in range(count)
+            ],
+            "definitions": [],
+        }
+        raw = noema._canonical_json(value)
+        (directory / "m.json").write_bytes(raw)
+        return sha256(raw).hexdigest()
+
     def test_lock_binds_every_dependency_byte_string(self):
         build, artifacts = noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
         lock = build["lock"]
@@ -948,6 +978,21 @@ class ModuleLockTests(unittest.TestCase):
             with self.assertRaises(noema.Refusal) as raised:
                 noema.compile_source(source, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
             self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.IMPORTS")
+
+    def test_module_declarations_consume_the_graph_node_budget(self):
+        exact_signatures = noema.MAX_GRAPH_NODES - 2
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            digest = self._signature_module(directory, exact_signatures)
+            source = noema._canonical_source([["import", "m", digest]])
+            noema.compile_source(source, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            digest = self._signature_module(directory, exact_signatures + 1)
+            source = noema._canonical_source([["import", "m", digest]])
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.compile_source(source, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+            self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.NODES")
 
 
 class ProjectionTests(unittest.TestCase):

@@ -211,7 +211,8 @@ grants authority refuse.
 Source-span coverage is reviewed evidence. It establishes the recorded mapping
 for exact bytes and does not establish that the reviewer captured unexpressed
 intent. An unsupported remainder blocks authority migration and remains visible
-in every evidence record.
+in every evidence record. Bound files must decode as UTF-8, and span endpoints
+must fall between complete scalar values.
 
 A semantic diff has closed entries for added, removed or modified effects,
 gates, authority, scope, evidence classes, literals, transitions, precedence
@@ -295,6 +296,9 @@ Version 1 applies every limit before returning a partial graph or result:
 | expanded macro graph | 65,536 nodes |
 | one finite quantifier set | 4,096 members |
 | one derived output | 1,048,576 bytes |
+
+The graph-node count includes source records, term nodes, each embedded module
+and every module import, subtype, signature and definition declaration.
 
 The seed archive verifier separately accepts at most 1,048,576 archive bytes,
 64 members, 1,048,576 uncompressed bytes in aggregate, 1,048,576 bytes for one
