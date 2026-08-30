@@ -687,6 +687,31 @@ class RenderingTests(TemporaryRepositoryTestCase):
         ):
             self.assertNotIn(forbidden, rendered)
 
+    def test_text_rendering_escapes_untrusted_record_newlines(self):
+        base = self._report()
+        status = dead_code.AnalyserStatus(
+            "solidity",
+            "degraded",
+            "slither+forge/1",
+            "tool incomplete",
+            (
+                dead_code.AnalyserRecord(
+                    ".:slither",
+                    "project",
+                    "failed",
+                    "tool failed",
+                    1,
+                    "0.11.4",
+                    1,
+                    0,
+                    "warning\nstatus forged",
+                ),
+            ),
+        )
+        text = dead_code.render_text(dead_code.Report(base.universe, (status,), ()))
+        self.assertNotIn("\nstatus forged", text)
+        self.assertIn(r"warning\nstatus forged", text)
+
 
 class WriteBoundaryTests(TemporaryRepositoryTestCase):
     def setUp(self):
@@ -1453,6 +1478,22 @@ class RepositoryAnalyserTests(TemporaryRepositoryTestCase):
         self.assertEqual(len(status.records), len(dead_code.REPOSITORY_FAMILIES))
         self.assertTrue(all(item.evidence_count == 0 for item in status.records))
 
+    def test_unreadable_referrer_degrades_every_family_and_suppresses_candidates(self):
+        build_repository(
+            self.root,
+            files={
+                "tests/fixtures/orphan.json": "{}" + NL,
+                "tests/test_large.py": "x" * 128 + NL,
+            },
+        )
+        universe = dead_code.discover(self.root)
+        with mock.patch.object(dead_code, "MAX_REPOSITORY_FILE_BYTES", 16):
+            status, findings = dead_code.analyse_repository(self.root, universe)
+        self.assertEqual(status.state, "degraded")
+        self.assertEqual(findings, ())
+        self.assertTrue(all(record.state == "parse-error" for record in status.records))
+        self.assertTrue(all(record.reason for record in status.records))
+
     def test_repository_finding_survives_report_rendering(self):
         universe, (status, findings) = self._analyse(
             {"docs/orphan.md": "# orphan" + NL, "README.md": "root" + NL}
@@ -1494,11 +1535,14 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
         return dead_code.discover(self.root)
 
     def _successful_runner(self, calls, *, detectors=None, forge_summary=None):
+        original_run_process = dead_code.run_process
         slither = self._slither_document(detectors)
         forge = self._forge_summary() if forge_summary is None else forge_summary
 
         def run(argv, **kwargs):
             calls.append((tuple(argv), kwargs["cwd"]))
+            if argv[0] == "git":
+                return original_run_process(argv, **kwargs)
             if argv == ["slither", "--version"]:
                 return b"0.11.4\n", b"", 0
             if argv == ["forge", "--version"]:
@@ -1700,11 +1744,16 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
         calls = []
         with mock.patch.object(dead_code, "run_process", side_effect=self._successful_runner(calls)):
             dead_code.analyse_solidity(self.root, universe)
-        self.assertIn(
-            (("slither", ".", "--detect", "dead-code,unused-state", "--json", "-"), self.root),
-            calls,
-        )
-        self.assertIn((("forge", "coverage", "--report", "summary"), self.root), calls)
+        expected = {
+            ("slither", ".", "--detect", "dead-code,unused-state", "--json", "-"),
+            ("forge", "coverage", "--report", "summary"),
+        }
+        analysis_calls = [(argv, cwd) for argv, cwd in calls if argv in expected]
+        self.assertEqual({argv for argv, _cwd in analysis_calls}, expected)
+        for _argv, cwd in analysis_calls:
+            self.assertTrue(cwd.is_absolute())
+            self.assertFalse(cwd.is_relative_to(self.root))
+            self.assertEqual(cwd.name, "repository")
 
     def test_foundry_outputs_are_confined_outside_the_repository(self):
         universe = self._universe()
@@ -1725,6 +1774,24 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
                 target = Path(environment[name])
                 self.assertTrue(target.is_absolute())
                 self.assertFalse(target.is_relative_to(self.root))
+
+    def test_tool_execution_cannot_mutate_the_live_project(self):
+        universe = self._universe()
+        source = self.root / "src" / "Dead.sol"
+        before = source.read_bytes()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] == ["forge", "coverage"]:
+                (kwargs["cwd"] / "src" / "Dead.sol").write_text(
+                    "mutated by project code" + NL,
+                    encoding="utf-8",
+                )
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            dead_code.analyse_solidity(self.root, universe)
+        self.assertEqual(source.read_bytes(), before)
 
     def test_slither_detector_maps_to_project_attributed_finding(self):
         universe = self._universe()
@@ -1764,6 +1831,19 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
         candidate = next(item for item in findings if item.symbol and item.symbol.startswith("forge-coverage:"))
         self.assertEqual(candidate.path, "src/Dead.sol")
         self.assertEqual(candidate.confidence, "low")
+
+    def test_partially_malformed_forge_table_refuses_all_rows(self):
+        files = {
+            **self._project(),
+            "src/Other.sol": "pragma solidity ^0.8.20; contract Other {}" + NL,
+        }
+        universe = self._universe(files)
+        payload = (
+            self._forge_summary("0.00", "0", "1")
+            + b"| src/Other.sol | malformed | malformed | malformed | malformed |\n"
+        )
+        with self.assertRaisesRegex(dead_code.Refusal, "malformed"):
+            dead_code._forge_findings(payload, project=".", universe=universe)
 
     def test_solidity_finding_survives_report_rendering(self):
         universe = self._universe()
