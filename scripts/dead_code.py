@@ -77,6 +77,9 @@ BASELINE_COMMAND = (
     ",".join(BASELINE_ANALYSERS),
 )
 BASELINE_PUBLICATION_PATHS = frozenset({BASELINE_PATH.as_posix()})
+REPOSITORY_NON_AUTHORITATIVE_SOURCES = frozenset(
+    {BASELINE_PATH.as_posix(), SUPPRESSIONS_PATH.as_posix()}
+)
 MAX_BASELINE_BYTES = 32 * 1024 * 1024
 MAX_SUPPRESSIONS_BYTES = 4 * 1024 * 1024
 MAX_SUPPRESSIONS = 10_000
@@ -86,7 +89,7 @@ COVERAGE_OUTPUT_ENV = "WILDCAT_DEAD_CODE_COVERAGE_OUTPUT"
 CHECK_CONTAINMENT_ENV = "WILDCAT_CHECK_CONTAINMENT"
 PYTHON_ANALYSER_VERSION = "1"
 COVERAGE_ANALYSER_VERSION = "sys.monitoring/3.14"
-REPOSITORY_ANALYSER_VERSION = "repository-graph/1"
+REPOSITORY_ANALYSER_VERSION = "repository-graph/2"
 SOLIDITY_ANALYSER_VERSION = "slither+forge/1"
 SOLIDITY_VERSION_TIMEOUT_SECONDS = 30
 SOLIDITY_TOOL_TIMEOUT_SECONDS = 600
@@ -105,6 +108,7 @@ REPOSITORY_FAMILIES = (
     "schema",
 )
 ANALYSER_STATES = frozenset({"ran", "not-available", "degraded", "failed"})
+BASELINE_ANALYSER_STATES = frozenset({"ran", "degraded"})
 CONFIDENCE_LEVELS = frozenset({"high", "medium", "low"})
 ANALYSER_RECORD_KINDS = frozenset({"file", "check", "family", "project"})
 ANALYSER_RECORD_STATES = frozenset(
@@ -1379,8 +1383,11 @@ def _repository_source_paths(universe: Universe) -> tuple[str, ...]:
     return tuple(
         path
         for path in universe.analysed
-        if PurePosixPath(path).suffix.lower() in REPOSITORY_SOURCE_SUFFIXES
-        or PurePosixPath(path).name in {"SKILL.md", "AGENTS.md", "PROMISE_MACHINE.md"}
+        if path not in REPOSITORY_NON_AUTHORITATIVE_SOURCES
+        and (
+            PurePosixPath(path).suffix.lower() in REPOSITORY_SOURCE_SUFFIXES
+            or PurePosixPath(path).name in {"SKILL.md", "AGENTS.md", "PROMISE_MACHINE.md"}
+        )
     )
 
 
@@ -3536,6 +3543,13 @@ def build_baseline_document(
     suppressions_document: dict[str, object],
     suppressions: tuple[Suppression, ...],
 ) -> dict[str, object]:
+    unusable = sorted(
+        f"{status.analyser_id}={status.state}"
+        for status in report.statuses
+        if status.state not in BASELINE_ANALYSER_STATES
+    )
+    if unusable:
+        raise Refusal("baseline analyser state is not admissible: " + ", ".join(unusable))
     suppressed = {item.finding_id for item in suppressions}
     findings = sorted(
         (
@@ -3625,8 +3639,10 @@ def validate_baseline_document(document: dict[str, object]) -> None:
         version = analyser["version"]
         if version is not None and (not isinstance(version, str) or not version):
             raise Refusal(f"{analyser_label} version is invalid")
-        if analyser["state"] not in ANALYSER_STATES:
-            raise Refusal(f"{analyser_label} state is invalid")
+        if analyser["state"] not in BASELINE_ANALYSER_STATES:
+            raise Refusal(
+                f"{analyser_label} state {analyser['state']} cannot be recorded in a baseline"
+            )
         analyser_ids.append(identifier)
     if analyser_ids != sorted(set(analyser_ids)):
         raise Refusal(f"{label} analyser identities are not sorted and unique")

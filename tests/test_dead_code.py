@@ -1331,6 +1331,36 @@ class RepositoryAnalyserTests(TemporaryRepositoryTestCase):
         )
         self.assertFalse(self._family_findings(findings, "document"))
 
+    def test_baseline_record_cannot_retain_a_repository_candidate(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                ".dead-code/baseline.json": json.dumps(
+                    {"findings": [{"path": "docs/orphan.md"}]}, sort_keys=True
+                )
+                + NL,
+                "docs/orphan.md": "# orphan" + NL,
+            }
+        )
+        self.assertEqual(
+            [item.path for item in self._family_findings(findings, "document")],
+            ["docs/orphan.md"],
+        )
+
+    def test_suppression_record_cannot_retain_a_repository_candidate(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                ".dead-code/suppressions.json": json.dumps(
+                    {"entries": [{"path": "docs/orphan.md"}]}, sort_keys=True
+                )
+                + NL,
+                "docs/orphan.md": "# orphan" + NL,
+            }
+        )
+        self.assertEqual(
+            [item.path for item in self._family_findings(findings, "document")],
+            ["docs/orphan.md"],
+        )
+
     def test_unreferenced_cli_target_is_reported(self):
         _universe, (_status, findings) = self._analyse(
             {"scripts/orphan.py": "print('orphan')" + NL, "README.md": "root" + NL}
@@ -2508,7 +2538,10 @@ class BaselineContractTests(TemporaryRepositoryTestCase):
             (
                 dead_code.AnalyserStatus("python", "ran", "1", "done"),
                 dead_code.AnalyserStatus(
-                    "repository", "degraded", "repository-graph/1", "bounded"
+                    "repository",
+                    "degraded",
+                    dead_code.REPOSITORY_ANALYSER_VERSION,
+                    "bounded",
                 ),
             ),
             tuple(findings),
@@ -2688,6 +2721,26 @@ class BaselineContractTests(TemporaryRepositoryTestCase):
         baseline = self._baseline()
         baseline["analysers"].reverse()
         with self.assertRaisesRegex(dead_code.Refusal, "not sorted and unique"):
+            dead_code.validate_baseline_document(baseline)
+
+    def test_failed_analyser_cannot_be_written_to_a_baseline(self):
+        report = self._report()
+        failed = dead_code.Report(
+            report.universe,
+            (
+                dead_code.AnalyserStatus("python", "failed", "1", "crashed"),
+                report.statuses[1],
+            ),
+            report.findings,
+        )
+        document, suppressions = dead_code.parse_suppressions(self._raw([]), failed)
+        with self.assertRaisesRegex(dead_code.Refusal, "failed"):
+            dead_code.build_baseline_document(failed, document, suppressions)
+
+    def test_recorded_baseline_cannot_claim_a_failed_analyser(self):
+        baseline = self._baseline()
+        baseline["analysers"][0]["state"] = "failed"
+        with self.assertRaisesRegex(dead_code.Refusal, "failed"):
             dead_code.validate_baseline_document(baseline)
 
     def test_commit_tree_and_universe_drift_refuse_by_name(self):

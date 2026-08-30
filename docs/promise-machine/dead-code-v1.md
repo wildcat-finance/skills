@@ -75,9 +75,9 @@ source change.
   repeat the two-commit refresh. Do not edit recorded identities by hand.
 - `unused`, `stale target` or `target does not match`: remove or correct the
   exact suppression, review the resulting candidate, then refresh.
-- analyser `degraded`, `failed` or version drift: repair or accept the tool
-  environment explicitly; zero findings from an incomplete analyser is not a
-  clean result.
+- analyser `degraded` or version drift: repair or accept the tool environment
+  explicitly; `failed` and `not-available` states cannot be baselined. Zero
+  findings from an incomplete analyser is not a clean result.
 - write refusal: inspect `.dead-code` for a symlink, foreign object or failed
   permission. The writer will not sweep it automatically.
 

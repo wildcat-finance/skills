@@ -340,7 +340,7 @@
           "minLength": 1
         },
         "state": {
-          "enum": ["ran", "not-available", "degraded", "failed"]
+          "enum": ["ran", "degraded"]
         }
       }
     },
