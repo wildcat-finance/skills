@@ -190,10 +190,19 @@ class ValidationState:
         self.expression_count = 0
         self.promise_exception_count = 0
 
+    def compact_literal(self, text: str, path: str) -> None:
+        """Count one value that the compact form carries as a literal field."""
+
+        _scalar(text, path)
+        self.total_literal_bytes += len(text.encode("utf-8"))
+        if self.total_literal_bytes > MAX_TOTAL_LITERAL_BYTES:
+            refuse("WAI-E-BOUNDS.LITERALS", path)
+
     def declare(self, value: Any, path: str, *, governed: bool = False, parent: str | None = None) -> str:
         identifier = _identifier(value, path)
         if identifier in self.ids:
             refuse("WAI-E-REFERENCE.DUPLICATE_ID", path)
+        self.compact_literal(identifier, path)
         self.ids.add(identifier)
         if governed:
             self.governed.add(identifier)
@@ -210,9 +219,7 @@ class ValidationState:
         size = len(text.encode("utf-8"))
         if size > MAX_LITERAL_BYTES:
             refuse("WAI-E-BOUNDS.LITERAL", f"{path}.value")
-        self.total_literal_bytes += size
-        if self.total_literal_bytes > MAX_TOTAL_LITERAL_BYTES:
-            refuse("WAI-E-BOUNDS.LITERALS", path)
+        self.compact_literal(text, path)
         if kind == "identifier":
             _identifier(text, f"{path}.value")
         elif kind == "path":
@@ -259,6 +266,7 @@ def _expression(
     elif kind == "exception":
         item = _object(value, ("kind", "target", "predicate", "expressions"), path)
         target = _identifier(item["target"], f"{path}.target")
+        state.compact_literal(target, f"{path}.target")
         if target != directive_id and target not in ancestor_scopes:
             refuse("WAI-E-REFERENCE.EXCEPTION_TARGET", f"{path}.target")
         state.literal(item["predicate"], f"{path}.predicate")
@@ -375,10 +383,12 @@ def validate_model(model: Any) -> dict[str, Any]:
         source_id = state.declare(source["id"], f"{path}.id")
         state.sources.add(source_id)
         source_ids.append(source_id)
-        _safe_relative_path(source["path"], f"{path}.path")
+        source_path = _safe_relative_path(source["path"], f"{path}.path")
+        state.compact_literal(source_path, f"{path}.path")
         digest = _string(source["sha256"], f"{path}.sha256")
         if SHA256_RE.fullmatch(digest) is None:
             refuse("WAI-E-SHAPE.SHA256", f"{path}.sha256")
+        state.compact_literal(digest, f"{path}.sha256")
     if source_ids != sorted(source_ids):
         refuse("WAI-E-CANONICAL.SOURCES", "$.sources")
 
@@ -426,6 +436,8 @@ def validate_model(model: Any) -> dict[str, Any]:
             refuse("WAI-E-SHAPE.RELATION_KIND", f"{path}.kind")
         source = _identifier(relation["source"], f"{path}.source")
         target = _identifier(relation["target"], f"{path}.target")
+        state.compact_literal(source, f"{path}.source")
+        state.compact_literal(target, f"{path}.target")
         if source not in state.directives or target not in state.directives:
             refuse("WAI-E-REFERENCE.RELATION", path)
         if source == target:
@@ -446,10 +458,14 @@ def validate_model(model: Any) -> dict[str, Any]:
         binding = _object(raw_binding, ("source", "node", "start", "end", "reviewer"), path)
         source = _identifier(binding["source"], f"{path}.source")
         node = _identifier(binding["node"], f"{path}.node")
+        state.compact_literal(source, f"{path}.source")
+        state.compact_literal(node, f"{path}.node")
         if source not in state.sources or node not in state.governed:
             refuse("WAI-E-REFERENCE.BINDING", path)
         start_text = _decimal(binding["start"], f"{path}.start")
         end_text = _decimal(binding["end"], f"{path}.end")
+        state.compact_literal(start_text, f"{path}.start")
+        state.compact_literal(end_text, f"{path}.end")
         start, end = _decimal_key(start_text), _decimal_key(end_text)
         if end <= start:
             refuse("WAI-E-REFERENCE.SPAN", path)
@@ -785,6 +801,14 @@ class CompactParser:
                 refuse("WAI-E-COMPACT.OPCODE", path)
             self.records.append((depth, fields[0], fields[1:]))
         self.index = 0
+        self.total_literal_bytes = 0
+
+    def literal(self, token: str, expected: str | None = None, path: str = "$") -> dict[str, str]:
+        literal = decode_literal(token, expected, path)
+        self.total_literal_bytes += len(literal["value"].encode("utf-8"))
+        if self.total_literal_bytes > MAX_TOTAL_LITERAL_BYTES:
+            refuse("WAI-E-BOUNDS.LITERALS", path)
+        return literal
 
     def peek(self) -> tuple[int, str, list[str]] | None:
         return self.records[self.index] if self.index < len(self.records) else None
@@ -813,22 +837,22 @@ class CompactParser:
             fields = self.take(depth, opcode, 1)
             expression: dict[str, Any] = {
                 "kind": kind,
-                "predicate": decode_literal(fields[0], path=path),
+                "predicate": self.literal(fields[0], path=path),
                 "expressions": [],
             }
         elif kind == "scope":
             fields = self.take(depth, opcode, 1)
             expression = {
                 "kind": kind,
-                "scope": decode_literal(fields[0], "identifier", path)["value"],
+                "scope": self.literal(fields[0], "identifier", path)["value"],
                 "expressions": [],
             }
         else:
             fields = self.take(depth, opcode, 2)
             expression = {
                 "kind": kind,
-                "target": decode_literal(fields[0], "identifier", path)["value"],
-                "predicate": decode_literal(fields[1], path=path),
+                "target": self.literal(fields[0], "identifier", path)["value"],
+                "predicate": self.literal(fields[1], path=path),
                 "expressions": [],
             }
         while self.peek() is not None and self.peek()[0] == depth + 1 and self.peek()[1] in OPCODE_EXPRESSIONS:
@@ -839,8 +863,8 @@ class CompactParser:
         path = f"$record[{self.index}]"
         fields = self.take(3, "M", 2)
         promise: dict[str, Any] = {
-            "id": decode_literal(fields[0], "identifier", path)["value"],
-            "claim": decode_literal(fields[1], path=path),
+            "id": self.literal(fields[0], "identifier", path)["value"],
+            "claim": self.literal(fields[1], path=path),
             "evidence": [],
             "evidence_classes": [],
             "boundary": None,
@@ -851,32 +875,32 @@ class CompactParser:
             "exceptions": [],
         }
         while self.peek() is not None and self.peek()[:2] == (4, "V"):
-            promise["evidence"].append(decode_literal(self.take(4, "V", 1)[0], path=path))
+            promise["evidence"].append(self.literal(self.take(4, "V", 1)[0], path=path))
         while self.peek() is not None and self.peek()[:2] == (4, "K"):
             evidence_class = self.take(4, "K", 1)[0]
             if evidence_class not in EVIDENCE_CLASSES:
                 refuse("WAI-E-COMPACT.TOKEN", path)
             promise["evidence_classes"].append(evidence_class)
-        promise["boundary"] = decode_literal(self.take(4, "G", 1)[0], path=path)
+        promise["boundary"] = self.literal(self.take(4, "G", 1)[0], path=path)
         while self.peek() is not None and self.peek()[:2] == (4, "A"):
-            promise["authorises"].append(decode_literal(self.take(4, "A", 1)[0], path=path))
+            promise["authorises"].append(self.literal(self.take(4, "A", 1)[0], path=path))
         consequence = self.take(4, "Q", 1)[0]
         if consequence not in ("0", "1", "2", "3"):
             refuse("WAI-E-COMPACT.TOKEN", path)
         promise["consequence"] = consequence
         while self.peek() is not None and self.peek()[:2] == (4, "J"):
-            promise["refuses"].append(decode_literal(self.take(4, "J", 1)[0], path=path))
+            promise["refuses"].append(self.literal(self.take(4, "J", 1)[0], path=path))
         while self.peek() is not None and self.peek()[:2] == (4, "Z"):
-            promise["recovery"].append(decode_literal(self.take(4, "Z", 1)[0], path=path))
+            promise["recovery"].append(self.literal(self.take(4, "Z", 1)[0], path=path))
         while self.peek() is not None and self.peek()[:2] == (4, "I"):
             values = self.take(4, "I", 8)
-            exception = {"id": decode_literal(values[0], "identifier", path)["value"]}
+            exception = {"id": self.literal(values[0], "identifier", path)["value"]}
             for field, token in zip(
                 ("authority", "gate", "subject", "scope", "record", "expiry", "recovery"),
                 values[1:],
                 strict=True,
             ):
-                exception[field] = decode_literal(token, path=path)
+                exception[field] = self.literal(token, path=path)
             promise["exceptions"].append(exception)
         return promise
 
@@ -885,8 +909,8 @@ class CompactParser:
         model: dict[str, Any] = {
             "schema": SCHEMA_ID,
             "document": {
-                "id": decode_literal(fields[0], "identifier")["value"],
-                "title": decode_literal(fields[1]),
+                "id": self.literal(fields[0], "identifier")["value"],
+                "title": self.literal(fields[1]),
             },
             "sources": [],
             "sections": [],
@@ -897,16 +921,16 @@ class CompactParser:
             values = self.take(1, "S", 3)
             model["sources"].append(
                 {
-                    "id": decode_literal(values[0], "identifier")["value"],
-                    "path": decode_literal(values[1], "path")["value"],
-                    "sha256": decode_literal(values[2], "sha256")["value"],
+                    "id": self.literal(values[0], "identifier")["value"],
+                    "path": self.literal(values[1], "path")["value"],
+                    "sha256": self.literal(values[2], "sha256")["value"],
                 }
             )
         while self.peek() is not None and self.peek()[:2] == (1, "H"):
             values = self.take(1, "H", 2)
             section: dict[str, Any] = {
-                "id": decode_literal(values[0], "identifier")["value"],
-                "title": decode_literal(values[1]),
+                "id": self.literal(values[0], "identifier")["value"],
+                "title": self.literal(values[1]),
                 "directives": [],
             }
             while self.peek() is not None and self.peek()[0] == 2 and self.peek()[1] in OPCODE_DIRECTIVES:
@@ -914,9 +938,9 @@ class CompactParser:
                 del depth
                 values = self.take(2, opcode, 2)
                 directive: dict[str, Any] = {
-                    "id": decode_literal(values[0], "identifier")["value"],
+                    "id": self.literal(values[0], "identifier")["value"],
                     "kind": OPCODE_DIRECTIVES[opcode],
-                    "statement": decode_literal(values[1]),
+                    "statement": self.literal(values[1]),
                     "expressions": [],
                     "promise": None,
                 }
@@ -932,19 +956,19 @@ class CompactParser:
             model["relations"].append(
                 {
                     "kind": OPCODE_RELATIONS[opcode],
-                    "source": decode_literal(values[0], "identifier")["value"],
-                    "target": decode_literal(values[1], "identifier")["value"],
+                    "source": self.literal(values[0], "identifier")["value"],
+                    "target": self.literal(values[1], "identifier")["value"],
                 }
             )
         while self.peek() is not None and self.peek()[:2] == (1, "B"):
             values = self.take(1, "B", 5)
             model["bindings"].append(
                 {
-                    "source": decode_literal(values[0], "identifier")["value"],
-                    "node": decode_literal(values[1], "identifier")["value"],
-                    "start": decode_literal(values[2], "number")["value"],
-                    "end": decode_literal(values[3], "number")["value"],
-                    "reviewer": decode_literal(values[4], "identifier"),
+                    "source": self.literal(values[0], "identifier")["value"],
+                    "node": self.literal(values[1], "identifier")["value"],
+                    "start": self.literal(values[2], "number")["value"],
+                    "end": self.literal(values[3], "number")["value"],
+                    "reviewer": self.literal(values[4], "identifier"),
                 }
             )
         if self.index != len(self.records):

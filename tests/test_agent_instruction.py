@@ -449,6 +449,91 @@ def file_and_line_count_limit_model() -> dict:
     return model
 
 
+def all_compact_literal_bytes_limit_plus_one_model() -> dict:
+    """Build a valid model whose compact literal values total exactly cap + 1."""
+
+    identifiers = [f"r{index:03d}" + "a" * 124 for index in range(78)]
+    directives = [
+        {
+            "id": identifier,
+            "kind": "require",
+            "statement": literal("text", ""),
+            "expressions": [],
+            "promise": None,
+        }
+        for identifier in identifiers
+    ]
+    directives[0]["statement"] = literal("text", "x" * 237)
+    relations = [
+        {"kind": "before", "source": source, "target": target}
+        for left_index, source in enumerate(identifiers)
+        for target in identifiers[left_index + 1 :]
+    ][:2990]
+    bindings = [
+        {"source": "src", "node": "doc", "start": "0", "end": "10000", "reviewer": literal("identifier", "r")},
+        {"source": "src", "node": "section", "start": "0", "end": "10000", "reviewer": literal("identifier", "r")},
+    ]
+    bindings.extend(
+        {
+            "source": "src",
+            "node": identifier,
+            "start": str(index * 2 + 1),
+            "end": str(index * 2 + 2),
+            "reviewer": literal("identifier", "r"),
+        }
+        for index, identifier in enumerate(identifiers)
+    )
+    bindings.sort(
+        key=lambda item: (
+            item["source"],
+            (len(item["start"]), item["start"]),
+            (len(item["end"]), item["end"]),
+            item["node"],
+            item["reviewer"]["value"],
+        )
+    )
+    return {
+        "schema": SCHEMA_ID,
+        "document": {"id": "doc", "title": literal("text", "")},
+        "sources": [{"id": "src", "path": "source.md", "sha256": "0" * 64}],
+        "sections": [{"id": "section", "title": literal("text", ""), "directives": directives}],
+        "relations": relations,
+        "bindings": bindings,
+    }
+
+
+def compact_literal_byte_total(compact: bytes) -> int:
+    parser = AI.CompactParser(compact)
+    total = 0
+    for _, _, fields in parser.records:
+        for field in fields:
+            if len(field) >= 3 and field[0] in AI.TAG_KINDS and ":" in field[1:]:
+                total += len(AI.decode_literal(field)["value"].encode("utf-8"))
+    return total
+
+
+def total_literal_limit_model(extra: int = 0) -> dict:
+    model = minimal_model()
+    model["document"]["title"] = literal("text", "x" * AI.MAX_LITERAL_BYTES)
+    model["sections"][0]["title"] = literal("text", "x" * AI.MAX_LITERAL_BYTES)
+    directive = model["sections"][0]["directives"][0]
+    directive["statement"] = literal("text", "x" * AI.MAX_LITERAL_BYTES)
+    directive["expressions"] = [
+        {"kind": "when", "predicate": literal("text", "x" * AI.MAX_LITERAL_BYTES), "expressions": []}
+        for _ in range(9)
+    ]
+    directive["expressions"].append(
+        {"kind": "when", "predicate": literal("text", ""), "expressions": []}
+    )
+    with mock.patch.object(AI, "validate_model", return_value=model):
+        base = compact_literal_byte_total(AI.format_compact(model))
+    remainder = AI.MAX_TOTAL_LITERAL_BYTES - base + extra
+    if not 0 <= remainder <= AI.MAX_LITERAL_BYTES:
+        raise AssertionError(f"invalid total-literal remainder: {remainder}")
+    directive["expressions"][-1]["predicate"] = literal("text", "x" * remainder)
+    return model
+
+
 class RefusalAssertions:
     def assertRefusal(self, code: str, function, *arguments):
         with self.assertRaises(AI.CodecError) as raised:
@@ -724,36 +809,19 @@ class CanonicalModelTests(RefusalAssertions, unittest.TestCase):
         self.assertRefusal("WAI-E-BOUNDS.PATH", AI.validate_model, model)
 
     def test_total_literal_cap_at_limit_is_valid(self):
-        model = minimal_model()
-        model["document"]["title"] = literal("text", "x" * AI.MAX_LITERAL_BYTES)
-        model["sections"][0]["title"] = literal("text", "x" * AI.MAX_LITERAL_BYTES)
-        directive = model["sections"][0]["directives"][0]
-        directive["statement"] = literal("text", "x" * AI.MAX_LITERAL_BYTES)
-        directive["expressions"] = [
-            {"kind": "when", "predicate": literal("text", "x" * AI.MAX_LITERAL_BYTES), "expressions": []}
-            for _ in range(9)
-        ]
-        remainder = AI.MAX_TOTAL_LITERAL_BYTES - (12 * AI.MAX_LITERAL_BYTES) - (3 * len("shoggoth"))
-        directive["expressions"].append(
-            {"kind": "when", "predicate": literal("text", "x" * remainder), "expressions": []}
-        )
+        model = total_literal_limit_model()
+        with mock.patch.object(AI, "validate_model", return_value=model):
+            compact = AI.format_compact(model)
+        self.assertEqual(compact_literal_byte_total(compact), AI.MAX_TOTAL_LITERAL_BYTES)
         AI.validate_model(model)
-        AI.format_compact(model)
+        self.assertEqual(AI.decode_compact(compact)[0], model)
 
     def test_total_literal_cap_limit_plus_one_refuses(self):
-        model = minimal_model()
-        model["document"]["title"] = literal("text", "x" * AI.MAX_LITERAL_BYTES)
-        model["sections"][0]["title"] = literal("text", "x" * AI.MAX_LITERAL_BYTES)
-        directive = model["sections"][0]["directives"][0]
-        directive["statement"] = literal("text", "x" * AI.MAX_LITERAL_BYTES)
-        directive["expressions"] = [
-            {"kind": "when", "predicate": literal("text", "x" * AI.MAX_LITERAL_BYTES), "expressions": []}
-            for _ in range(9)
-        ]
-        remainder = AI.MAX_TOTAL_LITERAL_BYTES - (12 * AI.MAX_LITERAL_BYTES) - (3 * len("shoggoth")) + 1
-        directive["expressions"].append(
-            {"kind": "when", "predicate": literal("text", "x" * remainder), "expressions": []}
-        )
+        model = total_literal_limit_model(extra=1)
+        self.assertRefusal("WAI-E-BOUNDS.LITERALS", AI.validate_model, model)
+
+    def test_all_compact_literal_bytes_limit_plus_one_refuses(self):
+        model = all_compact_literal_bytes_limit_plus_one_model()
         self.assertRefusal("WAI-E-BOUNDS.LITERALS", AI.validate_model, model)
 
     def test_section_cap_at_limit_is_valid(self):
@@ -1017,6 +1085,15 @@ class CompactCodecTests(RefusalAssertions, unittest.TestCase):
             self.assertFalse(hasattr(error, "model"))
         else:
             self.fail("malformed compact input was accepted")
+
+    def test_decoder_counts_reference_fields_in_total_literal_cap(self):
+        model = all_compact_literal_bytes_limit_plus_one_model()
+        with mock.patch.object(AI, "validate_model", return_value=model):
+            compact = AI.format_compact(model)
+        self.assertEqual(compact_literal_byte_total(compact), AI.MAX_TOTAL_LITERAL_BYTES + 1)
+        with mock.patch.object(AI, "validate_model", return_value=model) as validate:
+            self.assertRefusal("WAI-E-BOUNDS.LITERALS", AI.decode_compact, compact)
+        validate.assert_not_called()
 
     def test_valid_fixture_round_trips(self):
         canonical = (CODEC_FIXTURES / "valid-minimal.json").read_bytes()
