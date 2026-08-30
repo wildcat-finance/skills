@@ -144,8 +144,9 @@ and `definitions`. Import entries are `[id,sha256]`; nominal subtype entries are
 `[qualified-name,core-parent]`; signatures are
 `[qualified-name,[parameter-types],result-type]`; definitions are
 `[qualified-name,[[parameter,type],...],pure-term]`. Collections are unique and
-source-sorted. A source import resolves only `<module-id>.json` below the named
-module directory. Unmentioned files have no meaning.
+source-sorted. The 64-import limit covers the complete transitive registry, not
+each file independently. A source import resolves only `<module-id>.json` below
+the named module directory. Unmentioned files have no meaning.
 
 `noema-lock/v1` binds source, graph, compiler, kernel and projection-profile
 SHA-256 values plus the ordered module id/digest list. Any changed or missing

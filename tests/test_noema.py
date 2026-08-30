@@ -846,6 +846,27 @@ class GraphValidationTests(unittest.TestCase):
 
 
 class ModuleLockTests(unittest.TestCase):
+    def _module_chain(self, directory, count):
+        child = None
+        child_digest = None
+        root_digest = None
+        for index in reversed(range(count)):
+            module_id = f"m{index:02d}"
+            value = {
+                "schema": noema.MODULE_SCHEMA,
+                "id": module_id,
+                "imports": [] if child is None else [[child, child_digest]],
+                "types": [],
+                "signatures": [],
+                "definitions": [],
+            }
+            raw = noema._canonical_json(value)
+            (directory / f"{module_id}.json").write_bytes(raw)
+            child = module_id
+            child_digest = sha256(raw).hexdigest()
+            root_digest = child_digest
+        return root_digest
+
     def test_lock_binds_every_dependency_byte_string(self):
         build, artifacts = noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
         lock = build["lock"]
@@ -900,6 +921,21 @@ class ModuleLockTests(unittest.TestCase):
             with self.assertRaises(noema.Refusal) as raised:
                 noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, kernel)
             self.assertEqual(raised.exception.code, "NOE-E-DIGEST.KERNEL")
+
+    def test_transitive_module_cap_accepts_exact_and_refuses_plus_one(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            digest = self._module_chain(directory, noema.MAX_IMPORTS)
+            source = noema._canonical_source([["import", "m00", digest]])
+            build, _artifacts = noema.compile_source(source, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+            self.assertEqual(len(build["graph"]["modules"]), noema.MAX_IMPORTS)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            digest = self._module_chain(directory, noema.MAX_IMPORTS + 1)
+            source = noema._canonical_source([["import", "m00", digest]])
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.compile_source(source, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+            self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.IMPORTS")
 
 
 class ProjectionTests(unittest.TestCase):

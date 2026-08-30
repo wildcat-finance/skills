@@ -717,6 +717,8 @@ def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str
             if loaded[module_id]["sha256"] != expected_digest:
                 refuse("NOE-E-DIGEST.MODULE", module_id, "one module identity binds multiple byte strings")
             return
+        if len(loaded) + len(visiting) >= MAX_IMPORTS:
+            refuse("NOE-E-BOUNDS.IMPORTS", "modules", "transitive module count exceeds its limit")
         visiting.add(module_id)
         path = _module_path(directory, module_id)
         raw = _read_regular(path, f"module.{module_id}", MAX_INPUT_BYTES)
