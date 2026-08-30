@@ -2334,7 +2334,7 @@ def _semantic_facets(graph: dict[str, object]) -> dict[tuple[str, str], object]:
             facets[(node, "gate")] = record[3]
             facets[(node, "scope")] = record[5]
             facets[(node, "evidence_class")] = record[6]
-            facets[(node, "effect")] = record[8]
+            facets[(node, "effect")] = [record[4], record[8]]
         else:
             refuse("NOE-E-TYPE.RECORD", f"graph.records[{index}]", "unknown record in semantic diff")
     modules = graph["modules"]

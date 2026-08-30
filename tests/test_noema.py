@@ -1703,6 +1703,29 @@ class SemanticDiffTests(unittest.TestCase):
         kinds = {entry["kind"] for entry in noema.semantic_diff(self.build, changed)["entries"]}
         self.assertIn("effect", kinds)
 
+    def test_exception_subject_change_is_named_as_an_effect(self):
+        exception = [
+            "exception",
+            "exception.test",
+            [":", "actor", "alice"],
+            ["=", [":", "state", "ready"], [":", "state", "ready"]],
+            [":", "effect", "old"],
+            [":", "scope", "repository"],
+            [":", "evidence", "record"],
+            [":", "value", "never"],
+            ["-", [":", "effect", "recovery"]],
+        ]
+        records = base_records() + [exception]
+        before, _artifacts = compile_records(records)
+        changed_records = json.loads(json.dumps(records))
+        changed_records[-1][4][2] = "new"
+        after, _artifacts = compile_records(changed_records)
+        kinds = {
+            entry["kind"]
+            for entry in noema.semantic_diff(before, after)["entries"]
+        }
+        self.assertIn("effect", kinds)
+
     def test_source_binding_change_is_named(self):
         records = json.loads(json.dumps(self.build["graph"]["records"]))
         records[4][3][4] = "9"
