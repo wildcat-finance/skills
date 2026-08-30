@@ -59,6 +59,13 @@ def workflow_run_blocks(text: str) -> list[str]:
     return blocks
 
 
+def scratch_directory(prefix: str = "commit-identity-"):
+    """Keep fixture churn under the repository's ignored scratch anchor."""
+    scratch = ROOT / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
+
+
 policy = load_module("commit_identity_under_test", POLICY_PATH)
 contributors = load_module("contributors_under_test", SCRIPTS / "contributors.py")
 hexctl = load_module("hexctl_identity_policy_under_test", HEXCTL_PATH)
@@ -142,8 +149,7 @@ SHOGGOTH = {
 
 @contextmanager
 def candidate_repository(changes=(), *, base_change=None, shallow=False):
-    temporary_root = Path(tempfile.gettempdir()).resolve()
-    with tempfile.TemporaryDirectory(dir=temporary_root) as directory:
+    with scratch_directory() as directory:
         root = Path(directory)
         source = root / "source"
         bare = root / "candidate.git"
