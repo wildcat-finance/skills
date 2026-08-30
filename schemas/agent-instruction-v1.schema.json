@@ -64,11 +64,12 @@
     },
     "decimal": {
       "type": "string",
-      "pattern": "^(0|[1-9][0-9]*)$"
+      "pattern": "^(0|[1-9][0-9]*)$",
+      "maxLength": 65000
     },
     "relativePath": {
       "type": "string",
-      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))[^\\\\\\x00-\\x20]+$",
+      "pattern": "^(?!/)(?!.*//)(?!.*\\/$)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[!-~]+$",
       "minLength": 1,
       "maxLength": 512
     },
@@ -95,7 +96,7 @@
         },
         "value": {
           "type": "string",
-          "maxLength": 65536
+          "maxLength": 65000
         }
       }
     },
@@ -346,7 +347,7 @@
           "$ref": "#/$defs/decimal"
         },
         "reviewer": {
-          "$ref": "#/$defs/literal"
+          "$ref": "#/$defs/reviewer"
         }
       }
     },
@@ -361,6 +362,22 @@
         "inferred",
         "unknown"
       ]
+    },
+    "reviewer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "identifier"
+        },
+        "value": {
+          "$ref": "#/$defs/nodeId"
+        }
+      }
     },
     "promise": {
       "type": "object",
