@@ -1578,6 +1578,20 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
         self.assertEqual(findings, ())
         self.assertIn("exit 1", next(item for item in status.records if item.record_id.endswith(":slither")).reason)
 
+    def test_long_tool_stderr_preserves_the_terminal_failure_reason(self):
+        universe = self._universe()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] == ["slither", "."]:
+                return b"", b"warning\n" * 100 + b"terminal root cause", 1
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, _findings = dead_code.analyse_solidity(self.root, universe)
+        record = next(item for item in status.records if item.record_id.endswith(":slither"))
+        self.assertIn("terminal root cause", record.reason)
+
     def test_tool_timeout_degrades_project(self):
         universe = self._universe()
         successful = self._successful_runner([])
@@ -1625,6 +1639,19 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
             next(item for item in status.records if item.record_id.endswith(":slither")).state,
             "parse-error",
         )
+
+    def test_successful_slither_result_without_detector_key_is_empty_evidence(self):
+        universe = self._universe()
+        payload = json.dumps(
+            {"success": True, "error": None, "results": {}}
+        ).encode()
+        findings, evidence_count = dead_code._slither_findings(
+            payload,
+            project=".",
+            universe=universe,
+        )
+        self.assertEqual(findings, ())
+        self.assertEqual(evidence_count, 0)
 
     def test_fixed_argv_and_project_cwd_are_used(self):
         universe = self._universe()

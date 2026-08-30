@@ -1812,12 +1812,14 @@ def _invoke_optional_tool(
             detail = decode_output(stderr, f"{argv[0]} stderr").strip()
         except Refusal:
             detail = "non-UTF-8 stderr"
+        if len(detail) > 512:
+            detail = detail[:96] + " ... " + detail[-411:]
         return ToolInvocation(
             "failed",
             stdout,
             stderr,
             duration_ms,
-            f"exit {returncode}" + (f": {detail[:512]}" if detail else ""),
+            f"exit {returncode}" + (f": {detail}" if detail else ""),
         )
     return ToolInvocation("passed", stdout, stderr, duration_ms, None)
 
@@ -1867,7 +1869,9 @@ def _slither_findings(
     if document.get("success") is not True:
         raise Refusal(f"Slither JSON for {project} does not report success")
     results = document.get("results")
-    detectors = results.get("detectors") if isinstance(results, dict) else None
+    if not isinstance(results, dict):
+        raise Refusal(f"Slither JSON for {project} omits results object")
+    detectors = results.get("detectors", [])
     if not isinstance(detectors, list):
         raise Refusal(f"Slither JSON for {project} omits detector results")
     tracked = set(universe.analysed)
