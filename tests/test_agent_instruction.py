@@ -654,6 +654,40 @@ class CanonicalModelTests(RefusalAssertions, unittest.TestCase):
         ]
         self.assertRefusal("WAI-E-CANONICAL.SOURCES", AI.validate_model, model)
 
+    def test_duplicate_source_path_alias_refuses(self):
+        model = minimal_model()
+        model["sources"] = [
+            {"id": "src-a", "path": "source.md", "sha256": "0" * 64},
+            {"id": "src-b", "path": "source.md", "sha256": "0" * 64},
+        ]
+        for binding in model["bindings"]:
+            binding["source"] = "src-a"
+        second = copy.deepcopy(model["sections"][0]["directives"][0])
+        second["id"] = "rule-b"
+        model["sections"][0]["directives"].append(second)
+        model["bindings"].append(
+            {
+                "source": "src-b",
+                "node": "rule-b",
+                "start": "20",
+                "end": "50",
+                "reviewer": reviewer(),
+            }
+        )
+        model["bindings"].sort(
+            key=lambda item: (
+                item["source"],
+                int(item["start"]),
+                int(item["end"]),
+                item["node"],
+                item["reviewer"]["value"],
+            )
+        )
+        self.assertRefusal("WAI-E-REFERENCE.DUPLICATE_SOURCE_PATH", AI.validate_model, model)
+        with mock.patch.object(AI, "validate_model", return_value=model):
+            compact = AI.format_compact(model)
+        self.assertRefusal("WAI-E-REFERENCE.DUPLICATE_SOURCE_PATH", AI.decode_compact, compact)
+
     def test_relation_order_refuses(self):
         model = complete_model()
         model["relations"].reverse()

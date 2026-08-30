@@ -64,8 +64,10 @@ means none.
 
 Ids are lowercase ASCII and match `[a-z][a-z0-9.-]*`. References resolve to
 one declared id of the expected kind. Section and directive arrays preserve
-order. Source, relation, binding, and evidence-class arrays use the canonical
-orders below; duplicate values are rejected rather than collapsed.
+order. Each source path occurs once in a model, so two source ids cannot alias
+the same bytes and bypass span-overlap checks. Source, relation, binding, and
+evidence-class arrays use the canonical orders below; duplicate values are
+rejected rather than collapsed.
 
 JSON input is UTF-8 without a BOM. Duplicate object keys, floating-point
 numbers, JSON numeric values, non-scalar Unicode, and values outside the schema

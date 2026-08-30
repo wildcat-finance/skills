@@ -380,6 +380,7 @@ def validate_model(model: Any) -> dict[str, Any]:
 
     sources = _array(root["sources"], "$.sources", MAX_SOURCES, minimum=1)
     source_ids: list[str] = []
+    source_paths: set[str] = set()
     for index, raw_source in enumerate(sources):
         path = f"$.sources[{index}]"
         source = _object(raw_source, ("id", "path", "sha256"), path)
@@ -387,6 +388,9 @@ def validate_model(model: Any) -> dict[str, Any]:
         state.sources.add(source_id)
         source_ids.append(source_id)
         source_path = _safe_relative_path(source["path"], f"{path}.path")
+        if source_path in source_paths:
+            refuse("WAI-E-REFERENCE.DUPLICATE_SOURCE_PATH", f"{path}.path")
+        source_paths.add(source_path)
         state.compact_literal(source_path, f"{path}.path")
         digest = _string(source["sha256"], f"{path}.sha256")
         if SHA256_RE.fullmatch(digest) is None:
