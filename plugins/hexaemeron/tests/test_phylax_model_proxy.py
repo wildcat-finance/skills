@@ -5621,8 +5621,8 @@ class ConformanceTests(unittest.TestCase):
         skill_root = PLUGIN_ROOT / "skills" / "phylax"
         skill = (skill_root / "SKILL.md").read_text(encoding="utf-8")
         evolution = (skill_root / "EVOLUTION.md").read_text(encoding="utf-8")
-        self.assertIn('metadata:\n  version: "1.4.0"', skill)
-        self.assertIn("- Current version: `phylax-v1.4.0`", evolution)
+        self.assertIn('metadata:\n  version: "1.5.0"', skill)
+        self.assertIn("- Current version: `phylax-v1.5.0`", evolution)
         for unchanged in (
             "- Frontier status: `mature`",
             "- Frontier revision: `off-chain-boundary-controls`",

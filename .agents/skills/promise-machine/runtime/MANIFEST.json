@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 994,
-  "total_bytes": 21513368,
+  "total_bytes": 21529549,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -2619,15 +2619,15 @@
       "source": "plugins/hexaemeron/skills/metron/scripts/metron.py"
     },
     {
-      "bytes": 2983,
+      "bytes": 3500,
       "path": "plugins/hexaemeron/skills/phylax/EVOLUTION.md",
-      "sha256": "0ebd24ade9b2db09fa5992370e3cb60b2c2193154181dd36c54ea2c4c0cad67a",
+      "sha256": "5bcc5d1e3846f64ad0ea89177eeb309a989a8918f4c68726b7534d3ef551904c",
       "source": "plugins/hexaemeron/skills/phylax/EVOLUTION.md"
     },
     {
-      "bytes": 23458,
+      "bytes": 24141,
       "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-      "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d",
+      "sha256": "945c6d103fb333cba8436d860f94aca67f3903083ed6ff79067b96a0c15669f8",
       "source": "plugins/hexaemeron/skills/phylax/SKILL.md"
     },
     {
@@ -2721,9 +2721,9 @@
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py"
     },
     {
-      "bytes": 31593,
+      "bytes": 46574,
       "path": "plugins/hexaemeron/skills/phylax/scripts/phylax.py",
-      "sha256": "52a77227d9489039ec0c85b4deea7eb66c82998a2a26336c99a2668a426102fa",
+      "sha256": "a8c998c586ebc0d3d7ac59fc1867a4b54b5d482f34e1b96aea75a0e4d41cafda",
       "source": "plugins/hexaemeron/skills/phylax/scripts/phylax.py"
     },
     {
