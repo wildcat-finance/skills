@@ -3718,13 +3718,47 @@ def compare_baseline_documents(
         raise Refusal("baseline document drift")
 
 
+def _changed_paths(
+    root: Path,
+    before: str,
+    after: str,
+    label: str,
+    *,
+    root_fd: int,
+) -> tuple[str, ...]:
+    changed_raw = run_git(
+        root,
+        "diff",
+        "--name-only",
+        "-z",
+        f"{before}..{after}",
+        "--",
+        root_fd=root_fd,
+    )
+    return tuple(
+        sorted(
+            validate_repository_path(path, label)
+            for path in changed_raw.split(chr(0))
+            if path
+        )
+    )
+
+
 def require_baseline_publication(
     root: Path,
     source_commit: str,
     current_commit: str,
     *,
     root_fd: int,
-) -> None:
+) -> tuple[str, tuple[str, ...]]:
+    """Establish that the checked-out record was published validly.
+
+    Returns the commit that published the record and the tracked paths that
+    changed after it. A non-empty path list is a currency observation and not
+    a refusal, because the recorded document describes its own source commit
+    and a later commit cannot change that answer.
+    """
+    label = BASELINE_PATH.as_posix()
     if source_commit == current_commit:
         raise Refusal("baseline was not published after its recorded source commit")
     _stdout, _stderr, returncode = run_process(
@@ -3736,36 +3770,62 @@ def require_baseline_publication(
     )
     if returncode != 0:
         raise Refusal("baseline source commit is not an ancestor of the checkout")
-    changed_raw = run_git(
+    discovered = run_git(
         root,
-        "diff",
-        "--name-only",
-        "-z",
-        f"{source_commit}..{current_commit}",
+        "rev-list",
+        "-1",
+        current_commit,
         "--",
+        label,
+        root_fd=root_fd,
+    ).strip()
+    if not discovered:
+        raise Refusal(f"no commit reachable from the checkout published {label}")
+    publication_commit = _require_oid(discovered, "baseline publication commit")
+    changed_after = _changed_paths(
+        root,
+        publication_commit,
+        current_commit,
+        "baseline currency path",
         root_fd=root_fd,
     )
-    changed = {
-        validate_repository_path(path, "baseline publication path")
-        for path in changed_raw.split(chr(0))
-        if path
-    }
-    unexpected = sorted(changed - BASELINE_PUBLICATION_PATHS)
-    if unexpected:
+    if label in changed_after:
         raise Refusal(
-            "baseline is stale; source changed after publication: "
-            + ", ".join(unexpected[:5])
+            f"{label} at the checkout differs from the record published by "
+            f"{publication_commit}"
         )
-    if changed != BASELINE_PUBLICATION_PATHS:
+    published = _changed_paths(
+        root,
+        source_commit,
+        publication_commit,
+        "baseline publication path",
+        root_fd=root_fd,
+    )
+    if set(published) != BASELINE_PUBLICATION_PATHS:
         raise Refusal("baseline publication does not change exactly its owned record")
+    return publication_commit, changed_after
 
 
-def _baseline_summary(document: dict[str, object]) -> str:
+def _baseline_currency(changed_after_publication: tuple[str, ...]) -> str:
+    total = len(changed_after_publication)
+    if not total:
+        return "current; no tracked path changed after publication"
+    listed = ", ".join(changed_after_publication[:5])
+    more = "" if total <= 5 else f" and {total - 5} more"
+    return f"stale; {total} path(s) changed after publication: {listed}{more}"
+
+
+def _baseline_summary(
+    document: dict[str, object],
+    publication_commit: str,
+    changed_after_publication: tuple[str, ...],
+) -> str:
     findings = document["findings"]
     suppressed = [item for item in findings if item["suppressed"]]
     lines = [
         f"{TOOL_ID} {TOOL_VERSION} baseline check  schema {document['schema']}",
         f"source    {document['tree']['commit']}",
+        f"published {publication_commit}",
         f"tree      {document['tree']['git_tree']}",
         f"universe  {document['universe']['id']}",
         "analysers " + ", ".join(
@@ -3781,6 +3841,7 @@ def _baseline_summary(document: dict[str, object]) -> str:
     for item in suppressed:
         symbol = f" {item['symbol']}" if item["symbol"] else ""
         lines.append(f"suppressed {item['analyser_id']} {item['path']}{symbol} {item['id']}")
+    lines.append(f"currency  {_baseline_currency(changed_after_publication)}")
     lines.append("status    matched; candidate count did not gate this command")
     return chr(10).join(lines) + chr(10)
 
@@ -4107,7 +4168,7 @@ def command_baseline(arguments: argparse.Namespace) -> int:
         if raw != _render_json_document(recorded):
             raise Refusal(f"{label} is not canonical JSON")
         source_commit = recorded["tree"]["commit"]
-        require_baseline_publication(
+        publication_commit, changed_after_publication = require_baseline_publication(
             root,
             source_commit,
             current_commit,
@@ -4127,7 +4188,9 @@ def command_baseline(arguments: argparse.Namespace) -> int:
         )
         expected = build_baseline_document(report, suppressions_document, suppressions)
         compare_baseline_documents(recorded, expected)
-        sys.stdout.write(_baseline_summary(recorded))
+        sys.stdout.write(
+            _baseline_summary(recorded, publication_commit, changed_after_publication)
+        )
         return 0
     finally:
         os.close(root_fd)
