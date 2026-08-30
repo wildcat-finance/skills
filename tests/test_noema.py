@@ -1848,6 +1848,142 @@ class SemanticDiffTests(unittest.TestCase):
 
 
 class SliceTests(unittest.TestCase):
+    def test_relation_closure_materializes_the_selectable_index_once(self):
+        effect = "relation.index"
+        records = [["import", "core", CORE_DIGEST]]
+        for index in range(5):
+            records.append(
+                [
+                    "rule",
+                    f"rule.relation.{index}",
+                    ["+", [":", "effect", effect]],
+                    source_binding(index, index + 1),
+                ]
+            )
+        for index in range(4):
+            records.append(
+                [
+                    "precedence",
+                    f"rule.relation.{index}",
+                    f"rule.relation.{index + 1}",
+                    [":", "actor", "reviewer"],
+                    [":", "scope", "repository"],
+                    [":", "evidence", f"relation.{index}"],
+                ]
+            )
+        build, artifacts = compile_records(records)
+        profile = noema._decode_json(
+            artifacts["profile"],
+            "profile",
+            canonical=True,
+        )
+        real_set = set
+        selectable_materializations = 0
+
+        def indexed_set(value=()):
+            nonlocal selectable_materializations
+            if isinstance(value, dict) and any(
+                str(key).startswith("rule.relation.") for key in value
+            ):
+                selectable_materializations += 1
+            return real_set(value)
+
+        with mock.patch.object(noema, "set", indexed_set, create=True):
+            noema.select_runtime(
+                build,
+                profile,
+                sha256(artifacts["profile"]).hexdigest(),
+                runtime_selection(effect),
+            )
+        self.assertEqual(selectable_materializations, 1)
+
+    def test_selection_rules_share_one_truth_expansion_budget(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.guard.a",
+                [
+                    "?",
+                    ["core.checked", [":", "evidence", "guard.a"]],
+                    ["+", [":", "effect", "guard.a"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.guard.b",
+                [
+                    "?",
+                    ["core.checked", [":", "evidence", "guard.b"]],
+                    ["+", [":", "effect", "guard.b"]],
+                ],
+                source_binding(1, 2),
+            ],
+        ]
+        with mock.patch.object(
+            noema,
+            "MAX_TRUTH_EXPANSION_NODES",
+            8,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                select_records(
+                    records,
+                    runtime_selection("absent", target="nowhere"),
+                )
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_manifest_omission_validation_uses_an_included_index(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.included",
+                ["+", [":", "effect", "included"]],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.omitted",
+                ["+", [":", "effect", "omitted"]],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("included"),
+        )
+        original = noema._validate_node_id_set
+
+        class NoLinearMembership(list):
+            def __contains__(self, item):
+                raise AssertionError("omission validation searched the included list")
+
+        def indexed_nodes(value, field):
+            result = original(value, field)
+            if field == "manifest.included_ids":
+                return NoLinearMembership(result)
+            return result
+
+        with mock.patch.object(noema, "_validate_node_id_set", indexed_nodes):
+            noema._validate_manifest_value(manifest)
+
+    def test_unsealed_runtime_objects_refuse_before_deep_validation(self):
+        class TraversalTrap(dict):
+            def __iter__(self):
+                raise AssertionError("unsealed data was traversed")
+
+        with self.assertRaises(noema.Refusal) as build_raised:
+            noema._runtime_build(TraversalTrap())
+        self.assertEqual(build_raised.exception.code, "NOE-E-DIGEST.BUILD")
+        with self.assertRaises(noema.Refusal) as manifest_raised:
+            noema._runtime_manifest(TraversalTrap())
+        self.assertEqual(
+            manifest_raised.exception.code,
+            "NOE-E-DIGEST.MANIFEST",
+        )
+
     def test_slice_closure_has_a_closed_scan_budget(self):
         records = [["import", "core", CORE_DIGEST]]
         links = [f"link.{index}" for index in range(4)]
@@ -2190,6 +2326,117 @@ class SliceTests(unittest.TestCase):
 
 
 class PolicyCheckTests(unittest.TestCase):
+    def test_policy_rules_share_one_directive_expansion_budget(self):
+        effect = "directive.aggregate"
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.directive.a",
+                ["+", [":", "effect", effect]],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.directive.b",
+                ["+", [":", "effect", effect]],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        with mock.patch.object(
+            noema,
+            "MAX_DIRECTIVE_EXPANSION_NODES",
+            5,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_policy_rules_share_one_truth_expansion_budget(self):
+        effect = "truth.aggregate"
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.truth.a",
+                [
+                    "?",
+                    ["core.checked", [":", "evidence", "truth.a"]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.truth.b",
+                [
+                    "?",
+                    ["core.checked", [":", "evidence", "truth.b"]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        with mock.patch.object(
+            noema,
+            "MAX_TRUTH_EXPANSION_NODES",
+            5,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_high_consequence_controller_supplies_the_authority(self):
+        effect = "authority.controller"
+        consequence = [":", "core.consequence", "3"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.early.unwrapped",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.late.authorized",
+                [
+                    "^",
+                    [":", "actor", "operator"],
+                    [
+                        ";",
+                        ["!", ["=", consequence, consequence]],
+                        ["+", [":", "effect", effect]],
+                    ],
+                ],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect, authority=("operator",)),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+        self.assertEqual(
+            result["output"]["controlling_node"],
+            "rule.late.authorized",
+        )
+
     def test_allowed_consequence_zero_case_permits(self):
         _build, selection, manifest, _projection = runtime_fixture()
         result = noema.check_runtime("inspect", selection["facts"], manifest)
@@ -2682,6 +2929,40 @@ class PolicyCheckTests(unittest.TestCase):
             ("refuse", "invalid-exception"),
         )
 
+    def test_exception_recovery_effect_is_not_its_policy_subject(self):
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.recover",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", "recover"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "exception",
+                "exception.deploy",
+                [":", "actor", "admin"],
+                ["core.checked", [":", "evidence", "emergency"]],
+                [":", "effect", "deploy"],
+                [":", "scope", "repository"],
+                [":", "evidence", "emergency"],
+                [":", "value", "expired"],
+                ["+", [":", "effect", "recover"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("recover"),
+        )
+        self.assertIn("exception.deploy", manifest["included_ids"])
+        result = noema.check_runtime("recover", [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
     def test_valid_exception_cannot_mint_permission(self):
         effect = "exception.valid"
         evidence = [":", "evidence", "exception.valid"]
@@ -3169,6 +3450,50 @@ class PolicyCheckTests(unittest.TestCase):
 
 
 class TransitionTests(unittest.TestCase):
+    def test_transitions_share_one_truth_expansion_budget(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.move",
+                ["+", [":", "effect", "move"]],
+                source_binding(0, 1),
+            ],
+            [
+                "transition",
+                "transition.budget.a",
+                [":", "state", "machine"],
+                [":", "state", "idle"],
+                [":", "event", "go"],
+                ["core.checked", [":", "evidence", "transition.a"]],
+                [":", "state", "ready.a"],
+                ["+", [":", "effect", "step.a"]],
+            ],
+            [
+                "transition",
+                "transition.budget.b",
+                [":", "state", "machine"],
+                [":", "state", "idle"],
+                [":", "event", "go"],
+                ["core.checked", [":", "evidence", "transition.b"]],
+                [":", "state", "ready.b"],
+                ["+", [":", "effect", "step.b"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("move", state="idle"),
+        )
+        with mock.patch.object(
+            noema,
+            "MAX_TRUTH_EXPANSION_NODES",
+            5,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.next_runtime("machine", "idle", "go", [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
     def test_transition_expands_its_typed_state_definition(self):
         gate = ["=", [":", "state", "idle"], [":", "state", "idle"]]
         records = [
@@ -3388,13 +3713,13 @@ class LiteralTests(unittest.TestCase):
         self.assertEqual(raised.exception.field, "literal")
         self.assertNotIn("touch", raised.exception.message)
 
-    def test_literal_inventory_drift_refuses(self):
+    def test_unsealed_literal_manifest_refuses_before_inventory_validation(self):
         _build, _selection, manifest, _projection = runtime_fixture()
         hostile = json.loads(json.dumps(manifest))
         hostile["literals"] = []
         with self.assertRaises(noema.Refusal) as raised:
             noema.literal_runtime("lit.instruction", hostile)
-        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.TAPE")
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MANIFEST")
 
 
 class ExplainTests(unittest.TestCase):
@@ -3427,12 +3752,12 @@ class ExplainTests(unittest.TestCase):
         with self.assertRaises(noema.Refusal):
             noema.check_runtime("inspect", [explanation], manifest)
 
-    def test_explanation_cannot_be_consumed_as_manifest(self):
+    def test_unsealed_explanation_cannot_be_consumed_as_manifest(self):
         _build, _selection, manifest, _projection = runtime_fixture()
         explanation = noema.explain_runtime("rule.inspect", manifest)["output"]
         with self.assertRaises(noema.Refusal) as raised:
             noema.explain_runtime("rule.inspect", explanation)
-        self.assertEqual(raised.exception.code, "NOE-E-TYPE.KEYS")
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MANIFEST")
 
     def test_explanation_is_deterministic(self):
         _build, _selection, manifest, _projection = runtime_fixture()

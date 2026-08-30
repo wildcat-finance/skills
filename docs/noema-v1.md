@@ -335,10 +335,12 @@ when supplied, the result states whether the exact manifest identity changed.
 In-process policy operations accept only a freshly selected manifest or the
 fully rederived result of artifact verification. Deserialized manifest data
 must cross that verifier; structural validity alone does not establish its
-provenance, and mutation after verification invalidates the manifest. Slice
-selection likewise accepts only a locally compiled or fully artifact-verified
-build, and hashes the complete validated profile value against its locked
-digest before deriving a manifest.
+provenance, so an unsealed in-process value refuses before deep validation and
+mutation after verification invalidates the manifest. Artifact verification
+validates omission membership and fact evidence through precomputed indexes.
+Slice selection likewise accepts only a locally compiled or fully
+artifact-verified build, and hashes the complete validated profile value
+against its locked digest before deriving a manifest.
 
 Policy evaluation first expands only locked pure definitions. A checked fact
 can settle any exact proposition whose closed evaluation is unknown; a fact
@@ -368,6 +370,12 @@ retained as policy and recovery context but cannot by itself cancel a
 prohibition or mint authority in this shadow runtime. Any relevant exception
 without applicable authority and scope, established gate and record evidence,
 and an active expiry refuses before permission can be granted.
+Relevance is determined by the exception's declared effect subject. Its
+recovery directive remains slice context and does not make the exception a
+policy constraint on that recovery effect.
+For a permitted consequence-2 or consequence-3 effect, the reported
+controlling node is one applicable permission that supplied that authority,
+not an earlier unwrapped permission.
 
 Pure definitions are expanded before runtime code reads typed fields as well
 as directive bodies. Defined actors and scopes therefore govern overrides and
@@ -401,8 +409,8 @@ Version 1 applies every limit before returning a partial graph or result:
 | all decoded literal occurrences | 786,432 bytes |
 | expanded macro graph | 65,536 nodes |
 | slice fixed-point scans | 65,536 records |
-| one recursive directive walk | 65,536 expanded nodes |
-| one recursive truth evaluation | 65,536 expanded nodes |
+| one policy directive pass | 65,536 expanded nodes |
+| one selection, policy or transition truth pass | 65,536 expanded nodes |
 | policy requirement pairs | 65,536 |
 | one finite quantifier set | 4,096 members |
 | one derived output | 1,048,576 bytes |
@@ -416,11 +424,11 @@ Expanded-macro accounting substitutes an argument at every occurrence of its
 formal parameter; the macro-call node itself is absent from the expanded graph.
 Slice closure refuses before repeated fixed-point passes inspect more than
 65,536 record entries in aggregate.
-One shared directive counter covers the initial directive and every nested
-guard, authority, scope or sequence child visited while deriving intents.
-One shared counter covers the initial proposition and every recursively
-evaluated Boolean or quantified child, so quantifier substitution cannot reset
-the expansion budget per member.
+One shared directive counter covers every rule and every nested guard,
+authority, scope or sequence child visited by one `check` operation. One shared
+truth counter covers every proposition and recursively evaluated Boolean or
+quantified child visited by one `select`, `check` or `next` operation, so
+record boundaries and quantifier substitution cannot reset the work budget.
 Policy evaluation expands each requirement once, indexes override edges and
 refuses before comparing more than 65,536 requirement pairs.
 

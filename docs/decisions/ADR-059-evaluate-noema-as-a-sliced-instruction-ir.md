@@ -83,6 +83,12 @@ Runtime substitution respects nested binder shadowing, expanded finite sets
 have set rather than multiset semantics, and decimal order is independent of
 the host interpreter's integer conversion ceiling. Recursive evaluation keeps
 authored subfact identities beside their expanded terms.
+Runtime work counters span complete operations rather than resetting at rule
+or transition boundaries. Selection and manifest validation precompute their
+membership indexes, and unsealed in-process policy inputs refuse before a deep
+walk. A high-consequence permit reports the permission that supplied its
+applicable authority as the controlling node. Exception recovery remains
+reachable context without becoming the exception's checked policy subject.
 
 ## Alternatives
 
