@@ -1571,6 +1571,30 @@ def _projection_aliases(profile: dict[str, object], graph: dict[str, object]) ->
     return aliases
 
 
+def _projection_lock(value: object) -> dict[str, object]:
+    lock = _exact_keys(
+        value,
+        {"schema", "source_sha256", "graph_sha256", "compiler_sha256", "kernel_sha256", "profile_sha256", "modules"},
+        "projection.lock",
+    )
+    if lock["schema"] != "noema-lock/v1":
+        refuse("NOE-E-TYPE.VERSION", "projection.lock.schema", "unsupported lock schema")
+    for key in ("source_sha256", "graph_sha256", "compiler_sha256", "kernel_sha256", "profile_sha256"):
+        _digest(lock[key], f"projection.lock.{key}")
+    modules = lock["modules"]
+    if not isinstance(modules, list) or len(modules) > MAX_IMPORTS:
+        refuse("NOE-E-BOUNDS.IMPORTS", "projection.lock.modules", "lock module count exceeds its limit")
+    previous = ""
+    for index, value in enumerate(modules):
+        module = _exact_keys(value, {"id", "sha256"}, f"projection.lock.modules[{index}]")
+        module_id = _identifier(module["id"], f"projection.lock.modules[{index}].id")
+        _digest(module["sha256"], f"projection.lock.modules[{index}].sha256")
+        if module_id <= previous:
+            refuse("NOE-E-SYNTAX.ORDER", "projection.lock.modules", "lock modules must be unique and sorted")
+        previous = module_id
+    return lock
+
+
 def project_build(
     build: dict[str, object],
     profile: dict[str, object],
@@ -1598,6 +1622,7 @@ def project_build(
     }
     bundle = {
         "schema": PROJECTION_SCHEMA,
+        "lock": lock,
         "manifest": manifest,
         "text": projection.decode("utf-8"),
     }
@@ -1609,7 +1634,7 @@ def project_build(
 
 
 def recover_projection(bundle_value: object, profile: dict[str, object]) -> dict[str, object]:
-    bundle = _exact_keys(bundle_value, {"schema", "manifest", "text"}, "projection")
+    bundle = _exact_keys(bundle_value, {"schema", "lock", "manifest", "text"}, "projection")
     if bundle["schema"] != PROJECTION_SCHEMA:
         refuse("NOE-E-TYPE.VERSION", "projection.schema", "unsupported projection bundle")
     manifest = _exact_keys(
@@ -1621,6 +1646,11 @@ def recover_projection(bundle_value: object, profile: dict[str, object]) -> dict
         refuse("NOE-E-TYPE.VERSION", "projection.manifest.schema", "unsupported projection manifest")
     for key in ("graph_sha256", "lock_sha256", "profile_sha256", "aliases_sha256", "projection_sha256"):
         _digest(manifest[key], f"projection.manifest.{key}")
+    lock = _projection_lock(bundle["lock"])
+    if sha256(_canonical_json(lock)).hexdigest() != manifest["lock_sha256"]:
+        refuse("NOE-E-DIGEST.LOCK", "projection", "projection manifest binds different lock bytes")
+    if lock["graph_sha256"] != manifest["graph_sha256"] or lock["profile_sha256"] != manifest["profile_sha256"]:
+        refuse("NOE-E-DIGEST.LOCK", "projection", "projection lock and manifest identities differ")
     if sha256(_canonical_json(profile)).hexdigest() != manifest["profile_sha256"]:
         refuse("NOE-E-DIGEST.PROFILE", "projection", "projection manifest binds different profile bytes")
     aliases = profile.get("aliases")

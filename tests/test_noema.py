@@ -948,10 +948,19 @@ class ProjectionTests(unittest.TestCase):
     def test_manifest_profile_mismatch_refuses(self):
         bundle = noema.project_build(self.build, self.profile, self.profile_digest)
         bundle["manifest"]["profile_sha256"] = "0" * 64
+        bundle["lock"]["profile_sha256"] = "0" * 64
+        bundle["manifest"]["lock_sha256"] = sha256(noema._canonical_json(bundle["lock"])).hexdigest()
         bundle["manifest"]["projection_sha256"] = sha256(bundle["text"].encode()).hexdigest()
         with self.assertRaises(noema.Refusal) as raised:
             noema.recover_projection(bundle, self.profile)
         self.assertEqual(raised.exception.code, "NOE-E-DIGEST.PROFILE")
+
+    def test_manifest_lock_mismatch_refuses(self):
+        bundle = noema.project_build(self.build, self.profile, self.profile_digest)
+        bundle["manifest"]["lock_sha256"] = "0" * 64
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.recover_projection(bundle, self.profile)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.LOCK")
 
 
 class SemanticDiffTests(unittest.TestCase):

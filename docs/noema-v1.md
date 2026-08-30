@@ -178,8 +178,9 @@ tokenizer revisions do not share their meaning.
 `NT1 <profile-sha256> <graph-sha256>`, one canonical JSON graph line and a final
 LF. The graph line substitutes exact strings using the profile. Its
 `noema-projection-manifest/v1` binds graph, lock, profile, alias-list and
-projection digests. Inverse substitution must recover the byte-identical graph
-before the bundle is returned.
+projection digests. The projection bundle carries the closed lock whose digest
+the manifest names. Inverse substitution must recover the byte-identical graph,
+and lock graph/profile identities must agree, before the bundle is returned.
 
 Aliases are injective across reserved opcodes, qualified predicates, literal
 ids and values visible in the same slice. Arity does not disambiguate an alias.

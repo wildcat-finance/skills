@@ -697,9 +697,10 @@
     "projection": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schema", "manifest", "text"],
+      "required": ["schema", "lock", "manifest", "text"],
       "properties": {
         "schema": { "const": "noema-projection/v1" },
+        "lock": { "$ref": "#/$defs/lock" },
         "manifest": { "$ref": "#/$defs/projectionManifest" },
         "text": { "type": "string", "minLength": 1, "maxLength": 1048576 }
       }
