@@ -176,6 +176,23 @@ class BrevitasTests(unittest.TestCase):
             {GIT_FULL_LOWER, GIT_SHORT_LOWER, GIT_SHORT_UPPER, "abc1234"},
         )
 
+    def test_markdown_code_context_requires_matching_backtick_runs(self) -> None:
+        admitted = ("`abc1234`", "``abc1234``", "````abc1234````")
+        refused = (
+            "``abc1234`",
+            "`abc1234``",
+            "``abc1234```",
+            "````abc1234```",
+            "```abc1234````",
+            "`abc1234",
+        )
+        for source in admitted:
+            with self.subTest(source=source):
+                self.assertEqual(self.category(source, "Git object id"), {"abc1234"})
+        for source in refused:
+            with self.subTest(source=source):
+                self.assertEqual(self.category(source, "Git object id"), set())
+
     def test_each_explicit_git_label_admits_an_abbreviation(self) -> None:
         labels = ("git", "commit", "sha", "sha-1", "oid", "ref", "head", "base", "parent", "tree")
         source = " ".join(f"{label}: {index:07x}" for index, label in enumerate(labels, start=1))

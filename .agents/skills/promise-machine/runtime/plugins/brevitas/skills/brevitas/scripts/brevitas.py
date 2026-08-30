@@ -75,7 +75,7 @@ GIT_FULL_OID_RE = re.compile(
     r"(?<!0x)(?<!0X)(?<![a-fA-F0-9])[a-fA-F0-9]{40}(?![a-fA-F0-9])"
 )
 GIT_CODE_OID_RE = re.compile(
-    r"(?P<ticks>`{1,3})(?P<oid>[a-fA-F0-9]{7,39})(?P=ticks)"
+    r"(?<!`)(?P<ticks>`+)(?!`)(?P<oid>[a-fA-F0-9]{7,39})(?P=ticks)(?!`)"
 )
 GIT_LABEL_OID_RE = re.compile(
     r"(?<![A-Za-z0-9_-])"
