@@ -1,0 +1,23 @@
+{
+  "name": "homologia",
+  "displayName": "Homologia",
+  "version": "0.1.0",
+  "description": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
+  "author": {
+    "name": "Wildcat Labs",
+    "url": "https://wildcat.finance"
+  },
+  "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/homologia",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "solidity",
+    "python",
+    "typescript",
+    "differential-testing",
+    "fixed-point",
+    "rounding",
+    "wildcat"
+  ],
+  "skills": "./skills/"
+}

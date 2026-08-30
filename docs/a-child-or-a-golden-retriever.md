@@ -65,10 +65,11 @@ keeps inspection, repair, rerun, and safe exit available.
 
 ## The first safe action
 
-Use a local coding harness that can keep the repository available, sign commits
-as the contributing actor, and publish through the right account. If Hexaemeron
-is not installed, follow [INSTALL.md](../INSTALL.md). Then open the target
-repository and read its `AGENTS.md` before asking for work.
+Use a local coding harness that can keep the repository available and preserve
+the contributing actor as author. Before publication, make sure an explicitly
+authorised publisher has a signing key and account the repository accepts. If
+Hexaemeron is not installed, follow [INSTALL.md](../INSTALL.md). Then open the
+target repository and read its `AGENTS.md` before asking for work.
 
 <!-- primer-first-action:start -->
 First safe action: Open the target repository in a local coding harness, read its `AGENTS.md`, install Hexaemeron from `INSTALL.md`, then explicitly say: `Run Fiat for: <one small, named outcome>.`
@@ -84,7 +85,7 @@ Fiat is explicit-only. Talking about a delivery, mentioning Hex, or calling
 someone Shog does not start it.
 
 <!-- primer-stop-rule:start -->
-Stop when: The target repository denies the action, the controller says `blocked` or `audit-verdict`, a gate fails, or the harness cannot sign and publish as the contributing actor. Keep the state and evidence; repair or ask before continuing.
+Stop when: The target repository denies the action, the controller says `blocked` or `audit-verdict`, a gate fails, or no explicitly authorised publisher has a repository-valid signing key and account. Keep the state and evidence; repair or ask before continuing.
 <!-- primer-stop-rule:end -->
 
 Do not skip a red gate, reconstruct progress from chat, move an in-progress

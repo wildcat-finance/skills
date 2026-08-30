@@ -7,8 +7,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY = ROOT / "SHOGGOTH.md"
-CONTRACT = "shoggoth-collective/v2"
-EXPECTED_SHA256 = "e983c7e7cc170190bc04b2dcf5de207f8e27051c9dba99480f6ab0c559607fce"
+CONTRACT = "shoggoth-collective/v3"
+EXPECTED_SHA256 = "b6cef0339e10c102d3cee2a83a9d8f7ae9ad0c45c26af4086eabd0f2730386a4"
 
 
 class ShoggothIdentityTests(unittest.TestCase):
@@ -52,6 +52,11 @@ class ShoggothIdentityTests(unittest.TestCase):
         self.assertIn("The human remains the Git author and signer", text)
         self.assertIn("publishes through their own GitHub account", text)
         self.assertIn("Never request, copy, upload or provision those Shoggoth credentials", text)
+        self.assertIn("Git authorship and publication are separate roles", text)
+        self.assertIn("committer and signer and uses their own repository account", text)
+        self.assertIn("while Shoggoth remains the author", text)
+        self.assertIn("Without explicit authority and a repository-valid signing route", text)
+        self.assertIn("An authorised human publisher of Shoggoth-authored work is not a human contributor", text)
         self.assertIn("may retain the host's ordinary authorship", text)
 
 

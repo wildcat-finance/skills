@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.12",
+      "version": "1.6.13",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -47,6 +47,28 @@
         "fuzzing",
         "solidity",
         "receipts"
+      ]
+    },
+    {
+      "name": "homologia",
+      "displayName": "Homologia",
+      "source": "./plugins/homologia",
+      "description": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/homologia",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "solidity",
+        "differential-testing",
+        "fixed-point",
+        "rounding",
+        "evidence",
+        "parity"
       ]
     },
     {

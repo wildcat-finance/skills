@@ -50,9 +50,9 @@ CONTRIBUTOR_PDF = ROOT / "docs" / "pdf" / "how-to-help-shoggoth.pdf"
 
 KIT_DIGEST = "e09eb107921ab52e467bae54e3e605f2e01fa258df7c12529be44fc486d71218"
 COVER_DIGEST = "5763ab9da93a3bd3420d2e905eef9525dbeb2e642f3121d8ad76c38d9f9cc32a"
-HEX_VERSION = "1.6.12"
+HEX_VERSION = "1.6.13"
 STUDY_HEX_VERSION = "1.6.9"
-FIAT_VERSION = "5.38.1"
+FIAT_VERSION = "5.39.1"
 STUDY_FIAT_VERSION = "5.34.1"
 PROMPT_DIGESTS = (
     "5e2c721d2ac5fb76106aa9047f0e3b887d6b66c0c14f44f287a6584b2022b157",
@@ -142,10 +142,10 @@ EXPECTED_BINARY_DIGESTS = {
         "5fa9dd3da85d34721a2d35debdb4e299d2ae281a4dafc42ea903cb8f649bf2d3"
     ),
     "docs/pdf/a-child-or-a-golden-retriever.pdf": (
-        "e562f12cbfbff650316c4f00a56f9f2ba474290940061d32752480cd553cbdf6"
+        "914f597f12bb9b95ba4420204df4b1e945bb05eefe109489d452e08321527755"
     ),
     "docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf": (
-        "09c666e63545ebc5b5f69252467a5250fa3a51dc4e1e154aeb36e0a1125c4764"
+        "094472325b38d5bac46d16c7d510a261ba17447044c2d9ba46b1aa19c1164463"
     ),
 }
 REQUIRED_FILES = {
@@ -379,6 +379,11 @@ class ChildOrGoldenRetrieverPrimerTests(unittest.TestCase):
             "checkpoint, but it must verify that checkpoint before doing anything else.",
             primer,
         )
+        self.assertIn(
+            "no explicitly authorised publisher has a repository-valid signing key and account",
+            primer,
+        )
+        self.assertNotIn("sign and publish as the contributing actor", primer)
 
     def test_fiat_routes_a_checkpoint_arrival_before_fresh_initialization(self) -> None:
         fiat = FIAT_SKILL.read_text(encoding="utf-8")

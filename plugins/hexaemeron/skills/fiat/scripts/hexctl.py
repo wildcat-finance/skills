@@ -9302,6 +9302,14 @@ HOST_PR_LOGINS = frozenset(
         "copilot[bot]",
     }
 )
+"""Runtime host accounts, which ADR-016 forbids as an author.
+
+Membership is a refusal, so this set holds runtime hosts and nothing else. A
+delivery agent that opens its own pull requests under a GitHub App identity is
+the contributing actor rather than a host, and belongs nowhere near this set:
+adding it would refuse every pull request it opens. `GITHUB_LOGIN_RE` already
+accepts a `[bot]` login for that reason.
+"""
 COAUTHOR_RE = re.compile(
     r"^Co-authored-by:\s*(?P<name>.+?)\s*<(?P<email>[^<>]+)>$",
     re.IGNORECASE,
@@ -9350,6 +9358,12 @@ CAUSE_HOST_AUTHOR = (
     "Claude <noreply@anthropic.com>; set git user.name and user.email to the "
     "contributing actor and recreate the commit."
 )
+# verify_local_commit committer and commit_attribution (ADR-052).
+CAUSE_HOST_COMMITTER = (
+    "The usual cause is the runtime host's default committer identity; use the "
+    "explicitly authorised publisher's own name, address and signing key, then "
+    "recreate the commit without changing its author."
+)
 # verify_local_commit co-author and message_coauthors (ADR-016; the study's
 # section 4 table).
 CAUSE_HOST_COAUTHOR = (
@@ -9367,8 +9381,8 @@ CAUSE_HOST_BYLINE = (
 # inspect_pull_request author (ADR-016; the study's section 4 table).
 CAUSE_HOST_PR_AUTHOR = (
     "The pull request was opened under the host app's GitHub identity, such "
-    "as claude[bot]; open it from the contributing actor's own account "
-    "instead."
+    "as claude[bot]; open it from the human contributor's account, or from "
+    "the explicitly authorised publisher's account for Shoggoth work."
 )
 # inspect_pull_request byline (ADR-016; the study's section 4 table).
 CAUSE_HOST_PR_BYLINE = (
@@ -9379,8 +9393,9 @@ CAUSE_HOST_PR_BYLINE = (
 )
 # checked_login (ADR-016; the study's section 4 table).
 CAUSE_HOST_ACCOUNT = (
-    "The commit was pushed under the host app's account; hand off before "
-    "publication and push as the contributing actor."
+    "The GitHub response links this identity to a runtime host account; use "
+    "the human contributor's account for their work, or the explicitly "
+    "authorised publisher's account for Shoggoth work."
 )
 
 
@@ -9515,6 +9530,26 @@ def commit_author(
     fields = tool_text(data, f"{label} commit author").rstrip("\n").split("\0")
     if len(fields) != 2 or not all(field.strip() for field in fields):
         die(f"{label} commit {commit_sha} author identity is malformed")
+    return fields[0], fields[1]
+
+
+def commit_committer(
+    base_dir: str,
+    commit_sha: str,
+    label: str,
+    *,
+    native_relation: bool = False,
+) -> tuple[str, str]:
+    """Read the actor who created the exact commit, separately from its author."""
+    data = _exact_commit_git(
+        base_dir,
+        ["show", "-s", "--no-show-signature", "--format=%cn%x00%ce", commit_sha],
+        f"{label} commit {commit_sha} committer cannot be read",
+        native_relation=native_relation,
+    )
+    fields = tool_text(data, f"{label} commit committer").rstrip("\n").split("\0")
+    if len(fields) != 2 or not all(field.strip() for field in fields):
+        die(f"{label} commit {commit_sha} committer identity is malformed")
     return fields[0], fields[1]
 
 
@@ -9697,6 +9732,17 @@ def verify_local_commit(
         die(
             f"{label} commit {commit_sha} uses a runtime host as author; "
             f"use Shoggoth or preserve the human contributor. {CAUSE_HOST_AUTHOR}"
+        )
+    committer_name, committer_email = commit_committer(
+        base_dir,
+        commit_sha,
+        label,
+        native_relation=native_relation,
+    )
+    if is_host_identity(committer_name, committer_email):
+        die(
+            f"{label} commit {commit_sha} uses a runtime host as committer. "
+            f"{CAUSE_HOST_COMMITTER}"
         )
     body = tool_text(
         _exact_commit_git(
@@ -10035,7 +10081,7 @@ def require_github_verified(payload: dict, commit_sha: str) -> None:
 
 
 def commit_attribution(payload: dict, commit_sha: str) -> dict:
-    """Who GitHub says wrote one commit, recorded without an address.
+    """Who GitHub names as author and committer, without either address.
 
     The linked account is the identity, because one person may hold several
     addresses and one account. The digest corroborates it, and carries the
@@ -10048,12 +10094,25 @@ def commit_attribution(payload: dict, commit_sha: str) -> dict:
     name, email = checked_identity(commit.get("author"), label)
     if is_host_identity(name, email):
         die(f"{label} names a runtime host as author. {CAUSE_HOST_AUTHOR}")
+    committer_label = f"{label} committer"
+    committer_name, committer_email = checked_identity(
+        commit.get("committer"), committer_label
+    )
+    if is_host_identity(committer_name, committer_email):
+        die(
+            f"{committer_label} names a runtime host. {CAUSE_HOST_COMMITTER}"
+        )
     return {
         "commit": commit_sha,
         "login": checked_login(payload.get("author"), label),
         "name": name,
         "email_sha256": identity_digest(email),
         "coauthors": message_coauthors(commit.get("message"), label),
+        "committer": {
+            "login": checked_login(payload.get("committer"), committer_label),
+            "name": committer_name,
+            "email_sha256": identity_digest(committer_email),
+        },
     }
 
 
@@ -10084,13 +10143,14 @@ def identity_label(identity: dict) -> str:
 
 
 def recorded_run_attribution(state: dict) -> list[dict]:
-    """Every identity this run's receipts recorded, in step order.
+    """Every primary author this run's receipts recorded, in step order.
 
     A step whose push evidence was repaired at merge time carries a fresher
     container on the merge record, because the recorded push attribution
     describes commits that are no longer the branch tip. The fresher one wins.
     A legacy receipt carries none, and contributes nothing rather than
-    refusing.
+    refusing. A nested committer is publication evidence, not an authorship
+    identity, so it stays in the push receipt and does not enter this view.
     """
     identities = []
     merges = as_dict(as_dict(state.get("integrate")).get("merges"))
@@ -10112,7 +10172,8 @@ def recorded_run_attribution(state: dict) -> list[dict]:
                 record.get("commit"), str
             ):
                 die(f"step {step['n']} recorded a malformed attribution entry")
-            identities.append({"step": step["n"], **record})
+            author = {key: value for key, value in record.items() if key != "committer"}
+            identities.append({"step": step["n"], **author})
     return identities
 
 
@@ -10139,7 +10200,7 @@ def attribution_carriers(state: dict, identity: dict, merge_sha: str) -> list[st
 
 
 def merged_attribution(base_dir: str, state: dict, merge_sha: str) -> dict:
-    """Whether the base still carries every identity the run published under.
+    """Whether the base still carries every primary author the run recorded.
 
     Two mechanisms count. A merge commit leaves every recorded commit
     reachable from the base, which is the ordinary case and needs no further

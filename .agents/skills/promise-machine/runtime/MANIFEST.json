@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 982,
-  "total_bytes": 21397871,
+  "file_count": 994,
+  "total_bytes": 21517269,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -50,16 +50,16 @@
   ],
   "files": [
     {
-      "bytes": 6738,
+      "bytes": 6902,
       "path": ".agents/skills/promise-machine/SKILL.md",
-      "sha256": "72a09f7377969b6bfa051793b56ee29976e2981e0c2ed475f2b89b1b1829349f",
+      "sha256": "ba91643be5e89f160514973df86d80505dd5ce097cd04c7f67c0c47a2d179a01",
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "8d3a839e5ab8e78ce1f5c4decf6cd3d4429d3456fd3a0329ed5cb39264df9c9f",
+      "sha256": "b74c7efd3f4234a29572a7afe107f89499f9b58aea9ba89644d974bb5c5fb011",
       "source": null
     },
     {
@@ -69,9 +69,9 @@
       "source": ".python-version"
     },
     {
-      "bytes": 12923,
+      "bytes": 13407,
       "path": "AGENTS.md",
-      "sha256": "3cd8527bbc8b8a76c18d1bcf4e0a96f365fb10385a6c2042b36615ce3e10b090",
+      "sha256": "6de99def3abd65a24dac0410fb3e397a0c966644f30248b3bfc95a4bfbe68580",
       "source": "AGENTS.md"
     },
     {
@@ -87,9 +87,9 @@
       "source": "PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3523,
+      "bytes": 4230,
       "path": "SHOGGOTH.md",
-      "sha256": "e983c7e7cc170190bc04b2dcf5de207f8e27051c9dba99480f6ab0c559607fce",
+      "sha256": "b6cef0339e10c102d3cee2a83a9d8f7ae9ad0c45c26af4086eabd0f2730386a4",
       "source": "SHOGGOTH.md"
     },
     {
@@ -1677,6 +1677,18 @@
       "source": "plugins/hexaemeron/docs/elenchus-structured-runner-reports/study.md"
     },
     {
+      "bytes": 3817,
+      "path": "plugins/hexaemeron/docs/fiat-author-publisher-separation/runbook.md",
+      "sha256": "25d9a1d1a28777563248a59a7509636c9ebd4cd089756bb779af731415807b3f",
+      "source": "plugins/hexaemeron/docs/fiat-author-publisher-separation/runbook.md"
+    },
+    {
+      "bytes": 11979,
+      "path": "plugins/hexaemeron/docs/fiat-author-publisher-separation/study.md",
+      "sha256": "7e30f7cbfb8e88653d3b8d95c4ad8ead3a488722beabd23db92b5c8a5efddd1a",
+      "source": "plugins/hexaemeron/docs/fiat-author-publisher-separation/study.md"
+    },
+    {
       "bytes": 4199,
       "path": "plugins/hexaemeron/docs/fiat-bound-step-merge/proof.md",
       "sha256": "7b9e609b3d7fd197ee3d6e70d862adddf4e09b80889d896053b2f2cf0a25a33a",
@@ -1899,15 +1911,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 48341,
+      "bytes": 49700,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "846b85db34839758809e65c757742b5446c56301a35c97a296fb46299a150399",
+      "sha256": "77191d33c79fc2c1a16ee855f241a42375cedad7a13e747ce5c451618bf60690",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 61583,
+      "bytes": 62417,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "90ce1a7d3037b799b85be31d960689bd92ed1ea04d463150730a9c5237728903",
+      "sha256": "d7eccc1d68142a7dd4d401a8316b8c6f2de2f56bc4e1375c65f5a80f9f3189ca",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1941,9 +1953,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/prose-pass.md"
     },
     {
-      "bytes": 31149,
+      "bytes": 32269,
       "path": "plugins/hexaemeron/skills/fiat/references/push-discipline.md",
-      "sha256": "e89ada33205cf447beec685211cb5d0a7887bff7bab697d452f185c2719b1118",
+      "sha256": "9c14a1eef6f3d9b7186af8cca4be93890f13f1f8b072b2ec0c2ff685ede5cf79",
       "source": "plugins/hexaemeron/skills/fiat/references/push-discipline.md"
     },
     {
@@ -1971,9 +1983,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 511623,
+      "bytes": 514334,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
@@ -3013,6 +3025,66 @@
       "path": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
       "sha256": "a96f4f0e19052b173450895466005ad3bc5c530058792063289d4601c6e5c553",
       "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
+    },
+    {
+      "bytes": 2331,
+      "path": "plugins/homologia/AGENTS.md",
+      "sha256": "76789665f787bed4f42fd857ffa6a0bf4d504e52833b7f9209e3341f27bb9dd7",
+      "source": "plugins/homologia/AGENTS.md"
+    },
+    {
+      "bytes": 11342,
+      "path": "plugins/homologia/LICENSE",
+      "sha256": "624ddb0910d0925eafa5ac16a65a1360417e3d7c72aff6df0f3eab475695b68d",
+      "source": "plugins/homologia/LICENSE"
+    },
+    {
+      "bytes": 23568,
+      "path": "plugins/homologia/PROMISE_MACHINE.md",
+      "sha256": "be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca",
+      "source": "plugins/homologia/PROMISE_MACHINE.md"
+    },
+    {
+      "bytes": 2675,
+      "path": "plugins/homologia/README.md",
+      "sha256": "fbe3bb192fbb5aef52d1ad697c1a72bf64d4bfa951f2767409dfd08eaceaceed",
+      "source": "plugins/homologia/README.md"
+    },
+    {
+      "bytes": 3285,
+      "path": "plugins/homologia/docs/decisions/ADR-001-one-charter-for-numeric-agreement.md",
+      "sha256": "7e7fa2bf5faeeb025c4e39181926805a2d7a281954925a27c5f02670ff8d6efd",
+      "source": "plugins/homologia/docs/decisions/ADR-001-one-charter-for-numeric-agreement.md"
+    },
+    {
+      "bytes": 12379,
+      "path": "plugins/homologia/docs/homologia-runbook.md",
+      "sha256": "34ae57c29e34a35f17e7d1cef3e4433f01c7a4b97ebe360e7cfd446f841d21d9",
+      "source": "plugins/homologia/docs/homologia-runbook.md"
+    },
+    {
+      "bytes": 30274,
+      "path": "plugins/homologia/docs/homologia-study.md",
+      "sha256": "888f19b42ce3c7a1293cd2e49ff650fab63ea7d39115df9745bf4029f34446dd",
+      "source": "plugins/homologia/docs/homologia-study.md"
+    },
+    {
+      "bytes": 2203,
+      "path": "plugins/homologia/scripts/homologia.py",
+      "sha256": "756e4fa43dad085b4dd3b2f783f934dd1071199a0b05b7eb8bd94d9ee9d00f72",
+      "source": "plugins/homologia/scripts/homologia.py"
+    },
+    {
+      "bytes": 1741,
+      "path": "plugins/homologia/skills/homologia/EVOLUTION.md",
+      "sha256": "8d764a1e9c24dd9cfcc90ec09c668a813c9a64a67afa2d1a4adbf8a7187c4e2d",
+      "source": "plugins/homologia/skills/homologia/EVOLUTION.md"
+    },
+    {
+      "bytes": 6425,
+      "path": "plugins/homologia/skills/homologia/SKILL.md",
+      "sha256": "cd027112e12dab2428dcbe910e4e65cc0541d6da512a600e6415f7da436aa8e1",
+      "source": "plugins/homologia/skills/homologia/SKILL.md"
     },
     {
       "bytes": 2719,

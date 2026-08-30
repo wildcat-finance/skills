@@ -180,6 +180,11 @@ turn a passing structural check into proof that a domain claim is true.
 - [Hermes](./plugins/hermes) changes Solidity gas use one named optimisation
   class at a time, keeping only measured wins that preserve behaviour, storage
   layout, selectors, and required arithmetic evidence.
+- [Homologia](./plugins/homologia) checks whether a contract computation and an
+  off-chain reimplementation of it return the same integers over a declared set
+  of inputs, and keeps every disagreement as a specimen. Agreement is not
+  correctness: two implementations of the same misunderstanding agree
+  perfectly, and the verdict says so.
 - [Horos](./plugins/horos) writes and verifies evidence-backed repository
   boundaries and skeleton maps for oriented reading. Its exclusions reduce cost;
   they never apply during security review.
@@ -325,6 +330,7 @@ Use $ariadne to capture this release in an evidence statement, run its gates, an
 Use $berean to verify this release's citations, chain readings, and promotion record against its pinned corpus.
 Use $brevitas to shorten this engineering review without dropping addresses, hashes, file-and-line references, numbers, counterexamples, or reproduction steps.
 Use $hermes to optimise gas in this repository. Name the corpus rule each candidate implements, work one optimisation class at a time, and keep the complete verification record.
+Use $homologia to check whether this contract computation and its off-chain mirror agree over declared vectors.
 Use $fiat to take this issue from study to a merged delivery, one receipted phase at a time.
 Use $kronos to rank the held frontier jobs and run the best eligible one through Fiat until none remain.
 Use $protasis to decide whether this study and runbook are ready to build from.

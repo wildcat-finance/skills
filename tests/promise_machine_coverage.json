@@ -70,9 +70,49 @@
         "test_wave_atlas_pull_requests_read_every_page",
         "test_wave_atlas_runtime_and_shoggoth_prs_are_excluded_once"
       ],
-      "sha256": "dd479fbaac231f90181363dbb91bbe124f69a7c978117562ef08f3b149ae4a5c"
+      "sha256": "70574968f3134ca8ea7822ba9c81991e34237b603b42c8dfa77eecef22f57008"
     },
     "transition": "place every Skills contributor row and every merged supplemental pull-request author in exactly one of ranked, excluded with a named reason, or refused, then render both artefacts from that one computation without strengthening what either count means"
+  },
+  "dead_code": {
+    "contract": "dead-code-baseline/v1",
+    "documentation": {
+      "path": "docs/promise-machine/dead-code-v1.md",
+      "sha256": "ff65defb8d95a04264601865ed2c31cd22501db6aceea672fa7c7fa40960a82c"
+    },
+    "fixtures": [
+      {
+        "path": ".dead-code/suppressions.json",
+        "sha256": "42fd6b5814135ce396027b5087bec10dcb00bc5736d05be0929065c022b1a8ae"
+      }
+    ],
+    "promise_id": "promise-machine-dead-code-baseline",
+    "runtime": {
+      "path": "scripts/dead_code.py",
+      "sha256": "143d45838048ab2f5219f584d2ee00809894af140aa2226a19e14f953edc32c3"
+    },
+    "schema_source": {
+      "path": "schemas/dead-code-report-v1.schema.json",
+      "sha256": "7d67503a3ea6c15233a709d40e3ed86800c6113248a4d4087419ab90562c4ab2"
+    },
+    "suppression_schema": {
+      "path": "schemas/dead-code-suppressions-v1.schema.json",
+      "sha256": "d3cbb6d10ed842f1cb29a38fd88ead74e842ef57b8f8d553b6aa113a6bf5b65b"
+    },
+    "tests": {
+      "path": "tests/test_dead_code.py",
+      "selectors": [
+        "test_one_exact_suppression_is_accepted",
+        "test_broad_suppression_identity_refuses",
+        "test_baseline_record_cannot_retain_a_repository_candidate",
+        "test_failed_analyser_cannot_be_written_to_a_baseline",
+        "test_source_change_after_publication_is_stale",
+        "test_write_then_check_uses_two_commit_publication",
+        "test_workflow_and_operator_guide_carry_the_exact_four_command_demo"
+      ],
+      "sha256": "311d100ae93b013e72cd0af1c6409783507970793b2da863c64a42efe29396db"
+    },
+    "transition": "record and verify one report-only static candidate baseline over an exact clean source commit, with only exact current suppressions accepted and no finding count treated as deletion or merge authority"
   },
   "evidence": {
     "alexandria-m": {
@@ -740,6 +780,31 @@
       "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
       "selector": "test_labelled_subject_mismatch_cases"
     },
+    "homologia-scaffold-m": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_a_drifted_installed_root_law_copy_is_detected",
+      "claim": "A mutated copy of the root law makes the same byte comparison fail, so the installed-copy check refuses drift instead of passing trivially."
+    },
+    "homologia-scaffold-o": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_no_verb_prints_a_verdict_on_standard_output",
+      "claim": "The nearest overclaim is a verb that answers: every verb is required to leave standard output empty, so no caller can read a verdict off this version."
+    },
+    "homologia-scaffold-p": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_identity_agrees_across_both_manifests_and_the_marketplace",
+      "claim": "Positive evidence reads the declared name and version out of both host manifests and the suite marketplace and requires one value."
+    },
+    "homologia-scaffold-r": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_a_refusal_names_where_the_behaviour_will_come_from",
+      "claim": "Recovery evidence requires the refusal to name its version and the runbook that carries the behaviour, so the caller is told where to go."
+    },
+    "homologia-scaffold-s": {
+      "path": "plugins/homologia/tests/test_scaffold.py",
+      "selector": "test_the_canonical_skill_states_the_declared_version",
+      "claim": "A contract left at a superseded version is refused, so a stale declaration cannot ride along beside a moved manifest."
+    },
     "horos-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/horos/tests/test_boundary.py",
@@ -1366,15 +1431,15 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "10bc0dd2e2a25df8d56e140aba1d16d29b6c784e96c07361822800b2eec6fe18"
+        "sha256": "927862aa8985965145d75c717d509cc55bb43779cb0c14ccdd8e6b0cfda72f50"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
-        "sha256": "ca60f7d10a3749c164440cfdf9b6e9be59e3517a063758f5811d1dde2dcafcbf"
+        "sha256": "6c8a5eba777ca961b5cebc58fbb0990d5c0b6d0620f69efa768da66e110c873e"
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "b5ab4aeed353f9ca3f461bc579ef87738ea684d4d3426caa7f81d353adf4d078"
+        "sha256": "9589a112393ff93dc396a670c7403987cec0866309edff22ab37db7b3fa94f96"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
@@ -2832,6 +2897,22 @@
       "group": "vendored",
       "promise_id": "hexaemeron-x-ray-preaudit",
       "skill_path": "plugins/hexaemeron/skills/x-ray/SKILL.md"
+    },
+    {
+      "promise_id": "homologia-scaffold-identity",
+      "skill_path": "plugins/homologia/skills/homologia/SKILL.md",
+      "group": "executable",
+      "cases": {
+        "P": "homologia-scaffold-p",
+        "M": "homologia-scaffold-m",
+        "S": "homologia-scaffold-s",
+        "O": "homologia-scaffold-o",
+        "R": "homologia-scaffold-r",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      }
     }
   ],
   "run_observation": {
@@ -2926,7 +3007,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21"
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -3164,7 +3245,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -3178,7 +3259,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work and any unrun external check"
       },
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -3192,7 +3273,7 @@
         "transition": "local archive, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -3206,7 +3287,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -3220,7 +3301,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -3234,7 +3315,7 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
@@ -3248,7 +3329,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-version-resolution": {
@@ -3262,7 +3343,7 @@
         "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
         "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
       },
-      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
+      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {

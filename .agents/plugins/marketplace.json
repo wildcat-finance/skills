@@ -18,10 +18,22 @@
     },
     {
       "name": "hexaemeron",
-      "version": "1.6.12",
+      "version": "1.6.13",
       "source": {
         "source": "local",
         "path": "./plugins/hexaemeron"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "homologia",
+      "source": {
+        "source": "local",
+        "path": "./plugins/homologia"
       },
       "policy": {
         "installation": "AVAILABLE",

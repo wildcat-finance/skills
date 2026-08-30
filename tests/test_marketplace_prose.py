@@ -13,39 +13,34 @@ from repo_contract import (
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
-PLUGINS = (
-    "alexandria",
-    "ariadne",
-    "berean",
-    "brevitas",
-    "hermes",
-    "hexaemeron",
-    "horos",
-    "janus",
-    "lemma",
-    "lazarus",
-    "pandects",
-    "probitas",
-    "sapheneia",
-    "synkrisis",
-    "tabularium",
-)
+def discovered_plugins():
+    """The universe is what ships, not what a list here remembers.
+
+    A hand-maintained tuple lets a new plugin land with every one of these
+    cases passing while none of them looked at it. Discovery makes the
+    omission the failure it should be.
+    """
+    return tuple(
+        sorted(
+            path.parent.parent.name
+            for path in (ROOT / "plugins").glob("*/.claude-plugin/plugin.json")
+        )
+    )
+
+
+PLUGINS = discovered_plugins()
+# The canonical skill takes the plugin's own name, with one recorded exception:
+# Hexaemeron's entry point is Fiat, because the plugin ships a phase suite
+# rather than a single agent.
+CANONICAL_SKILL_NAMES = {"hexaemeron": "fiat"}
 CANONICAL_SKILLS = {
-    "alexandria": ROOT / "plugins" / "alexandria" / "skills" / "alexandria" / "SKILL.md",
-    "ariadne": ROOT / "plugins" / "ariadne" / "skills" / "ariadne" / "SKILL.md",
-    "berean": ROOT / "plugins" / "berean" / "skills" / "berean" / "SKILL.md",
-    "brevitas": ROOT / "plugins" / "brevitas" / "skills" / "brevitas" / "SKILL.md",
-    "hermes": ROOT / "plugins" / "hermes" / "skills" / "hermes" / "SKILL.md",
-    "hexaemeron": ROOT / "plugins" / "hexaemeron" / "skills" / "fiat" / "SKILL.md",
-    "horos": ROOT / "plugins" / "horos" / "skills" / "horos" / "SKILL.md",
-    "janus": ROOT / "plugins" / "janus" / "skills" / "janus" / "SKILL.md",
-    "lemma": ROOT / "plugins" / "lemma" / "skills" / "lemma" / "SKILL.md",
-    "lazarus": ROOT / "plugins" / "lazarus" / "skills" / "lazarus" / "SKILL.md",
-    "pandects": ROOT / "plugins" / "pandects" / "skills" / "pandects" / "SKILL.md",
-    "probitas": ROOT / "plugins" / "probitas" / "skills" / "probitas" / "SKILL.md",
-    "sapheneia": ROOT / "plugins" / "sapheneia" / "skills" / "sapheneia" / "SKILL.md",
-    "synkrisis": ROOT / "plugins" / "synkrisis" / "skills" / "synkrisis" / "SKILL.md",
-    "tabularium": ROOT / "plugins" / "tabularium" / "skills" / "tabularium" / "SKILL.md",
+    name: ROOT
+    / "plugins"
+    / name
+    / "skills"
+    / CANONICAL_SKILL_NAMES.get(name, name)
+    / "SKILL.md"
+    for name in PLUGINS
 }
 NEXT_JOB_LABEL = "**Next Fiat job.**"
 NEXT_JOB_PREFIX = NEXT_JOB_LABEL + " Use /hexaemeron:fiat to "
@@ -279,7 +274,7 @@ class MarketplaceProseTests(unittest.TestCase):
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
         )
-        self.assertEqual(len(governed), 24)
+        self.assertEqual(len(governed), 25)
         for skill in governed:
             plugin = skill.parents[2]
             target = skill.parent if plugin.name == "hexaemeron" else plugin
@@ -354,7 +349,7 @@ class MarketplaceProseTests(unittest.TestCase):
     def test_plugin_landing_readmes_publish_unique_rolling_fiat_jobs(self):
         landings = plugin_landing_readmes()
         self.assertEqual(set(landings), set(PLUGINS))
-        self.assertEqual(len(landings), 15)
+        self.assertEqual(len(landings), len(marketplace_entries()))
 
         topics = {}
         for name, path in landings.items():
