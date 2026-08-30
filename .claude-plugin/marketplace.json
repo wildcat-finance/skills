@@ -32,7 +32,7 @@
       "displayName": "Hexaemeron",
       "source": "./plugins/hexaemeron",
       "description": "Receipted delivery through merge and closure, with ranked frontier, audit, fuzzing, prose, specification, debugging, hardening, telemetry and measurement skills.",
-      "version": "1.6.5",
+      "version": "1.6.17",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -47,6 +47,28 @@
         "fuzzing",
         "solidity",
         "receipts"
+      ]
+    },
+    {
+      "name": "homologia",
+      "displayName": "Homologia",
+      "source": "./plugins/homologia",
+      "description": "Establish whether an on-chain computation and its off-chain reimplementation agree, integer for integer, over declared vectors.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Wildcat Labs",
+        "url": "https://wildcat.finance"
+      },
+      "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/homologia",
+      "repository": "https://github.com/wildcat-finance/skills",
+      "category": "Developer Tools",
+      "tags": [
+        "solidity",
+        "differential-testing",
+        "fixed-point",
+        "rounding",
+        "evidence",
+        "parity"
       ]
     },
     {
@@ -118,7 +140,7 @@
       "displayName": "Probitas",
       "source": "./plugins/probitas",
       "description": "Sourced counterparty lending dossiers from declared addresses, with coverage gaps kept visible.",
-      "version": "0.1.1",
+      "version": "0.1.3",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -205,7 +227,7 @@
       "displayName": "Ariadne",
       "source": "./plugins/ariadne",
       "description": "Release evidence statements binding artefact digests to the record behind them.",
-      "version": "1.2.2",
+      "version": "1.3.0",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -248,7 +270,7 @@
       "displayName": "Alexandria",
       "source": "./plugins/alexandria",
       "description": "Digest-bound lending-data releases with unsigned evidence statements, reviewed credit views and address queries.",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -270,7 +292,7 @@
       "displayName": "Brevitas",
       "source": "./plugins/brevitas",
       "description": "Evidence-preserving budgets for engineering prose.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"
@@ -312,8 +334,8 @@
       "name": "synkrisis",
       "displayName": "Synkrisis",
       "source": "./plugins/synkrisis",
-      "description": "Refusing scaffold for the specified comparison of validated run observations in one declared cohort.",
-      "version": "0.1.0",
+      "description": "Checked cohort construction, bounded diagnosis, fixed-template rendering and whole-path verification over validated run observations, held to a measured work budget.",
+      "version": "0.5.1",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

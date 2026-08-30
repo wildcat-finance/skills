@@ -40,10 +40,11 @@ MORPHO_BLUE_ENDPOINT = "https://blue-api.morpho.org/graphql"
 MORPHO_BLUE_FIRST_MARKET_BLOCK = 18919623
 
 # A separate product on a separate API: fixed-rate, fixed-maturity lending,
-# REST rather than GraphQL, and on Base rather than mainnet. Keyless, and
-# `/users/<address>/positions` and `/users/<address>/transactions` both answer.
-# No adapter yet; the registry names it so a dossier does not imply otherwise.
-MORPHO_MIDNIGHT_ENDPOINT = "https://api.morpho.org/v0/midnight"
+# REST rather than GraphQL, and on Base rather than mainnet. The adapter locks
+# every request to this exact HTTPS origin; the global token route shares the
+# origin but sits outside the Midnight path.
+MORPHO_API_ORIGIN = "https://api.morpho.org"
+MORPHO_MIDNIGHT_ENDPOINT = MORPHO_API_ORIGIN + "/v0/midnight"
 
 # Euler v2's keyless event ledger and vault metadata service.  The Goldsky
 # simple subgraph is useful for active-position discovery but is intentionally

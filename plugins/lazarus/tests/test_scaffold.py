@@ -300,30 +300,53 @@ class ScaffoldTests(unittest.TestCase):
         ):
             self.assertIn(term, text)
 
-    def test_fixed_shell_ci_toolchain_and_licence_remain_in_place(self):
+    def test_fixed_shell_ci_scope_toolchain_and_licence_remain_in_place(self):
         workflow = (support.REPO_ROOT / ".github/workflows/lazarus.yml").read_text(
             encoding="utf-8"
         )
 
-        def event_paths(source, event):
-            match = re.search(
-                rf"(?m)^  {event}:\n    paths:\n(?P<paths>(?:      - .+\n)+)",
+        def event_paths(source, event, required=True):
+            event_match = re.search(
+                rf"(?ms)^  {re.escape(event)}:\n(?P<body>.*?)(?=^  [a-z_]+:|\Z)",
                 source,
             )
-            self.assertIsNotNone(match)
-            return set(re.findall(r'^      - "([^"]+)"$', match["paths"], re.M))
+            self.assertIsNotNone(event_match)
+            paths_match = re.search(
+                r"(?m)^    paths:\n(?P<paths>(?:      - .+\n)+)",
+                event_match["body"],
+            )
+            if not required and paths_match is None:
+                return None
+            self.assertIsNotNone(paths_match)
+            return set(
+                re.findall(r'^      - "([^"]+)"$', paths_match["paths"], re.M)
+            )
 
         repo_workflow = (
             support.REPO_ROOT / ".github/workflows/repo.yml"
         ).read_text(encoding="utf-8")
-        router = ".agents/skills/promise-machine/SKILL.md"
-        generated_runtime = ".agents/**"
+        shared_paths = {".agents/**", ".claude-plugin/**", "AGENTS.md"}
         for event in ("push", "pull_request"):
             with self.subTest(event=event):
                 lazarus_paths = event_paths(workflow, event)
-                self.assertIn(router, lazarus_paths)
-                self.assertNotIn(generated_runtime, lazarus_paths)
-                self.assertIn(generated_runtime, event_paths(repo_workflow, event))
+                self.assertTrue(lazarus_paths.isdisjoint(shared_paths))
+                self.assertIsNone(event_paths(repo_workflow, event, required=False))
+
+        plugins_path = support.REPO_ROOT / ".github/workflows/plugins.yml"
+        self.assertTrue(plugins_path.is_file(), "the complete plugin workflow is missing")
+        plugins_workflow = plugins_path.read_text(encoding="utf-8")
+        for event in ("push", "pull_request"):
+            with self.subTest(aggregate_event=event):
+                self.assertIsNone(event_paths(plugins_workflow, event, required=False))
+        # The aggregate gate shards the declared graph, one job per scope, so
+        # Lazarus is covered by its own shard rather than by a single --full
+        # invocation. What matters here is unchanged: the gate carries no path
+        # filter, so its context reaches every pull request.
+        self.assertIn(
+            "python3 scripts/run_checks.py\n          --scope ${{ matrix.scope }}",
+            plugins_workflow,
+        )
+        self.assertIn("          - lazarus\n", plugins_workflow)
 
         self.assertIn('python-version-file: ".python-version"', workflow)
         self.assertNotIn("matrix.python-version", workflow)

@@ -39,13 +39,19 @@ Pandects supplies reviewed credit laws, Hermes measures a single
 gas-optimisation class named by a rule from its pinned corpus,
 Hexaemeron controls a receipted delivery loop and holds each of its phases to a
 named skill, while Lemma stops after producing
-source-linked chunks. Horos decides what an agent does not read. Janus checks
+source-linked chunks. Homologia compares one pinned contract computation with one pinned off-chain
+mirror over declared vectors and preserves each divergence as a specimen,
+where Pandects supplies the economic laws and Lazarus the proved chain-side
+answers such a comparison consumes as evidence. Horos decides what an agent
+does not read. Janus checks
 what a contract hook may observe and change around a host action, where
 Pandects supplies the economic laws such a transition must preserve. Synkrisis
-reserves the cross-run comparison boundary, but its current scaffold refuses
-cohort, diagnosis, render, and verification operations. Its specified future
-findings remain bounded inferences: capture, redaction, receipt binding, causal
-triage, and every decision to act stay with their owners. Sapheneia
+owns the cross-run comparison boundary: it builds one checked cohort from
+declared run observations and infers only bounded relations between named
+events, and any operation whose runbook step has not landed refuses by name
+rather than guessing. Its findings stay bounded inferences: capture,
+redaction, receipt binding, causal triage, and every decision to act stay
+with their owners. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
 durable audit, issue, and comment prose. It does not change another skill's
 facts or gates. Brevitas controls the volume and structure of engineering prose
@@ -116,6 +122,9 @@ these instructions.
 - Hexaemeron is under `plugins/hexaemeron/`. Read
   `plugins/hexaemeron/AGENTS.md` before running one of its skills or changing
   that plugin.
+- Homologia is under `plugins/homologia/`. Read
+  `plugins/homologia/AGENTS.md` before running its skill or changing that
+  plugin.
 - Horos is under `plugins/horos/`. Read `plugins/horos/AGENTS.md` before
   running its skill or changing that plugin.
 - Janus is under `plugins/janus/`. Read `plugins/janus/AGENTS.md` before
@@ -163,7 +172,22 @@ these instructions.
 
 ## Checks for changes to this repository
 
-Run the checks that cover every changed area.
+The checked runner is the entrypoint. It reads the declared ownership graph
+at `tests/check-map-v1.json`, unions any requested scope with every actual
+changed path, closes that set over the declared dependencies, and executes
+the selected checks from a disposable snapshot under one process budget
+(ADR-041).
+
+```bash
+python3 scripts/run_checks.py            # select from the current diff and run
+python3 scripts/run_checks.py --plan     # show the selection without running
+python3 scripts/run_checks.py --full     # run every declared check
+```
+
+A plan or run refuses when a changed path has no declared owner, a command in
+the map is stale, or the map is malformed; fix `tests/check-map-v1.json` in
+the same change. Hosted CI is unchanged by this entrypoint. The suites below
+are the inventory the map declares, and each remains directly runnable.
 
 Every `python3` command below means the exact interpreter recorded in
 [`.python-version`](.python-version). The supported minor is declared in
@@ -182,6 +206,7 @@ python3 -m unittest discover -s plugins/brevitas/tests -t plugins/brevitas
 python3 plugins/hermes/skills/hermes/scripts/test_hermes.py
 python3 plugins/hexaemeron/tests/run_tests.py
 python3 plugins/hexaemeron/skills/imprimatur/tests/run_tests.py
+python3 -m unittest discover -s plugins/homologia/tests -t plugins/homologia
 python3 -m unittest discover -s plugins/horos/tests -t plugins/horos
 python3 plugins/lemma/tests/test_markdown.py
 python3 plugins/lemma/tests/test_solidity.py

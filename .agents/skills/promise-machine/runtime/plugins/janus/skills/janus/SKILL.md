@@ -10,7 +10,7 @@ description: >
   fuzz one repository for generic Solidity defects; that is fizz. Never report a
   hook as conformant on a delta the recorder did not fully capture.
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
 ---
 
 <p align="center">
@@ -69,6 +69,38 @@ A stateful Foundry harness drives ordinary and hostile sequences through the
 adapter, records the real storage writes, call targets, value movements, and
 gas across each threshold, and compares the observed delta against the manifest.
 A deterministic unit mode runs the same checks over fixed sequences.
+
+The comparison reads the manifest rather than a copy of it. A reader selects
+the threshold by action name, never by position, and resolves each permitted
+call, storage scope and value movement into concrete addresses through the host
+adapter's own name table, which is what the gates then enforce.
+
+Three things about that resolution decide what a permit means, so they are
+stated rather than left to be discovered.
+
+The account symbol of a call target or an external storage slot is the text
+before the first `.`; the suffix is documentation and is never resolved. A
+value movement's `asset` and `recipient` carry no suffix in the format, so
+their whole string is the name and a dot inside it is part of that name. A dot
+is an ordinary character in an account name, so where the adapter also answers
+for a longer reading of the same string the manifest is ambiguous and the
+reader refuses instead of choosing one.
+
+Resolution is account-granular. A slot expression contributes only its account
+and a function suffix contributes only its account, so a permit written at slot
+or function granularity is enforced at whole-account granularity. Call kind is
+the one dimension carried through, because a `call` and a `delegatecall` differ
+in whose storage changes.
+
+A `staticcall` entry admits nothing into the state-changing allowed set. Its
+symbol must still resolve, so a misnamed read target aborts rather than
+vanishing, but naming a read cannot widen what the hook may change.
+
+Resolution fails closed throughout. An action the manifest does not carry, a
+duplicated action name, a symbol the adapter cannot resolve, a blank account
+symbol, and a resolution to the zero address each abort with a named error. The
+reader never returns a default or a shrunken set, because a permitted set that
+silently lost an entry would reject everything and read as a passing gate.
 
 ## The seven gates
 

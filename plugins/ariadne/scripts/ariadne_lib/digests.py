@@ -59,7 +59,7 @@ def check(digests):
                 "digest value for %s is not lowercase hex; case-insensitive "
                 "comparison is how two different digests come to look equal" % algorithm
             )
-        if not HEX.match(value):
+        if not HEX.fullmatch(value):
             raise DigestError("digest value for %s is not hex" % algorithm)
         if algorithm in ALGORITHMS:
             expected = ALGORITHMS[algorithm][1]
@@ -85,12 +85,19 @@ def agree(left, right):
     agreement has to rest on a supported algorithm, and any shared algorithm
     that disagrees sinks the match regardless.
     """
-    shared = set(left) & set(right)
-    if not shared:
-        return False
-    if not any(algorithm in ALGORITHMS for algorithm in shared):
-        return False
-    return all(left[algorithm] == right[algorithm] for algorithm in shared)
+    # Claims are compared with every statement subject.  Iterating the wider
+    # set for each comparison lets one bounded JSON object multiply work by the
+    # subject count, so walk only the smaller set and probe the other mapping.
+    smaller, larger = (left, right) if len(left) <= len(right) else (right, left)
+    supported = False
+    for algorithm, value in smaller.items():
+        if algorithm not in larger:
+            continue
+        if value != larger[algorithm]:
+            return False
+        if algorithm in ALGORITHMS:
+            supported = True
+    return supported
 
 
 def of_bytes(data, algorithm=DEFAULT_ALGORITHM):

@@ -6,6 +6,8 @@ import {JanusHarness} from "../src/JanusHarness.sol";
 import {Vm} from "../src/Vm.sol";
 import {WildcatHostModel, MockAsset} from "../src/wildcat/WildcatHostModel.sol";
 import {WildcatHostAdapter} from "../src/wildcat/WildcatHostAdapter.sol";
+import {MockRoleProvider} from "../src/wildcat/MockRoleProvider.sol";
+import {AccountResolver, ManifestReader, ResolvedThreshold} from "../src/ManifestReader.sol";
 import {
   ReentryHook,
   GasGriefHook,
@@ -21,17 +23,30 @@ contract HostileHooksTest is JanusBase, JanusHarness {
 
   MockAsset asset;
   WildcatHostModel model;
+  MockRoleProvider provider;
   WildcatHostAdapter adapter;
+  ManifestReader manifestReader;
   address lender = address(0xBEEF);
 
   function setUp() public {
     asset = new MockAsset();
     model = new WildcatHostModel(asset);
-    adapter = new WildcatHostAdapter(model, asset, address(0));
+    provider = new MockRoleProvider();
+    adapter = new WildcatHostAdapter(model, asset, address(provider));
+    manifestReader = new ManifestReader();
     model.setBorrower(address(adapter));
     asset.mint(lender, 1_000_000);
     vm.prank(lender);
     asset.approve(address(model), type(uint256).max);
+  }
+
+  /// @dev The manifest's threshold for one action, resolved through the host
+  ///      adapter. The hostile verdicts take their gate inputs from here for
+  ///      the same reason the honest ones do: a hostile hook caught by a
+  ///      hand-written set proves only that the literal was narrow enough, not
+  ///      that the manifest was.
+  function _threshold(string memory action) internal view returns (ResolvedThreshold memory) {
+    return manifestReader.resolveFile(MANIFEST, action, AccountResolver(address(adapter)));
   }
 
   function _deposit(uint256 amount) internal returns (DriveResult memory) {
@@ -52,11 +67,32 @@ contract HostileHooksTest is JanusBase, JanusHarness {
   function test_gas_grief_hook_caught_by_gate5() external {
     model.setHook(address(new GasGriefHook()));
     _deposit(100);
-    uint256 budget = vm.parseJsonUint(vm.readFile(MANIFEST), ".thresholds[0].gasBudget");
+    uint256 budget = _threshold("deposit").gasBudget;
     assertTrue(
       model.lastHookGasUsed() > budget,
       "gate5: the hook consumed more than the manifest budget"
     );
+  }
+
+  /// @dev The budget gate 5 enforces is the driven action's own, and this is
+  ///      what shows the selection is by name here rather than by position.
+  ///      Every other resolution in this file asks for `deposit`, so a helper
+  ///      that ignored its argument and always resolved `deposit` would change
+  ///      no result -- which was true until this test existed. The manifest
+  ///      gives two different budgets to compare: 2000000 on deposit and
+  ///      1000000 on the rate-setting action.
+  ///      It installs a hook first because resolution is all or nothing: the
+  ///      deposit threshold's `permittedStorageWrites` are scope `hook`, so
+  ///      reading its budget still resolves the `hook` symbol and a host with
+  ///      no hook installed refuses with `SymbolResolvesToZero`. That is the
+  ///      fail-closed posture working, not an obstacle to route around.
+  function test_the_resolved_budget_is_the_actions_own_not_the_first() external {
+    model.setHook(address(new ReentryHook()));
+    uint256 deposit = _threshold("deposit").gasBudget;
+    uint256 rates = _threshold("setAnnualInterestAndReserveRatioBips").gasBudget;
+    assertEq(deposit, uint256(2000000), "deposit carries its own budget");
+    assertEq(rates, uint256(1000000), "and the rate action carries a different one");
+    assertTrue(deposit != rates, "so the two are not the same read");
   }
 
   function test_value_redirect_hook_caught_by_gate2() external {
@@ -85,20 +121,39 @@ contract HostileHooksTest is JanusBase, JanusHarness {
     DriveResult memory r = _deposit(100);
     assertTrue(!r.reverted, "the mutating deposit reports success");
 
-    address[] memory allowedCalls = new address[](0);
+    ResolvedThreshold memory t = _threshold("deposit");
     assertTrue(
-      !_gate1_hookCallsWithinAllowed(r.delta, address(hook), allowedCalls),
-      "gate1: the call to the external registry is caught"
+      !_gate1_hookCallsWithinAllowed(r.delta, address(hook), t.allowedCallTargets),
+      "gate1: the call to the external registry is caught against the manifest's own set"
     );
 
     // The registry's storage was written by the hook's subtree. The storage
     // scope check catches it independently of the call-target check: only the
     // hook's own storage is a permitted write scope here.
-    address[] memory allowedWrites = new address[](1);
-    allowedWrites[0] = address(hook);
+    // The manifest's deposit threshold permits hook-scope writes only, so the
+    // resolved write set is the hook's own address, resolved through the
+    // adapter rather than written here. The registry is not in it.
+    model.setHook(address(hook)); // the resolved `hook` symbol is this hook
+    ResolvedThreshold memory w = _threshold("deposit");
+    assertEq(w.allowedWriteAccounts.length, 2, "both hook-scope writes resolved");
+    assertEq(w.allowedWriteAccounts[0], address(hook), "and both name the hook itself");
+    // Both assertions below read one local, so a set swapped in here is
+    // swapped in both. Rejection alone does not say the resolved set was the
+    // one used -- any set missing the registry rejects, including a wrong one
+    // -- and the pair is what pins it: this exact set rejects, and this exact
+    // set plus the registry accepts. A different set fails the second half.
+    address[] memory scopes = w.allowedWriteAccounts;
     assertTrue(
-      !_gate1_hookStorageWithinScopes(r.delta, address(hook), allowedWrites),
+      !_gate1_hookStorageWithinScopes(r.delta, address(hook), scopes),
       "gate1: the hook-caused write to external storage is caught"
+    );
+
+    address[] memory widened = new address[](scopes.length + 1);
+    for (uint256 i; i < scopes.length; ++i) widened[i] = scopes[i];
+    widened[scopes.length] = address(registry);
+    assertTrue(
+      _gate1_hookStorageWithinScopes(r.delta, address(hook), widened),
+      "gate1: the registry is the only account the resolved scopes are missing"
     );
   }
 

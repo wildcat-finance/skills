@@ -27,6 +27,16 @@
         },
         "commit": {
           "type": "string",
+          "anyOf": [
+            {
+              "minLength": 40,
+              "maxLength": 40
+            },
+            {
+              "minLength": 64,
+              "maxLength": 64
+            }
+          ],
           "pattern": "^[0-9a-f]{40}$|^[0-9a-f]{64}$",
           "description": "A git object id, sha1 or sha256. A branch or a tag names something that moves."
         },
@@ -257,6 +267,16 @@
           },
           "covered_revision": {
             "type": "string",
+            "anyOf": [
+              {
+                "minLength": 40,
+                "maxLength": 40
+              },
+              {
+                "minLength": 64,
+                "maxLength": 64
+              }
+            ],
             "pattern": "^[0-9a-f]{40}$|^[0-9a-f]{64}$",
             "description": "The revision the audit covered, as a git object id."
           },

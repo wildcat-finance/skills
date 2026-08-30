@@ -40,6 +40,15 @@ COMPLETE_RUNBOOK_AMENDMENT = """
 **Still holding.** Step 1: entry holds; exit holds.
 """
 
+VERSION_RELATION_ROW = (
+    "protasis | plugins/hexaemeron/skills/protasis/EVOLUTION.md | "
+    "next-generation-after-integration-base"
+)
+
+
+def relation_block(*rows):
+    return "```version-relations\n" + "\n".join(rows) + "\n```\n\n"
+
 
 def findings(source):
     with tempfile.TemporaryDirectory() as directory:
@@ -172,6 +181,152 @@ class RunbookAmendments(unittest.TestCase):
         self.assertEqual(codes(COMPLETE_STEP + COMPLETE_RUNBOOK_AMENDMENT + second), [])
 
 
+class VersionRelations(unittest.TestCase):
+    def test_one_valid_block_and_an_absent_legacy_block_are_clean(self):
+        self.assertEqual(codes(relation_block(VERSION_RELATION_ROW) + COMPLETE_STEP), [])
+        self.assertEqual(codes(COMPLETE_STEP), [])
+
+    def test_partial_target_coverage_is_clean(self):
+        two_targets = relation_block(
+            "fiat | plugins/hexaemeron/skills/fiat/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+            VERSION_RELATION_ROW,
+        ) + COMPLETE_STEP
+        self.assertEqual(codes(two_targets.replace(
+            "fiat | plugins/hexaemeron/skills/fiat/EVOLUTION.md | "
+            "next-generation-after-integration-base\n",
+            "",
+        )), [])
+
+    def test_a_second_block_or_a_block_after_step_one_refuses(self):
+        second = relation_block(VERSION_RELATION_ROW) * 2 + COMPLETE_STEP
+        self.assertIn("P006", codes(second))
+        self.assertIn(
+            "P006",
+            codes(COMPLETE_STEP + "\n" + relation_block(VERSION_RELATION_ROW)),
+        )
+
+    def test_each_row_has_exactly_three_non_empty_fields(self):
+        malformed = (
+            "protasis | plugins/hexaemeron/skills/protasis/EVOLUTION.md",
+            VERSION_RELATION_ROW + " | extra",
+            "protasis |  | next-generation-after-integration-base",
+        )
+        for row in malformed:
+            with self.subTest(row=row):
+                self.assertIn("P006", codes(relation_block(row) + COMPLETE_STEP))
+
+    def test_ids_and_paths_are_unique(self):
+        duplicate_id = relation_block(VERSION_RELATION_ROW, VERSION_RELATION_ROW)
+        duplicate_path = relation_block(
+            VERSION_RELATION_ROW,
+            "fiat | plugins/hexaemeron/skills/protasis/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+        )
+        self.assertIn("P006", codes(duplicate_id + COMPLETE_STEP))
+        self.assertIn("P006", codes(duplicate_path + COMPLETE_STEP))
+
+    def test_unsafe_paths_refuse(self):
+        paths = (
+            "/plugins/hexaemeron/skills/protasis/EVOLUTION.md",
+            "plugins/hexaemeron/skills/../protasis/EVOLUTION.md",
+            "plugins/hexaemeron/skills/./protasis/EVOLUTION.md",
+            "plugins\\hexaemeron\\skills\\protasis\\EVOLUTION.md",
+            "plugins/hexaemeron/skills/protasis/EVOLUTION.md\x1f",
+            "plugins/hexa\x80emeron/skills/protasis/EVOLUTION.md",
+            "plugins/hexa\u202eemeron/skills/protasis/EVOLUTION.md",
+        )
+        for path in paths:
+            with self.subTest(path=repr(path)):
+                row = (
+                    f"protasis | {path} | "
+                    "next-generation-after-integration-base"
+                )
+                self.assertIn("P006", codes(relation_block(row) + COMPLETE_STEP))
+
+    def test_unknown_relation_blank_row_and_target_directory_mismatch_refuse(self):
+        unknown = VERSION_RELATION_ROW.replace(
+            "next-generation-after-integration-base", "next-minor"
+        )
+        mismatch = VERSION_RELATION_ROW.replace(
+            "/protasis/EVOLUTION.md", "/fiat/EVOLUTION.md"
+        )
+        self.assertIn("P006", codes(relation_block(unknown) + COMPLETE_STEP))
+        self.assertIn(
+            "P006",
+            codes("```version-relations\n" + VERSION_RELATION_ROW + "\n\n```\n" + COMPLETE_STEP),
+        )
+        self.assertIn("P006", codes(relation_block(mismatch) + COMPLETE_STEP))
+
+    def test_a_fenced_decoy_is_not_a_declaration(self):
+        decoy = (
+            "````markdown\n"
+            "```version-relations\n"
+            "bad | row\n"
+            "```\n"
+            "````\n\n"
+        )
+        self.assertEqual(codes(decoy + COMPLETE_STEP), [])
+
+    def test_the_closed_block_has_a_row_cap_and_exact_info_string(self):
+        rows = tuple(
+            f"skill-{number} | plugins/example/skills/skill-{number}/EVOLUTION.md | "
+            "next-generation-after-integration-base"
+            for number in range(32)
+        )
+        self.assertEqual(codes(relation_block(*rows) + COMPLETE_STEP), [])
+        self.assertIn("P006", codes(relation_block(*rows, VERSION_RELATION_ROW) + COMPLETE_STEP))
+        malformed_info = relation_block(VERSION_RELATION_ROW).replace(
+            "```version-relations", "```version-relations extra", 1
+        )
+        self.assertIn("P006", codes(malformed_info + COMPLETE_STEP))
+
+    def test_a_declared_target_has_no_concrete_version_token_outside_the_block(self):
+        token = "protasis-v4.8.0"
+        valid = relation_block(VERSION_RELATION_ROW) + COMPLETE_STEP
+        candidates = (
+            valid.replace("```version-relations", token + "\n```version-relations", 1),
+            valid.replace("## Step 1", token + "\n\n## Step 1", 1),
+            valid.replace("Do the thing.", f"Do the thing for {token}."),
+            valid.replace("A clean tree.", f"A clean tree at `{token}`."),
+            valid.replace("Proved by `pytest`.", f"Proved by `pytest {token}`."),
+            valid.replace("`a.py`.", f"`a.py` and {token}."),
+            valid.replace("One case.", f"One case for {token}."),
+            valid.replace("none, docs only.", f"none for {token}, docs only."),
+            valid.replace(
+                "**Tests.** One case.",
+                f"**Tests.** One case.\n\n```bash\nprintf '{token}'\n```",
+            ),
+            valid + COMPLETE_RUNBOOK_AMENDMENT.replace("fiat-v2.0.0", token),
+        )
+        for position, source in enumerate(candidates):
+            with self.subTest(position=position):
+                self.assertIn("P006", codes(source))
+
+    def test_relation_findings_do_not_echo_runbook_controlled_values(self):
+        rows = (
+            "PRIVATE-ID | plugins/example/skills/PRIVATE-ID/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+            "unknown | plugins/example/skills/unknown/EVOLUTION.md | private-relation",
+            "private-target | private-segment/private-target/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+            "other-target | private-segment/private-target/EVOLUTION.md | "
+            "next-generation-after-integration-base",
+        )
+        source = relation_block(*rows) + COMPLETE_STEP.replace(
+            "Do the thing.", "Do the thing at private-target-v1.2.3."
+        )
+        messages = " ".join(finding.message for finding in findings(source))
+        for value in (
+            "PRIVATE-ID",
+            "private-relation",
+            "private-segment",
+            "private-target",
+        ):
+            with self.subTest(value=value):
+                self.assertNotIn(value, messages)
+
+
 class ExitCommands(unittest.TestCase):
     def test_an_exit_with_no_command_is_a_finding(self):
         source = COMPLETE_STEP.replace("**Exit.** Proved by `pytest`.",
@@ -219,6 +374,8 @@ class Documents(unittest.TestCase):
     def test_a_document_with_no_step_is_a_finding(self):
         self.assertEqual(codes("# Title\n\n## Steps\n\nDecided later.\n"),
                          ["P003"])
+        malformed_relation = relation_block("bad | row")
+        self.assertEqual(codes(malformed_relation), ["P003", "P006"])
 
     def test_a_step_heading_inside_a_fence_is_not_a_step(self):
         source = "# Title\n\n```markdown\n## Step 1: Example\n```\n"
@@ -380,6 +537,15 @@ if __name__ == "__main__":
 
 COMPLETE_STUDY = (FIXTURES / "complete-study.md").read_text(encoding="utf-8")
 
+COMPLETE_STUDY_AMENDMENT = """
+### Amendment -- 2026-08-29
+
+**What changed.** Study mode now checks the amendment shape.
+**Why.** A malformed correction must fail before it is receipted.
+**Steps touched.** Step 1.
+**Still holding.** Step 1: entry holds; exit holds.
+"""
+
 
 def study_findings(source):
     with tempfile.TemporaryDirectory() as directory:
@@ -423,6 +589,111 @@ def with_answer(number, answer):
         if not skipping:
             out.append(line)
     return "\n".join(out) + "\n"
+
+
+class StudyAmendments(unittest.TestCase):
+    def test_each_fixture_omission_reports_s008(self):
+        fixtures = (
+            "missing-amendment-date-study.md",
+            "missing-amendment-what-changed-study.md",
+            "missing-amendment-why-study.md",
+            "missing-amendment-steps-touched-study.md",
+            "missing-amendment-still-holding-study.md",
+        )
+        for name in fixtures:
+            with self.subTest(fixture=name):
+                found = protasis.check_study(FIXTURES / name)
+                self.assertEqual([finding.code for finding in found], ["S008"])
+
+    def test_complete_and_absent_amendments_are_clean(self):
+        self.assertEqual(
+            protasis.check_study(FIXTURES / "complete-amended-study.md"), []
+        )
+        self.assertEqual(protasis.check_study(FIXTURES / "complete-study.md"), [])
+
+    def test_backtick_tilde_and_longer_closing_fences_hide_decoys(self):
+        fences = (
+            ("```markdown", "```"),
+            ("~~~markdown", "~~~"),
+            ("```markdown", "````"),
+        )
+        for opening, closing in fences:
+            with self.subTest(opening=opening, closing=closing):
+                decoy = (
+                    f"\n{opening}\n"
+                    "### Amendment\n"
+                    "**Unexpected.** private-amendment-value\n"
+                    f"{closing}\n"
+                )
+                self.assertNotIn("S008", study_codes(COMPLETE_STUDY + decoy))
+
+    def test_malformed_and_non_calendar_dates_report_s008(self):
+        for date in ("2026/08/29", "2026-02-30"):
+            with self.subTest(date=date):
+                source = COMPLETE_STUDY + COMPLETE_STUDY_AMENDMENT.replace(
+                    "2026-08-29", date
+                )
+                self.assertIn("S008", study_codes(source))
+
+    def test_fields_are_ordered_unique_known_and_non_empty(self):
+        duplicate = COMPLETE_STUDY_AMENDMENT.replace(
+            "**Why.** A malformed correction must fail before it is receipted.",
+            "**Why.** First reason.\n**Why.** Second reason.",
+        )
+        reordered = COMPLETE_STUDY_AMENDMENT.replace(
+            "**What changed.** Study mode now checks the amendment shape.\n"
+            "**Why.** A malformed correction must fail before it is receipted.\n",
+            "**Why.** A malformed correction must fail before it is receipted.\n"
+            "**What changed.** Study mode now checks the amendment shape.\n",
+        )
+        unexpected = COMPLETE_STUDY_AMENDMENT.replace(
+            "**Why.** A malformed correction must fail before it is receipted.",
+            "**Private field.** private-amendment-value\n"
+            "**Why.** A malformed correction must fail before it is receipted.",
+        )
+        empty = COMPLETE_STUDY_AMENDMENT.replace(
+            "**Steps touched.** Step 1.", "**Steps touched.**"
+        )
+        for source in (duplicate, reordered, unexpected, empty):
+            with self.subTest(source=source):
+                self.assertIn("S008", study_codes(COMPLETE_STUDY + source))
+
+        messages = " ".join(
+            finding.message
+            for finding in study_findings(COMPLETE_STUDY + unexpected)
+        )
+        self.assertNotIn("private-amendment-value", messages)
+        self.assertNotIn("Private field", messages)
+
+    def test_an_amendment_must_remain_final(self):
+        source = (
+            COMPLETE_STUDY
+            + COMPLETE_STUDY_AMENDMENT
+            + "\n## Appendix\n\nLater section.\n"
+        )
+        self.assertIn("S008", study_codes(source))
+
+    def test_text_and_json_reports_carry_the_same_finding(self):
+        path = FIXTURES / "missing-amendment-date-study.md"
+        text_output = io.StringIO()
+        with redirect_stdout(text_output):
+            text_status = protasis.main(["--study", str(path)])
+        json_output = io.StringIO()
+        with redirect_stdout(json_output):
+            json_status = protasis.main([
+                "--study", str(path), "--format", "json",
+            ])
+        payload = json.loads(json_output.getvalue())
+        self.assertEqual((text_status, json_status), (1, 1))
+        self.assertEqual([finding["code"] for finding in payload], ["S008"])
+        self.assertIn(
+            f"S008 {payload[0]['message']}",
+            text_output.getvalue(),
+        )
+
+    def test_only_runbooks_require_complete_replacement_clauses(self):
+        self.assertEqual(study_codes(COMPLETE_STUDY + COMPLETE_STUDY_AMENDMENT), [])
+        self.assertIn("P005", codes(COMPLETE_STEP + COMPLETE_STUDY_AMENDMENT))
 
 
 class StudyItems(unittest.TestCase):

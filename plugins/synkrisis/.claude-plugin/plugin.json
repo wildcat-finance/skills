@@ -1,8 +1,8 @@
 {
   "name": "synkrisis",
   "displayName": "Synkrisis",
-  "version": "0.1.0",
-  "description": "Refusing scaffold for the specified comparison of validated run observations in one declared cohort.",
+  "version": "0.5.1",
+  "description": "Checked cohort construction, bounded diagnosis, fixed-template rendering and whole-path verification over validated run observations, held to a measured work budget.",
   "author": {
     "name": "Wildcat Labs",
     "url": "https://wildcat.finance"

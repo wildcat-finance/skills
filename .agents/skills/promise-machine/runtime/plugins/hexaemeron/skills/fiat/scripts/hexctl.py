@@ -21,15 +21,19 @@ human-facing goes to plain text or stderr.
 
 import argparse
 import contextlib
+import ctypes
 import datetime
+import errno
 import fcntl
 import glob
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import re
 import selectors
+import shutil
 import stat
 import subprocess
 import sys
@@ -43,6 +47,7 @@ STATE_FILE = "state.json"
 LEDGER_FILE = "ledger.jsonl"
 STUDY_AMENDMENT_PENDING_FILE = "study-amendment-pending.json"
 RUNBOOK_AMENDMENT_PENDING_FILE = "runbook-amendment-pending.json"
+VERSION_RESOLUTION_PENDING_FILE = "version-resolution.pending.json"
 AMENDMENT_PENDING_FILES = {
     "study": STUDY_AMENDMENT_PENDING_FILE,
     "runbook": RUNBOOK_AMENDMENT_PENDING_FILE,
@@ -102,6 +107,20 @@ DEFAULT_CONFIG = {
     "solidity": "auto",
 }
 
+CONFIG_SET_EXACT_PATHS = frozenset({"audit.log_path", "git"})
+CONFIG_SET_PREFIXES = ("git.",)
+"""The complete mutable Fiat configuration surface.
+
+Audit policy, skill identity and Solidity classification are controller gates, not
+operator tuning knobs.  A run may move its own audit record and may change Git
+settings, but no other stored config path can be rewritten after ``init``.
+"""
+
+
+def config_path_is_mutable(path: str) -> bool:
+    """Return whether ``config set`` may write this exact path."""
+    return path in CONFIG_SET_EXACT_PATHS or path.startswith(CONFIG_SET_PREFIXES)
+
 LINTS = ("phylax", "ephoros", "hypomnema")
 """The three bundled lints a non-Solidity audit round runs.
 
@@ -150,11 +169,11 @@ def audit_filter_obligation() -> dict:
 
 
 SOLIDITY_MODES = ("auto", True, False)
-"""What `config solidity` accepts.
+"""What a stored legacy ``config.solidity`` value may contain.
 
 `auto` reads the answer off the `security_suite` receipt, which is where the run
 already recorded whether the Pashov pair applies. `true` and `false` force it, for a
-repository where the receipt does not tell the truth about the diff.
+legacy run that recorded an override before the config write gate existed.
 """
 
 
@@ -163,7 +182,7 @@ def solidity_mode(value) -> bool:
 
     Checked by identity rather than by `in SOLIDITY_MODES`, because Python makes
     `1 == True` and `0 == False`, so membership would accept an integer as a mode and
-    store it. `config set solidity 1` is a caller error, not a way to spell `true`.
+    store it. An integer in an older state is not a way to spell ``true``.
     """
     if isinstance(value, bool):
         return True
@@ -197,8 +216,13 @@ SOURCE_BYTES_MAX = 2 * 1024 * 1024
 AMENDMENT_HISTORY_MAX = 500
 GIT_OUTPUT_MAX = 2 * 1024 * 1024
 GIT_PATHS_MAX = 500
+# Integration revalidation reads a surface that grows with the base, so it
+# carries its own ceiling. GIT_PATHS_MAX still bounds the commit range, the
+# prose diff and the checkpoint ref set, none of which grow that way.
+INTEGRATION_PATHS_MAX = 4096
 GIT_TIMEOUT = 30
 INTEGRATION_REVALIDATION_SCHEMA = "fiat-integration-revalidation/v1"
+INTEGRATION_REVALIDATION_SCHEMA_V2 = "fiat-integration-revalidation/v2"
 INTEGRATION_REVALIDATION_FILE = os.path.join(
     STATE_DIR_NAME, "integration-revalidation.json"
 )
@@ -207,6 +231,62 @@ INTEGRATION_COMMAND_BYTES_MAX = 2048
 INTEGRATION_CHECK_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 INTEGRATION_SYNC_SUPERSESSIONS_MAX = 8
 INTEGRATION_SYNC_REASON_BYTES_MAX = 1024
+SYNC_RESOLUTION_GUARD_SCHEMA = "fiat-sync-resolution-guard/v1"
+SYNC_RESOLUTION_GUARD_KEYS = frozenset(
+    {
+        "schema",
+        "side_selected_paths",
+        "superseded_intersection_paths",
+        "acknowledged_paths",
+    }
+)
+SYNC_TREE_PATH_BATCH_MAX = 64
+SYNC_TREE_ARG_BYTES_MAX = 64 * 1024
+GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN = b"fiat-generator-file/v1\0"
+GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN = b"fiat-generator-tree/v1\0"
+GENERATOR_AGGREGATE_REGISTRY = {
+    "promise-machine-portable-runtime-v1": {
+        "prefix": ".agents/skills/promise-machine/runtime/",
+        "generator": "scripts/portable_promise_machine.py",
+        "manifest": "MANIFEST.json",
+        "manifest_schema": "promise-machine-portable-runtime/v1",
+        "manifest_contract": "promise-machine/v1",
+        "command": "python3 scripts/portable_promise_machine.py check",
+        "max_files": 1024,
+        "max_bytes": 32 * 1024 * 1024,
+    },
+}
+RESOLUTION_SYNC_KEYS = frozenset(
+    {
+        "commit",
+        "base",
+        "starting_base",
+        "base_head",
+        "parents",
+        "github_verified",
+        "product_evidence",
+        "revalidation",
+        "resolution_guard",
+    }
+)
+RESOLUTION_REVALIDATION_KEYS = frozenset(
+    {
+        "schema",
+        "artifact",
+        "sha256",
+        "base_before",
+        "base_after",
+        "product_paths",
+        "upstream_paths",
+        "overlap_paths",
+        "composition_paths",
+        "affected_paths",
+        "checks",
+    }
+)
+RESOLUTION_REVALIDATION_CHECK_KEYS = frozenset(
+    {"id", "command", "paths", "exit"}
+)
 OBSERVATION_BINDING_CONTRACT = "fiat-run-observation-binding/v1"
 OBSERVATION_CONTRACT = "promise-machine-run-observation/v1"
 OBSERVATION_BYTES_MAX = 1_048_576
@@ -222,6 +302,99 @@ OBSERVATION_CAPTURE_STATUSES = (
 OBSERVATION_REDACTION_STATUSES = ("passed", "failed", "unknown")
 OBSERVATION_REASON_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 _OBSERVATION_VALIDATOR = None
+
+CHECKPOINT_SCHEMA = "fiat-controller-checkpoint/v1"
+CHECKPOINT_RESULT_SCHEMA = "fiat-controller-checkpoint-export/v1"
+CHECKPOINT_RESTORE_RESULT_SCHEMA = "fiat-controller-checkpoint-restore/v1"
+CHECKPOINT_MANIFEST_FILE = "MANIFEST.json"
+CHECKPOINT_CONTROLLER_DIR = "controller"
+CHECKPOINT_RESTORE_MARKER_FILE = "checkpoint-restore.json"
+CHECKPOINT_RESTORE_MARKER_SCHEMA = "fiat-controller-checkpoint-restore-marker/v1"
+CHECKPOINT_FILES_MAX = 4096
+CHECKPOINT_DIRECTORIES_MAX = 4096
+CHECKPOINT_TOTAL_BYTES_MAX = 256 * 1024 * 1024
+CHECKPOINT_FILE_BYTES_MAX = 64 * 1024 * 1024
+CHECKPOINT_MANIFEST_BYTES_MAX = 1024 * 1024
+CHECKPOINT_PATH_BYTES_MAX = 1024
+CHECKPOINT_JSON_DEPTH_MAX = 128
+CHECKPOINT_IO_CHUNK = 64 * 1024
+CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
+    {
+        "fiat-v5.35.1",
+        "fiat-v5.36.1",
+        "fiat-v5.37.1",
+        "fiat-v5.38.1",
+        "fiat-v5.39.1",
+        "fiat-v5.40.1",
+        "fiat-v5.41.1",
+        "fiat-v5.42.1",
+        "fiat-v5.43.1",
+    }
+)
+VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
+VERSION_RELATIONS_INFO = "version-relations"
+VERSION_RELATION = "next-generation-after-integration-base"
+VERSION_RELATIONS_MAX = 32
+VERSION_RELATION_PATH_BYTES_MAX = 1024
+VERSION_RELATION_COUNTER_DIGITS_MAX = 128
+VERSION_RELATION_COUNTER_MAX = (10 ** VERSION_RELATION_COUNTER_DIGITS_MAX) - 1
+VERSION_RELATION_SKILL_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+VERSION_RELATION_FENCE_RE = re.compile(
+    r"^ {0,3}(?P<mark>`{3,}|~{3,})(?P<info>.*)$"
+)
+VERSION_RELATION_TARGET_KEYS = frozenset(
+    {
+        "skill",
+        "ledger",
+        "relation",
+        "anchor_version",
+        "evolution",
+        "generation",
+        "epoch",
+        "frontier_status",
+        "frontier_revision",
+        "frontier_sha256",
+        "current_frontier_sha256",
+        "next_job_sha256",
+        "ledger_sha256",
+        "skill_sha256",
+        "skill_metadata_version",
+    }
+)
+VERSION_RELATION_KEYS = frozenset(
+    {"schema", "source_sha256", "anchor_commit", "targets"}
+)
+VERSION_RESOLUTION_SCHEMA = "fiat-version-resolution/v1"
+VERSION_RESOLUTION_PENDING_SCHEMA = "fiat-version-resolution-pending/v1"
+VERSION_RESOLUTIONS_MAX = 8
+VERSION_RESOLUTION_PENDING_BYTES_MAX = 256 * 1024
+VERSION_RESOLUTION_TARGET_KEYS = frozenset(
+    {
+        "skill",
+        "ledger",
+        "relation",
+        "anchor_version",
+        "base_version",
+        "resolved_version",
+        "base_ledger_sha256",
+        "head_ledger_sha256",
+        "row_sha256",
+        "skill_sha256",
+        "skill_metadata_version",
+    }
+)
+VERSION_RESOLUTION_KEYS = frozenset(
+    {
+        "schema",
+        "runbook_sha256",
+        "relations_sha256",
+        "base_ref",
+        "base_commit",
+        "head_commit",
+        "targets",
+        "ts",
+    }
+)
 
 
 def scoped_path(base_dir: str, supplied: str, label: str) -> str:
@@ -1028,6 +1201,222 @@ def require_state_container(value, path: str, expected_type: type):
     return value
 
 
+def _state_relation_fault(path: str, reason: str) -> None:
+    """Refuse one malformed optional relation container without echoing values."""
+    die(f"state version relations key '{path}' {reason}", 1)
+
+
+def validate_version_relations_shape(value, path: str) -> dict:
+    """Validate the closed additive v1 runbook-anchor receipt."""
+    if not isinstance(value, dict):
+        _state_relation_fault(path, "must be an object")
+    if set(value) != VERSION_RELATION_KEYS:
+        _state_relation_fault(path, "has an unsupported field set")
+    if value.get("schema") != VERSION_RELATIONS_SCHEMA:
+        _state_relation_fault(f"{path}.schema", "is not supported")
+    for name in ("source_sha256", "anchor_commit"):
+        candidate = value.get(name)
+        valid = isinstance(candidate, str) and (
+            re.fullmatch(r"[0-9a-f]{64}", candidate) is not None
+            if name == "source_sha256"
+            else COMMIT_RE.fullmatch(candidate) is not None
+        )
+        if not valid:
+            _state_relation_fault(f"{path}.{name}", "is malformed")
+    targets = value.get("targets")
+    if not isinstance(targets, list) or not targets:
+        _state_relation_fault(f"{path}.targets", "must be a non-empty array")
+    if len(targets) > VERSION_RELATIONS_MAX:
+        _state_relation_fault(f"{path}.targets", "exceeds its item cap")
+
+    prior_skill = None
+    seen_paths = set()
+    for index, target in enumerate(targets):
+        target_path = f"{path}.targets[{index}]"
+        if not isinstance(target, dict) or set(target) != VERSION_RELATION_TARGET_KEYS:
+            _state_relation_fault(target_path, "has an unsupported field set")
+        skill = target.get("skill")
+        ledger = target.get("ledger")
+        if not isinstance(skill, str) or not VERSION_RELATION_SKILL_RE.fullmatch(skill):
+            _state_relation_fault(f"{target_path}.skill", "is malformed")
+        if not isinstance(ledger, str) or _version_relation_path_fault(ledger, skill):
+            _state_relation_fault(f"{target_path}.ledger", "is malformed")
+        if prior_skill is not None and skill <= prior_skill:
+            _state_relation_fault(f"{path}.targets", "is not uniquely skill-sorted")
+        if ledger in seen_paths:
+            _state_relation_fault(f"{path}.targets", "repeats a ledger path")
+        prior_skill = skill
+        seen_paths.add(ledger)
+        if target.get("relation") != VERSION_RELATION:
+            _state_relation_fault(f"{target_path}.relation", "is not supported")
+
+        counters = []
+        for name in ("evolution", "generation", "epoch"):
+            counter = target.get(name)
+            if (
+                not isinstance(counter, int)
+                or isinstance(counter, bool)
+                or counter < 0
+                or counter > VERSION_RELATION_COUNTER_MAX
+            ):
+                _state_relation_fault(f"{target_path}.{name}", "is malformed")
+            if name == "generation" and counter == VERSION_RELATION_COUNTER_MAX:
+                _state_relation_fault(
+                    f"{target_path}.generation",
+                    "cannot be projected within its counter bound",
+                )
+            counters.append(counter)
+        expected_label = f"{skill}-v{counters[0]}.{counters[1]}.{counters[2]}"
+        if target.get("anchor_version") != expected_label:
+            _state_relation_fault(f"{target_path}.anchor_version", "is inconsistent")
+        expected_metadata = ".".join(str(counter) for counter in counters)
+        if target.get("skill_metadata_version") != expected_metadata:
+            _state_relation_fault(
+                f"{target_path}.skill_metadata_version", "is inconsistent"
+            )
+        if target.get("frontier_status") not in ("open", "mature"):
+            _state_relation_fault(f"{target_path}.frontier_status", "is malformed")
+        revision = target.get("frontier_revision")
+        try:
+            revision_bytes = (
+                revision.encode("utf-8") if isinstance(revision, str) else b""
+            )
+        except UnicodeEncodeError:
+            revision_bytes = b""
+        if (
+            not isinstance(revision, str)
+            or not revision_bytes
+            or len(revision_bytes) > VERSION_RELATION_PATH_BYTES_MAX
+            or _contains_nonprinting_character(revision)
+        ):
+            _state_relation_fault(f"{target_path}.frontier_revision", "is malformed")
+        for name in (
+            "frontier_sha256",
+            "current_frontier_sha256",
+            "next_job_sha256",
+            "ledger_sha256",
+            "skill_sha256",
+        ):
+            digest = target.get(name)
+            if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                _state_relation_fault(f"{target_path}.{name}", "is malformed")
+    return value
+
+
+def _state_resolution_fault(path: str, reason: str) -> None:
+    """Refuse one malformed optional resolution without echoing its value."""
+    die(f"state version resolution key '{path}' {reason}", 1)
+
+
+def validate_version_resolution_shape(value, path: str) -> dict:
+    """Validate one closed append-only integrate-time resolution receipt."""
+    if not isinstance(value, dict):
+        _state_resolution_fault(path, "must be an object")
+    if set(value) != VERSION_RESOLUTION_KEYS:
+        _state_resolution_fault(path, "has an unsupported field set")
+    if value.get("schema") != VERSION_RESOLUTION_SCHEMA:
+        _state_resolution_fault(f"{path}.schema", "is not supported")
+    for name in ("runbook_sha256", "relations_sha256"):
+        digest = value.get(name)
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            _state_resolution_fault(f"{path}.{name}", "is malformed")
+    base_ref = value.get("base_ref")
+    if (
+        not isinstance(base_ref, str)
+        or not BRANCH_RE.fullmatch(base_ref)
+        or ".." in base_ref
+        or "//" in base_ref
+        or base_ref.endswith(".lock")
+    ):
+        _state_resolution_fault(f"{path}.base_ref", "is malformed")
+    for name in ("base_commit", "head_commit"):
+        commit_sha = value.get(name)
+        if not isinstance(commit_sha, str) or COMMIT_RE.fullmatch(commit_sha) is None:
+            _state_resolution_fault(f"{path}.{name}", "is malformed")
+    timestamp = value.get("ts")
+    try:
+        parsed_timestamp = (
+            datetime.datetime.fromisoformat(timestamp)
+            if isinstance(timestamp, str)
+            else None
+        )
+    except ValueError:
+        parsed_timestamp = None
+    if parsed_timestamp is None or parsed_timestamp.tzinfo is None:
+        _state_resolution_fault(f"{path}.ts", "is malformed")
+
+    targets = value.get("targets")
+    if not isinstance(targets, list) or not targets:
+        _state_resolution_fault(f"{path}.targets", "must be a non-empty array")
+    if len(targets) > VERSION_RELATIONS_MAX:
+        _state_resolution_fault(f"{path}.targets", "exceeds its item cap")
+    prior_skill = None
+    seen_paths = set()
+    for index, target in enumerate(targets):
+        target_path = f"{path}.targets[{index}]"
+        if not isinstance(target, dict) or set(target) != VERSION_RESOLUTION_TARGET_KEYS:
+            _state_resolution_fault(target_path, "has an unsupported field set")
+        skill = target.get("skill")
+        ledger = target.get("ledger")
+        if not isinstance(skill, str) or VERSION_RELATION_SKILL_RE.fullmatch(skill) is None:
+            _state_resolution_fault(f"{target_path}.skill", "is malformed")
+        if not isinstance(ledger, str) or _version_relation_path_fault(ledger, skill):
+            _state_resolution_fault(f"{target_path}.ledger", "is malformed")
+        if prior_skill is not None and skill <= prior_skill:
+            _state_resolution_fault(f"{path}.targets", "is not uniquely skill-sorted")
+        if ledger in seen_paths:
+            _state_resolution_fault(f"{path}.targets", "repeats a ledger path")
+        prior_skill = skill
+        seen_paths.add(ledger)
+        if target.get("relation") != VERSION_RELATION:
+            _state_resolution_fault(f"{target_path}.relation", "is not supported")
+        labels = {}
+        for name in ("anchor_version", "base_version", "resolved_version"):
+            label = target.get(name)
+            parts = _label_parts(label, skill) if isinstance(label, str) else None
+            if parts is None or label != f"{skill}-v{parts[0]}.{parts[1]}.{parts[2]}":
+                _state_resolution_fault(f"{target_path}.{name}", "is malformed")
+            labels[name] = parts
+        anchor, base, resolved = (
+            labels["anchor_version"],
+            labels["base_version"],
+            labels["resolved_version"],
+        )
+        if (
+            base[0] != anchor[0]
+            or base[2] != anchor[2]
+            or base[1] < anchor[1]
+            or resolved != (base[0], base[1] + 1, base[2])
+        ):
+            _state_resolution_fault(f"{target_path}.resolved_version", "is inconsistent")
+        if target.get("skill_metadata_version") != ".".join(
+            str(part) for part in resolved
+        ):
+            _state_resolution_fault(
+                f"{target_path}.skill_metadata_version", "is inconsistent"
+            )
+        for name in (
+            "base_ledger_sha256",
+            "head_ledger_sha256",
+            "row_sha256",
+            "skill_sha256",
+        ):
+            digest = target.get(name)
+            if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+                _state_resolution_fault(f"{target_path}.{name}", "is malformed")
+    return value
+
+
+def validate_version_resolution_history(value, path: str) -> list[dict]:
+    if not isinstance(value, list):
+        _state_resolution_fault(path, "must be an array")
+    if len(value) > VERSION_RESOLUTIONS_MAX:
+        _state_resolution_fault(path, "exceeds its item cap")
+    for index, receipt in enumerate(value):
+        validate_version_resolution_shape(receipt, f"{path}[{index}]")
+    return value
+
+
 def validate_state_shape(state) -> dict:
     """Validate the version-1 container spine in one deterministic order.
 
@@ -1040,7 +1429,22 @@ def validate_state_shape(state) -> dict:
         require_state_container(
             config.get(section), f"config.{section}", dict
         )
-    require_state_container(root.get("receipts"), "receipts", dict)
+    receipts = require_state_container(root.get("receipts"), "receipts", dict)
+    runbook = receipts.get("runbook")
+    if isinstance(runbook, dict) and "version_relations" in runbook:
+        validate_version_relations_shape(
+            runbook["version_relations"], "receipts.runbook.version_relations"
+        )
+    integrate = root.get("integrate")
+    if isinstance(integrate, dict) and "version_resolutions" in integrate:
+        validate_version_resolution_history(
+            integrate["version_resolutions"], "integrate.version_resolutions"
+        )
+    terminal = receipts.get("integrate")
+    if isinstance(terminal, dict) and "version_resolution" in terminal:
+        validate_version_resolution_shape(
+            terminal["version_resolution"], "receipts.integrate.version_resolution"
+        )
     steps = require_state_container(root.get("steps"), "steps", list)
 
     for step_index, step in enumerate(steps):
@@ -1203,7 +1607,158 @@ def clear_study_amendment_pending(base_dir: str) -> None:
     clear_amendment_pending(base_dir, "study")
 
 
-def load_state(base_dir: str, *, allow_pending_amendment: bool = False) -> dict:
+def version_resolution_pending_path(base_dir: str) -> str:
+    return os.path.join(state_root(base_dir), VERSION_RESOLUTION_PENDING_FILE)
+
+
+def load_version_resolution_pending(base_dir: str) -> dict | None:
+    """Read one closed, subject-labelled interrupted resolution marker."""
+    path = version_resolution_pending_path(base_dir)
+    try:
+        file_state = os.lstat(path)
+    except FileNotFoundError:
+        return None
+    except OSError:
+        die("version resolution pending record cannot be inspected", 1)
+    if not stat.S_ISREG(file_state.st_mode) or stat.S_ISLNK(file_state.st_mode):
+        die("version resolution pending record is not a regular file", 1)
+    if file_state.st_size > VERSION_RESOLUTION_PENDING_BYTES_MAX:
+        die(
+            "version resolution pending record exceeds "
+            f"{VERSION_RESOLUTION_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
+    try:
+        with open(path, "rb") as handle:
+            raw = handle.read(VERSION_RESOLUTION_PENDING_BYTES_MAX + 1)
+    except OSError:
+        die("version resolution pending record cannot be read", 1)
+    if len(raw) > VERSION_RESOLUTION_PENDING_BYTES_MAX:
+        die(
+            "version resolution pending record exceeds "
+            f"{VERSION_RESOLUTION_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        die("version resolution pending record is malformed", 1)
+    expected_keys = {
+        "schema",
+        "subject",
+        "state_before_sha256",
+        "state_after_sha256",
+        "ledger_head",
+        "receipt_sha256",
+        "receipt",
+    }
+    if not isinstance(value, dict) or set(value) != expected_keys:
+        die("version resolution pending record has an unsupported shape", 1)
+    if (
+        value.get("schema") != VERSION_RESOLUTION_PENDING_SCHEMA
+        or value.get("subject") != "version-resolution"
+    ):
+        die("version resolution pending record has an unsupported subject", 1)
+    for name in (
+        "state_before_sha256",
+        "state_after_sha256",
+        "ledger_head",
+        "receipt_sha256",
+    ):
+        digest = value.get(name)
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            die("version resolution pending record has an invalid digest", 1)
+    receipt = validate_version_resolution_shape(
+        value.get("receipt"), "pending.version_resolution.receipt"
+    )
+    if hashlib.sha256(canonical(receipt).encode()).hexdigest() != value["receipt_sha256"]:
+        die("version resolution pending record receipt digest does not match", 1)
+    return value
+
+
+def write_version_resolution_pending(base_dir: str, value: dict) -> None:
+    """Publish the resolution marker before its ledger/state write windows."""
+    try:
+        raw = (
+            json.dumps(value, sort_keys=True, separators=(",", ":")) + "\n"
+        ).encode("utf-8")
+    except (TypeError, ValueError, UnicodeEncodeError):
+        die("version resolution pending record has an unsupported shape", 1)
+    if len(raw) > VERSION_RESOLUTION_PENDING_BYTES_MAX:
+        die(
+            "version resolution pending record exceeds "
+            f"{VERSION_RESOLUTION_PENDING_BYTES_MAX}-byte cap",
+            1,
+        )
+    root = state_root(base_dir)
+    path = version_resolution_pending_path(base_dir)
+    descriptor, temporary = tempfile.mkstemp(
+        prefix=".version-resolution-pending-", dir=root
+    )
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(raw)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        directory = os.open(root, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except OSError:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        try:
+            os.unlink(temporary)
+        except FileNotFoundError:
+            pass
+        die("version resolution pending record could not be written", 1)
+
+
+def clear_version_resolution_pending(base_dir: str) -> None:
+    path = version_resolution_pending_path(base_dir)
+    try:
+        os.unlink(path)
+        directory = os.open(state_root(base_dir), os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except FileNotFoundError:
+        return
+    except OSError:
+        die("version resolution pending record could not be cleared", 1)
+
+
+def make_version_resolution_write_durable(
+    base_dir: str, path: str, label: str, *, replaced: bool = False
+) -> None:
+    """Fsync one transaction write before crossing its next recovery window."""
+    try:
+        descriptor = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        if replaced:
+            directory = os.open(state_root(base_dir), os.O_RDONLY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+    except OSError:
+        die(f"version resolution {label} could not be made durable", 1)
+
+
+def load_state(
+    base_dir: str,
+    *,
+    allow_pending_amendment: bool = False,
+    allow_pending_resolution: bool = False,
+) -> dict:
     path = state_path(base_dir)
     if not os.path.exists(path):
         # A checkout that started a run has no state of its own: the run's state
@@ -1232,15 +1787,26 @@ def load_state(base_dir: str, *, allow_pending_amendment: bool = False) -> dict:
     except (ValueError, OSError) as exc:
         die(f"state file unreadable at {path}: {exc}", 1)
     state = validate_state_shape(state)
-    if not allow_pending_amendment:
-        pending = pending_amendments(base_dir)
-        if pending:
-            subject = next(iter(pending))
-            die(
-                f"{subject} amendment transaction is pending; rerun `hexctl "
-                f"amend {subject} --artifact <canonical-{subject}>` to recover "
-                "before continuing"
-            )
+    amendments = pending_amendments(base_dir)
+    resolution = load_version_resolution_pending(base_dir)
+    if amendments and resolution is not None:
+        die(
+            "amendment and version-resolution transactions are both pending; "
+            "inspect both markers without removing either",
+            1,
+        )
+    if amendments and not allow_pending_amendment:
+        subject = next(iter(amendments))
+        die(
+            f"{subject} amendment transaction is pending; rerun `hexctl "
+            f"amend {subject} --artifact <canonical-{subject}>` to recover "
+            "before continuing"
+        )
+    if resolution is not None and not allow_pending_resolution:
+        die(
+            "version-resolution transaction is pending; rerun `hexctl done "
+            "resolve-versions` to recover before continuing"
+        )
     return state
 
 
@@ -1257,6 +1823,7 @@ MUTATING = frozenset(
         "cmd_halt",
         "cmd_resume",
         "cmd_reset",
+        "cmd_checkpoint_export",
     }
 )
 """Commands that write. `status`, `next` and `verify` only read, and blocking
@@ -1326,11 +1893,21 @@ def held_lock(base_dir: str, command: str):
         os.makedirs(root, exist_ok=True)
 
     path = lock_path(base_dir)
-    fd = os.open(
-        path,
-        os.O_CREAT | os.O_RDWR | getattr(os, "O_CLOEXEC", 0),
-        0o644,
-    )
+    try:
+        fd = os.open(
+            path,
+            os.O_CREAT
+            | os.O_RDWR
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+        )
+    except OSError:
+        die("run lock is not a safe regular file", 1)
+    lock_stat = os.fstat(fd)
+    if not stat.S_ISREG(lock_stat.st_mode) or lock_stat.st_nlink != 1:
+        os.close(fd)
+        die("run lock is not a safe regular file", 1)
     acquired = False
 
     try:
@@ -1744,6 +2321,11 @@ def cmd_init(args) -> None:
             f"for '{run_branch}' off '{args.base}'"
         ),
     )
+    try:
+        starting_commit = _native_relation_worktree_start(worktree, run_branch)
+    except SystemExit:
+        remove_run_worktree(args.dir, worktree)
+        raise
 
     # From here the run's home is the worktree, so a failure has something to
     # undo. Anything that goes wrong while writing state takes the tree with it,
@@ -1779,13 +2361,14 @@ def cmd_init(args) -> None:
         "frontier": frontier,
     }
     state["config"]["audit"]["log_path"] = run_audit_log_path(run_branch)
-    state["worktree"] = worktree
-    state["origin"] = origin_root
+    state["config"]["git"]["worktree"] = worktree
+    state["config"]["git"]["origin"] = origin_root
     init_data = {
         "topic": args.topic,
         "base": args.base,
         "run_branch": run_branch,
         "controller_currency": provenance,
+        "starting_commit": starting_commit,
     }
     if args.task_issue is not None:
         init_data["task_issue"] = args.task_issue
@@ -1878,8 +2461,1535 @@ def ledger_frontier_digest(text: str) -> str | None:
 
 
 def _label_parts(label: str, skill: str) -> tuple[int, int, int] | None:
-    match = re.fullmatch(rf"{re.escape(skill)}-v(\d+)\.(\d+)\.(\d+)", label)
-    return tuple(int(g) for g in match.groups()) if match else None
+    match = re.fullmatch(
+        rf"{re.escape(skill)}-v([0-9]+)\.([0-9]+)\.([0-9]+)", label
+    )
+    if match is None:
+        return None
+    groups = match.groups()
+    if any(len(group) > VERSION_RELATION_COUNTER_DIGITS_MAX for group in groups):
+        return None
+    try:
+        return tuple(int(group) for group in groups)
+    except ValueError:
+        # Python bounds decimal-to-integer conversion. Treat a label beyond that
+        # bound as malformed input instead of letting its exception escape with
+        # interpreter-specific diagnostic text.
+        return None
+
+
+def _contains_nonprinting_character(value: str) -> bool:
+    """Cover control and format characters at a runbook/state boundary."""
+    return any(not character.isprintable() for character in value)
+
+
+def _unfenced_markdown_lines(text: str) -> list[str]:
+    """Return physical Markdown lines that are not inside fenced code.
+
+    Version evidence has to come from the live ledger, not from a quoted
+    specimen that happens to use the same row or header spelling.  Keep the
+    physical line endings so history-prefix receipts still bind exact bytes.
+    """
+    visible = []
+    open_mark = None
+    open_length = None
+    for physical in text.splitlines(keepends=True):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is not None:
+            sequence = fence.group("mark")
+            mark = sequence[0]
+            info = fence.group("info").strip()
+            if open_mark is None:
+                open_mark, open_length = mark, len(sequence)
+            elif mark == open_mark and len(sequence) >= open_length and not info:
+                open_mark, open_length = None, None
+            continue
+        if open_mark is None:
+            visible.append(physical)
+    return visible
+
+
+def _version_relation_path_fault(value: str, skill: str) -> str | None:
+    """Return the lexical fault for one governed ledger path, if any."""
+    if not isinstance(value, str):
+        return "relation path is not text"
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError:
+        encoded = b""
+    parts = value.split("/")
+    if (
+        not encoded
+        or len(encoded) > VERSION_RELATION_PATH_BYTES_MAX
+        or value.startswith(("/", "\\"))
+        or re.match(r"^[A-Za-z]:", value)
+        or "\\" in value
+        or any(part in ("", ".", "..") for part in parts)
+        or _contains_nonprinting_character(value)
+    ):
+        return "relation path is not a safe repository-relative path"
+    if len(parts) < 2 or parts[-1] != "EVOLUTION.md":
+        return "relation path must name an EVOLUTION.md file"
+    if parts[-2] != skill:
+        return "relation target id must match the skill directory before EVOLUTION.md"
+    return None
+
+
+def _first_unfenced_step(lines: list[str]) -> int | None:
+    open_mark = None
+    open_length = None
+    for index, physical in enumerate(lines):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is not None:
+            sequence = fence.group("mark")
+            mark = sequence[0]
+            info = fence.group("info").strip()
+            if open_mark is None:
+                open_mark, open_length = mark, len(sequence)
+                continue
+            if mark == open_mark and len(sequence) >= open_length and not info:
+                open_mark, open_length = None, None
+            continue
+        if open_mark is None and STEP_HEADING_RE.fullmatch(line):
+            return index
+    return None
+
+
+def parse_version_relation_source(text: str) -> dict | None:
+    """Extract one closed Protasis relation block without opening its paths."""
+    lines = text.splitlines(keepends=True)
+    blocks = []
+    open_mark = None
+    open_length = None
+    relation_open = None
+    for index, physical in enumerate(lines):
+        line = physical.rstrip("\r\n")
+        fence = VERSION_RELATION_FENCE_RE.match(line)
+        if fence is None:
+            continue
+        sequence = fence.group("mark")
+        mark = sequence[0]
+        info = fence.group("info").strip()
+        if open_mark is None:
+            open_mark, open_length = mark, len(sequence)
+            words = info.split()
+            relation_open = (
+                (index, info == VERSION_RELATIONS_INFO)
+                if words and words[0] == VERSION_RELATIONS_INFO
+                else None
+            )
+            continue
+        if mark == open_mark and len(sequence) >= open_length and not info:
+            if relation_open is not None:
+                opening, exact_info = relation_open
+                blocks.append((opening, index, exact_info, True))
+            open_mark, open_length, relation_open = None, None, None
+    if relation_open is not None:
+        opening, exact_info = relation_open
+        blocks.append((opening, len(lines) - 1, exact_info, False))
+    if not blocks:
+        return None
+    if len(blocks) != 1:
+        die("runbook carries more than one version-relations block")
+
+    opening, closing, exact_info, closed = blocks[0]
+    if not exact_info:
+        die("version-relations fence must carry only that exact info string")
+    if not closed:
+        die("version-relations block is not closed")
+    first_step = _first_unfenced_step(lines)
+    if first_step is not None and opening >= first_step:
+        die("version-relations block must occur before Step 1")
+
+    rows = [line.rstrip("\r\n") for line in lines[opening + 1 : closing]]
+    if not rows:
+        die("version-relations block carries no row")
+    if len(rows) > VERSION_RELATIONS_MAX:
+        die(f"version-relations block exceeds {VERSION_RELATIONS_MAX} rows")
+
+    targets = []
+    seen_skills = set()
+    seen_paths = set()
+    for row in rows:
+        if not row.strip():
+            die("version-relations row must not be blank")
+        if _contains_nonprinting_character(row):
+            die("version-relations row contains a control character")
+        fields = [field.strip() for field in row.split("|")]
+        if len(fields) != 3 or any(not field for field in fields):
+            die(
+                "version-relations row must carry three non-empty fields "
+                "(skill id | EVOLUTION.md path | relation)"
+            )
+        skill, ledger, relation = fields
+        if not VERSION_RELATION_SKILL_RE.fullmatch(skill):
+            die("version relation target id is not kebab-case")
+        if skill in seen_skills:
+            die("version relation target id appears more than once")
+        if ledger in seen_paths:
+            die("version relation path appears more than once")
+        fault = _version_relation_path_fault(ledger, skill)
+        if fault:
+            die(fault)
+        if relation != VERSION_RELATION:
+            die(f"unknown version relation; expected {VERSION_RELATION!r}")
+        seen_skills.add(skill)
+        seen_paths.add(ledger)
+        targets.append({"skill": skill, "ledger": ledger, "relation": relation})
+
+    outside = "".join(lines[:opening] + lines[closing + 1 :])
+    for skill in sorted(seen_skills):
+        token = re.compile(
+            rf"(?<![A-Za-z0-9-]){re.escape(skill)}-v"
+            rf"[0-9]+\.[0-9]+\.[0-9]+(?![A-Za-z0-9-])"
+        )
+        if token.search(outside):
+            die(
+                "declared target has a concrete version token outside the "
+                "version-relations block"
+            )
+    source = "".join(lines[opening : closing + 1]).encode("utf-8")
+    return {
+        "source_sha256": hashlib.sha256(source).hexdigest(),
+        "targets": targets,
+    }
+
+
+def _native_relation_environment() -> dict[str, str]:
+    """A Git environment that cannot substitute for the repository relation."""
+    environment = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("GIT_")
+    }
+    environment.update(
+        {
+            "GIT_CONFIG_GLOBAL": os.devnull,
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_CONFIG_SYSTEM": os.devnull,
+            "GIT_NO_LAZY_FETCH": "1",
+            "GIT_TERMINAL_PROMPT": "0",
+        }
+    )
+    return environment
+
+
+def _native_relation_git(
+    base_dir: str, argv: list[str], refusal: str
+) -> bytes:
+    """Read native local objects without inherited Git substitution state."""
+    return bounded_tool(
+        base_dir,
+        "git",
+        ["--no-replace-objects", *argv],
+        refusal,
+        environment=_native_relation_environment(),
+    )
+
+
+def _native_ancestry_status(
+    base_dir: str, candidate: str, descendant: str
+) -> int | None:
+    """Return Git's native ancestry answer, or ``None`` when it gave none.
+
+    This is topology admission only. It deliberately reads no signature,
+    attribution, or GitHub evidence; ``done merge-step`` owns those checks over
+    the exact current range. ``bounded_probe`` keeps startup, time, and output
+    failures inside the same unknown result instead of exposing child output or
+    turning an unavailable answer into a non-ancestor claim.
+    """
+    candidate = require_full_sha(candidate, "waiting step recorded head")
+    descendant = require_full_sha(descendant, "waiting step observed tip")
+    status, _output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "merge-base",
+            "--is-ancestor",
+            candidate,
+            descendant,
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in (0, 1):
+        return None
+    return status
+
+
+def _native_relation_commit(base_dir: str, ref: str, label: str) -> str:
+    raw = _native_relation_git(
+        base_dir,
+        ["rev-parse", "--verify", "--end-of-options", f"{ref}^{{commit}}"],
+        f"{label} does not resolve to a native commit",
+    )
+    try:
+        lines = [line for line in raw.decode("ascii").splitlines() if line]
+    except UnicodeDecodeError:
+        lines = []
+    if len(lines) != 1 or not COMMIT_RE.fullmatch(lines[0]):
+        die(f"{label} did not resolve to one full native commit SHA")
+    return lines[0]
+
+
+def _native_relation_parents(
+    base_dir: str, commit_sha: str, label: str
+) -> list[str]:
+    """Read exact commit parents without replacement refs or inherited Git state."""
+    commit_sha = require_full_sha(commit_sha, label)
+    raw = _native_relation_git(
+        base_dir,
+        ["show", "-s", "--no-show-signature", "--format=%P", commit_sha],
+        f"{label} parents cannot be read",
+    )
+    try:
+        parents = raw.decode("ascii").strip().split()
+    except UnicodeDecodeError:
+        parents = []
+    if any(COMMIT_RE.fullmatch(parent) is None for parent in parents):
+        die(f"{label} returned a malformed parent SHA")
+    return parents
+
+
+def _native_relation_merge_base(
+    base_dir: str, left: str, right: str
+) -> str:
+    """Resolve one native common ancestor for a stored composition proof."""
+    left = require_full_sha(left, "version resolution product head")
+    right = require_full_sha(right, "version resolution base head")
+    raw = _native_relation_git(
+        base_dir,
+        ["merge-base", "--all", left, right],
+        "version resolution product/base merge base cannot be read",
+    )
+    try:
+        candidates = [line for line in raw.decode("ascii").splitlines() if line]
+    except UnicodeDecodeError:
+        candidates = []
+    if len(candidates) != 1 or COMMIT_RE.fullmatch(candidates[0]) is None:
+        die("version resolution product/base merge base is ambiguous or malformed")
+    return candidates[0]
+
+
+def _native_diff_paths(
+    base_dir: str,
+    before: str,
+    after: str,
+    subject: str,
+    refusal: str,
+) -> list[str]:
+    """One exact native tree delta, named by the caller that reads it.
+
+    Replacement objects, rename detection and submodule shortcuts all let a
+    delta describe something other than the two trees named, so every caller
+    that turns a delta into evidence reads it through here. The subject is the
+    caller's, because a refusal that named the wrong reader is what the #710
+    acceptance fixture pins against.
+    """
+    raw = _native_relation_git(
+        base_dir,
+        [
+            "diff",
+            "--no-renames",
+            "--ignore-submodules=none",
+            "--name-only",
+            "-z",
+            f"{before}..{after}",
+            "--",
+        ],
+        refusal,
+    )
+    try:
+        decoded = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        die(f"{subject} is not UTF-8")
+    paths = [path for path in decoded.split("\0") if path]
+    unique = sorted(set(paths))
+    if len(unique) > INTEGRATION_PATHS_MAX:
+        die(f"{subject} exceeds {INTEGRATION_PATHS_MAX} paths")
+    if len(unique) != len(paths):
+        die(f"{subject} contains duplicate paths")
+    root = os.path.realpath(base_dir)
+    for index, path in enumerate(unique):
+        if (
+            not isinstance(path, str)
+            or not path
+            or os.path.isabs(path)
+            or path in (".", "..")
+            or ".." in path.split("/")
+            or any(ord(character) < 32 or ord(character) == 127 for character in path)
+        ):
+            die(f"{subject} contains an unsafe path at index {index}")
+        candidate = os.path.realpath(os.path.join(root, path))
+        try:
+            inside = os.path.commonpath((root, candidate)) == root
+        except ValueError:
+            inside = False
+        if not inside:
+            die(f"{subject} escapes the repository at index {index}")
+    return unique
+
+
+def _native_relation_diff_paths(
+    base_dir: str, before: str, after: str
+) -> list[str]:
+    """Read one exact native tree delta for target-path revalidation."""
+    before = require_full_sha(before, "version resolution product head")
+    after = require_full_sha(after, "version resolution sync head")
+    return _native_diff_paths(
+        base_dir,
+        before,
+        after,
+        "version resolution target path delta",
+        "version resolution target path delta cannot be read",
+    )
+
+def _native_relation_repository_identity(base_dir: str) -> tuple[str, str]:
+    """Identify the worktree Git directory and its exact common repository."""
+    raw = _native_relation_git(
+        base_dir,
+        [
+            "rev-parse",
+            "--path-format=absolute",
+            "--absolute-git-dir",
+            "--git-common-dir",
+        ],
+        "version relation repository identity cannot be read",
+    )
+    try:
+        lines = raw.decode("utf-8").splitlines()
+        encoded = [line.encode("utf-8") for line in lines]
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        lines = []
+        encoded = []
+    if (
+        len(lines) != 2
+        or any(not os.path.isabs(line) for line in lines)
+        or any(not value or len(value) > 4096 for value in encoded)
+    ):
+        die("version relation repository identity is malformed")
+    return tuple(lines)
+
+
+def _native_relation_worktree_start(base_dir: str, branch: str) -> str:
+    """Capture the exact commit checked out when ``init`` made the worktree."""
+    first = _native_relation_commit(base_dir, "HEAD", "run starting commit")
+    symbolic = _native_relation_git(
+        base_dir,
+        ["symbolic-ref", "--quiet", "HEAD"],
+        "run starting branch cannot be read",
+    )
+    current = _native_relation_git(
+        base_dir,
+        ["show-ref", "--verify", "--hash", f"refs/heads/{branch}"],
+        "run starting commit cannot be read",
+    )
+    final = _native_relation_commit(base_dir, "HEAD", "run starting commit")
+    try:
+        symbolic_name = symbolic.decode("utf-8").strip()
+        current_sha = current.decode("ascii").strip()
+    except (UnicodeDecodeError, UnicodeEncodeError):
+        symbolic_name = ""
+        current_sha = ""
+    if symbolic_name != f"refs/heads/{branch}":
+        die("run worktree did not retain its named starting branch")
+    if (
+        first != final
+        or not COMMIT_RE.fullmatch(current_sha)
+        or current_sha != first
+    ):
+        die("run starting commit changed while init recorded it")
+    return first
+
+
+def _relation_init_starting_commit(base_dir: str, state: dict) -> str:
+    """Read the exact run start from the intact hash-chained init receipt."""
+    path = ledger_path(base_dir)
+    if not os.path.exists(path):
+        die("version relation init evidence is missing", 1)
+    prev = "genesis"
+    first_entry = None
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            for line_number, line in enumerate(handle, 1):
+                if not line.strip():
+                    continue
+                entry = json.loads(line)
+                expected = hashlib.sha256(
+                    canonical(
+                        {
+                            "ts": entry["ts"],
+                            "event": entry["event"],
+                            "data": entry["data"],
+                            "prev": entry["prev"],
+                            "state": entry["state"],
+                        }
+                    ).encode()
+                ).hexdigest()
+                if entry["prev"] != prev or entry["hash"] != expected:
+                    die(
+                        f"version relation controller ledger is not intact at "
+                        f"line {line_number}",
+                        1,
+                    )
+                if first_entry is None:
+                    first_entry = entry
+                prev = entry["hash"]
+    except (OSError, UnicodeDecodeError, ValueError, KeyError, TypeError):
+        die("version relation controller ledger is malformed", 1)
+    data = as_dict(as_dict(first_entry).get("data"))
+    starting_commit = data.get("starting_commit")
+    if (
+        as_dict(first_entry).get("event") != "init"
+        or data.get("base") != state.get("base")
+        or data.get("run_branch") != run_branch_of(state)
+        or not isinstance(starting_commit, str)
+        or not COMMIT_RE.fullmatch(starting_commit)
+    ):
+        die("version relation init starting commit is missing or malformed", 1)
+    return starting_commit
+
+
+def _require_native_relation_history(base_dir: str) -> None:
+    """Refuse local object and ancestry substitutions before a branch point."""
+    if "GIT_GRAFT_FILE" in os.environ:
+        die("version relation starting history is rewritten by a graft")
+    local_substitutions = (
+        (
+            "info/grafts",
+            "graft",
+            "version relation starting history is rewritten by a graft",
+        ),
+        (
+            "objects/info/alternates",
+            "alternate object store",
+            "version relation repository uses an alternate object store",
+        ),
+    )
+    for git_path, label, populated_refusal in local_substitutions:
+        raw = _native_relation_git(
+            base_dir,
+            ["rev-parse", "--path-format=absolute", "--git-path", git_path],
+            f"version relation {label} state cannot be located",
+        )
+        try:
+            lines = raw.decode("utf-8").splitlines()
+            encoded_path = lines[0].encode("utf-8") if len(lines) == 1 else b""
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            lines = []
+            encoded_path = b""
+        if (
+            len(lines) != 1
+            or not os.path.isabs(lines[0])
+            or not encoded_path
+            or len(encoded_path) > 4096
+        ):
+            die(f"version relation {label} path is malformed")
+        try:
+            candidate = os.lstat(lines[0])
+        except FileNotFoundError:
+            continue
+        except (OSError, ValueError):
+            die(f"version relation {label} state cannot be read")
+        if not stat.S_ISREG(candidate.st_mode) or candidate.st_size:
+            die(populated_refusal)
+
+    shallow = _native_relation_git(
+        base_dir,
+        ["rev-parse", "--is-shallow-repository"],
+        "version relation shallow state cannot be read",
+    )
+    try:
+        shallow_state = shallow.decode("ascii").strip()
+    except UnicodeDecodeError:
+        shallow_state = ""
+    if shallow_state == "true":
+        die("version relation starting history is shallow")
+    if shallow_state != "false":
+        die("version relation shallow state is malformed")
+
+
+def relation_anchor_commit(base_dir: str, state: dict) -> str:
+    """The immutable branch point the run started from, using native local refs."""
+    init_start = _relation_init_starting_commit(base_dir, state)
+    repository = _native_relation_repository_identity(base_dir)
+    _require_native_relation_history(base_dir)
+    starting = state.get("base")
+    if isinstance(starting, str) and COMMIT_RE.fullmatch(starting):
+        anchor = _native_relation_commit(
+            base_dir, starting, "version relation starting commit"
+        )
+        _require_native_relation_history(base_dir)
+        if _native_relation_repository_identity(base_dir) != repository:
+            die("version relation repository changed while reading the starting commit")
+        if anchor != init_start:
+            die("version relation starting commit does not match the init starting commit")
+        return anchor
+    run_branch = run_branch_of(state)
+    if not isinstance(run_branch, str) or not run_branch:
+        die("version relations require the run's integration branch")
+    base_branch = integration_base_of(state)
+    run_head = _native_relation_commit(
+        base_dir, run_branch, "version relation run branch"
+    )
+    base_head = _native_relation_commit(
+        base_dir, base_branch, "version relation base branch"
+    )
+    raw = _native_relation_git(
+        base_dir,
+        ["merge-base", "--all", run_head, base_head],
+        "version relation starting commit cannot be derived",
+    )
+    try:
+        candidates = [line for line in raw.decode("ascii").splitlines() if line]
+    except UnicodeDecodeError:
+        candidates = []
+    if len(candidates) != 1 or not COMMIT_RE.fullmatch(candidates[0]):
+        die("version relation starting commit is ambiguous or malformed")
+    final_run = _native_relation_commit(
+        base_dir, run_branch, "version relation run branch"
+    )
+    final_base = _native_relation_commit(
+        base_dir, base_branch, "version relation base branch"
+    )
+    if (run_head, base_head) != (final_run, final_base):
+        die("version relation refs changed while deriving the starting commit")
+    _require_native_relation_history(base_dir)
+    if _native_relation_repository_identity(base_dir) != repository:
+        die("version relation repository changed while deriving the starting commit")
+    if candidates[0] != init_start:
+        die("version relation branch point does not match the init starting commit")
+    return candidates[0]
+
+
+def read_commit_blob(
+    base_dir: str, commit_sha: str, relative: str, label: str
+) -> tuple[str, bytes]:
+    """Read one bounded regular Git blob at an exact commit without a worktree."""
+    raw = _native_relation_git(
+        base_dir,
+        ["ls-tree", "-z", commit_sha, "--", relative],
+        f"{label} object cannot be inspected",
+    )
+    entries = [entry for entry in raw.split(b"\0") if entry]
+    if not entries:
+        die(f"{label} object is missing at the anchor commit")
+    if len(entries) != 1 or b"\t" not in entries[0]:
+        die(f"{label} object identity is ambiguous or malformed")
+    header, raw_path = entries[0].split(b"\t", 1)
+    fields = header.split()
+    try:
+        returned_path = raw_path.decode("utf-8")
+    except UnicodeDecodeError:
+        returned_path = ""
+    if len(fields) != 3 or returned_path != relative:
+        die(f"{label} object identity is ambiguous or malformed")
+    try:
+        mode, kind, object_sha = [field.decode("ascii") for field in fields]
+    except UnicodeDecodeError:
+        mode, kind, object_sha = "", "", ""
+    if (
+        mode not in ("100644", "100755")
+        or kind != "blob"
+        or not re.fullmatch(r"[0-9a-f]{40}(?:[0-9a-f]{24})?", object_sha)
+    ):
+        die(f"{label} object is not a regular blob")
+    size_raw = _native_relation_git(
+        base_dir,
+        ["cat-file", "-s", object_sha],
+        f"{label} object size cannot be read",
+    )
+    try:
+        size_text = size_raw.decode("ascii").strip()
+        size = int(size_text) if re.fullmatch(r"\d+", size_text) else -1
+    except (UnicodeDecodeError, ValueError):
+        size = -1
+    if size < 0:
+        die(f"{label} object size is malformed")
+    if size > SOURCE_BYTES_MAX:
+        die(f"{label} object exceeds {SOURCE_BYTES_MAX}-byte cap")
+    data = _native_relation_git(
+        base_dir,
+        ["cat-file", "blob", object_sha],
+        f"{label} object cannot be read",
+    )
+    if len(data) != size:
+        die(f"{label} object size changed during the bounded read")
+    return object_sha, data
+
+
+def _ledger_field_bytes(text: str, name: str, label: str) -> tuple[str, bytes]:
+    prefix = f"- {name}: "
+    values = [
+        line[len(prefix) :]
+        for physical in _unfenced_markdown_lines(text)
+        if (line := physical.rstrip("\r\n")).startswith(prefix)
+    ]
+    if len(values) != 1 or not values[0]:
+        die(f"{label} has a missing or ambiguous {name} field")
+    return values[0].strip().strip("`"), values[0].encode("utf-8")
+
+
+def _frontmatter_plain_key(
+    line: str, indent: int, unsupported: str
+) -> str | None:
+    """Read one key from Fiat's closed block-mapping frontmatter subset."""
+    prefix = " " * indent
+    if not line.startswith(prefix):
+        return None
+    tail = line[indent:]
+    if not tail or tail[0].isspace() or tail.startswith("#"):
+        return None
+    match = re.match(r"^([A-Za-z][A-Za-z0-9_-]*)\s*:", tail)
+    if match is None:
+        die(unsupported)
+    return match.group(1)
+
+
+def _skill_frontmatter_identity(text: str, skill: str) -> str:
+    """Read one unambiguous name and numeric version from frontmatter."""
+    lines = text.splitlines()
+    if not lines or lines[0] != "---":
+        die("version relation target skill frontmatter is missing")
+    try:
+        closing = lines.index("---", 1)
+    except ValueError:
+        die("version relation target skill frontmatter is not closed")
+    frontmatter = lines[1:closing]
+    if any("\t" in line for line in frontmatter):
+        die("version relation target skill frontmatter uses unsupported key syntax")
+
+    top_level = [
+        (index, key)
+        for index, line in enumerate(frontmatter)
+        if (
+            key := _frontmatter_plain_key(
+                line,
+                0,
+                "version relation target skill frontmatter name or metadata "
+                "identity is ambiguous",
+            )
+        ) is not None
+    ]
+    names = [(index, key) for index, key in top_level if key == "name"]
+    if len(names) != 1:
+        die("version relation target skill frontmatter name does not match")
+    name_index = names[0][0]
+    name = re.fullmatch(
+        r"name:\s*([a-z0-9]+(?:-[a-z0-9]+)*)\s*",
+        frontmatter[name_index],
+    )
+    if name is None or name.group(1) != skill:
+        die("version relation target skill frontmatter name does not match")
+    next_top = next(
+        (index for index, _ in top_level if index > name_index),
+        len(frontmatter),
+    )
+    if any(
+        line.strip() and not line.lstrip().startswith("#")
+        for line in frontmatter[name_index + 1 : next_top]
+    ):
+        die("version relation target skill frontmatter name does not match")
+
+    metadata = [
+        index
+        for index, key in top_level
+        if key == "metadata"
+    ]
+    if len(metadata) != 1:
+        die(
+            "version relation target skill frontmatter metadata version "
+            "is missing or ambiguous"
+        )
+    if frontmatter[metadata[0]] != "metadata:":
+        die(
+            "version relation target skill frontmatter metadata version "
+            "is missing or ambiguous"
+        )
+    metadata_end = next(
+        (index for index, _ in top_level if index > metadata[0]),
+        len(frontmatter),
+    )
+    metadata_body = frontmatter[metadata[0] + 1 : metadata_end]
+    metadata_keys = [
+        (index, key)
+        for index, line in enumerate(metadata_body)
+        if (
+            key := _frontmatter_plain_key(
+                line,
+                2,
+                "version relation target skill frontmatter metadata version "
+                "is missing or ambiguous",
+            )
+        ) is not None
+    ]
+    versions = [(index, key) for index, key in metadata_keys if key == "version"]
+    if len(versions) != 1:
+        die(
+            "version relation target skill frontmatter metadata version "
+            "is missing or ambiguous"
+        )
+    version_index = versions[0][0]
+    version = re.fullmatch(
+        r'  version: "([0-9]+\.[0-9]+\.[0-9]+)"',
+        metadata_body[version_index],
+    )
+    if version is None:
+        die(
+            "version relation target skill frontmatter metadata version "
+            "is missing or ambiguous"
+        )
+    return version.group(1)
+
+
+def capture_version_relation_target(
+    base_dir: str, anchor_commit: str, declaration: dict
+) -> dict:
+    """Build one content-bounded anchor from two exact Git blobs."""
+    skill = declaration["skill"]
+    ledger_path = declaration["ledger"]
+    _, ledger_bytes = read_commit_blob(
+        base_dir, anchor_commit, ledger_path, "version relation target ledger"
+    )
+    try:
+        ledger_text = ledger_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        die("version relation target ledger is not UTF-8 text")
+    skill_path = ledger_path.rsplit("/", 1)[0] + "/SKILL.md"
+    _, skill_bytes = read_commit_blob(
+        base_dir, anchor_commit, skill_path, "version relation target skill"
+    )
+    try:
+        skill_text = skill_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        die("version relation target skill is not UTF-8 text")
+
+    current, _ = _ledger_field_bytes(
+        ledger_text, "Current version", "version relation target ledger"
+    )
+    status, _ = _ledger_field_bytes(
+        ledger_text, "Frontier status", "version relation target ledger"
+    )
+    revision, _ = _ledger_field_bytes(
+        ledger_text, "Frontier revision", "version relation target ledger"
+    )
+    frontier, frontier_raw = _ledger_field_bytes(
+        ledger_text, "Current frontier", "version relation target ledger"
+    )
+    next_job, next_job_raw = _ledger_field_bytes(
+        ledger_text, "Next Fiat job", "version relation target ledger"
+    )
+    parts = _label_parts(current, skill)
+    if parts is None or current != f"{skill}-v{parts[0]}.{parts[1]}.{parts[2]}":
+        die("version relation target ledger has a malformed current label")
+    if parts[1] == VERSION_RELATION_COUNTER_MAX:
+        die(
+            "version relation target generation cannot be projected within "
+            "its counter bound"
+        )
+    if status not in ("open", "mature"):
+        die("version relation target ledger has a malformed frontier status")
+    if status == "mature" and next_job != "None -- mature":
+        die("version relation target ledger has an inconsistent mature frontier")
+    if status == "open" and next_job == "None -- mature":
+        die("version relation target ledger has an inconsistent open frontier")
+    frontier_digest = hashlib.sha256(
+        f"{status}|{revision}|{frontier}|{next_job}\n".encode("utf-8")
+    ).hexdigest()
+    rows = ledger_rows(ledger_text)
+    if (
+        not rows
+        or rows[-1]["version"] != current
+        or rows[-1]["revision"] != revision
+        or rows[-1]["digest"] != frontier_digest
+    ):
+        die("version relation target ledger history does not match its header")
+
+    metadata = _skill_frontmatter_identity(skill_text, skill)
+    expected_metadata = ".".join(str(part) for part in parts)
+    if metadata != expected_metadata:
+        die(
+            "version relation target skill frontmatter metadata version "
+            "does not match the ledger"
+        )
+    return {
+        "skill": skill,
+        "ledger": ledger_path,
+        "relation": declaration["relation"],
+        "anchor_version": current,
+        "evolution": parts[0],
+        "generation": parts[1],
+        "epoch": parts[2],
+        "frontier_status": status,
+        "frontier_revision": revision,
+        "frontier_sha256": frontier_digest,
+        "current_frontier_sha256": hashlib.sha256(frontier_raw).hexdigest(),
+        "next_job_sha256": hashlib.sha256(next_job_raw).hexdigest(),
+        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+        "skill_sha256": hashlib.sha256(skill_bytes).hexdigest(),
+        "skill_metadata_version": metadata,
+    }
+
+
+def capture_version_relations(
+    base_dir: str, source: dict, anchor_commit: str
+) -> dict:
+    targets = [
+        capture_version_relation_target(base_dir, anchor_commit, declaration)
+        for declaration in source["targets"]
+    ]
+    receipt = {
+        "schema": VERSION_RELATIONS_SCHEMA,
+        "source_sha256": source["source_sha256"],
+        "anchor_commit": anchor_commit,
+        "targets": sorted(targets, key=lambda target: target["skill"]),
+    }
+    validate_version_relations_shape(receipt, "captured.version_relations")
+    return receipt
+
+
+def version_relations_packet(receipt: dict, resolution: dict | None = None) -> dict:
+    """Label an anchor and its provisional arithmetic without reserving it."""
+    targets = []
+    for target in receipt["targets"]:
+        targets.append(
+            {
+                **target,
+                "projection": (
+                    f"{target['skill']}-v{target['evolution']}."
+                    f"{target['generation'] + 1}.{target['epoch']}"
+                ),
+            }
+        )
+    return {
+        "schema": receipt["schema"],
+        "status": "resolved" if resolution is not None else "anchor",
+        "resolution": resolution,
+        "source_sha256": receipt["source_sha256"],
+        "anchor_commit": receipt["anchor_commit"],
+        "targets": targets,
+    }
+
+
+def _ledger_history_records(text: str, skill: str, label: str) -> list[dict]:
+    """Parse and validate every governed history row, retaining exact bytes."""
+    visible = _unfenced_markdown_lines(text)
+    headings = [
+        index
+        for index, physical in enumerate(visible)
+        if physical.rstrip("\r\n") == "## History"
+    ]
+    if not headings:
+        die(f"{label} has no History section")
+    if len(headings) != 1:
+        die(f"{label} has an ambiguous History section")
+    rows = []
+    for physical in visible[headings[0] + 1 :]:
+        line = physical.rstrip("\r\n")
+        if re.match(r"^ {0,3}#{1,2}(?:[ \t]+|$)", line):
+            break
+        match = LEDGER_ROW.fullmatch(line) or LEDGER_ROW_COMPACT.fullmatch(line)
+        if match is None:
+            if line.startswith("| `") or line.startswith("- `"):
+                die(f"{label} carries a malformed history row")
+            continue
+        row = match.groupdict()
+        parts = _label_parts(row["version"], skill)
+        if parts is None or row["version"] != (
+            f"{skill}-v{parts[0]}.{parts[1]}.{parts[2]}"
+        ):
+            die(f"{label} carries a malformed history label")
+        row["parts"] = parts
+        row["raw"] = physical
+        rows.append(row)
+    if not rows:
+        die(f"{label} carries no governed history row")
+    if rows[0]["axis"] != "baseline":
+        die(f"{label} history does not begin with a baseline row")
+    seen_versions = set()
+    for index, row in enumerate(rows):
+        if row["version"] in seen_versions:
+            die(f"{label} history repeats a version")
+        seen_versions.add(row["version"])
+        if index == 0:
+            continue
+        previous = rows[index - 1]
+        deltas = tuple(
+            row["parts"][part] - previous["parts"][part]
+            for part in range(3)
+        )
+        expected_axis = {0: "evolution", 1: "generation", 2: "epoch"}
+        changed = [part for part, delta in enumerate(deltas) if delta != 0]
+        if (
+            len(changed) != 1
+            or deltas[changed[0]] != 1
+            or row["axis"] != expected_axis[changed[0]]
+            or row["axis"] == "baseline"
+        ):
+            die(f"{label} history does not follow the version-axis arithmetic")
+        if row["axis"] == "generation" and (
+            row["revision"] != previous["revision"]
+            or row["digest"] != previous["digest"]
+        ):
+            die(f"{label} generation history changes the held frontier")
+        if row["axis"] == "evolution" and row["digest"] == previous["digest"]:
+            die(f"{label} evolution history does not change the held frontier")
+        if (
+            row["axis"] == "epoch"
+            and row["digest"] != previous["digest"]
+            and "reopen" not in (row["evidence"] + row["change"]).lower()
+        ):
+            die(f"{label} epoch history changes the frontier without reopening it")
+    return rows
+
+
+def _version_target_snapshot(
+    base_dir: str, commit_sha: str, target: dict, label: str
+) -> dict:
+    """Read one exact ledger and sibling skill blob from a native commit."""
+    skill = target["skill"]
+    ledger_path = target["ledger"]
+    ledger_object, ledger_bytes = read_commit_blob(
+        base_dir, commit_sha, ledger_path, f"{label} ledger"
+    )
+    skill_path = ledger_path.rsplit("/", 1)[0] + "/SKILL.md"
+    skill_object, skill_bytes = read_commit_blob(
+        base_dir, commit_sha, skill_path, f"{label} skill"
+    )
+    try:
+        ledger_text = ledger_bytes.decode("utf-8")
+        skill_text = skill_bytes.decode("utf-8")
+    except UnicodeDecodeError:
+        die(f"{label} version evidence is not UTF-8 text")
+    current, _ = _ledger_field_bytes(ledger_text, "Current version", label)
+    status, _ = _ledger_field_bytes(ledger_text, "Frontier status", label)
+    revision, _ = _ledger_field_bytes(ledger_text, "Frontier revision", label)
+    frontier, frontier_raw = _ledger_field_bytes(
+        ledger_text, "Current frontier", label
+    )
+    next_job, next_job_raw = _ledger_field_bytes(ledger_text, "Next Fiat job", label)
+    parts = _label_parts(current, skill)
+    if parts is None or current != f"{skill}-v{parts[0]}.{parts[1]}.{parts[2]}":
+        die(f"{label} has a malformed current version")
+    if status not in ("open", "mature"):
+        die(f"{label} has a malformed frontier status")
+    if (status == "mature") != (next_job == "None -- mature"):
+        die(f"{label} has an inconsistent frontier status and next job")
+    frontier_sha256 = hashlib.sha256(
+        f"{status}|{revision}|{frontier}|{next_job}\n".encode("utf-8")
+    ).hexdigest()
+    rows = _ledger_history_records(ledger_text, skill, label)
+    if (
+        rows[-1]["version"] != current
+        or rows[-1]["revision"] != revision
+        or rows[-1]["digest"] != frontier_sha256
+    ):
+        die(f"{label} header does not match its final history row")
+    metadata = _skill_frontmatter_identity(skill_text, skill)
+    if metadata != ".".join(str(part) for part in parts):
+        die(f"{label} skill metadata does not match its ledger")
+    return {
+        "skill": skill,
+        "ledger": ledger_path,
+        "skill_path": skill_path,
+        "current": current,
+        "parts": parts,
+        "status": status,
+        "revision": revision,
+        "frontier_sha256": frontier_sha256,
+        "current_frontier_sha256": hashlib.sha256(frontier_raw).hexdigest(),
+        "next_job_sha256": hashlib.sha256(next_job_raw).hexdigest(),
+        "rows": rows,
+        "ledger_object": ledger_object,
+        "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+        "skill_object": skill_object,
+        "skill_sha256": hashlib.sha256(skill_bytes).hexdigest(),
+        "metadata": metadata,
+    }
+
+
+def _require_anchor_snapshot(snapshot: dict, anchor: dict) -> None:
+    expected = {
+        "current": anchor["anchor_version"],
+        "parts": (
+            anchor["evolution"],
+            anchor["generation"],
+            anchor["epoch"],
+        ),
+        "status": anchor["frontier_status"],
+        "revision": anchor["frontier_revision"],
+        "frontier_sha256": anchor["frontier_sha256"],
+        "current_frontier_sha256": anchor["current_frontier_sha256"],
+        "next_job_sha256": anchor["next_job_sha256"],
+        "ledger_sha256": anchor["ledger_sha256"],
+        "skill_sha256": anchor["skill_sha256"],
+        "metadata": anchor["skill_metadata_version"],
+    }
+    if any(snapshot[name] != value for name, value in expected.items()):
+        die("version relation anchor evidence no longer matches its exact objects")
+
+
+def _require_history_prefix(
+    prefix: list[dict], history: list[dict], label: str
+) -> None:
+    if len(history) < len(prefix):
+        die(f"{label} history is shorter than its required prefix")
+    if any(
+        expected["raw"] != actual["raw"]
+        for expected, actual in zip(prefix, history)
+    ):
+        die(f"{label} history rewrites its required prefix")
+
+
+def version_compatibility_fault(anchor: dict, snapshot: dict) -> str | None:
+    """Name the first non-generation anchor field that drifted."""
+    comparisons = (
+        ("evolution", anchor["evolution"], snapshot["parts"][0]),
+        ("epoch", anchor["epoch"], snapshot["parts"][2]),
+        ("frontier_status", anchor["frontier_status"], snapshot["status"]),
+        ("frontier_revision", anchor["frontier_revision"], snapshot["revision"]),
+        ("frontier_sha256", anchor["frontier_sha256"], snapshot["frontier_sha256"]),
+        (
+            "current_frontier_sha256",
+            anchor["current_frontier_sha256"],
+            snapshot["current_frontier_sha256"],
+        ),
+        ("next_job_sha256", anchor["next_job_sha256"], snapshot["next_job_sha256"]),
+    )
+    return next(
+        (name for name, expected, actual in comparisons if expected != actual),
+        None,
+    )
+
+
+def resolve_version_relation_target(
+    base_dir: str,
+    anchor_commit: str,
+    base_commit: str,
+    head_commit: str,
+    anchor: dict,
+) -> dict:
+    """Resolve and prove one target against exact base and candidate objects."""
+    anchor_snapshot = _version_target_snapshot(
+        base_dir, anchor_commit, anchor, "version relation anchor"
+    )
+    _require_anchor_snapshot(anchor_snapshot, anchor)
+    base_snapshot = _version_target_snapshot(
+        base_dir, base_commit, anchor, "version resolution base"
+    )
+    head_snapshot = _version_target_snapshot(
+        base_dir, head_commit, anchor, "version resolution candidate"
+    )
+    _require_history_prefix(
+        anchor_snapshot["rows"], base_snapshot["rows"], "version resolution base"
+    )
+    compatibility_fault = version_compatibility_fault(anchor, base_snapshot)
+    if compatibility_fault:
+        die(
+            "version resolution base has incompatible drift in "
+            f"{compatibility_fault}"
+        )
+    if base_snapshot["parts"][1] >= VERSION_RELATION_COUNTER_MAX:
+        die("version resolution base generation has no representable successor")
+    if base_snapshot["parts"][1] < anchor["generation"]:
+        die("version resolution base generation predates the anchor")
+    for row in base_snapshot["rows"][len(anchor_snapshot["rows"]) :]:
+        if (
+            row["axis"] != "generation"
+            or row["revision"] != anchor["frontier_revision"]
+            or row["digest"] != anchor["frontier_sha256"]
+        ):
+            die("version resolution base carries incompatible history drift")
+
+    _require_history_prefix(
+        base_snapshot["rows"], head_snapshot["rows"], "version resolution candidate"
+    )
+    if len(head_snapshot["rows"]) != len(base_snapshot["rows"]) + 1:
+        die("version resolution candidate must add exactly one target history row")
+    resolved_parts = (
+        base_snapshot["parts"][0],
+        base_snapshot["parts"][1] + 1,
+        base_snapshot["parts"][2],
+    )
+    resolved_version = (
+        f"{anchor['skill']}-v{resolved_parts[0]}."
+        f"{resolved_parts[1]}.{resolved_parts[2]}"
+    )
+    final_row = head_snapshot["rows"][-1]
+    if (
+        head_snapshot["current"] != resolved_version
+        or head_snapshot["parts"] != resolved_parts
+        or head_snapshot["metadata"] != ".".join(str(part) for part in resolved_parts)
+        or final_row["version"] != resolved_version
+        or final_row["axis"] != "generation"
+        or final_row["revision"] != anchor["frontier_revision"]
+        or final_row["digest"] != anchor["frontier_sha256"]
+    ):
+        die("version resolution candidate row or skill metadata does not match")
+    compatibility_fault = version_compatibility_fault(anchor, head_snapshot)
+    if compatibility_fault:
+        die(
+            "version resolution candidate changes anchored field "
+            f"{compatibility_fault}"
+        )
+    return {
+        "skill": anchor["skill"],
+        "ledger": anchor["ledger"],
+        "relation": anchor["relation"],
+        "anchor_version": anchor["anchor_version"],
+        "base_version": base_snapshot["current"],
+        "resolved_version": resolved_version,
+        "base_ledger_sha256": base_snapshot["ledger_sha256"],
+        "head_ledger_sha256": head_snapshot["ledger_sha256"],
+        "row_sha256": hashlib.sha256(final_row["raw"].encode("utf-8")).hexdigest(),
+        "skill_sha256": head_snapshot["skill_sha256"],
+        "skill_metadata_version": head_snapshot["metadata"],
+    }
+
+
+def final_product_head(state: dict) -> str:
+    if not state.get("steps"):
+        die("version resolution requires at least one completed step")
+    final_step = state["steps"][-1]["n"]
+    merge_records = as_dict(as_dict(state.get("integrate")).get("merges"))
+    return require_full_sha(
+        as_dict(merge_records.get(str(final_step))).get("merge_commit"),
+        "final recorded product head",
+    )
+
+
+def _require_resolution_sync(
+    base_dir: str,
+    state: dict,
+    sync: dict,
+    product_head: str,
+    base_commit: str,
+    head_commit: str,
+    relations: dict,
+) -> None:
+    """Recheck the active signed composition and its target-path coverage."""
+    if set(sync) != RESOLUTION_SYNC_KEYS:
+        die("active version-resolution sync has an unsupported field set")
+    if (
+        sync.get("commit") != head_commit
+        or sync.get("base") != integration_base_of(state)
+        or sync.get("starting_base") != state.get("base")
+        or sync.get("base_head") != base_commit
+        or sync.get("parents") != [product_head, base_commit]
+        or sync.get("github_verified") != [head_commit]
+        or sync.get("product_evidence") != product_evidence_record(state, product_head)
+    ):
+        die("active version-resolution sync evidence is stale or malformed")
+    if _native_relation_parents(base_dir, head_commit, "version resolution sync") != [
+        product_head,
+        base_commit,
+    ]:
+        die("version resolution sync parents do not match product and base")
+    verify_local_commit(
+        base_dir,
+        head_commit,
+        "version resolution sync",
+        native_relation=True,
+    )
+    revalidation = sync.get("revalidation")
+    if (
+        not isinstance(revalidation, dict)
+        or set(revalidation) != RESOLUTION_REVALIDATION_KEYS
+        or revalidation.get("schema") != INTEGRATION_REVALIDATION_SCHEMA
+    ):
+        die("version resolution sync revalidation is missing or malformed")
+    _manifest_paths(
+        [revalidation.get("artifact")],
+        "version resolution sync revalidation artifact",
+    )
+    digest = revalidation.get("sha256")
+    if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        die("version resolution sync revalidation digest is malformed")
+    base_before = _native_relation_merge_base(base_dir, product_head, base_commit)
+    expected_paths = {
+        "product_paths": _native_relation_diff_paths(
+            base_dir, base_before, product_head
+        ),
+        "upstream_paths": _native_relation_diff_paths(
+            base_dir, base_before, base_commit
+        ),
+        "composition_paths": _native_relation_diff_paths(
+            base_dir, product_head, head_commit
+        ),
+    }
+    expected_paths["overlap_paths"] = sorted(
+        set(expected_paths["product_paths"]) & set(expected_paths["upstream_paths"])
+    )
+    expected_paths["affected_paths"] = sorted(
+        set(expected_paths["composition_paths"]) | set(expected_paths["overlap_paths"])
+    )
+    if (
+        revalidation.get("base_before") != base_before
+        or revalidation.get("base_after") != base_commit
+    ):
+        die("version resolution sync revalidation commit pair is stale or malformed")
+    stored_paths = {}
+    for name in (
+        "product_paths",
+        "upstream_paths",
+        "overlap_paths",
+        "composition_paths",
+        "affected_paths",
+    ):
+        stored_paths[name] = _manifest_paths(
+            revalidation.get(name), f"version resolution sync {name}"
+        )
+        if stored_paths[name] != expected_paths[name]:
+            die("version resolution sync revalidation path proof does not match")
+    checks = revalidation.get("checks")
+    if (
+        not isinstance(checks, list)
+        or not checks
+        or len(checks) > INTEGRATION_CHECKS_MAX
+    ):
+        die("version resolution sync revalidation is missing or malformed")
+    affected_paths = stored_paths["affected_paths"]
+    changed = set(expected_paths["composition_paths"])
+    overlap = set(expected_paths["overlap_paths"])
+    target_paths = set()
+    for target in relations["targets"]:
+        target_paths.add(target["ledger"])
+        target_paths.add(target["ledger"].rsplit("/", 1)[0] + "/SKILL.md")
+    needed = (changed | overlap) & target_paths
+    covered = set()
+    seen_ids = set()
+    for index, check in enumerate(checks):
+        if not isinstance(check, dict) or set(check) != RESOLUTION_REVALIDATION_CHECK_KEYS:
+            die("version resolution sync carries a failed or malformed check")
+        check_id = check.get("id")
+        if (
+            not isinstance(check_id, str)
+            or INTEGRATION_CHECK_ID_RE.fullmatch(check_id) is None
+            or check_id in seen_ids
+        ):
+            die("version resolution sync carries a failed or malformed check")
+        seen_ids.add(check_id)
+        command = check.get("command")
+        try:
+            command_bytes = command.encode("utf-8") if isinstance(command, str) else b""
+        except UnicodeEncodeError:
+            command_bytes = b""
+        if (
+            not command_bytes
+            or len(command_bytes) > INTEGRATION_COMMAND_BYTES_MAX
+            or any(
+                ord(character) < 32 or ord(character) == 127
+                for character in command
+            )
+            or isinstance(check.get("exit"), bool)
+            or check.get("exit") != 0
+        ):
+            die("version resolution sync carries a failed or malformed check")
+        paths = _manifest_paths(
+            check.get("paths"),
+            f"version resolution sync check {index} paths",
+            set(affected_paths),
+        )
+        covered.update(paths)
+    if covered != set(affected_paths):
+        die("version resolution sync checks do not cover every affected path")
+    if not needed.issubset(covered):
+        die("version resolution sync checks do not cover each changed target path")
+    previous_sync = _active_sync_predecessor(
+        as_dict(state.get("integrate")), head_commit
+    )
+    _require_sync_resolution_guard(
+        base_dir,
+        sync,
+        product_head,
+        previous_sync=previous_sync,
+    )
+
+
+def _resolution_without_timestamp(receipt: dict) -> dict:
+    return {key: value for key, value in receipt.items() if key != "ts"}
+
+
+def build_version_resolution(
+    base_dir: str,
+    state: dict,
+    *,
+    exact_base: str | None = None,
+    exact_head: str | None = None,
+) -> dict:
+    """Build one atomic resolution from stable refs or exact terminal parents."""
+    runbook = receipted_source(base_dir, state, "runbook")
+    relations = receipted_version_relations(base_dir, runbook, state=state)
+    if relations is None:
+        die("the receipted runbook declares no version relation")
+    if state.get("phase") != "integrate":
+        die("version resolution is available only after the step stack closes")
+    product_head = final_product_head(state)
+    integrate = as_dict(state.get("integrate"))
+    sync = as_dict(integrate.get("sync"))
+    expected_head = (
+        require_full_sha(sync.get("commit"), "active recorded sync commit")
+        if sync
+        else product_head
+    )
+    base_ref = integration_base_of(state)
+    repository = _native_relation_repository_identity(base_dir)
+    _require_native_relation_history(base_dir)
+
+    if exact_base is None or exact_head is None:
+        first_base = remote_branch_tip(
+            base_dir,
+            base_ref,
+            "version resolution base ref",
+            native_relation=True,
+        )
+        first_head = remote_branch_tip(
+            base_dir,
+            run_branch_of(state),
+            "version resolution run ref",
+            native_relation=True,
+        )
+        if first_head != expected_head:
+            die("version resolution run ref does not match the candidate head")
+        if not sync and first_base != relations["anchor_commit"]:
+            die(
+                "version resolution base advanced; create the existing signed "
+                "product/base sync and complete path revalidation first"
+            )
+        if sync and sync.get("base_head") != first_base:
+            die("version resolution sync does not name the current base ref")
+        base_commit, head_commit = first_base, first_head
+    else:
+        base_commit = require_full_sha(exact_base, "version resolution exact base")
+        head_commit = require_full_sha(exact_head, "version resolution exact head")
+        if head_commit != expected_head:
+            die("version resolution exact head does not match the candidate head")
+        if sync and sync.get("base_head") != base_commit:
+            die("version resolution sync does not name the exact base parent")
+        if not sync and base_commit != relations["anchor_commit"]:
+            die("version resolution exact base requires a recorded signed sync")
+
+    if _native_relation_commit(
+        base_dir, base_commit, "version resolution base object"
+    ) != base_commit:
+        die("version resolution base object does not match")
+    if _native_relation_commit(
+        base_dir, head_commit, "version resolution candidate object"
+    ) != head_commit:
+        die("version resolution candidate object does not match")
+    if sync:
+        _require_resolution_sync(
+            base_dir,
+            state,
+            sync,
+            product_head,
+            base_commit,
+            head_commit,
+            relations,
+        )
+    targets = [
+        resolve_version_relation_target(
+            base_dir,
+            relations["anchor_commit"],
+            base_commit,
+            head_commit,
+            target,
+        )
+        for target in relations["targets"]
+    ]
+    if exact_base is None:
+        final_head = remote_branch_tip(
+            base_dir,
+            run_branch_of(state),
+            "version resolution run ref reread",
+            native_relation=True,
+        )
+        final_base = remote_branch_tip(
+            base_dir,
+            base_ref,
+            "version resolution base ref reread",
+            native_relation=True,
+        )
+        if (final_base, final_head) != (base_commit, head_commit):
+            die("version resolution remote refs changed during evidence collection")
+    _require_native_relation_history(base_dir)
+    if _native_relation_repository_identity(base_dir) != repository:
+        die("version resolution repository changed during evidence collection")
+    receipt = {
+        "schema": VERSION_RESOLUTION_SCHEMA,
+        "runbook_sha256": as_dict(state["receipts"].get("runbook")).get("sha256"),
+        "relations_sha256": relations["source_sha256"],
+        "base_ref": base_ref,
+        "base_commit": base_commit,
+        "head_commit": head_commit,
+        "targets": sorted(targets, key=lambda target: target["skill"]),
+        "ts": now(),
+    }
+    validate_version_resolution_shape(receipt, "built.version_resolution")
+    return receipt
+
+
+def active_version_resolution(base_dir: str, state: dict) -> dict:
+    history = as_dict(state.get("integrate")).get("version_resolutions")
+    if not isinstance(history, list) or not history:
+        die("version relations have no recorded integration-time resolution")
+    active = validate_version_resolution_shape(
+        history[-1], "integrate.version_resolutions[-1]"
+    )
+    current = build_version_resolution(base_dir, state)
+    if _resolution_without_timestamp(active) != _resolution_without_timestamp(current):
+        die("the active version resolution is stale for the current base or head")
+    return active
+
+
+def version_resolution_status(base_dir: str, state: dict) -> dict:
+    """Describe the newest receipt without mistaking recorded for current."""
+    history = as_dict(state.get("integrate")).get("version_resolutions") or []
+    if not history:
+        return {
+            "status": "absent",
+            "history": 0,
+            "base_commit": None,
+            "head_commit": None,
+            "reason": None,
+        }
+    newest = validate_version_resolution_shape(
+        history[-1], "integrate.version_resolutions[-1]"
+    )
+    common = {
+        "history": len(history),
+        "base_commit": newest["base_commit"],
+        "head_commit": newest["head_commit"],
+    }
+    terminal = as_dict(as_dict(state.get("receipts")).get("integrate")).get(
+        "version_resolution"
+    )
+    if state.get("phase") == "done" and terminal == newest:
+        return {"status": "terminal", **common, "reason": None}
+    if state.get("phase") != "integrate":
+        return {
+            "status": "stale",
+            **common,
+            "reason": "recorded outside the integration phase",
+        }
+    diagnostic = io.StringIO()
+    try:
+        with contextlib.redirect_stderr(diagnostic):
+            active_version_resolution(base_dir, state)
+    except SystemExit:
+        reason = diagnostic.getvalue().strip()
+        prefix = "hexctl: error: "
+        if reason.startswith(prefix):
+            reason = reason[len(prefix) :]
+        reason = re.sub(r"[\x00-\x1f\x7f]+", " ", reason).strip()[:512]
+        return {
+            "status": "stale",
+            **common,
+            "reason": reason or "current evidence does not match the newest receipt",
+        }
+    return {"status": "active", **common, "reason": None}
 
 
 def carried_forward_lines(text: str) -> list[str] | None:
@@ -2111,7 +4221,7 @@ def stale_controller(target_dir: str) -> tuple[str, str, str] | None:
     A marketplace plugin is installed from a published copy, so a repository
     that also holds Fiat's source can be a whole evolution ahead of the
     controller driving the run. Every rule the newer one enforces then goes
-    unenforced silently, which is the one failure mode a receipt cannot show:
+    unenforced silently, which is the one omission a receipt cannot show:
     the missing flag looks like a rule that was never written.
 
     Returns (running label, checked-in label, repo-relative path), or None when
@@ -2267,8 +4377,8 @@ def currency_remote_head(clone_dir: str, branch: str) -> tuple[str | None, str |
     so only the clone's own configuration can choose where the read goes, and
     no URL passes through this controller at all. Credential prompts are
     disabled; the read is time-capped and output-capped by `bounded_probe`.
-    Returns (head, None), or (None, warning) for anything but exactly one
-    well-formed ref line -- a failed read is never a verdict.
+    Returns (head, None), or (None, warning) unless the response contains one
+    full commit SHA and its exact ref name -- a failed read is never a verdict.
     """
     expected_ref = f"refs/heads/{branch}"
     status, output, failure = bounded_probe(
@@ -2933,6 +5043,11 @@ def cmd_config(args) -> None:
             node = node[part]
         print(json.dumps(node))
         return
+    if not config_path_is_mutable(args.path):
+        die(
+            f"config path is immutable: {args.path}; config set may change only "
+            "audit.log_path, git, or git.*"
+        )
     if not args.value:
         die("config set requires a value")
     for part in parts[:-1]:
@@ -2943,20 +5058,8 @@ def cmd_config(args) -> None:
     if not isinstance(node, dict) or leaf not in node:
         die(f"config path not found: {args.path}")
     value = parse_value(args.value)
-    if args.path == "solidity" and not solidity_mode(value):
-        die(
-            "config solidity takes %s; got %r"
-            % (", ".join(json.dumps(m) for m in SOLIDITY_MODES), value)
-        )
     if args.path == "audit.log_path":
         value = check_audit_log_path(args.dir, state, value)
-    elif args.path == "audit" and isinstance(value, dict) and "log_path" in value:
-        # Replacing the whole section reaches the same field. Without this the
-        # constraint is one `config set audit '{...}'` away from not existing,
-        # which is how the shared path would come back.
-        value["log_path"] = check_audit_log_path(
-            args.dir, state, value["log_path"]
-        )
     node[leaf] = value
     commit(args.dir, state, "config-set", {"path": args.path, "value": node[leaf]})
     print(f"set {args.path}")
@@ -2970,10 +5073,23 @@ def _require_file(path: str, label: str) -> str:
     return path
 
 
+def _portable_receipt_artifact(base_dir: str, path: str) -> str:
+    """Store a verified source as one portable target-relative path."""
+    try:
+        relative = os.path.relpath(path, os.path.realpath(base_dir))
+    except (OSError, TypeError, ValueError):
+        die("source artefact path is not portable")
+    portable = relative.replace(os.sep, "/")
+    return _checkpoint_safe_relative(tuple(portable.split("/")))
+
+
 def done_study(args, state: dict) -> None:
     require_global_phase(state, "study")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "study artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "study artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
     skills = [s for s in (args.skills or "").split(",") if s]
     digest = hashlib.sha256(artifact_bytes).hexdigest()
     state["receipts"]["study"] = {
@@ -2994,7 +5110,22 @@ def done_study(args, state: dict) -> None:
 def done_runbook(args, state: dict) -> None:
     require_global_phase(state, "runbook")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "runbook artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "runbook artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
+    artifact_text = decoded_source(artifact_bytes, "runbook artefact")
+    relation_source = parse_version_relation_source(artifact_text)
+    version_relations = None
+    if relation_source is not None:
+        repository = _native_relation_repository_identity(args.dir)
+        anchor_commit = relation_anchor_commit(args.dir, state)
+        version_relations = capture_version_relations(
+            args.dir, relation_source, anchor_commit
+        )
+        _require_native_relation_history(args.dir)
+        if _native_relation_repository_identity(args.dir) != repository:
+            die("version relation repository changed during anchor capture")
     steps_file = _require_file(args.steps_file, "steps-file")
     _, steps_bytes = read_bounded_source(args.dir, steps_file, "steps file")
     try:
@@ -3035,6 +5166,9 @@ def done_runbook(args, state: dict) -> None:
         "sha256": digest,
         "step_count": len(titles),
     }
+    if version_relations is not None:
+        state["receipts"]["runbook"]["version_relations"] = version_relations
+        receipt["version_relations"] = version_relations
     receipt["sha256"] = digest
     commit(args.dir, state, "done:runbook", receipt)
     print(f"runbook receipted; {len(titles)} steps registered; step 1 -> implement")
@@ -3505,8 +5639,8 @@ def cmd_audit_round(args) -> None:
                 + ("that" if one else "them")
                 + " cannot say whether "
                 + ("it ran" if one else "they ran")
-                + " (see references/audit-loop.md; `config set solidity true` if this "
-                "run really is a Solidity one)"
+                + " (see references/audit-loop.md; the security_suite receipt must "
+                "classify the run before audit because Solidity config is immutable)"
             )
 
     recorded = {lint: value for lint, value in exits.items() if value is not None}
@@ -3657,6 +5791,7 @@ def done_push(args, state: dict) -> None:
     if not args.head_commit:
         die("--head-commit is required")
     stacked = run_branch_of(state) is not None
+    expected_issue = expected_task_issue(state)
     if stacked:
         expected_base = step_pr_base(state, step)
         if not args.pr_base:
@@ -3682,7 +5817,6 @@ def done_push(args, state: dict) -> None:
                 "--merge-commit is required; the pull request is not terminal "
                 "until merged"
             )
-        expected_issue = expected_task_issue(state)
         if state["receipts"].get("task_issue") is not None and not args.closed_issue_url:
             die("--closed-issue-url is required because a task_issue receipt exists")
         if expected_issue and args.closed_issue_url != expected_issue:
@@ -3712,6 +5846,7 @@ def done_push(args, state: dict) -> None:
         expected_base=(args.pr_base if stacked else state["base"]),
         expected_head_sha=verified_commits[-1],
         expected_merge_sha=args.merge_commit,
+        expected_closing_issue=(expected_issue if not stacked else None),
     )
     github_verified, attribution = verified_github_attribution(
         args.dir, verified_commits
@@ -3721,7 +5856,13 @@ def done_push(args, state: dict) -> None:
         merge_verified = verify_github_commits(args.dir, [args.merge_commit])
     step["receipts"]["push"] = {
         "pr_url": args.pr_url,
-        "head_commit": args.head_commit,
+        # The resolved identity, not the argument. `--head-commit` accepts any
+        # ref git resolves, including an abbreviated SHA, and the merge-order
+        # check at integration compares this value to a full branch tip. Storing
+        # what was typed lets a short SHA read as a rewritten branch five steps
+        # later, with no way back: `done push` refuses once the run has left the
+        # steps phase, and the ledger is append-only.
+        "head_commit": supplied_head,
         "pr_base": args.pr_base,
         "merge_commit": args.merge_commit,
         "closed_issue_url": args.closed_issue_url,
@@ -3766,7 +5907,12 @@ def done_push(args, state: dict) -> None:
         print(f"step {step['n']} published, merged, and receipted; {tail}")
 
 
-def _integrate_directive(state: dict) -> dict:
+def _integrate_directive(
+    state: dict,
+    base_dir: str | None = None,
+    *,
+    check_resolution: bool = True,
+) -> dict:
     """Merge the stack bottom up, then the run branch into the base once."""
     run_branch = run_branch_of(state)
     integration_base = integration_base_of(state)
@@ -3789,7 +5935,8 @@ def _integrate_directive(state: dict) -> dict:
             ),
         }
     then = "hexctl done integrate --pr-url <url> --merge-commit <sha>"
-    if expected_task_issue(state):
+    task_issue = expected_task_issue(state)
+    if task_issue:
         then += " --closed-issue-url <url>"
     final_step = state["steps"][-1]["n"]
     merge_records = as_dict(as_dict(state.get("integrate")).get("merges"))
@@ -3801,7 +5948,8 @@ def _integrate_directive(state: dict) -> dict:
     sync_then = (
         "hexctl done sync-run --commit <signed-merge-sha> "
         "--base-commit <remote-base-sha> "
-        f"--revalidation {INTEGRATION_REVALIDATION_FILE}"
+        f"--revalidation {INTEGRATION_REVALIDATION_FILE} "
+        "[--acknowledge-sync-path <exact-risk-path> ...]"
     )
     sync_recovery = "sync-run-and-revalidate"
     if sync:
@@ -3813,7 +5961,29 @@ def _integrate_directive(state: dict) -> dict:
             "--reason <bounded-repair-reason>"
         )
         sync_recovery = "supersede-sync-and-revalidate"
-    return {
+    resolution = None
+    relations = as_dict(as_dict(state.get("receipts")).get("runbook")).get(
+        "version_relations"
+    )
+    if relations is not None and check_resolution:
+        history = as_dict(state.get("integrate")).get("version_resolutions")
+        if not isinstance(history, list) or not history:
+            return {
+                "do": "resolve-versions",
+                "run_branch": run_branch,
+                "base": integration_base,
+                "starting_base": state["base"],
+                "reason": "the relation-bearing run has no exact base/head resolution",
+                "then": "hexctl done resolve-versions",
+                "recovery": (
+                    "if the base advanced, first use the existing signed "
+                    "product/base sync with complete integration revalidation"
+                ),
+            }
+        if base_dir is None:
+            die("version resolution freshness needs the run worktree", 1)
+        resolution = active_version_resolution(base_dir, state)
+    directive = {
         "do": "integrate",
         "run_branch": run_branch,
         "base": integration_base,
@@ -3824,9 +5994,19 @@ def _integrate_directive(state: dict) -> dict:
             "recovery": sync_recovery,
             "artifact": INTEGRATION_REVALIDATION_FILE,
             "then": sync_then,
+            "resolution_guard": {
+                "schema": SYNC_RESOLUTION_GUARD_SCHEMA,
+                "flag": "--acknowledge-sync-path",
+                "rule": (
+                    "repeat the flag for the exact sorted paths named by the "
+                    "controller; acknowledgement records inspection and does "
+                    "not replace revalidation"
+                ),
+            },
             "boundary": (
-                "base advancement alone does not authorise a carryover or "
-                "invalidate the exact-tree product evidence"
+                "base advancement alone does not authorise a carryover, "
+                "invalidate the exact-tree product evidence, or permit a "
+                "whole-side or unreviewed rebuilt resolution"
             ),
         },
         "attribution": {
@@ -3838,8 +6018,21 @@ def _integrate_directive(state: dict) -> dict:
                 "author or in a Co-authored-by trailer"
             ),
         },
+        **({"version_resolution": resolution} if resolution is not None else {}),
         "then": then,
     }
+    identity = github_issue_identity(task_issue)
+    if identity is not None:
+        issue_repository, issue_number = identity
+        directive["task_issue_closure"] = {
+            "issue": task_issue,
+            "required_before_merge": f"Closes {issue_repository}#{issue_number}",
+            "gate": (
+                "done integrate reads the final pull request body and refuses "
+                "without a recognised closing reference to this exact issue"
+            ),
+        }
+    return directive
 
 
 def product_evidence_record(state: dict, product_head: str) -> dict:
@@ -3875,21 +6068,30 @@ def product_evidence_record(state: dict, product_head: str) -> dict:
 
 
 def merge_base_commit(base_dir: str, product_head: str, base_head: str) -> str:
-    raw = bounded_git(
-        base_dir,
-        ["merge-base", product_head, base_head],
-        "could not resolve the product/base merge base",
-    )
-    try:
-        lines = raw.decode("ascii", "strict").splitlines()
-    except UnicodeDecodeError:
-        die("product/base merge base is not ASCII")
-    if len(lines) != 1:
-        die("product/base merge base did not return one commit")
-    return require_full_sha(lines[0], "product/base merge base")
+    """Use the same replacement-free merge base stored evidence replays."""
+    return _native_relation_merge_base(base_dir, product_head, base_head)
 
 
 def git_diff_paths(base_dir: str, before: str, after: str) -> list[str]:
+    """The integration path delta, read free of replacement and rename drift."""
+    return _native_diff_paths(
+        base_dir,
+        before,
+        after,
+        "integration path delta",
+        "could not read the integration path delta",
+    )
+
+def git_diff_paths_for_aggregates(
+    base_dir: str, before: str, after: str
+) -> list[str]:
+    """Read one complete bounded delta before aggregate classification.
+
+    Version 1 continues through ``git_diff_paths`` and its integration refusal.
+    Version 2 may cross that count only because a later exact registry join
+    classifies the excess. The existing byte and time ceilings still bound the
+    Git read, and this reader keeps the same path grammar and diagnostics.
+    """
     raw = bounded_git(
         base_dir,
         ["diff", "--name-only", "-z", f"{before}..{after}", "--"],
@@ -3901,28 +6103,17 @@ def git_diff_paths(base_dir: str, before: str, after: str) -> list[str]:
         die("integration path delta is not UTF-8")
     paths = [path for path in decoded.split("\0") if path]
     unique = sorted(set(paths))
-    if len(unique) > GIT_PATHS_MAX:
-        die(f"integration path delta exceeds {GIT_PATHS_MAX} paths")
     if len(unique) != len(paths):
         die("integration path delta contains duplicate paths")
-    root = os.path.realpath(base_dir)
     for index, path in enumerate(unique):
         if (
-            not isinstance(path, str)
-            or not path
+            not path
             or os.path.isabs(path)
             or path in (".", "..")
             or ".." in path.split("/")
             or any(ord(character) < 32 or ord(character) == 127 for character in path)
         ):
             die(f"integration path delta contains an unsafe path at index {index}")
-        candidate = os.path.realpath(os.path.join(root, path))
-        try:
-            inside = os.path.commonpath((root, candidate)) == root
-        except ValueError:
-            inside = False
-        if not inside:
-            die(f"integration path delta escapes the repository at index {index}")
     return unique
 
 
@@ -3936,8 +6127,8 @@ def _strict_json_object(pairs):
 
 
 def _manifest_paths(value, label: str, allowed: set[str] | None = None) -> list[str]:
-    if not isinstance(value, list) or len(value) > GIT_PATHS_MAX:
-        die(f"{label} must be an array of at most {GIT_PATHS_MAX} paths")
+    if not isinstance(value, list) or len(value) > INTEGRATION_PATHS_MAX:
+        die(f"{label} must be an array of at most {INTEGRATION_PATHS_MAX} paths")
     if any(not isinstance(path, str) for path in value):
         die(f"{label} must contain only path strings")
     if value != sorted(set(value)):
@@ -3961,6 +6152,818 @@ def _manifest_paths(value, label: str, allowed: set[str] | None = None) -> list[
     return value
 
 
+def _sync_tree_path_batches(paths: list[str]) -> list[list[str]]:
+    """Keep literal ls-tree argv below one explicit path and byte envelope."""
+    batches = []
+    current = []
+    current_bytes = 0
+    for path in paths:
+        token_bytes = len(f":(literal){path}".encode("utf-8")) + 1
+        if current and (
+            len(current) >= SYNC_TREE_PATH_BATCH_MAX
+            or current_bytes + token_bytes > SYNC_TREE_ARG_BYTES_MAX
+        ):
+            batches.append(current)
+            current = []
+            current_bytes = 0
+        current.append(path)
+        current_bytes += token_bytes
+    if current:
+        batches.append(current)
+    return batches
+
+
+def _sync_tree_entries(
+    base_dir: str, commit_sha: str, paths: list[str], label: str
+) -> dict[str, str | None]:
+    """Read exact tree-entry identities for literal paths at one native commit."""
+    commit_sha = require_full_sha(commit_sha, f"{label} commit")
+    paths = _manifest_paths(paths, f"{label} paths")
+    identities = {path: None for path in paths}
+    for batch in _sync_tree_path_batches(paths):
+        literal_pathspecs = [f":(literal){path}" for path in batch]
+        raw = _native_relation_git(
+            base_dir,
+            ["ls-tree", "-z", "--full-tree", commit_sha, "--", *literal_pathspecs],
+            f"{label} tree entries cannot be read",
+        )
+        batch_set = set(batch)
+        seen = set()
+        for record in raw.split(b"\0"):
+            if not record:
+                continue
+            metadata, separator, path_bytes = record.partition(b"\t")
+            fields = metadata.split()
+            try:
+                path = path_bytes.decode("utf-8")
+                mode, kind, object_id = [field.decode("ascii") for field in fields]
+            except (UnicodeDecodeError, ValueError):
+                die(f"{label} tree entries are malformed")
+            if (
+                separator != b"\t"
+                or path not in batch_set
+                or path in seen
+                or re.fullmatch(r"[0-7]{6}", mode) is None
+                or kind not in {"blob", "tree", "commit"}
+                or COMMIT_RE.fullmatch(object_id) is None
+            ):
+                die(f"{label} tree entries are malformed")
+            seen.add(path)
+            identities[path] = f"{mode} {kind} {object_id}"
+    return identities
+
+
+def _active_sync_predecessor(integrate: dict, active_commit: str) -> dict | None:
+    """Return the sync immediately superseded by the active receipt."""
+    history = integrate.get("superseded_syncs") or []
+    if not isinstance(history, list):
+        die("recorded superseded integration syncs are malformed")
+    if not history:
+        return None
+    tail = history[-1]
+    previous = tail.get("sync") if isinstance(tail, dict) else None
+    if (
+        not isinstance(previous, dict)
+        or tail.get("superseded_by") != active_commit
+    ):
+        die("active integration sync is not joined to its supersession history")
+    return previous
+
+
+def sync_resolution_guard_record(
+    base_dir: str,
+    product_head: str,
+    base_head: str,
+    sync_head: str,
+    *,
+    current_sync: dict | None,
+    acknowledgements: list[str],
+) -> dict:
+    """Expose whole-side and rebuild-loss paths before a sync is receipted."""
+    product_head = require_full_sha(product_head, "sync resolution product head")
+    base_head = require_full_sha(base_head, "sync resolution base head")
+    sync_head = require_full_sha(sync_head, "sync resolution sync head")
+    acknowledgements = _manifest_paths(
+        acknowledgements, "--acknowledge-sync-path values"
+    )
+
+    base_before = merge_base_commit(base_dir, product_head, base_head)
+    product_paths = git_diff_paths(base_dir, base_before, product_head)
+    base_paths = git_diff_paths(base_dir, base_before, base_head)
+    overlap_paths = sorted(set(product_paths) & set(base_paths))
+    product_entries = _sync_tree_entries(
+        base_dir, product_head, overlap_paths, "sync resolution product"
+    )
+    base_entries = _sync_tree_entries(
+        base_dir, base_head, overlap_paths, "sync resolution base"
+    )
+    sync_entries = _sync_tree_entries(
+        base_dir, sync_head, overlap_paths, "sync resolution result"
+    )
+    side_selected_paths = [
+        path
+        for path in overlap_paths
+        if product_entries[path] != base_entries[path]
+        and sync_entries[path] in {product_entries[path], base_entries[path]}
+    ]
+
+    superseded_intersection_paths = []
+    if current_sync is not None:
+        if not isinstance(current_sync, dict):
+            die("active integration sync is malformed")
+        old_sync = require_full_sha(
+            current_sync.get("commit"), "active recorded sync commit"
+        )
+        old_base = require_full_sha(
+            current_sync.get(SYNC_BASE_HEAD_KEY), "active recorded sync base"
+        )
+        if _native_relation_parents(
+            base_dir, old_sync, "active recorded sync commit"
+        ) != [product_head, old_base]:
+            die("active recorded sync parents do not match product and old base")
+        old_composition_paths = git_diff_paths(base_dir, product_head, old_sync)
+        base_advance_paths = git_diff_paths(base_dir, old_base, base_head)
+        superseded_intersection_paths = sorted(
+            set(old_composition_paths) & set(base_advance_paths)
+        )
+
+    required = sorted(
+        set(side_selected_paths) | set(superseded_intersection_paths)
+    )
+    if acknowledgements != required:
+        missing = sorted(set(required) - set(acknowledgements))
+        extra = sorted(set(acknowledgements) - set(required))
+        die(
+            "integration sync resolution acknowledgements do not match; "
+            f"missing {json.dumps(missing, ensure_ascii=False)}; "
+            f"extra {json.dumps(extra, ensure_ascii=False)}; repeat "
+            "--acknowledge-sync-path once for each required path in this "
+            f"exact order: {json.dumps(required, ensure_ascii=False)}"
+        )
+    return {
+        "schema": SYNC_RESOLUTION_GUARD_SCHEMA,
+        "side_selected_paths": side_selected_paths,
+        "superseded_intersection_paths": superseded_intersection_paths,
+        "acknowledged_paths": acknowledgements,
+    }
+
+
+def _require_sync_resolution_guard(
+    base_dir: str,
+    sync: dict,
+    product_head: str,
+    *,
+    previous_sync: dict | None,
+) -> dict:
+    """Recompute one stored guard from its immutable Git objects."""
+    guard = sync.get("resolution_guard")
+    if (
+        not isinstance(guard, dict)
+        or set(guard) != SYNC_RESOLUTION_GUARD_KEYS
+        or guard.get("schema") != SYNC_RESOLUTION_GUARD_SCHEMA
+    ):
+        die(
+            "active integration sync has no current resolution guard; "
+            "supersede it with a fresh signed and revalidated sync"
+        )
+    for field in (
+        "side_selected_paths",
+        "superseded_intersection_paths",
+        "acknowledged_paths",
+    ):
+        _manifest_paths(guard.get(field), f"sync resolution guard {field}")
+    expected = sync_resolution_guard_record(
+        base_dir,
+        product_head,
+        sync.get(SYNC_BASE_HEAD_KEY),
+        sync.get("commit"),
+        current_sync=previous_sync,
+        acknowledgements=guard["acknowledged_paths"],
+    )
+    if guard != expected:
+        die("active integration sync resolution guard does not replay")
+    return expected
+
+
+def _sha256_value(value, label: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        die(f"{label} must be a lowercase SHA-256 digest")
+    return value
+
+
+def _aggregate_relative_path(value, label: str) -> str:
+    if not isinstance(value, str):
+        die(f"{label} must be a path string")
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError:
+        encoded = b""
+    if (
+        not encoded
+        or len(encoded) > 4096
+        or os.path.isabs(value)
+        or value in (".", "..")
+        or ".." in value.split("/")
+        or value.startswith("./")
+        or value.endswith("/")
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        die(f"{label} is unsafe")
+    return value
+
+
+def _git_tree_record(raw: bytes, label: str) -> tuple[str, str, str, str]:
+    try:
+        metadata, path_bytes = raw.split(b"\t", 1)
+        mode, kind, object_id = metadata.decode("ascii", "strict").split(" ")
+        path = path_bytes.decode("utf-8", "strict")
+    except (UnicodeError, ValueError):
+        die(f"{label} has malformed Git tree metadata")
+    if re.fullmatch(r"[0-9a-f]{40}", object_id) is None:
+        die(f"{label} has a malformed Git object id")
+    return mode, kind, object_id, path
+
+
+def _git_aggregate_tree(
+    base_dir: str, sync_head: str, aggregate_id: str, registry: dict
+) -> tuple[str, list[dict]]:
+    prefix = registry["prefix"]
+    tree_path = prefix.removesuffix("/")
+    root_raw = bounded_git(
+        base_dir,
+        ["ls-tree", "-z", sync_head, "--", tree_path],
+        f"generator aggregate {aggregate_id} tree could not be read",
+    )
+    root_rows = [row for row in root_raw.split(b"\0") if row]
+    if len(root_rows) != 1:
+        die(f"generator aggregate {aggregate_id} prefix is not one Git tree")
+    mode, kind, tree_id, path = _git_tree_record(
+        root_rows[0], f"generator aggregate {aggregate_id} prefix"
+    )
+    if path != tree_path or mode != "040000" or kind != "tree":
+        die(f"generator aggregate {aggregate_id} prefix is not a Git tree")
+
+    raw = bounded_git(
+        base_dir,
+        ["ls-tree", "-r", "-z", "--full-tree", sync_head, "--", prefix],
+        f"generator aggregate {aggregate_id} contents could not be read",
+    )
+    rows = []
+    for index, encoded in enumerate(row for row in raw.split(b"\0") if row):
+        mode, kind, object_id, member = _git_tree_record(
+            encoded, f"generator aggregate {aggregate_id} member {index}"
+        )
+        if not member.startswith(prefix):
+            die(f"generator aggregate {aggregate_id} escaped its registered prefix")
+        _aggregate_relative_path(
+            member, f"generator aggregate {aggregate_id} member {index}"
+        )
+        if kind != "blob":
+            die(f"generator aggregate {aggregate_id} member {member} is not a blob")
+        if mode not in ("100644", "100755"):
+            die(f"generator aggregate {aggregate_id} member {member} has an unsafe mode")
+        rows.append(
+            {"path": member, "mode": mode, "object": object_id}
+        )
+    paths = [row["path"] for row in rows]
+    if paths != sorted(set(paths)):
+        die(f"generator aggregate {aggregate_id} Git tree paths are not sorted and unique")
+    if not rows:
+        die(f"generator aggregate {aggregate_id} Git tree is empty")
+    if len(rows) > registry["max_files"]:
+        die(
+            f"generator aggregate {aggregate_id} exceeds its "
+            f"{registry['max_files']}-file ceiling"
+        )
+    return tree_id, rows
+
+
+def _git_batch_blobs(
+    base_dir: str, aggregate_id: str, rows: list[dict], max_bytes: int
+) -> dict[str, bytes]:
+    """Read every final aggregate blob through one bounded batch process."""
+    requests = b"".join(row["object"].encode("ascii") + b"\n" for row in rows)
+    try:
+        process = subprocess.Popen(
+            ["git", "cat-file", "--batch"],
+            cwd=os.path.realpath(base_dir),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            shell=False,
+        )
+    except OSError:
+        die(f"generator aggregate {aggregate_id} Git object batch could not start")
+    assert process.stdin is not None
+    assert process.stdout is not None
+    try:
+        process.stdin.write(requests)
+        process.stdin.close()
+    except (BrokenPipeError, OSError):
+        process.kill()
+        process.wait()
+        process.stdout.close()
+        die(f"generator aggregate {aggregate_id} Git object batch rejected its request")
+
+    selector = selectors.DefaultSelector()
+    selector.register(process.stdout, selectors.EVENT_READ)
+    output = bytearray()
+    output_max = max_bytes + GIT_OUTPUT_MAX
+    deadline = time.monotonic() + GIT_TIMEOUT
+    try:
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                process.kill()
+                process.wait()
+                die(
+                    f"generator aggregate {aggregate_id} Git object batch "
+                    f"timed out after {GIT_TIMEOUT} seconds"
+                )
+            events = selector.select(min(remaining, 0.1))
+            if not events and process.poll() is not None:
+                events = [
+                    (key, selectors.EVENT_READ)
+                    for key in selector.get_map().values()
+                ]
+            for key, _ in events:
+                chunk = os.read(key.fd, 65536)
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    continue
+                output.extend(chunk)
+                if len(output) > output_max:
+                    process.kill()
+                    process.wait()
+                    die(
+                        f"generator aggregate {aggregate_id} Git object batch "
+                        "exceeded its bounded output envelope"
+                    )
+        try:
+            returncode = process.wait(timeout=max(0.0, deadline - time.monotonic()))
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait()
+            die(
+                f"generator aggregate {aggregate_id} Git object batch "
+                f"timed out after {GIT_TIMEOUT} seconds"
+            )
+    finally:
+        selector.close()
+        process.stdout.close()
+    if returncode != 0:
+        die(f"generator aggregate {aggregate_id} Git object batch failed")
+
+    cursor = 0
+    metadata_bytes = 0
+    blob_bytes = 0
+    blobs = {}
+    for row in rows:
+        header_end = output.find(b"\n", cursor)
+        if header_end < 0:
+            die(f"generator aggregate {aggregate_id} Git object batch is partial")
+        header = bytes(output[cursor:header_end])
+        metadata_bytes += len(header) + 1
+        if metadata_bytes > GIT_OUTPUT_MAX:
+            die(
+                f"generator aggregate {aggregate_id} Git object metadata "
+                f"exceeds {GIT_OUTPUT_MAX} bytes"
+            )
+        try:
+            object_id, kind, size_text = header.decode("ascii", "strict").split(" ")
+            size = int(size_text, 10)
+        except (UnicodeError, ValueError):
+            die(f"generator aggregate {aggregate_id} Git object batch is malformed")
+        if (
+            object_id != row["object"]
+            or kind != "blob"
+            or size < 0
+            or str(size) != size_text
+        ):
+            die(f"generator aggregate {aggregate_id} Git object batch is malformed")
+        blob_bytes += size
+        if blob_bytes > max_bytes:
+            die(
+                f"generator aggregate {aggregate_id} exceeds its "
+                f"{max_bytes}-byte ceiling"
+            )
+        start = header_end + 1
+        end = start + size
+        if end >= len(output) or output[end:end + 1] != b"\n":
+            die(f"generator aggregate {aggregate_id} Git object batch is partial")
+        blobs[row["path"]] = bytes(output[start:end])
+        cursor = end + 1
+    if cursor != len(output):
+        die(f"generator aggregate {aggregate_id} Git object batch has extra output")
+    return blobs
+
+
+def _manifest_document(data: bytes, aggregate_id: str) -> dict:
+    try:
+        document = json.loads(
+            data.decode("utf-8", "strict"), object_pairs_hook=_strict_json_object
+        )
+    except (UnicodeError, ValueError) as exc:
+        die(f"generator aggregate {aggregate_id} manifest is not valid JSON: {exc}")
+    if not isinstance(document, dict):
+        die(f"generator aggregate {aggregate_id} manifest must be an object")
+    return document
+
+
+def _validate_generator_aggregate(
+    base_dir: str,
+    sync_head: str,
+    declaration: dict,
+    registry: dict,
+) -> dict:
+    aggregate_id = declaration["id"]
+    tree_id, rows = _git_aggregate_tree(
+        base_dir, sync_head, aggregate_id, registry
+    )
+    blobs = _git_batch_blobs(
+        base_dir, aggregate_id, rows, registry["max_bytes"]
+    )
+    by_path = {row["path"]: row for row in rows}
+    manifest_path = registry["prefix"] + registry["manifest"]
+    if manifest_path not in blobs:
+        die(f"generator aggregate {aggregate_id} manifest is missing")
+    manifest_bytes = blobs[manifest_path]
+    manifest_digest = hashlib.sha256(manifest_bytes).hexdigest()
+    if manifest_digest != declaration["manifest_sha256"]:
+        die(f"generator aggregate {aggregate_id} manifest digest does not match")
+    document = _manifest_document(manifest_bytes, aggregate_id)
+    if set(document) != {
+        "schema",
+        "contract",
+        "generated_by",
+        "file_count",
+        "total_bytes",
+        "omissions",
+        "files",
+    }:
+        die(f"generator aggregate {aggregate_id} manifest has the wrong fields")
+    if document.get("schema") != registry["manifest_schema"]:
+        die(f"generator aggregate {aggregate_id} manifest has the wrong schema")
+    if document.get("contract") != registry["manifest_contract"]:
+        die(f"generator aggregate {aggregate_id} manifest has the wrong contract")
+    if document.get("generated_by") != registry["generator"]:
+        die(f"generator aggregate {aggregate_id} manifest has the wrong generator")
+    if not isinstance(document.get("omissions"), list):
+        die(f"generator aggregate {aggregate_id} manifest omissions must be an array")
+    payload = document.get("files")
+    if not isinstance(payload, list):
+        die(f"generator aggregate {aggregate_id} manifest files must be an array")
+    if len(payload) + 1 > registry["max_files"]:
+        die(
+            f"generator aggregate {aggregate_id} exceeds its "
+            f"{registry['max_files']}-file ceiling"
+        )
+    normalized_rows = []
+    for index, item in enumerate(payload):
+        if not isinstance(item, dict) or set(item) not in (
+            {"bytes", "path", "sha256", "source"},
+            {"bytes", "generated_by", "path", "sha256", "source"},
+        ):
+            die(
+                f"generator aggregate {aggregate_id} manifest row {index} "
+                "has the wrong fields"
+            )
+        path = _aggregate_relative_path(
+            item.get("path"),
+            f"generator aggregate {aggregate_id} manifest row {index} path",
+        )
+        if path == registry["manifest"]:
+            die(f"generator aggregate {aggregate_id} manifest contains a self row")
+        size = item.get("bytes")
+        if isinstance(size, bool) or not isinstance(size, int) or size < 0:
+            die(
+                f"generator aggregate {aggregate_id} manifest row {index} "
+                "has an invalid byte count"
+            )
+        digest = _sha256_value(
+            item.get("sha256"),
+            f"generator aggregate {aggregate_id} manifest row {index} digest",
+        )
+        source = item.get("source")
+        if source is not None and not isinstance(source, str):
+            die(
+                f"generator aggregate {aggregate_id} manifest row {index} "
+                "has an invalid source"
+            )
+        if "generated_by" in item and not isinstance(item["generated_by"], str):
+            die(
+                f"generator aggregate {aggregate_id} manifest row {index} "
+                "has an invalid generator"
+            )
+        normalized_rows.append({"path": path, "bytes": size, "sha256": digest})
+    manifest_paths = [item["path"] for item in normalized_rows]
+    if manifest_paths != sorted(set(manifest_paths)):
+        die(f"generator aggregate {aggregate_id} manifest paths are not sorted and unique")
+    manifest_file_count = document.get("file_count")
+    if (
+        isinstance(manifest_file_count, bool)
+        or not isinstance(manifest_file_count, int)
+        or manifest_file_count != len(normalized_rows)
+    ):
+        die(f"generator aggregate {aggregate_id} manifest file count does not match")
+    payload_bytes = sum(item["bytes"] for item in normalized_rows)
+    manifest_total_bytes = document.get("total_bytes")
+    if (
+        isinstance(manifest_total_bytes, bool)
+        or not isinstance(manifest_total_bytes, int)
+        or manifest_total_bytes != payload_bytes
+    ):
+        die(f"generator aggregate {aggregate_id} manifest byte count does not match")
+    total_bytes = payload_bytes + len(manifest_bytes)
+    if total_bytes > registry["max_bytes"]:
+        die(
+            f"generator aggregate {aggregate_id} exceeds its "
+            f"{registry['max_bytes']}-byte ceiling"
+        )
+
+    expected_paths = {
+        registry["prefix"] + item["path"] for item in normalized_rows
+    }
+    expected_paths.add(manifest_path)
+    if set(by_path) != expected_paths:
+        die(f"generator aggregate {aggregate_id} manifest membership does not match Git")
+    if declaration["file_count"] != len(expected_paths):
+        die(f"generator aggregate {aggregate_id} file count does not match")
+
+    file_digests = []
+    for item in normalized_rows:
+        full_path = registry["prefix"] + item["path"]
+        data = blobs[full_path]
+        if len(data) != item["bytes"]:
+            die(f"generator aggregate {aggregate_id} blob byte count does not match")
+        digest = hashlib.sha256(data).hexdigest()
+        if digest != item["sha256"]:
+            die(f"generator aggregate {aggregate_id} blob digest does not match")
+        mode = by_path[full_path]["mode"]
+        file_digests.append(
+            (
+                full_path,
+                hashlib.sha256(
+                    GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN
+                    + full_path.encode("utf-8")
+                    + b"\0"
+                    + mode.encode("ascii")
+                    + b"\0"
+                    + str(len(data)).encode("ascii")
+                    + b"\0"
+                    + digest.encode("ascii")
+                ).digest(),
+            )
+        )
+    manifest_mode = by_path[manifest_path]["mode"]
+    file_digests.append(
+        (
+            manifest_path,
+            hashlib.sha256(
+                GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN
+                + manifest_path.encode("utf-8")
+                + b"\0"
+                + manifest_mode.encode("ascii")
+                + b"\0"
+                + str(len(manifest_bytes)).encode("ascii")
+                + b"\0"
+                + manifest_digest.encode("ascii")
+            ).digest(),
+        )
+    )
+    file_digests.sort(key=lambda item: item[0])
+    tree_digest = hashlib.sha256(
+        GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN
+        + b"".join(digest for _, digest in file_digests)
+    ).hexdigest()
+    if tree_digest != declaration["tree_sha256"]:
+        die(f"generator aggregate {aggregate_id} tree digest does not match")
+    return {
+        **declaration,
+        "git_tree": tree_id,
+        "payload_file_count": len(normalized_rows),
+        "total_bytes": total_bytes,
+    }
+
+
+def _affected_aggregates(value) -> list[dict]:
+    label = "affected_aggregates"
+    if not isinstance(value, list) or not value:
+        die(f"{label} must be a non-empty array")
+    normalized = []
+    for index, aggregate in enumerate(value):
+        if not isinstance(aggregate, dict) or set(aggregate) != {
+            "id",
+            "prefix",
+            "generator",
+            "manifest",
+            "manifest_sha256",
+            "file_count",
+            "tree_sha256",
+        }:
+            die(f"{label} entry {index} has the wrong fields")
+        aggregate_id = aggregate["id"]
+        if not isinstance(aggregate_id, str):
+            die(f"{label} entry {index} has an invalid id")
+        registry = GENERATOR_AGGREGATE_REGISTRY.get(aggregate_id)
+        if registry is None:
+            die(f"{label} entry {index} names an unknown aggregate")
+        for key in ("prefix", "generator", "manifest"):
+            if aggregate[key] != registry[key]:
+                die(
+                    f"generator aggregate {aggregate_id} {key} does not match "
+                    "the source registry"
+                )
+        _sha256_value(
+            aggregate["manifest_sha256"],
+            f"generator aggregate {aggregate_id} manifest digest",
+        )
+        _sha256_value(
+            aggregate["tree_sha256"],
+            f"generator aggregate {aggregate_id} tree digest",
+        )
+        count = aggregate["file_count"]
+        if (
+            isinstance(count, bool)
+            or not isinstance(count, int)
+            or count < 1
+            or count > registry["max_files"]
+        ):
+            die(f"generator aggregate {aggregate_id} has an invalid file count")
+        normalized.append(dict(aggregate))
+    ids = [aggregate["id"] for aggregate in normalized]
+    if ids != sorted(set(ids)):
+        die(f"{label} must be sorted and unique by id")
+    prefixes = [aggregate["prefix"] for aggregate in normalized]
+    for left, prefix in enumerate(prefixes):
+        for other in prefixes[left + 1:]:
+            if prefix.startswith(other) or other.startswith(prefix):
+                die("affected_aggregates contains overlapping registered prefixes")
+    return normalized
+
+
+def _integration_checks_v2(
+    value, affected_paths: list[str], aggregates: list[dict]
+) -> list[dict]:
+    if (
+        not isinstance(value, list)
+        or not value
+        or len(value) > INTEGRATION_CHECKS_MAX
+    ):
+        die(
+            "integration revalidation checks must be a non-empty array of at "
+            f"most {INTEGRATION_CHECKS_MAX} entries"
+        )
+    selected_ids = {aggregate["id"] for aggregate in aggregates}
+    normalized = []
+    seen_ids = set()
+    covered_paths = set()
+    covered_aggregates = set()
+    for index, check in enumerate(value):
+        if not isinstance(check, dict) or set(check) != {
+            "id", "command", "paths", "aggregates", "exit"
+        }:
+            die(
+                f"integration revalidation check {index} must contain exactly "
+                "id, command, paths, aggregates and exit"
+            )
+        check_id = check["id"]
+        if (
+            not isinstance(check_id, str)
+            or not INTEGRATION_CHECK_ID_RE.fullmatch(check_id)
+            or check_id in seen_ids
+        ):
+            die(f"integration revalidation check {index} has an invalid id")
+        seen_ids.add(check_id)
+        command = check["command"]
+        try:
+            command_bytes = command.encode("utf-8") if isinstance(command, str) else b""
+        except UnicodeEncodeError:
+            command_bytes = b""
+        if (
+            not command_bytes
+            or len(command_bytes) > INTEGRATION_COMMAND_BYTES_MAX
+            or any(ord(character) < 32 or ord(character) == 127 for character in command)
+        ):
+            die(f"integration revalidation check {index} has an invalid command")
+        if isinstance(check["exit"], bool) or check["exit"] != 0:
+            die(f"integration revalidation check {check_id} must record exit 0")
+        paths = _manifest_paths(
+            check["paths"],
+            f"integration revalidation check {check_id} paths",
+            set(affected_paths),
+        )
+        ids = check["aggregates"]
+        if not isinstance(ids, list) or any(not isinstance(item, str) for item in ids):
+            die(f"integration revalidation check {check_id} aggregates must be an array")
+        if ids != sorted(set(ids)):
+            die(
+                f"integration revalidation check {check_id} aggregates must be "
+                "sorted and unique"
+            )
+        if not set(ids) <= selected_ids:
+            die(f"integration revalidation check {check_id} names an undeclared aggregate")
+        for aggregate_id in ids:
+            expected = GENERATOR_AGGREGATE_REGISTRY[aggregate_id]["command"]
+            if command != expected:
+                die(
+                    f"integration revalidation check {check_id} must use the "
+                    f"registered verification command for {aggregate_id}"
+                )
+        covered_paths.update(paths)
+        covered_aggregates.update(ids)
+        normalized.append(
+            {
+                "id": check_id,
+                "command": command,
+                "paths": paths,
+                "aggregates": ids,
+                "exit": 0,
+            }
+        )
+    if covered_paths != set(affected_paths):
+        die("integration revalidation checks do not cover every affected path")
+    if covered_aggregates != selected_ids:
+        die("integration revalidation checks do not cover every affected aggregate")
+    return normalized
+
+
+def _integration_revalidation_record_v2(
+    base_dir: str,
+    artifact: str,
+    data: bytes,
+    raw: dict,
+    product_head: str,
+    base_head: str,
+    sync_head: str,
+) -> dict:
+    if set(raw) != {"schema", "affected_paths", "affected_aggregates", "checks"}:
+        die(
+            "integration revalidation v2 artefact must contain exactly schema, "
+            "affected_paths, affected_aggregates and checks"
+        )
+    declarations = _affected_aggregates(raw["affected_aggregates"])
+    base_before = merge_base_commit(base_dir, product_head, base_head)
+    product_paths = git_diff_paths_for_aggregates(
+        base_dir, base_before, product_head
+    )
+    upstream_paths = git_diff_paths_for_aggregates(
+        base_dir, base_before, base_head
+    )
+    overlap_paths = sorted(set(product_paths) & set(upstream_paths))
+    composition_paths = git_diff_paths_for_aggregates(
+        base_dir, product_head, sync_head
+    )
+    required_paths = sorted(set(composition_paths) | set(overlap_paths))
+    prefixes = [aggregate["prefix"] for aggregate in declarations]
+    owned_paths = [
+        path for path in required_paths if any(path.startswith(prefix) for prefix in prefixes)
+    ]
+    if not owned_paths:
+        die("affected_aggregates does not own any computed integration path")
+    outside_paths = sorted(set(required_paths) - set(owned_paths))
+    affected_paths = _manifest_paths(
+        raw["affected_paths"], "affected_paths", set(required_paths)
+    )
+    if affected_paths != outside_paths:
+        missing = sorted(set(outside_paths) - set(affected_paths))
+        if missing:
+            die(
+                "affected_paths omits the computed outside integration surface: "
+                + ", ".join(missing)
+            )
+        die("affected_paths must contain only the exact outside integration surface")
+
+    aggregates = [
+        _validate_generator_aggregate(
+            base_dir,
+            sync_head,
+            declaration,
+            GENERATOR_AGGREGATE_REGISTRY[declaration["id"]],
+        )
+        for declaration in declarations
+    ]
+    checks = _integration_checks_v2(raw["checks"], affected_paths, aggregates)
+    return {
+        "schema": INTEGRATION_REVALIDATION_SCHEMA_V2,
+        "artifact": os.path.relpath(artifact, os.path.realpath(base_dir)),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        "base_before": base_before,
+        "base_after": base_head,
+        "sync_head": sync_head,
+        "product_paths": product_paths,
+        "upstream_paths": upstream_paths,
+        "overlap_paths": overlap_paths,
+        "composition_paths": composition_paths,
+        "required_path_count": len(required_paths),
+        "aggregate_owned_path_count": len(owned_paths),
+        "individual_path_count": len(affected_paths),
+        "affected_paths": affected_paths,
+        "affected_aggregates": aggregates,
+        "checks": checks,
+    }
+
+
 def integration_revalidation_record(
     base_dir: str,
     supplied: str,
@@ -3979,6 +6982,19 @@ def integration_revalidation_record(
         )
     except ValueError as exc:
         die(f"integration revalidation artefact is not valid JSON: {exc}")
+    if (
+        isinstance(raw, dict)
+        and raw.get("schema") == INTEGRATION_REVALIDATION_SCHEMA_V2
+    ):
+        return _integration_revalidation_record_v2(
+            base_dir,
+            artifact,
+            data,
+            raw,
+            product_head,
+            base_head,
+            sync_head,
+        )
     if not isinstance(raw, dict) or set(raw) != {
         "schema", "affected_paths", "checks"
     }:
@@ -4200,23 +7216,19 @@ def refuse_unreceipted_run_branch_movement(
 
 
 def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> None:
-    """Refuse when a step branch that is still waiting has moved since its push.
+    """Refuse when a waiting branch no longer contains its receipted head.
 
-    GitHub's native stacked-pull-request flow rebases every downstream branch on
-    each merge and re-signs the rewritten commits with its own key. Author and
-    the provenance trailers survive; the local signature does not.
-
-    Without this check the first symptom is an invalid local signature at a later
-    merge-step, which reads as a broken signing setup rather than as a branch
-    rewrite, and by then several steps have already merged. Comparing each
-    waiting step's remote tip against the head its push receipt names finds the
-    rewrite at the first merge-step after it happened, and says what happened.
+    Equality is the zero-query path. A moved tip receives one bounded native
+    ancestry query: status 0 admits topology only, status 1 establishes that the
+    receipted head is absent, and every other outcome is unknown. Signatures,
+    provenance, GitHub verification, and attribution remain mandatory over the
+    exact live range at ``done merge-step``.
 
     A step whose branch cannot be read is reported rather than skipped: an absent
     downstream branch during integration is not a normal state.
     """
     merged = as_dict(state.get("integrate")).get("merged") or []
-    moved, unreadable = [], []
+    nonancestors, unknown, unreadable = [], [], []
     for step in state["steps"]:
         number = step["n"]
         if number == current_step or number in merged:
@@ -4231,27 +7243,61 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
         except SystemExit:
             unreadable.append(f"step {number} ('{branch}')")
             continue
-        if tip != recorded:
-            moved.append(
-                f"step {number} ('{branch}') is at {tip} and its push receipt "
-                f"names {recorded}"
-            )
+        if tip == recorded:
+            continue
+        if len(recorded) < 40:
+            # An abbreviated receipt is an older receipt format, not a moved
+            # branch: `--head-commit` accepts any ref git resolves, and receipts
+            # written before that value was stored resolved hold whatever was
+            # passed. Resolve and ask again, so the check answers whether this
+            # is the commit that was pushed rather than whether two strings
+            # match. Only reached when they differ, so a full-length receipt
+            # never shells out.
+            try:
+                recorded = _native_relation_commit(
+                    base_dir, recorded, f"step {number} recorded push head"
+                )
+            except SystemExit:
+                unreadable.append(f"step {number} ('{branch}', recorded {recorded})")
+                continue
+            if tip == recorded:
+                continue
+        relation = _native_ancestry_status(base_dir, recorded, tip)
+        observation = (
+            f"step {number} ('{branch}') recorded head {recorded} and observed "
+            f"tip {tip}"
+        )
+        if relation == 0:
+            continue
+        if relation == 1:
+            nonancestors.append(observation)
+        else:
+            unknown.append(observation)
     if unreadable:
         die(
             "a step branch still waiting to merge could not be read: "
             + "; ".join(unreadable)
             + ". Integration cannot proceed while a downstream branch is missing."
         )
-    if moved:
+    if unknown:
         die(
-            "a step branch still waiting to merge has been rewritten since it was "
-            "pushed: " + "; ".join(moved) + ". GitHub's stacked-pull-request flow "
-            "rebases downstream branches on each merge and re-signs them with its "
-            "own key, which keeps the author and the provenance trailers and "
-            "discards the local signature. The range these receipts describe is no "
-            "longer the range on the remote. Land the run from a branch holding the "
-            "original commits rather than merging the rewritten stack, and do not "
-            "import GitHub's public key to make the signature check pass."
+            "a step branch still waiting to merge has unknown ancestry: "
+            + "; ".join(unknown)
+            + ". Its ancestry could not be determined from bounded native local "
+            "objects. Restore readable native objects and repository history, then "
+            "retry; integration cannot proceed on an unanswered relation."
+        )
+    if nonancestors:
+        die(
+            "a step branch still waiting to merge no longer contains its receipted "
+            "head: "
+            + "; ".join(nonancestors)
+            + ". Each recorded head is not an ancestor of its observed tip. The "
+            "controller has not established why the history moved, and the push "
+            "receipt no longer describes the current remote range. Land the run "
+            "from a branch holding the original commits rather than merging this "
+            "stack, and do not import GitHub's public key to make the signature "
+            "check pass."
         )
 
 
@@ -4267,7 +7313,7 @@ def done_merge_step(args, state: dict) -> None:
         die("--step is required")
     if not args.merge_commit:
         die("--merge-commit is required")
-    pending = _integrate_directive(state)
+    pending = _integrate_directive(state, args.dir, check_resolution=False)
     if pending["do"] != "merge-step":
         die(f"every step already merged into '{run_branch_of(state)}'")
     if args.step != pending["step"]:
@@ -4372,7 +7418,7 @@ def done_sync_run(args, state: dict) -> None:
         )
     if state.get("halted"):
         die(f"run is halted ({state['halted']['reason']}); `hexctl resume` first")
-    pending = _integrate_directive(state)
+    pending = _integrate_directive(state, args.dir, check_resolution=False)
     if pending["do"] != "integrate":
         die(
             f"step {pending['step']} still has to merge into "
@@ -4431,12 +7477,19 @@ def done_sync_run(args, state: dict) -> None:
     base_tip = require_full_sha(args.base_commit, "run sync base commit")
     if current_sync and sync_tip == current_sync.get("commit"):
         die("replacement integration sync must use a new signed commit")
+    repository = _native_relation_repository_identity(args.dir)
+    _require_native_relation_history(args.dir)
     integration_base = integration_base_of(state)
-    remote_tip = remote_branch_tip(args.dir, run_branch_of(state))
+    remote_tip = remote_branch_tip(
+        args.dir, run_branch_of(state), native_relation=True
+    )
     if remote_tip != sync_tip:
         die("run sync commit does not match the remote run branch tip")
     remote_base = remote_branch_tip(
-        args.dir, integration_base, "remote base branch tip"
+        args.dir,
+        integration_base,
+        "remote base branch tip",
+        native_relation=True,
     )
     if remote_base != base_tip:
         die("run sync base commit does not match the remote base branch tip")
@@ -4444,7 +7497,7 @@ def done_sync_run(args, state: dict) -> None:
     merge_records = as_dict(integrate.get("merges"))
     final_merge = as_dict(merge_records.get(str(final_step))).get("merge_commit")
     recorded_tip = require_full_sha(final_merge, "final recorded step merge")
-    parents = commit_parents(args.dir, sync_tip, "run sync commit")
+    parents = _native_relation_parents(args.dir, sync_tip, "run sync commit")
     expected_parents = [recorded_tip, base_tip]
     if parents != expected_parents:
         die(
@@ -4460,8 +7513,21 @@ def done_sync_run(args, state: dict) -> None:
     revalidation = integration_revalidation_record(
         args.dir, args.revalidation, recorded_tip, base_tip, sync_tip
     )
+    resolution_guard = sync_resolution_guard_record(
+        args.dir,
+        recorded_tip,
+        base_tip,
+        sync_tip,
+        current_sync=(current_sync if current_sync else None),
+        acknowledgements=list(
+            getattr(args, "acknowledge_sync_paths", None) or []
+        ),
+    )
     verify_local_commit(args.dir, sync_tip, "run branch integration sync")
     github_verified = verify_github_commits(args.dir, [sync_tip])
+    _require_native_relation_history(args.dir)
+    if _native_relation_repository_identity(args.dir) != repository:
+        die("integration sync repository changed during evidence collection")
     new_sync = {
         "commit": sync_tip,
         "base": integration_base,
@@ -4471,6 +7537,7 @@ def done_sync_run(args, state: dict) -> None:
         "github_verified": github_verified,
         "product_evidence": product_evidence,
         "revalidation": revalidation,
+        "resolution_guard": resolution_guard,
     }
     if current_sync:
         superseded_sync = {
@@ -4494,8 +7561,9 @@ def done_sync_run(args, state: dict) -> None:
             f"{run_branch_of(state)} superseded integration sync "
             f"{superseded_sync['sync']['commit']} with {sync_tip}; "
             f"product evidence preserved; {len(revalidation['checks'])} "
-            "integration revalidation check(s) recorded; integration may "
-            "continue"
+            "integration revalidation check(s) recorded; "
+            f"{len(resolution_guard['acknowledged_paths'])} sync resolution "
+            "path(s) acknowledged; integration may continue"
         )
     else:
         commit(args.dir, state, "done:sync-run", new_sync)
@@ -4503,8 +7571,283 @@ def done_sync_run(args, state: dict) -> None:
             f"{run_branch_of(state)} synced with {integration_base} at "
             f"{base_tip}; product evidence preserved; "
             f"{len(revalidation['checks'])} integration revalidation check(s) "
-            "recorded; integration may continue"
+            f"recorded; {len(resolution_guard['acknowledged_paths'])} sync "
+            "resolution path(s) acknowledged; integration may continue"
         )
+
+
+def version_resolution_event(receipt: dict) -> dict:
+    """Bounded ledger projection of one full state receipt."""
+    return {
+        "schema": VERSION_RESOLUTION_SCHEMA,
+        "sha256": hashlib.sha256(canonical(receipt).encode()).hexdigest(),
+        "runbook_sha256": receipt["runbook_sha256"],
+        "relations_sha256": receipt["relations_sha256"],
+        "base_ref": receipt["base_ref"],
+        "base_commit": receipt["base_commit"],
+        "head_commit": receipt["head_commit"],
+        "targets": [
+            {
+                "skill": target["skill"],
+                "ledger": target["ledger"],
+                "resolved_version": target["resolved_version"],
+                "head_ledger_sha256": target["head_ledger_sha256"],
+                "skill_sha256": target["skill_sha256"],
+            }
+            for target in receipt["targets"]
+        ],
+    }
+
+
+def _intact_ledger_entries(base_dir: str, label: str) -> list[dict]:
+    path = ledger_path(base_dir)
+    entries = []
+    previous = "genesis"
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            for line_number, line in enumerate(handle, 1):
+                if not line.strip():
+                    continue
+                entry = json.loads(line)
+                expected = hashlib.sha256(
+                    canonical(
+                        {
+                            "ts": entry["ts"],
+                            "event": entry["event"],
+                            "data": entry["data"],
+                            "prev": entry["prev"],
+                            "state": entry["state"],
+                        }
+                    ).encode()
+                ).hexdigest()
+                if entry["prev"] != previous or entry["hash"] != expected:
+                    die(
+                        f"{label} controller ledger is not intact at line "
+                        f"{line_number}",
+                        1,
+                    )
+                previous = entry["hash"]
+                entries.append(entry)
+    except (OSError, UnicodeDecodeError, ValueError, KeyError, TypeError):
+        die(f"{label} controller ledger is malformed", 1)
+    if not entries:
+        die(f"{label} controller ledger is empty", 1)
+    return entries
+
+
+def _state_with_resolution(state: dict, receipt: dict) -> dict:
+    candidate = json.loads(json.dumps(state))
+    integrate = candidate.setdefault("integrate", {"merged": [], "merges": {}})
+    history = integrate.setdefault("version_resolutions", [])
+    if not isinstance(history, list):
+        die("recorded version resolution history is malformed", 1)
+    history.append(receipt)
+    validate_version_resolution_history(
+        history, "candidate.integrate.version_resolutions"
+    )
+    return candidate
+
+
+def recover_version_resolution(
+    base_dir: str,
+    state: dict,
+    pending: dict,
+    current: dict | None,
+) -> tuple[dict, bool]:
+    """Finish, clear, or refuse one interrupted ledger/state transition."""
+    recorded = pending["receipt"]
+    state_hash = state_fingerprint(state)
+    before = pending["state_before_sha256"]
+    after = pending["state_after_sha256"]
+    event_data = version_resolution_event(recorded)
+    last = _intact_ledger_entries(base_dir, "version resolution")[-1]
+    event_durable = (
+        last.get("event") == "done:version-resolution"
+        and last.get("data") == event_data
+        and last.get("state") == after
+        and last.get("prev") == pending["ledger_head"]
+    )
+    if state_hash == after:
+        if not event_durable:
+            die(
+                "version resolution state is durable without its matching "
+                "ledger event",
+                1,
+            )
+        clear_version_resolution_pending(base_dir)
+        return state, True
+    if state_hash != before:
+        die("version resolution pending state fingerprint does not match", 1)
+    # The first pass lets a matching durable state/event pair clear without
+    # consulting refs which may legitimately have moved after the transaction.
+    # Every incomplete window still rebuilds current evidence before mutation.
+    if current is None:
+        return state, False
+    if _resolution_without_timestamp(recorded) != _resolution_without_timestamp(current):
+        die(
+            "pending version resolution names stale base, head, or target "
+            "evidence; restore that exact evidence or inspect the marker",
+            1,
+        )
+    if event_durable:
+        candidate = _state_with_resolution(state, recorded)
+        if state_fingerprint(candidate) != after:
+            die("version resolution pending candidate fingerprint does not match", 1)
+        save_state(base_dir, candidate)
+        make_version_resolution_write_durable(
+            base_dir,
+            state_path(base_dir),
+            "state recovery",
+            replaced=True,
+        )
+        clear_version_resolution_pending(base_dir)
+        return candidate, True
+    if last.get("hash") != pending["ledger_head"] or last.get("state") != before:
+        die(
+            "version resolution pending ledger ends with an unrelated transition",
+            1,
+        )
+    clear_version_resolution_pending(base_dir)
+    return state, False
+
+
+def done_resolve_versions(args, state: dict) -> None:
+    """Receipt one exact all-target relation result without editing the product."""
+    if state.get("phase") != "integrate":
+        die("resolve-versions is available only in the integrate phase")
+    if state.get("halted"):
+        die(f"run is halted ({state['halted']['reason']}); `hexctl resume` first")
+    pending_directive = _integrate_directive(
+        state, args.dir, check_resolution=False
+    )
+    if pending_directive["do"] != "integrate":
+        die(
+            f"step {pending_directive['step']} still has to merge into "
+            f"'{run_branch_of(state)}' before versions can resolve"
+        )
+    pending = load_version_resolution_pending(args.dir)
+    if pending is not None:
+        state, recovered = recover_version_resolution(
+            args.dir, state, pending, None
+        )
+        if recovered:
+            verify_run(args.dir)
+            recorded = pending["receipt"]
+            print(
+                "recovered version resolution for base "
+                f"{recorded['base_commit']} and head {recorded['head_commit']}"
+            )
+            return
+    current = build_version_resolution(args.dir, state)
+    if pending is not None:
+        state, recovered = recover_version_resolution(
+            args.dir, state, pending, current
+        )
+        if recovered:
+            verify_run(args.dir)
+            print(
+                "recovered version resolution for base "
+                f"{current['base_commit']} and head {current['head_commit']}"
+            )
+            return
+    verify_run(args.dir)
+    history = as_dict(state.get("integrate")).get("version_resolutions") or []
+    if not isinstance(history, list):
+        die("recorded version resolution history is malformed", 1)
+    if (
+        history
+        and _resolution_without_timestamp(history[-1])
+        == _resolution_without_timestamp(current)
+    ):
+        print(
+            "version resolution already records base "
+            f"{current['base_commit']} and head {current['head_commit']}"
+        )
+        return
+    if len(history) >= VERSION_RESOLUTIONS_MAX:
+        die(
+            f"version resolution history already retains {VERSION_RESOLUTIONS_MAX} "
+            "entries; halt rather than evicting evidence"
+        )
+    candidate = _state_with_resolution(state, current)
+    marker = {
+        "schema": VERSION_RESOLUTION_PENDING_SCHEMA,
+        "subject": "version-resolution",
+        "state_before_sha256": state_fingerprint(state),
+        "state_after_sha256": state_fingerprint(candidate),
+        "ledger_head": _intact_ledger_entries(
+            args.dir, "version resolution"
+        )[-1]["hash"],
+        "receipt_sha256": hashlib.sha256(canonical(current).encode()).hexdigest(),
+        "receipt": current,
+    }
+    write_version_resolution_pending(args.dir, marker)
+    append_ledger(
+        args.dir,
+        "done:version-resolution",
+        version_resolution_event(current),
+        marker["state_after_sha256"],
+    )
+    make_version_resolution_write_durable(
+        args.dir, ledger_path(args.dir), "ledger event"
+    )
+    save_state(args.dir, candidate)
+    make_version_resolution_write_durable(
+        args.dir,
+        state_path(args.dir),
+        "state replacement",
+        replaced=True,
+    )
+    clear_version_resolution_pending(args.dir)
+    print(
+        f"resolved {len(current['targets'])} version target(s) against "
+        f"{current['base_ref']} at {current['base_commit']} and candidate "
+        f"{current['head_commit']}"
+    )
+
+
+def terminal_version_resolution(
+    base_dir: str, state: dict, merge_commit: str
+) -> dict | None:
+    """Replay a relation from the actual base merge's ordered parents."""
+    relations = as_dict(as_dict(state.get("receipts")).get("runbook")).get(
+        "version_relations"
+    )
+    if relations is None:
+        return None
+    history = as_dict(state.get("integrate")).get("version_resolutions")
+    if not isinstance(history, list) or not history:
+        die("relation-bearing integration has no version resolution")
+    active = validate_version_resolution_shape(
+        history[-1], "integrate.version_resolutions[-1]"
+    )
+    merge_sha = require_full_sha(merge_commit, "integration merge commit")
+    parents = _native_relation_parents(
+        base_dir, merge_sha, "integration merge commit"
+    )
+    expected_parents = [active["base_commit"], active["head_commit"]]
+    if parents != expected_parents:
+        die(
+            "integration merge parents do not replay the resolved "
+            "[base, candidate] pair"
+        )
+    replay = build_version_resolution(
+        base_dir,
+        state,
+        exact_base=parents[0],
+        exact_head=parents[1],
+    )
+    if _resolution_without_timestamp(active) != _resolution_without_timestamp(replay):
+        die("integration merge parents do not replay the active resolution")
+    remote_base_after = remote_branch_tip(
+        base_dir,
+        integration_base_of(state),
+        "post-merge base branch tip",
+        native_relation=True,
+    )
+    if remote_base_after != merge_sha:
+        die("the base branch moved again after the checked integration merge")
+    return active
 
 
 def done_integrate(args, state: dict) -> None:
@@ -4516,7 +7859,7 @@ def done_integrate(args, state: dict) -> None:
         )
     if state.get("halted"):
         die(f"run is halted ({state['halted']['reason']}); `hexctl resume` first")
-    pending = _integrate_directive(state)
+    pending = _integrate_directive(state, args.dir, check_resolution=False)
     integration_base = integration_base_of(state)
     if pending["do"] != "integrate":
         die(
@@ -4571,11 +7914,23 @@ def done_integrate(args, state: dict) -> None:
             state, recorded_tip
         ):
             die("recorded product evidence changed after the integration sync")
+        previous_sync = _active_sync_predecessor(
+            integrate, sync.get("commit")
+        )
+        _require_sync_resolution_guard(
+            args.dir,
+            sync,
+            recorded_tip,
+            previous_sync=previous_sync,
+        )
         expected_tip = require_full_sha(sync.get("commit"), "recorded run sync commit")
     if remote_tip != expected_tip:
         if sync:
             die("remote run branch tip does not match the recorded run sync commit")
         die("remote run branch tip does not match the final recorded step merge")
+    terminal_resolution = terminal_version_resolution(
+        args.dir, state, args.merge_commit
+    )
     pr_record = inspect_pull_request(
         args.dir,
         args.pr_url,
@@ -4584,6 +7939,7 @@ def done_integrate(args, state: dict) -> None:
         expected_head_sha=remote_tip,
         expected_merge_sha=args.merge_commit,
         expected_head_label="remote run branch tip",
+        expected_closing_issue=expected_issue,
     )
     github_verified = verify_github_commits(args.dir, [args.merge_commit])
     attribution = merged_attribution(args.dir, state, args.merge_commit)
@@ -4604,12 +7960,14 @@ def done_integrate(args, state: dict) -> None:
             args.dir, frontier, published
         ) if frontier else [],
     }
+    if terminal_resolution is not None:
+        state["receipts"]["integrate"]["version_resolution"] = terminal_resolution
     if sync:
         state["receipts"]["integrate"]["sync"] = sync
         state["receipts"]["integrate"]["superseded_syncs"] = list(
             integrate.get("superseded_syncs") or []
         )
-    worktree = state.get("worktree")
+    worktree = configured_git_path(state, "worktree")
     if worktree and os.path.isdir(worktree):
         state["receipts"]["integrate"]["worktree_clean"] = worktree_is_clean(worktree)
     state["phase"] = "done"
@@ -4638,12 +7996,16 @@ DONE_HANDLERS = {
     "push": done_push,
     "merge-step": done_merge_step,
     "sync-run": done_sync_run,
+    "resolve-versions": done_resolve_versions,
     "integrate": done_integrate,
 }
 
 
 def cmd_done(args) -> None:
-    state = load_state(args.dir)
+    state = load_state(
+        args.dir,
+        allow_pending_resolution=args.phase == "resolve-versions",
+    )
     handler = DONE_HANDLERS.get(args.phase)
     if handler is None:
         die(f"unknown phase '{args.phase}'")
@@ -4674,6 +8036,62 @@ def receipted_source(base_dir: str, state: dict, name: str):
         "text": decoded_source(data, f"{name} artefact"),
         "receipt": receipt,
     }
+
+
+def receipted_version_relations(
+    base_dir: str, runbook: dict, *, state: dict | None = None
+) -> dict | None:
+    """Reconstruct one optional anchor from its exact source and Git objects."""
+    if state is None:
+        state = load_state(base_dir)
+    receipt = as_dict(runbook.get("receipt"))
+    stored = receipt.get("version_relations")
+    source = parse_version_relation_source(runbook["text"])
+    if source is None and stored is None:
+        return None
+    if source is None:
+        die("runbook receipt has version relations but its source block is absent", 1)
+    if stored is None:
+        die("runbook source has version relations but its receipt anchor is absent", 1)
+    stored = validate_version_relations_shape(
+        stored, "receipts.runbook.version_relations"
+    )
+    declarations = sorted(
+        source["targets"], key=lambda declaration: declaration["skill"]
+    )
+    recorded = [
+        {
+            "skill": target["skill"],
+            "ledger": target["ledger"],
+            "relation": target["relation"],
+        }
+        for target in stored["targets"]
+    ]
+    if source["source_sha256"] != stored["source_sha256"] or declarations != recorded:
+        die("runbook version relations source does not match its receipt", 1)
+    if stored["anchor_commit"] != _relation_init_starting_commit(base_dir, state):
+        die(
+            "runbook version relations anchor commit does not match the "
+            "init starting commit"
+        )
+    repository = _native_relation_repository_identity(base_dir)
+    _require_native_relation_history(base_dir)
+    anchor_commit = _native_relation_commit(
+        base_dir,
+        stored["anchor_commit"],
+        "runbook version relations anchor commit",
+    )
+    if anchor_commit != stored["anchor_commit"]:
+        die("runbook version relations anchor commit is not a direct commit object")
+    reconstructed = capture_version_relations(
+        base_dir, source, anchor_commit
+    )
+    _require_native_relation_history(base_dir)
+    if _native_relation_repository_identity(base_dir) != repository:
+        die("version relation repository changed during anchor replay", 1)
+    if reconstructed != stored:
+        die("runbook version relations anchor does not match its exact Git evidence", 1)
+    return stored
 
 
 # This is Protasis's accepted STEP grammar with only the number-group name
@@ -4766,7 +8184,11 @@ def markdown_lines(text: str):
 
 
 def _study_amendment_boundary(
-    text: str, expected: str, subject: str = "study"
+    text: str,
+    expected: str,
+    subject: str = "study",
+    *,
+    shape_already_accepted: bool = False,
 ) -> tuple[int, int, str]:
     """Find the one real final amendment whose byte prefix has the receipt hash."""
     headings = []
@@ -4800,10 +8222,11 @@ def _study_amendment_boundary(
     later = [start for start, _ in headings if start > heading_start]
     if later:
         die("amendment candidate appends more than one final amendment block")
-    try:
-        datetime.date.fromisoformat(date_text)
-    except ValueError:
-        die(f"amendment heading has an invalid calendar date: {date_text}")
+    if not shape_already_accepted:
+        try:
+            datetime.date.fromisoformat(date_text)
+        except ValueError:
+            die(f"amendment heading has an invalid calendar date: {date_text}")
     return boundary, heading_start, date_text
 
 
@@ -4847,6 +8270,37 @@ def _study_amendment_fields(
         if not value:
             die(f"amendment field '{name}' must not be empty")
         values[name] = value
+    return values
+
+
+def _accepted_study_amendment_fields(
+    text: str, heading_start: int
+) -> dict[str, str]:
+    """Extract controller-owned values after Protasis accepted the shape.
+
+    Protasis owns the dated four-field grammar. Fiat needs only the two fields
+    that join the accepted suffix to controller state, so this extractor makes
+    no second cardinality, ordering, name, or non-empty-value verdict.
+    """
+    fields = []
+    for start, end, line, in_fence, _ in markdown_lines(text):
+        if start <= heading_start or in_fence:
+            continue
+        match = ANY_AMENDMENT_FIELD_RE.fullmatch(line)
+        if match:
+            name, _, first_line = line[2:].partition(".**")
+            fields.append((start, end, name, first_line.strip()))
+
+    values = {}
+    for index, (_, end, name, first_line) in enumerate(fields):
+        stop = fields[index + 1][0] if index + 1 < len(fields) else len(text)
+        value = " ".join((first_line + "\n" + text[end:stop]).split())
+        if name in ("Steps touched", "Still holding"):
+            values[name] = value
+
+    missing = [name for name in ("Steps touched", "Still holding") if name not in values]
+    if missing:
+        die("Protasis accepted a study amendment Fiat could not consume", 1)
     return values
 
 
@@ -5080,10 +8534,12 @@ def _replace_runbook_bytes(path: str, data: bytes) -> None:
 def _study_amendment_record(
     state: dict, expected: str, candidate: bytes
 ) -> dict:
-    """Validate captured candidate bytes and return only bounded receipt data."""
+    """Join Protasis-accepted bytes to bounded controller receipt data."""
     text = decoded_source(candidate, "study amendment candidate")
-    boundary, heading_start, date_text = _study_amendment_boundary(text, expected)
-    fields = _study_amendment_fields(text, heading_start)
+    boundary, heading_start, date_text = _study_amendment_boundary(
+        text, expected, shape_already_accepted=True
+    )
+    fields = _accepted_study_amendment_fields(text, heading_start)
     touched, verdicts = _study_step_verdicts(fields, state)
     prefix_bytes = text[:boundary].encode("utf-8")
     amendment_bytes = candidate[len(prefix_bytes):]
@@ -5248,8 +8704,8 @@ def _recover_study_amendment(
             1,
         )
 
-    recovered = _study_amendment_record(state, prior, canonical)
     _check_amended_study(base_dir, canonical)
+    recovered = _study_amendment_record(state, prior, canonical)
     if recovered != amendment:
         die("pending study amendment metadata does not match the candidate bytes", 1)
     existing_history = receipt.get("amendments")
@@ -5306,8 +8762,8 @@ def cmd_amend_study(args) -> None:
                 "restore the receipted bytes or halt the run"
             )
 
-    amendment = _study_amendment_record(state, expected, candidate)
     _check_amended_study(args.dir, candidate)
+    amendment = _study_amendment_record(state, expected, candidate)
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)
@@ -5544,7 +9000,11 @@ def _receipted_runbook_amendments(source: dict) -> list[dict]:
 
 
 def source_runbook_step(
-    source: dict, step: dict, *, current_study_sha256: str | None = None
+    source: dict,
+    step: dict,
+    *,
+    current_study_sha256: str | None = None,
+    version_relations: dict | None = None,
 ) -> dict:
     """Carry one exact baseline step plus its current receipted amendments."""
     text = source["text"]
@@ -5598,7 +9058,7 @@ def source_runbook_step(
             }
         )
     markdown = baseline + "".join(item["markdown"] for item in applicable)
-    return {
+    packet = {
         "markdown": markdown,
         "baseline_markdown": baseline,
         "baseline_sha256": hashlib.sha256(baseline.encode("utf-8")).hexdigest(),
@@ -5609,6 +9069,9 @@ def source_runbook_step(
         "number": step["n"],
         "title": step["title"],
     }
+    if version_relations is not None:
+        packet["version_relations"] = version_relations_packet(version_relations)
+    return packet
 
 
 def source_risk_register(source: dict) -> dict:
@@ -5651,6 +9114,8 @@ def bounded_probe(
     program: str,
     argv: list[str],
     extra_env: dict | None = None,
+    *,
+    environment: dict[str, str] | None = None,
 ) -> tuple[int | None, bytes, str | None]:
     """Run one fixed-argv tool and report failure instead of refusing.
 
@@ -5662,7 +9127,15 @@ def bounded_probe(
     failure); failure is None, "start", "timeout" or "output-cap", and the
     returncode is None whenever the child never finished cleanly.
     """
-    env = {**os.environ, **extra_env} if extra_env is not None else None
+    # `environment` replaces the child's environment outright; `extra_env`
+    # layers over the parent's. The native relation readers need the first,
+    # because inheriting GIT_* is exactly what they strip.
+    if environment is not None:
+        env = environment
+    elif extra_env is not None:
+        env = {**os.environ, **extra_env}
+    else:
+        env = None
     try:
         process = subprocess.Popen(
             [program, *argv],
@@ -5710,7 +9183,13 @@ def bounded_probe(
     return returncode, bytes(output), None
 
 
-def bounded_run(base_dir: str, program: str, argv: list[str]) -> tuple[int, bytes]:
+def bounded_run(
+    base_dir: str,
+    program: str,
+    argv: list[str],
+    *,
+    environment: dict[str, str] | None = None,
+) -> tuple[int, bytes]:
     """Run one fixed-argv tool and return its status and output.
 
     The reader itself: no shell, a hard timeout, a hard output cap, and nothing
@@ -5720,7 +9199,9 @@ def bounded_run(base_dir: str, program: str, argv: list[str]) -> tuple[int, byte
     read the status here.
     """
     operation = f"{program} {argv[0]}" if argv else program
-    returncode, output, failure = bounded_probe(base_dir, program, argv)
+    returncode, output, failure = bounded_probe(
+        base_dir, program, argv, environment=environment
+    )
     if failure == "start":
         die(f"{operation} could not start")
     if failure == "timeout":
@@ -5735,9 +9216,13 @@ def bounded_tool(
     program: str,
     argv: list[str],
     refusal: str | None = None,
+    *,
+    environment: dict[str, str] | None = None,
 ) -> bytes:
     """Run one fixed-argv tool without exposing its output in failures."""
-    returncode, output = bounded_run(base_dir, program, argv)
+    returncode, output = bounded_run(
+        base_dir, program, argv, environment=environment
+    )
     if returncode != 0:
         if refusal is not None:
             die(refusal)
@@ -5855,6 +9340,12 @@ def run_worktree_path(base_dir: str, run_branch: str) -> str:
     return os.path.join(
         repository_root(base_dir), *WORKTREE_HOME, flattened_run_branch(run_branch)
     )
+
+
+def configured_git_path(state: dict, name: str):
+    """Read a current Git path, retaining old top-level state compatibility."""
+    configured = as_dict(as_dict(state.get("config")).get("git")).get(name)
+    return configured if configured is not None else state.get(name)
 
 
 def check_worktree_path(root: str, candidate: str, registered: str | None = None) -> str:
@@ -6093,6 +9584,17 @@ GITHUB_SIGNING_KEYS = frozenset(
     }
 )
 
+# A repository may choose its signature format and trust material, but it may
+# not replace the native program that decides whether a signature is valid.
+# Command-scoped values outrank repository-local config while preserving the
+# three formats Git supports.
+SIGNATURE_VERIFIER_CONFIG = (
+    "gpg.program=gpg",
+    "gpg.openpgp.program=gpg",
+    "gpg.x509.program=gpgsm",
+    "gpg.ssh.program=ssh-keygen",
+)
+
 
 HOST_IDENTITY_NAMES = frozenset(
     {
@@ -6127,6 +9629,14 @@ HOST_PR_LOGINS = frozenset(
         "copilot[bot]",
     }
 )
+"""Runtime host accounts, which ADR-016 forbids as an author.
+
+Membership is a refusal, so this set holds runtime hosts and nothing else. A
+delivery agent that opens its own pull requests under a GitHub App identity is
+the contributing actor rather than a host, and belongs nowhere near this set:
+adding it would refuse every pull request it opens. `GITHUB_LOGIN_RE` already
+accepts a `[bot]` login for that reason.
+"""
 COAUTHOR_RE = re.compile(
     r"^Co-authored-by:\s*(?P<name>.+?)\s*<(?P<email>[^<>]+)>$",
     re.IGNORECASE,
@@ -6175,6 +9685,12 @@ CAUSE_HOST_AUTHOR = (
     "Claude <noreply@anthropic.com>; set git user.name and user.email to the "
     "contributing actor and recreate the commit."
 )
+# verify_local_commit committer and commit_attribution (ADR-052).
+CAUSE_HOST_COMMITTER = (
+    "The usual cause is the runtime host's default committer identity; use the "
+    "explicitly authorised publisher's own name, address and signing key, then "
+    "recreate the commit without changing its author."
+)
 # verify_local_commit co-author and message_coauthors (ADR-016; the study's
 # section 4 table).
 CAUSE_HOST_COAUTHOR = (
@@ -6192,8 +9708,8 @@ CAUSE_HOST_BYLINE = (
 # inspect_pull_request author (ADR-016; the study's section 4 table).
 CAUSE_HOST_PR_AUTHOR = (
     "The pull request was opened under the host app's GitHub identity, such "
-    "as claude[bot]; open it from the contributing actor's own account "
-    "instead."
+    "as claude[bot]; open it from the human contributor's account, or from "
+    "the explicitly authorised publisher's account for Shoggoth work."
 )
 # inspect_pull_request byline (ADR-016; the study's section 4 table).
 CAUSE_HOST_PR_BYLINE = (
@@ -6204,8 +9720,9 @@ CAUSE_HOST_PR_BYLINE = (
 )
 # checked_login (ADR-016; the study's section 4 table).
 CAUSE_HOST_ACCOUNT = (
-    "The commit was pushed under the host app's account; hand off before "
-    "publication and push as the contributing actor."
+    "The GitHub response links this identity to a runtime host account; use "
+    "the human contributor's account for their work, or the explicitly "
+    "authorised publisher's account for Shoggoth work."
 )
 
 
@@ -6311,15 +9828,55 @@ def message_coauthors(message: object, label: str) -> list[dict]:
     return found
 
 
-def commit_author(base_dir: str, commit_sha: str, label: str) -> tuple[str, str]:
-    data = bounded_git(
+def _exact_commit_git(
+    base_dir: str,
+    argv: list[str],
+    refusal: str,
+    *,
+    native_relation: bool = False,
+) -> bytes:
+    """Read one native commit object, optionally inside the relation sandbox."""
+    if native_relation:
+        return _native_relation_git(base_dir, argv, refusal)
+    return bounded_git(base_dir, ["--no-replace-objects", *argv], refusal)
+
+
+def commit_author(
+    base_dir: str,
+    commit_sha: str,
+    label: str,
+    *,
+    native_relation: bool = False,
+) -> tuple[str, str]:
+    data = _exact_commit_git(
         base_dir,
         ["show", "-s", "--no-show-signature", "--format=%an%x00%ae", commit_sha],
         f"{label} commit {commit_sha} author cannot be read",
+        native_relation=native_relation,
     )
     fields = tool_text(data, f"{label} commit author").rstrip("\n").split("\0")
     if len(fields) != 2 or not all(field.strip() for field in fields):
         die(f"{label} commit {commit_sha} author identity is malformed")
+    return fields[0], fields[1]
+
+
+def commit_committer(
+    base_dir: str,
+    commit_sha: str,
+    label: str,
+    *,
+    native_relation: bool = False,
+) -> tuple[str, str]:
+    """Read the actor who created the exact commit, separately from its author."""
+    data = _exact_commit_git(
+        base_dir,
+        ["show", "-s", "--no-show-signature", "--format=%cn%x00%ce", commit_sha],
+        f"{label} commit {commit_sha} committer cannot be read",
+        native_relation=native_relation,
+    )
+    fields = tool_text(data, f"{label} commit committer").rstrip("\n").split("\0")
+    if len(fields) != 2 or not all(field.strip() for field in fields):
+        die(f"{label} commit {commit_sha} committer identity is malformed")
     return fields[0], fields[1]
 
 
@@ -6336,17 +9893,30 @@ def resolved_commit(base_dir: str, ref: str, label: str) -> str:
 
 
 def remote_branch_tip(
-    base_dir: str, branch: str, label: str = "remote run branch tip"
+    base_dir: str,
+    branch: str,
+    label: str = "remote run branch tip",
+    *,
+    native_relation: bool = False,
 ) -> str:
     check_branch_name(branch)
     expected_ref = f"refs/heads/{branch}"
-    data = bounded_git(
+    reader = _native_relation_git if native_relation else bounded_git
+    data = reader(
         base_dir,
         ["ls-remote", "--refs", "origin", expected_ref],
         f"{label} could not be read",
     )
     lines = [line for line in tool_text(data, label).splitlines() if line]
-    if len(lines) != 1:
+    if not lines:
+        # A deleted branch and a malformed remote answer are different faults,
+        # and the recovery only exists for the first. Integrate reads this
+        # while the run branch still has to be there, so say which one it is.
+        die(
+            f"{label} names no ref: origin has no {expected_ref}. A deleted "
+            "branch reads this way; restore it at its recorded commit and retry"
+        )
+    if len(lines) > 1:
         die(f"{label} must contain exactly one ref")
     fields = lines[0].split("\t")
     if (
@@ -6426,7 +9996,7 @@ def signing_key(base_dir: str, commit_sha: str) -> str:
     try:
         data = bounded_git(
             base_dir,
-            ["log", "-n1", "--pretty=%GK", commit_sha],
+            ["--no-replace-objects", "log", "-n1", "--pretty=%GK", commit_sha],
             f"signing key for {commit_sha} could not be read",
         )
     except SystemExit:
@@ -6434,10 +10004,32 @@ def signing_key(base_dir: str, commit_sha: str) -> str:
     return tool_text(data, "signing key").strip()
 
 
-def verify_local_commit(base_dir: str, commit_sha: str, label: str) -> str:
+def verify_local_commit(
+    base_dir: str,
+    commit_sha: str,
+    label: str,
+    *,
+    native_relation: bool = False,
+) -> str:
     """Verify one exact locally created commit and its required trailers."""
     commit_sha = require_full_sha(commit_sha, label)
-    if bounded_tool_status(base_dir, "git", ["verify-commit", commit_sha]) != 0:
+    verification_argv = [
+        item
+        for setting in SIGNATURE_VERIFIER_CONFIG
+        for item in ("-c", setting)
+    ]
+    verification_argv.extend(["verify-commit", commit_sha])
+    if native_relation:
+        _native_relation_git(
+            base_dir,
+            verification_argv,
+            f"{label} commit {commit_sha} has no valid native local signature",
+        )
+    elif bounded_tool_status(
+        base_dir,
+        "git",
+        ["--no-replace-objects", *verification_argv],
+    ) != 0:
         key = signing_key(base_dir, commit_sha).upper()
         if key in GITHUB_SIGNING_KEYS:
             die(
@@ -6457,17 +10049,34 @@ def verify_local_commit(base_dir: str, commit_sha: str, label: str) -> str:
                 f"(signed with key {key}, which this keyring cannot validate)"
             )
         die(f"{label} commit {commit_sha} has no valid local signature")
-    author_name, author_email = commit_author(base_dir, commit_sha, label)
+    author_name, author_email = commit_author(
+        base_dir,
+        commit_sha,
+        label,
+        native_relation=native_relation,
+    )
     if is_host_identity(author_name, author_email):
         die(
             f"{label} commit {commit_sha} uses a runtime host as author; "
             f"use Shoggoth or preserve the human contributor. {CAUSE_HOST_AUTHOR}"
         )
+    committer_name, committer_email = commit_committer(
+        base_dir,
+        commit_sha,
+        label,
+        native_relation=native_relation,
+    )
+    if is_host_identity(committer_name, committer_email):
+        die(
+            f"{label} commit {commit_sha} uses a runtime host as committer. "
+            f"{CAUSE_HOST_COMMITTER}"
+        )
     body = tool_text(
-        bounded_git(
+        _exact_commit_git(
             base_dir,
             ["show", "-s", "--no-show-signature", "--format=%B", commit_sha],
             f"{label} commit {commit_sha} message cannot be read",
+            native_relation=native_relation,
         ),
         f"{label} commit message",
     )
@@ -6517,6 +10126,13 @@ GITHUB_SSH_RE = re.compile(
 GITHUB_PR_RE = re.compile(
     r"^https://github\.com/(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/pull/(?P<number>[1-9][0-9]*)/?$"
 )
+GITHUB_ISSUE_RE = re.compile(
+    r"^https://github\.com/(?P<repo>[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)/issues/(?P<number>[1-9][0-9]*)/?$"
+)
+GITHUB_CLOSING_KEYWORD_RE = re.compile(
+    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+",
+    re.IGNORECASE,
+)
 
 
 def require_full_sha(value: object, label: str) -> str:
@@ -6554,6 +10170,78 @@ def github_repository(base_dir: str) -> str:
     if repository.casefold() != target.casefold():
         die("GitHub repository identity does not match target origin")
     return target
+
+
+def github_issue_identity(issue_url: object) -> tuple[str, str] | None:
+    """Return the repository and number for one canonical GitHub issue URL.
+
+    ``task_issue`` predates the GitHub delivery gate and deliberately accepts
+    other HTTP issue trackers. Those keep their explicit closure receipt. A
+    GitHub issue gets the stronger pull-request closing-reference rule.
+    """
+    if not isinstance(issue_url, str):
+        return None
+    match = GITHUB_ISSUE_RE.fullmatch(issue_url)
+    if match is None:
+        return None
+    return match.group("repo"), match.group("number")
+
+
+def github_issue_closing_references(
+    issue_url: object, pull_request_repository: str
+) -> tuple[str, ...]:
+    identity = github_issue_identity(issue_url)
+    if identity is None:
+        return ()
+    issue_repository, number = identity
+    references = [f"{issue_repository}#{number}"]
+    if issue_repository.casefold() == pull_request_repository.casefold():
+        references.insert(0, f"#{number}")
+    return tuple(references)
+
+
+def markdown_prose_lines(body: str) -> list[str]:
+    """Return lines where GitHub can interpret a closing keyword.
+
+    A keyword displayed as an example in a fence, inline code, an HTML comment,
+    or a quotation is evidence about syntax, not an instruction to close.
+    """
+    without_comments = re.sub(r"<!--.*?-->", "", body, flags=re.DOTALL)
+    lines = []
+    fence = None
+    for line in without_comments.splitlines():
+        stripped = line.lstrip()
+        marker = stripped[:3]
+        if marker in ("```", "~~~"):
+            fence = None if fence == marker else marker if fence is None else fence
+            continue
+        if fence is not None or stripped.startswith(">"):
+            continue
+        lines.append(re.sub(r"`+[^`\n]*`+", "", line))
+    return lines
+
+
+def pull_request_closing_reference(
+    body: str, issue_url: object, repository: str
+) -> dict | None:
+    references = github_issue_closing_references(issue_url, repository)
+    if not references:
+        return None
+    alternatives = "|".join(re.escape(reference) for reference in references)
+    pattern = re.compile(
+        GITHUB_CLOSING_KEYWORD_RE.pattern
+        + rf"(?P<reference>{alternatives})(?![A-Za-z0-9_.#/-])",
+        GITHUB_CLOSING_KEYWORD_RE.flags,
+    )
+    for line in markdown_prose_lines(body):
+        match = pattern.search(line)
+        if match is not None:
+            return {
+                "issue_url": issue_url,
+                "reference": match.group("reference"),
+                "body_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
+            }
+    return None
 
 
 def pull_request_target(pr_url: object, repository: str) -> tuple[str, str]:
@@ -6594,6 +10282,7 @@ def inspect_pull_request(
     expected_head_sha: str | None,
     expected_merge_sha: str | None,
     expected_head_label: str = "verified pushed branch tip",
+    expected_closing_issue: str | None = None,
 ) -> dict:
     head_sha = (
         require_full_sha(expected_head_sha, "pull request head")
@@ -6630,6 +10319,21 @@ def inspect_pull_request(
         die("pull request topology is missing its body")
     if HOST_BYLINE_RE.search(body):
         die(f"pull request body carries a runtime-host byline. {CAUSE_HOST_PR_BYLINE}")
+    closing_issue = None
+    if expected_closing_issue is not None:
+        references = github_issue_closing_references(
+            expected_closing_issue, repository
+        )
+        if references:
+            closing_issue = pull_request_closing_reference(
+                body, expected_closing_issue, repository
+            )
+            if closing_issue is None:
+                canonical = f"Closes {references[-1]}"
+                die(
+                    "pull request body has no recognised closing reference for "
+                    f"the recorded task_issue; add `{canonical}` before merge"
+                )
     returned_url = payload.get("html_url")
     if not isinstance(returned_url, str):
         die("pull request topology is missing its URL")
@@ -6659,7 +10363,7 @@ def inspect_pull_request(
             die("pull request is not the expected merged topology")
     elif merged:
         die("step pull request was already merged before integrate")
-    return {
+    record = {
         "url": url,
         "head": expected_head,
         "base": expected_base,
@@ -6668,6 +10372,9 @@ def inspect_pull_request(
         "merge_sha": returned_merge,
         "author_login": author_login,
     }
+    if closing_issue is not None:
+        record["closing_issue"] = closing_issue
+    return record
 
 
 def github_commit_payload(base_dir: str, repository: str, commit_sha: str) -> dict:
@@ -6701,7 +10408,7 @@ def require_github_verified(payload: dict, commit_sha: str) -> None:
 
 
 def commit_attribution(payload: dict, commit_sha: str) -> dict:
-    """Who GitHub says wrote one commit, recorded without an address.
+    """Who GitHub names as author and committer, without either address.
 
     The linked account is the identity, because one person may hold several
     addresses and one account. The digest corroborates it, and carries the
@@ -6714,12 +10421,25 @@ def commit_attribution(payload: dict, commit_sha: str) -> dict:
     name, email = checked_identity(commit.get("author"), label)
     if is_host_identity(name, email):
         die(f"{label} names a runtime host as author. {CAUSE_HOST_AUTHOR}")
+    committer_label = f"{label} committer"
+    committer_name, committer_email = checked_identity(
+        commit.get("committer"), committer_label
+    )
+    if is_host_identity(committer_name, committer_email):
+        die(
+            f"{committer_label} names a runtime host. {CAUSE_HOST_COMMITTER}"
+        )
     return {
         "commit": commit_sha,
         "login": checked_login(payload.get("author"), label),
         "name": name,
         "email_sha256": identity_digest(email),
         "coauthors": message_coauthors(commit.get("message"), label),
+        "committer": {
+            "login": checked_login(payload.get("committer"), committer_label),
+            "name": committer_name,
+            "email_sha256": identity_digest(committer_email),
+        },
     }
 
 
@@ -6750,13 +10470,14 @@ def identity_label(identity: dict) -> str:
 
 
 def recorded_run_attribution(state: dict) -> list[dict]:
-    """Every identity this run's receipts recorded, in step order.
+    """Every primary author this run's receipts recorded, in step order.
 
     A step whose push evidence was repaired at merge time carries a fresher
     container on the merge record, because the recorded push attribution
     describes commits that are no longer the branch tip. The fresher one wins.
     A legacy receipt carries none, and contributes nothing rather than
-    refusing.
+    refusing. A nested committer is publication evidence, not an authorship
+    identity, so it stays in the push receipt and does not enter this view.
     """
     identities = []
     merges = as_dict(as_dict(state.get("integrate")).get("merges"))
@@ -6778,7 +10499,8 @@ def recorded_run_attribution(state: dict) -> list[dict]:
                 record.get("commit"), str
             ):
                 die(f"step {step['n']} recorded a malformed attribution entry")
-            identities.append({"step": step["n"], **record})
+            author = {key: value for key, value in record.items() if key != "committer"}
+            identities.append({"step": step["n"], **author})
     return identities
 
 
@@ -6805,7 +10527,7 @@ def attribution_carriers(state: dict, identity: dict, merge_sha: str) -> list[st
 
 
 def merged_attribution(base_dir: str, state: dict, merge_sha: str) -> dict:
-    """Whether the base still carries every identity the run published under.
+    """Whether the base still carries every primary author the run recorded.
 
     Two mechanisms count. A merge commit leaves every recorded commit
     reachable from the base, which is the ordinary case and needs no further
@@ -6962,6 +10684,7 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         # A pre-generation state cannot establish the source claims needed by
         # the four new briefs, so it retains an explicit inline directive.
         return packet
+    version_relations = receipted_version_relations(root, runbook, state=state)
 
     step = current_step(state)
     plan = branch_plan(state, step)
@@ -6969,7 +10692,10 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         packet["agent"] = "mason"
         packet["brief"] = {
             "runbook_step": source_runbook_step(
-                runbook, step, current_study_sha256=study["sha256"]
+                runbook,
+                step,
+                current_study_sha256=study["sha256"],
+                version_relations=version_relations,
             ),
             "branch": plan["branch"],
             "branch_from": plan["branch_from"],
@@ -7000,7 +10726,10 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
             "audit_filter": directive["audit_filter"],
             "risk_register": source_risk_register(study),
             "runbook_step": source_runbook_step(
-                runbook, step, current_study_sha256=study["sha256"]
+                runbook,
+                step,
+                current_study_sha256=study["sha256"],
+                version_relations=version_relations,
             ),
         }
         return packet
@@ -7017,12 +10746,2058 @@ def delegation_packet(base_dir: str, state: dict, directive: dict) -> dict:
         ),
         "plugin_root": root_plugin,
     }
+    if version_relations is not None:
+        packet["brief"]["version_relations"] = version_relations_packet(
+            version_relations
+        )
     return packet
+
+
+# ------------------------------------------------ controller checkpoints
+
+def _checkpoint_stat_identity(value: os.stat_result) -> tuple:
+    """Fields that must stay fixed while one controller entry is copied."""
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_nlink,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
+def _checkpoint_ref_names(state: dict) -> list[str]:
+    """The bounded local ref set the controller already names."""
+    names = []
+    base = state.get("base")
+    if not isinstance(base, str) or not base:
+        die("checkpoint source has no usable base ref")
+    if not COMMIT_RE.fullmatch(base) and not branch_name_ok(base):
+        die("checkpoint source has an unsafe base ref")
+    names.append(base)
+
+    run_branch = run_branch_of(state)
+    if run_branch is not None:
+        if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
+            die("checkpoint source has an unsafe run ref")
+        names.append(run_branch)
+
+    for step in state["steps"]:
+        branch = as_dict(step.get("receipts")).get("implement")
+        branch = as_dict(branch).get("branch")
+        if branch is None:
+            continue
+        if not isinstance(branch, str) or not branch_name_ok(branch):
+            die("checkpoint source has an unsafe step ref")
+        names.append(branch)
+
+    unique = sorted(set(names))
+    if len(unique) != len(names) or len(unique) > GIT_PATHS_MAX:
+        die("checkpoint source ref set is duplicated or too large")
+    return unique
+
+
+def _checkpoint_refs(base_dir: str, state: dict) -> dict[str, str]:
+    """Resolve each recorded ref through the existing bounded Git reader."""
+    return {
+        name: resolved_commit(base_dir, name, "checkpoint ref")
+        for name in _checkpoint_ref_names(state)
+    }
+
+
+def _checkpoint_boundary(state: dict, ledger: list[dict]) -> tuple[str, dict]:
+    """Name one of ADR-028's two accepted export boundaries."""
+    if not ledger:
+        die("checkpoint export requires a non-empty verified ledger")
+    directive = _next_directive(state)
+    event = ledger[-1].get("event")
+    if event == "done:push":
+        return "post-push", directive
+    if event == "audit-round" and directive.get("do") == "audit-verdict":
+        return "audit-verdict", directive
+    die(
+        "checkpoint export is allowed only immediately after done push or "
+        "at an active audit-verdict"
+    )
+
+
+def _checkpoint_safe_relative(parts: tuple[str, ...]) -> str:
+    """Return one portable controller-relative path without echoing failures."""
+    for part in parts:
+        try:
+            encoded = part.encode("utf-8")
+        except UnicodeEncodeError:
+            die("checkpoint source contains an unsafe path")
+        if (
+            not encoded
+            or part in (".", "..")
+            or "/" in part
+            or "\\" in part
+            or any(ord(character) < 32 or ord(character) == 127 for character in part)
+        ):
+            die("checkpoint source contains an unsafe path")
+    relative = "/".join(parts)
+    if len(relative.encode("utf-8")) > CHECKPOINT_PATH_BYTES_MAX:
+        die("checkpoint source path exceeds the byte ceiling")
+    return relative
+
+
+def _checkpoint_write_all(descriptor: int, data: bytes) -> None:
+    view = memoryview(data)
+    while view:
+        written = os.write(descriptor, view)
+        if written <= 0:
+            raise OSError("short checkpoint write")
+        view = view[written:]
+
+
+def _checkpoint_regular(
+    source_dir: int,
+    name: str,
+    initial: os.stat_result,
+    destination: str | None,
+) -> tuple[int, str]:
+    """Hash and optionally copy one no-follow, single-link stable file."""
+    if not stat.S_ISREG(initial.st_mode) or initial.st_nlink != 1:
+        die("checkpoint source contains a special or linked entry")
+    if initial.st_size > CHECKPOINT_FILE_BYTES_MAX:
+        die("checkpoint source file exceeds the byte ceiling")
+
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        source = os.open(name, flags, dir_fd=source_dir)
+    except OSError:
+        die("checkpoint source changed during capture")
+    output = None
+    digest = hashlib.sha256()
+    copied = 0
+    try:
+        before = os.fstat(source)
+        if (
+            _checkpoint_stat_identity(before) != _checkpoint_stat_identity(initial)
+            or not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+        ):
+            die("checkpoint source changed during capture")
+        if destination is not None:
+            output = os.open(
+                destination,
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+            )
+        while True:
+            chunk = os.read(source, CHECKPOINT_IO_CHUNK)
+            if not chunk:
+                break
+            copied += len(chunk)
+            if copied > CHECKPOINT_FILE_BYTES_MAX or copied > before.st_size:
+                die("checkpoint source changed during capture")
+            digest.update(chunk)
+            if output is not None:
+                _checkpoint_write_all(output, chunk)
+        after = os.fstat(source)
+        if (
+            copied != before.st_size
+            or _checkpoint_stat_identity(after) != _checkpoint_stat_identity(before)
+        ):
+            die("checkpoint source changed during capture")
+        try:
+            fresh = os.stat(name, dir_fd=source_dir, follow_symlinks=False)
+        except OSError:
+            die("checkpoint source changed during capture")
+        if _checkpoint_stat_identity(fresh) != _checkpoint_stat_identity(before):
+            die("checkpoint source changed during capture")
+        if output is not None:
+            os.fsync(output)
+    except OSError:
+        die("checkpoint source could not be copied")
+    finally:
+        if output is not None:
+            os.close(output)
+        os.close(source)
+    return copied, digest.hexdigest()
+
+
+def _checkpoint_snapshot(
+    source_root: str,
+    destination_root: str | None,
+    *,
+    exclude_live_lock: bool = True,
+) -> list[dict]:
+    """Read one bounded recursive snapshot, optionally into a private stage."""
+    root_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        root_descriptor = os.open(source_root, root_flags)
+    except OSError:
+        die("checkpoint source directory is not a safe directory")
+
+    inventory = []
+    totals = {"files": 0, "directories": 1, "bytes": 0}
+
+    def walk(source_dir: int, destination_dir: str | None, parts: tuple[str, ...]):
+        try:
+            before_directory = os.fstat(source_dir)
+            if not stat.S_ISDIR(before_directory.st_mode):
+                die("checkpoint source contains a non-directory container")
+            with os.scandir(source_dir) as iterator:
+                entries = []
+                for entry in iterator:
+                    relative_parts = (*parts, entry.name)
+                    relative = _checkpoint_safe_relative(relative_parts)
+                    try:
+                        initial = os.stat(
+                            entry.name, dir_fd=source_dir, follow_symlinks=False
+                        )
+                    except OSError:
+                        die("checkpoint source changed during capture")
+
+                    if not parts and entry.name == "lock":
+                        if not exclude_live_lock:
+                            die("checkpoint capsule contains an excluded run lock")
+                        if not stat.S_ISREG(initial.st_mode) or initial.st_nlink != 1:
+                            die("checkpoint lock is not a safe regular file")
+                        continue
+
+                    if stat.S_ISDIR(initial.st_mode):
+                        totals["directories"] += 1
+                        if totals["directories"] > CHECKPOINT_DIRECTORIES_MAX:
+                            die("checkpoint source has too many directories")
+                    elif stat.S_ISREG(initial.st_mode):
+                        totals["files"] += 1
+                        if totals["files"] > CHECKPOINT_FILES_MAX:
+                            die("checkpoint source has too many files")
+                        if initial.st_size > CHECKPOINT_FILE_BYTES_MAX:
+                            die("checkpoint source file exceeds the byte ceiling")
+                        totals["bytes"] += initial.st_size
+                        if totals["bytes"] > CHECKPOINT_TOTAL_BYTES_MAX:
+                            die("checkpoint source exceeds the total byte ceiling")
+                    else:
+                        die("checkpoint source contains a special or linked entry")
+
+                    entries.append((entry, initial, relative_parts, relative))
+                entries.sort(key=lambda item: item[0].name)
+        except OSError:
+            die("checkpoint source directory changed during capture")
+
+        for entry, initial, relative_parts, relative in entries:
+            if stat.S_ISDIR(initial.st_mode):
+                child_destination = None
+                if destination_dir is not None:
+                    child_destination = os.path.join(destination_dir, entry.name)
+                    try:
+                        os.mkdir(child_destination, 0o700)
+                    except OSError:
+                        die("checkpoint stage could not create a private directory")
+                try:
+                    child = os.open(entry.name, root_flags, dir_fd=source_dir)
+                except OSError:
+                    die("checkpoint source directory changed during capture")
+                try:
+                    opened = os.fstat(child)
+                    if _checkpoint_stat_identity(opened) != _checkpoint_stat_identity(initial):
+                        die("checkpoint source directory changed during capture")
+                    files_before = len(inventory)
+                    walk(child, child_destination, relative_parts)
+                    if child_destination is not None and len(inventory) == files_before:
+                        try:
+                            os.rmdir(child_destination)
+                        except OSError:
+                            die("checkpoint private stage changed during capture")
+                finally:
+                    os.close(child)
+                continue
+
+            destination = (
+                os.path.join(destination_dir, entry.name)
+                if destination_dir is not None
+                else None
+            )
+            byte_count, digest = _checkpoint_regular(
+                source_dir, entry.name, initial, destination
+            )
+            inventory.append(
+                {
+                    "path": f"{CHECKPOINT_CONTROLLER_DIR}/{relative}",
+                    "bytes": byte_count,
+                    "sha256": digest,
+                }
+            )
+
+        after_directory = os.fstat(source_dir)
+        if _checkpoint_stat_identity(after_directory) != _checkpoint_stat_identity(
+            before_directory
+        ):
+            die("checkpoint source directory changed during capture")
+
+    try:
+        walk(root_descriptor, destination_root, ())
+    finally:
+        os.close(root_descriptor)
+    return sorted(inventory, key=lambda item: item["path"])
+
+
+def _checkpoint_read_staged(path: str, ceiling: int) -> bytes:
+    """Read one private staged file under its declared byte ceiling."""
+    try:
+        before = os.lstat(path)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or before.st_size > ceiling
+        ):
+            die("checkpoint stage contains an unsafe file")
+        descriptor = os.open(
+            path,
+            os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0),
+        )
+        try:
+            data = bytearray()
+            while True:
+                chunk = os.read(descriptor, min(CHECKPOINT_IO_CHUNK, ceiling + 1 - len(data)))
+                if not chunk:
+                    break
+                data.extend(chunk)
+                if len(data) > ceiling:
+                    die("checkpoint stage file exceeds the byte ceiling")
+            after = os.fstat(descriptor)
+            named = os.lstat(path)
+        finally:
+            os.close(descriptor)
+    except OSError:
+        die("checkpoint stage could not be verified")
+    if (
+        len(data) != before.st_size
+        or _checkpoint_stat_identity(after) != _checkpoint_stat_identity(before)
+        or _checkpoint_stat_identity(named) != _checkpoint_stat_identity(before)
+    ):
+        die("checkpoint stage changed during verification")
+    return bytes(data)
+
+
+def _checkpoint_json_depth_within_limit(data: bytes) -> bool:
+    """Bound JSON container nesting without interpreting string punctuation."""
+    depth = 0
+    in_string = False
+    escaped = False
+    for byte in data:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif byte == 0x5C:  # backslash
+                escaped = True
+            elif byte == 0x22:  # double quote
+                in_string = False
+            continue
+        if byte == 0x22:
+            in_string = True
+        elif byte in (0x5B, 0x7B):  # [ {
+            depth += 1
+            if depth > CHECKPOINT_JSON_DEPTH_MAX:
+                return False
+        elif byte in (0x5D, 0x7D) and depth:
+            depth -= 1
+    return True
+
+
+def _checkpoint_json(data: bytes, label: str):
+    if not _checkpoint_json_depth_within_limit(data):
+        die(f"checkpoint {label} exceeds the JSON nesting ceiling")
+    try:
+        return json.loads(
+            data.decode("utf-8"),
+            object_pairs_hook=_strict_json_object,
+            parse_constant=lambda _: (_ for _ in ()).throw(
+                ValueError("non-finite number")
+            ),
+        )
+    except (MemoryError, RecursionError, UnicodeDecodeError, ValueError):
+        die(f"checkpoint {label} is not strict UTF-8 JSON")
+
+
+def _checkpoint_ledger(data: bytes, state: dict) -> tuple[int, str]:
+    """Verify the captured ledger prefix without accepting duplicate keys."""
+    previous = "genesis"
+    count = 0
+    last_state = None
+    for raw_line in io.BytesIO(data):
+        if not raw_line.strip():
+            continue
+        entry = _checkpoint_json(raw_line, "ledger")
+        if not isinstance(entry, dict):
+            die("checkpoint ledger entry is not an object")
+        try:
+            body = {
+                "ts": entry["ts"],
+                "event": entry["event"],
+                "data": entry["data"],
+                "prev": entry["prev"],
+                "state": entry["state"],
+            }
+            expected = hashlib.sha256(canonical(body).encode()).hexdigest()
+            valid = entry["prev"] == previous and entry["hash"] == expected
+        except (KeyError, TypeError):
+            valid = False
+        if not valid:
+            die("checkpoint ledger chain is invalid")
+        previous = entry["hash"]
+        last_state = entry["state"]
+        count += 1
+    if count == 0 or last_state != state_fingerprint(state):
+        die("checkpoint state does not match its ledger tail")
+    return count, previous
+
+
+def _checkpoint_directory_still_at_path(path: str, descriptor: int) -> bool:
+    """Return whether one no-follow path still names the opened directory."""
+    current = None
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        if os.path.realpath(path) != path:
+            return False
+        current = os.open(path, flags)
+        opened = os.fstat(current)
+        expected = os.fstat(descriptor)
+        return (opened.st_dev, opened.st_ino) == (expected.st_dev, expected.st_ino)
+    except OSError:
+        return False
+    finally:
+        if current is not None:
+            with contextlib.suppress(OSError):
+                os.close(current)
+
+
+def _checkpoint_directory_still_in_parent(
+    parent_descriptor: int, name: str, descriptor: int
+) -> bool:
+    """Return whether one parent entry still names the opened directory."""
+    try:
+        named = os.stat(name, dir_fd=parent_descriptor, follow_symlinks=False)
+        opened = os.fstat(descriptor)
+    except OSError:
+        return False
+    return (
+        stat.S_ISDIR(named.st_mode)
+        and stat.S_ISDIR(opened.st_mode)
+        and (named.st_dev, named.st_ino) == (opened.st_dev, opened.st_ino)
+    )
+
+
+def _checkpoint_destination(base_dir: str, supplied: str) -> tuple[str, str, int]:
+    """Resolve and pin one new sibling-publish target and its parent."""
+    if not isinstance(supplied, str) or not supplied:
+        die("checkpoint export requires --out <new-directory>")
+    try:
+        encoded = supplied.encode("utf-8")
+    except UnicodeEncodeError:
+        die("checkpoint output path is unsafe")
+    if (
+        not encoded
+        or len(encoded) > 4096
+        or any(ord(character) < 32 or ord(character) == 127 for character in supplied)
+    ):
+        die("checkpoint output path is unsafe")
+    destination = os.path.abspath(
+        supplied if os.path.isabs(supplied) else os.path.join(base_dir, supplied)
+    )
+    parent = os.path.dirname(destination)
+    if not os.path.basename(destination) or os.path.realpath(parent) != parent:
+        die("checkpoint output parent must be one existing non-symlink directory")
+    source = os.path.realpath(state_root(base_dir))
+    if contained_in(source, destination):
+        die("checkpoint output destination cannot enter controller state")
+    parent_descriptor = None
+    try:
+        parent_stat = os.lstat(parent)
+        parent_descriptor = os.open(
+            parent,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        opened = os.fstat(parent_descriptor)
+        if (
+            not stat.S_ISDIR(parent_stat.st_mode)
+            or not stat.S_ISDIR(opened.st_mode)
+            or (parent_stat.st_dev, parent_stat.st_ino)
+            != (opened.st_dev, opened.st_ino)
+            or not _checkpoint_directory_still_at_path(parent, parent_descriptor)
+        ):
+            raise OSError("checkpoint parent identity changed")
+    except OSError:
+        if parent_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(parent_descriptor)
+        die("checkpoint output parent must be one existing non-symlink directory")
+
+    try:
+        os.stat(
+            os.path.basename(destination),
+            dir_fd=parent_descriptor,
+            follow_symlinks=False,
+        )
+    except FileNotFoundError:
+        pass
+    except OSError:
+        os.close(parent_descriptor)
+        die("checkpoint output destination could not be inspected")
+    else:
+        os.close(parent_descriptor)
+        die("checkpoint output destination is occupied")
+    return destination, parent, parent_descriptor
+
+
+def _checkpoint_manifest(
+    stage: str,
+    state: dict,
+    boundary: str,
+    directive: dict,
+    refs: dict[str, str],
+    inventory: list[dict],
+) -> tuple[dict, bytes, str]:
+    controller_root = os.path.join(stage, CHECKPOINT_CONTROLLER_DIR)
+    state_bytes = _checkpoint_read_staged(
+        os.path.join(controller_root, STATE_FILE), CHECKPOINT_FILE_BYTES_MAX
+    )
+    ledger_bytes = _checkpoint_read_staged(
+        os.path.join(controller_root, LEDGER_FILE), CHECKPOINT_FILE_BYTES_MAX
+    )
+    if not ledger_bytes.endswith(b"\n"):
+        die("checkpoint ledger is not an appendable exact prefix")
+    captured_state = _checkpoint_json(state_bytes, "state")
+    captured_state = validate_state_shape(captured_state)
+    if canonical(captured_state) != canonical(state):
+        die("checkpoint captured another controller state")
+    ledger_count, ledger_tail = _checkpoint_ledger(ledger_bytes, captured_state)
+    version = ledger_version(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
+    )
+    if version is None:
+        die("checkpoint controller version cannot be resolved")
+    total_bytes = sum(item["bytes"] for item in inventory)
+    manifest = {
+        "schema": CHECKPOINT_SCHEMA,
+        "controller": {
+            "name": captured_state.get("controller"),
+            "state_version": captured_state.get("version"),
+            "version": version,
+        },
+        "boundary": {
+            "kind": boundary,
+            "next": directive,
+            "refs": refs,
+        },
+        "source": {
+            "state_sha256": hashlib.sha256(state_bytes).hexdigest(),
+            "state_fingerprint": state_fingerprint(captured_state),
+            "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+            "ledger_entries": ledger_count,
+            "ledger_tail": ledger_tail,
+        },
+        "resources": {
+            "files": len(inventory),
+            "bytes": total_bytes,
+            "limits": {
+                "files": CHECKPOINT_FILES_MAX,
+                "directories": CHECKPOINT_DIRECTORIES_MAX,
+                "total_bytes": CHECKPOINT_TOTAL_BYTES_MAX,
+                "file_bytes": CHECKPOINT_FILE_BYTES_MAX,
+                "manifest_bytes": CHECKPOINT_MANIFEST_BYTES_MAX,
+                "path_bytes": CHECKPOINT_PATH_BYTES_MAX,
+            },
+        },
+        "files": inventory,
+    }
+    payload = canonical(manifest).encode("utf-8") + b"\n"
+    if len(payload) > CHECKPOINT_MANIFEST_BYTES_MAX:
+        die("checkpoint manifest exceeds the byte ceiling")
+    return manifest, payload, hashlib.sha256(payload).hexdigest()
+
+
+def _checkpoint_write_manifest(stage: str, payload: bytes) -> None:
+    path = os.path.join(stage, CHECKPOINT_MANIFEST_FILE)
+    try:
+        descriptor = os.open(
+            path,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+        )
+        try:
+            _checkpoint_write_all(descriptor, payload)
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+    except OSError:
+        die("checkpoint manifest could not be written")
+
+
+def _checkpoint_fsync_directories(stage: str) -> None:
+    for current, directories, _ in os.walk(stage, topdown=False, followlinks=False):
+        directories.sort()
+        try:
+            descriptor = os.open(
+                current,
+                os.O_RDONLY
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_DIRECTORY", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+            )
+            try:
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+        except OSError:
+            die("checkpoint stage could not be made durable")
+
+
+def _checkpoint_atomic_publish(stage: str, destination: str) -> None:
+    """Atomically publish one complete directory without replacing a target."""
+    try:
+        libc = ctypes.CDLL(None, use_errno=True)
+    except OSError:
+        die("checkpoint platform has no atomic no-replace directory publish")
+    source_bytes = os.fsencode(stage)
+    destination_bytes = os.fsencode(destination)
+    if hasattr(libc, "renameat2"):
+        rename = libc.renameat2
+        rename.argtypes = (
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_int,
+            ctypes.c_char_p,
+            ctypes.c_uint,
+        )
+        rename.restype = ctypes.c_int
+        result = rename(-100, source_bytes, -100, destination_bytes, 1)
+    elif hasattr(libc, "renamex_np"):
+        rename = libc.renamex_np
+        rename.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint)
+        rename.restype = ctypes.c_int
+        result = rename(source_bytes, destination_bytes, 0x00000004)
+    else:
+        die("checkpoint platform has no atomic no-replace directory publish")
+    if result == 0:
+        return
+    error = ctypes.get_errno()
+    if error in (errno.EEXIST, errno.ENOTEMPTY):
+        die("checkpoint output destination became occupied")
+    die("checkpoint stage could not be published atomically")
+
+
+def cmd_checkpoint_export(args) -> None:
+    """Export one deterministic controller capsule without changing the run."""
+    base_dir = os.path.abspath(args.dir)
+    verify_run(base_dir)
+    state = load_state(base_dir)
+    ledger = ledger_entries(base_dir)
+    boundary, directive = _checkpoint_boundary(state, ledger)
+    if os.path.lexists(state_path(base_dir) + ".tmp"):
+        die("checkpoint export refuses a pending controller transaction")
+    destination, parent, parent_descriptor = _checkpoint_destination(
+        base_dir, args.out
+    )
+    working_descriptor = None
+    try:
+        refs = _checkpoint_refs(base_dir, state)
+        state_before = _checkpoint_read_staged(
+            state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+        ledger_before = _checkpoint_read_staged(
+            ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+        )
+
+        try:
+            working_descriptor = os.open(
+                ".",
+                os.O_RDONLY
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_DIRECTORY", 0),
+            )
+            os.fchdir(parent_descriptor)
+        except OSError:
+            die("checkpoint output parent could not be pinned")
+        if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
+            die("checkpoint output parent changed before staging")
+
+        prefix = f".{os.path.basename(destination)}.stage-"
+        try:
+            stage = tempfile.mkdtemp(prefix=prefix, dir=".")
+            os.chmod(stage, 0o700)
+        except OSError:
+            die("checkpoint private stage could not be created")
+        stage_name = os.path.basename(stage)
+        stage_descriptor = None
+        published = False
+        try:
+            try:
+                stage_descriptor = os.open(
+                    stage_name,
+                    os.O_RDONLY
+                    | getattr(os, "O_CLOEXEC", 0)
+                    | getattr(os, "O_DIRECTORY", 0)
+                    | getattr(os, "O_NOFOLLOW", 0),
+                    dir_fd=parent_descriptor,
+                )
+            except OSError:
+                die("checkpoint private stage changed before capture")
+            if not _checkpoint_directory_still_in_parent(
+                parent_descriptor, stage_name, stage_descriptor
+            ):
+                die("checkpoint private stage changed before capture")
+            controller_stage = os.path.join(stage, CHECKPOINT_CONTROLLER_DIR)
+            try:
+                os.mkdir(controller_stage, 0o700)
+            except OSError:
+                die("checkpoint private stage changed before capture")
+            inventory = _checkpoint_snapshot(state_root(base_dir), controller_stage)
+            if not _checkpoint_directory_still_in_parent(
+                parent_descriptor, stage_name, stage_descriptor
+            ):
+                die("checkpoint private stage changed during capture")
+            if (
+                _checkpoint_snapshot(
+                    controller_stage, None, exclude_live_lock=False
+                )
+                != inventory
+            ):
+                die("checkpoint private stage changed during capture")
+            manifest, manifest_bytes, manifest_digest = _checkpoint_manifest(
+                stage, state, boundary, directive, refs, inventory
+            )
+            if _checkpoint_snapshot(state_root(base_dir), None) != inventory:
+                die("checkpoint source changed before publication")
+            if (
+                _checkpoint_read_staged(
+                    state_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+                )
+                != state_before
+                or _checkpoint_read_staged(
+                    ledger_path(base_dir), CHECKPOINT_FILE_BYTES_MAX
+                )
+                != ledger_before
+                or _checkpoint_refs(base_dir, state) != refs
+            ):
+                die("checkpoint source changed before publication")
+            _checkpoint_write_manifest(stage, manifest_bytes)
+            if _checkpoint_read_staged(
+                os.path.join(stage, CHECKPOINT_MANIFEST_FILE),
+                CHECKPOINT_MANIFEST_BYTES_MAX,
+            ) != manifest_bytes:
+                die("checkpoint manifest changed before publication")
+            _checkpoint_fsync_directories(stage)
+            if not _checkpoint_directory_still_in_parent(
+                parent_descriptor, stage_name, stage_descriptor
+            ):
+                die("checkpoint private stage changed before publication")
+            if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
+                die("checkpoint output parent changed before publication")
+            destination_name = os.path.basename(destination)
+            _checkpoint_atomic_publish(stage_name, destination_name)
+            if not _checkpoint_directory_still_in_parent(
+                parent_descriptor, destination_name, stage_descriptor
+            ):
+                die("checkpoint private stage changed during publication", 1)
+            if not _checkpoint_directory_still_at_path(parent, parent_descriptor):
+                try:
+                    shutil.rmtree(destination_name, dir_fd=parent_descriptor)
+                    os.fsync(parent_descriptor)
+                except OSError:
+                    die(
+                        "checkpoint output parent changed and publication "
+                        "could not be removed",
+                        1,
+                    )
+                die("checkpoint output parent changed during publication")
+            published = True
+            try:
+                os.fsync(parent_descriptor)
+            except OSError:
+                die("checkpoint publication could not be made durable", 1)
+        finally:
+            if (
+                not published
+                and stage_descriptor is not None
+                and _checkpoint_directory_still_in_parent(
+                    parent_descriptor, stage_name, stage_descriptor
+                )
+            ):
+                with contextlib.suppress(OSError):
+                    shutil.rmtree(stage_name, dir_fd=parent_descriptor)
+            if stage_descriptor is not None:
+                with contextlib.suppress(OSError):
+                    os.close(stage_descriptor)
+    finally:
+        if working_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.fchdir(working_descriptor)
+            with contextlib.suppress(OSError):
+                os.close(working_descriptor)
+        with contextlib.suppress(OSError):
+            os.close(parent_descriptor)
+
+    source = manifest["source"]
+    print(
+        json.dumps(
+            {
+                "schema": CHECKPOINT_RESULT_SCHEMA,
+                "capsule": destination,
+                "boundary": boundary,
+                "next": directive,
+                "refs": refs,
+                "files": manifest["resources"]["files"],
+                "bytes": manifest["resources"]["bytes"],
+                "manifest_sha256": manifest_digest,
+                "state_sha256": source["state_sha256"],
+                "state_fingerprint": source["state_fingerprint"],
+                "ledger_sha256": source["ledger_sha256"],
+                "ledger_entries": source["ledger_entries"],
+                "ledger_tail": source["ledger_tail"],
+            },
+            sort_keys=True,
+        )
+    )
+
+
+def _checkpoint_closed_object(value, fields: set[str], label: str) -> dict:
+    """Accept one object with exactly the manifest fields its schema names."""
+    if not isinstance(value, dict) or set(value) != fields:
+        die(f"checkpoint {label} has an unsupported shape")
+    return value
+
+
+def _checkpoint_restore_source_receipt(
+    state: dict, name: str
+) -> tuple[str, str] | None:
+    """Return one portable source path and digest from imported state."""
+    receipt = as_dict(as_dict(state.get("receipts")).get(name))
+    expected = receipt.get("sha256")
+    if expected is None:
+        return None
+    if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
+        die(f"checkpoint {name} receipt has an invalid sha256")
+    artifact = receipt.get("artifact")
+    if not isinstance(artifact, str) or not artifact:
+        die(f"checkpoint {name} artefact path is not relocatable")
+    if os.path.isabs(artifact):
+        old_origin = configured_git_path(state, "origin")
+        old_worktree = configured_git_path(state, "worktree")
+        run_branch = run_branch_of(state)
+        paths = (old_origin, old_worktree, artifact)
+        for path in paths:
+            try:
+                encoded = path.encode("utf-8") if isinstance(path, str) else b""
+            except UnicodeEncodeError:
+                encoded = b""
+            if (
+                not encoded
+                or not os.path.isabs(path)
+                or path.replace("\\", "/") != path
+                or os.path.normpath(path) != path
+                or any(
+                    ord(character) < 32 or ord(character) == 127
+                    for character in path
+                )
+            ):
+                die(f"checkpoint {name} artefact path is not relocatable")
+        if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        expected_worktree = os.path.join(
+            old_origin, *WORKTREE_HOME, run_branch.replace("/", "-")
+        )
+        if old_worktree != expected_worktree:
+            die(f"checkpoint {name} artefact path is not relocatable")
+        try:
+            relative = os.path.relpath(artifact, old_worktree).replace(os.sep, "/")
+        except (OSError, TypeError, ValueError):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        artifact = _checkpoint_safe_relative(tuple(relative.split("/")))
+        if os.path.join(old_worktree, *artifact.split("/")) != receipt["artifact"]:
+            die(f"checkpoint {name} artefact path is not relocatable")
+    if artifact.replace("\\", "/") != artifact:
+        die(f"checkpoint {name} artefact path is unsafe")
+    if _checkpoint_safe_relative(tuple(artifact.split("/"))) != artifact:
+        die(f"checkpoint {name} artefact path is unsafe")
+    return artifact, expected
+
+
+def _checkpoint_restore_capsule(
+    supplied: str, expected_digest: str
+) -> tuple[str, dict, dict, bytes, bytes, list[dict]]:
+    """Verify one hostile capsule completely before any restore path exists."""
+    if not isinstance(expected_digest, str) or not re.fullmatch(
+        r"[0-9a-f]{64}", expected_digest
+    ):
+        die("checkpoint restore requires a lowercase SHA-256 manifest digest")
+    if not isinstance(supplied, str) or not supplied:
+        die("checkpoint restore requires --from <capsule-directory>")
+    try:
+        capsule = os.path.abspath(supplied)
+        initial = os.lstat(capsule)
+    except (OSError, TypeError, ValueError):
+        die("checkpoint capsule is not a safe directory")
+    if (
+        os.path.realpath(capsule) != capsule
+        or not stat.S_ISDIR(initial.st_mode)
+        or stat.S_ISLNK(initial.st_mode)
+    ):
+        die("checkpoint capsule is not a safe directory")
+    try:
+        names = []
+        with os.scandir(capsule) as iterator:
+            for entry in iterator:
+                entry_stat = entry.stat(follow_symlinks=False)
+                expected_directory = entry.name == CHECKPOINT_CONTROLLER_DIR
+                if (
+                    entry.name not in (CHECKPOINT_MANIFEST_FILE, CHECKPOINT_CONTROLLER_DIR)
+                    or (expected_directory and not stat.S_ISDIR(entry_stat.st_mode))
+                    or (not expected_directory and not stat.S_ISREG(entry_stat.st_mode))
+                    or (not expected_directory and entry_stat.st_nlink != 1)
+                ):
+                    die("checkpoint capsule has an unsupported top-level entry")
+                names.append(entry.name)
+    except OSError:
+        die("checkpoint capsule changed during verification")
+    if set(names) != {CHECKPOINT_CONTROLLER_DIR, CHECKPOINT_MANIFEST_FILE} or len(names) != 2:
+        die("checkpoint capsule is incomplete or has extra entries")
+
+    manifest_path = os.path.join(capsule, CHECKPOINT_MANIFEST_FILE)
+    manifest_bytes = _checkpoint_read_staged(
+        manifest_path, CHECKPOINT_MANIFEST_BYTES_MAX
+    )
+    if hashlib.sha256(manifest_bytes).hexdigest() != expected_digest:
+        die("checkpoint manifest digest does not match --manifest-sha256")
+    manifest = _checkpoint_json(manifest_bytes, "manifest")
+    manifest = _checkpoint_closed_object(
+        manifest,
+        {"schema", "controller", "boundary", "source", "resources", "files"},
+        "manifest",
+    )
+    if (
+        manifest.get("schema") != CHECKPOINT_SCHEMA
+        or canonical(manifest).encode("utf-8") + b"\n" != manifest_bytes
+    ):
+        die("checkpoint manifest is not canonical or has the wrong schema")
+
+    controller = _checkpoint_closed_object(
+        manifest["controller"], {"name", "state_version", "version"}, "controller"
+    )
+    boundary = _checkpoint_closed_object(
+        manifest["boundary"], {"kind", "next", "refs"}, "boundary"
+    )
+    source = _checkpoint_closed_object(
+        manifest["source"],
+        {
+            "state_sha256",
+            "state_fingerprint",
+            "ledger_sha256",
+            "ledger_entries",
+            "ledger_tail",
+        },
+        "source identity",
+    )
+    resources = _checkpoint_closed_object(
+        manifest["resources"], {"files", "bytes", "limits"}, "resources"
+    )
+    limits = _checkpoint_closed_object(
+        resources["limits"],
+        {
+            "files",
+            "directories",
+            "total_bytes",
+            "file_bytes",
+            "manifest_bytes",
+            "path_bytes",
+        },
+        "resource limits",
+    )
+    if canonical(limits) != canonical(
+        {
+            "files": CHECKPOINT_FILES_MAX,
+            "directories": CHECKPOINT_DIRECTORIES_MAX,
+            "total_bytes": CHECKPOINT_TOTAL_BYTES_MAX,
+            "file_bytes": CHECKPOINT_FILE_BYTES_MAX,
+            "manifest_bytes": CHECKPOINT_MANIFEST_BYTES_MAX,
+            "path_bytes": CHECKPOINT_PATH_BYTES_MAX,
+        }
+    ):
+        die("checkpoint manifest resource limits do not match this controller")
+
+    controller_root = os.path.join(capsule, CHECKPOINT_CONTROLLER_DIR)
+    inventory = _checkpoint_snapshot(
+        controller_root, None, exclude_live_lock=False
+    )
+    recorded = manifest["files"]
+    if (
+        not isinstance(recorded, list)
+        or len(recorded) > CHECKPOINT_FILES_MAX
+    ):
+        die("checkpoint manifest file inventory is invalid")
+    for item in recorded:
+        _checkpoint_closed_object(item, {"path", "bytes", "sha256"}, "file record")
+        if (
+            not isinstance(item["path"], str)
+            or not item["path"].startswith(CHECKPOINT_CONTROLLER_DIR + "/")
+            or not isinstance(item["bytes"], int)
+            or isinstance(item["bytes"], bool)
+            or item["bytes"] < 0
+            or not isinstance(item["sha256"], str)
+            or not re.fullmatch(r"[0-9a-f]{64}", item["sha256"])
+        ):
+            die("checkpoint manifest file inventory is invalid")
+        relative = item["path"].removeprefix(CHECKPOINT_CONTROLLER_DIR + "/")
+        if _checkpoint_safe_relative(tuple(relative.split("/"))) != relative:
+            die("checkpoint manifest file inventory is invalid")
+    if recorded != sorted(recorded, key=lambda item: item["path"]):
+        die("checkpoint manifest file inventory is invalid")
+    if recorded != inventory:
+        die("checkpoint manifest inventory does not match controller bytes")
+    total_bytes = sum(item["bytes"] for item in inventory)
+    if (
+        resources["files"] != len(inventory)
+        or resources["bytes"] != total_bytes
+        or not isinstance(resources["files"], int)
+        or isinstance(resources["files"], bool)
+        or not isinstance(resources["bytes"], int)
+        or isinstance(resources["bytes"], bool)
+    ):
+        die("checkpoint manifest resource totals do not match controller bytes")
+
+    state_bytes = _checkpoint_read_staged(
+        os.path.join(controller_root, STATE_FILE), CHECKPOINT_FILE_BYTES_MAX
+    )
+    ledger_bytes = _checkpoint_read_staged(
+        os.path.join(controller_root, LEDGER_FILE), CHECKPOINT_FILE_BYTES_MAX
+    )
+    if len(state_bytes) > SOURCE_BYTES_MAX:
+        die("checkpoint state exceeds the bounded controller-source cap")
+    state = validate_state_shape(_checkpoint_json(state_bytes, "state"))
+    ledger_count, ledger_tail = _checkpoint_ledger(ledger_bytes, state)
+    if not ledger_bytes.endswith(b"\n"):
+        die("checkpoint ledger is not an appendable exact prefix")
+    if canonical(source) != canonical(
+        {
+            "state_sha256": hashlib.sha256(state_bytes).hexdigest(),
+            "state_fingerprint": state_fingerprint(state),
+            "ledger_sha256": hashlib.sha256(ledger_bytes).hexdigest(),
+            "ledger_entries": ledger_count,
+            "ledger_tail": ledger_tail,
+        }
+    ):
+        die("checkpoint source identities do not match controller bytes")
+
+    current_version = ledger_version(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
+    )
+    controller_identity = {
+        "name": controller["name"],
+        "state_version": controller["state_version"],
+    }
+    state_identity = {
+        "name": state.get("controller"),
+        "state_version": state.get("version"),
+    }
+    if (
+        canonical(controller_identity) != canonical(state_identity)
+        or not isinstance(controller["version"], str)
+        or controller["version"] not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
+        or current_version not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
+    ):
+        die("checkpoint controller identity does not match this controller")
+    last_entry = None
+    for line in io.BytesIO(ledger_bytes):
+        if line.strip():
+            last_entry = _checkpoint_json(line, "ledger")
+    expected_kind, expected_next = _checkpoint_boundary(
+        state, [] if last_entry is None else [last_entry]
+    )
+    if (
+        boundary["kind"] != expected_kind
+        or canonical(boundary["next"]) != canonical(expected_next)
+        or not isinstance(boundary["refs"], dict)
+        or sorted(boundary["refs"]) != _checkpoint_ref_names(state)
+        or any(
+            not isinstance(value, str) or not COMMIT_RE.fullmatch(value)
+            for value in boundary["refs"].values()
+        )
+    ):
+        die("checkpoint boundary does not match controller semantics")
+
+    # Study and runbook bytes remain source-bound after relocation. Validate
+    # every receipt path before the marker boundary, and bind controller-local
+    # sources to the corresponding bytes inside the capsule.
+    for name in ("study", "runbook"):
+        source_receipt = _checkpoint_restore_source_receipt(state, name)
+        if source_receipt is None:
+            continue
+        artifact, expected = source_receipt
+        prefix = STATE_DIR_NAME + "/"
+        if artifact.startswith(prefix):
+            relative = artifact[len(prefix):]
+            candidate = os.path.join(controller_root, *relative.split("/"))
+            data = _checkpoint_read_staged(candidate, SOURCE_BYTES_MAX)
+            if hashlib.sha256(data).hexdigest() != expected:
+                die(f"checkpoint {name} artefact does not match its receipt")
+
+    # The root and manifest identities are checked a second time so a moving
+    # capsule never reaches the marker-first mutation boundary.
+    if (
+        _checkpoint_snapshot(controller_root, None, exclude_live_lock=False)
+        != inventory
+        or _checkpoint_read_staged(manifest_path, CHECKPOINT_MANIFEST_BYTES_MAX)
+        != manifest_bytes
+    ):
+        die("checkpoint capsule changed during verification")
+    return capsule, manifest, state, state_bytes, ledger_bytes, inventory
+
+
+def _checkpoint_restore_origin(base_dir: str) -> str:
+    """Admit one clean, top-level Git worktree as the new origin."""
+    origin = os.path.abspath(base_dir)
+    if os.path.realpath(origin) != origin or repository_root(origin) != origin:
+        die("checkpoint restore requires a fresh top-level Git origin")
+    if bounded_git(origin, ["status", "--porcelain"]).strip():
+        die("checkpoint restore requires a clean fresh origin")
+    return origin
+
+
+def _checkpoint_restore_marker_paths(origin: str, state: dict, digest: str):
+    run_branch = run_branch_of(state)
+    if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
+        die("checkpoint state has no relocatable run branch")
+    worktree = run_worktree_path(origin, run_branch)
+    stage = os.path.join(worktree, f".{STATE_DIR_NAME}.restore-stage-{digest[:16]}")
+    marker = os.path.join(state_root(origin), CHECKPOINT_RESTORE_MARKER_FILE)
+    return worktree, stage, marker
+
+
+def _checkpoint_restore_marker_record(
+    state: dict, digest: str, worktree: str, stage: str
+) -> dict:
+    return {
+        "schema": CHECKPOINT_RESTORE_MARKER_SCHEMA,
+        "manifest_sha256": digest,
+        "run_branch": run_branch_of(state),
+        "worktree": worktree,
+        "stage": stage,
+    }
+
+
+def _checkpoint_restore_marker(
+    origin: str, state: dict, digest: str
+) -> tuple[str, str, str, bool]:
+    """Publish or verify the transaction marker before a restore-owned path."""
+    worktree, stage, marker = _checkpoint_restore_marker_paths(origin, state, digest)
+    root = state_root(origin)
+    expected = _checkpoint_restore_marker_record(state, digest, worktree, stage)
+    if os.path.lexists(root):
+        if os.path.islink(root) or not os.path.isdir(root):
+            die("checkpoint restore origin state path is occupied")
+        allowed = {".gitignore", CHECKPOINT_RESTORE_MARKER_FILE, WORKTREE_FILE}
+        try:
+            names = set(os.listdir(root))
+        except OSError:
+            die("checkpoint restore marker cannot be inspected")
+        if not names.issubset(allowed) or CHECKPOINT_RESTORE_MARKER_FILE not in names:
+            die("checkpoint restore requires an empty fresh origin")
+        raw = _checkpoint_read_staged(marker, CHECKPOINT_MANIFEST_BYTES_MAX)
+        found = _checkpoint_json(raw, "restore marker")
+        if found != expected or raw != canonical(found).encode("utf-8") + b"\n":
+            die("checkpoint restore marker belongs to another transaction")
+        return worktree, stage, marker, True
+
+    origin_descriptor = None
+    root_descriptor = None
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    create_flags = (
+        os.O_WRONLY
+        | os.O_CREAT
+        | os.O_EXCL
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        origin_descriptor = os.open(origin, directory_flags)
+        if not _checkpoint_directory_still_at_path(origin, origin_descriptor):
+            raise OSError("checkpoint restore origin changed")
+        os.mkdir(STATE_DIR_NAME, 0o700, dir_fd=origin_descriptor)
+        root_descriptor = os.open(
+            STATE_DIR_NAME, directory_flags, dir_fd=origin_descriptor
+        )
+        if not _checkpoint_directory_still_in_parent(
+            origin_descriptor, STATE_DIR_NAME, root_descriptor
+        ):
+            raise OSError("checkpoint restore state path changed")
+
+        gitignore_descriptor = os.open(
+            ".gitignore", create_flags, 0o600, dir_fd=root_descriptor
+        )
+        try:
+            _checkpoint_write_all(gitignore_descriptor, b"*\n")
+            os.fsync(gitignore_descriptor)
+        finally:
+            os.close(gitignore_descriptor)
+
+        marker_descriptor = os.open(
+            CHECKPOINT_RESTORE_MARKER_FILE,
+            create_flags,
+            0o600,
+            dir_fd=root_descriptor,
+        )
+        try:
+            _checkpoint_write_all(
+                marker_descriptor, canonical(expected).encode("utf-8") + b"\n"
+            )
+            os.fsync(marker_descriptor)
+        finally:
+            os.close(marker_descriptor)
+        if not _checkpoint_directory_still_in_parent(
+            origin_descriptor, STATE_DIR_NAME, root_descriptor
+        ):
+            raise OSError("checkpoint restore state path changed")
+        os.fsync(root_descriptor)
+        os.fsync(origin_descriptor)
+    except OSError:
+        die("checkpoint restore marker could not be published")
+    finally:
+        for descriptor in (root_descriptor, origin_descriptor):
+            if descriptor is not None:
+                with contextlib.suppress(OSError):
+                    os.close(descriptor)
+    return worktree, stage, marker, False
+
+
+def _checkpoint_restore_prepare_worktree_home(
+    origin: str, worktree: str
+) -> None:
+    """Create the derived worktree home through pinned directory entries."""
+    home = os.path.dirname(worktree)
+    expected = os.path.join(origin, *WORKTREE_HOME)
+    if home != expected:
+        die("checkpoint restore derived worktree home changed")
+
+    directory_descriptor = None
+    gitignore_descriptor = None
+    directory_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        directory_descriptor = os.open(origin, directory_flags)
+        if not _checkpoint_directory_still_at_path(origin, directory_descriptor):
+            raise OSError("checkpoint restore origin changed")
+        for component in WORKTREE_HOME:
+            try:
+                os.mkdir(component, 0o700, dir_fd=directory_descriptor)
+            except FileExistsError:
+                pass
+            next_descriptor = os.open(
+                component, directory_flags, dir_fd=directory_descriptor
+            )
+            if not _checkpoint_directory_still_in_parent(
+                directory_descriptor, component, next_descriptor
+            ):
+                os.close(next_descriptor)
+                raise OSError("checkpoint restore worktree home changed")
+            os.close(directory_descriptor)
+            directory_descriptor = next_descriptor
+
+        if not _checkpoint_directory_still_at_path(home, directory_descriptor):
+            raise OSError("checkpoint restore worktree home changed")
+        try:
+            initial = os.stat(
+                ".gitignore", dir_fd=directory_descriptor, follow_symlinks=False
+            )
+        except FileNotFoundError:
+            gitignore_descriptor = os.open(
+                ".gitignore",
+                os.O_RDWR
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+                dir_fd=directory_descriptor,
+            )
+            _checkpoint_write_all(gitignore_descriptor, b"*\n")
+            os.fsync(gitignore_descriptor)
+        else:
+            if (
+                not stat.S_ISREG(initial.st_mode)
+                or initial.st_nlink != 1
+                or initial.st_size != 2
+            ):
+                raise OSError("checkpoint restore worktree ignore changed")
+            gitignore_descriptor = os.open(
+                ".gitignore",
+                os.O_RDONLY
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=directory_descriptor,
+            )
+            opened = os.fstat(gitignore_descriptor)
+            if (
+                _checkpoint_stat_identity(opened)
+                != _checkpoint_stat_identity(initial)
+                or os.read(gitignore_descriptor, 3) != b"*\n"
+            ):
+                raise OSError("checkpoint restore worktree ignore changed")
+        if not _checkpoint_directory_still_at_path(home, directory_descriptor):
+            raise OSError("checkpoint restore worktree home changed")
+        os.fsync(directory_descriptor)
+    except OSError:
+        die("checkpoint restore could not prepare its marker-owned worktree home")
+    finally:
+        for descriptor in (gitignore_descriptor, directory_descriptor):
+            if descriptor is not None:
+                with contextlib.suppress(OSError):
+                    os.close(descriptor)
+
+
+def _checkpoint_restore_retire_marker(
+    origin: str, state: dict, digest: str, marker: str
+) -> None:
+    """Retire only the stable marker bytes owned by this transaction."""
+    worktree, stage, expected_marker = _checkpoint_restore_marker_paths(
+        origin, state, digest
+    )
+    if marker != expected_marker:
+        die("checkpoint restore marker changed before retirement", 1)
+    expected = canonical(
+        _checkpoint_restore_marker_record(state, digest, worktree, stage)
+    ).encode("utf-8") + b"\n"
+    root = state_root(origin)
+    name = os.path.basename(marker)
+    root_descriptor = None
+    marker_descriptor = None
+    verified = False
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    root_flags = flags | getattr(os, "O_DIRECTORY", 0)
+    try:
+        root_descriptor = os.open(root, root_flags)
+        if not _checkpoint_directory_still_at_path(root, root_descriptor):
+            die("checkpoint restore marker changed before retirement", 1)
+        initial = os.stat(name, dir_fd=root_descriptor, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(initial.st_mode)
+            or initial.st_nlink != 1
+            or initial.st_size > CHECKPOINT_MANIFEST_BYTES_MAX
+        ):
+            die("checkpoint restore marker changed before retirement", 1)
+        marker_descriptor = os.open(name, flags, dir_fd=root_descriptor)
+        before = os.fstat(marker_descriptor)
+        if _checkpoint_stat_identity(before) != _checkpoint_stat_identity(initial):
+            die("checkpoint restore marker changed before retirement", 1)
+        data = bytearray()
+        while True:
+            chunk = os.read(
+                marker_descriptor,
+                min(
+                    CHECKPOINT_IO_CHUNK,
+                    CHECKPOINT_MANIFEST_BYTES_MAX + 1 - len(data),
+                ),
+            )
+            if not chunk:
+                break
+            data.extend(chunk)
+            if len(data) > CHECKPOINT_MANIFEST_BYTES_MAX:
+                die("checkpoint restore marker changed before retirement", 1)
+        after = os.fstat(marker_descriptor)
+        named = os.stat(name, dir_fd=root_descriptor, follow_symlinks=False)
+        if (
+            bytes(data) != expected
+            or len(data) != before.st_size
+            or _checkpoint_stat_identity(after) != _checkpoint_stat_identity(before)
+            or _checkpoint_stat_identity(named) != _checkpoint_stat_identity(before)
+        ):
+            die("checkpoint restore marker changed before retirement", 1)
+        verified = True
+        os.unlink(name, dir_fd=root_descriptor)
+        if os.fstat(marker_descriptor).st_nlink != 0:
+            die("checkpoint restore marker changed during retirement", 1)
+        os.fsync(root_descriptor)
+    except OSError:
+        if verified:
+            die("checkpoint restore completed but its marker could not be retired", 1)
+        die("checkpoint restore marker changed before retirement", 1)
+    finally:
+        for descriptor in (marker_descriptor, root_descriptor):
+            if descriptor is not None:
+                with contextlib.suppress(OSError):
+                    os.close(descriptor)
+
+
+def _checkpoint_restore_breadcrumb(origin: str, worktree: str) -> None:
+    """Publish or verify the one no-follow breadcrumb owned by restore."""
+    payload = f"{worktree}\n".encode("utf-8")
+    if len(payload) > SOURCE_BYTES_MAX:
+        die("checkpoint restore breadcrumb exceeds the output cap", 1)
+    root = state_root(origin)
+    root_descriptor = None
+    breadcrumb_descriptor = None
+    created = False
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        root_descriptor = os.open(
+            root, flags | getattr(os, "O_DIRECTORY", 0)
+        )
+        if not _checkpoint_directory_still_at_path(root, root_descriptor):
+            die("checkpoint restore breadcrumb path changed", 1)
+        try:
+            initial = os.stat(
+                WORKTREE_FILE, dir_fd=root_descriptor, follow_symlinks=False
+            )
+        except FileNotFoundError:
+            breadcrumb_descriptor = os.open(
+                WORKTREE_FILE,
+                os.O_RDWR
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+                dir_fd=root_descriptor,
+            )
+            _checkpoint_write_all(breadcrumb_descriptor, payload)
+            os.fsync(breadcrumb_descriptor)
+            os.lseek(breadcrumb_descriptor, 0, os.SEEK_SET)
+            before = os.fstat(breadcrumb_descriptor)
+            created = True
+        else:
+            if (
+                not stat.S_ISREG(initial.st_mode)
+                or initial.st_nlink != 1
+                or initial.st_size != len(payload)
+            ):
+                die("checkpoint restore breadcrumb is not transaction-owned", 1)
+            breadcrumb_descriptor = os.open(
+                WORKTREE_FILE, flags, dir_fd=root_descriptor
+            )
+            before = os.fstat(breadcrumb_descriptor)
+            if _checkpoint_stat_identity(before) != _checkpoint_stat_identity(
+                initial
+            ):
+                die("checkpoint restore breadcrumb path changed", 1)
+        data = bytearray()
+        while True:
+            chunk = os.read(breadcrumb_descriptor, CHECKPOINT_IO_CHUNK)
+            if not chunk:
+                break
+            data.extend(chunk)
+            if len(data) > len(payload):
+                die("checkpoint restore breadcrumb is not transaction-owned", 1)
+        after = os.fstat(breadcrumb_descriptor)
+        named = os.stat(
+            WORKTREE_FILE, dir_fd=root_descriptor, follow_symlinks=False
+        )
+        if (
+            bytes(data) != payload
+            or _checkpoint_stat_identity(after) != _checkpoint_stat_identity(before)
+            or _checkpoint_stat_identity(named) != _checkpoint_stat_identity(before)
+            or not _checkpoint_directory_still_at_path(root, root_descriptor)
+        ):
+            die("checkpoint restore breadcrumb is not transaction-owned", 1)
+        if created:
+            os.fsync(root_descriptor)
+    except OSError:
+        die("checkpoint restore breadcrumb could not be published safely", 1)
+    finally:
+        for descriptor in (breadcrumb_descriptor, root_descriptor):
+            if descriptor is not None:
+                with contextlib.suppress(OSError):
+                    os.close(descriptor)
+
+
+def _checkpoint_restore_state(
+    imported: dict,
+    origin: str,
+    worktree: str,
+    manifest: dict,
+    manifest_digest: str,
+) -> tuple[dict, dict]:
+    """Relocate controller paths and shape the same-ledger receipt."""
+    state = json.loads(json.dumps(imported))
+    old_origin = configured_git_path(state, "origin")
+    old_worktree = configured_git_path(state, "worktree")
+    for name in ("study", "runbook"):
+        source_receipt = _checkpoint_restore_source_receipt(state, name)
+        if source_receipt is None:
+            continue
+        artifact, _ = source_receipt
+        receipt = as_dict(as_dict(state.get("receipts")).get(name))
+        receipt["artifact"] = artifact
+    state.pop("origin", None)
+    state.pop("worktree", None)
+    state["config"]["git"]["origin"] = origin
+    state["config"]["git"]["worktree"] = worktree
+    relocated = state_fingerprint(state)
+    receipt = {
+        "manifest_sha256": manifest_digest,
+        "source_state_sha256": manifest["source"]["state_sha256"],
+        "source_ledger_sha256": manifest["source"]["ledger_sha256"],
+        "source_ledger_tail": manifest["source"]["ledger_tail"],
+        "refs": manifest["boundary"]["refs"],
+        "relocated_state_fingerprint": relocated,
+        "old_origin": old_origin,
+        "old_worktree": old_worktree,
+        "origin": origin,
+        "worktree": worktree,
+    }
+    return state, receipt
+
+
+def _checkpoint_restore_verify_source(
+    worktree: str, stage: str, state: dict, name: str
+) -> None:
+    """Verify a source against its fresh Git tree or staged controller copy."""
+    source_receipt = _checkpoint_restore_source_receipt(state, name)
+    if source_receipt is None:
+        return
+    artifact, expected = source_receipt
+    prefix = STATE_DIR_NAME + "/"
+    if not artifact.startswith(prefix):
+        receipted_source(worktree, state, name)
+        return
+    relative = artifact[len(prefix):]
+    data = _checkpoint_read_staged(
+        os.path.join(stage, *relative.split("/")), SOURCE_BYTES_MAX
+    )
+    if hashlib.sha256(data).hexdigest() != expected:
+        die(f"checkpoint {name} artefact does not match its receipt")
+
+
+def _checkpoint_restore_active_state(
+    worktree: str,
+    imported: dict,
+    origin: str,
+    manifest: dict,
+    manifest_digest: str,
+    ledger_prefix: bytes,
+) -> tuple[dict, bytes, str]:
+    """Accept only the exact relocated state and one owned restore append."""
+    state_bytes = _checkpoint_read_staged(state_path(worktree), SOURCE_BYTES_MAX)
+    state = validate_state_shape(_checkpoint_json(state_bytes, "restored state"))
+    expected_state, expected_receipt = _checkpoint_restore_state(
+        imported, origin, worktree, manifest, manifest_digest
+    )
+    expected_state_bytes = (
+        json.dumps(expected_state, indent=2, sort_keys=False).encode("utf-8") + b"\n"
+    )
+    ledger = _checkpoint_read_staged(
+        ledger_path(worktree), CHECKPOINT_FILE_BYTES_MAX
+    )
+    if state != expected_state or state_bytes != expected_state_bytes:
+        die("checkpoint restore found unowned active state")
+    if not ledger.startswith(ledger_prefix):
+        die("checkpoint restore found unowned active state")
+    suffix = ledger[len(ledger_prefix):]
+    if not suffix.endswith(b"\n") or suffix.count(b"\n") != 1:
+        die("checkpoint restore found unowned active state")
+    last = _checkpoint_json(suffix[:-1], "restore ledger entry")
+    if not isinstance(last, dict):
+        die("checkpoint restore found unowned active state")
+    if (
+        set(last) != {"ts", "event", "data", "prev", "state", "hash"}
+        or last.get("event") != "checkpoint:restore"
+        or last.get("data") != expected_receipt
+        or last.get("prev") != manifest["source"]["ledger_tail"]
+        or last.get("state") != state_fingerprint(expected_state)
+        or json.dumps(last, sort_keys=True).encode("utf-8") + b"\n" != suffix
+    ):
+        die("checkpoint restore found unowned active state")
+    count, tail = _checkpoint_ledger(ledger, state)
+    if (
+        count != manifest["source"]["ledger_entries"] + 1
+        or tail != last.get("hash")
+    ):
+        die("checkpoint restore found unowned active state")
+    return state, ledger, tail
+
+
+def _checkpoint_restore_opaque_evidence(
+    controller_root: str, inventory: list[dict]
+) -> None:
+    """Require every non-ledger controller file to retain its capsule bytes."""
+    observed = _checkpoint_snapshot(
+        controller_root, None, exclude_live_lock=False
+    )
+    expected_by_path = {item["path"]: item for item in inventory}
+    observed_by_path = {item["path"]: item for item in observed}
+    if set(observed_by_path) != set(expected_by_path):
+        die("checkpoint restore changed opaque controller evidence")
+    for path, expected in expected_by_path.items():
+        relative = path.removeprefix(CHECKPOINT_CONTROLLER_DIR + "/")
+        if relative in (STATE_FILE, LEDGER_FILE):
+            continue
+        if observed_by_path[path] != expected:
+            die("checkpoint restore changed opaque controller evidence")
+
+
+def _checkpoint_restore_worktree_branch(worktree: str, state: dict) -> None:
+    """Require the restored worktree to remain attached to its recorded branch."""
+    expected = run_branch_of(state)
+    current = bounded_git(
+        worktree,
+        ["symbolic-ref", "--quiet", "--short", "HEAD"],
+        refusal="checkpoint restored worktree branch changed during finalization",
+    ).decode("utf-8", "replace").strip()
+    if current != expected:
+        die("checkpoint restored worktree branch changed during finalization")
+
+
+def _checkpoint_restore_worktree_identity(
+    worktree: str, expected: tuple[int, int] | None = None
+) -> tuple[int, int]:
+    """Pin the directory identity used by path-based restore checks."""
+    descriptor = None
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    try:
+        initial = os.lstat(worktree)
+        descriptor = os.open(worktree, flags)
+        opened = os.fstat(descriptor)
+        identity = (opened.st_dev, opened.st_ino)
+        if (
+            not stat.S_ISDIR(initial.st_mode)
+            or stat.S_ISLNK(initial.st_mode)
+            or (initial.st_dev, initial.st_ino) != identity
+            or not _checkpoint_directory_still_at_path(worktree, descriptor)
+            or (expected is not None and identity != expected)
+        ):
+            raise OSError("checkpoint restored worktree changed")
+        return identity
+    except OSError:
+        die("checkpoint restored worktree changed during finalization", 1)
+    finally:
+        if descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(descriptor)
+
+
+def _checkpoint_restore_write_files(
+    stage: str, state: dict, ledger_prefix: bytes, receipt: dict
+) -> tuple[bytes, str]:
+    """Replace state and append exactly one receipt inside a private stage."""
+    state_hash = state_fingerprint(state)
+    entry = {
+        "ts": now(),
+        "event": "checkpoint:restore",
+        "data": receipt,
+        "prev": receipt["source_ledger_tail"],
+        "state": state_hash,
+    }
+    entry["hash"] = hashlib.sha256(canonical(entry).encode()).hexdigest()
+    ledger = ledger_prefix + json.dumps(entry, sort_keys=True).encode("utf-8") + b"\n"
+    state_payload = json.dumps(state, indent=2, sort_keys=False).encode("utf-8") + b"\n"
+    if len(state_payload) > SOURCE_BYTES_MAX:
+        die("checkpoint relocated state exceeds the bounded controller-source cap")
+    if len(ledger) > CHECKPOINT_FILE_BYTES_MAX:
+        die("checkpoint relocated ledger exceeds the file byte ceiling")
+    stage_descriptor = None
+    try:
+        stage_descriptor = os.open(
+            stage,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        if not _checkpoint_directory_still_at_path(stage, stage_descriptor):
+            raise OSError("checkpoint restore stage changed")
+        for name, payload in ((STATE_FILE, state_payload), (LEDGER_FILE, ledger)):
+            temporary = name + ".restore"
+            descriptor = os.open(
+                temporary,
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_CLOEXEC", 0)
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+                dir_fd=stage_descriptor,
+            )
+            try:
+                _checkpoint_write_all(descriptor, payload)
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+            os.replace(
+                temporary,
+                name,
+                src_dir_fd=stage_descriptor,
+                dst_dir_fd=stage_descriptor,
+            )
+            if not _checkpoint_directory_still_at_path(stage, stage_descriptor):
+                raise OSError("checkpoint restore stage changed")
+        os.fsync(stage_descriptor)
+    except OSError:
+        die("checkpoint restore stage could not record relocated state")
+    finally:
+        if stage_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.close(stage_descriptor)
+    count, tail = _checkpoint_ledger(ledger, state)
+    if count < 2 or tail != entry["hash"]:
+        die("checkpoint restore receipt could not be verified")
+    return ledger, tail
+
+
+def _checkpoint_restore_internal_checks(
+    worktree: str, manifest: dict, ledger: bytes
+) -> tuple[int, dict, str]:
+    """Run verify, status and semantic next without emitting their content."""
+    count = verify_run(worktree)
+    status_output = io.StringIO()
+    with contextlib.redirect_stdout(status_output):
+        cmd_status(argparse.Namespace(dir=worktree, json=False))
+    status_bytes = status_output.getvalue().encode("utf-8")
+    if len(status_bytes) > GIT_OUTPUT_MAX:
+        die("checkpoint restored status exceeds the output cap", 1)
+    state = load_state(worktree)
+    directive = _next_directive(state)
+    if directive != manifest["boundary"]["next"]:
+        die("checkpoint restored next directive changed", 1)
+    return count, directive, hashlib.sha256(status_bytes).hexdigest()
+
+
+def _checkpoint_restore_result(
+    *,
+    manifest: dict,
+    digest: str,
+    worktree: str,
+    ledger: bytes,
+    ledger_tail: str,
+    verify_count: int,
+    directive: dict,
+    status_sha256: str,
+    state_fingerprint_value: str,
+    recovery: str,
+) -> dict:
+    return {
+        "schema": CHECKPOINT_RESTORE_RESULT_SCHEMA,
+        "manifest_sha256": digest,
+        "source_state_sha256": manifest["source"]["state_sha256"],
+        "state_fingerprint": state_fingerprint_value,
+        "source_ledger_sha256": manifest["source"]["ledger_sha256"],
+        "ledger_sha256": hashlib.sha256(ledger).hexdigest(),
+        "ledger_entries": verify_count,
+        "ledger_tail": ledger_tail,
+        "refs": len(manifest["boundary"]["refs"]),
+        "worktree": worktree,
+        "verify": "ok",
+        "status_sha256": status_sha256,
+        "next": directive,
+        "recovery": recovery,
+    }
+
+
+def cmd_checkpoint_restore(args) -> None:
+    """Restore one verified capsule into a fresh, separately restored Git tree."""
+    origin = _checkpoint_restore_origin(args.dir)
+    capsule, manifest, imported, _, ledger_prefix, inventory = (
+        _checkpoint_restore_capsule(args.source, args.manifest_sha256)
+    )
+    refs = _checkpoint_refs(origin, imported)
+    if refs != manifest["boundary"]["refs"]:
+        die("checkpoint restored Git refs do not match the manifest")
+
+    worktree, stage, marker = _checkpoint_restore_marker_paths(
+        origin, imported, args.manifest_sha256
+    )
+    if os.path.realpath(os.path.dirname(worktree)) != os.path.dirname(worktree):
+        die("checkpoint restore derived worktree path crosses a symlink")
+    root = state_root(origin)
+    marker_exists = os.path.isfile(marker)
+    if not marker_exists:
+        check_worktree_path(origin, worktree)
+        refuse_checked_out_branch(origin, run_branch_of(imported))
+    worktree, stage, marker, resumed = _checkpoint_restore_marker(
+        origin, imported, args.manifest_sha256
+    )
+
+    final_root = state_root(worktree)
+    final_safe = False
+    if os.path.lexists(final_root):
+        try:
+            final_stat = os.lstat(final_root)
+            final_safe = (
+                stat.S_ISDIR(final_stat.st_mode)
+                and not stat.S_ISLNK(final_stat.st_mode)
+                and os.path.realpath(final_root) == final_root
+            )
+        except OSError:
+            final_safe = False
+    if resumed and final_safe and os.path.isfile(state_path(worktree)):
+        worktree_identity = _checkpoint_restore_worktree_identity(worktree)
+        state, ledger, ledger_tail = _checkpoint_restore_active_state(
+            worktree,
+            imported,
+            origin,
+            manifest,
+            args.manifest_sha256,
+            ledger_prefix,
+        )
+        _checkpoint_restore_opaque_evidence(final_root, inventory)
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+        _checkpoint_restore_worktree_branch(worktree, imported)
+        verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
+            worktree, manifest, ledger
+        )
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+        state, ledger, ledger_tail = _checkpoint_restore_active_state(
+            worktree,
+            imported,
+            origin,
+            manifest,
+            args.manifest_sha256,
+            ledger_prefix,
+        )
+        _checkpoint_restore_opaque_evidence(final_root, inventory)
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+        _checkpoint_restore_worktree_branch(worktree, imported)
+        if _checkpoint_refs(origin, imported) != refs:
+            die("checkpoint restored Git refs changed during finalization")
+        _checkpoint_restore_breadcrumb(origin, worktree)
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+        state, ledger, ledger_tail = _checkpoint_restore_active_state(
+            worktree,
+            imported,
+            origin,
+            manifest,
+            args.manifest_sha256,
+            ledger_prefix,
+        )
+        _checkpoint_restore_opaque_evidence(final_root, inventory)
+        _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+        _checkpoint_restore_worktree_branch(worktree, imported)
+        if _checkpoint_refs(origin, imported) != refs:
+            die("checkpoint restored Git refs changed during finalization")
+        _checkpoint_restore_retire_marker(
+            origin, imported, args.manifest_sha256, marker
+        )
+        print(
+            json.dumps(
+                _checkpoint_restore_result(
+                    manifest=manifest,
+                    digest=args.manifest_sha256,
+                    worktree=worktree,
+                    ledger=ledger,
+                    ledger_tail=ledger_tail,
+                    verify_count=verify_count,
+                    directive=directive,
+                    status_sha256=status_digest,
+                    state_fingerprint_value=state_fingerprint(state),
+                    recovery="finalized-interrupted-publication",
+                ),
+                sort_keys=True,
+            )
+        )
+        return
+    if resumed and (os.path.lexists(worktree) or os.path.lexists(stage)):
+        die(
+            "checkpoint restore transaction was interrupted before active state; "
+            "its marker-owned paths were preserved for inspection"
+        )
+
+    _checkpoint_restore_prepare_worktree_home(origin, worktree)
+    bounded_git(
+        origin,
+        ["worktree", "add", worktree, run_branch_of(imported)],
+        refusal="checkpoint restore could not create its derived worktree",
+    )
+    try:
+        worktree_stat = os.lstat(worktree)
+    except OSError:
+        die("checkpoint restore derived worktree changed after Git created it")
+    if (
+        not stat.S_ISDIR(worktree_stat.st_mode)
+        or stat.S_ISLNK(worktree_stat.st_mode)
+        or os.path.realpath(worktree) != worktree
+        or repository_root(worktree) != worktree
+    ):
+        die("checkpoint restore derived worktree changed after Git created it")
+    worktree_identity = _checkpoint_restore_worktree_identity(worktree)
+    _checkpoint_restore_worktree_branch(worktree, imported)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+    if _checkpoint_refs(origin, imported) != refs:
+        die("checkpoint restored Git refs changed during relocation")
+    if os.path.lexists(final_root) or os.path.lexists(stage):
+        die("checkpoint restore derived worktree is occupied")
+    try:
+        os.mkdir(stage, 0o700)
+    except OSError:
+        die("checkpoint restore private stage could not be created")
+    staged_inventory = _checkpoint_snapshot(
+        os.path.join(capsule, CHECKPOINT_CONTROLLER_DIR),
+        stage,
+        exclude_live_lock=False,
+    )
+    if staged_inventory != inventory:
+        die("checkpoint capsule changed during restore capture")
+    if _checkpoint_refs(origin, imported) != refs:
+        die("checkpoint restored Git refs changed during relocation")
+    for name in ("study", "runbook"):
+        _checkpoint_restore_verify_source(worktree, stage, imported, name)
+
+    relocated, receipt = _checkpoint_restore_state(
+        imported, origin, worktree, manifest, args.manifest_sha256
+    )
+    ledger, ledger_tail = _checkpoint_restore_write_files(
+        stage, relocated, ledger_prefix, receipt
+    )
+    _checkpoint_restore_opaque_evidence(stage, inventory)
+    _checkpoint_restore_worktree_branch(worktree, imported)
+    if _checkpoint_refs(origin, imported) != refs:
+        die("checkpoint restored Git refs changed before publication")
+    _checkpoint_fsync_directories(stage)
+    worktree_descriptor = None
+    stage_descriptor = None
+    working_descriptor = None
+    try:
+        worktree_descriptor = os.open(
+            worktree,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        stage_descriptor = os.open(
+            stage,
+            os.O_RDONLY
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        working_descriptor = os.open(
+            ".", os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+        )
+        if (
+            not _checkpoint_directory_still_at_path(worktree, worktree_descriptor)
+            or not _checkpoint_directory_still_in_parent(
+                worktree_descriptor, os.path.basename(stage), stage_descriptor
+            )
+        ):
+            die("checkpoint restore marker-owned paths changed before publication")
+        os.fchdir(worktree_descriptor)
+        _checkpoint_atomic_publish(os.path.basename(stage), STATE_DIR_NAME)
+        if (
+            not _checkpoint_directory_still_at_path(worktree, worktree_descriptor)
+            or not _checkpoint_directory_still_in_parent(
+                worktree_descriptor, STATE_DIR_NAME, stage_descriptor
+            )
+        ):
+            die("checkpoint restore active state changed during publication", 1)
+        _checkpoint_restore_worktree_branch(worktree, imported)
+        if _checkpoint_refs(origin, imported) != refs:
+            die("checkpoint restored Git refs changed during publication")
+    except OSError:
+        die("checkpoint restore marker-owned paths changed before publication")
+    finally:
+        if working_descriptor is not None:
+            with contextlib.suppress(OSError):
+                os.fchdir(working_descriptor)
+        for descriptor in (working_descriptor, stage_descriptor, worktree_descriptor):
+            if descriptor is not None:
+                with contextlib.suppress(OSError):
+                    os.close(descriptor)
+    _checkpoint_restore_opaque_evidence(final_root, inventory)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+    _checkpoint_restore_worktree_branch(worktree, imported)
+    verify_count, directive, status_digest = _checkpoint_restore_internal_checks(
+        worktree, manifest, ledger
+    )
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+    relocated, ledger, ledger_tail = _checkpoint_restore_active_state(
+        worktree,
+        imported,
+        origin,
+        manifest,
+        args.manifest_sha256,
+        ledger_prefix,
+    )
+    _checkpoint_restore_opaque_evidence(final_root, inventory)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+    _checkpoint_restore_worktree_branch(worktree, imported)
+    if _checkpoint_refs(origin, imported) != refs:
+        die("checkpoint restored Git refs changed during finalization")
+    _checkpoint_restore_breadcrumb(origin, worktree)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+    relocated, ledger, ledger_tail = _checkpoint_restore_active_state(
+        worktree,
+        imported,
+        origin,
+        manifest,
+        args.manifest_sha256,
+        ledger_prefix,
+    )
+    _checkpoint_restore_opaque_evidence(final_root, inventory)
+    _checkpoint_restore_worktree_identity(worktree, worktree_identity)
+    _checkpoint_restore_worktree_branch(worktree, imported)
+    if _checkpoint_refs(origin, imported) != refs:
+        die("checkpoint restored Git refs changed during finalization")
+    _checkpoint_restore_retire_marker(
+        origin, imported, args.manifest_sha256, marker
+    )
+    print(
+        json.dumps(
+            _checkpoint_restore_result(
+                manifest=manifest,
+                digest=args.manifest_sha256,
+                worktree=worktree,
+                ledger=ledger,
+                ledger_tail=ledger_tail,
+                verify_count=verify_count,
+                directive=directive,
+                status_sha256=status_digest,
+                state_fingerprint_value=state_fingerprint(relocated),
+                recovery="new",
+            ),
+            sort_keys=True,
+        )
+    )
 
 
 def cmd_next(args) -> None:
     state = load_state(args.dir)
-    directive = _next_directive(state)
+    directive = _next_directive(state, args.dir)
     if directive["do"] == "merge-step":
         # While the stack is still coming down the run branch has to be where the
         # loop left it, and this is the only point where a wrong merge can still
@@ -7035,7 +12810,7 @@ def cmd_next(args) -> None:
     print(json.dumps(out))
 
 
-def _next_directive(state: dict) -> dict:
+def _next_directive(state: dict, base_dir: str | None = None) -> dict:
     if state.get("halted"):
         return {"do": "halted", "reason": state["halted"]["reason"]}
     blocked = amendment_block(state)
@@ -7067,9 +12842,18 @@ def _next_directive(state: dict) -> dict:
             "then": "hexctl done runbook --artifact <path> --steps-file <path>",
         }
     if phase == "integrate":
-        return _integrate_directive(state)
+        return _integrate_directive(state, base_dir)
     if phase == "done":
-        return {"do": "done", "steps": len(state["steps"])}
+        return {
+            "do": "done",
+            "steps": len(state["steps"]),
+            "finalise": {
+                "status": "hexctl status",
+                "verify": "hexctl verify",
+                "retire": "hexctl reset",
+                "archive": "local .hexaemeron/archive",
+            },
+        }
     step = current_step(state)
     base = {"step": step["n"], "title": step["title"]}
     if step["phase"] == "audit":
@@ -7124,6 +12908,8 @@ def clean(text: str) -> str:
 
 def cmd_status(args) -> None:
     state = load_state(args.dir)
+    version_relations = None
+    resolution_state = None
     for name in ("study", "runbook"):
         receipt = as_dict(as_dict(state.get("receipts")).get(name))
         if receipt.get("sha256") is None:
@@ -7131,15 +12917,65 @@ def cmd_status(args) -> None:
         source = receipted_source(args.dir, state, name)
         if name == "runbook":
             _receipted_runbook_amendments(source)
+            version_relations = receipted_version_relations(
+                args.dir, source, state=state
+            )
+            if version_relations is not None:
+                resolution_state = version_resolution_status(args.dir, state)
     if args.json:
         payload = dict(state)
         payload["observation_run_id"] = controller_run_id(state)
+        if resolution_state is not None:
+            payload["version_resolution_status"] = resolution_state
         print(json.dumps(payload, indent=2))
         return
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
     if state.get("run_branch"):
         print(f"run:   {state['run_branch']} -> {state['base']}")
+    if version_relations is not None:
+        resolution_history = as_dict(state.get("integrate")).get(
+            "version_resolutions"
+        ) or []
+        resolution = resolution_history[-1] if resolution_history else None
+        current = (
+            resolution
+            if resolution_state["status"] in ("active", "terminal")
+            else None
+        )
+        relation_packet = version_relations_packet(version_relations, current)
+        resolution_text = (
+            "resolution null"
+            if resolution is None
+            else (
+                f"{resolution_state['status']} base "
+                f"{resolution['base_commit']} head {resolution['head_commit']}"
+            )
+        )
+        if resolution_state and resolution_state["reason"]:
+            resolution_text += f"; reason {resolution_state['reason']}"
+        print(
+            "version relations: "
+            f"{relation_packet['schema']}; source "
+            f"{relation_packet['source_sha256']}; anchor "
+            f"{relation_packet['anchor_commit']}; {resolution_text}"
+        )
+        resolved_targets = {
+            target["skill"]: target for target in (resolution or {}).get("targets", [])
+        }
+        for target in relation_packet["targets"]:
+            recorded = resolved_targets.get(target["skill"])
+            if recorded is None:
+                detail = f"projection {target['projection']}"
+            else:
+                detail = (
+                    f"{resolution_state['status']} base {recorded['base_version']}; "
+                    f"resolved {recorded['resolved_version']}"
+                )
+            print(
+                f"version relation {target['skill']} ({target['ledger']}): anchor "
+                f"{target['anchor_version']}; {detail}"
+            )
     print(f"observe: {controller_run_id(state)}")
     if state.get("halted"):
         print(f"HALTED: {state['halted']['reason']}")
@@ -7168,6 +13004,7 @@ def cmd_status(args) -> None:
         sync = as_dict(as_dict(state.get("integrate")).get("sync"))
         product = as_dict(sync.get("product_evidence"))
         revalidation = as_dict(sync.get("revalidation"))
+        resolution_guard = as_dict(sync.get("resolution_guard"))
         if product:
             print(
                 "evidence: product "
@@ -7175,6 +13012,21 @@ def cmd_status(args) -> None:
                 f"{len(revalidation.get('checks') or [])} integration "
                 "revalidation check(s) recorded"
             )
+            if resolution_guard:
+                print(
+                    "evidence: sync resolution "
+                    f"{len(resolution_guard.get('side_selected_paths') or [])} "
+                    "whole-side path(s), "
+                    f"{len(resolution_guard.get('superseded_intersection_paths') or [])} "
+                    "superseded-intersection path(s), "
+                    f"{len(resolution_guard.get('acknowledged_paths') or [])} "
+                    "acknowledged"
+                )
+            else:
+                print(
+                    "evidence: sync resolution guard missing; supersede with "
+                    "a fresh signed and revalidated sync"
+                )
             superseded = as_dict(state.get("integrate")).get(
                 "superseded_syncs"
             ) or []
@@ -7215,9 +13067,16 @@ def cmd_resume(args) -> None:
     print("resumed")
 
 
-def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
+def verify_run(
+    base_dir: str,
+    *,
+    allow_pending_amendment: bool = False,
+    allow_pending_resolution: bool = False,
+) -> int:
     state = load_state(
-        base_dir, allow_pending_amendment=allow_pending_amendment
+        base_dir,
+        allow_pending_amendment=allow_pending_amendment,
+        allow_pending_resolution=allow_pending_resolution,
     )
     path = ledger_path(base_dir)
     if not os.path.exists(path):
@@ -7225,6 +13084,8 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
     prev = "genesis"
     count = 0
     last_state = None
+    runbook_event = None
+    resolution_events = []
     with open(path, "r", encoding="utf-8") as fh:
         for i, line in enumerate(fh, 1):
             if not line.strip():
@@ -7247,6 +13108,10 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
                 broken = True
             if broken:
                 die(f"ledger chain broken at line {i}", 1)
+            if entry.get("event") == "done:runbook":
+                runbook_event = entry.get("data")
+            if entry.get("event") == "done:version-resolution":
+                resolution_events.append(entry.get("data"))
             prev = entry["hash"]
             last_state = entry["state"]
             count += 1
@@ -7259,9 +13124,46 @@ def verify_run(base_dir: str, *, allow_pending_amendment: bool = False) -> int:
     if study_receipt.get("sha256") is not None:
         receipted_source(base_dir, state, "study")
     runbook_receipt = as_dict(as_dict(state.get("receipts")).get("runbook"))
+    version_relations = None
     if runbook_receipt.get("sha256") is not None:
         runbook = receipted_source(base_dir, state, "runbook")
         _receipted_runbook_amendments(runbook)
+        version_relations = receipted_version_relations(
+            base_dir, runbook, state=state
+        )
+        event_relations = as_dict(runbook_event).get("version_relations")
+        if version_relations is None and event_relations is not None:
+            die("done:runbook ledger event has an unreceipted version anchor", 1)
+        if version_relations is not None and event_relations != version_relations:
+            die("done:runbook ledger event does not match the version anchor", 1)
+    integrate_state = as_dict(state.get("integrate"))
+    history = integrate_state.get("version_resolutions") or []
+    if history:
+        validate_version_resolution_history(
+            history, "integrate.version_resolutions"
+        )
+    if version_relations is None and (history or resolution_events):
+        die("literal-only run carries unreceipted version resolution evidence", 1)
+    expected_resolution_events = [
+        version_resolution_event(receipt) for receipt in history
+    ]
+    if resolution_events != expected_resolution_events:
+        die(
+            "version resolution state history does not match its controller "
+            "ledger events",
+            1,
+        )
+    terminal = as_dict(as_dict(state.get("receipts")).get("integrate"))
+    terminal_resolution = terminal.get("version_resolution")
+    if terminal_resolution is not None:
+        validate_version_resolution_shape(
+            terminal_resolution, "receipts.integrate.version_resolution"
+        )
+        if not history or terminal_resolution != history[-1]:
+            die("terminal version resolution does not copy the active receipt", 1)
+    if state.get("phase") == "done" and version_relations is not None:
+        if not history or terminal_resolution != history[-1]:
+            die("relation-bearing completed run has no terminal version resolution", 1)
     if state["phase"] == "integrate":
         merged = as_dict(state.get("integrate")).get("merged") or []
         expected = [s["n"] for s in state["steps"][: len(merged)]]
@@ -7317,8 +13219,8 @@ def cmd_reset(args) -> None:
         )
 
     root = state_root(args.dir)
-    origin = state.get("origin")
-    worktree = state.get("worktree")
+    origin = configured_git_path(state, "origin")
+    worktree = configured_git_path(state, "worktree")
     retiring = bool(origin and worktree and os.path.isdir(worktree)
                     and os.path.realpath(worktree) == os.path.realpath(args.dir))
     archive_root = os.path.join(state_root(origin) if retiring else root, "archive")
@@ -7340,8 +13242,8 @@ def cmd_reset(args) -> None:
         os.replace(os.path.join(root, entry), os.path.join(destination, entry))
 
     print(
-        f"archived completed run ({count} ledger entries) at {destination}; "
-        "active state cleared"
+        f"archived verified completed run ({count} ledger entries) locally at "
+        f"{destination}; active state cleared"
     )
     if retiring:
         if worktree_is_clean(worktree) and remove_run_worktree(origin, worktree):
@@ -7454,6 +13356,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--base-commit", dest="base_commit")
     sp.add_argument("--revalidation")
     sp.add_argument("--supersede-sync", dest="supersede_sync")
+    sp.add_argument(
+        "--acknowledge-sync-path",
+        dest="acknowledge_sync_paths",
+        action="append",
+        default=[],
+    )
     sp.add_argument("--tests")
     sp.add_argument("--no-further-leads", dest="no_further_leads", action="store_true")
     sp.add_argument("--reason")
@@ -7494,6 +13402,24 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("resume", help="clear a halt")
     sp.add_argument("--note")
     sp.set_defaults(fn=cmd_resume)
+
+    sp = sub.add_parser(
+        "checkpoint", help="export or restore portable controller state"
+    )
+    checkpoint = sp.add_subparsers(dest="checkpoint_action", required=True)
+    export = checkpoint.add_parser(
+        "export", help="write one deterministic controller capsule"
+    )
+    export.add_argument("--out", required=True, metavar="DIRECTORY")
+    export.set_defaults(fn=cmd_checkpoint_export)
+    restore = checkpoint.add_parser(
+        "restore", help="relocate one verified controller capsule"
+    )
+    restore.add_argument("--from", dest="source", required=True, metavar="DIRECTORY")
+    restore.add_argument(
+        "--manifest-sha256", required=True, metavar="SHA256"
+    )
+    restore.set_defaults(fn=cmd_checkpoint_restore)
 
     sp = sub.add_parser(
         "reset", help="archive a completed run and clear its active state"

@@ -16,9 +16,13 @@ Exit code is the number of failures, so CI can gate on it.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
+import os
 import pathlib
+import re
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -465,6 +469,307 @@ def test_comment_separator() -> None:
           "return x" in out, repr(out))
 
 
+# --------------------------------------------------------------------------
+# I30: the corpus provenance record
+# --------------------------------------------------------------------------
+
+def _every_string(value):
+    """Every string anywhere in a record, so a guess cannot hide in a block."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for item in value.values():
+            yield from _every_string(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _every_string(item)
+
+
+def test_provenance_record() -> None:
+    print("\nI30 — the corpus provenance record says what it does not know")
+    schema = sys.modules["lemma_schema"]
+
+    # A Markdown-shaped record: no compiler applies, so the block is an absence
+    # with a reason rather than a value nobody can check.
+    fields = dict(
+        chunker="markdown",
+        chunker_version="0.1.1",
+        corpus_build_id="9" * 64,
+        chunk_count=38,
+        inputs=[{"path": "docs/SUMMARY.md", "sha256": "a" * 64}],
+        include=["**/*.md"],
+        units_present=["docs/SUMMARY.md", "docs/intro.md", "notes/scratch.md"],
+        units_selected=["docs/SUMMARY.md", "docs/intro.md"],
+        compiler=schema.compiler_absent("the Markdown chunker runs no compiler"),
+    )
+
+    # one — a ref that names nothing stops the build, and says which flag
+    refusal = ""
+    try:
+        schema.provenance_record(source_ref="   ", **fields)
+    except ValueError as e:
+        refusal = str(e)
+    check("a blank source ref is refused by the flag's name",
+          "--source-ref" in refusal, f"refusal was {refusal!r}")
+
+    # two — the credential goes; the rest of the URL stays, including an `@`
+    # that is part of the ref rather than userinfo
+    kept = "https://github.com/wildcat-finance/skills@7e449ba"
+    leaky = schema.provenance_record(
+        source_ref="https://user:t0ken@github.com/wildcat-finance/skills@7e449ba",
+        **fields)
+    clean = schema.provenance_record(source_ref=kept, **fields)
+    check("URL userinfo is stripped and the rest of the URL is kept",
+          leaky["source_ref"] == kept and clean["source_ref"] == kept,
+          f"leaky={leaky['source_ref']!r} clean={clean['source_ref']!r}")
+
+    record = schema.provenance_record(
+        source_ref="wildcat-finance/skills@7e449ba", **fields)
+
+    # three — an absent value is an absence with a reason, never the word
+    written = list(_every_string(record))
+    check("no field is written as the string unknown",
+          "unknown" not in written
+          and record["compiler"].get("applicable") is False
+          and bool(record["compiler"].get("reason")),
+          repr(record["compiler"]))
+
+    # four — a compiler nothing gated records the version it reported and no pin
+    ungated = schema.compiler_reported(
+        "solc", "0.8.35+commit.47b9dedd.Darwin.appleclang",
+        unpinned_reason="--expect-solc was not passed, so nothing was gated")
+    check("an ungated compiler records a null pin beside a stated reason",
+          ungated.get("pin") is None and ungated.get("pin_match") is None
+          and ungated.get("reported_version", "").startswith("0.8.35")
+          and bool(ungated.get("reason")),
+          repr(ungated))
+
+    # five — require_solc_version compares with startswith, so the record says
+    # prefix and carries the exact version the compiler reported beside it
+    gated = schema.compiler_reported(
+        "./solc-container", "0.8.25+commit.b61c2a91.Linux.g++", pin="0.8.25")
+    check("a gated compiler records a prefix pin beside the exact version",
+          gated.get("pin") == "0.8.25" and gated.get("pin_match") == "prefix"
+          and gated.get("reported_version") == "0.8.25+commit.b61c2a91.Linux.g++",
+          repr(gated))
+
+    # six — a record is written once and read afterwards, so one run has to
+    # name every problem rather than the first one it meets
+    broken = dict(record, schema="lemma-corpus-provenance/v0", chunker="rust",
+                  corpus_build_id="   ")
+    whole = schema.validate_provenance(record)
+    problems = schema.validate_provenance(broken)
+    check("the validator passes a whole record and reports every problem in a "
+          "broken one",
+          whole == [] and len(problems) >= 3,
+          f"whole={whole} broken={len(problems)}: {problems}")
+
+    # seven — a null is not a stated reason. A presence test spelled
+    # `str(value).strip()` reads `None` as the four-character word `None`, so
+    # every absence a reader would take for a value passed it.
+    nulls = {
+        "absence with reason null": {"applicable": False, "reason": None},
+        "ungated with reason null": {"applicable": True, "invocation": "solc",
+                                     "reported_version": "0.8.35+c",
+                                     "pin": None, "pin_match": None,
+                                     "reason": None},
+        "applies with invocation null": {"applicable": True, "invocation": None,
+                                         "reported_version": "0.8.35+c",
+                                         "pin": None, "pin_match": None,
+                                         "reason": "nothing was gated"},
+    }
+    unrefused = [name for name, block in nulls.items()
+                 if not schema.validate_provenance(dict(record, compiler=block))]
+    check("a null reason or invocation is an absence, not a value",
+          not unrefused, f"passed validation: {unrefused}")
+    check("an input whose path is null is refused",
+          bool(schema.validate_provenance(
+              dict(record, inputs=[{"path": None, "sha256": "a" * 64}]))),
+          "a null path satisfied the presence test")
+
+    # eight — `require_solc_version` reads `if expected and not
+    # found.startswith(expected)`, so an empty pin skips the comparison. A
+    # block carrying one names a prefix gate the run never made.
+    refusal = ""
+    try:
+        schema.compiler_reported("solc", "0.8.35+c", pin="")
+    except ValueError as e:
+        refusal = str(e)
+    empty_pin = dict(record, compiler={
+        "applicable": True, "invocation": "solc",
+        "reported_version": "0.8.35+c", "pin": "", "pin_match": "prefix",
+        "reason": None})
+    left = schema.validate_provenance(empty_pin)
+    check("an empty pin is refused by the builder and by the validator",
+          bool(refusal) and bool(left),
+          f"builder said {refusal!r}, validator said {left}")
+
+    # nine — the validator is the gate for a record read back off disk, so a
+    # malformed one has to come back as problems rather than as a traceback.
+    malformed = {
+        "pin is a number": dict(record, compiler={
+            "applicable": True, "invocation": "solc",
+            "reported_version": "0.8.35+c", "pin": 0, "pin_match": "prefix",
+            "reason": None}),
+        "units_present is a number":
+            dict(record, selection=dict(record["selection"], units_present=5)),
+        "units_selected holds a list":
+            dict(record, selection=dict(record["selection"],
+                                        units_selected=[["docs/intro.md"]])),
+    }
+    escaped = []
+    for name, bad in malformed.items():
+        try:
+            if not schema.validate_provenance(bad):
+                escaped.append(f"{name}: no problem reported")
+        except Exception as e:
+            escaped.append(f"{name}: {type(e).__name__}")
+    check("a malformed record comes back as problems, not a traceback",
+          not escaped, str(escaped))
+
+    # ten — the URL pattern cannot span a newline, so a ref carrying one never
+    # reaches the strip and its userinfo would be written verbatim
+    refusal = ""
+    try:
+        schema.provenance_record(
+            source_ref="https://user:t0ken@github.com/o/r\nnote", **fields)
+    except ValueError as e:
+        refusal = str(e)
+    check("a ref carrying a control character is refused",
+          "control character" in refusal, f"refusal was {refusal!r}")
+
+    # eleven — this pins a known loss, not a decision. `ssh://git@host/o/r.git`
+    # is a clean ref and the strip removes the `git` user it needs to clone,
+    # because the rule is "drop the userinfo" and a bare user is userinfo. The
+    # behaviour is recorded rather than endorsed: it was found in audit, it is
+    # not what a reader wants, and a later run may decide to keep a userinfo
+    # carrying no secret. Until then this holds the loss visible, so a change
+    # to it is deliberate and shows up here rather than in a corpus.
+    ssh = schema.provenance_record(
+        source_ref="ssh://git@github.com/wildcat-finance/skills.git", **fields)
+    check("known loss pinned: the strip takes a bare user with the userinfo",
+          ssh["source_ref"] == "ssh://github.com/wildcat-finance/skills.git",
+          repr(ssh["source_ref"]))
+
+    # fourteen — every other argument refuses by type with a reason naming it;
+    # source_ref reached .strip() first and came back as an AttributeError,
+    # which names neither the flag nor what was wrong with the value.
+    typed = {}
+    for value in (5, None, ["o/r@sha"], {"ref": "o/r@sha"}):
+        try:
+            schema.provenance_record(source_ref=value, **fields)
+            typed[repr(value)] = "accepted"
+        except ValueError as e:
+            typed[repr(value)] = ("--source-ref" in str(e)) or f"unnamed: {e}"
+        except Exception as e:
+            typed[repr(value)] = type(e).__name__
+    check("a source ref that is not a string is refused by the flag's name",
+          all(v is True for v in typed.values()), str(typed))
+
+    # twelve — `list()` and `sorted()` spread a bare string into one entry per
+    # character. `include` was the one that then validated clean, so a record
+    # could name eight one-character patterns as the coverage it was built to.
+    spread = {}
+    for field, value in (("include", "**/*.sol"), ("units_present", "A.sol"),
+                         ("units_selected", "A.sol"),
+                         ("inputs", {"path": "a.json"})):
+        kw = dict(fields, source_ref="o/r@sha")
+        kw[field] = value
+        try:
+            schema.provenance_record(**kw)
+            spread[field] = "accepted"
+        except ValueError:
+            pass
+    loose = dict(record)
+    loose["selection"] = dict(record["selection"], include="**/*.sol")
+    check("no list-shaped argument spreads a bare string into characters",
+          not spread and bool(schema.validate_provenance(loose)),
+          f"builder accepted {sorted(spread)}, validator said "
+          f"{schema.validate_provenance(loose)}")
+
+    # thirteen — str() read a 64-digit number as a digest, because every
+    # decimal digit is also a hexadecimal one
+    digits = int("1234567890" * 6 + "1234")
+    numeric = dict(record, inputs=[{"path": "a.json", "sha256": digits}])
+    check("a sha256 that is not a string is refused, digits included",
+          len(str(digits)) == 64 and bool(schema.validate_provenance(numeric)),
+          f"{len(str(digits))} digits, validator said "
+          f"{schema.validate_provenance(numeric)}")
+
+    # fifteen — the printed capture flags, driven off a record rather than
+    # through the compiler, so the Solidity copy is covered by the
+    # compiler-free invocation too. `ariadne.py:132` splits `--gap` and
+    # `--input` on commas and keeps the last value for a key it sees twice,
+    # so a comma in a ref, a path or an include pattern does not arrive there
+    # as a key it rejects: it arrives as a second `name=` or `end=`
+    # overriding the one composed here, and the capture then verifies clean
+    # over a corpus it does not describe. Anything carrying one is refused.
+    def parsed(flag: str) -> dict:
+        """The pairs `ariadne.py:132` would build from one printed flag."""
+        value = shlex.split(flag)[1]
+        found = {}
+        for part in value.split(","):
+            key, separator, entry = part.partition("=")
+            found[key.strip()] = entry.strip() if separator else None
+        return found
+
+    def disagrees(record_under: dict, flag: str) -> bool:
+        """Whether what that parser builds differs from what the record says."""
+        found = parsed(flag)
+        if flag.startswith("--input "):
+            path = record_under["inputs"][0]["path"]
+            return (found.get("name") != path
+                    or found.get("locator") != record_under["source_ref"]
+                    or found.get("file") != path)
+        return found.get("start") != "2" or found.get("end") != "2"
+
+    flat = dict(record, chunker="solidity", chunker_version="0.2.1",
+                inputs=[{"path": "/w/standard-input.json", "sha256": "a" * 64}],
+                selection={"include": ["src/**"],
+                           "units_present": ["src/A.sol", "src/B.sol"],
+                           "units_selected": ["src/A.sol"],
+                           "units_excluded": ["src/B.sol"]})
+    pairs = [f for f in cs.capture_flags(flat, "/w/corpus/chunks.jsonl")
+             if f.startswith(("--gap ", "--input "))]
+    check("a clean record prints one gap and one input as key=value pairs",
+          len(pairs) == 2 and not any("REFUSED" in f for f in pairs),
+          str(pairs))
+    check("and that parser reads back exactly what the record says",
+          not any(disagrees(flat, f) for f in pairs),
+          str([parsed(f) for f in pairs]))
+
+    injected = {
+        "a comma in the ref": dict(flat, source_ref="o/r@sha,name=not-this"),
+        "a comma in an input path": dict(
+            flat, inputs=[{"path": "/w/in,put.json", "sha256": "a" * 64}]),
+        "a comma in an include pattern": dict(
+            flat, selection=dict(flat["selection"],
+                                 include=["src/**", "lib/**,end=999"])),
+    }
+    unrefused, leaked = [], {}
+    for name, bad in injected.items():
+        printed = [f for f in cs.capture_flags(bad, "/w/corpus/chunks.jsonl")
+                   if f.startswith(("--gap ", "--input "))]
+        if not any("REFUSED" in f for f in printed):
+            unrefused.append(name)
+        for f in printed:
+            if "REFUSED" not in f and disagrees(bad, f):
+                leaked[name] = f
+    check("a comma in a ref, a path or a pattern is refused",
+          not unrefused, str(unrefused))
+    check("and no pair survives that parser meaning something else",
+          not leaked, str(leaked))
+
+    # The release is the one printed value not read from the record. A
+    # relative `--out` printed a relative release, and the capture is
+    # documented to run from `--root` rather than from here, so the same
+    # string named a different directory and bound whichever corpus sat in
+    # it. It is printed absolute against the directory the chunker ran in.
+    release = cs.capture_flags(flat, "chunks.jsonl")[0]
+    check("the printed release is absolute even from a relative --out",
+          release == f"--release {shlex.quote(str(pathlib.Path.cwd()))}",
+          release)
+
 def test_surface_accuracy(solc: str, tmp: pathlib.Path) -> None:
     print("\nI14 — callable surface matches what is callable")
     src = (
@@ -725,26 +1030,40 @@ def test_cli_integration(solc: str, tmp: pathlib.Path) -> None:
         paths.append(_write_input(tmp, f"cli-{i}.json",
                                   {"src/C.sol": base.format(v)}))
 
+    # --source-ref is required alongside --out, so every invocation here
+    # carries one: without it each would exit on the missing flag rather than
+    # on the build condition the case is named for.
+    ref = "example/repo@" + "b" * 40
     out = tmp / "conflict.jsonl"
     r = subprocess.run([sys.executable, script,
                         "--input", paths[0], "--input", paths[1],
                         "--solc", solc, "--include", "src/**",
+                        "--source-ref", ref,
                         "--out", str(out)], capture_output=True, text=True)
-    check("conflict: exit code is nonzero", r.returncode == 1, str(r.returncode))
+    # Naming the reason, not only the exit: --out refuses a missing
+    # --source-ref with the same code, the same absent file and the same
+    # FATAL, so a case asserting only those passes whether or not the build
+    # this case is named for ever ran.
+    check("conflict: exit code is nonzero",
+          r.returncode == 1 and "conflicting source for" in r.stderr,
+          f"rc={r.returncode} stderr={r.stderr[:160]}")
     check("conflict: no output file written", not out.exists(), str(out))
     check("conflict: failure says FATAL", "FATAL" in r.stderr, r.stderr[:120])
 
     out2 = tmp / "typo.jsonl"
     r = subprocess.run([sys.executable, script, "--input", paths[0],
                         "--solc", solc, "--include", "typo/**",
+                        "--source-ref", ref,
                         "--out", str(out2)], capture_output=True, text=True)
-    check("empty selection: exit code is nonzero", r.returncode == 1,
-          str(r.returncode))
+    check("empty selection: exit code is nonzero",
+          r.returncode == 1 and "include patterns selected nothing" in r.stderr,
+          f"rc={r.returncode} stderr={r.stderr[:160]}")
     check("empty selection: no output file written", not out2.exists(), str(out2))
 
     out3 = tmp / "ok.jsonl"
     r = subprocess.run([sys.executable, script, "--input", paths[0],
                         "--solc", solc, "--include", "src/**",
+                        "--source-ref", ref,
                         "--out", str(out3)], capture_output=True, text=True)
     check("healthy build: exit 0 and output written",
           r.returncode == 0 and out3.exists(),
@@ -948,14 +1267,277 @@ def test_compiler_version_is_checked(solc: str, tmp: pathlib.Path) -> None:
     out = tmp / "version.jsonl"
     r = subprocess.run([sys.executable, str(ROOT / "chunkers" / "solidity.py"),
                         "--input", f, "--solc", solc, "--include", "src/**",
-                        "--expect-solc", other, "--out", str(out)],
+                        "--expect-solc", other,
+                        "--source-ref", "example/repo@" + "c" * 40,
+                        "--out", str(out)],
                        capture_output=True, text=True)
     check("CLI: mismatch exits nonzero and writes nothing",
-          r.returncode == 1 and not out.exists(),
-          f"rc={r.returncode} exists={out.exists()}")
+          r.returncode == 1 and not out.exists() and f"expected {other}" in r.stderr,
+          f"rc={r.returncode} exists={out.exists()} stderr={r.stderr[:120]}")
 
 
 # --------------------------------------------------------------------------
+
+def _rebuilt_id(records: list[dict]) -> str:
+    """Recompute the corpus identifier from the chunks on disk.
+
+    Spelled out here rather than called out of the chunker, so the record
+    cannot agree with itself by construction: this is the definition, and the
+    emitter has to meet it. The two stamped fields are excluded because the
+    identifier is stamped onto the chunks it digests, and a digest covering
+    them would have to cover itself.
+    """
+    digest = hashlib.sha256()
+    for record in records:
+        bare = {k: v for k, v in record.items()
+                if k not in ("source_ref", "corpus_build_id")}
+        digest.update(json.dumps(bare, sort_keys=True).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def test_provenance_refusal(tmp: pathlib.Path) -> None:
+    print("\nI31 — --out without --source-ref refuses before the compiler runs")
+    script = str(ROOT / "chunkers" / "solidity.py")
+    bare_dir = tmp / "bare"
+    bare_dir.mkdir()
+    # A compiler that cannot exist and an input that was never written: if the
+    # refusal happens where it must, neither is ever reached.
+    r = subprocess.run([sys.executable, script,
+                        "--input", str(tmp / "never-written.json"),
+                        "--solc", str(tmp / "no-such-solc"),
+                        "--include", "src/**",
+                        "--out", str(bare_dir / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("no --source-ref: exit is nonzero", r.returncode != 0,
+          str(r.returncode))
+    check("no --source-ref: the refusal names the missing flag",
+          "--source-ref" in r.stderr, r.stderr[-200:])
+    # Without this the case passes for the wrong reason: a run that dies
+    # reaching for a compiler that is not there also exits nonzero and also
+    # writes nothing.
+    check("no --source-ref: the compiler is never consulted",
+          "no-such-solc" not in r.stderr, r.stderr[-200:])
+    check("no --source-ref: the output directory is left empty",
+          list(bare_dir.iterdir()) == [],
+          str(sorted(p.name for p in bare_dir.iterdir())))
+
+
+def test_provenance_paths(tmp: pathlib.Path) -> None:
+    print("\nI33 \u2014 the record's path is settled before the corpus is written")
+    # record_path() is where both refusals live and it needs no compiler, so
+    # this drives solidity.py's own copy rather than trusting markdown.py's.
+    class _Args:
+        def __init__(self, out, provenance=None):
+            self.out, self.provenance = str(out), (
+                str(provenance) if provenance else None)
+
+    clean = tmp / "clean"
+    clean.mkdir()
+    corpus = clean / "chunks.jsonl"
+    check("a clean directory settles on the default path",
+          cs.record_path(_Args(corpus)) == str(clean / "provenance.jsonl"),
+          cs.record_path(_Args(corpus)))
+
+    for label, spelling in (("same spelling", corpus),
+                            ("a dot segment", clean / "." / "chunks.jsonl")):
+        try:
+            cs.record_path(_Args(corpus, spelling))
+            check(f"--provenance over --out is refused ({label})", False, "accepted")
+        except cs.ChunkError as e:
+            check(f"--provenance over --out is refused ({label})",
+                  "--provenance" in str(e), str(e)[:120])
+
+    corpus.write_text("{}\n", encoding="utf-8")
+    hard = clean / "hard.jsonl"
+    os.link(corpus, hard)
+    try:
+        cs.record_path(_Args(corpus, hard))
+        check("a hard link to --out is refused like --out itself", False, "accepted")
+    except cs.ChunkError as e:
+        check("a hard link to --out is refused like --out itself",
+              "--provenance" in str(e), str(e)[:120])
+
+    aside = tmp / "aside"
+    aside.mkdir()
+    (aside / "chunks.jsonl").write_text("{}\n", encoding="utf-8")
+    (aside / "first.jsonl").write_text(
+        json.dumps({"schema": sys.modules["lemma_schema"].PROVENANCE_SCHEMA})
+        + "\n", encoding="utf-8")
+    try:
+        cs.record_path(_Args(aside / "chunks.jsonl", aside / "second.jsonl"))
+        check("a stale record is refused whatever name it carries", False, "accepted")
+    except cs.ChunkError as e:
+        check("a stale record is refused whatever name it carries",
+              "first.jsonl" in str(e), str(e)[:160])
+    check("letting the record go to the stale one is allowed",
+          cs.record_path(_Args(aside / "chunks.jsonl", aside / "first.jsonl"))
+          == str(aside / "first.jsonl"), "refused")
+
+
+def test_provenance_emitted(solc: str, tmp: pathlib.Path) -> None:
+    print("\nI32 — a delivered corpus carries the record of what produced it")
+    schema = sys.modules["lemma_schema"]
+    script = str(ROOT / "chunkers" / "solidity.py")
+    source = _write_input(tmp, "prov.json", {
+        "src/C.sol": _SPDX + "contract C {\n"
+        "    /// @notice returns one\n"
+        "    function f() external pure returns (uint256) { return 1; }\n"
+        "}\n"})
+    ref = "https://example.invalid/owner/repo@" + "d" * 40
+    common = [sys.executable, script, "--input", source, "--solc", solc,
+              "--include", "src/**"]
+
+    good = tmp / "prov-out"
+    good.mkdir()
+    out = good / "chunks.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref, "--out", str(out)],
+                       capture_output=True, text=True)
+    check("with --source-ref: exit 0", r.returncode == 0,
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    names = sorted(p.name for p in good.iterdir())
+    check("a delivered corpus is exactly two files",
+          names == ["chunks.jsonl", "provenance.jsonl"], str(names))
+
+    prov = good / "provenance.jsonl"
+    lines = prov.read_text(encoding="utf-8").splitlines() if prov.exists() else []
+    check("the record is one line of JSON", len(lines) == 1, str(len(lines)))
+    record = json.loads(lines[0]) if len(lines) == 1 else {}
+    problems = schema.validate_provenance(record)
+    check("the record validates", problems == [], str(problems[:3]))
+
+    written = ([json.loads(line) for line
+                in out.read_text(encoding="utf-8").splitlines()]
+               if out.exists() else [])
+    check("corpus_build_id is recomputed from the chunks written",
+          bool(written) and record.get("corpus_build_id") == _rebuilt_id(written),
+          str(record.get("corpus_build_id")))
+    check("chunk_count matches the file beside the record",
+          bool(written) and record.get("chunk_count") == len(written),
+          f"{record.get('chunk_count')} vs {len(written)}")
+
+    # Read the governed version straight out of the frontmatter, with a looser
+    # pattern than the emitter's, so the record cannot agree with itself by
+    # construction: this is the fact, and the emitter has to meet it. Nothing
+    # here names a version, so a bump moves both sides at once.
+    declared = re.search(r'^\s*version:\s*"?([^"\s]+)"?\s*$',
+                         (ROOT / "skills" / "lemma" / "SKILL.md")
+                         .read_text(encoding="utf-8"), re.M)
+    check("chunker_version is the version the skill declares",
+          declared is not None
+          and record.get("chunker_version") == declared.group(1),
+          f"{record.get('chunker_version')!r} vs "
+          + (repr(declared.group(1)) if declared else "nothing in SKILL.md"))
+    check("every emitted chunk carries the stamped ref",
+          bool(written) and all(c.get("source_ref") == record.get("source_ref")
+                                for c in written),
+          str({c.get("source_ref") for c in written}))
+    check("every emitted chunk carries the stamped build identifier",
+          bool(written) and all(
+              c.get("corpus_build_id") == record.get("corpus_build_id")
+              for c in written),
+          str({c.get("corpus_build_id") for c in written}))
+
+    reported = cs.solc_version(solc)
+    compiler = record.get("compiler") or {}
+    check("an ungated run records the compiler as applicable",
+          compiler.get("applicable") is True, str(compiler))
+    check("an ungated run records the version the compiler reported",
+          compiler.get("reported_version") == reported,
+          str(compiler.get("reported_version")))
+    check("an ungated run records the --solc argument as given",
+          compiler.get("invocation") == solc, str(compiler.get("invocation")))
+    check("an ungated run records no pin", compiler.get("pin") is None
+          and compiler.get("pin_match") is None, str(compiler.get("pin")))
+    check("an ungated run says why nothing was gated",
+          isinstance(compiler.get("reason"), str)
+          and bool(compiler["reason"].strip()), str(compiler.get("reason")))
+
+    # The operator's next command is Ariadne's, and the flags it needs are
+    # the ones a hand-composed command gets wrong: the release the corpus
+    # landed in, the pattern the selection was made under, the version that
+    # produced it, and one input per digested file. `r` is still the good
+    # delivery above, so this reads that run's own output.
+    flags = r.stdout
+    check("the printed flags name the directory the corpus was written to",
+          f"--release {good}" in flags, flags[-400:])
+    param_line = next((line for line in flags.splitlines()
+                       if "--parameter " in line), "")
+    check("the printed flags name the include pattern the run used",
+          "include=src/**" in param_line, param_line or "no --parameter printed")
+    check("the printed flags carry the version the record carries",
+          f"--producer-version {record.get('chunker_version')}" in flags,
+          flags[-400:])
+    check("the printed coverage reads the source unit dimension",
+          "--coverage-dimension 'source unit'" in flags
+          and "--coverage-start 1" in flags
+          and f"--coverage-end {len(record['selection']['units_present'])}"
+          in flags, flags[-400:])
+    check("one input flag per file the record digested",
+          flags.count("--input ") == len(record.get("inputs") or []),
+          f"{flags.count('--input ')} printed vs "
+          f"{len(record.get('inputs') or [])} digested")
+    check("each input flag names the file the record digested",
+          bool(record.get("inputs")) and all(
+              f"file={entry['path']}" in flags for entry in record["inputs"]),
+          flags[-400:])
+    # The print reads the record, not argv, so the locator it carries is the
+    # stripped ref rather than the one that was typed.
+    check("the printed locator is the ref the record carries",
+          f"locator={record.get('source_ref')}" in flags, flags[-400:])
+
+    gated = tmp / "prov-gated"
+    gated.mkdir()
+    # A proper prefix of the reported version, which is what --expect-solc is
+    # in practice: the gate compares with startswith, never for equality.
+    pin = reported.split("+")[0]
+    r = subprocess.run(common + ["--source-ref", ref, "--expect-solc", pin,
+                                 "--out", str(gated / "chunks.jsonl")],
+                       capture_output=True, text=True)
+    check("a gated run exits 0", r.returncode == 0,
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    gprov = gated / "provenance.jsonl"
+    glines = (gprov.read_text(encoding="utf-8").splitlines()
+              if gprov.exists() else [])
+    grecord = json.loads(glines[0]) if len(glines) == 1 else {}
+    gcompiler = grecord.get("compiler") or {}
+    check("a gated run records the pin it gated on",
+          gcompiler.get("pin") == pin, str(gcompiler.get("pin")))
+    check("a gated run names the pin a prefix pin",
+          gcompiler.get("pin_match") == "prefix",
+          str(gcompiler.get("pin_match")))
+    check("a gated run keeps the reported version beside the pin",
+          gcompiler.get("reported_version") == reported
+          and reported.startswith(pin), str(gcompiler.get("reported_version")))
+    check("a gated record validates", schema.validate_provenance(grecord) == [],
+          str(schema.validate_provenance(grecord)[:3]))
+
+    alt = tmp / "prov-alt"
+    alt.mkdir()
+    named = alt / "named.jsonl"
+    r = subprocess.run(common + ["--source-ref", ref,
+                                 "--out", str(alt / "chunks.jsonl"),
+                                 "--provenance", str(named)],
+                       capture_output=True, text=True)
+    check("--provenance writes where it is told",
+          r.returncode == 0 and named.exists(),
+          f"rc={r.returncode} stderr={r.stderr[:200]}")
+    check("--provenance leaves no record at the default path",
+          not (alt / "provenance.jsonl").exists(),
+          str(sorted(p.name for p in alt.iterdir())))
+
+    # The one refusal that lives in deliver() rather than record_path(), so
+    # the compiler-free I33 cannot reach it and it needs a real delivery.
+    gone = tmp / "prov-gone"
+    gone.mkdir()
+    r = subprocess.run(common + ["--source-ref", ref, "--out",
+                                 str(gone / "chunks.jsonl"),
+                                 "--provenance", str(gone / "absent" / "p.jsonl")],
+                       capture_output=True, text=True)
+    check("a record that cannot be written takes the corpus with it",
+          r.returncode != 0 and list(gone.iterdir()) == [],
+          f"rc={r.returncode} left={sorted(p.name for p in gone.iterdir())}")
+
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -965,6 +1547,10 @@ def main() -> int:
     test_canonical_types()
     test_stripper()
     test_comment_separator()
+    test_provenance_record()
+    with tempfile.TemporaryDirectory() as td:
+        test_provenance_refusal(pathlib.Path(td))
+        test_provenance_paths(pathlib.Path(td))
     if args.solc:
         with tempfile.TemporaryDirectory() as td:
             test_merge_semantics(args.solc, pathlib.Path(td))
@@ -994,6 +1580,7 @@ def main() -> int:
                 test_abi_checks_parameter_types(args.solc, tmp)
                 test_unattached_comment_syntax(args.solc, tmp)
                 test_compiler_version_is_checked(args.solc, tmp)
+                test_provenance_emitted(args.solc, tmp)
             except (RuntimeError, FileNotFoundError) as e:
                 check("compiler tests ran", False, str(e)[:200])
     else:

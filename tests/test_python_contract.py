@@ -14,6 +14,7 @@ packages are trustworthy or free of advisories.
 """
 
 from pathlib import Path
+import json
 import re
 import sys
 import tomllib
@@ -27,17 +28,58 @@ WORKFLOWS = ROOT / ".github" / "workflows"
 README = ROOT / "README.md"
 LAZARUS = ROOT / "plugins" / "lazarus"
 
-REQUIRED_MINOR = "==3.13.*"
-EXACT_VERSION = "3.13.15"
+REQUIRED_MINOR = "==3.14.*"
+EXACT_VERSION = "3.14.6"
 PYTHON_WORKFLOWS = {
     "contributors.yml",
+    "dead-code.yml",
+    "identity.yml",
     "janus.yml",
     "lazarus.yml",
     "pandects.yml",
+    "plugins.yml",
     "repo.yml",
     "synkrisis.yml",
 }
-PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml"}
+PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml", "identity.yml"}
+# Required gates carry no path filter, so they have no filter to inspect.
+UNFILTERED_GATES = {"plugins.yml", "repo.yml"}
+PATH_FILTERED_PULL_REQUEST_WORKFLOWS = PULL_REQUEST_WORKFLOWS - UNFILTERED_GATES
+BRANCH_CI_WORKFLOWS = PULL_REQUEST_WORKFLOWS | {
+    "janus-forge.yml",
+    "pandects-forge.yml",
+}
+PLUGIN_WORKFLOW_PATHS = {
+    "janus.yml": {
+        "plugins/janus/**",
+        ".python-version",
+        "pyproject.toml",
+        ".github/workflows/janus.yml",
+    },
+    "lazarus.yml": {
+        "plugins/lazarus/**",
+        "docs/lazarus-multi-provider-chain-anchor/**",
+        "docs/lazarus-receipt-inclusion-proofs/**",
+        "docs/decisions/ADR-037-prove-receipts-with-a-full-ordered-witness.md",
+        ".python-version",
+        "pyproject.toml",
+        ".github/workflows/lazarus.yml",
+    },
+    "pandects.yml": {
+        "plugins/pandects/**",
+        ".python-version",
+        "pyproject.toml",
+        ".github/workflows/pandects.yml",
+    },
+    "synkrisis.yml": {
+        "plugins/synkrisis/**",
+        "docs/synkrisis/**",
+        "scripts/run_observation.py",
+        ".python-version",
+        "pyproject.toml",
+        ".github/workflows/synkrisis.yml",
+    },
+}
 DEPENDENCY_FILES = {
     "plugins/lazarus/requirements.lock",
     "plugins/lazarus/requirements.txt",
@@ -46,6 +88,7 @@ PIN_REFERENCING_PROSE = {
     "AGENTS.md",
     "README.md",
     "docs/decisions/ADR-038-pin-the-python-suite-to-one-interpreter.md",
+    "docs/decisions/ADR-042-advance-the-python-suite-to-3-14.md",
     "plugins/ariadne/docs/design.md",
     "plugins/berean/README.md",
     "plugins/berean/skills/berean/SKILL.md",
@@ -104,6 +147,44 @@ def dependency_drift(direct_text, lock_text):
     }
 
 
+def workflow_event_body(source, event):
+    """Return one event mapping without parsing GitHub's YAML extensions."""
+    match = re.search(
+        rf"(?ms)^  {re.escape(event)}:\n(?P<body>.*?)(?=^  [a-z_]+:|\Z)",
+        source,
+    )
+    if match is None:
+        raise ValueError(f"workflow has no {event} event")
+    return match["body"]
+
+
+def workflow_event_paths(source, event):
+    """Return the quoted path filters from one workflow event."""
+    body = workflow_event_body(source, event)
+    match = re.search(
+        r"(?m)^    paths:\n(?P<paths>(?:      - .+\n)+)",
+        body,
+    )
+    if match is None:
+        raise ValueError(f"workflow {event} event has no paths")
+    return set(re.findall(r'^      - "([^"]+)"$', match["paths"], re.M))
+
+
+def workflow_event_branches(source, event):
+    """Return the quoted or plain branch filters from one workflow event."""
+    body = workflow_event_body(source, event)
+    match = re.search(
+        r"(?m)^    branches:\n(?P<branches>(?:      - .+\n)+)",
+        body,
+    )
+    if match is None:
+        return set()
+    return set(
+        value.strip('"')
+        for value in re.findall(r"^      - (.+)$", match["branches"], re.M)
+    )
+
+
 def is_current_runtime_prose(path):
     """Exclude immutable evidence, receipted records, fixtures, and vendored skills."""
     relative = path.relative_to(ROOT)
@@ -117,9 +198,9 @@ def is_current_runtime_prose(path):
         return False
     if name in {"evolution.md", "promise_machine.md"}:
         return False
-    if name in {"study.md", "runbook.md", "proof.md"}:
+    if name in {"study.md", "runbook.md", "proof.md", "benchmark.md"}:
         return False
-    if name.endswith(("-study.md", "-runbook.md", "-proof.md")):
+    if name.endswith(("-study.md", "-runbook.md", "-proof.md", "-benchmark.md")):
         return False
     if parts[:3] == ("docs", "promise-machine", "evidence"):
         return False
@@ -193,21 +274,143 @@ class PythonRuntimeContractTests(unittest.TestCase):
         self.assertEqual(invokes_python, found)
 
     def test_pull_request_workflows_run_when_either_contract_file_changes(self):
-        for name in sorted(PULL_REQUEST_WORKFLOWS):
+        for name in sorted(PATH_FILTERED_PULL_REQUEST_WORKFLOWS):
             text = (WORKFLOWS / name).read_text(encoding="utf-8")
             with self.subTest(workflow=name):
                 self.assertEqual(text.count('- ".python-version"'), 2)
                 self.assertEqual(text.count('- "pyproject.toml"'), 2)
 
-    def test_root_gate_runs_when_any_workflow_changes(self):
-        text = (WORKFLOWS / "repo.yml").read_text(encoding="utf-8")
-        self.assertEqual(text.count('- ".github/workflows/*.yml"'), 2)
+    def test_feature_pushes_do_not_duplicate_pull_request_runs(self):
+        for name in sorted(BRANCH_CI_WORKFLOWS):
+            text = (WORKFLOWS / name).read_text(encoding="utf-8")
+            with self.subTest(workflow=name):
+                self.assertEqual(workflow_event_branches(text, "push"), {"main"})
+                self.assertNotIn(
+                    "    branches:", workflow_event_body(text, "pull_request")
+                )
+                self.assertIn("  workflow_dispatch:\n", text)
+
+    def test_plugin_workflows_follow_only_their_owned_inputs(self):
+        for name, expected in sorted(PLUGIN_WORKFLOW_PATHS.items()):
+            text = (WORKFLOWS / name).read_text(encoding="utf-8")
+            for event in ("push", "pull_request"):
+                with self.subTest(workflow=name, event=event):
+                    self.assertEqual(workflow_event_paths(text, event), expected)
+
+    def test_required_gates_carry_no_path_filter(self):
+        """Every gate main requires must run on every pull request.
+
+        A required status check that a pull request never produces blocks that
+        pull request with no way to clear it, and the suite already asserts
+        over paths no filter listed: .horos/boundary.json, audit/,
+        CONTRIBUTORS.md, LICENSE and .gitignore. Both reasons say the root
+        gate is unfiltered, so no filter may reappear on either event.
+        """
+        for name in sorted(UNFILTERED_GATES):
+            text = (WORKFLOWS / name).read_text(encoding="utf-8")
+            for event in ("push", "pull_request"):
+                with self.subTest(workflow=name, event=event):
+                    with self.assertRaises(ValueError):
+                        workflow_event_paths(text, event)
+
+    def test_complete_plugin_gate_shards_the_one_declared_graph(self):
+        workflow = WORKFLOWS / "plugins.yml"
+        self.assertTrue(workflow.is_file(), "the complete plugin workflow is missing")
+        text = workflow.read_text(encoding="utf-8")
+        self.assertEqual(text.count("  plugins:\n"), 1)
+        self.assertIn("permissions:\n  contents: read\n", text)
+        self.assertEqual(text.count("fetch-depth: 0"), 1)
+        self.assertIn("uses: actions/setup-node@v7", text)
+        self.assertIn('node-version: "26.6.0"', text)
+        self.assertIn("uses: foundry-rs/foundry-toolchain@v1", text)
+        self.assertIn("version: v1.7.1", text)
+        self.assertIn(
+            "run: python3 -m pip install --requirement "
+            "plugins/lazarus/requirements.lock",
+            text,
+        )
+        historical_key = (
+            ROOT
+            / "plugins"
+            / "hexaemeron"
+            / "tests"
+            / "fixtures"
+            / "signing-keys"
+            / "shoggoth-636ec19d.asc"
+        )
+        self.assertTrue(historical_key.is_file())
+        self.assertIn(
+            "EXPECTED_GPG_FINGERPRINT: "
+            "636EC19DE45DF10F3CE6206F57742DA1ABED6F46",
+            text,
+        )
+        self.assertIn(
+            "gpg --batch --import \"$key_path\"",
+            text,
+        )
+        # One shard per declared scope, each running the committed graph for
+        # that scope alone. The graph stays the only definition of a check, and
+        # no command is copied into the workflow.
+        self.assertEqual(
+            text.count(
+                "python3 scripts/run_checks.py\n"
+                "          --scope ${{ matrix.scope }}\n"
+                "          --report tmp/checks/${{ matrix.scope }}.json"
+            ),
+            1,
+        )
+        declared = set(
+            json.loads((ROOT / "tests" / "check-map-v1.json").read_text())["scopes"]
+        )
+        block = text[text.index("        scope:\n") : text.index("    runs-on:")]
+        sharded = set(re.findall(r"^\s+- ([a-z][a-z-]*)$", block, re.MULTILINE))
+        self.assertEqual(
+            sharded,
+            declared,
+            "every declared scope needs exactly one shard, and no shard may "
+            "name a scope the graph does not declare",
+        )
+        # The aggregate job is the required context and is green only when
+        # every shard reached terminal success.
+        self.assertIn("    needs: scope\n", text)
+        self.assertIn('test "$SHARDS" = success', text)
+        self.assertIn("fail-fast: false", text)
+        self.assertIn("if: always()", text)
+        self.assertIn("uses: actions/upload-artifact@v4", text)
+        self.assertIn("path: tmp/checks/${{ matrix.scope }}.json", text)
+        self.assertNotIn("continue-on-error", text)
+        self.assertNotIn("github.event.pull_request", text)
+        self.assertNotIn("--full", text)
+
+    def test_complete_graph_has_one_owned_suite_scope_for_every_plugin(self):
+        graph = json.loads((ROOT / "tests" / "check-map-v1.json").read_text())
+        plugins = {
+            path.name for path in (ROOT / "plugins").iterdir() if path.is_dir()
+        }
+        owners = {
+            item["path"].removeprefix("plugins/"): item["scope"]
+            for item in graph["owners"]
+            if item["path"].startswith("plugins/")
+            and "/" not in item["path"][8:]
+        }
+        self.assertEqual(set(owners), plugins)
+        for plugin in sorted(plugins):
+            with self.subTest(plugin=plugin):
+                self.assertEqual(owners[plugin], plugin)
+                self.assertIn(plugin, graph["scopes"])
+                self.assertIn(plugin, graph["dependencies"])
+                checks = [
+                    graph["checks"][check_id]
+                    for check_id in graph["scopes"][plugin]["checks"]
+                ]
+                self.assertTrue(any(check["kind"] == "suite" for check in checks))
 
     def test_readme_points_to_both_contract_layers_and_the_decision(self):
         text = README.read_text(encoding="utf-8")
         self.assertIn("[`pyproject.toml`](./pyproject.toml)", text)
         self.assertIn("[`.python-version`](./.python-version)", text)
         self.assertIn("[ADR-038]", text)
+        self.assertIn("[ADR-042]", text)
 
     def test_current_runtime_prose_points_to_the_pin(self):
         for relative in sorted(PIN_REFERENCING_PROSE):

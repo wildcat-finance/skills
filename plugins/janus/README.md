@@ -20,9 +20,9 @@ the implementation; and the Pashov suite can audit the contracts. Those
 siblings do not decide which hook effects the host permits, and a passing Janus
 manifest is not a whole-protocol security verdict.
 
-Synkrisis is specified to compare validated run observations, not Janus
-conformance results into a wider safety claim. Its current command scaffold
-refuses every operation and cannot authorise a hook change.
+Synkrisis compares validated run observations, and it does not carry Janus
+conformance results into a wider safety claim. Its findings suggest one named
+owner and cannot authorise a hook change.
 
 A conformance suite for what a contract hook may observe and change around a
 host action.
@@ -45,6 +45,24 @@ ordinary and hostile sequences, records the real storage writes, call targets,
 value movements, and gas across each threshold, and fails when the observed
 delta exceeds the manifest. A deterministic unit mode runs the same checks over
 fixed sequences.
+
+The gates read the manifest rather than a copy of it. A reader picks the
+threshold by action name, never by position, and resolves each permitted call,
+storage scope and value movement into concrete addresses through the host
+adapter's own name table.
+
+Three details of that resolution decide what a permit means. The account symbol
+of a call target or an external slot is the text before the first `.`, and the
+suffix is documentation; a value movement's names carry no suffix, so a dot
+inside one is part of the name. Enforcement is account-granular, so a permit
+written per slot or per function is enforced per account, and call kind is the
+one dimension carried through. A `staticcall` entry admits nothing
+state-changing, though its symbol must still resolve.
+
+Resolution fails closed. A missing or duplicated action, an unresolvable
+symbol, a blank account symbol, a zero address, and a name with more than one
+reading each abort with a named error, because a permitted set that silently
+lost an entry would reject everything and read as a passing gate.
 
 ## What it ships
 

@@ -6,7 +6,8 @@ Ask the Atlas for a number. Pick your harness. Finish what you start.
 
 You do not need to understand the whole skills suite or choose a Wave. You need
 one job from the Atlas, a local coding harness that can work in this repository,
-and enough uninterrupted time to finish one Fiat run.
+and enough uninterrupted time to reach either completion or a completed-step
+checkpoint before moving the run.
 
 ## The thirty-second version
 
@@ -19,11 +20,11 @@ and enough uninterrupted time to finish one Fiat run.
 
 ## Aye, here you go - #123
 
-> [!WARNING]
-> Fiat does not yet support checkpointing. Work is actively ongoing to complete
-> it. Once Fiat starts, complete the entire run locally. Closing the harness,
-> abandoning the run or moving an unfinished run to another session can lose
-> the work. Do not assume that another contributor or session can resume it.
+> [!IMPORTANT]
+> After a completed step, another machine may resume from the portable
+> checkpoint, but it must verify that checkpoint before doing anything else.
+> Arbitrary mid-step state is not portable: keep the harness open until Fiat
+> reaches an accepted boundary and the checkpoint is exported and uploaded.
 
 You are the contributor, not Shoggoth. Keep your own Git author, valid signing
 identity and GitHub account. Fiat adds the required Shoggoth provenance without
@@ -69,7 +70,7 @@ can produce two different jobs.
 The ChatGPT and Claude routes are covered by the Atlas launcher tests. Each one
 asks the Atlas for one job and opens a new web chat with the exact prompt filled
 in. That is a bootstrap hand-off. It is not evidence that the browser chat can
-complete a local Fiat run or that another session can take over later. Before
+complete a local Fiat run or restore a verified checkpoint. Before
 `hexctl init`, the prompt asks the chat to confirm that it can work in the
 repository, use your signing identity and publish through your GitHub account.
 If it cannot, move the same prompt to a suitable local coding harness before
@@ -88,10 +89,11 @@ the run starts.
 
 Instruction compatibility and a known-good launcher are different claims.
 Codex and Claude Code have repository-native package routes. The two web
-bootstraps have checked Atlas redirects. The other named harnesses use the
-manual path until an Atlas hand-off is built and tested for them. Cline and Roo
-Code are not presented as launch options because this repository has no checked
-Atlas hand-off for either one.
+bootstraps have checked Atlas redirects. A later hand-off is supported only
+from a verified completed-step checkpoint, not from browser chat history. The
+other named harnesses use the manual path until an Atlas hand-off is built and
+tested for them. Cline and Roo Code are not presented as launch options because
+this repository has no checked Atlas hand-off for either one.
 
 Before Fiat starts, confirm that the selected issue is still open and does not
 already have an active owner, issue-number branch or pull request. If it does,
@@ -141,15 +143,18 @@ allocating it until a maintainer closed it by hand.
 - If the work on your issue has already merged, ask the Atlas for another allocation and say so on the issue. An open issue is not proof the work is outstanding.
 - If installation or access is missing, state exactly what is missing and ask before changing the repository.
 - If a check fails, keep the repository state and failure output, follow the named recovery, and rerun the same check.
-- If you must interrupt the run, preserve only what Fiat says is safe to commit or push and mark the run incomplete. That is damage control, not a supported hand-off.
+- If you must interrupt mid-step, preserve only what Fiat says is safe to commit or push and mark the run incomplete. That is damage control, not a supported hand-off.
+- If a completed-step checkpoint was exported and uploaded, a fresh machine may continue only after verifying its archive, Git boundary, signatures and controller capsule.
 
 ## Why the workflow works this way
 
 Random allocation spreads contributors across the dependency-clear pool. The
 issue number keeps the work bounded. Fiat leaves a visible sequence of study,
-implementation and review evidence for a maintainer. The local-completion rule
-keeps an unfinished controller state from being mistaken for a portable hand-off
-before checkpointing exists.
+implementation and review evidence for a maintainer. The accepted-boundary rule
+keeps unfinished or moving controller state from being mistaken for a portable
+hand-off. Checkpoint restore carries the same verified ledger forward; it does
+not start a replacement run or remove the outer bundle, signature and archive
+checks.
 
 The contributor supplies time, judgement, their own signing identity and their
 own harness and GitHub accounts. The repository receives an ordinary

@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted, 2026-08-27.
+Accepted, 2026-08-27. Extended by ADR-054, which records why the generated
+payload stays in this tree and what its per-clone cost is.
 
 ## Context
 

@@ -1,0 +1,325 @@
+{
+  "schema": "wildcat.check-map.v1",
+  "description": "Declared ownership, checks and named consumers for this repository. Path ownership resolves by longest matching prefix; every tracked and relevant untracked path must resolve to exactly one scope.",
+  "decision_record": "docs/decisions/ADR-045-select-and-schedule-repository-checks-from-one-graph.md",
+  "checks": {
+    "root-suite": {
+      "title": "Root repository suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "tests"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "tests"
+    },
+    "dead-code-suite": {
+      "title": "Report-only dead-code suite",
+      "argv": ["python3", "-m", "unittest", "tests.test_dead_code", "-v"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "tests/test_dead_code.py"
+    },
+    "alexandria-suite": {
+      "title": "Alexandria suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/alexandria/tests", "-t", "plugins/alexandria"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/alexandria/tests"
+    },
+    "ariadne-suite": {
+      "title": "Ariadne suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/ariadne/tests", "-t", "plugins/ariadne"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/ariadne/tests"
+    },
+    "berean-suite": {
+      "title": "Berean suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/berean/tests", "-t", "plugins/berean"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/berean/tests"
+    },
+    "brevitas-suite": {
+      "title": "Brevitas suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/brevitas/tests", "-t", "plugins/brevitas"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/brevitas/tests"
+    },
+    "hermes-suite": {
+      "title": "Hermes suite",
+      "argv": ["python3", "plugins/hermes/skills/hermes/scripts/test_hermes.py"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/hermes/skills/hermes/scripts/test_hermes.py"
+    },
+    "hexaemeron-suite": {
+      "title": "Hexaemeron suite",
+      "argv": ["python3", "plugins/hexaemeron/tests/run_tests.py"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/hexaemeron/tests/run_tests.py",
+      "jobs_flag": "--jobs"
+    },
+    "imprimatur-suite": {
+      "title": "Imprimatur suite",
+      "argv": ["python3", "plugins/hexaemeron/skills/imprimatur/tests/run_tests.py"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/hexaemeron/skills/imprimatur/tests/run_tests.py"
+    },
+    "homologia-suite": {
+      "title": "Homologia suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/homologia/tests", "-t", "plugins/homologia"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/homologia/tests"
+    },
+    "horos-suite": {
+      "title": "Horos suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/horos/tests", "-t", "plugins/horos"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/horos/tests"
+    },
+    "janus-suite": {
+      "title": "Janus suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/janus/tests", "-t", "plugins/janus"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/janus/tests"
+    },
+    "lazarus-suite": {
+      "title": "Lazarus suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/lazarus/tests", "-t", "plugins/lazarus"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/lazarus/tests"
+    },
+    "lemma-markdown": {
+      "title": "Lemma Markdown chunker",
+      "argv": ["python3", "plugins/lemma/tests/test_markdown.py"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/lemma/tests/test_markdown.py"
+    },
+    "lemma-solidity": {
+      "title": "Lemma Solidity chunker",
+      "argv": ["python3", "plugins/lemma/tests/test_solidity.py"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/lemma/tests/test_solidity.py"
+    },
+    "pandects-suite": {
+      "title": "Pandects suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/pandects/tests", "-t", "plugins/pandects"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/pandects/tests"
+    },
+    "pandects-forge-build": {
+      "title": "Pandects forge build",
+      "argv": ["forge", "build"],
+      "cwd": "plugins/pandects",
+      "kind": "build",
+      "requires_executable": "forge",
+      "group": "pandects-forge",
+      "order": 1
+    },
+    "pandects-forge-test": {
+      "title": "Pandects forge test",
+      "argv": ["forge", "test"],
+      "cwd": "plugins/pandects",
+      "kind": "suite",
+      "requires_executable": "forge",
+      "group": "pandects-forge",
+      "order": 2
+    },
+    "probitas-suite": {
+      "title": "Probitas suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/probitas/tests", "-t", "plugins/probitas"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/probitas/tests"
+    },
+    "sapheneia-suite": {
+      "title": "Sapheneia suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/sapheneia/tests", "-t", "plugins/sapheneia"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/sapheneia/tests"
+    },
+    "synkrisis-suite": {
+      "title": "Synkrisis suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/synkrisis/tests", "-t", "plugins/synkrisis"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/synkrisis/tests"
+    },
+    "tabularium-suite": {
+      "title": "Tabularium suite",
+      "argv": ["python3", "-m", "unittest", "discover", "-s", "plugins/tabularium/tests", "-t", "plugins/tabularium"],
+      "cwd": ".",
+      "kind": "suite",
+      "script": "plugins/tabularium/tests"
+    },
+    "lint-phylax": {
+      "title": "Phylax boundary lint",
+      "argv": ["python3", "plugins/hexaemeron/skills/phylax/scripts/phylax.py", "plugins", "tests"],
+      "cwd": ".",
+      "kind": "lint",
+      "script": "plugins/hexaemeron/skills/phylax/scripts/phylax.py"
+    },
+    "lint-ephoros": {
+      "title": "Ephoros signal lint",
+      "argv": ["python3", "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py", "plugins", "tests"],
+      "cwd": ".",
+      "kind": "lint",
+      "script": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
+    },
+    "lint-hypomnema": {
+      "title": "Hypomnema record lint",
+      "argv": ["python3", "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py", "README.md", "AGENTS.md", ".agents/skills/promise-machine/SKILL.md", ".agents/skills/promise-machine/PORTABLE.md", "plugins", "docs"],
+      "cwd": ".",
+      "kind": "lint",
+      "script": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
+    }
+  },
+  "groups": {
+    "pandects-forge": {
+      "title": "Pandects Solidity build then test",
+      "ordered": ["pandects-forge-build", "pandects-forge-test"]
+    }
+  },
+  "scopes": {
+    "root": {
+      "title": "Root contract, shared scripts and root suite",
+      "checks": ["root-suite"]
+    },
+    "dead-code": {
+      "title": "Report-only dead-code discovery",
+      "checks": ["dead-code-suite"]
+    },
+    "repo-lints": {
+      "title": "Repository-wide tree lints",
+      "checks": ["lint-phylax", "lint-ephoros", "lint-hypomnema"]
+    },
+    "docs": {
+      "title": "Decision records and documentation",
+      "checks": []
+    },
+    "schemas": {
+      "title": "Published JSON schemas",
+      "checks": []
+    },
+    "promise-machine": {
+      "title": "Promise Machine contract and its governed release surface",
+      "checks": []
+    },
+    "marketplace": {
+      "title": "Host plugin manifests and the host-neutral entrypoint",
+      "checks": []
+    },
+    "ci": {
+      "title": "Hosted workflow definitions",
+      "checks": []
+    },
+    "alexandria": {"title": "Alexandria plugin", "checks": ["alexandria-suite"]},
+    "ariadne": {"title": "Ariadne plugin", "checks": ["ariadne-suite"]},
+    "berean": {"title": "Berean plugin", "checks": ["berean-suite"]},
+    "brevitas": {"title": "Brevitas plugin", "checks": ["brevitas-suite"]},
+    "hermes": {"title": "Hermes plugin", "checks": ["hermes-suite"]},
+    "hexaemeron": {"title": "Hexaemeron plugin", "checks": ["hexaemeron-suite", "imprimatur-suite"]},
+    "homologia": {"title": "Homologia plugin", "checks": ["homologia-suite"]},
+    "horos": {"title": "Horos plugin", "checks": ["horos-suite"]},
+    "janus": {"title": "Janus plugin", "checks": ["janus-suite"]},
+    "lazarus": {"title": "Lazarus plugin", "checks": ["lazarus-suite"]},
+    "lemma": {"title": "Lemma plugin", "checks": ["lemma-markdown", "lemma-solidity"]},
+    "pandects": {"title": "Pandects plugin", "checks": ["pandects-suite", "pandects-forge-build", "pandects-forge-test"]},
+    "probitas": {"title": "Probitas plugin", "checks": ["probitas-suite"]},
+    "sapheneia": {"title": "Sapheneia plugin", "checks": ["sapheneia-suite"]},
+    "synkrisis": {"title": "Synkrisis plugin", "checks": ["synkrisis-suite"]},
+    "tabularium": {"title": "Tabularium plugin", "checks": ["tabularium-suite"]}
+  },
+  "dependencies": {
+    "root": ["repo-lints", "dead-code"],
+    "dead-code": ["repo-lints"],
+    "docs": ["root", "repo-lints"],
+    "schemas": ["root"],
+    "promise-machine": ["root", "hexaemeron"],
+    "marketplace": ["root", "repo-lints"],
+    "ci": ["root"],
+    "alexandria": ["repo-lints"],
+    "ariadne": ["repo-lints"],
+    "berean": ["repo-lints"],
+    "brevitas": ["repo-lints", "root"],
+    "hermes": ["repo-lints"],
+    "hexaemeron": ["repo-lints", "root"],
+    "homologia": ["repo-lints"],
+    "horos": ["repo-lints", "root", "dead-code"],
+    "janus": ["repo-lints"],
+    "lazarus": ["repo-lints"],
+    "lemma": ["repo-lints"],
+    "pandects": ["repo-lints"],
+    "probitas": ["repo-lints"],
+    "sapheneia": ["repo-lints"],
+    "synkrisis": ["repo-lints"],
+    "tabularium": ["repo-lints"]
+  },
+  "owners": [
+    {"path": ".dead-code", "scope": "dead-code"},
+    {"path": ".agents", "scope": "marketplace"},
+    {"path": ".claude", "scope": "marketplace"},
+    {"path": ".claude-plugin", "scope": "marketplace"},
+    {"path": ".github", "scope": "ci"},
+    {"path": ".github/workflows/dead-code.yml", "scope": "dead-code"},
+    {"path": ".gitattributes", "scope": "root"},
+    {"path": ".gitignore", "scope": "root"},
+    {"path": ".python-version", "scope": "root"},
+    {"path": ".horos", "scope": "root"},
+    {"path": "AGENTS.md", "scope": "root"},
+    {"path": "FUTUREPROOFING.md", "scope": "root"},
+    {"path": "CONTRIBUTORS.md", "scope": "root"},
+    {"path": "INSTALL.md", "scope": "root"},
+    {"path": "LICENSE", "scope": "root"},
+    {"path": "PROMISE_MACHINE.md", "scope": "promise-machine"},
+    {"path": "README.md", "scope": "root"},
+    {"path": "pyproject.toml", "scope": "root"},
+    {"path": "skills.sh.json", "scope": "root"},
+    {"path": "SHOGGOTH.md", "scope": "root"},
+    {"path": "assets", "scope": "root"},
+    {"path": "audit", "scope": "root"},
+    {"path": "docs", "scope": "docs"},
+    {"path": "docs/dead-code", "scope": "dead-code"},
+    {"path": "docs/decisions/ADR-053-keep-dead-code-discovery-report-only.md", "scope": "dead-code"},
+    {"path": "docs/promise-machine/dead-code-v1.md", "scope": "dead-code"},
+    {"path": "repo_contract.py", "scope": "root"},
+    {"path": "schemas", "scope": "schemas"},
+    {"path": "schemas/dead-code-report-v1.schema.json", "scope": "dead-code"},
+    {"path": "schemas/dead-code-suppressions-v1.schema.json", "scope": "dead-code"},
+    {"path": "scripts", "scope": "root"},
+    {"path": "scripts/dead_code.py", "scope": "dead-code"},
+    {"path": "scripts/dead_code_monitoring", "scope": "dead-code"},
+    {"path": "scripts/promise_machine.py", "scope": "promise-machine"},
+    {"path": "tests", "scope": "root"},
+    {"path": "tests/emit_dead_code_report.py", "scope": "dead-code"},
+    {"path": "tests/test_dead_code.py", "scope": "dead-code"},
+    {"path": "tests/check-map-v1.json", "scope": "root"},
+    {"path": "tests/promise_machine_coverage.json", "scope": "promise-machine"},
+    {"path": "plugins/alexandria", "scope": "alexandria"},
+    {"path": "plugins/ariadne", "scope": "ariadne"},
+    {"path": "plugins/berean", "scope": "berean"},
+    {"path": "plugins/brevitas", "scope": "brevitas"},
+    {"path": "plugins/hermes", "scope": "hermes"},
+    {"path": "plugins/hexaemeron", "scope": "hexaemeron"},
+    {"path": "plugins/homologia", "scope": "homologia"},
+    {"path": "plugins/horos", "scope": "horos"},
+    {"path": "plugins/janus", "scope": "janus"},
+    {"path": "plugins/lazarus", "scope": "lazarus"},
+    {"path": "plugins/lemma", "scope": "lemma"},
+    {"path": "plugins/pandects", "scope": "pandects"},
+    {"path": "plugins/probitas", "scope": "probitas"},
+    {"path": "plugins/sapheneia", "scope": "sapheneia"},
+    {"path": "plugins/synkrisis", "scope": "synkrisis"},
+    {"path": "plugins/tabularium", "scope": "tabularium"}
+  ]
+}

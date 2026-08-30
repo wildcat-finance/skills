@@ -83,7 +83,7 @@ VENUES = (
         "ethereum",
         False,
         "none",
-        "450 vaults on mainnet, on the same keyless API. A counterparty may "
+        "450 vaults on mainnet, on the same keyless API. A counterparty can "
         "appear here as a curator rather than a borrower, and a curator who "
         "allocated into a market that took bad debt made a call that cost "
         "lenders money. Not collected yet.",
@@ -101,12 +101,13 @@ VENUES = (
         "morpho-midnight",
         "Morpho Midnight",
         "base",
-        False,
+        True,
         "none",
         "Fixed-rate, fixed-maturity lending on a separate keyless REST API at "
         "api.morpho.org/v0/midnight, not the GraphQL one. A maturity means "
         "there is a date by which the money was due, so this reads closer to "
-        "Wildcat than Blue does. Base rather than mainnet. Not collected yet.",
+        "Wildcat than Blue does. API-scoped Base history only; the returned "
+        "coverage row states its cursor and index boundaries.",
     ),
     Venue(
         "maple",

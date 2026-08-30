@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -13,17 +14,41 @@ import tempfile
 import unittest
 
 
+# The model proxy's receipt path refuses symlinked components by design.
+# macOS resolves TMPDIR under /var, a symlink to /private/var, so every
+# temporary directory built here -- and every child process that inherits
+# TMPDIR -- would trip that refusal before a test began.  Canonicalising the
+# temporary root hands the runtime a real path and leaves the refusal itself
+# untouched.
+tempfile.tempdir = os.path.realpath(tempfile.gettempdir())
+os.environ["TMPDIR"] = tempfile.tempdir
+
+
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / ".agents" / "skills" / "promise-machine"
 RUNTIME = PACKAGE / "runtime"
 MANIFEST = RUNTIME / "MANIFEST.json"
 GENERATOR = ROOT / "scripts" / "portable_promise_machine.py"
 CONFIG = ROOT / "skills.sh.json"
+PAYLOAD_ROOT = ROOT / ".agents"
 
 SCHEMA = "promise-machine-portable-runtime/v1"
 CONTRACT = "promise-machine/v1"
+# The skills CLI's SKILLS_EXTRACT_MAX_FILES and SKILLS_EXTRACT_MAX_BYTES
+# defaults.  They gate its `well-known` and `download` source types, which are
+# direct SKILL.md and archive URLs; the `github` type this repository installs
+# through never consults them.  Held anyway so the package stays installable by
+# every route the CLI offers.  See ADR-054.
 MAX_FILES = 1_000
 MAX_BYTES = 25 * 1024 * 1024
+
+# The per-clone cost ADR-054 accepted and recorded, plus deliberate headroom.
+# This binds before MAX_BYTES does, so payload growth is refused against the
+# recorded figure rather than against a CLI limit that does not apply here.
+RECORDED_TRACKED_FILES = 999
+RECORDED_TRACKED_BYTES = 21_789_732
+TRACKED_FILES_CEILING = 1_010
+TRACKED_BYTES_CEILING = 22_500_000
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
@@ -32,6 +57,20 @@ EXPECTED_OMISSIONS = {
     "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/release/**",
     "plugins/alexandria/examples/compound-v3-phase0-v0/source/**",
+}
+PORTABLE_TEST_FILES = {
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/framing-cases.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/invalid-unicode.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/jobspec.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/lifecycle-cases.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/policy.sha256",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
+    "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
 }
 
 
@@ -71,6 +110,12 @@ class SkillsShPackageTests(unittest.TestCase):
             {entry["pattern"] for entry in manifest["omissions"]},
             EXPECTED_OMISSIONS,
         )
+        tests_omission = next(
+            entry
+            for entry in manifest["omissions"]
+            if entry["pattern"] == "plugins/*/tests/**"
+        )
+        self.assertEqual(set(tests_omission["exceptions"]), PORTABLE_TEST_FILES)
 
         expected = {"MANIFEST.json"}
         total = 0
@@ -183,7 +228,17 @@ class SkillsShPackageTests(unittest.TestCase):
                 self.assertFalse((plugin / ".claude-plugin").exists())
                 self.assertFalse((plugin / ".codex-plugin").exists())
                 self.assertFalse((plugin / "audit").exists())
-                self.assertFalse((plugin / "tests").exists())
+                if plugin.name != "hexaemeron":
+                    self.assertFalse((plugin / "tests").exists())
+        portable_tests = RUNTIME / "plugins/hexaemeron/tests"
+        self.assertEqual(
+            {
+                path.relative_to(RUNTIME).as_posix()
+                for path in portable_tests.rglob("*")
+                if path.is_file() or path.is_symlink()
+            },
+            PORTABLE_TEST_FILES,
+        )
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())
         self.assertTrue((example / "rebuild.py").is_file())
@@ -226,6 +281,61 @@ class SkillsShPackageTests(unittest.TestCase):
             self.assertEqual(
                 boundary.returncode, 0, boundary.stdout + boundary.stderr
             )
+            model_proxy = (
+                installed
+                / "runtime/plugins/hexaemeron/skills/phylax/scripts/model_proxy.py"
+            )
+            conformance_manifest = (
+                installed
+                / "runtime/plugins/hexaemeron/tests/fixtures/model-proxy-v1/manifest.json"
+            )
+            conformance = subprocess.run(  # phylax: allow subprocess: fixed installed demo
+                [
+                    sys.executable,
+                    str(model_proxy),
+                    "conformance",
+                    "--manifest",
+                    str(conformance_manifest),
+                ],
+                cwd=project,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                conformance.returncode,
+                0,
+                conformance.stdout + conformance.stderr,
+            )
+            self.assertEqual(
+                json.loads(conformance.stdout)["outcome"],
+                "conformance_checked",
+            )
+
+
+    def test_payload_footprint_stays_within_the_recorded_ceiling(self):
+        """The payload's per-clone cost is the one ADR-054 accepted.
+
+        Growth is not wrong, but it is not free and it is not silent: this
+        fails with the new figure so the record can be updated deliberately.
+        """
+        files = sorted(path for path in PAYLOAD_ROOT.rglob("*") if path.is_file())
+        total = sum(path.stat().st_size for path in files)
+        self.assertLessEqual(
+            len(files),
+            TRACKED_FILES_CEILING,
+            f"payload holds {len(files)} files, ceiling is "
+            f"{TRACKED_FILES_CEILING}; ADR-054 recorded "
+            f"{RECORDED_TRACKED_FILES}. Update ADR-054 and this ceiling "
+            f"together, or reduce what the generator copies.",
+        )
+        self.assertLessEqual(
+            total,
+            TRACKED_BYTES_CEILING,
+            f"payload holds {total} bytes, ceiling is "
+            f"{TRACKED_BYTES_CEILING}; ADR-054 recorded "
+            f"{RECORDED_TRACKED_BYTES}. Update ADR-054 and this ceiling "
+            f"together, or reduce what the generator copies.",
+        )
 
 
 if __name__ == "__main__":

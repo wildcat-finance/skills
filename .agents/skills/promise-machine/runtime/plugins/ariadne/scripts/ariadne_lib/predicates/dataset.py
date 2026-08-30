@@ -35,6 +35,13 @@ from ..gates import Gate
 
 TYPE = "https://ariadne.wildcat.finance/dataset/v1"
 SUMMARY = "a dataset release: inputs, producer, released files, coverage and gaps"
+EXPECTED_RESULTS = (
+    (2, "environment"),
+    (5, "deltas"),
+    (None, "predicate-fields"),
+    (None, "coverage"),
+    (None, "inputs"),
+)
 
 PRODUCER_REQUIRED = ("tool", "tool_version", "command", "parameters_digest")
 INPUT_REQUIRED = ("name", "locator")

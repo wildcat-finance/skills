@@ -9,7 +9,7 @@ description: >
   new kind of artefact needs a predicate of its own. Ariadne neither signs nor
   verifies signatures; those operations belong to cosign.
 metadata:
-  version: "2.2.0"
+  version: "3.2.0"
 ---
 
 <p align="center">
@@ -30,7 +30,7 @@ another frontier pass after that ledger becomes mature.
 
 Ariadne writes and checks the evidence statement that joins a released artefact digest to the work actually recorded behind it.
 
-**Current frontier.** The grounded-agent predicate remains unimplemented; the state-fixture predicate now ships with its schema, gates, conformance fixtures and a capture path that reads a Lazarus fixture's evidence counts rather than recomputing them.
+**Current frontier.** The grounded-agent predicate now ships as the fifth registered Ariadne predicate, with a closed schema, gates 2 and 5, conformance fixtures and a bounded offline capture path that binds an existing `berean-release/v1` tree without importing or running Berean, executing an agent, regrading evaluations or reaching a network.
 <!-- marketplace-context:end -->
 
 A release publishes a claim. The evidence behind it sits somewhere else, joined
@@ -44,10 +44,10 @@ can supply other release subjects and evidence. Ariadne binds and gates those
 exact inputs. It neither reruns a sibling's work nor upgrades its result, and
 signature creation and verification remain with cosign.
 
-Synkrisis is the still-unimplemented comparison boundary for validated run
-observations. Its scaffold writes nothing. Ariadne may eventually bind a
-comparison artefact to evidence, but that binding will not establish cause or
-authorise action.
+Synkrisis is the comparison boundary for validated run observations. It writes
+a cohort, findings and a verified report. Ariadne may bind such a comparison
+artefact to evidence, but that binding will not establish cause or authorise
+action.
 
 `$SKILL_DIR` is the directory holding this file. The tool lives at
 `$SKILL_DIR/../../scripts/ariadne.py`; resolve it from where you loaded this
@@ -93,6 +93,15 @@ python3 scripts/ariadne.py capture-state-fixture \
   --first-capture-reason '<why there is no earlier capture of this block>' \
   --out fixture.json
 
+python3 scripts/ariadne.py capture-grounded-agent \
+  --release ../berean/examples/goldfinch-demo-v0/release \
+  --name goldfinch-demo-v0 \
+  --producer-tool berean --producer-version 0.2.0 \
+  --producer-command python3 \
+  --producer-command plugins/berean/examples/goldfinch-demo-v0/rebuild.py \
+  --first-capture-reason '<why there is no earlier capture>' \
+  --output grounded-agent.intoto.json
+
 python3 scripts/ariadne.py inspect <statement-or-envelope.json>
 
 python3 scripts/ariadne.py verify <statement-or-envelope.json>
@@ -100,11 +109,12 @@ python3 scripts/ariadne.py verify <statement-or-envelope.json>
 python3 scripts/ariadne.py replay <statement.json> [--allow-execution --project <dir>]
 ```
 
-`predicates` lists the predicate types this build understands. Four are registered:
+`predicates` lists the predicate types this build understands. Five are registered:
 `https://ariadne.wildcat.finance/solidity-release/v1`,
 `https://ariadne.wildcat.finance/dataset/v1`,
-`https://ariadne.wildcat.finance/state-fixture/v1`, and
-`https://ariadne.wildcat.finance/state-fixture/v2`. A statement of any other type
+`https://ariadne.wildcat.finance/state-fixture/v1`,
+`https://ariadne.wildcat.finance/state-fixture/v2`, and
+`https://ariadne.wildcat.finance/grounded-agent/v1`. A statement of any other type
 still parses and still gets its core gates.
 
 `capture` reads a Foundry project's build output into a release statement that
@@ -139,6 +149,13 @@ re-derives a chain, so offering a flag would imply otherwise.
 [`docs/capturing-a-state-fixture.md`](../../docs/capturing-a-state-fixture.md) has
 the flags.
 
+`capture-grounded-agent` reads an existing `berean-release/v1` tree into a
+grounded-agent statement. It independently checks the release identity and
+component bytes, but does not import or run Berean, execute an agent, regrade
+evaluations or promotion evidence, or reach a network.
+[`docs/capturing-a-grounded-agent.md`](../../docs/capturing-a-grounded-agent.md)
+has the flags.
+
 `inspect` reads either a bare in-toto statement or a DSSE envelope wrapping
 one, and reports the predicate type, whether that type is registered here, the
 subjects with their digests, and what is known about the signatures.
@@ -153,7 +170,15 @@ all adjustable with `--max-bytes` and `--max-depth`.
 `--allow-execution` it prints the plan and runs nothing, which is the default
 because the commands inside a statement are somebody else's data rather than
 instructions. It never uses a shell, refuses a command whose arguments were
-redacted at capture, and refuses a program name carrying a path separator.
+redacted at capture, refuses a program name carrying a path separator or
+Windows drive prefix, and refuses known shells and Windows batch programs.
+The JSON result reports execution authority as `executionAllowed`; `executed`
+is true only when an eligible process actually started.
+Only the Solidity-release predicate has a local output recomputer, and it is
+used only for the exact command recorded by that predicate's build environment.
+An exact command on another predicate, or a different command on a Solidity
+statement, may run, but replay does not compare it with an unrelated Foundry
+artefact bundle or report that output as a match.
 
 Exit codes: 0 success, 1 a gate was breached, 2 usage or validation error.
 
@@ -293,11 +318,24 @@ field by field. `schemas/state-fixture-v1.json` and
 Type URIs: `https://ariadne.wildcat.finance/state-fixture/v1` and
 `https://ariadne.wildcat.finance/state-fixture/v2`.
 
+## Grounded-agent predicate
+
+`https://ariadne.wildcat.finance/grounded-agent/v1` binds a semantic
+`berean-release/v1` identity, its exact component bytes, its policy boundary and
+adapter provenance, and an explicit baseline/current comparison. It keeps
+inputs under `given` and outputs under `produced`. Optional reads, evaluations
+and promotion evidence are objects or explicit `null` with a paired absence
+reason; promotion projects only non-conclusion identity metadata.
+[`docs/grounded-agent.md`](../../docs/grounded-agent.md)
+publishes the field and gate contract. The bounded local capture path is in
+[`docs/capturing-a-grounded-agent.md`](../../docs/capturing-a-grounded-agent.md).
+
 ## Examples
 
-[`examples/`](../../examples) holds two attestations over the fixture project:
-a clean release, and one carrying a fuzz campaign that timed out and an audit
-covering an earlier revision. Both verify. The second is the more useful one to
+[`examples/`](../../examples) holds four attestations: two over the fixture
+project, one over a fixed Lazarus fixture and one over a fixed Berean release.
+All four verify. The Solidity statement carrying a fuzz campaign that timed
+out and an audit covering an earlier revision is still the more useful one to
 read: a format whose only examples are clean releases teaches producers to make
 their releases look clean.
 
@@ -308,9 +346,10 @@ fails a named gate.
 
 Named so the edge is visible rather than implied.
 
-The registry holds four predicates. The grounded-agent predicate is specified and
-not implemented here, so a statement of that type verifies its core gates and is
-told which gates went unchecked.
+The registry holds five predicates, reached through four local capture paths.
+Grounded-agent capture binds a bounded local `berean-release/v1` tree; it does
+not import or run Berean, execute an agent, regrade evaluation or promotion
+evidence, or reach a network.
 
 Nothing confirms a deployment against a chain, nothing signs, and nothing runs
 as a GitHub Action. Each of those is a deliberate boundary rather than an

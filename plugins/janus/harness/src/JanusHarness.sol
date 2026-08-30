@@ -91,6 +91,18 @@ abstract contract JanusHarness is StateDeltaRecorder {
   ///      its causal subtree, targets an allowed address. A static call is a
   ///      read and is never an effect, so a hook may read any address; only a
   ///      call that could change state is enumerated.
+  ///
+  ///      `allowed` is the manifest's own set. `ManifestReader` selects the
+  ///      threshold by action name and resolves each `permittedCalls` target
+  ///      through the host adapter's name table, so the addresses compared here
+  ///      are the ones the manifest wrote rather than a literal a test author
+  ///      chose. A `staticcall` entry resolves and admits nothing, which is why
+  ///      the manifest can name a read target without widening this set.
+  ///
+  ///      Passing a literal is still possible and two engine-mechanics tests do
+  ///      it deliberately, to construct a permitted forwarder and an empty set
+  ///      that the manifest does not describe. Every conformance verdict takes
+  ///      its set from resolution.
   function _gate1_hookCallsWithinAllowed(
     Delta memory delta,
     address hookAddr,
@@ -108,8 +120,21 @@ abstract contract JanusHarness is StateDeltaRecorder {
   ///      A write to any account outside `allowedWriteAccounts` that the hook
   ///      caused, meaning the written account is one its subtree made a
   ///      state-changing call into, is a storage effect the manifest did not
-  ///      enumerate. The hook's own storage (its address) is passed in when the
-  ///      manifest permits hook-scope writes.
+  ///      enumerate.
+  ///
+  ///      `allowedWriteAccounts` is resolved rather than assembled. A
+  ///      `permittedStorageWrites` entry of scope `hook` resolves the symbol
+  ///      `hook` through the adapter, scope `host` resolves `host`, and scope
+  ///      `external` resolves its slot expression's account prefix. The hook's
+  ///      own address therefore reaches this gate because the manifest said
+  ///      `hook`, not because a test passed it in.
+  ///
+  ///      The granularity is account, not slot. A manifest entry naming
+  ///      `lenderStatus[lender]` contributes only the account that holds it, so
+  ///      two hook-scope entries resolve to the same address twice and a permit
+  ///      written per slot is enforced per account. That is the stated
+  ///      non-goal this matches: `StorageWriteObs.slot` is recorded and never
+  ///      compared here.
   function _gate1_hookStorageWithinScopes(
     Delta memory delta,
     address hookAddr,

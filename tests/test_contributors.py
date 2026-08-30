@@ -1241,11 +1241,27 @@ class WorkflowShape(unittest.TestCase):
     def test_the_workflow_exists(self):
         self.assertTrue(self.WORKFLOW.is_file(), f"{self.WORKFLOW} is absent")
 
-    def test_permissions_are_exactly_the_two_writes_it_needs(self):
+    def test_permissions_are_exactly_the_three_writes_it_needs(self):
         self.assertEqual(
             sorted(self.block("permissions")),
-            ["contents: write", "pull-requests: write"],
+            ["actions: write", "contents: write", "pull-requests: write"],
             "the workflow must hold no scope beyond what it uses",
+        )
+
+    def test_actions_write_is_spent_on_the_required_check_dispatch(self):
+        """The third scope has to earn itself.
+
+        main requires the `invariants` check. GITHUB_TOKEN opens this pull
+        request, and GitHub raises no pull_request run for anything
+        GITHUB_TOKEN did, so without a dispatch the check never appears and
+        the pull request can never merge. actions: write buys that dispatch
+        and nothing else.
+        """
+        text = self.WORKFLOW.read_text(encoding="utf-8")
+        self.assertIn(
+            'gh workflow run repo.yml --repo "$GITHUB_REPOSITORY" --ref "$branch"',
+            text,
+            "actions: write is held but the invariants dispatch is gone",
         )
 
     def test_it_runs_daily_and_on_demand(self):

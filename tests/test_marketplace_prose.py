@@ -13,46 +13,43 @@ from repo_contract import (
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
-PLUGINS = (
-    "alexandria",
-    "ariadne",
-    "berean",
-    "brevitas",
-    "hermes",
-    "hexaemeron",
-    "horos",
-    "janus",
-    "lemma",
-    "lazarus",
-    "pandects",
-    "probitas",
-    "sapheneia",
-    "synkrisis",
-    "tabularium",
-)
+def discovered_plugins():
+    """The universe is what ships, not what a list here remembers.
+
+    A hand-maintained tuple lets a new plugin land with every one of these
+    cases passing while none of them looked at it. Discovery makes the
+    omission the failure it should be.
+    """
+    return tuple(
+        sorted(
+            path.parent.parent.name
+            for path in (ROOT / "plugins").glob("*/.claude-plugin/plugin.json")
+        )
+    )
+
+
+PLUGINS = discovered_plugins()
+# The canonical skill takes the plugin's own name, with one recorded exception:
+# Hexaemeron's entry point is Fiat, because the plugin ships a phase suite
+# rather than a single agent.
+CANONICAL_SKILL_NAMES = {"hexaemeron": "fiat"}
 CANONICAL_SKILLS = {
-    "alexandria": ROOT / "plugins" / "alexandria" / "skills" / "alexandria" / "SKILL.md",
-    "ariadne": ROOT / "plugins" / "ariadne" / "skills" / "ariadne" / "SKILL.md",
-    "berean": ROOT / "plugins" / "berean" / "skills" / "berean" / "SKILL.md",
-    "brevitas": ROOT / "plugins" / "brevitas" / "skills" / "brevitas" / "SKILL.md",
-    "hermes": ROOT / "plugins" / "hermes" / "skills" / "hermes" / "SKILL.md",
-    "hexaemeron": ROOT / "plugins" / "hexaemeron" / "skills" / "fiat" / "SKILL.md",
-    "horos": ROOT / "plugins" / "horos" / "skills" / "horos" / "SKILL.md",
-    "janus": ROOT / "plugins" / "janus" / "skills" / "janus" / "SKILL.md",
-    "lemma": ROOT / "plugins" / "lemma" / "skills" / "lemma" / "SKILL.md",
-    "lazarus": ROOT / "plugins" / "lazarus" / "skills" / "lazarus" / "SKILL.md",
-    "pandects": ROOT / "plugins" / "pandects" / "skills" / "pandects" / "SKILL.md",
-    "probitas": ROOT / "plugins" / "probitas" / "skills" / "probitas" / "SKILL.md",
-    "sapheneia": ROOT / "plugins" / "sapheneia" / "skills" / "sapheneia" / "SKILL.md",
-    "synkrisis": ROOT / "plugins" / "synkrisis" / "skills" / "synkrisis" / "SKILL.md",
-    "tabularium": ROOT / "plugins" / "tabularium" / "skills" / "tabularium" / "SKILL.md",
+    name: ROOT
+    / "plugins"
+    / name
+    / "skills"
+    / CANONICAL_SKILL_NAMES.get(name, name)
+    / "SKILL.md"
+    for name in PLUGINS
 }
-NEXT_JOB_PREFIX = "**Next Fiat job.** Use /hexaemeron:fiat to "
+NEXT_JOB_LABEL = "**Next Fiat job.**"
+NEXT_JOB_PREFIX = NEXT_JOB_LABEL + " Use /hexaemeron:fiat to "
 NEXT_JOB_SUFFIX = (
     "Before the run finishes, cold-read and reconcile all mutable first-party "
     "marketplace prose. Change a skill's Next Fiat job only when that exact "
     "frontier job completed; otherwise leave it unchanged."
 )
+MATURE_NEXT_JOB = NEXT_JOB_LABEL + " None -- mature."
 MARKETPLACE_CONTEXT_START = "<!-- marketplace-context:start -->"
 MARKETPLACE_CONTEXT_END = "<!-- marketplace-context:end -->"
 IMMUTABLE_CONTEXT_PREFIXES = (
@@ -74,6 +71,17 @@ def plugin_landing_readmes():
         for path in (ROOT / "plugins").glob("*/README.md")
         if re.search(r"(?m)^## In one line$", path.read_text(encoding="utf-8"))
     }
+
+
+def frontier_status(name):
+    ledger = CANONICAL_SKILLS[name].parent / "EVOLUTION.md"
+    match = re.search(
+        r"(?m)^- Frontier status: `(open|mature)`$",
+        ledger.read_text(encoding="utf-8"),
+    )
+    if match is None:
+        raise AssertionError(f"skill ledger has no recognised frontier status: {ledger}")
+    return match.group(1)
 
 
 def marketplace_frontiers(path):
@@ -266,7 +274,7 @@ class MarketplaceProseTests(unittest.TestCase):
             for skill in (ROOT / "plugins").glob("*/skills/**/SKILL.md")
             if (skill.parent / "EVOLUTION.md").is_file()
         )
-        self.assertEqual(len(governed), 24)
+        self.assertEqual(len(governed), 25)
         for skill in governed:
             plugin = skill.parents[2]
             target = skill.parent if plugin.name == "hexaemeron" else plugin
@@ -341,17 +349,15 @@ class MarketplaceProseTests(unittest.TestCase):
     def test_plugin_landing_readmes_publish_unique_rolling_fiat_jobs(self):
         landings = plugin_landing_readmes()
         self.assertEqual(set(landings), set(PLUGINS))
-        self.assertEqual(len(landings), 15)
+        self.assertEqual(len(landings), len(marketplace_entries()))
 
         topics = {}
         for name, path in landings.items():
             text = path.read_text(encoding="utf-8")
-            lines = [line for line in text.splitlines() if line.startswith(NEXT_JOB_PREFIX)]
+            lines = [line for line in text.splitlines() if line.startswith(NEXT_JOB_LABEL)]
             with self.subTest(plugin=name):
-                self.assertEqual(text.count(NEXT_JOB_PREFIX), 1, path)
+                self.assertEqual(text.count(NEXT_JOB_LABEL), 1, path)
                 self.assertEqual(len(lines), 1, path)
-                self.assertTrue(lines[0].startswith(NEXT_JOB_PREFIX), path)
-                self.assertTrue(lines[0].endswith(NEXT_JOB_SUFFIX), path)
                 context = re.search(
                     re.escape(MARKETPLACE_CONTEXT_START)
                     + r"(.*?)"
@@ -361,12 +367,29 @@ class MarketplaceProseTests(unittest.TestCase):
                 )
                 self.assertIsNotNone(context, path)
                 self.assertIn(lines[0], context.group(1), path)
+                if frontier_status(name) == "mature":
+                    self.assertEqual(lines[0], MATURE_NEXT_JOB, path)
+                    self.assertNotIn("/hexaemeron:fiat", context.group(1), path)
+                    continue
+
+                self.assertTrue(lines[0].startswith(NEXT_JOB_PREFIX), path)
+                self.assertTrue(lines[0].endswith(NEXT_JOB_SUFFIX), path)
                 topic = lines[0][len(NEXT_JOB_PREFIX) : -len(NEXT_JOB_SUFFIX)].strip()
                 self.assertTrue(topic, path)
                 self.assertTrue(topic.endswith("."), path)
                 topics[name] = topic
 
-        self.assertEqual(len(set(topics.values())), len(PLUGINS))
+        self.assertEqual(len(set(topics.values())), len(topics))
+
+    def test_ariadne_grounded_agent_guides_carry_marketplace_context(self):
+        docs = ROOT / "plugins" / "ariadne" / "docs"
+        for name in ("grounded-agent.md", "capturing-a-grounded-agent.md"):
+            path = docs / name
+            text = path.read_text(encoding="utf-8")
+            with self.subTest(guide=name):
+                self.assertEqual(text.count(MARKETPLACE_CONTEXT_START), 1, path)
+                self.assertEqual(text.count(MARKETPLACE_CONTEXT_END), 1, path)
+                self.assertEqual(len(marketplace_frontiers(path)), 1, path)
 
     def test_rolling_fiat_jobs_exist_only_in_plugin_landing_readmes(self):
         allowed = set(plugin_landing_readmes().values())

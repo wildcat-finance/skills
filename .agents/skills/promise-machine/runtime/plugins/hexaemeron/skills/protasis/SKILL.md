@@ -12,7 +12,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "4.8.0"
+  version: "5.9.0"
 ---
 
 <p align="center">
@@ -45,7 +45,9 @@ framework change.
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
-**Current state.** The amendment contract fixes a dated block with four fields for a mid-run change, and no study exercises it yet: nothing enumerates whether an appended amendment carries its date or its fields, so the first live use is checked only by the person who writes it.
+**Current state.** Protasis checks the fixed mechanical shape of study items,
+risk registers, study amendments, runbook steps, runbook amendments, and
+optional version relations through one bounded scanner.
 
 ## Refuse these four
 
@@ -253,6 +255,30 @@ and a step may assume every earlier step's exit state and nothing else.
 If a step's exit cannot be proved by a command, it is not an exit. "Reviewed",
 "working" and "integrated" prove nothing on their own.
 
+### Version relations
+
+A runbook may carry one optional fenced `version-relations` block before Step
+1. Absence preserves the literal-only contract. A present block carries at
+most 32 physical rows, with no blank row, in this closed shape:
+
+```version-relations
+protasis | plugins/hexaemeron/skills/protasis/EVOLUTION.md | next-generation-after-integration-base
+```
+
+Each row is `skill id | EVOLUTION.md path | relation`. The skill id is
+kebab-case. The path is repository-relative, contains no empty, `.` or `..`
+segment, backslash or control character, ends in `EVOLUTION.md`, and has the
+skill id as its parent directory. Ids and paths are unique. The sole admitted
+relation is `next-generation-after-integration-base`; a partial target list is
+valid because an omitted target may retain an intentional literal.
+
+A declared target has no concrete
+`<skill>-v<evolution>.<generation>.<epoch>` token outside the block. Prose,
+examples, commands and amendments all count. P006
+checks this shape and lexical identity. It does not open the ledger, decide
+whether the relation suits the change, allocate a version, or establish what
+the integration base will be.
+
 ## When one topic is several
 
 Most topics are one capability and go straight to the study. Decompose first
@@ -302,11 +328,18 @@ The study mode reads items as `## N. Title` headings, 1 to 12, refuses
 silence and a bare none on items 8 through 12, and reads item 5's
 risk-register block against the shape above: S005 when no block names a
 concern, S006 when a line does not split into the three pipe-separated
-fields, S007 when a field is malformed. The runbook mode reads the step
+fields, S007 when a field is malformed. S008 reports a real study amendment
+whose heading is not a calendar date, whose four fields are missing,
+duplicated, reordered, unknown, or empty, or which is not final. A study with
+no amendment and amendment examples inside fences remain unchanged. The
+runbook mode reads the step
 schema above, ends the last baseline step before a real amendment heading and
 reports P005 when a runbook amendment does not carry the dated four-field
-shape and complete replacement clauses below. Codes P000 to P005 and S000 to
-S007 are stable interfaces other
+shape and complete replacement clauses below. It reports P006 when a present
+version-relations block is open, misplaced, duplicated, oversized or malformed,
+or when a declared target is also pinned to a concrete token outside that
+block. Codes P000 to P006 and S000 to
+S008 are stable interfaces other
 tools cite. Deliberate exceptions state a reason:
 `<!-- protasis: allow <why> -->` on the heading line or the line above it.
 Presence and shape are all the parser settles; whether an answer is any good
@@ -356,11 +389,13 @@ clause. The other three amendment fields remain `Why`, `Steps touched` and
 the mechanical check establishes its shape and source bytes, not that the new
 criterion is correct or its command will pass.
 
-The runbook checker treats the first real `### Amendment -- YYYY-MM-DD`
+The shared amendment scanner checks every real study or runbook amendment's
+calendar date, four ordered non-empty fields, and final-section placement.
+Fenced examples are not amendments. Runbook mode additionally checks the
+complete-replacement syntax described above. The runbook checker treats the
+first real `### Amendment -- YYYY-MM-DD`
 heading as the end of the last baseline step, so amendment fields cannot answer
-for a missing step field. It checks each real amendment's calendar date, four
-ordered non-empty fields, final-section placement and complete-replacement
-syntax. Fenced examples are not amendments. Fiat owns exact-prefix continuity,
+for a missing step field. Fiat owns exact-prefix continuity,
 step topology, touched-step verdicts, receipts, recovery and the current-study
 binding; Protasis does not duplicate those controller gates.
 
@@ -462,12 +497,12 @@ assumption costs a sentence. Found in the audit loop, it costs a step.
 
 ### protasis-runbook-readiness
 
-- Promise: A runbook accepted by Protasis decomposes the study into ordered steps whose entry, modules, exit commands, files, tests and discipline effects are discrete and provable.
-- Evidence: The accepted study, exact runbook, `protasis.py` structural result, per-step commands and files, dependency order, version boundary and completed pre-receipt checklist.
+- Promise: A runbook accepted by Protasis decomposes the study into ordered steps whose entry, modules, exit commands, files, tests and discipline effects are discrete and provable, and any optional governed-skill version relation has one closed source without a competing concrete target token.
+- Evidence: The accepted study, exact runbook, `protasis.py` structural result, per-step commands and files, dependency order, optional version-relations block, version boundary and completed pre-receipt checklist.
 - Evidence classes: checked, inferred, recorded
-- Boundary: Runbook readiness establishes buildable specification content, not correct implementation, command success, audit closure or delivery completion.
+- Boundary: Runbook readiness establishes buildable specification content and the lexical shape of a declared version relation. It does not establish correct implementation, command success, relation suitability, a selected version or integration base, audit closure or delivery completion.
 - Authorises: Starting implementation at the first step while using the study and runbook as the change-control boundary.
 - Consequence: 1
-- Refuses: A step with no executable exit, mixed independent outcomes, missing affected files or tests, forward references to an undecided design or receipt language with no evidence command.
+- Refuses: A step with no executable exit, mixed independent outcomes, missing affected files or tests, forward references to an undecided design, receipt language with no evidence command, or a malformed, ambiguous or concretely contradicted version relation.
 - Recovery: Split or reorder the failing step, supply its exact evidence and rerun both the mechanical check and the full content review.
 - Exceptions: none

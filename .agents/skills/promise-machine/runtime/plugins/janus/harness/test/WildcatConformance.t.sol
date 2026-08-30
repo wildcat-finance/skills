@@ -7,6 +7,8 @@ import {IWildcatHook} from "../src/wildcat/IWildcatHook.sol";
 import {WildcatHostModel, MockAsset} from "../src/wildcat/WildcatHostModel.sol";
 import {HonestAccessHook} from "../src/wildcat/HonestAccessHook.sol";
 import {WildcatHostAdapter} from "../src/wildcat/WildcatHostAdapter.sol";
+import {MockRoleProvider} from "../src/wildcat/MockRoleProvider.sol";
+import {AccountResolver, ManifestReader, ResolvedThreshold} from "../src/ManifestReader.sol";
 
 /// @dev A hook that reverts on deposit with a custom error, to prove the model
 ///      bubbles the exact revert bytes and rolls the action back (gate 4).
@@ -138,21 +140,35 @@ contract WildcatConformanceTest is JanusBase, JanusHarness {
   MockAsset asset;
   WildcatHostModel model;
   HonestAccessHook honest;
+  MockRoleProvider provider;
   WildcatHostAdapter adapter;
+  ManifestReader manifestReader;
   address lender = address(0xBEEF);
 
   function setUp() public {
     asset = new MockAsset();
     model = new WildcatHostModel(asset);
     honest = new HonestAccessHook();
-    adapter = new WildcatHostAdapter(model, asset, address(0));
+    provider = new MockRoleProvider();
+    adapter = new WildcatHostAdapter(model, asset, address(provider));
+    manifestReader = new ManifestReader();
     model.setBorrower(address(adapter));
     model.setHook(address(honest));
+    honest.setRoleProvider(provider);
 
     asset.mint(lender, 1_000_000);
     vm.prank(lender);
     asset.approve(address(model), type(uint256).max);
     honest.grant(lender, block.timestamp + 1000);
+  }
+
+  /// @dev The manifest's threshold for one action, resolved through the host
+  ///      adapter. Every verdict test below takes its gate inputs from this
+  ///      rather than from a literal, so the sets the gates enforce are the
+  ///      sets the manifest wrote. A literal agrees with the manifest only
+  ///      until someone edits one of them.
+  function _threshold(string memory action) internal view returns (ResolvedThreshold memory) {
+    return manifestReader.resolveFile(MANIFEST, action, AccountResolver(address(adapter)));
   }
 
   function _depositParams(uint256 amount) internal view returns (bytes memory) {
@@ -168,20 +184,142 @@ contract WildcatConformanceTest is JanusBase, JanusHarness {
 
     assertTrue(_deltaHasEffects(r.delta), "the drive produced observable effects, so the gate is not vacuous");
 
-    address[] memory allowed = new address[](0); // the honest hook calls nothing
+    ResolvedThreshold memory t = _threshold("deposit");
+    assertEq(t.allowedCallTargets.length, 1, "the resolved permit set is not empty");
+    assertEq(t.allowedCallTargets[0], address(provider), "and it names the role provider");
+
+    // Gate 1 passes for a hook that calls nothing no matter what set it is
+    // given, including a wrong one, so the honest verdict is worth having only
+    // if the hook actually exercised the permit. It did: the provider counted
+    // the call the manifest declares.
+    assertEq(uint256(provider.validations()), 1, "the hook made the permitted provider call");
+
     assertTrue(
-      _gate1_hookCallsWithinAllowed(r.delta, address(honest), allowed),
-      "gate1: the hook made no call outside the permitted set"
+      _gate1_hookCallsWithinAllowed(r.delta, address(honest), t.allowedCallTargets),
+      "gate1: the hook made no call outside the manifest's resolved set"
     );
+
+    assertEq(t.allowedWriteAccounts.length, 2, "both hook-scope entries resolved");
+    assertEq(t.allowedWriteAccounts[0], address(honest), "and both name the hook itself");
 
     assertEq(_hookValueMoved(r.delta, address(honest)), uint256(0), "gate2: the hook moved no value");
     assertEq(asset.balanceOf(address(honest)), hookAssetBefore, "gate2: the hook's asset balance is unchanged");
     assertEq(r.valueAfter - r.valueBefore, uint256(100), "gate2: market value rose by exactly the deposit");
   }
 
+  /// @dev Gate 1's other half on the honest path, and the manifest gap it
+  ///      exposes. This is the finding the step was built to reach, so it is
+  ///      pinned as behaviour rather than described in a comment somewhere.
+  ///
+  ///      The deposit threshold declares `roleProvider.validateCredential` a
+  ///      `call`, which is the kind reserved for state-changing calls: naming
+  ///      it `staticcall` would be the way to say the provider only reads. Its
+  ///      `permittedStorageWrites` then lists two entries, both scope `hook`,
+  ///      and nothing scoped to the provider.
+  ///
+  ///      Those two clauses disagree. Gate 1 attributes a write to the hook
+  ///      when the written account is one the hook's subtree made a
+  ///      state-changing call into, which is what catches a call laundered
+  ///      through a permitted forwarder. A role provider that records anything
+  ///      when validated -- and recording is the only reason to declare the
+  ///      call state-changing -- therefore produces a write the manifest did
+  ///      not enumerate, and the storage half rejects the honest hook.
+  ///
+  ///      The manifest is the artefact under test, so it is not edited here to
+  ///      make the verdict green. The schema already has the clause that would
+  ///      close the gap: a `permittedStorageWrites` entry of scope `external`
+  ///      whose slot names `roleProvider`. Adding it is a change to the Wildcat
+  ///      spec and belongs to whoever owns that file.
+  ///
+  ///      Both directions are asserted, so this cannot rot into a green tick:
+  ///      the call half passes with the resolved set, and the storage half
+  ///      rejects for exactly this reason, with the provider named as the
+  ///      account that made it reject.
+  function test_the_manifest_permits_the_provider_call_but_not_the_write_it_causes() external {
+    DriveResult memory r = _drive(adapter, "deposit", lender, _depositParams(100));
+    assertTrue(!r.reverted, "the provider-backed deposit succeeds");
+    assertEq(uint256(provider.validations()), 1, "the provider recorded the permitted call");
+
+    ResolvedThreshold memory t = _threshold("deposit");
+
+    assertTrue(
+      _gate1_hookCallsWithinAllowed(r.delta, address(honest), t.allowedCallTargets),
+      "gate1 calls: the permitted call is admitted"
+    );
+
+    assertTrue(
+      !_gate1_hookStorageWithinScopes(r.delta, address(honest), t.allowedWriteAccounts),
+      "gate1 storage: the write that call caused is not enumerated, so it is caught"
+    );
+
+    // And the account that makes the difference is the provider itself: with
+    // it added to the write set the same delta passes, which is what shows the
+    // rejection is the manifest's missing clause and not a gate defect.
+    address[] memory widened = new address[](t.allowedWriteAccounts.length + 1);
+    for (uint256 i; i < t.allowedWriteAccounts.length; ++i) widened[i] = t.allowedWriteAccounts[i];
+    widened[t.allowedWriteAccounts.length] = address(provider);
+    assertTrue(
+      _gate1_hookStorageWithinScopes(r.delta, address(honest), widened),
+      "gate1 storage: the provider is the only account the manifest is missing"
+    );
+  }
+
+  /// @dev The provider path is optional, and this is what makes that claim
+  ///      testable rather than merely written down. The hook's guard on an
+  ///      unset provider was a line no mutant could kill: every
+  ///      `HonestAccessHook` in the suite either had a provider set or was
+  ///      never driven, so calling the provider unconditionally -- which on an
+  ///      unset provider means calling `address(0)` and reverting -- changed no
+  ///      result anywhere.
+  ///
+  ///      A provider-less hook still completes a deposit, still keeps its
+  ///      monotone known-lender bit, and makes no call at all, so gate 1 holds
+  ///      against the resolved set for the opposite reason the provider-backed
+  ///      path does: nothing to permit rather than a permitted call.
+  function test_a_hook_without_a_provider_still_deposits_and_calls_nothing() external {
+    HonestAccessHook bare = new HonestAccessHook();
+    model.setHook(address(bare));
+    bare.grant(lender, block.timestamp + 1000);
+
+    DriveResult memory r = _drive(adapter, "deposit", lender, _depositParams(100));
+    assertTrue(!r.reverted, "the provider-less deposit succeeds");
+    assertTrue(bare.knownLender(lender), "and the monotone known-lender bit is set");
+    assertEq(uint256(provider.validations()), 0, "no provider call was made");
+
+    ResolvedThreshold memory t = _threshold("deposit");
+    assertTrue(
+      _gate1_hookCallsWithinAllowed(r.delta, address(bare), t.allowedCallTargets),
+      "gate1: a hook that calls nothing is within any resolved set"
+    );
+  }
+
+  /// @dev The honest permit shown to be doing work, without a literal anywhere.
+  ///      The same deposit is judged against a second threshold the manifest
+  ///      actually carries: `setAnnualInterestAndReserveRatioBips` permits no
+  ///      calls at all, so the provider call the hook made is outside its
+  ///      resolved set and gate 1 rejects. Without this the honest verdict
+  ///      could hold against any set at all, and with an empty literal instead
+  ///      it would only show that an empty array rejects.
+  ///
+  ///      Both sets come from the same manifest through the same adapter, so
+  ///      what separates them is the manifest's own per-action permission and
+  ///      not anything written in this test.
+  function test_a_permitted_call_is_not_permitted_under_another_action() external {
+    DriveResult memory r = _drive(adapter, "deposit", lender, _depositParams(100));
+    assertTrue(!r.reverted, "the provider-backed deposit succeeds");
+    assertEq(uint256(provider.validations()), 1, "and it made the permitted call");
+
+    ResolvedThreshold memory rates = _threshold("setAnnualInterestAndReserveRatioBips");
+    assertEq(rates.allowedCallTargets.length, 0, "that action permits no calls");
+    assertTrue(
+      !_gate1_hookCallsWithinAllowed(r.delta, address(honest), rates.allowedCallTargets),
+      "gate1: the same call is caught under an action that does not permit it"
+    );
+  }
+
   function test_gate5_honest_hook_within_manifest_gas_budget() external {
     _drive(adapter, "deposit", lender, _depositParams(100));
-    uint256 budget = vm.parseJsonUint(vm.readFile(MANIFEST), ".thresholds[0].gasBudget");
+    uint256 budget = _threshold("deposit").gasBudget;
     assertTrue(model.lastHookGasUsed() <= budget, "gate5: the hook stayed within the manifest budget");
     assertTrue(model.lastHookGasUsed() > 0, "gate5: a real hook gas figure was recorded");
   }
