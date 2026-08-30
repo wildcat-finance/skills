@@ -1466,6 +1466,21 @@ class PromiseSemanticGateTests(unittest.TestCase):
     def test_level_three_adds_authority_and_independent_evidence(self):
         self.assertEqual(self.evaluate(self.transition(3)), [])
 
+        for source in ("content", "authority"):
+            with self.subTest(source=source):
+                replayed = self.transition(3)
+                independent = next(
+                    item for item in replayed["evidence"] if item["role"] == "independent"
+                )
+                if source == "content":
+                    reused = next(
+                        item for item in replayed["evidence"] if item["role"] == "content"
+                    )["reference"]
+                else:
+                    reused = replayed["authority"]
+                independent["reference"] = dict(reused)
+                self.assertEqual(semantic_codes(self.evaluate(replayed)), ["PM090"])
+
     def test_level_three_refuses_a_level_two_only_replay(self):
         document = load_fixture("consequences/level-3-level-2-only.json")
         self.assertEqual(semantic_codes(self.evaluate(document)), ["PM090"])

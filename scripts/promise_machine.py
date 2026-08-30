@@ -1761,6 +1761,7 @@ def evaluate_transition_record(
         "independent",
     }
     roles: set[str] = set()
+    evidence_digests: dict[str, str] = {}
     for entry in evidence:
         if not isinstance(entry, dict) or set(entry) != evidence_keys:
             return [
@@ -1824,6 +1825,7 @@ def evaluate_transition_record(
                 )
             ]
         roles.add(role)
+        evidence_digests[role] = entry["reference"]["sha256"]
     required_roles = CONSEQUENCE_ROLES[document["consequence"]]
     if roles != required_roles:
         return [
@@ -1853,6 +1855,20 @@ def evaluate_transition_record(
                     "law-consequence-separation",
                     shown,
                     authority_error,
+                    record=document,
+                )
+            ]
+        independent_digest = evidence_digests["independent"]
+        if independent_digest == document["authority"]["sha256"] or any(
+            digest == independent_digest
+            for role, digest in evidence_digests.items()
+            if role != "independent"
+        ):
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "level three independent evidence reuses authority or ordinary evidence bytes",
                     record=document,
                 )
             ]
