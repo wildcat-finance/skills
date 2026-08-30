@@ -2444,6 +2444,17 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
         else:
             self.fail("non-scalar adapter response was accepted")
 
+    def test_non_scalar_bound_evidence_record_refuses_without_escaping(self):
+        record = b'{"schema":"\\ud800"}\n'
+        try:
+            AI.load_canonical_record(record, allow_integers=True)
+        except AI.CodecError as error:
+            self.assertEqual(error.code, "WAI-E-UTF8.SCALAR")
+        except Exception as error:
+            self.fail(f"non-scalar bound evidence escaped as {type(error).__name__}")
+        else:
+            self.fail("non-scalar bound evidence was accepted")
+
     def test_fake_tokenizer_model_mismatch_refuses(self):
         profile = self.profile(mode="model-mismatch")
         self.assertRefusal(
@@ -2875,6 +2886,16 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
                 answer = AI._answer_record(response, self.question())
                 self.assertNotIn("visible-secret", answer["response"])
                 self.assertIn("[REDACTED]", answer["response"])
+
+    def test_secret_redaction_cannot_expand_past_response_cap(self):
+        response = ("token=x " * 64)[: AI.MAX_PARITY_RESPONSE_BYTES]
+        self.assertEqual(len(response.encode("utf-8")), AI.MAX_PARITY_RESPONSE_BYTES)
+        answer = AI._answer_record(response, self.question())
+        self.assertEqual(answer["response"], "[REDACTED: response exceeded stored bound]")
+        self.assertLessEqual(
+            len(answer["response"].encode("utf-8")), AI.MAX_PARITY_RESPONSE_BYTES
+        )
+        self.assertEqual(answer["code"], "WAI-E-PARITY.ANSWER")
 
     def test_prompt_does_not_label_answer_outcome_classes(self):
         template = (ROOT / manifest_record()["evidence"]["parity_prompt"]["path"]).read_bytes()

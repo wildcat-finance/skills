@@ -1662,9 +1662,9 @@ def _record_bounds(value: Any, path: str = "$", depth: int = 0, *, allow_integer
             _record_bounds(item, f"{path}[{index}]", depth + 1, allow_integers=allow_integers)
         return
     if isinstance(value, str):
+        _scalar(value, path)
         if len(value.encode("utf-8")) > MAX_LITERAL_BYTES:
             refuse("WAI-E-BOUNDS.LITERAL", path)
-        _scalar(value, path)
         return
     if value is None or isinstance(value, bool):
         return
@@ -3431,6 +3431,9 @@ def _render_parity_prompt(
 
 def _answer_record(response: str, question: Mapping[str, Any]) -> dict[str, Any]:
     safe_response = _redact_text(response)
+    _scalar(safe_response, "$.adapter_output.response")
+    if len(safe_response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
+        safe_response = "[REDACTED: response exceeded stored bound]"
     try:
         value = json.loads(response, object_pairs_hook=_duplicate_checked_external_object)
     except (CodecError, json.JSONDecodeError, RecursionError):

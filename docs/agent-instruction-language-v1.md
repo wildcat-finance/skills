@@ -432,6 +432,8 @@ the local parser can preserve and refuse malformed or unlisted values instead
 of letting the runtime coerce them. The report retains the bounded final JSON
 answer or refusal, input and prompt digests, prompt token count, job id, verdict,
 unknowns, and refusal codes. It does not retain model reasoning.
+Secret-shaped response text is redacted; if those replacements would exceed the
+512-byte record limit, the report stores one fixed bounded redaction marker.
 
 The checked run contains 18 source-versus-compact pairs and 36 isolated model
 calls. All 18 pairs returned the declared required answer from both forms; the
