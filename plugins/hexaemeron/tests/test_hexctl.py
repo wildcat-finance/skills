@@ -663,48 +663,46 @@ class TestStudyAmendments(HexctlCase):
         with open(os.path.join(self.target, "study.md"), encoding="utf-8") as handle:
             self.assertEqual(handle.read(), original)
 
-    def test_date_and_four_field_shape_are_exact(self):
+    def test_protasis_owns_shape_before_record_or_mutation(self):
+        original = self.to_amendable_steps()
+        paths = [Path(self.target, name) for name in (
+            ".hexaemeron/state.json", ".hexaemeron/ledger.jsonl", "study.md"
+        )]
+        before = [path.read_bytes() for path in paths]
+        why = "**Why.** The receipted baseline disproved it.\n"
+        what = "**What changed.** The fixture assumption was corrected.\n"
         cases = {
-            "invalid date": (self.amendment(date="2026-02-30"), "invalid calendar date"),
-            "missing field": (
-                self.amendment().replace(
-                    "**Why.** The receipted baseline disproved it.\n", ""
-                ),
-                "field 'Why' must occur exactly once",
+            "invalid date": self.amendment(date="2026-02-30"),
+            "missing field": self.amendment().replace(why, ""),
+            "duplicate field": self.amendment().replace(
+                why, "**Why.** First.\n**Why.** Second.\n"
             ),
-            "duplicate field": (
-                self.amendment().replace(
-                    "**Why.** The receipted baseline disproved it.\n",
-                    "**Why.** First.\n**Why.** Second.\n",
-                ),
-                "field 'Why' must occur exactly once",
-            ),
-            "empty field": (
-                self.amendment(what=""), "field 'What changed' must not be empty"
-            ),
-            "wrong order": (
-                self.amendment().replace(
-                    "**What changed.** The fixture assumption was corrected.\n"
-                    "**Why.** The receipted baseline disproved it.\n",
-                    "**Why.** The receipted baseline disproved it.\n"
-                    "**What changed.** The fixture assumption was corrected.\n",
-                ),
-                "accepted four-field order",
-            ),
+            "empty field": self.amendment(what=""),
+            "wrong order": self.amendment().replace(what + why, why + what),
         }
-        for label, (suffix, message) in cases.items():
+        for label, suffix in cases.items():
             with self.subTest(label=label):
-                other = HexctlCase(methodName="runTest")
-                other.setUp()
-                try:
-                    original = other.to_amendable_steps()
-                    candidate = other.write("candidate.md", original + suffix)
-                    proc = other.run_ctl(
-                        "amend", "study", "--artifact", candidate, expect=2
-                    )
-                    self.assertIn(message, proc.stderr)
-                finally:
-                    other.tearDown()
+                candidate = self.write("candidate.md", original + suffix)
+                proc = self.run_ctl(
+                    "amend", "study", "--artifact", candidate, expect=2
+                )
+                self.assertIn("Protasis rejected the amendment candidate", proc.stderr)
+
+        module = hexctl_module()
+        with (
+            mock.patch.object(
+                module,
+                "_study_amendment_record",
+                side_effect=AssertionError,
+            ),
+            redirect_stderr(StringIO()),
+            self.assertRaises(SystemExit),
+        ):
+            module.cmd_amend_study(argparse.Namespace(
+                dir=self.target, artifact=os.path.join(self.target, candidate)
+            ))
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.assertFalse(Path(self.target, ".hexaemeron/study-amendment-pending.json").exists())
 
     def test_every_unbuilt_step_gets_one_unambiguous_entry_and_exit_verdict(self):
         cases = {
@@ -845,7 +843,11 @@ class TestStudyAmendments(HexctlCase):
 
         for label, suffix, message in (
             ("duplicate", self.amendment() + self.amendment(), "more than one"),
-            ("trailing", self.amendment() + "\n## Notes\n\nLater.\n", "final section"),
+            (
+                "trailing",
+                self.amendment() + "\n## Notes\n\nLater.\n",
+                "Protasis rejected the amendment candidate",
+            ),
         ):
             with self.subTest(label=label):
                 other = HexctlCase(methodName="runTest")
