@@ -38,6 +38,11 @@ Neither the model nor the compact form may silently add, remove, infer,
 normalise, merge, or reorder an instruction. An unsupported construct refuses
 encoding.
 
+Binding `start` and `end` offsets use bare canonical decimal fields in `B`
+records. Their positions already assign the number kind, so repeating a
+number tag and byte length adds no information. Other number values keep the
+ordinary length-prefixed literal form.
+
 For this prototype, lossless means exact canonical-model equality:
 `decode(format(model))` produces the same canonical JSON bytes. Fresh-context
 questions and hostile mutations may disprove a reviewed source binding, but a
@@ -82,6 +87,14 @@ questions beside every derived form.
 The standard-library codec stays independent of tokenizers and model runtimes.
 Measurement and family-parity adapters remain outside its authority and may
 support only the exact profiles and observations they record.
+
+The final Promise Machine digest exposed that length-prefixed binding offsets
+left the three-document token gate dependent on how one embedded SHA-256 was
+segmented: the pre-change rerun moved from a one-token saving to a one-token
+regression. Bare type-fixed offsets changed that same comparison to a 52-token
+saving while preserving all three canonical models. This measurement justifies
+the encoding choice for the bound cohort; it is not a general compression
+claim.
 
 Version 1 cannot be called ready for a repository-wide conversion from this
 decision alone. The [runbook](../compact-agent-instruction-language/runbook.md)

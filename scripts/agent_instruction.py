@@ -881,8 +881,8 @@ def format_compact(model: Any) -> bytes:
             "B",
             encode_literal({"kind": "identifier", "value": binding["source"]}),
             encode_literal({"kind": "identifier", "value": binding["node"]}),
-            encode_literal({"kind": "number", "value": binding["start"]}),
-            encode_literal({"kind": "number", "value": binding["end"]}),
+            binding["start"],
+            binding["end"],
             encode_literal(binding["reviewer"]),
         )
     if len(lines) > MAX_LINES:
@@ -938,6 +938,16 @@ class CompactParser:
         if self.total_literal_bytes > MAX_TOTAL_LITERAL_BYTES:
             refuse("WAI-E-BOUNDS.LITERALS", path)
         return literal
+
+    def decimal(self, token: str, path: str = "$") -> str:
+        value = _decimal(token, path)
+        size = len(value.encode("utf-8"))
+        if size > MAX_LITERAL_BYTES:
+            refuse("WAI-E-BOUNDS.LITERAL", path)
+        self.total_literal_bytes += size
+        if self.total_literal_bytes > MAX_TOTAL_LITERAL_BYTES:
+            refuse("WAI-E-BOUNDS.LITERALS", path)
+        return value
 
     def peek(self) -> tuple[int, str, list[str]] | None:
         return self.records[self.index] if self.index < len(self.records) else None
@@ -1091,12 +1101,13 @@ class CompactParser:
             )
         while self.peek() is not None and self.peek()[:2] == (1, "B"):
             values = self.take(1, "B", 5)
+            path = f"$record[{self.index - 1}]"
             model["bindings"].append(
                 {
                     "source": self.literal(values[0], "identifier")["value"],
                     "node": self.literal(values[1], "identifier")["value"],
-                    "start": self.literal(values[2], "number")["value"],
-                    "end": self.literal(values[3], "number")["value"],
+                    "start": self.decimal(values[2], path),
+                    "end": self.decimal(values[3], path),
                     "reviewer": self.literal(values[4], "identifier"),
                 }
             )
@@ -2602,7 +2613,12 @@ def _check_fixture(
     return records, fixture_risks, literal_classes, len(mutation_records), len(answer_sets)
 
 
-def _check_manifest_bytes(root: str | os.PathLike[str], manifest_bytes: bytes) -> list[dict[str, Any]]:
+def _check_manifest_bytes(
+    root: str | os.PathLike[str],
+    manifest_bytes: bytes,
+    *,
+    validate_evidence_reports: bool = True,
+) -> list[dict[str, Any]]:
     manifest_digest = _digest(manifest_bytes)
     manifest = validate_manifest(load_canonical_record(manifest_bytes))
     schema_bytes = read_confined(root, manifest["schema_path"])
@@ -2651,7 +2667,11 @@ def _check_manifest_bytes(root: str | os.PathLike[str], manifest_bytes: bytes) -
             refuse("WAI-E-MUTATION.LITERAL_COVERAGE", "$.fixtures")
         if mutation_total != _small_decimal(manifest["mutation_count"], "$.mutation_count", MAX_MUTATIONS):
             refuse("WAI-E-MANIFEST.MUTATION_COUNT", "$.mutation_count")
-        _load_evidence_artifacts(root, manifest)
+        _load_evidence_artifacts(
+            root,
+            manifest,
+            validate_reports=validate_evidence_reports,
+        )
     records.append(
         _check_record(
             "run.summary",
@@ -3139,7 +3159,10 @@ def _validate_parity_record(
 
 
 def _load_evidence_artifacts(
-    root: str | os.PathLike[str], manifest: Mapping[str, Any]
+    root: str | os.PathLike[str],
+    manifest: Mapping[str, Any],
+    *,
+    validate_reports: bool = True,
 ) -> dict[str, bytes]:
     if _confined_directory_entries(root, EVIDENCE_ROOT, len(EVIDENCE_ARTIFACTS)) != set(EVIDENCE_ARTIFACTS.values()):
         refuse("WAI-E-MANIFEST.CLOSURE", "$.evidence")
@@ -3174,6 +3197,8 @@ def _load_evidence_artifacts(
             refuse("WAI-E-PARITY.PROMPT", "$.evidence.parity_prompt")
     tokenizer = validate_tokenizer_profile(load_canonical_record(evidence["tokenizer_profile"]))
     families = validate_family_profiles(load_canonical_record(evidence["family_profiles"]))
+    if not validate_reports:
+        return evidence
     measurement = load_canonical_record(evidence["measurement_record"], allow_integers=True)
     parity = load_canonical_record(evidence["parity_record"], allow_integers=True)
     if measurement.get("schema") != MEASUREMENT_SCHEMA:
@@ -3228,10 +3253,10 @@ def _signed_decimal(value: int) -> str:
 def measure_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[dict[str, Any], bool]:
     manifest_bytes = read_confined(root, manifest_path)
     manifest = validate_manifest(load_canonical_record(manifest_bytes))
-    checked = _check_manifest_bytes(root, manifest_bytes)
+    checked = _check_manifest_bytes(root, manifest_bytes, validate_evidence_reports=False)
     if checked[-1]["outcome"] != "accepted":
         refuse("WAI-E-MEASURE.MUTATIONS", "$.manifest")
-    evidence = _load_evidence_artifacts(root, manifest)
+    evidence = _load_evidence_artifacts(root, manifest, validate_reports=False)
     profile = validate_tokenizer_profile(load_canonical_record(evidence["tokenizer_profile"]))
     _verify_profile_identity(profile)
     bootstrap = evidence["decoder_bootstrap"]
@@ -3475,10 +3500,10 @@ def _answer_record(response: str, question: Mapping[str, Any]) -> dict[str, Any]
 def parity_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[dict[str, Any], bool]:
     manifest_bytes = read_confined(root, manifest_path)
     manifest = validate_manifest(load_canonical_record(manifest_bytes))
-    checked = _check_manifest_bytes(root, manifest_bytes)
+    checked = _check_manifest_bytes(root, manifest_bytes, validate_evidence_reports=False)
     if checked[-1]["outcome"] != "accepted":
         refuse("WAI-E-PARITY.MUTATIONS", "$.manifest")
-    evidence = _load_evidence_artifacts(root, manifest)
+    evidence = _load_evidence_artifacts(root, manifest, validate_reports=False)
     families_record = validate_family_profiles(load_canonical_record(evidence["family_profiles"]))
     profiles = families_record["profiles"]
     for index, profile in enumerate(profiles):

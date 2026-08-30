@@ -441,7 +441,7 @@ def exception_count_model(count: int) -> dict:
 
 def line_limit_model(end_extra: int = 0) -> dict:
     model = minimal_model()
-    start_width = 32745
+    start_width = 32752
     end_width = start_width + end_extra
     start = "1" + "0" * (start_width - 1)
     end = ("2" if end_extra == 0 else "1") + "0" * (end_width - 1)
@@ -459,7 +459,7 @@ def file_and_line_count_limit_model() -> dict:
     evidence = [literal("text", "") for _ in range(AI.MAX_EXPRESSIONS)]
     authorisation_count = AI.MAX_LINES - 15 - len(evidence)
     evidence[:12] = [literal("text", " " * 32759) for _ in range(12)]
-    evidence[12] = literal("text", " " * 16340 + "x")
+    evidence[12] = literal("text", " " * 16352 + "x")
     directive["promise"] = {
         "id": "promise",
         "claim": literal("text", ""),
@@ -537,10 +537,12 @@ def all_compact_literal_bytes_limit_plus_one_model() -> dict:
 def compact_literal_byte_total(compact: bytes) -> int:
     parser = AI.CompactParser(compact)
     total = 0
-    for _, _, fields in parser.records:
+    for _, opcode, fields in parser.records:
         for field in fields:
             if len(field) >= 3 and field[0] in AI.TAG_KINDS and ":" in field[1:]:
                 total += len(AI.decode_literal(field)["value"].encode("utf-8"))
+        if opcode == "B":
+            total += sum(len(fields[index].encode("utf-8")) for index in (2, 3))
     return total
 
 
@@ -996,6 +998,32 @@ class CompactCodecTests(RefusalAssertions, unittest.TestCase):
         compact = AI.format_compact(complete_model())
         model, _ = AI.decode_compact(compact)
         self.assertEqual(AI.format_compact(model), compact)
+
+    def test_binding_offsets_use_bare_canonical_decimals(self):
+        binding_lines = [
+            line.split()
+            for line in AI.format_compact(complete_model()).decode().splitlines()
+            if line.lstrip().startswith("B ")
+        ]
+        self.assertTrue(binding_lines)
+        for fields in binding_lines:
+            with self.subTest(fields=fields):
+                self.assertRegex(fields[3], r"\A(?:0|[1-9][0-9]*)\Z")
+                self.assertRegex(fields[4], r"\A(?:0|[1-9][0-9]*)\Z")
+
+    def test_length_prefixed_binding_offsets_refuse(self):
+        model = minimal_model()
+        lines = AI.format_compact(model).decode().splitlines()
+        binding_index = next(index for index, line in enumerate(lines) if line.lstrip().startswith("B "))
+        fields = lines[binding_index].split()
+        start = model["bindings"][0]["start"]
+        fields[3] = f"n{len(start.encode('utf-8'))}:{start}"
+        lines[binding_index] = "  " + " ".join(fields)
+        self.assertRefusal(
+            "WAI-E-SHAPE.DECIMAL",
+            AI.decode_compact,
+            ("\n".join(lines) + "\n").encode(),
+        )
 
     def test_output_has_exact_final_newline(self):
         compact = AI.format_compact(minimal_model())
@@ -2145,6 +2173,28 @@ class AdapterFixtureTests(RefusalAssertions):
     def tearDown(self):
         self.temporary.cleanup()
 
+    def copied_fixture_root(self) -> Path:
+        destination = self.root / "repository"
+        fixture_destination = destination / "tests/fixtures/agent-instruction-v1"
+        fixture_destination.parent.mkdir(parents=True)
+        shutil.copytree(ROOT / "tests/fixtures/agent-instruction-v1", fixture_destination)
+        for source in {item["source"]["path"] for item in manifest_record()["fixtures"]}:
+            target = destination / source
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / source, target)
+        return destination
+
+    def rebind_changed_bootstrap(self, root: Path) -> str:
+        manifest_path = root / MANIFEST.relative_to(ROOT)
+        manifest = AI.load_canonical_record(manifest_path.read_bytes())
+        bootstrap_path = root / manifest["evidence"]["decoder_bootstrap"]["path"]
+        bootstrap = bootstrap_path.read_bytes() + b"Regeneration guard.\n"
+        bootstrap_path.write_bytes(bootstrap)
+        digest = hashlib.sha256(bootstrap).hexdigest()
+        manifest["evidence"]["decoder_bootstrap"]["sha256"] = digest
+        manifest_path.write_bytes(AI.canonical_record_bytes(manifest))
+        return digest
+
     def profile(
         self,
         *,
@@ -2252,6 +2302,18 @@ class AdapterFixtureTests(RefusalAssertions):
 
 
 class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
+    def test_measure_regenerates_after_bound_inputs_change(self):
+        copied = self.copied_fixture_root()
+        bootstrap_sha256 = self.rebind_changed_bootstrap(copied)
+        counts = iter([*((10, "{}") for _ in range(3)), (1, "{}"), *((value, "{}") for value in (5, 1) * 3)])
+        with (
+            mock.patch.object(AI, "_verify_profile_identity"),
+            mock.patch.object(AI, "_ollama_generate", side_effect=lambda *args, **kwargs: next(counts)),
+        ):
+            report, accepted = AI.measure_manifest(copied, str(MANIFEST.relative_to(ROOT)))
+        self.assertTrue(accepted)
+        self.assertEqual(report["bootstrap_sha256"], bootstrap_sha256)
+
     def test_fake_tokenizer_profile_verifies_exact_identity(self):
         profile = AI.validate_tokenizer_profile(self.profile())
         AI._verify_profile_identity(profile)
@@ -2687,6 +2749,21 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
 
 
 class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
+    def test_parity_regenerates_after_bound_inputs_change(self):
+        copied = self.copied_fixture_root()
+        bootstrap_sha256 = self.rebind_changed_bootstrap(copied)
+
+        def answer(profile, prompt, **kwargs):
+            return 1, json.dumps({"answer_id": kwargs["answer_ids"][0]})
+
+        with (
+            mock.patch.object(AI, "_verify_profile_identity"),
+            mock.patch.object(AI, "_ollama_generate", side_effect=answer),
+        ):
+            report, accepted = AI.parity_manifest(copied, str(MANIFEST.relative_to(ROOT)))
+        self.assertTrue(accepted)
+        self.assertEqual(report["bootstrap_sha256"], bootstrap_sha256)
+
     def test_two_genuinely_distinct_fake_families_validate(self):
         profiles = self.family_profiles()
         self.assertIs(AI.validate_family_profiles(profiles), profiles)
@@ -3076,6 +3153,173 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
             AI.canonical_record_bytes(report, allow_integers=True),
         )
         self.assertEqual(sorted(path.name for path in self.root.iterdir()), ["fake-runtime.py", "manifest.json", "parity.json"])
+
+
+class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
+    COVERAGE_PATH = ROOT / "tests/promise_machine_coverage.json"
+    PROMISE_ID = "promise-machine-agent-instruction-prototype"
+
+    def coverage(self) -> dict:
+        return json.loads(self.COVERAGE_PATH.read_text(encoding="utf-8"))["agent_instruction"]
+
+    def copied_root(self, destination: Path) -> Path:
+        fixture_destination = destination / "tests/fixtures/agent-instruction-v1"
+        fixture_destination.parent.mkdir(parents=True)
+        shutil.copytree(ROOT / "tests/fixtures/agent-instruction-v1", fixture_destination)
+        for source in {item["source"]["path"] for item in manifest_record()["fixtures"]}:
+            target = destination / source
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / source, target)
+        return destination
+
+    def assert_bound_paths(self, records: list[dict]) -> None:
+        for record in records:
+            with self.subTest(path=record["path"]):
+                path = ROOT / record["path"]
+                self.assertTrue(path.is_file())
+                self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), record["sha256"])
+
+    def test_root_promise_has_complete_exact_field_inventory(self):
+        source = (ROOT / "PROMISE_MACHINE.md").read_text(encoding="utf-8")
+        block = source.split(f"### {self.PROMISE_ID}\n", 1)[1].split("\n## Installation copies", 1)[0]
+        fields = (
+            "Promise",
+            "Evidence",
+            "Evidence classes",
+            "Boundary",
+            "Authorises",
+            "Consequence",
+            "Refuses",
+            "Recovery",
+            "Exceptions",
+        )
+        for field in fields:
+            with self.subTest(field=field):
+                self.assertEqual(block.count(f"- {field}:"), 1)
+
+    def test_specialised_coverage_binds_promise_and_contract(self):
+        coverage = self.coverage()
+        self.assertEqual(coverage["contract"], AI.SCHEMA_ID)
+        self.assertEqual(coverage["promise_id"], self.PROMISE_ID)
+        self.assertIn("exact checked compact documents", coverage["transition"])
+
+    def test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets(self):
+        contract = (ROOT / "docs/agent-instruction-language-v1.md").read_text(encoding="utf-8")
+        self.assertIn("| one decoded literal or binding offset | 65,000 | UTF-8 bytes |", contract)
+        self.assertIn("| all decoded literals and binding offsets | 786,432 | UTF-8 bytes |", contract)
+
+    def test_specialised_coverage_binds_runtime_documentation_and_manifest(self):
+        coverage = self.coverage()
+        self.assertEqual(coverage["checker"]["path"], "scripts/agent_instruction.py")
+        self.assertEqual(coverage["manifest"]["path"], str(MANIFEST.relative_to(ROOT)))
+        self.assertEqual(
+            sorted(record["path"] for record in coverage["documentation"]),
+            [
+                "docs/agent-instruction-language-v1.md",
+                "docs/decisions/ADR-051-encode-a-closed-agent-instruction-model.md",
+            ],
+        )
+        records = [coverage["checker"], coverage["manifest"], *coverage["documentation"]]
+        self.assert_bound_paths(records)
+
+    def test_specialised_coverage_binds_focused_tests(self):
+        record = self.coverage()["tests"]
+        self.assertEqual(set(record), {"path", "sha256", "selectors"})
+        self.assertEqual(record["path"], "tests/test_agent_instruction.py")
+        self.assert_bound_paths([{"path": record["path"], "sha256": record["sha256"]}])
+        selectors = record["selectors"]
+        self.assertIsInstance(selectors, list)
+        self.assertTrue(selectors)
+        self.assertEqual(len(selectors), len(set(selectors)))
+        source = (ROOT / record["path"]).read_text(encoding="utf-8")
+        for selector in selectors:
+            with self.subTest(selector=selector):
+                self.assertIsInstance(selector, str)
+                self.assertIn(f"def {selector}(", source)
+
+    def test_specialised_coverage_binds_all_fixture_artifacts(self):
+        coverage = self.coverage()
+        manifest = manifest_record()
+        records = coverage["fixtures"]
+        expected_paths = sorted(
+            fixture["artifacts"][artifact]["path"]
+            for fixture in manifest["fixtures"]
+            for artifact in AI.FIXTURE_ARTIFACTS
+        )
+        self.assertEqual(sorted(record["path"] for record in records), expected_paths)
+        self.assert_bound_paths(records)
+
+    def test_specialised_coverage_binds_all_evidence_records(self):
+        coverage = self.coverage()
+        expected_paths = sorted(record["path"] for record in manifest_record()["evidence"].values())
+        self.assertEqual(sorted(record["path"] for record in coverage["evidence"]), expected_paths)
+        self.assert_bound_paths(coverage["evidence"])
+
+    def test_bound_manifest_runs_complete_clean_demonstration(self):
+        records = AI.check_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+        self.assertEqual(records[-1]["outcome"], "accepted")
+        self.assertEqual(records[-1]["binding_count"], 15)
+        self.assertEqual(records[-1]["mutation_count"], 14)
+        self.assertEqual(records[-1]["question_count"], 9)
+        self.assertEqual(records[-1]["roundtrip_count"], 3)
+
+    def test_compact_documents_reproduce_from_bound_models(self):
+        for fixture in manifest_record()["fixtures"]:
+            with self.subTest(fixture=fixture["id"]):
+                model = AI.load_canonical_record((ROOT / fixture["artifacts"]["model"]["path"]).read_bytes())
+                compact = (ROOT / fixture["artifacts"]["compact"]["path"]).read_bytes()
+                self.assertEqual(AI.format_compact(model), compact)
+
+    def test_plugin_promise_machine_copies_are_current(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/promise_machine.py"), "sync", "--check", "--json"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_portable_promise_machine_runtime_is_current(self):
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/portable_promise_machine.py"), "check"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def assert_stale_report_refuses(self, evidence_key: str, field_path: tuple[str, ...], code: str) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            manifest_path = copied / MANIFEST.relative_to(ROOT)
+            manifest = AI.load_canonical_record(manifest_path.read_bytes())
+            report_path = copied / manifest["evidence"][evidence_key]["path"]
+            report = AI.load_canonical_record(report_path.read_bytes(), allow_integers=True)
+            target = report
+            for key in field_path[:-1]:
+                target = target[key]
+            target[field_path[-1]] = 0
+            changed = AI.canonical_record_bytes(report, allow_integers=True)
+            report_path.write_bytes(changed)
+            manifest["evidence"][evidence_key]["sha256"] = hashlib.sha256(changed).hexdigest()
+            manifest_path.write_bytes(AI.canonical_record_bytes(manifest))
+            self.assertRefusal(code, AI.check_manifest, copied, str(MANIFEST.relative_to(ROOT)))
+
+    def test_stale_measurement_report_refuses(self):
+        self.assert_stale_report_refuses(
+            "measurement_record",
+            ("totals", "source_tokens"),
+            "WAI-E-MEASURE.RECORD",
+        )
+
+    def test_stale_parity_report_refuses(self):
+        self.assert_stale_report_refuses(
+            "parity_record",
+            ("summary", "passed"),
+            "WAI-E-PARITY.RECORD",
+        )
 
 
 if __name__ == "__main__":
