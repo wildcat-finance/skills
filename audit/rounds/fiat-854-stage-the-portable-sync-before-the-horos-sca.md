@@ -61,3 +61,19 @@ Elenchus verdict: guarded
 | S3-R1-01 | low | scripts/portable_promise_machine.py | the import pattern missed `import "./A.sol" as N;`, a legal Solidity form, because it required the semicolon to follow the closing quote directly. The consequence is the worst kind for this check: a lost import written that way would have been skipped in silence and the check would have exited 0, which is the exact failure the step exists to end. Reached by enumerating the legal import grammars against the compiled pattern rather than by reading the mirror, since the mirror happens to contain none of that form and reading it would have shown nothing. Fixed by admitting an optional trailing alias, and guarded by `test_every_legal_import_form_naming_a_path_is_seen`, which asserts all six forms resolve to the same path and fails on the unfixed pattern | fixed in ee5d67044d76b19d48192629ba3927f0d8f4c5ab |
 
 Leads not pursued: the differential rule was checked in both directions rather than assumed. Against the real tree the check reports nothing across 88 mirrored Solidity files and 265 relative imports, including the two in `plugins/horos/examples/fixture-sol/Market.sol` that resolve in neither tree and must stay accepted. Dropping `plugins/janus/harness/src/wildcat/IRoleProvider.sol` from the payload reproduces skills#329 exactly and reports `HonestAccessHook.sol imports ./IRoleProvider.sol: plugins/janus/harness/src/wildcat/IRoleProvider.sol is in the source and absent from the mirror`, so the check catches the case it was written for. Not pursued: making the check compile or parse Solidity, which would buy comment and string awareness at the cost of a toolchain dependency this repository does not otherwise need for a packaging script. Not pursued: extending closure to Python or Markdown, which is a larger surface with no observed defect behind it. Not pursued: whether a bare-scope import such as `@openzeppelin/...` should be resolved through a remapping file, which belongs to whoever owns the Solidity build rather than to the mirror check.
+
+## Step 3, round 2 -- 2026-08-30T06:31:01Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: import-target-traversal=reviewed; closure-check-cost=reviewed; index-write-scope=not-applicable; index-write-environment=not-applicable; non-repository-root=not-applicable; partial-write=not-applicable; boundary-counts-churn=reviewed
+
+Not checked: the suite waiver holds and the Pashov pair did not run. This round audits the tree with S3-R1-01's fix applied. The fix widened one regular expression and added one test; the resolver, the differential rule and the caller were re-read and not re-derived. The parser limits stated in round 1 are unchanged and are limits rather than findings: the check still reads Solidity as text, so a commented or quoted import would be read as one, and non-relative targets remain out of scope by the study's own non-goal.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the widened pattern was checked for over-reach as well as reach, because a looser regex is the obvious way to break this fix. The optional alias clause admits only `as` followed by one identifier before the semicolon, so it does not begin matching statements that are not imports, and the real tree still reports zero failures across 88 mirrored Solidity files with the mirror byte-identical before and after. All 18 cases in the module pass and the root suite is 539 at zero failures. Carried unchanged from round 1: Solidity is not parsed, closure is not extended to Python or Markdown, and bare-scope imports are not resolved through a remapping file.
