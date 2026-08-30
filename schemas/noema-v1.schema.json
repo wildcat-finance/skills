@@ -176,6 +176,36 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["schema", "id", "path", "bytes", "sha256", "governed"],
+      "oneOf": [
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "brevitas" },
+            "path": { "const": "plugins/brevitas/skills/brevitas/SKILL.md" }
+          }
+        },
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "fiat" },
+            "path": { "const": "plugins/hexaemeron/skills/fiat/SKILL.md" }
+          }
+        },
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "phylax" },
+            "path": { "const": "plugins/hexaemeron/skills/phylax/SKILL.md" }
+          }
+        },
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "sapheneia" },
+            "path": { "const": "plugins/sapheneia/skills/sapheneia/SKILL.md" }
+          }
+        }
+      ],
       "properties": {
         "schema": { "const": "noema-source-identity/v1" },
         "id": { "$ref": "#/$defs/identifier" },
@@ -491,10 +521,10 @@
         "mutation_plan_sha256": { "$ref": "#/$defs/sha256" },
         "mutations_sha256": { "$ref": "#/$defs/sha256" },
         "mapped_spans": { "type": "integer", "minimum": 1, "maximum": 32768 },
-        "unsupported_remainders": { "type": "integer", "minimum": 0, "maximum": 32768 },
+        "unsupported_remainders": { "type": "integer", "minimum": 1, "maximum": 32768 },
         "questions": { "type": "integer", "minimum": 1, "maximum": 256 },
         "mutations": { "type": "integer", "minimum": 1, "maximum": 256 },
-        "shadow": { "type": "boolean" }
+        "shadow": { "const": true }
       }
     },
     "criticalVector": {

@@ -237,11 +237,20 @@ unsupported remainder. Spans for one physical source cannot overlap. Gaps in a
 declared governed region, stale bytes, aliased source paths and a remainder that
 grants authority refuse.
 
+The fixed corpus identities are `brevitas` at
+`plugins/brevitas/skills/brevitas/SKILL.md`, `fiat` at
+`plugins/hexaemeron/skills/fiat/SKILL.md`, `phylax` at
+`plugins/hexaemeron/skills/phylax/SKILL.md` and `sapheneia` at
+`plugins/sapheneia/skills/sapheneia/SKILL.md`. A source digest may advance with
+reviewed repository bytes; an identity may not move to another path or alias.
+
 Source-span coverage is reviewed evidence. It establishes the recorded mapping
 for exact bytes and does not establish that the reviewer captured unexpressed
 intent. An unsupported remainder blocks authority migration and remains visible
-in every evidence record. Bound files must decode as UTF-8, and span endpoints
-must fall between complete scalar values.
+in every evidence record. Every v1 prototype specimen must retain at least one
+such remainder and remain shadow-only; widening node spans cannot promote a
+specimen. Bound files must decode as UTF-8, and span endpoints must fall between
+complete scalar values.
 
 A semantic diff has closed entries for added, removed or modified effects,
 gates, authority, scope, evidence classes, literals, transitions, precedence

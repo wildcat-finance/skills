@@ -388,6 +388,23 @@ class NoemaScaffoldTests(unittest.TestCase):
             ["properties"]["root"]["pattern"],
         )
 
+    def test_schema_binds_each_specimen_id_to_its_canonical_source(self):
+        source_identity = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"][
+            "sourceIdentity"
+        ]
+        published = {
+            branch["properties"]["id"]["const"]: branch["properties"]["path"]["const"]
+            for branch in source_identity["oneOf"]
+        }
+        self.assertEqual(published, noema.SPECIMEN_SOURCE_PATHS)
+
+    def test_schema_keeps_every_prototype_specimen_shadow_only(self):
+        record = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"][
+            "specimenRecord"
+        ]["properties"]
+        self.assertEqual(record["shadow"], {"const": True})
+        self.assertEqual(record["unsupported_remainders"]["minimum"], 1)
+
     def test_schema_closes_graph_tuple_shapes(self):
         definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
         self.assertEqual(set(definitions["term"]), {"oneOf"})
@@ -4362,6 +4379,27 @@ class SourceBindingTests(unittest.TestCase):
         self.assertEqual(verified["counts"]["specimens"], 4)
         self.assertEqual(verified["counts"]["members"], 17)
 
+    def test_each_specimen_id_names_its_fixed_canonical_source(self):
+        for name in SPECIMEN_NAMES:
+            identity = read_json(specimen_directory(name) / "source.json")
+            self.assertEqual(identity["path"], noema.SPECIMEN_SOURCE_PATHS[name])
+
+    def test_valid_alternate_source_path_refuses_before_becoming_identity(self):
+        identity = read_json(specimen_directory("fiat") / "source.json")
+        alternate = ROOT / "docs/noema-v1.md"
+        raw = alternate.read_bytes()
+        identity.update(
+            {
+                "path": alternate.relative_to(ROOT).as_posix(),
+                "bytes": len(raw),
+                "sha256": sha256(raw).hexdigest(),
+                "governed": {"start": 0, "end": len(raw)},
+            }
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._source_identity(identity, ROOT)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.SOURCE")
+
     def test_seed_reference_names_match_the_closed_inventory(self):
         inventory = read_json(INVENTORY)
         expected = [item["path"] for item in inventory["files"]]
@@ -4458,6 +4496,14 @@ class SourceBindingTests(unittest.TestCase):
         corpus = read_json(CORPUS_MANIFEST)
         self.assertTrue(all(item["shadow"] for item in corpus["specimens"]))
         self.assertEqual(sum(item["unsupported_remainders"] for item in corpus["specimens"]), 44)
+
+    def test_corpus_record_cannot_promote_a_fully_mapped_specimen(self):
+        record = copy.deepcopy(read_json(CORPUS_MANIFEST)["specimens"][0])
+        record["unsupported_remainders"] = 0
+        record["shadow"] = False
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._specimen_record(record, "corpus.specimens[0]")
+        self.assertEqual(raised.exception.code, "NOE-E-AUTHORITY.SHADOW")
 
     def test_source_digest_tamper_refuses(self):
         with copied_corpus() as root:
