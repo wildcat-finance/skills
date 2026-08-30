@@ -998,8 +998,9 @@ class TestCommitVerification(
         module.GIT_TIMEOUT = 0.05
         for mode in (
             "nonzero", "timeout", "overflow", "missing-trailer",
-            "duplicate-trailer", "host-author", "host-coauthor", "host-byline",
-            "range-confusion", "malformed-range", "missing-commit",
+            "duplicate-trailer", "host-author", "host-committer",
+            "host-coauthor", "host-byline", "range-confusion",
+            "malformed-range", "missing-commit",
         ):
             with self.subTest(mode=mode):
                 error = StringIO()
@@ -1011,6 +1012,25 @@ class TestCommitVerification(
                         module.verify_local_range(self.dir, "base", "head", "step")
                 self.assertNotIn("ghp_FAKE_SECRET", error.getvalue())
                 self.assertNotIn("FAKE SIGNATURE MATERIAL", error.getvalue())
+
+    def test_authorised_publisher_committer_keeps_shoggoth_author(self):
+        module = hexctl_module()
+        commit = "a" * 40
+        with mock.patch.dict(
+            os.environ,
+            {"PATH": self.env["PATH"], "FAKE_GIT_MODE": "publisher-committer"},
+        ):
+            self.assertEqual(
+                module.verify_local_commit(self.dir, commit, "step"), commit
+            )
+            self.assertEqual(
+                module.commit_author(self.dir, commit, "step"),
+                ("Shoggoth", "shoggoth@wildcat.finance"),
+            )
+            self.assertEqual(
+                module.commit_committer(self.dir, commit, "step"),
+                ("Laurence Day", "laurence@wildcat.finance"),
+            )
 
     def test_pull_request_refuses_host_author_and_byline(self):
         module = hexctl_module()
@@ -1169,6 +1189,10 @@ class TestMergedAttribution(HexctlCase):
             ("attribution-null-account-object", "account login is not a string"),
             ("attribution-bad-login", "account login is malformed"),
             ("attribution-host-author", "runtime host as author"),
+            ("attribution-host-committer-account", "runtime host account"),
+            ("attribution-host-committer", "runtime host"),
+            ("attribution-missing-committer", "identity is not an object"),
+            ("attribution-bad-committer-login", "account login is malformed"),
             ("attribution-missing-identity", "identity is not an object"),
             ("attribution-blank-name", "identity name is malformed"),
             ("attribution-long-name", "identity name is malformed"),
@@ -1188,6 +1212,16 @@ class TestMergedAttribution(HexctlCase):
                 self.assertIn(expected, error.getvalue())
                 self.assertNotIn("RAW FAKE SIGNATURE", error.getvalue())
                 self.assertNotIn("ghp_FAKE_SECRET", error.getvalue())
+
+    def test_author_and_publisher_committer_are_recorded_separately(self):
+        record = self.attribution_of("publisher-committer")[0]
+        self.assertEqual(record["login"], "shoggoth-wildcat")
+        self.assertEqual(record["name"], "Shoggoth")
+        self.assertEqual(record["committer"]["login"], "laurenceday")
+        self.assertEqual(record["committer"]["name"], "Laurence Day")
+        self.assertNotEqual(
+            record["email_sha256"], record["committer"]["email_sha256"]
+        )
 
     def test_verification_alone_does_not_apply_the_attribution_checks(self):
         """A merge commit refuses on its signature, never on its identity shape.
@@ -1256,6 +1290,27 @@ class TestMergedAttribution(HexctlCase):
         recorded = pushed[0]["data"]["attribution"]
         self.assertIsNone(recorded["commits"][0]["login"])
         self.assertNotIn("@", json.dumps(recorded))
+        self.run_ctl("verify")
+
+    def test_the_push_receipt_records_the_author_and_human_publisher(self):
+        self.to_push()
+        self.env["FAKE_GIT_MODE"] = "publisher-committer"
+        self.env["FAKE_GH_MODE"] = "publisher-committer"
+        self.run_ctl(
+            "done", "push",
+            "--pr-url", "https://github.com/wildcat-finance/example/pull/1",
+            "--head-commit", "d" * 40, "--pr-base", self.step_base(1),
+        )
+        attribution = self.state()["steps"][0]["receipts"]["push"]["attribution"]
+        self.assertEqual(attribution["pull_request_author"], "laurenceday")
+        self.assertEqual(attribution["commits"][0]["login"], "shoggoth-wildcat")
+        self.assertEqual(
+            attribution["commits"][0]["committer"]["login"], "laurenceday"
+        )
+        self.assertNotIn("@", json.dumps(attribution))
+        authors = hexctl_module().recorded_run_attribution(self.state())
+        self.assertEqual([entry["login"] for entry in authors], ["shoggoth-wildcat"])
+        self.assertNotIn("committer", authors[0])
         self.run_ctl("verify")
 
 

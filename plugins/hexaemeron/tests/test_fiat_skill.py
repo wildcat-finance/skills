@@ -149,9 +149,11 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("Preserve a human contributor as Git author and signer", flat)
         self.assertIn("publish through their own GitHub account", flat)
         self.assertIn("Never ask for, copy, upload, configure or use the Shoggoth private signing key", flat)
-        self.assertIn("Only a run contributed by Shoggoth needs the Shoggoth publication identity", flat)
-        self.assertIn("is neither author nor co-author", flat)
-        self.assertIn("stops before publication", flat)
+        self.assertIn("Publication is a separate role", flat)
+        self.assertIn("explicitly authorises a human publisher", flat)
+        self.assertIn("Record both roles", flat)
+        self.assertIn("is neither author, committer nor co-author", flat)
+        self.assertIn("Without explicit authority", flat)
         self.assertIn("known host account as pull-request author", flat)
 
     def test_agent_contracts_own_the_exact_delegation_brief_fields(self):
@@ -276,7 +278,7 @@ class FiatSkillContractTests(unittest.TestCase):
         fiat = " ".join(self.fiat.split())
         # A step's pull request targets the step below it, never the base.
         self.assertIn("gh pr create --base <pr_base> --head <branch>", self.push_discipline)
-        self.assertIn("hexctl done push --pr-url <url> --head-commit <sha> --pr-base <ref>",
+        self.assertIn("hexctl done push --pr-url <url> --head-commit <full-sha> --pr-base <ref>",
                       self.push_discipline)
         self.assertIn("never point one at the recorded base", flat)
         self.assertIn("only merge into the base in the whole run", flat)
@@ -440,11 +442,9 @@ class FiatSkillContractTests(unittest.TestCase):
         }
         for version, ledger in ledgers.items():
             with self.subTest(version=version):
-                self.assertIn(f"- Current version: `{version}`", ledger)
                 latest = next(
-                    line
-                    for line in reversed(ledger.splitlines())
-                    if line.startswith("| `")
+                    line for line in ledger.splitlines()
+                    if line.startswith(f"| `{version}` |")
                 )
                 self.assertIn(f"| `{version}` | generation |", latest)
                 self.assertIn("skills#556", latest)

@@ -1,8 +1,8 @@
 {
   "counts": {
-    "bytes_binary": 54682880,
+    "bytes_binary": 54682912,
     "bytes_content_addressed": 7844971,
-    "bytes_generated": 21803367,
+    "bytes_generated": 21809139,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
@@ -10,7 +10,7 @@
   },
   "entries": [
     {
-      "bytes": 21736297,
+      "bytes": 21742069,
       "category": "generated",
       "evidence": "linguist-generated for '.agents/skills/promise-machine/runtime/**' in .gitattributes",
       "files": 987,
@@ -130,14 +130,14 @@
       "path": "docs/assets/shoggoth-help-queues.png"
     },
     {
-      "bytes": 43750,
+      "bytes": 43767,
       "category": "binary",
       "evidence": "file signature pdf",
       "grade": "hard",
       "path": "docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf"
     },
     {
-      "bytes": 3688570,
+      "bytes": 3688585,
       "category": "binary",
       "evidence": "file signature pdf",
       "grade": "hard",

@@ -13,10 +13,10 @@ class HostIdentityRefusalCases:
     def test_host_identity_refusals_name_the_host_default_and_the_recovery(self):
         """Each host-identity refusal names the usual host default and its recovery.
 
-        The words the older tests assert stay in front. The appended clauses are
-        fixed constants in the controller, so this table asserts their text
-        rather than reading it back out of the module: a message nobody wrote
-        down would otherwise pass by being whatever the module said.
+        The recovery clauses are fixed constants in the controller, so this
+        table asserts their text rather than reading it back out of the module:
+        a message nobody wrote down would otherwise pass by being whatever the
+        module said.
         """
         module = hexctl_module()
         url = "https://github.com/wildcat-finance/example/pull/1"
@@ -41,8 +41,10 @@ class HostIdentityRefusalCases:
             "remove it and recreate the commit",
         )
         pr_author_clauses = (
-            "opened under the host app's GitHub identity, such as claude[bot]",
-            "open it from the contributing actor's own account instead",
+            "The pull request was opened under the host app's GitHub identity, "
+            "such as claude[bot]",
+            "the human contributor's account",
+            "the explicitly authorised publisher's account for Shoggoth work",
         )
         pr_byline_clauses = (
             "the host appending its attribution line or claude.ai session link "
@@ -51,8 +53,9 @@ class HostIdentityRefusalCases:
             "read it back over REST, and rerun this receipt",
         )
         account_clauses = (
-            "The commit was pushed under the host app's account",
-            "hand off before publication and push as the contributing actor",
+            "The GitHub response links this identity to a runtime host account",
+            "the human contributor's account for their work",
+            "the explicitly authorised publisher's account for Shoggoth work",
         )
 
         def local_range():
