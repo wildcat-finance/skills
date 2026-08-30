@@ -834,10 +834,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:8350e1b0fe2b747e907c060fc7964c4a2512737fee42de10dc09a4164c95647a",
+      "id": "sha256:ed29a7aa25944e7a5905b4804336f619342bfb2cc72f4c6805db6945715905ed",
       "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
       "suppressed": false,
-      "symbol": "lint_text.fences@395"
+      "symbol": "lint_text.fences@426"
     },
     {
       "analyser_id": "python",
@@ -3076,10 +3076,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "bd3c2cd352af90326b3aad44c641823242b916c6",
-    "git_tree": "0c08d6d908442ebd25f5c7609a654186651752d7"
+    "commit": "c0d0478571b5b0b7b605d2a382ec454e6369dc27",
+    "git_tree": "87ecd81759a10c16e6baca33d9a7f982de07f0a0"
   },
   "universe": {
-    "id": "sha256:d1021a9ecdd1d4faf7f1cd8cea568c1ad3ee05447852a3155d8e73d49664e96d"
+    "id": "sha256:12623eb94a902e07c89d5368d473fbf8c97a96285e4ea949be16b6e229641834"
   }
 }
