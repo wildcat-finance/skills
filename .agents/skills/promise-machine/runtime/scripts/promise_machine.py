@@ -87,7 +87,7 @@ OBLIGATION_MARKER_PREFIX = "<!-- promise-machine-obligation:"
 OBLIGATION_CLAUSE_PREFIX = "> Obligation:"
 OPEN_SUPPORTS_DIR_FD = os.open in os.supports_dir_fd
 HTML_BLOCK_TYPE_1_OPEN = re.compile(
-    r"^ {0,3}<(script|pre|style|textarea)(?=[ \t>/]|$)", re.IGNORECASE
+    r"^ {0,3}<(script|pre|style|textarea)(?=[ \t>]|$)", re.IGNORECASE
 )
 HTML_BLOCK_TYPE_1_CLOSE = re.compile(
     r"</(?:script|pre|style|textarea)>", re.IGNORECASE
@@ -101,7 +101,7 @@ HTML_DECLARATION_CLOSE = re.compile(r">")
 HTML_CDATA_OPEN = re.compile(r"^ {0,3}<!\[CDATA\[")
 HTML_CDATA_CLOSE = re.compile(r"\]\]>")
 HTML_BLOCK_TYPE_6_OPEN = re.compile(
-    r"^ {0,3}</?([A-Za-z][A-Za-z0-9-]*)(?=[ \t/>]|$)"
+    r"^ {0,3}</?([A-Za-z][A-Za-z0-9-]*)(?=[ \t>]|/>|$)"
 )
 HTML_BLOCK_TYPE_6_TAGS = {
     "address", "article", "aside", "base", "basefont", "blockquote",
@@ -114,6 +114,7 @@ HTML_BLOCK_TYPE_6_TAGS = {
     "section", "summary", "table", "tbody", "td", "tfoot", "th",
     "thead", "title", "tr", "track", "ul",
 }
+HTML_BLOCK_TYPE_1_TAGS = {"script", "pre", "style", "textarea"}
 HTML_ATTRIBUTE = (
     r"[ \t]+[A-Za-z_:][A-Za-z0-9_.:-]*"
     r"(?:[ \t]*=[ \t]*(?:[^ \t\"'=<>`]+|'[^']*'|\"[^\"]*\"))?"
@@ -667,10 +668,12 @@ def markdown_unfenced_lines(text: str):
             continue
         html_type_7 = HTML_BLOCK_TYPE_7_LINE.match(line)
         if html_type_7 is not None and not paragraph_open:
-            visible.append(None)
-            html_until_blank = True
-            paragraph_open = False
-            continue
+            opening_tag = (html_type_7.group(1) or "").lower()
+            if opening_tag not in HTML_BLOCK_TYPE_1_TAGS:
+                visible.append(None)
+                html_until_blank = True
+                paragraph_open = False
+                continue
 
         # Keep malformed marker-shaped prose visible to the closed grammar,
         # but only after a containing raw HTML block had the chance to mask it.

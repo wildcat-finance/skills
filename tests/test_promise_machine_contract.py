@@ -450,6 +450,26 @@ class PromiseObligationTests(unittest.TestCase):
                 )
                 self.assertIn("PM006", [finding.code for finding in findings])
 
+    def test_compact_self_closing_raw_text_tags_do_not_hide_law_headings(self):
+        law = LAW.read_text(encoding="utf-8")
+        for tag in ("script", "pre", "style", "textarea"):
+            with self.subTest(tag=tag):
+                text = f"{law}\n<{tag}/>\n## Scope\n\n"
+                findings = promise_machine_module.validate_law_document(
+                    text.encode("utf-8"), text, f"{tag}-self-closing-decoy.md"
+                )
+                self.assertIn("PM006", [finding.code for finding in findings])
+
+    def test_malformed_type_six_slash_tags_do_not_hide_law_headings(self):
+        law = LAW.read_text(encoding="utf-8")
+        for opener in ("<div/not-a-tag>", "</div/not-a-tag>", "<div/", "</div/"):
+            with self.subTest(opener=opener):
+                text = f"{law}\n{opener}\n## Scope\n\n"
+                findings = promise_machine_module.validate_law_document(
+                    text.encode("utf-8"), text, "type-six-slash-decoy.md"
+                )
+                self.assertIn("PM006", [finding.code for finding in findings])
+
     def test_law_gates_track_blocks_before_a_generic_html_block(self):
         cases = {
             "setext-heading": "lead\n---",
