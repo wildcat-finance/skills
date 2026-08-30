@@ -2703,6 +2703,8 @@ def _truth_or(values: list[str]) -> str:
 def _resolved_scalar(value: object) -> tuple[str, object] | None:
     if not isinstance(value, list) or not value:
         return None
+    if value[0] == "$" and len(value) == 2 and isinstance(value[1], str):
+        return "literal-ref", value[1]
     if value[0] == ":" and len(value) == 3 and isinstance(value[1], str):
         return value[1], value[2]
     if value[0] == "{}" and len(value) >= 2 and isinstance(value[1], str):
@@ -2720,11 +2722,33 @@ def _resolved_scalar(value: object) -> tuple[str, object] | None:
     return None
 
 
+def _resolved_decimal(
+    value: object,
+    literals: dict[str, list[object]],
+) -> str | None:
+    if (
+        isinstance(value, list)
+        and len(value) == 2
+        and value[0] == "$"
+        and isinstance(value[1], str)
+    ):
+        literal = literals.get(value[1])
+        if literal is not None and literal[2] == "number":
+            return str(literal[4])
+        return None
+    scalar = _resolved_scalar(value)
+    if scalar is None or scalar[0] != "value":
+        return None
+    decimal = str(scalar[1])
+    return decimal if DECIMAL_RE.fullmatch(decimal) is not None else None
+
+
 def _evaluate_derived_truth(
     expanded: object,
     authored: object,
     facts: dict[str, dict[str, object]],
     definitions: dict[str, tuple[list[list[object]], object]],
+    literals: dict[str, list[object]],
     expansion_nodes: list[int],
 ) -> tuple[str, set[str]]:
     if not isinstance(expanded, list) or not expanded:
@@ -2745,6 +2769,7 @@ def _evaluate_derived_truth(
                 item,
                 facts,
                 definitions,
+                literals,
                 expansion_nodes=expansion_nodes,
             )
             for item in source[1:]
@@ -2757,6 +2782,7 @@ def _evaluate_derived_truth(
             source[1],
             facts,
             definitions,
+            literals,
             expansion_nodes=expansion_nodes,
         )
         return _truth_not(value), used
@@ -2765,12 +2791,14 @@ def _evaluate_derived_truth(
             source[1],
             facts,
             definitions,
+            literals,
             expansion_nodes=expansion_nodes,
         )
         right, right_used = _evaluate_truth(
             source[2],
             facts,
             definitions,
+            literals,
             expansion_nodes=expansion_nodes,
         )
         return _truth_or([_truth_not(left), right]), left_used | right_used
@@ -2782,16 +2810,9 @@ def _evaluate_derived_truth(
         if left is not None and right is not None:
             return ("true" if left == right else "false"), set()
     if tag in {"lt", "le", "gt", "ge"} and len(expanded) == 3:
-        left = _resolved_scalar(expanded[1])
-        right = _resolved_scalar(expanded[2])
-        if left is not None and right is not None and left[0] == right[0] == "value":
-            left_number = str(left[1])
-            right_number = str(right[1])
-            if (
-                DECIMAL_RE.fullmatch(left_number) is None
-                or DECIMAL_RE.fullmatch(right_number) is None
-            ):
-                return "unknown", set()
+        left_number = _resolved_decimal(expanded[1], literals)
+        right_number = _resolved_decimal(expanded[2], literals)
+        if left_number is not None and right_number is not None:
             ordering = (
                 (len(left_number) > len(right_number))
                 - (len(left_number) < len(right_number))
@@ -2841,6 +2862,7 @@ def _evaluate_derived_truth(
                     _substitute_term(source[3], {binder[0]: member}),
                     facts,
                     definitions,
+                    literals,
                     expansion_nodes=expansion_nodes,
                 )
                 for member in members
@@ -2863,6 +2885,7 @@ def _evaluate_truth(
     proposition: object,
     facts: dict[str, dict[str, object]],
     definitions: dict[str, tuple[list[list[object]], object]],
+    literals: dict[str, list[object]],
     *,
     expansion_nodes: list[int] | None = None,
 ) -> tuple[str, set[str]]:
@@ -2895,6 +2918,7 @@ def _evaluate_truth(
         proposition,
         facts,
         definitions,
+        literals,
         expansion_nodes,
     )
     if established:
@@ -2922,6 +2946,7 @@ def _outer_directive_activity(
     directive: object,
     facts: dict[str, dict[str, object]],
     definitions: dict[str, tuple[list[list[object]], object]],
+    literals: dict[str, list[object]],
     expansion_nodes: list[int],
 ) -> tuple[str, str | None, str | None]:
     if not isinstance(directive, list) or not directive:
@@ -2929,7 +2954,7 @@ def _outer_directive_activity(
     tag = directive[0]
     if tag in {"@", "^"} and len(directive) == 3:
         return _outer_directive_activity(
-            directive[2], facts, definitions, expansion_nodes
+            directive[2], facts, definitions, literals, expansion_nodes
         )
     if tag in {"?", "/"} and len(directive) == 3:
         guard = directive[1]
@@ -2937,6 +2962,7 @@ def _outer_directive_activity(
             guard,
             facts,
             definitions,
+            literals,
             expansion_nodes=expansion_nodes,
         )
         active = value if tag == "?" else _truth_not(value)
@@ -2963,7 +2989,7 @@ def _outer_directive_activity(
         if active != "true":
             return active, None, None
         return _outer_directive_activity(
-            directive[2], facts, definitions, expansion_nodes
+            directive[2], facts, definitions, literals, expansion_nodes
         )
     return "true", None, None
 
@@ -3071,7 +3097,7 @@ def select_runtime(
         if record[0] != "rule":
             continue
         activity, controlling_fact, reason = _outer_directive_activity(
-            record[2], fact_map, definitions, selection_truth_nodes
+            record[2], fact_map, definitions, literals, selection_truth_nodes
         )
         if activity == "false" and controlling_fact is not None and reason is not None:
             inactive[identifier] = (controlling_fact, reason)
@@ -3100,15 +3126,28 @@ def select_runtime(
             for kind, value in atoms
         ):
             secondary.add(identifier)
-    included = set(primary or secondary)
-    if not included:
-        included = set(active_selectable_ids)
-
     rule_by_id = {
         str(record[1]): identifier
         for identifier, record in selectable.items()
         if record[0] == "rule"
     }
+
+    def seed_with_relation_endpoints(seed: set[str]) -> set[str]:
+        result = set(seed)
+        for identifier in sorted(seed):
+            references = _record_rule_references(selectable[identifier])
+            if not references:
+                continue
+            endpoints = {rule_by_id[item] for item in references if item in rule_by_id}
+            if endpoints and endpoints <= active_selectable_ids:
+                result.update(endpoints)
+            else:
+                result.remove(identifier)
+        return result
+
+    included = seed_with_relation_endpoints(set(primary or secondary))
+    if not included:
+        included = seed_with_relation_endpoints(set(active_selectable_ids))
     changed = True
     slice_scans = 0
     while changed:
@@ -3472,6 +3511,7 @@ def _directive_intents(
     directive: object,
     facts: dict[str, dict[str, object]],
     definitions: dict[str, tuple[list[list[object]], object]],
+    literals: dict[str, list[object]],
     *,
     activity: str = "true",
     authority: tuple[str, ...] = (),
@@ -3509,6 +3549,7 @@ def _directive_intents(
             source[1],
             facts,
             definitions,
+            literals,
             expansion_nodes=truth_expansion_nodes,
         )
         gated = guard if tag == "?" else _truth_not(guard)
@@ -3516,6 +3557,7 @@ def _directive_intents(
             source[2],
             facts,
             definitions,
+            literals,
             activity=_combine_activity(activity, gated),
             authority=authority,
             scope=scope,
@@ -3530,6 +3572,7 @@ def _directive_intents(
             source[2],
             facts,
             definitions,
+            literals,
             activity=activity,
             authority=authority,
             scope=(*scope, scope_value),
@@ -3544,6 +3587,7 @@ def _directive_intents(
             source[2],
             facts,
             definitions,
+            literals,
             activity=activity,
             authority=(*authority, authority_value),
             scope=scope,
@@ -3559,6 +3603,7 @@ def _directive_intents(
                     child,
                     facts,
                     definitions,
+                    literals,
                     activity=activity,
                     authority=authority,
                     scope=scope,
@@ -3579,6 +3624,7 @@ def _directive_intents(
             authored_subject,
             facts,
             definitions,
+            literals,
             expansion_nodes=truth_expansion_nodes,
         )
     effects = sorted(value for kind, value in _typed_atoms(subject) if kind == "effect")
@@ -3639,7 +3685,7 @@ def check_runtime(
     if facts != selection["facts"]:
         refuse("NOE-E-DIGEST.FACTS", "facts", "policy facts differ from the selected manifest")
     fact_map = {str(item["id"]): item for item in facts}
-    _literals, definitions, selectable = _manifest_registry(manifest)
+    literals, definitions, selectable = _manifest_registry(manifest)
     relevant = [
         record
         for record in selectable.values()
@@ -3664,6 +3710,7 @@ def check_runtime(
             record[2],
             fact_map,
             definitions,
+            literals,
             expansion_nodes=directive_expansion_nodes,
             truth_expansion_nodes=truth_expansion_nodes,
         ):
@@ -3715,6 +3762,7 @@ def check_runtime(
                     ["core.checked", override[6]],
                     fact_map,
                     definitions,
+                    literals,
                     expansion_nodes=truth_expansion_nodes,
                 )
                 if (
@@ -3795,12 +3843,14 @@ def check_runtime(
             record[3],
             fact_map,
             definitions,
+            literals,
             expansion_nodes=truth_expansion_nodes,
         )
         evidence_truth, _evidence_facts = _evaluate_truth(
             ["core.checked", record[6]],
             fact_map,
             definitions,
+            literals,
             expansion_nodes=truth_expansion_nodes,
         )
         if not (
@@ -3880,15 +3930,22 @@ def check_runtime(
         "controlling_node": controlling["node"],
         "reason": reason,
     }
+    manifest_digest = _value_sha256(manifest)
+    output_digest = _value_sha256(output)
     verdict = "ok" if decision == "permit" else decision
     code = "NOE-OK" if decision == "permit" else "NOE-I-POLICY_UNKNOWN" if decision == "unknown" else "NOE-I-POLICY_REFUSE"
     return _result(
         "check",
         verdict,
         code,
-        correlation_values=(str(manifest["graph_sha256"]), str(manifest["facts_sha256"]), effect_id),
+        correlation_values=(manifest_digest, str(manifest["facts_sha256"]), effect_id),
         message="policy decision returned without executing an effect",
-        digests={"graph": str(manifest["graph_sha256"]), "manifest": _value_sha256(manifest)},
+        digests={
+            "graph": str(manifest["graph_sha256"]),
+            "manifest": manifest_digest,
+            "facts": str(manifest["facts_sha256"]),
+            "output": output_digest,
+        },
         counts={"nodes": len(relevant)},
         output=output,
     )
@@ -3930,7 +3987,7 @@ def next_runtime(
         if identifier in combined and combined[identifier] != receipt:
             refuse("NOE-E-DIGEST.FACTS", "receipts", "receipt contradicts the selected fact")
         combined[identifier] = receipt
-    _literals, definitions, selectable = _manifest_registry(manifest)
+    literals, definitions, selectable = _manifest_registry(manifest)
     matched: list[tuple[list[object], str, set[str]]] = []
     unknown: list[list[object]] = []
     truth_expansion_nodes = [0]
@@ -3947,6 +4004,7 @@ def next_runtime(
             record[5],
             combined,
             definitions,
+            literals,
             expansion_nodes=truth_expansion_nodes,
         )
         if truth == "true":
@@ -3993,14 +4051,22 @@ def next_runtime(
             "reason": "no-enabled-transition",
         }
         verdict, code = "ok", "NOE-I-TRANSITION_STOP"
+    manifest_digest = _value_sha256(manifest)
     receipts_digest = _value_sha256(receipts)
+    output_digest = _value_sha256(output)
     return _result(
         "next",
         verdict,
         code,
-        correlation_values=(str(manifest["graph_sha256"]), machine_id, state_id, event_id, receipts_digest),
+        correlation_values=(manifest_digest, machine_id, state_id, event_id, receipts_digest),
         message="transition data returned without executing its ordered effects",
-        digests={"graph": str(manifest["graph_sha256"]), "manifest": _value_sha256(manifest), "output": receipts_digest},
+        digests={
+            "graph": str(manifest["graph_sha256"]),
+            "manifest": manifest_digest,
+            "facts": str(manifest["facts_sha256"]),
+            "receipts": receipts_digest,
+            "output": output_digest,
+        },
         counts={"entries": len(output["effects"])},
         output=output,
     )
@@ -4022,13 +4088,18 @@ def literal_runtime(identifier_value: object, manifest_value: object) -> dict[st
         "sha256": sha256(value.encode("utf-8")).hexdigest(),
         "value": value,
     }
+    manifest_digest = _value_sha256(manifest)
     return _result(
         "literal",
         "ok",
         "NOE-OK",
-        correlation_values=(str(manifest["graph_sha256"]), identifier),
+        correlation_values=(manifest_digest, identifier),
         message="reachable inert literal returned as data",
-        digests={"graph": str(manifest["graph_sha256"]), "output": output["sha256"]},
+        digests={
+            "graph": str(manifest["graph_sha256"]),
+            "manifest": manifest_digest,
+            "output": _value_sha256(output),
+        },
         counts={"bytes": output["bytes"]},
         output=output,
     )
@@ -4054,13 +4125,18 @@ def explain_runtime(node_value: object, manifest_value: object) -> dict[str, obj
         "node": node,
         "render": render,
     }
+    manifest_digest = _value_sha256(manifest)
     return _result(
         "explain",
         "ok",
         "NOE-I-NON_AUTHORITATIVE",
-        correlation_values=(str(manifest["graph_sha256"]), node),
+        correlation_values=(manifest_digest, node),
         message="non-authoritative render returned for inspection only",
-        digests={"graph": str(manifest["graph_sha256"]), "output": _value_sha256(output)},
+        digests={
+            "graph": str(manifest["graph_sha256"]),
+            "manifest": manifest_digest,
+            "output": _value_sha256(output),
+        },
         counts={"bytes": len(render.encode("utf-8"))},
         output=output,
     )
@@ -4209,9 +4285,11 @@ def _select_command(arguments: argparse.Namespace) -> dict[str, object]:
     )
     manifest_digest = _value_sha256(manifest)
     changed: bool | None = None
+    previous_digest: str | None = None
     if arguments.previous_manifest is not None:
         previous, _previous_projection = _verify_manifest_path(arguments.previous_manifest)
-        changed = _value_sha256(previous) != manifest_digest
+        previous_digest = _value_sha256(previous)
+        changed = previous_digest != manifest_digest
     output = {
         "schema": "noema-select/v1",
         "manifest_sha256": manifest_digest,
@@ -4220,17 +4298,22 @@ def _select_command(arguments: argparse.Namespace) -> dict[str, object]:
         "omitted_ids": [item["id"] for item in manifest["omitted"]],
         "changed": changed,
     }
+    digests = {
+        "graph": str(manifest["graph_sha256"]),
+        "manifest": manifest_digest,
+        "projection": str(manifest["projection_sha256"]),
+        "output": _value_sha256(output),
+    }
+    if previous_digest is not None:
+        digests["before"] = previous_digest
+        digests["after"] = manifest_digest
     return _result(
         "select",
         "ok",
         "NOE-I-CHANGED" if changed else "NOE-OK",
-        correlation_values=(str(manifest["graph_sha256"]), str(manifest["selection_sha256"])),
+        correlation_values=(manifest_digest, previous_digest or "none"),
         message="dependency-closed runtime slice returned as data",
-        digests={
-            "graph": str(manifest["graph_sha256"]),
-            "manifest": manifest_digest,
-            "projection": str(manifest["projection_sha256"]),
-        },
+        digests=digests,
         counts={
             "included": len(manifest["included_ids"]),
             "omitted": len(manifest["omitted"]),

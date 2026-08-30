@@ -89,6 +89,9 @@ membership indexes, and unsealed in-process policy inputs refuse before a deep
 walk. A high-consequence permit reports the permission that supplied its
 applicable authority as the controlling node. Exception recovery remains
 reachable context without becoming the exception's checked policy subject.
+Secondary-rooted governing edges close over both active endpoints, literal
+references retain set identity while number literals remain comparable, and
+runtime receipts bind the exact slice, inputs and output they describe.
 
 ## Alternatives
 

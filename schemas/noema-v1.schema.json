@@ -493,6 +493,12 @@
         "manifest": {
           "$ref": "#/$defs/sha256"
         },
+        "facts": {
+          "$ref": "#/$defs/sha256"
+        },
+        "receipts": {
+          "$ref": "#/$defs/sha256"
+        },
         "output": {
           "$ref": "#/$defs/sha256"
         },
