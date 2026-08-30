@@ -1,4 +1,4 @@
-# ADR-055: Require the complete plugin graph
+# ADR-056: Require the complete plugin graph
 
 ## Status
 
