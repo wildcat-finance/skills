@@ -224,5 +224,91 @@ class RuntimeStagingTests(unittest.TestCase):
         self.assertEqual(status, "not a git work tree; mirror written but not staged")
 
 
+class ImportClosureTests(unittest.TestCase):
+    """A mirror may not lose an import its canonical source still resolves.
+
+    The mirror's file set is built from the tracked sources, so an untracked
+    source never reaches it while the files importing it do. Comparing declared
+    paths against digests cannot see that, because every file the manifest
+    lists is byte-correct. Recorded as S4-R1-03 during skills#329, where adding
+    `IRoleProvider.sol` left the mirrored `HonestAccessHook.sol` importing a
+    file that was not beside it and `check` still exited 0.
+    """
+
+    def setUp(self):
+        self.module = portable_module()
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.addCleanup(self._tmp.cleanup)
+
+    def source(self, relpath):
+        write(self.root, relpath, "// canonical\n")
+
+    @staticmethod
+    def sol(*imports):
+        body = "".join('import {X} from "%s";\n' % target for target in imports)
+        return ("// SPDX-License-Identifier: MIT\n" + body).encode("utf-8")
+
+    def failures(self, mirrored):
+        return self.module.import_closure_failures(self.root, mirrored)
+
+    def test_a_sibling_the_source_resolves_and_the_mirror_lost_is_refused(self):
+        self.source("a/B.sol")
+        found = self.failures({"a/A.sol": self.sol("./B.sol")})
+        self.assertEqual(len(found), 1, found)
+        self.assertIn("a/A.sol", found[0])
+        self.assertIn("./B.sol", found[0])
+        self.assertIn("a/B.sol", found[0])
+
+    def test_an_import_that_resolves_in_neither_tree_is_accepted(self):
+        # `plugins/horos/examples/fixture-sol/Market.sol` is exactly this: a
+        # single-file fixture whose imports were never meant to resolve. An
+        # absolute check would go red on the tree it shipped with.
+        self.assertEqual(self.failures({"a/A.sol": self.sol("./Missing.sol")}), [])
+
+    def test_a_parent_target_inside_the_tree_is_checked_rather_than_skipped(self):
+        # 218 of the mirror's 265 relative imports use `..`, so a rule that
+        # refused them would skip most of the surface and pass by not looking.
+        self.source("b/C.sol")
+        found = self.failures({"a/A.sol": self.sol("../b/C.sol")})
+        self.assertEqual(len(found), 1, found)
+        self.assertIn("b/C.sol", found[0])
+
+    def test_a_parent_target_inside_the_tree_that_the_mirror_carries_is_clean(self):
+        self.source("b/C.sol")
+        mirrored = {"a/A.sol": self.sol("../b/C.sol"), "b/C.sol": b"// mirrored\n"}
+        self.assertEqual(self.failures(mirrored), [])
+
+    def test_a_target_leaving_the_tree_or_naming_an_absolute_path_is_refused(self):
+        for target in ("../outside.sol", "../../outside.sol", "/etc/outside.sol"):
+            with self.subTest(target=target):
+                found = self.failures({"A.sol": self.sol(target)})
+                self.assertEqual(len(found), 1, found)
+                self.assertIn("does not resolve inside the tree", found[0])
+                self.assertIn(target, found[0])
+
+    def test_every_legal_import_form_naming_a_path_is_seen(self):
+        # A check that exists to catch a lost import must not lose one to its
+        # own pattern. `import "p" as N;` is legal and was skipped silently.
+        forms = (
+            'import "./A.sol";',
+            'import {X} from "./A.sol";',
+            'import * as N from "./A.sol";',
+            'import "./A.sol" as N;',
+            'import {X as Y} from "./A.sol";',
+            "import './A.sol';",
+        )
+        for statement in forms:
+            with self.subTest(statement=statement):
+                self.assertEqual(
+                    self.module.SOLIDITY_IMPORT.findall(statement), ["./A.sol"]
+                )
+
+    def test_the_resolver_never_returns_a_path_outside_the_tree(self):
+        for target in ("../x.sol", "../../x.sol", "/x.sol", "./../../x.sol"):
+            with self.subTest(target=target):
+                self.assertIsNone(self.module._resolve_relative("A.sol", target))
+
+
 if __name__ == "__main__":  # pragma: no cover - direct invocation
     unittest.main()

@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import shutil
 import subprocess
 import sys
@@ -266,6 +267,82 @@ def _actual_files(target: Path) -> dict[str, bytes]:
     return actual
 
 
+# `import "p";`, `import "p" as N;`, `import {A} from "p";` and
+# `import * as N from "p";` are all legal and all name a path. The trailing
+# alias matters: without it the pattern skips the statement silently, and a
+# check that exists to catch a lost import must not lose one to its own regex.
+SOLIDITY_IMPORT = re.compile(
+    r"""import\s+(?:[^;]*?\bfrom\s+)?["']([^"'\n]+)["']\s*"""
+    r"""(?:as\s+[A-Za-z_$][A-Za-z0-9_$]*\s*)?;"""
+)
+
+
+def _resolve_relative(importer: str, target: str) -> str | None:
+    """The tree-relative path a relative import names, or None if it escapes.
+
+    Normalising and then asking whether the result left the tree is the control
+    here, rather than refusing every `..` segment: 218 of the mirror's 265
+    relative Solidity imports use one, so a rule that refused them would skip
+    most of the surface and the check would pass by not looking.
+    """
+    if target.startswith("/"):
+        return None
+    parts: list[str] = []
+    for segment in (PurePosixPath(importer).parent / target).parts:
+        if segment == ".":
+            continue
+        if segment == "..":
+            if not parts:
+                return None
+            parts.pop()
+            continue
+        parts.append(segment)
+    if not parts:
+        return None
+    return PurePosixPath(*parts).as_posix()
+
+
+def import_closure_failures(root: Path, mirrored: dict[str, bytes]) -> list[str]:
+    """Relative imports the mirror lost that the canonical source still resolves.
+
+    The mirror's file set is built from the tracked sources, so a source that is
+    not yet tracked never reaches it while the files importing it do. The result
+    compiles in the checkout and not in the mirror, and comparing declared paths
+    against digests cannot see it, because every file the manifest lists is
+    byte-correct.
+
+    Checked against the canonical tree rather than absolutely. A relative import
+    that resolves in neither tree is a property of the source, not something
+    mirroring broke; `plugins/horos/examples/fixture-sol/Market.sol` holds two of
+    those and is meant to.
+    """
+    failures = []
+    for name in sorted(mirrored):
+        if not name.endswith(".sol"):
+            continue
+        text = mirrored[name].decode("utf-8", errors="replace")
+        for target in SOLIDITY_IMPORT.findall(text):
+            # Relative imports are the surface; a bare `@scope/...` or
+            # remapped target is another tool's problem. A leading slash is
+            # neither, and it is refused rather than skipped.
+            if not target.startswith((".", "/")):
+                continue
+            resolved = _resolve_relative(name, target)
+            if resolved is None:
+                failures.append(
+                    f"{name} imports {target}, which does not resolve inside the tree"
+                )
+                continue
+            if resolved in mirrored:
+                continue
+            if (root / resolved).is_file():
+                failures.append(
+                    f"{name} imports {target}: {resolved} is in the source "
+                    "and absent from the mirror"
+                )
+    return failures
+
+
 def check(root: Path) -> None:
     payload, manifest = expected_files(root)
     expected = dict(payload)
@@ -279,6 +356,13 @@ def check(root: Path) -> None:
             "portable runtime drift: "
             f"missing={missing!r} extra={extra!r} changed={changed!r}; "
             f"run python3 {GENERATOR} sync"
+        )
+    broken = import_closure_failures(root, actual)
+    if broken:
+        raise PackageError(
+            "portable runtime is not import-closed: "
+            + "; ".join(broken)
+            + f"; run python3 {GENERATOR} sync after staging the missing source"
         )
 
 
