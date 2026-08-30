@@ -1951,6 +1951,23 @@ def _slither_findings(
 
 
 FORGE_METRIC = re.compile(r"^(\d+(?:\.\d+)?)%\s*\((\d+)/(\d+)\)$")
+FORGE_COVERAGE_HEADER = ("file", "% lines", "% statements", "% branches", "% funcs")
+
+
+def _forge_metrics(cells: Sequence[str], project: str) -> tuple[tuple[int, int], ...]:
+    if len(cells) != 5:
+        raise Refusal(f"Forge coverage for {project} has a malformed table row")
+    metrics: list[tuple[int, int]] = []
+    for cell in cells[1:5]:
+        match = FORGE_METRIC.fullmatch(cell)
+        if match is None:
+            raise Refusal(f"Forge coverage for {project} has a malformed metric row")
+        covered = int(match.group(2))
+        total = int(match.group(3))
+        if covered > total:
+            raise Refusal(f"Forge coverage for {project} has an impossible metric")
+        metrics.append((covered, total))
+    return tuple(metrics)
 
 
 def _forge_findings(
@@ -1963,36 +1980,57 @@ def _forge_findings(
     tracked = set(universe.analysed)
     rows: list[tuple[str, tuple[tuple[int, int], ...]]] = []
     seen_paths: set[str] = set()
+    saw_header = False
+    saw_total = False
+    reading_coverage = False
+    total_metrics: tuple[tuple[int, int], ...] | None = None
     for line in text.splitlines():
         stripped = re.sub(r"\x1b\[[0-9;]*m", "", line).strip()
         if not stripped.startswith("|") or not stripped.endswith("|"):
             continue
-        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
-        if cells and all(cell and set(cell) <= {"-", ":"} for cell in cells):
+        separator = stripped[1:-1]
+        if separator and "-" in separator and set(separator) <= {"-", "+", ":", " "}:
             continue
-        if cells and cells[0].lower() in {"file", "total"}:
+        cells = tuple(cell.strip() for cell in stripped.strip("|").split("|"))
+        lowered = tuple(cell.lower() for cell in cells)
+        if lowered == FORGE_COVERAGE_HEADER:
+            if saw_header:
+                raise Refusal(f"Forge coverage for {project} repeats its coverage table")
+            saw_header = True
+            reading_coverage = True
             continue
-        if len(cells) != 5:
-            raise Refusal(f"Forge coverage for {project} has a malformed table row")
-        metrics: list[tuple[int, int]] = []
-        for cell in cells[1:5]:
-            match = FORGE_METRIC.fullmatch(cell)
-            if match is None:
-                raise Refusal(f"Forge coverage for {project} has a malformed metric row")
-            covered = int(match.group(2))
-            total = int(match.group(3))
-            if covered > total:
-                raise Refusal(f"Forge coverage for {project} has an impossible metric")
-            metrics.append((covered, total))
+        if not reading_coverage:
+            continue
+        metrics = _forge_metrics(cells, project)
+        if cells[0].lower() == "total":
+            if not rows:
+                raise Refusal(f"Forge coverage for {project} has a total before source rows")
+            saw_total = True
+            reading_coverage = False
+            total_metrics = metrics
+            continue
         path = _project_repository_path(project, cells[0], tracked)
         if path not in tracked or not path.endswith(".sol"):
             raise Refusal(f"Forge coverage for {project} names path outside the report universe: {path}")
         if path in seen_paths:
             raise Refusal(f"Forge coverage for {project} repeats source row {path}")
         seen_paths.add(path)
-        rows.append((path, tuple(metrics)))
+        rows.append((path, metrics))
+    if not saw_header:
+        raise Refusal(f"Forge coverage for {project} has no coverage table")
+    if reading_coverage or not saw_total or total_metrics is None:
+        raise Refusal(f"Forge coverage for {project} has an incomplete coverage table")
     if not rows:
         raise Refusal(f"Forge coverage for {project} has no parseable source rows")
+    expected_total = tuple(
+        (
+            sum(metrics[index][0] for _path, metrics in rows),
+            sum(metrics[index][1] for _path, metrics in rows),
+        )
+        for index in range(4)
+    )
+    if total_metrics != expected_total:
+        raise Refusal(f"Forge coverage for {project} has inconsistent total metrics")
     findings: list[Finding] = []
     for path, metrics in rows:
         lines, _statements, _branches, functions = metrics

@@ -1518,9 +1518,13 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
 
     @staticmethod
     def _forge_summary(percent="100.00", covered="1", total="1"):
+        metrics = f"{percent}% ({covered}/{total})"
         return (
             "| File | % Lines | % Statements | % Branches | % Funcs |" + NL
-            + f"| src/Dead.sol | {percent}% ({covered}/{total}) | {percent}% ({covered}/{total}) | {percent}% ({covered}/{total}) | {percent}% ({covered}/{total}) |" + NL
+            + "|--------------+-----------+--------------+------------+---------|" + NL
+            + f"| src/Dead.sol | {metrics} | {metrics} | {metrics} | {metrics} |" + NL
+            + "|--------------+-----------+--------------+------------+---------|" + NL
+            + f"| Total | {metrics} | {metrics} | {metrics} | {metrics} |" + NL
         ).encode()
 
     def _project(self, prefix=""):
@@ -1838,12 +1842,34 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
             "src/Other.sol": "pragma solidity ^0.8.20; contract Other {}" + NL,
         }
         universe = self._universe(files)
-        payload = (
-            self._forge_summary("0.00", "0", "1")
-            + b"| src/Other.sol | malformed | malformed | malformed | malformed |\n"
+        payload = self._forge_summary("0.00", "0", "1").replace(
+            b"| Total",
+            b"| src/Other.sol | malformed | malformed | malformed | malformed |\n| Total",
+            1,
         )
         with self.assertRaisesRegex(dead_code.Refusal, "malformed"):
             dead_code._forge_findings(payload, project=".", universe=universe)
+
+    def test_real_forge_summary_isolated_from_other_pipe_tables(self):
+        universe = self._universe()
+        payload = (
+            "| Contract | Selector | Calls | Reverts | Discards |" + NL
+            + "| Sound | advance | 1 | 0 | 0 |" + NL
+            + "|----------+----------+-------+---------+----------|" + NL
+            + "| File | % Lines | % Statements | % Branches | % Funcs |" + NL
+            + "|----------+-----------+--------------+------------+---------|" + NL
+            + "| src/Dead.sol | 0.00% (0/1) | 0.00% (0/1) | 0.00% (0/1) | 0.00% (0/1) |" + NL
+            + "|----------+-----------+--------------+------------+---------|" + NL
+            + "| Total | 0.00% (0/1) | 0.00% (0/1) | 0.00% (0/1) | 0.00% (0/1) |" + NL
+        ).encode()
+        findings, evidence_count = dead_code._forge_findings(
+            payload,
+            project=".",
+            universe=universe,
+        )
+        self.assertEqual(evidence_count, 1)
+        self.assertEqual(len(findings), 1)
+        self.assertEqual(findings[0].path, "src/Dead.sol")
 
     def test_solidity_finding_survives_report_rendering(self):
         universe = self._universe()
