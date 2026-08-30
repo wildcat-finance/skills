@@ -74,8 +74,9 @@ source change.
   then rerun. Ignored Fiat state is outside the analysed universe.
 - `baseline ... drift`: review the live report and repeat the two-commit
   refresh. Do not edit recorded identities by hand. A behind-but-valid record
-  is not a refusal: read the `currency` line, which names the publication
-  commit and the paths that changed after it.
+  is not a refusal: read the `published` line, which names the commit that
+  wrote the record, and the `currency` line, which names the paths that
+  changed after it.
 - `unused`, `stale target` or `target does not match`: remove or correct the
   exact suppression, review the resulting candidate, then refresh.
 - analyser `degraded` or version drift: repair or accept the tool environment

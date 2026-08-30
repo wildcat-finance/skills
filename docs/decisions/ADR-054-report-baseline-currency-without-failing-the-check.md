@@ -82,8 +82,9 @@ decision.
 
 CI goes red for this command on validity alone. A repository whose checkout has
 moved past the publication commit reads green with a stale currency line, and a
-reader who needs to know how far behind the record is finds the publication
-commit and the changed paths on that line and in the step summary.
+reader who needs to know how far behind the record is finds the changed paths
+on that line and the publication commit on the `published` line above it. The
+workflow step summary carries both lines as the command wrote them.
 
 The command now depends on `git rev-list` path history, which history
 simplification can shape. The blob check is the price of trusting the answer:

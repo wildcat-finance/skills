@@ -3080,6 +3080,20 @@ class ShippedSurfaceTests(unittest.TestCase):
         self.assertIn("Candidates are reported, not gated", text)
         self.assertNotIn("findings']) > 0", text)
 
+    def test_workflow_summary_carries_the_publication_commit_as_plain_text(self):
+        """The step summary answers how far behind the record is.
+
+        The publication commit sits on its own `published` line, so a filter
+        naming only `currency` and `status` drops it and leaves the on-call
+        question unanswerable from the summary. The captured lines are also
+        repository paths going into markdown, so they are fenced rather than
+        interpolated into a list item.
+        """
+        text = WORKFLOW_PATH.read_text(encoding="utf-8")
+        self.assertIn('{"published", "currency", "status"}', text)
+        self.assertIn('print("```text")', text)
+        self.assertNotIn('print(f"- {name}: {detail.strip()}")', text)
+
     def test_source_contains_no_source_removal_or_shell_execution(self):
         source = SCRIPT.read_text(encoding="utf-8")
         for forbidden in ("shutil.rmtree", "os.remove(", "shell=True"):

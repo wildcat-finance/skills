@@ -78,7 +78,7 @@
     "contract": "dead-code-baseline/v1",
     "documentation": {
       "path": "docs/promise-machine/dead-code-v1.md",
-      "sha256": "f2c580c4bbf01d0b08d40cd0ed58b9bfbf5ac6eb598f869d894e88d4a697d732"
+      "sha256": "2c629e8e890cd108959bae2eb311cc6f1f0a240c970c888ce4a902a3ccb4c4b2"
     },
     "fixtures": [
       {
@@ -115,9 +115,10 @@
         "test_record_changed_after_its_publication_commit_refuses",
         "test_undiscoverable_publication_commit_refuses",
         "test_write_then_check_uses_two_commit_publication",
-        "test_workflow_and_operator_guide_carry_the_exact_four_command_demo"
+        "test_workflow_and_operator_guide_carry_the_exact_four_command_demo",
+        "test_workflow_summary_carries_the_publication_commit_as_plain_text"
       ],
-      "sha256": "d91e01982b7dd379560a15692207e9c39494cdc948c945e808c6af9eb7bb4233"
+      "sha256": "ec5fbe64d95fa55b87fb5bbd91895388c280cd1b2d3120d84b862612610ac3ba"
     },
     "transition": "record and verify one report-only static candidate baseline over an exact clean source commit, with only exact current suppressions accepted and no finding count treated as deletion or merge authority"
   },

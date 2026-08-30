@@ -94,10 +94,16 @@ jobs:
           captured = Path(
               os.environ["RUNNER_TEMP"], "baseline-check.txt"
           ).read_text(encoding="utf-8")
-          for line in captured.splitlines():
-              name, _separator, detail = line.partition(" ")
-              if name in {"currency", "status"}:
-                  print(f"- {name}: {detail.strip()}")
+          reported = [
+              line
+              for line in captured.splitlines()
+              if line.partition(" ")[0] in {"published", "currency", "status"}
+          ]
+          print()
+          print("```text")
+          for line in reported:
+              print(line)
+          print("```")
           PY
 
       - name: Record an inconclusive failure
