@@ -74,6 +74,8 @@ SOLIDITY_VERSION_TIMEOUT_SECONDS = 30
 SOLIDITY_TOOL_TIMEOUT_SECONDS = 600
 MAX_SOLIDITY_VERSION_BYTES = 64 * 1024
 MAX_SOLIDITY_OUTPUT_BYTES = 32 * 1024 * 1024
+MAX_SOLIDITY_PROJECT_BYTES = 160 * 1024 * 1024
+MAX_SOLIDITY_PROJECT_FILES = 20_000
 REPOSITORY_FAMILIES = (
     "check-map",
     "cli",
@@ -1631,6 +1633,18 @@ def analyse_repository(
 
     objects: dict[str, list[RepositoryNode]] = {family: [] for family in REPOSITORY_FAMILIES}
     family_errors: dict[str, set[str]] = {family: set() for family in REPOSITORY_FAMILIES}
+    unreadable_sources = sorted(
+        f"{source.path}: {source.error}"
+        for source in sources.values()
+        if source.error is not None
+    )
+    if unreadable_sources:
+        visible = unreadable_sources[:5]
+        if len(unreadable_sources) > len(visible):
+            visible.append(f"and {len(unreadable_sources) - len(visible)} more")
+        reason = "unreadable declaration source(s): " + "; ".join(visible)
+        for family in REPOSITORY_FAMILIES:
+            family_errors[family].add(reason)
     analysed = set(universe.analysed)
     for path in universe.analysed:
         source = sources.get(path)
@@ -1839,9 +1853,7 @@ def _tool_version(invocation: ToolInvocation, tool: str) -> str:
     if not text:
         raise Refusal(f"{tool} version output is empty")
     first = text.splitlines()[0].strip()
-    if len(first.encode("utf-8")) > 256:
-        raise Refusal(f"{tool} version identity exceeds 256 bytes")
-    return first
+    return _bounded_tool_identity(first, f"{tool} version identity")
 
 
 def _project_repository_path(
@@ -1939,6 +1951,23 @@ def _slither_findings(
 
 
 FORGE_METRIC = re.compile(r"^(\d+(?:\.\d+)?)%\s*\((\d+)/(\d+)\)$")
+FORGE_COVERAGE_HEADER = ("file", "% lines", "% statements", "% branches", "% funcs")
+
+
+def _forge_metrics(cells: Sequence[str], project: str) -> tuple[tuple[int, int], ...]:
+    if len(cells) != 5:
+        raise Refusal(f"Forge coverage for {project} has a malformed table row")
+    metrics: list[tuple[int, int]] = []
+    for cell in cells[1:5]:
+        match = FORGE_METRIC.fullmatch(cell)
+        if match is None:
+            raise Refusal(f"Forge coverage for {project} has a malformed metric row")
+        covered = int(match.group(2))
+        total = int(match.group(3))
+        if covered > total:
+            raise Refusal(f"Forge coverage for {project} has an impossible metric")
+        metrics.append((covered, total))
+    return tuple(metrics)
 
 
 def _forge_findings(
@@ -1950,32 +1979,58 @@ def _forge_findings(
     text = decode_output(payload, f"Forge coverage for {project}")
     tracked = set(universe.analysed)
     rows: list[tuple[str, tuple[tuple[int, int], ...]]] = []
+    seen_paths: set[str] = set()
+    saw_header = False
+    saw_total = False
+    reading_coverage = False
+    total_metrics: tuple[tuple[int, int], ...] | None = None
     for line in text.splitlines():
         stripped = re.sub(r"\x1b\[[0-9;]*m", "", line).strip()
         if not stripped.startswith("|") or not stripped.endswith("|"):
             continue
-        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
-        if len(cells) < 5 or cells[0].lower() in {"file", "total"}:
+        separator = stripped[1:-1]
+        if separator and "-" in separator and set(separator) <= {"-", "+", ":", " "}:
             continue
-        metrics: list[tuple[int, int]] = []
-        for cell in cells[1:5]:
-            match = FORGE_METRIC.fullmatch(cell)
-            if match is None:
-                metrics = []
-                break
-            covered = int(match.group(2))
-            total = int(match.group(3))
-            if covered > total:
-                raise Refusal(f"Forge coverage for {project} has an impossible metric")
-            metrics.append((covered, total))
-        if not metrics:
+        cells = tuple(cell.strip() for cell in stripped.strip("|").split("|"))
+        lowered = tuple(cell.lower() for cell in cells)
+        if lowered == FORGE_COVERAGE_HEADER:
+            if saw_header:
+                raise Refusal(f"Forge coverage for {project} repeats its coverage table")
+            saw_header = True
+            reading_coverage = True
+            continue
+        if not reading_coverage:
+            continue
+        metrics = _forge_metrics(cells, project)
+        if cells[0].lower() == "total":
+            if not rows:
+                raise Refusal(f"Forge coverage for {project} has a total before source rows")
+            saw_total = True
+            reading_coverage = False
+            total_metrics = metrics
             continue
         path = _project_repository_path(project, cells[0], tracked)
         if path not in tracked or not path.endswith(".sol"):
             raise Refusal(f"Forge coverage for {project} names path outside the report universe: {path}")
-        rows.append((path, tuple(metrics)))
+        if path in seen_paths:
+            raise Refusal(f"Forge coverage for {project} repeats source row {path}")
+        seen_paths.add(path)
+        rows.append((path, metrics))
+    if not saw_header:
+        raise Refusal(f"Forge coverage for {project} has no coverage table")
+    if reading_coverage or not saw_total or total_metrics is None:
+        raise Refusal(f"Forge coverage for {project} has an incomplete coverage table")
     if not rows:
         raise Refusal(f"Forge coverage for {project} has no parseable source rows")
+    expected_total = tuple(
+        (
+            sum(metrics[index][0] for _path, metrics in rows),
+            sum(metrics[index][1] for _path, metrics in rows),
+        )
+        for index in range(4)
+    )
+    if total_metrics != expected_total:
+        raise Refusal(f"Forge coverage for {project} has inconsistent total metrics")
     findings: list[Finding] = []
     for path, metrics in rows:
         lines, _statements, _branches, functions = metrics
@@ -1998,10 +2053,107 @@ def _forge_findings(
     return tuple(findings), len(rows)
 
 
+def _materialise_solidity_project(
+    root: Path,
+    universe: Universe,
+    project: str,
+    destination: Path,
+) -> Path:
+    prefix = "" if project == "." else project.rstrip("/") + "/"
+    allowed = {
+        path
+        for path in universe.analysed
+        if project == "." or path.startswith(prefix)
+    }
+    config = "foundry.toml" if project == "." else prefix + "foundry.toml"
+    if config not in allowed:
+        raise Refusal(f"Foundry project {project} has no analysed foundry.toml")
+    if len(allowed) > MAX_SOLIDITY_PROJECT_FILES:
+        raise Refusal(
+            f"Foundry project {project} exceeds {MAX_SOLIDITY_PROJECT_FILES} tracked files"
+        )
+    argv = ["git", "archive", "--format=tar", universe.commit]
+    if project != ".":
+        argv.extend(["--", project])
+    root_fd = open_repository_directory(root)
+    try:
+        stdout, stderr, returncode = run_process(
+            argv,
+            cwd=root,
+            timeout_seconds=GIT_TIMEOUT_SECONDS,
+            output_limit=MAX_SOLIDITY_PROJECT_BYTES,
+            cwd_fd=root_fd,
+        )
+    finally:
+        os.close(root_fd)
+    if returncode != 0:
+        detail = decode_output(stderr, "git archive stderr").strip() or f"exit {returncode}"
+        raise Refusal(f"Foundry project {project} snapshot failed: {detail}")
+
+    destination.mkdir(mode=0o700)
+    seen: set[str] = set()
+    total_bytes = 0
+    try:
+        with tarfile.open(fileobj=io.BytesIO(stdout), mode="r:") as archive:
+            for member in archive:
+                if member.isdir():
+                    continue
+                path = validate_repository_path(member.name, "Foundry snapshot path")
+                if path not in allowed:
+                    continue
+                if path in seen:
+                    raise Refusal(f"Foundry project {project} snapshot repeats {path}")
+                if not member.isfile() or member.size < 0:
+                    raise Refusal(f"Foundry project {project} path {path} is not a regular file")
+                if member.size > MAX_REPOSITORY_FILE_BYTES:
+                    raise Refusal(
+                        f"Foundry project {project} path {path} exceeds "
+                        f"{MAX_REPOSITORY_FILE_BYTES} bytes"
+                    )
+                handle = archive.extractfile(member)
+                if handle is None:
+                    raise Refusal(f"Foundry project {project} path {path} cannot be read")
+                payload = handle.read(MAX_REPOSITORY_FILE_BYTES + 1)
+                if len(payload) != member.size or len(payload) > MAX_REPOSITORY_FILE_BYTES:
+                    raise Refusal(f"Foundry project {project} path {path} changed size while read")
+                total_bytes += len(payload)
+                if total_bytes > MAX_SOLIDITY_PROJECT_BYTES:
+                    raise Refusal(
+                        f"Foundry project {project} snapshot exceeded "
+                        f"{MAX_SOLIDITY_PROJECT_BYTES} bytes"
+                    )
+                target = destination.joinpath(*PurePosixPath(path).parts)
+                target.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+                flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+                mode = 0o700 if member.mode & 0o111 else 0o600
+                try:
+                    descriptor = os.open(target, flags, mode)
+                    with os.fdopen(descriptor, "wb") as output:
+                        output.write(payload)
+                except OSError as error:
+                    raise Refusal(
+                        f"Foundry project {project} path {path} cannot be materialised: {error}"
+                    ) from error
+                seen.add(path)
+    except (tarfile.TarError, OSError, EOFError) as error:
+        raise Refusal(f"Foundry project {project} snapshot is malformed: {error}") from error
+    missing = sorted(allowed - seen)
+    if missing:
+        raise Refusal(
+            f"Foundry project {project} snapshot omitted analysed path(s): "
+            + ", ".join(missing[:5])
+        )
+    project_root = destination if project == "." else destination.joinpath(*PurePosixPath(project).parts)
+    if not (project_root / "foundry.toml").is_file():
+        raise Refusal(f"Foundry project {project} snapshot omitted foundry.toml")
+    return project_root
+
+
 def _solidity_project_tool(
     tool: str,
     *,
     project: str,
+    repository_root: Path,
     project_root: Path,
     universe: Universe,
 ) -> tuple[AnalyserRecord, tuple[Finding, ...]]:
@@ -2053,6 +2205,44 @@ def _solidity_project_tool(
         ignore_cleanup_errors=True,
     ) as temporary:
         temporary_root = Path(temporary).resolve(strict=True)
+        snapshot_started = time.monotonic_ns()
+        try:
+            snapshot_project_root = _materialise_solidity_project(
+                repository_root,
+                universe,
+                project,
+                temporary_root / "repository",
+            )
+            for name in ("out", "cache", "broadcast"):
+                try:
+                    (snapshot_project_root / name).mkdir(mode=0o700, exist_ok=True)
+                except OSError as error:
+                    raise Refusal(
+                        f"Foundry project {project} disposable {name} directory failed: {error}"
+                    ) from error
+        except Refusal as error:
+            snapshot_duration = max(
+                0,
+                (time.monotonic_ns() - snapshot_started) // 1_000_000,
+            )
+            return (
+                AnalyserRecord(
+                    f"{project}:{tool}",
+                    "project",
+                    "failed",
+                    f"project={project}; disposable tracked snapshot could not be materialised",
+                    len(version_run.stdout) + len(version_run.stderr),
+                    version,
+                    version_run.duration_ms + snapshot_duration,
+                    0,
+                    str(error),
+                ),
+                (),
+            )
+        snapshot_duration = max(
+            0,
+            (time.monotonic_ns() - snapshot_started) // 1_000_000,
+        )
         environment = dict(os.environ)
         environment.update(
             {
@@ -2068,12 +2258,12 @@ def _solidity_project_tool(
             (temporary_root / name).mkdir(mode=0o700)
         run = _invoke_optional_tool(
             argv,
-            cwd=project_root,
+            cwd=snapshot_project_root,
             timeout_seconds=SOLIDITY_TOOL_TIMEOUT_SECONDS,
             output_limit=MAX_SOLIDITY_OUTPUT_BYTES,
             env=environment,
         )
-    total_duration = version_run.duration_ms + run.duration_ms
+    total_duration = version_run.duration_ms + snapshot_duration + run.duration_ms
     total_bytes = (
         len(version_run.stdout)
         + len(version_run.stderr)
@@ -2178,6 +2368,7 @@ def analyse_solidity(
             record, produced = _solidity_project_tool(
                 tool,
                 project=project,
+                repository_root=root,
                 project_root=project_root,
                 universe=universe,
             )
@@ -3160,6 +3351,11 @@ def render_json(report: Report) -> str:
     ) + chr(10)
 
 
+def _text_field(value: object) -> str:
+    rendered = json.dumps(str(value), ensure_ascii=False)[1:-1]
+    return rendered.replace("\u2028", r"\u2028").replace("\u2029", r"\u2029")
+
+
 def render_text(report: Report) -> str:
     document = report.as_dict()
     tree = document["tree"]
@@ -3175,31 +3371,32 @@ def render_text(report: Report) -> str:
             f"{universe['analysed_count']} analysed, "
             f"{universe['excluded_count']} excluded"
         ),
-        f"status    {status['state']}  {status['detail']}",
+        f"status    {_text_field(status['state'])}  {_text_field(status['detail'])}",
     ]
     by_category = universe["excluded_by_category"]
     if by_category:
         summary = ", ".join(
-            f"{name} {by_category[name]}" for name in sorted(by_category)
+            f"{_text_field(name)} {by_category[name]}" for name in sorted(by_category)
         )
         lines.append(f"excluded  {summary}")
     lines.extend(["", "analysers"])
     if not document["analysers"]:
         lines.append("  none ran; no reachability result was established")
     for analyser in document["analysers"]:
-        version = f" {analyser['version']}" if analyser["version"] else ""
+        version = f" {_text_field(analyser['version'])}" if analyser["version"] else ""
         lines.append(
-            f"  {analyser['id']}{version}  {analyser['state']}  "
-            f"{analyser['detail']}"
+            f"  {_text_field(analyser['id'])}{version}  "
+            f"{_text_field(analyser['state'])}  {_text_field(analyser['detail'])}"
         )
         for record in analyser["records"]:
-            version = record["version"] or "unknown"
-            reason = f"  reason={record['reason']}" if record["reason"] else ""
+            version = _text_field(record["version"] or "unknown")
+            reason = f"  reason={_text_field(record['reason'])}" if record["reason"] else ""
             lines.append(
-                f"    {record['kind']} {record['id']}  {record['state']}  "
+                f"    {_text_field(record['kind'])} {_text_field(record['id'])}  "
+                f"{_text_field(record['state'])}  "
                 f"{record['bytes']} byte(s)  version={version}  "
                 f"duration_ms={record['duration_ms']}  "
-                f"evidence={record['evidence_count']}  {record['detail']}{reason}"
+                f"evidence={record['evidence_count']}  {_text_field(record['detail'])}{reason}"
             )
 
     findings = document["findings"]
@@ -3207,13 +3404,13 @@ def render_text(report: Report) -> str:
     if not findings:
         lines.append("  none reported")
     for finding in findings:
-        symbol = f" {finding['symbol']}" if finding["symbol"] else ""
+        symbol = f" {_text_field(finding['symbol'])}" if finding["symbol"] else ""
         lines.append(
             f"  [{finding['confidence']}] {finding['id']}  "
-            f"{finding['analyser_id']}  {finding['path']}{symbol}"
+            f"{_text_field(finding['analyser_id'])}  {_text_field(finding['path'])}{symbol}"
         )
-        lines.append(f"      saw     {finding['evidence']}")
-        lines.append(f"      but     {finding['false_positive_boundary']}")
+        lines.append(f"      saw     {_text_field(finding['evidence'])}")
+        lines.append(f"      but     {_text_field(finding['false_positive_boundary'])}")
     return chr(10).join(lines) + chr(10)
 
 
