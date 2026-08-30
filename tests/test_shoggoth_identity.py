@@ -7,8 +7,8 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 IDENTITY = ROOT / "SHOGGOTH.md"
-CONTRACT = "shoggoth-collective/v3"
-EXPECTED_SHA256 = "b6cef0339e10c102d3cee2a83a9d8f7ae9ad0c45c26af4086eabd0f2730386a4"
+CONTRACT = "shoggoth-collective/v4"
+EXPECTED_SHA256 = "a5731008153b997c51c217af2e92a76e5fa8254d3a77ba3b2dd86270cb3c8664"
 
 
 class ShoggothIdentityTests(unittest.TestCase):
@@ -42,6 +42,19 @@ class ShoggothIdentityTests(unittest.TestCase):
         text = self.identity_text()
         self.assertIn("Use `the Creator` only when the role matters", text)
         self.assertIn("by personal name", text)
+
+    def test_resolved_human_contributors_are_addressed_as_creator(self):
+        text = self.identity_text()
+        agent_text = " ".join(
+            (ROOT / "AGENTS.md").read_text(encoding="utf-8").split()
+        )
+        self.assertIn("usable GitHub credentials for a user are already available", text)
+        self.assertIn("matches a human account named in the canonical", text)
+        self.assertIn("CONTRIBUTORS.md", text)
+        self.assertIn("will address that user as `Creator`", text)
+        self.assertIn("do not infer contributor identity", text)
+        self.assertIn("changes no authority, permission, authorship", text)
+        self.assertIn("resolving a user's collective form of address", agent_text)
 
     def test_governed_agent_work_uses_shoggoth_authorship(self):
         text = self.identity_text()

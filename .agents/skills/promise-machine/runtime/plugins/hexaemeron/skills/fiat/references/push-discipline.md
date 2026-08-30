@@ -82,13 +82,16 @@ missing argument does not fail: it falls through to the current branch's pull
 request, and on a chained stack that is the one holding every commit in the run.
 
 Two things refuse if the branch stops being where the loop left it. A waiting
-step whose branch has moved since its push refuses at the next merge-step, and so
-does a run branch carrying a merge this run did not receipt; `hexctl status`
-reports the second rather than refusing. Neither is repairable once the stack has
-landed out of order: a skipped step's pull request cannot be retargeted onto a
-branch its head already sits in, and cannot merge into a base it is an ancestor
-of. If it happens, halt with the reason and finish by hand rather than receipting
-a merge the loop did not make.
+step refuses at the next merge-step when its current tip no longer contains the
+head named by its push receipt, or when the native local object graph cannot
+answer that relation. A strict descendant remains eligible and earns fresh
+whole-range evidence when its own merge is receipted. A run branch carrying a
+merge this run did not receipt also refuses; `hexctl status` reports that second
+condition rather than refusing. Neither condition permits an out-of-order
+landing: a skipped step's pull request cannot be retargeted onto a branch its
+head already sits in, and cannot merge into a base it is an ancestor of. If that
+happens, halt with the reason and finish by hand rather than receipting a merge
+the loop did not make.
 
 ## The stacked pull request
 
@@ -235,12 +238,32 @@ The receipt refuses a `--merge-commit` here. Merges belong to `integrate`.
 
 ## Step checkpoint
 
-In force for every run until Wave Delta is complete, at the Creator's
-direction (2026-08-27). Anyone directing a run may waive it for that run by
-saying so explicitly; record that waiver and its wording in the run's
-evidence. Nothing else opts out. Once a step's `done push` receipt succeeds,
-and before packaging or acting on the next directive, export the controller
-capsule into a new directory:
+Every successful `done push` boundary gets a complete local checkpoint. The
+same rule applies when an exhausted audit reaches `audit-verdict`. Saving it is
+mandatory controller work, not a user choice: it cannot be waived, and the
+agent must not ask the user whether to save it, where to put it, or whether to
+keep it. A save failure blocks the next directive. Preserve the boundary,
+repair the failure and retry the same save.
+
+The destination is derived from controller state. It is never supplied by the
+user:
+
+```text
+<origin>/.hexaemeron/checkpoints/<run-worktree-name>/
+  step-<n>-<full-head-sha>/
+  audit-verdict-step-<n>-loop-<loop>-<full-head-sha>/
+```
+
+Use the `step-...` form after `done push` and the `audit-verdict-...` form at
+the exhausted-loop boundary. `<origin>` is `config.git.origin`,
+`<run-worktree-name>` is the basename of `config.git.worktree`, and every
+number and SHA comes from the verified controller state and Git boundary. The
+named boundary directory must be new. Build beside it and expose the final
+directory only after the archive and sidecar verify; never replace an existing
+checkpoint.
+
+Once the boundary is reached, and before packaging or acting on the next
+directive, export the controller capsule into the checkpoint staging area:
 
 ```text
 hexctl --dir <run-worktree> checkpoint export --out <new-controller-capsule-directory>
@@ -250,9 +273,8 @@ Keep the manifest SHA-256 printed by the command outside the capsule. Export
 accepts only the post-`done push`, pre-next-action boundary (or the active
 `audit-verdict` boundary) and does not change state or append a ledger entry.
 The schema, resource limits and refusal rules live in
-[controller-checkpoint.md](controller-checkpoint.md). Then upload the portable
-checkpoint so another contributor can pick up the completed steps in the
-interim:
+[controller-checkpoint.md](controller-checkpoint.md). Then build the local
+portable checkpoint:
 
 - Build the checkpoint in the fashion of
   [the fiat-377 end-of-step-2 note](https://github.com/wildcat-finance/skills/issues/377#issuecomment-5435028801):
@@ -266,26 +288,27 @@ interim:
   the proof transcript from the producing machine; a `.sha256` sidecar for
   each of the three main artifacts; and `CHECKPOINT-README.txt` with the
   contents list and the restore rule.
-- Upload one zip into the HexaemeronCheckpoints Drive folder itself
-  (`1BXLR1eppDrYWU8RSK9e83scPkWb9u7Sq`), not a subfolder: the fiat-377 run's
-  subfolder returned 404 to anonymous readers while the parent-folder zip
-  stayed fetchable, and link accessibility is what the checkpoint exists for.
-- Upload the zip's own `.sha256` sidecar beside it in the same folder. The
-  digest is computed over the archive's contents, so it cannot travel inside
-  the archive; the sidecar is what a reader checks before opening the
-  download, and the inner sidecars only cover member artifacts after
-  extraction. The digests on the issue remain the trust anchor.
-- Post a note on the run's task issue carrying the SHA-256 digests. The
-  digests on the issue are the trust anchor, not the sidecars.
+- Write the zip's own `.sha256` sidecar beside the zip in the fixed boundary
+  directory. The outer digest cannot travel inside the archive it covers; the
+  inner sidecars cover member artifacts after extraction.
+- Do not upload the checkpoint, publish it to a service, post its digests to an
+  issue, commit it, or push it. The current transport is the local filesystem.
 
-A run picked up from a checkpoint zip verifies before anything else: recompute
-the outer archive digest and member digests against the issue note, import the
-bundled key and pin it to the fingerprints the outer MANIFEST records, verify
-the bundle and its ref boundary, then `git verify-commit` every run commit with
-an exactly-once count of both provenance trailers, compared against the bundled
-proof transcript. Restore those refs into a fresh clean top-level checkout,
-then restore the already verified controller capsule with the digest recorded
-outside it:
+When another agent takes over, pass it the absolute archive path, outer
+SHA-256, controller-manifest SHA-256, origin, run-worktree name, step and audit
+loop when applicable, full head SHA, and expected next directive. This is a
+direct agent-to-agent hand-off. Do not route it through a user question. If no
+receiver is active yet, leave the verified checkpoint at its fixed path; its
+existence is not optional and needs no user decision.
+
+The receiving agent verifies before anything else: recompute the outer archive
+digest against the directly handed-off value and local sidecar, verify every
+member digest, import the bundled key and pin it to the fingerprints the outer
+MANIFEST records, verify the bundle and its ref boundary, then `git
+verify-commit` every run commit with an exactly-once count of both provenance
+trailers, compared against the bundled proof transcript. Restore those refs
+into a fresh clean top-level checkout, then restore the already verified
+controller capsule with the manifest digest handed over outside it:
 
 ```text
 hexctl --dir <fresh-origin> checkpoint restore \
@@ -298,11 +321,11 @@ relocates the same state, appends one `checkpoint:restore` event to the same
 ledger and executes no directive. The standalone
 [controller-checkpoint reference](controller-checkpoint.md) is authoritative
 for the schema and native recovery boundary; this section remains
-authoritative for the outer bundle, signatures, archive, sidecars, Drive object
-and issue note. Work that already landed on `main` needs no clean-machine proof
-beyond that. A run that modifies the alexandria or lazarus plugins owes one
-more: the same battery run by a remote agent in a fresh Linux container
-(colima or Docker, empty keyring, checkpoint fetched inside the container).
+authoritative for the outer bundle, signatures, local archive, sidecars and
+direct hand-off. Work that already landed on `main` needs no clean-checkout
+proof beyond that. A run that modifies the alexandria or lazarus plugins owes
+one more: the same battery in a fresh Linux container (colima or Docker, empty
+keyring, checkpoint copied into the container from its verified local path).
 
 ## Bringing the stack down
 
@@ -340,9 +363,19 @@ superseded, with a comment saying where the same commits landed. Never import
 GitHub's public key to make the signature check pass; that removes the guarantee
 the check exists for.
 
-The controller enforces this before damage rather than after: `done merge-step`
-compares every waiting step's remote tip against the head its push receipt
-names, and refuses the moment any downstream branch has been rewritten.
+The controller enforces the evidence boundary before another merge receipt.
+Equality is the no-query path. For each unequal waiting tip it asks native
+`git merge-base --is-ancestor <recorded> <tip>` once, without replacement
+objects, inherited `GIT_*` substitution, lazy fetch, or prompts. Status 0 admits
+only the branch topology. When that step later reaches `done merge-step`, the
+controller verifies the complete live range again and records its current
+local signatures, provenance, GitHub verification, author, and committer under
+`effective_push`; the original push receipt remains unchanged. Status 1 refuses
+because the observed tip does not contain the recorded head. A start failure,
+timeout, output cap, missing object, or any other status refuses as unknown.
+Both refusals name the branch and exact commits without guessing which external
+operation moved the history. ADR-021 still governs a genuine rewritten stack,
+and importing GitHub's public key remains the wrong repair.
 
 **When GitHub has not claimed the chain**, the original order stands. For each
 step:
@@ -423,7 +456,9 @@ rebase or rewrite the signed stack. Fetch the exact remote base tip, merge it
 into the run branch once with `--no-ff`, resolve only the reported conflicts,
 and sign that merge with the two exact provenance trailers. Its first parent
 must be the final recorded step merge and its second parent the supplied base
-tip. Push it, require GitHub `verified: true` with `reason: valid`, then record
+tip. Never settle a shared registry by taking the complete `ours` or `theirs`
+side. Inspect its product and base entries and preserve the intended union.
+Push it, require GitHub `verified: true` with `reason: valid`, then record
 the exact topology and bounded composition checks before the integration pull
 request merges:
 
@@ -432,6 +467,13 @@ hexctl done sync-run --commit <signed merge sha> \
   --base-commit <remote base sha> \
   --revalidation .hexaemeron/integration-revalidation.json
 ```
+
+The controller compares the product, base and sync tree entries for every path
+both parents changed. If the sync takes either complete parent entry, it names
+the path and refuses until the operator repeats
+`--acknowledge-sync-path <path>` for the exact sorted set. This is an inspection
+receipt, not proof that one side was correct; revalidation still has to cover
+the path.
 
 The controller compares both remote tips, reads the two parents, verifies the
 local signature and trailers, and checks GitHub's result. One active sync is
@@ -463,6 +505,13 @@ hexctl done sync-run --commit <replacement signed merge sha> \
   --supersede-sync <active sync sha> \
   --reason "<failed composition check and repair>"
 ```
+
+A rebuild has a second mandatory review set. Fiat intersects the paths the old
+composition changed with the paths changed by the old-base to current-base
+advance. Repeat `--acknowledge-sync-path` for every path it names, even when the
+new tree is a semantic union: the old merge may have carried a manual repair
+that exists in neither parent. Missing, extra, duplicate or unsorted flags
+refuse before a receipt is written.
 
 Fiat requires the exact active SHA, a bounded reason, fresh topology,
 signatures, GitHub verification and revalidation. It retains every superseded

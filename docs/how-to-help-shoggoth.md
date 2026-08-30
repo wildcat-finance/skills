@@ -7,7 +7,7 @@ Ask the Atlas for a number. Pick your harness. Finish what you start.
 You do not need to understand the whole skills suite or choose a Wave. You need
 one job from the Atlas, a local coding harness that can work in this repository,
 and enough uninterrupted time to reach either completion or a completed-step
-checkpoint before moving the run.
+checkpoint. Fiat saves that checkpoint locally before it continues.
 
 ## The thirty-second version
 
@@ -21,10 +21,11 @@ checkpoint before moving the run.
 ## Aye, here you go - #123
 
 > [!IMPORTANT]
-> After a completed step, another machine may resume from the portable
-> checkpoint, but it must verify that checkpoint before doing anything else.
-> Arbitrary mid-step state is not portable: keep the harness open until Fiat
-> reaches an accepted boundary and the checkpoint is exported and uploaded.
+> After every completed step, Fiat saves a verified checkpoint in its fixed
+> local store before the next directive. Agents hand over the local path and
+> digests directly; the user is never asked where to put it or whether to keep
+> it. Arbitrary mid-step state is not portable: keep the harness open until
+> Fiat reaches an accepted boundary and the local checkpoint verifies.
 
 You are the contributor, not Shoggoth. Keep your own Git author, valid signing
 identity and GitHub account. Fiat adds the required Shoggoth provenance without
@@ -144,7 +145,7 @@ allocating it until a maintainer closed it by hand.
 - If installation or access is missing, state exactly what is missing and ask before changing the repository.
 - If a check fails, keep the repository state and failure output, follow the named recovery, and rerun the same check.
 - If you must interrupt mid-step, preserve only what Fiat says is safe to commit or push and mark the run incomplete. That is damage control, not a supported hand-off.
-- If a completed-step checkpoint was exported and uploaded, a fresh machine may continue only after verifying its archive, Git boundary, signatures and controller capsule.
+- If a new local agent takes over after a completed step, pass it the checkpoint's absolute path and digests directly. It verifies the archive, Git boundary, signatures and controller capsule before continuing; do not ask the user to choose a destination or approve the save.
 
 ## Why the workflow works this way
 
@@ -154,7 +155,8 @@ implementation and review evidence for a maintainer. The accepted-boundary rule
 keeps unfinished or moving controller state from being mistaken for a portable
 hand-off. Checkpoint restore carries the same verified ledger forward; it does
 not start a replacement run or remove the outer bundle, signature and archive
-checks.
+checks. The current checkpoint transport is the local filesystem, not a remote
+service or an issue comment.
 
 The contributor supplies time, judgement, their own signing identity and their
 own harness and GitHub accounts. The repository receives an ordinary

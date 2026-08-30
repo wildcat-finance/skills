@@ -1,4 +1,4 @@
-# ADR-054: Report baseline currency without failing the check
+# ADR-059: Report baseline currency without failing the check
 
 ## Status
 
@@ -7,7 +7,14 @@ Accepted, 2026-08-30.
 The runbook for issue #936 allocated this decision as ADR-054 and required the
 number to be re-confirmed before the record was written. `ADR-053` was the
 highest identity in `docs/decisions` on `origin/main` at that point, so the
-allocation held.
+allocation held when the record was written.
+
+It did not hold at integration. `ADR-054` through `ADR-058` landed on `main`
+while this run was in its audit loop, including
+`ADR-054-keep-the-generated-skills-sh-payload-in-tree.md`. The record was
+renumbered to `ADR-059` when `tests/test_decision_records.py` reported the
+collision on the composed tree. Anything written before that point, including
+this run's audit records, names the number this record carried at the time.
 
 ## Context
 

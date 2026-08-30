@@ -37,6 +37,39 @@ def load_receipt_demo():
     return SimpleNamespace(**runpy.run_path(str(RECEIPT_DEMO_PATH)))
 
 
+def descriptor_stage_paths_are_traversable():
+    """Whether this host can address a child beneath an open directory fd."""
+
+    try:
+        with tempfile.TemporaryDirectory() as directory:
+            child = Path(directory) / "child"
+            child.mkdir()
+            descriptor = os.open(directory, os.O_RDONLY)
+            try:
+                expected = child.stat()
+                for root in (Path("/proc/self/fd"), Path("/dev/fd")):
+                    try:
+                        observed = (root / str(descriptor) / "child").stat()
+                    except OSError:
+                        continue
+                    if (observed.st_dev, observed.st_ino) == (
+                        expected.st_dev,
+                        expected.st_ino,
+                    ):
+                        return True
+            finally:
+                os.close(descriptor)
+    except OSError:
+        return False
+    return False
+
+
+REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE = unittest.skipUnless(
+    descriptor_stage_paths_are_traversable(),
+    "the published Goldfinch v1 producer requires traversable descriptor paths",
+)
+
+
 class GoldfinchDemoTests(unittest.TestCase):
     def test_synthetic_multi_provider_fixture_keeps_anchor_claims_false(self):
         report = verify_fixture(ANCHOR_FIXTURE)
@@ -226,6 +259,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((root / "manifest.json").read_bytes(), expected)
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_builder_command_materializes_the_byte_identical_fixture(self):
         with tempfile.TemporaryDirectory() as directory:
             rebuilt = Path(directory) / "tmp" / "goldfinch-v1"
@@ -362,6 +396,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             ):
                 demo._output_exists(output)
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_builder_rejects_a_parent_swapped_to_a_source_symlink(self):
         demo = load_receipt_demo()
         real_mkdtemp = tempfile.mkdtemp
@@ -409,6 +444,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             self.assertFalse((source / "fixture").exists())
             self.assertEqual(list(source.glob(".*.stage-*")), [])
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_builder_rechecks_the_parent_after_each_source_snapshot_read(self):
         demo = load_receipt_demo()
         real_read = demo.read_confined_bytes
@@ -456,6 +492,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             self.assertFalse((original_parent / "fixture").exists())
             self.assertEqual(list(original_parent.glob(".*.stage-*")), [])
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_builder_anchors_the_atomic_publish_to_the_open_parent(self):
         demo = load_receipt_demo()
         with tempfile.TemporaryDirectory() as directory:
@@ -519,6 +556,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             self.assertFalse((original_parent / "fixture").exists())
             self.assertEqual(list(original_parent.glob(".*.stage-*")), [])
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_builder_anchors_stage_writes_to_the_open_directory(self):
         demo = load_receipt_demo()
         real_write = Path.write_bytes
@@ -691,6 +729,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             )
             self.assertTrue(displaced.is_dir())
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_builder_cleans_a_stage_when_the_parent_moves_after_creation(self):
         demo = load_receipt_demo()
         real_mkdtemp = tempfile.mkdtemp
@@ -730,6 +769,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             self.assertEqual(list(moved_parent.iterdir()), [])
             self.assertFalse(output.exists())
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_builder_refuses_a_staged_symlink_without_overwriting_its_target(self):
         demo = load_receipt_demo()
         real_write = Path.write_bytes
@@ -821,6 +861,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             )
             self.assertEqual(list(root.glob("stage.cleanup-*")), [])
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_recorded_producer_argv_builds_the_fixture_ariadne_captures(self):
         demo = load_receipt_demo()
         runner = getattr(demo, "_run_producer_command", None)
@@ -885,6 +926,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
                 1,
             )
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_demo_guards_every_mutation_and_the_transaction_hash_boundary(self):
         report = load_receipt_demo().run_demo()
         self.assertEqual(report["stage"], "complete")
@@ -925,6 +967,7 @@ class GoldfinchReceiptProofDemoTests(unittest.TestCase):
             },
         )
 
+    @REQUIRES_TRAVERSABLE_DESCRIPTOR_STAGE
     def test_demo_command_emits_one_bounded_structured_event(self):
         result = subprocess.run(
             [sys.executable, str(RECEIPT_DEMO_PATH)],

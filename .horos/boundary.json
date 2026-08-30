@@ -1,16 +1,16 @@
 {
   "counts": {
-    "bytes_binary": 54682912,
+    "bytes_binary": 43883474,
     "bytes_content_addressed": 7844971,
-    "bytes_generated": 21825510,
+    "bytes_generated": 21878033,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 2096
+    "files_walked": 2129
   },
   "entries": [
     {
-      "bytes": 21758440,
+      "bytes": 21810963,
       "category": "generated",
       "evidence": "linguist-generated for '.agents/skills/promise-machine/runtime/**' in .gitattributes",
       "files": 989,
@@ -44,41 +44,6 @@
       "evidence": "file signature png",
       "grade": "hard",
       "path": "assets/characters/shoggoth.png"
-    },
-    {
-      "bytes": 1166639,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-cover.png"
-    },
-    {
-      "bytes": 978953,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-fiat-flow.png"
-    },
-    {
-      "bytes": 1682633,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-mascot-fiat.png"
-    },
-    {
-      "bytes": 2171579,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-mascot-roles.png"
-    },
-    {
-      "bytes": 1067330,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-whos-who.png"
     },
     {
       "bytes": 2168354,
@@ -130,21 +95,7 @@
       "path": "docs/assets/shoggoth-help-queues.png"
     },
     {
-      "bytes": 43767,
-      "category": "binary",
-      "evidence": "file signature pdf",
-      "grade": "hard",
-      "path": "docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf"
-    },
-    {
-      "bytes": 3688585,
-      "category": "binary",
-      "evidence": "file signature pdf",
-      "grade": "hard",
-      "path": "docs/pdf/a-child-or-a-golden-retriever.pdf"
-    },
-    {
-      "bytes": 2702044,
+      "bytes": 2702092,
       "category": "binary",
       "evidence": "file signature pdf",
       "grade": "hard",

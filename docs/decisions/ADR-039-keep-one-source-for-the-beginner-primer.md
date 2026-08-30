@@ -2,7 +2,11 @@
 
 ## Status
 
-Accepted, 2026-08-27.
+Superseded, 2026-08-30.
+
+[ADR-060](ADR-060-remove-the-beginner-primer-and-its-generator.md) removes the
+primer and its builder, so the single-source design recorded here keeps its
+reasoning but no longer has a subject in the tree.
 
 ## Context
 

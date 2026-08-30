@@ -663,48 +663,46 @@ class TestStudyAmendments(HexctlCase):
         with open(os.path.join(self.target, "study.md"), encoding="utf-8") as handle:
             self.assertEqual(handle.read(), original)
 
-    def test_date_and_four_field_shape_are_exact(self):
+    def test_protasis_owns_shape_before_record_or_mutation(self):
+        original = self.to_amendable_steps()
+        paths = [Path(self.target, name) for name in (
+            ".hexaemeron/state.json", ".hexaemeron/ledger.jsonl", "study.md"
+        )]
+        before = [path.read_bytes() for path in paths]
+        why = "**Why.** The receipted baseline disproved it.\n"
+        what = "**What changed.** The fixture assumption was corrected.\n"
         cases = {
-            "invalid date": (self.amendment(date="2026-02-30"), "invalid calendar date"),
-            "missing field": (
-                self.amendment().replace(
-                    "**Why.** The receipted baseline disproved it.\n", ""
-                ),
-                "field 'Why' must occur exactly once",
+            "invalid date": self.amendment(date="2026-02-30"),
+            "missing field": self.amendment().replace(why, ""),
+            "duplicate field": self.amendment().replace(
+                why, "**Why.** First.\n**Why.** Second.\n"
             ),
-            "duplicate field": (
-                self.amendment().replace(
-                    "**Why.** The receipted baseline disproved it.\n",
-                    "**Why.** First.\n**Why.** Second.\n",
-                ),
-                "field 'Why' must occur exactly once",
-            ),
-            "empty field": (
-                self.amendment(what=""), "field 'What changed' must not be empty"
-            ),
-            "wrong order": (
-                self.amendment().replace(
-                    "**What changed.** The fixture assumption was corrected.\n"
-                    "**Why.** The receipted baseline disproved it.\n",
-                    "**Why.** The receipted baseline disproved it.\n"
-                    "**What changed.** The fixture assumption was corrected.\n",
-                ),
-                "accepted four-field order",
-            ),
+            "empty field": self.amendment(what=""),
+            "wrong order": self.amendment().replace(what + why, why + what),
         }
-        for label, (suffix, message) in cases.items():
+        for label, suffix in cases.items():
             with self.subTest(label=label):
-                other = HexctlCase(methodName="runTest")
-                other.setUp()
-                try:
-                    original = other.to_amendable_steps()
-                    candidate = other.write("candidate.md", original + suffix)
-                    proc = other.run_ctl(
-                        "amend", "study", "--artifact", candidate, expect=2
-                    )
-                    self.assertIn(message, proc.stderr)
-                finally:
-                    other.tearDown()
+                candidate = self.write("candidate.md", original + suffix)
+                proc = self.run_ctl(
+                    "amend", "study", "--artifact", candidate, expect=2
+                )
+                self.assertIn("Protasis rejected the amendment candidate", proc.stderr)
+
+        module = hexctl_module()
+        with (
+            mock.patch.object(
+                module,
+                "_study_amendment_record",
+                side_effect=AssertionError,
+            ),
+            redirect_stderr(StringIO()),
+            self.assertRaises(SystemExit),
+        ):
+            module.cmd_amend_study(argparse.Namespace(
+                dir=self.target, artifact=os.path.join(self.target, candidate)
+            ))
+        self.assertEqual([path.read_bytes() for path in paths], before)
+        self.assertFalse(Path(self.target, ".hexaemeron/study-amendment-pending.json").exists())
 
     def test_every_unbuilt_step_gets_one_unambiguous_entry_and_exit_verdict(self):
         cases = {
@@ -845,7 +843,11 @@ class TestStudyAmendments(HexctlCase):
 
         for label, suffix, message in (
             ("duplicate", self.amendment() + self.amendment(), "more than one"),
-            ("trailing", self.amendment() + "\n## Notes\n\nLater.\n", "final section"),
+            (
+                "trailing",
+                self.amendment() + "\n## Notes\n\nLater.\n",
+                "Protasis rejected the amendment candidate",
+            ),
         ):
             with self.subTest(label=label):
                 other = HexctlCase(methodName="runTest")
@@ -1992,6 +1994,15 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertEqual(sync["revalidation"]["affected_paths"], [
             "shared.json", "upstream.py",
         ])
+        self.assertEqual(
+            sync["resolution_guard"],
+            {
+                "schema": "fiat-sync-resolution-guard/v1",
+                "side_selected_paths": [],
+                "superseded_intersection_paths": [],
+                "acknowledged_paths": [],
+            },
+        )
         status = self.run_ctl("status").stdout
         self.assertIn("product eeeeeeeeeeee preserved", status)
         self.assertIn("1 integration revalidation check(s) recorded", status)
@@ -5153,15 +5164,11 @@ class GitHubSignerDiagnosis(unittest.TestCase):
 
 
 class RewrittenStackRefusal(unittest.TestCase):
-    """The stack rewrite is caught at the first merge-step after it happens.
+    """A waiting non-ancestor is refused before another merge is receipted.
 
-    GitHub's native stacked-pull-request flow rebases every downstream branch on
-    each merge and re-signs the rewritten commits with its own key. Before this
-    check, the first symptom was an invalid local signature at a later
-    merge-step, which reads as a broken signing setup, and by then several steps
-    had already merged. The check compares each waiting step's remote tip with
-    the head its push receipt names, so the rewrite is named before any further
-    merge is receipted.
+    This synthetic fixture supplies native ancestry status 1 for unequal tips.
+    The controller can therefore name the observed branch and relation without
+    asserting which external operation caused the history to move.
     """
 
     def setUp(self):
@@ -5194,6 +5201,7 @@ class RewrittenStackRefusal(unittest.TestCase):
         with mock.patch.object(module, "step_branch_name",
                                side_effect=lambda _s, step: f"branch-{step['n']}"), \
              mock.patch.object(module, "remote_branch_tip", side_effect=tip), \
+             mock.patch.object(module, "_native_ancestry_status", return_value=1), \
              redirect_stderr(captured):
             try:
                 module.refuse_rewritten_stack(".", state, current_step)
@@ -5207,19 +5215,23 @@ class RewrittenStackRefusal(unittest.TestCase):
         )
         self.assertIsNone(message)
 
-    def test_a_rewritten_waiting_branch_is_refused_and_the_rewrite_named(self):
+    def test_a_nonancestor_waiting_branch_is_refused_without_a_cause_claim(self):
         message = self._refusal(
             self._state(), 2, {"branch-3": "d" * 40}
         )
-        self.assertIsNotNone(message, "a rewritten waiting branch was not refused")
-        self.assertIn("has been rewritten since it was pushed", message)
+        self.assertIsNotNone(message, "a non-ancestor waiting branch was not refused")
+        self.assertIn("no longer contains its receipted head", message)
+        self.assertIn("is not an ancestor", message)
         self.assertIn("branch-3", message)
-        self.assertIn("stacked-pull-request", message)
+        self.assertIn("c" * 40, message)
+        self.assertIn("d" * 40, message)
         self.assertIn(
             "do not import GitHub's public key",
             message,
             "the wrong repair is the obvious one and must be ruled out in the message",
         )
+        self.assertNotIn("GitHub's stacked-pull-request flow", message)
+        self.assertNotIn("re-signs", message)
 
     def test_the_step_being_merged_is_never_queried(self):
         """The current step's branch may legitimately differ from its receipt
