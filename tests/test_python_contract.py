@@ -313,7 +313,7 @@ class PythonRuntimeContractTests(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         workflow_event_paths(text, event)
 
-    def test_complete_plugin_gate_runs_the_one_full_graph(self):
+    def test_complete_plugin_gate_shards_the_one_declared_graph(self):
         workflow = WORKFLOWS / "plugins.yml"
         self.assertTrue(workflow.is_file(), "the complete plugin workflow is missing")
         text = workflow.read_text(encoding="utf-8")
@@ -348,18 +348,39 @@ class PythonRuntimeContractTests(unittest.TestCase):
             "gpg --batch --import \"$key_path\"",
             text,
         )
+        # One shard per declared scope, each running the committed graph for
+        # that scope alone. The graph stays the only definition of a check, and
+        # no command is copied into the workflow.
         self.assertEqual(
             text.count(
-                "run: python3 scripts/run_checks.py --full "
-                "--report tmp/checks/plugins.json"
+                "python3 scripts/run_checks.py\n"
+                "          --scope ${{ matrix.scope }}\n"
+                "          --report tmp/checks/${{ matrix.scope }}.json"
             ),
             1,
         )
+        declared = set(
+            json.loads((ROOT / "tests" / "check-map-v1.json").read_text())["scopes"]
+        )
+        block = text[text.index("        scope:\n") : text.index("    runs-on:")]
+        sharded = set(re.findall(r"^\s+- ([a-z][a-z-]*)$", block, re.MULTILINE))
+        self.assertEqual(
+            sharded,
+            declared,
+            "every declared scope needs exactly one shard, and no shard may "
+            "name a scope the graph does not declare",
+        )
+        # The aggregate job is the required context and is green only when
+        # every shard reached terminal success.
+        self.assertIn("    needs: scope\n", text)
+        self.assertIn('test "$SHARDS" = success', text)
+        self.assertIn("fail-fast: false", text)
         self.assertIn("if: always()", text)
         self.assertIn("uses: actions/upload-artifact@v4", text)
-        self.assertIn("path: tmp/checks/plugins.json", text)
+        self.assertIn("path: tmp/checks/${{ matrix.scope }}.json", text)
         self.assertNotIn("continue-on-error", text)
         self.assertNotIn("github.event.pull_request", text)
+        self.assertNotIn("--full", text)
 
     def test_complete_graph_has_one_owned_suite_scope_for_every_plugin(self):
         graph = json.loads((ROOT / "tests" / "check-map-v1.json").read_text())
