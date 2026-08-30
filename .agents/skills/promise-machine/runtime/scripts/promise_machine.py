@@ -86,6 +86,55 @@ OBLIGATION_MARKER = re.compile(
 OBLIGATION_MARKER_PREFIX = "<!-- promise-machine-obligation:"
 OBLIGATION_CLAUSE_PREFIX = "> Obligation:"
 OPEN_SUPPORTS_DIR_FD = os.open in os.supports_dir_fd
+HTML_BLOCK_TYPE_1_OPEN = re.compile(
+    r"^ {0,3}<(script|pre|style|textarea)(?=[ \t>/]|$)", re.IGNORECASE
+)
+HTML_BLOCK_TYPE_1_CLOSE = re.compile(
+    r"</(?:script|pre|style|textarea)>", re.IGNORECASE
+)
+HTML_COMMENT_OPEN = re.compile(r"^ {0,3}<!--")
+HTML_COMMENT_CLOSE = re.compile(r"-->")
+HTML_PROCESSING_OPEN = re.compile(r"^ {0,3}<\?")
+HTML_PROCESSING_CLOSE = re.compile(r"\?>")
+HTML_DECLARATION_OPEN = re.compile(r"^ {0,3}<![A-Za-z]")
+HTML_DECLARATION_CLOSE = re.compile(r">")
+HTML_CDATA_OPEN = re.compile(r"^ {0,3}<!\[CDATA\[")
+HTML_CDATA_CLOSE = re.compile(r"\]\]>")
+HTML_BLOCK_TYPE_6_OPEN = re.compile(
+    r"^ {0,3}</?([A-Za-z][A-Za-z0-9-]*)(?=[ \t/>]|$)"
+)
+HTML_BLOCK_TYPE_6_TAGS = {
+    "address", "article", "aside", "base", "basefont", "blockquote",
+    "body", "caption", "center", "col", "colgroup", "dd", "details",
+    "dialog", "dir", "div", "dl", "dt", "fieldset", "figcaption",
+    "figure", "footer", "form", "frame", "frameset", "h1", "h2", "h3",
+    "h4", "h5", "h6", "head", "header", "hr", "html", "iframe",
+    "legend", "li", "link", "main", "menu", "menuitem", "nav",
+    "noframes", "ol", "optgroup", "option", "p", "param", "search",
+    "section", "summary", "table", "tbody", "td", "tfoot", "th",
+    "thead", "title", "tr", "track", "ul",
+}
+HTML_BLOCK_TYPE_1_TAGS = {"script", "pre", "style", "textarea"}
+HTML_ATTRIBUTE = (
+    r"[ \t]+[A-Za-z_:][A-Za-z0-9_.:-]*"
+    r"(?:[ \t]*=[ \t]*(?:[^ \t\"'=<>`]+|'[^']*'|\"[^\"]*\"))?"
+)
+HTML_BLOCK_TYPE_7_LINE = re.compile(
+    r"^ {0,3}(?:<([A-Za-z][A-Za-z0-9-]*)(?:"
+    + HTML_ATTRIBUTE
+    + r")*[ \t]*/?>|</([A-Za-z][A-Za-z0-9-]*)[ \t]*>)[ \t]*$"
+)
+MARKDOWN_THEMATIC_BREAK = re.compile(
+    r"^ {0,3}(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})$"
+)
+MARKDOWN_SETEXT_UNDERLINE = re.compile(r"^ {0,3}(?:=+[ \t]*|-+[ \t]*)$")
+MARKDOWN_LINK_REFERENCE = re.compile(
+    r"^ {0,3}\[(?:\\.|[^\[\]])+\]:"
+)
+MARKDOWN_BLOCK_START = re.compile(
+    r"^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|[-+*](?:[ \t]|$))"
+)
+MARKDOWN_ORDERED_LIST = re.compile(r"^ {0,3}(\d{1,9})[.)](?:[ \t]|$)")
 OBLIGATION_ROW_KEYS = {
     "id",
     "clause_sha256",
@@ -503,10 +552,23 @@ def frontmatter_lines(text: str):
 
 
 def markdown_unfenced_lines(text: str):
-    """Return source lines with fenced-code content masked."""
+    """Return lines outside fenced code and CommonMark raw HTML blocks."""
+    physical_lines = re.split(r"\r\n?|\n", text)
+    frontmatter_end = None
+    if physical_lines and physical_lines[0] == "---":
+        try:
+            frontmatter_end = physical_lines.index("---", 1)
+        except ValueError:
+            pass
     visible: list[str | None] = []
     fence: tuple[str, int] | None = None
-    for line in text.splitlines():
+    html_end: re.Pattern | None = None
+    html_until_blank = False
+    paragraph_open = False
+    for index, line in enumerate(physical_lines):
+        if frontmatter_end is not None and index <= frontmatter_end:
+            visible.append(None)
+            continue
         if fence is not None:
             character, width = fence
             closing = re.fullmatch(
@@ -517,6 +579,26 @@ def markdown_unfenced_lines(text: str):
                 fence = None
             continue
 
+        if html_end is not None:
+            visible.append(None)
+            if html_end.search(line) is not None:
+                html_end = None
+            continue
+
+        if html_until_blank:
+            if line.strip():
+                visible.append(None)
+                continue
+            html_until_blank = False
+            paragraph_open = False
+            visible.append(line)
+            continue
+
+        if not line.strip():
+            visible.append(line)
+            paragraph_open = False
+            continue
+
         stripped = line.lstrip(" ")
         indentation = len(line) - len(stripped)
         opening = re.match(r"(`{3,}|~{3,})(.*)$", stripped)
@@ -525,8 +607,99 @@ def markdown_unfenced_lines(text: str):
             if run[0] == "~" or "`" not in info:
                 fence = (run[0], len(run))
                 visible.append(None)
+                paragraph_open = False
                 continue
+
+        # These standalone HTML comments are the law's authored metadata. An
+        # enclosing raw HTML block still masks them through the states above.
+        if line == MARKER:
+            visible.append(line)
+            paragraph_open = False
+            continue
+        if (
+            OBLIGATION_MARKER_PREFIX in line
+            and HTML_COMMENT_OPEN.match(line) is not None
+        ):
+            visible.append(line)
+            comment_open = HTML_COMMENT_OPEN.match(line)
+            if (
+                comment_open is not None
+                and HTML_COMMENT_CLOSE.search(line, comment_open.end()) is None
+            ):
+                html_end = HTML_COMMENT_CLOSE
+            paragraph_open = False
+            continue
+
+        html_type_1 = HTML_BLOCK_TYPE_1_OPEN.match(line)
+        if html_type_1 is not None:
+            visible.append(None)
+            if HTML_BLOCK_TYPE_1_CLOSE.search(line, html_type_1.end()) is None:
+                html_end = HTML_BLOCK_TYPE_1_CLOSE
+            paragraph_open = False
+            continue
+        html_openings = (
+            (HTML_CDATA_OPEN, HTML_CDATA_CLOSE),
+            (HTML_COMMENT_OPEN, HTML_COMMENT_CLOSE),
+            (HTML_PROCESSING_OPEN, HTML_PROCESSING_CLOSE),
+            (HTML_DECLARATION_OPEN, HTML_DECLARATION_CLOSE),
+        )
+        opened_html = False
+        for opening, closing in html_openings:
+            matched = opening.match(line)
+            if matched is None:
+                continue
+            visible.append(None)
+            if closing.search(line, matched.end()) is None:
+                html_end = closing
+            paragraph_open = False
+            opened_html = True
+            break
+        if opened_html:
+            continue
+
+        html_type_6 = HTML_BLOCK_TYPE_6_OPEN.match(line)
+        if (
+            html_type_6 is not None
+            and html_type_6.group(1).lower() in HTML_BLOCK_TYPE_6_TAGS
+        ):
+            visible.append(None)
+            html_until_blank = True
+            paragraph_open = False
+            continue
+        html_type_7 = HTML_BLOCK_TYPE_7_LINE.match(line)
+        if html_type_7 is not None and not paragraph_open:
+            tag = (html_type_7.group(1) or html_type_7.group(2) or "").lower()
+            if tag not in HTML_BLOCK_TYPE_1_TAGS:
+                visible.append(None)
+                html_until_blank = True
+                paragraph_open = False
+                continue
+
+        # Keep malformed marker-shaped prose visible to the closed grammar,
+        # but only after a containing raw HTML block had the chance to mask it.
+        if OBLIGATION_MARKER_PREFIX in line:
+            visible.append(line)
+            paragraph_open = False
+            continue
+
         visible.append(line)
+        block_start = MARKDOWN_BLOCK_START.match(line)
+        ordered_list = MARKDOWN_ORDERED_LIST.match(line)
+        ordered_list_start = ordered_list is not None and (
+            not paragraph_open or int(ordered_list.group(1)) == 1
+        )
+        thematic_break = MARKDOWN_THEMATIC_BREAK.fullmatch(line)
+        setext_underline = (
+            paragraph_open and MARKDOWN_SETEXT_UNDERLINE.fullmatch(line)
+        )
+        if block_start or ordered_list_start or thematic_break or setext_underline:
+            paragraph_open = False
+        elif not paragraph_open:
+            indented_code = line.startswith("    ") or line.startswith("\t")
+            link_reference = MARKDOWN_LINK_REFERENCE.match(line)
+            paragraph_open = not (indented_code or link_reference)
+        else:
+            paragraph_open = True
     return visible
 
 

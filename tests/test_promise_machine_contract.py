@@ -407,6 +407,94 @@ class PromiseObligationTests(unittest.TestCase):
         )
         self.assertIn("PM009", [finding.code for finding in findings])
 
+    def test_law_gates_ignore_commonmark_raw_html_block_content(self):
+        cases = {
+            "raw-text": "<script>\n## Scope\n</script>",
+            "comment": "<!--\n## Scope\n-->",
+            "processing": "<?\n## Scope\n?>",
+            "declaration": "<!DOCTYPE\n## Scope\n>",
+            "cdata": "<![CDATA[\n## Scope\n]]>",
+            "block-tag": "<div>\n## Scope\n</div>\n",
+            "generic-tag": "<x-decoy>\n## Scope\n</x-decoy>\n",
+            "raw-text-marker": (
+                "<script><!-- promise-machine-obligation: malformed\n"
+                "## Scope\n</script>"
+            ),
+            "block-tag-marker": (
+                "<div><!-- promise-machine-obligation: malformed\n"
+                "## Scope\n</div>\n"
+            ),
+            "generic-tag-marker": (
+                '<x-decoy data="<!-- promise-machine-obligation: malformed">\n'
+                "## Scope\n</x-decoy>\n"
+            ),
+        }
+        for name, block in cases.items():
+            with self.subTest(name=name):
+                lines = promise_machine_module.markdown_unfenced_lines(block)
+                self.assertNotIn("## Scope", lines)
+        paragraph_lines = promise_machine_module.markdown_unfenced_lines(
+            "paragraph\n<x-decoy>\n## Scope"
+        )
+        self.assertIn("## Scope", paragraph_lines)
+
+    def test_law_gates_track_blocks_before_a_generic_html_block(self):
+        cases = {
+            "setext-heading": "lead\n---",
+            "thematic-break": "* * *",
+            "indented-code": "    code",
+            "link-reference": "[label]: /target",
+            "blockquote": ">quoted",
+            "non-one-ordered-list": "2. item",
+        }
+        for name, prefix in cases.items():
+            with self.subTest(name=name):
+                lines = promise_machine_module.markdown_unfenced_lines(
+                    f"{prefix}\n<x-decoy>\n## Scope\n</x-decoy>\n"
+                )
+                self.assertNotIn("## Scope", lines)
+
+    def test_contract_identity_gate_ignores_an_html_comment_decoy(self):
+        declaration = "The shared contract identity is `promise-machine/v1`."
+        text = LAW.read_text(encoding="utf-8").replace(
+            declaration, f"<!--\n{declaration}\n-->", 1
+        )
+        findings = promise_machine_module.validate_law_document(
+            text.encode("utf-8"), text, "contract-identity-html-decoy.md"
+        )
+        self.assertIn("PM007", [finding.code for finding in findings])
+
+    def test_law_gates_reject_non_commonmark_line_separator_decoys(self):
+        separators = (
+            "\v",
+            "\f",
+            "\x1c",
+            "\x1d",
+            "\x1e",
+            "\x85",
+            "\u2028",
+            "\u2029",
+        )
+        for separator in separators:
+            with self.subTest(separator=ascii(separator)):
+                text = LAW.read_text(encoding="utf-8").replace(
+                    "## Scope", f"not-a-heading{separator}## Scope", 1
+                )
+                findings = promise_machine_module.validate_law_document(
+                    text.encode("utf-8"), text, "line-separator-decoy.md"
+                )
+                self.assertIn("PM006", [finding.code for finding in findings])
+
+    def test_required_section_gate_ignores_yaml_frontmatter_decoy(self):
+        text = LAW.read_text(encoding="utf-8").replace(
+            "## Scope", "## Scope changed", 1
+        )
+        text = f"---\n## Scope\n---\n{text}"
+        findings = promise_machine_module.validate_law_document(
+            text.encode("utf-8"), text, "frontmatter-decoy.md"
+        )
+        self.assertIn("PM006", [finding.code for finding in findings])
+
     def test_fenced_obligation_marker_cannot_replace_an_authored_clause(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)
@@ -429,6 +517,42 @@ class PromiseObligationTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM085", [item["code"] for item in report["findings"]])
+
+    def test_raw_html_obligation_marker_cannot_replace_an_authored_clause(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            write_obligation_fixture(target)
+            law = target / LAW.name
+            marker = (
+                "<!-- promise-machine-obligation: id=law-contract-identity -->"
+            )
+            clause = (
+                "> Obligation: This authored law names only `promise-machine/v1` as its\n"
+                "> contract identity."
+            )
+            text = law.read_text(encoding="utf-8").replace(
+                f"{marker}\n{clause}",
+                f"<div>\n{marker}\n{clause}\n</div>\n",
+                1,
+            )
+            law.write_text(text, encoding="utf-8")
+            completed = run_cli(
+                "check", "--root", target, "--only", "obligations", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM085", [item["code"] for item in report["findings"]])
+
+    def test_unclosed_obligation_comment_cannot_expose_hidden_law_content(self):
+        text = LAW.read_text(encoding="utf-8").replace(
+            "## Scope",
+            "<!-- promise-machine-obligation: malformed\n## Scope\n-->",
+            1,
+        )
+        findings = promise_machine_module.validate_law_document(
+            text.encode("utf-8"), text, "unclosed-obligation-comment.md"
+        )
+        self.assertIn("PM006", [finding.code for finding in findings])
 
     def test_each_normative_root_promise_section_is_required(self):
         headings = (
