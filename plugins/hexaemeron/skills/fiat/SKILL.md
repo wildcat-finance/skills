@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.43.1"
+  version: "5.44.1"
 ---
 
 <p align="center">
@@ -144,13 +144,15 @@ the second.
 1. If the user passed `status`, run `hexctl status` and report. Stop.
 2. Apply the frontier maturity gate below. This happens before `init` and
    before resuming an existing frontier run.
-3. If a run arrives as a checkpoint zip, verify the outer transport and Git
-   boundary first, restore its refs into a fresh clean top-level checkout, then
-   restore the checked controller capsule with `hexctl checkpoint restore`, per
-   the `Step checkpoint` section of
+3. If another agent hands over a local checkpoint path, verify the archive and
+   Git boundary first, restore its refs into a fresh clean top-level checkout,
+   then restore the checked controller capsule with `hexctl checkpoint
+   restore`, per the `Step checkpoint` section of
    [push-discipline.md](references/push-discipline.md). Run `hexctl verify` and
    `hexctl status --json` against the restored worktree, then enter the loop.
-   Never call `init` or start a fresh ledger for a restored run.
+   Never call `init` or start a fresh ledger for a restored run. Checkpoint
+   transfer is local agent-to-agent work; do not ask the user to choose a
+   destination, approve the transfer, or decide whether the checkpoint is kept.
 4. If `.hexaemeron/state.json` exists, run `hexctl verify`, then
    `hexctl status --json`. If its phase is `done`, run `hexctl reset` to
    archive the completed run, then continue immediately as a new run at step
@@ -559,11 +561,13 @@ append its attribution line or session link after creation. Wait for its gates
 but leave it open: a step's work lands in the
 integrate phase, not here. Do not add an issue reference unless one was
 independently supplied or required by higher-priority repository policy. Receipt
-the head SHA in full, from `git rev-parse HEAD`, with the PR URL and PR base. Then, before packaging or acting on the next
-directive, export the controller capsule with `hexctl checkpoint export` and
-upload the step checkpoint the `Step checkpoint` section of
-[push-discipline.md](references/push-discipline.md) requires. Preserve the
-export command's manifest SHA-256 outside the capsule for checked restore.
+the head SHA in full, from `git rev-parse HEAD`, with the PR URL and PR base.
+Then, before packaging or acting on the next directive, save the complete step
+checkpoint in the fixed local checkpoint store exactly as the `Step checkpoint`
+section of [push-discipline.md](references/push-discipline.md) requires. This is
+mandatory controller work: do not ask the user whether to save it, where to put
+it, or whether it may be skipped. Preserve the export command's manifest
+SHA-256 outside the capsule for checked restore.
 
 **Integrate.** Once every step is pushed, the stack comes down in order.
 Before each merge, an unchanged waiting head passes without a relation process.
@@ -764,8 +768,8 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 - Promise: A successful `hexctl checkpoint export` followed by `hexctl checkpoint restore` establishes that one bounded, deterministic `fiat-controller-checkpoint/v1` capsule was exported at an accepted controller boundary, verified against its out-of-band manifest SHA-256 and exact Git refs, and relocated into a fresh clean checkout while continuing the same append-only Fiat ledger.
 - Evidence: Ordinary controller verification before capture, the accepted ledger-tail boundary, stable no-follow regular-file reads, closed sorted inventory and resource totals, exact state and ledger byte identities, semantic state fingerprint and next directive, resolved Git refs, canonical manifest digest reported outside the capsule, the explicit compatible-controller set, portable source receipts and legacy-path guards, the restore transaction marker, one `checkpoint:restore` ledger entry, final controller verification and the clone-loss tests.
 - Evidence classes: checked, recorded
-- Boundary: The capsule proves the exact controller bytes, declared resources, semantic directive and Git boundary checked by these commands. It does not create or verify the Git bundle or outer archive, handle signing keys, publish to GitHub or Drive, make the manifest digest a semantic checkpoint identity, prove the recorded delivery claims true, or authorise the emitted next directive to run.
-- Authorises: Packaging the exported controller directory through the standing outer checkpoint procedure and, after that transport and its Git boundary have been verified, restoring the same ledger once into the fresh checkout and reporting the recomputed directive without executing it.
+- Boundary: The capsule proves the exact controller bytes, declared resources, semantic directive and Git boundary checked by these commands. It does not create or verify the Git bundle or outer archive, handle signing keys, publish anything remotely, make the manifest digest a semantic checkpoint identity, prove the recorded delivery claims true, or authorise the emitted next directive to run.
+- Authorises: Packaging the exported controller directory in the fixed local checkpoint store, handing its absolute path and digests directly to another local agent, and, after the archive and Git boundary have been verified, restoring the same ledger once into the fresh checkout and reporting the recomputed directive without executing it.
 - Consequence: 2
 - Refuses: Any unaccepted or moving boundary, pending controller mutation, unsafe or unstable path, symlink, hard link or special file, duplicate JSON key, non-finite number, JSON nesting above 128 containers, resource-cap breach, occupied destination, manifest or file drift, unsupported controller version, state-ledger disagreement, missing or moved Git ref, dirty checkout, conflicting transaction marker, or replay.
 - Recovery: Preserve the source controller and any interrupted private stage or marker for inspection, repair the named boundary without editing ledger history, re-establish the exact Git refs and clean destination, then rerun export or restore with the manifest digest printed by the successful export.
@@ -785,11 +789,11 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 
 ### fiat-local-retirement
 
-- Promise: A successful `hexctl reset` establishes that the active run was complete, its state and append-only ledger verified, its controller evidence moved into the checkout's local `.hexaemeron/archive/`, and its active state cleared; a run worktree was removed only when Git reported it clean and accepted a non-forced removal.
-- Evidence: Zero-exit `verify_run`, terminal `phase: done`, the destination created under the local state root, same-filesystem moves of every active state entry except the local ignore, archive and lock controls, the worktree cleanliness check, non-forced `git worktree remove`, rewritten live breadcrumbs and the printed archive path.
+- Promise: A successful `hexctl reset` establishes that the active run was complete, its state and append-only ledger verified, its controller evidence moved into the checkout's local `.hexaemeron/archive/`, its fixed `.hexaemeron/checkpoints/` store remained outside that archive, and its active state cleared; a run worktree was removed only when Git reported it clean and accepted a non-forced removal.
+- Evidence: Zero-exit `verify_run`, terminal `phase: done`, the destination created under the local state root, same-filesystem moves of every active state entry except the local ignore, archive, checkpoints and lock controls, the worktree cleanliness check, non-forced `git worktree remove`, rewritten live breadcrumbs and the printed archive path.
 - Evidence classes: checked, recorded
-- Boundary: Retirement preserves and clears local controller evidence; it does not strengthen any delivery receipt, publish the archive, prove that no external process copied it, or prevent an explicit forced Git add from overriding the self-ignore.
-- Authorises: Archiving a final verified run locally after its handoff data has been captured, clearing its active controller state, and retiring only a clean run worktree before the final report.
+- Boundary: Retirement preserves and clears local controller evidence without opening or validating checkpoint archives; it does not strengthen any delivery receipt, publish an archive, prove that no external process copied it, or prevent an explicit forced Git add from overriding the self-ignore.
+- Authorises: Archiving a final verified run locally after its handoff data has been captured, leaving the fixed checkpoint store in place, clearing its active controller state, and retiring only a clean run worktree before the final report.
 - Consequence: 2
 - Refuses: An incomplete run, failed controller verification, an archive destination outside the local state root, or forced removal of a worktree whose Git status is not clean.
 - Recovery: Keep the active state and worktree available, inspect `hexctl status` and `hexctl verify`, repair the failed evidence without editing ledger history, then rerun `hexctl reset`; if the tree holds work, inspect the retained path named by the command.

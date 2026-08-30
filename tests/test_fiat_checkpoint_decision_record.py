@@ -71,6 +71,24 @@ class FiatCheckpointDecisionRecord(unittest.TestCase):
         missing = [item for item in required if item not in text]
         self.assertEqual([], missing, "ADR-028 omits accepted recovery design terms")
 
+    def test_adr_supersedes_remote_transport_with_mandatory_local_handoff(self):
+        text = read(ADR)
+        amendment = text.split(
+            "## Amendment: Mandatory local checkpoint hand-off (2026-08-30)", 1
+        )[1].split("\n## ", 1)[0]
+        amendment = " ".join(amendment.split())
+        required = (
+            "`<origin>/.hexaemeron/checkpoints/`",
+            "Drive and the task issue are no longer checkpoint transports",
+            "former waiver is removed",
+            "does not turn destination, retention or whether to save into a user decision",
+            "passes the verified absolute path and digests directly to the next local agent",
+            "blocks dependent work",
+            "no checkpoint operation uploads, posts, commits or pushes",
+        )
+        missing = [item for item in required if item not in amendment]
+        self.assertEqual([], missing, "ADR-028 omits the mandatory local hand-off")
+
     def test_adr_records_the_rejected_designs(self):
         text = read(ADR)
         required = (

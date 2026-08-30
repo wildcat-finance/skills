@@ -238,6 +238,35 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("read the remote comment back", push)
         self.assertIn("does not make the comment controller-attested", push)
 
+    def test_step_checkpoint_is_unconditional_local_agent_work(self):
+        section = self.push_discipline.split("## Step checkpoint", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        flat = " ".join(section.split())
+        required = (
+            "Every successful `done push` boundary",
+            "mandatory controller work",
+            "cannot be waived",
+            "must not ask the user",
+            "<origin>/.hexaemeron/checkpoints/<run-worktree-name>/",
+            "A save failure blocks the next directive",
+            "Do not upload the checkpoint",
+            "direct agent-to-agent hand-off",
+            "absolute archive path",
+            "outer SHA-256",
+            "controller-manifest SHA-256",
+        )
+        missing = [item for item in required if item not in flat]
+        self.assertEqual([], missing)
+        self.assertNotIn("HexaemeronCheckpoints Drive", section)
+        self.assertNotIn("Anyone directing a run may waive", section)
+        self.assertNotIn("Post a note on the run's task issue", section)
+
+        fiat = " ".join(self.fiat.split())
+        self.assertIn("fixed local checkpoint store", fiat)
+        self.assertIn("mandatory controller work", fiat)
+        self.assertIn("do not ask the user whether to save it", fiat)
+
     def test_provenance_is_verified_without_reclassifying_human_work(self):
         # Flattened: these assert what the instruction says, and a reflow of the
         # same sentence is not a change to it. Pinning the line breaks made an
