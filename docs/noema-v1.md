@@ -232,9 +232,9 @@ Version 1 applies every limit before returning a partial graph or result:
 
 The seed archive verifier separately accepts at most 1,048,576 archive bytes,
 64 members, 1,048,576 uncompressed bytes in aggregate, 1,048,576 bytes for one
-member and 512 UTF-8 bytes for one member path. It rejects encryption, unsafe
-paths, links, special files, unsupported compression, duplicate names and any
-inventory mismatch.
+member and 512 UTF-8 bytes for one member path. It rejects encryption,
+non-canonical or unsafe paths, links, special files, unsupported compression,
+duplicate names and any inventory mismatch.
 
 ## Result and refusal contract
 
