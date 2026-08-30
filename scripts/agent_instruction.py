@@ -2668,6 +2668,468 @@ def check_manifest(root: str | os.PathLike[str], manifest_path: str) -> list[dic
     return _check_manifest_bytes(root, read_confined(root, manifest_path))
 
 
+def _record_nonnegative_integer(value: Any, path: str) -> int:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or value < 0
+        or value > MAX_FILE_BYTES
+    ):
+        refuse("WAI-E-BOUNDS.NUMBER", path)
+    return value
+
+
+def _measurement_material(
+    value: Any,
+    expected_bytes: bytes,
+    path: str,
+) -> tuple[dict[str, Any], int]:
+    material = _object(value, ("sha256", "bytes", "tokens"), path)
+    token_count = _record_nonnegative_integer(material["tokens"], f"{path}.tokens")
+    _record_nonnegative_integer(material["bytes"], f"{path}.bytes")
+    _sha256(material["sha256"], f"{path}.sha256")
+    expected = {
+        "sha256": _digest(expected_bytes),
+        "bytes": len(expected_bytes),
+        "tokens": token_count,
+    }
+    if canonical_record_bytes(material, allow_integers=True) != canonical_record_bytes(
+        expected, allow_integers=True
+    ):
+        refuse("WAI-E-MEASURE.RECORD", path)
+    return expected, token_count
+
+
+def _validate_measurement_record(
+    root: str | os.PathLike[str],
+    value: Any,
+    manifest: Mapping[str, Any],
+    evidence: Mapping[str, bytes],
+    profile: Mapping[str, Any],
+) -> None:
+    path = "$.evidence.measurement_record"
+    record = _object(
+        value,
+        (
+            "schema",
+            "correlation_id",
+            "corpus_sha256",
+            "tokenizer_profile_sha256",
+            "tokenizer_id",
+            "model",
+            "vocabulary_sha256",
+            "observed_on",
+            "bootstrap_sha256",
+            "bootstrap",
+            "documents",
+            "amortised",
+            "totals",
+            "events",
+            "summary",
+        ),
+        path,
+    )
+    bootstrap = evidence["decoder_bootstrap"]
+    bootstrap_record = _object(record["bootstrap"], ("bytes", "tokens"), f"{path}.bootstrap")
+    bootstrap_tokens = _record_nonnegative_integer(
+        bootstrap_record["tokens"], f"{path}.bootstrap.tokens"
+    )
+    _record_nonnegative_integer(bootstrap_record["bytes"], f"{path}.bootstrap.bytes")
+    expected_bootstrap = {"bytes": len(bootstrap), "tokens": bootstrap_tokens}
+    if canonical_record_bytes(bootstrap_record, allow_integers=True) != canonical_record_bytes(
+        expected_bootstrap, allow_integers=True
+    ):
+        refuse("WAI-E-MEASURE.RECORD", f"{path}.bootstrap")
+
+    raw_documents = _array(
+        record["documents"],
+        f"{path}.documents",
+        len(manifest["fixtures"]),
+        minimum=len(manifest["fixtures"]),
+    )
+    documents: list[dict[str, Any]] = []
+    for index, fixture in enumerate(manifest["fixtures"]):
+        fixture_id = fixture["id"]
+        document_path = f"{path}.documents[{index}]"
+        supplied = _object(
+            raw_documents[index],
+            ("fixture_id", "source", "canonical_model", "compact", "one_document"),
+            document_path,
+        )
+        source_file = read_confined(root, fixture["source"]["path"])
+        start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
+        end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
+        source_bytes = source_file[start:end]
+        model_bytes = _load_bound_artifact(
+            root,
+            fixture["artifacts"]["model"],
+            f"$.fixtures.{fixture_id}.model",
+        )
+        compact_bytes = _load_bound_artifact(
+            root,
+            fixture["artifacts"]["compact"],
+            f"$.fixtures.{fixture_id}.compact",
+        )
+        source, source_tokens = _measurement_material(
+            supplied["source"], source_bytes, f"{document_path}.source"
+        )
+        model, model_tokens = _measurement_material(
+            supplied["canonical_model"], model_bytes, f"{document_path}.canonical_model"
+        )
+        compact, compact_tokens = _measurement_material(
+            supplied["compact"], compact_bytes, f"{document_path}.compact"
+        )
+        one_document = _object(
+            supplied["one_document"],
+            ("bytes", "tokens", "delta_bytes", "delta_tokens"),
+            f"{document_path}.one_document",
+        )
+        _record_nonnegative_integer(one_document["bytes"], f"{document_path}.one_document.bytes")
+        _record_nonnegative_integer(one_document["tokens"], f"{document_path}.one_document.tokens")
+        expected_document = {
+            "fixture_id": fixture_id,
+            "source": source,
+            "canonical_model": model,
+            "compact": compact,
+            "one_document": {
+                "bytes": len(compact_bytes) + len(bootstrap),
+                "tokens": compact_tokens + bootstrap_tokens,
+                "delta_bytes": _signed_decimal(len(compact_bytes) + len(bootstrap) - len(source_bytes)),
+                "delta_tokens": _signed_decimal(compact_tokens + bootstrap_tokens - source_tokens),
+            },
+        }
+        if canonical_record_bytes(supplied, allow_integers=True) != canonical_record_bytes(
+            expected_document, allow_integers=True
+        ):
+            refuse("WAI-E-MEASURE.RECORD", document_path)
+        documents.append(expected_document)
+
+    amortised: list[dict[str, Any]] = []
+    for count in range(1, len(documents) + 1):
+        selected = documents[:count]
+        source_bytes = sum(item["source"]["bytes"] for item in selected)
+        source_tokens = sum(item["source"]["tokens"] for item in selected)
+        compact_bytes = sum(item["compact"]["bytes"] for item in selected)
+        compact_tokens = sum(item["compact"]["tokens"] for item in selected)
+        amortised.append(
+            {
+                "document_count": count,
+                "source_bytes": source_bytes,
+                "source_tokens": source_tokens,
+                "compact_plus_bootstrap_bytes": compact_bytes + len(bootstrap),
+                "compact_plus_bootstrap_tokens": compact_tokens + bootstrap_tokens,
+                "bootstrap_bytes_per_document": {"numerator": len(bootstrap), "denominator": count},
+                "bootstrap_tokens_per_document": {"numerator": bootstrap_tokens, "denominator": count},
+                "delta_bytes": _signed_decimal(compact_bytes + len(bootstrap) - source_bytes),
+                "delta_tokens": _signed_decimal(compact_tokens + bootstrap_tokens - source_tokens),
+            }
+        )
+    source_bytes_total = sum(item["source"]["bytes"] for item in documents)
+    source_tokens_total = sum(item["source"]["tokens"] for item in documents)
+    model_bytes_total = sum(item["canonical_model"]["bytes"] for item in documents)
+    model_tokens_total = sum(item["canonical_model"]["tokens"] for item in documents)
+    compact_bytes_total = sum(item["compact"]["bytes"] for item in documents)
+    compact_tokens_total = sum(item["compact"]["tokens"] for item in documents)
+    delta_tokens = compact_tokens_total + bootstrap_tokens - source_tokens_total
+    correlation_id = _digest(
+        (
+            _corpus_sha256(manifest)
+            + _digest(evidence["tokenizer_profile"])
+            + _digest(bootstrap)
+        ).encode("ascii")
+    )
+    events: list[dict[str, Any]] = [
+        {
+            "event": "measurement.baseline",
+            "correlation_id": correlation_id,
+            "fixture_id": item["fixture_id"],
+            "bytes": item["source"]["bytes"],
+            "tokens": item["source"]["tokens"],
+            "verdict": "recorded",
+            "unknowns": [],
+            "refusal_codes": [],
+        }
+        for item in documents
+    ]
+    events.extend(
+        {
+            "event": "measurement.result",
+            "correlation_id": correlation_id,
+            "fixture_id": item["fixture_id"],
+            "bytes": item["compact"]["bytes"],
+            "tokens": item["compact"]["tokens"],
+            "bootstrap_bytes": len(bootstrap),
+            "bootstrap_tokens": bootstrap_tokens,
+            "verdict": "recorded",
+            "unknowns": [],
+            "refusal_codes": [],
+        }
+        for item in documents
+    )
+    success = delta_tokens < 0
+    refusal_codes = [] if success else ["WAI-E-MEASURE.NON_NEGATIVE_DELTA"]
+    summary = {
+        "event": "run.summary",
+        "correlation_id": correlation_id,
+        "case_count": 1 + 3 * len(documents),
+        "passed": 1 if success else 0,
+        "failed": 0 if success else 1,
+        "refused": 0 if success else 1,
+        "unknown": 0,
+        "verdict": "accepted" if success else "refused",
+        "unknowns": [],
+        "refusal_codes": refusal_codes,
+    }
+    events.append(summary)
+    expected = {
+        "schema": MEASUREMENT_SCHEMA,
+        "correlation_id": correlation_id,
+        "corpus_sha256": _corpus_sha256(manifest),
+        "tokenizer_profile_sha256": _digest(evidence["tokenizer_profile"]),
+        "tokenizer_id": profile["id"],
+        "model": profile["model"],
+        "vocabulary_sha256": profile["vocabulary_sha256"],
+        "observed_on": profile["observed_on"],
+        "bootstrap_sha256": _digest(bootstrap),
+        "bootstrap": expected_bootstrap,
+        "documents": documents,
+        "amortised": amortised,
+        "totals": {
+            "source_bytes": source_bytes_total,
+            "source_tokens": source_tokens_total,
+            "canonical_model_bytes": model_bytes_total,
+            "canonical_model_tokens": model_tokens_total,
+            "compact_bytes": compact_bytes_total,
+            "compact_tokens": compact_tokens_total,
+            "compact_plus_bootstrap_bytes": compact_bytes_total + len(bootstrap),
+            "compact_plus_bootstrap_tokens": compact_tokens_total + bootstrap_tokens,
+            "delta_bytes": _signed_decimal(compact_bytes_total + len(bootstrap) - source_bytes_total),
+            "delta_tokens": _signed_decimal(delta_tokens),
+        },
+        "events": events,
+        "summary": summary,
+    }
+    if canonical_record_bytes(record, allow_integers=True) != canonical_record_bytes(
+        expected, allow_integers=True
+    ):
+        refuse("WAI-E-MEASURE.RECORD", path)
+    if not success:
+        refuse("WAI-E-MEASURE.NON_NEGATIVE_DELTA", f"{path}.totals.delta_tokens")
+
+
+def _validate_parity_mode_record(
+    value: Any,
+    *,
+    profile: Mapping[str, Any],
+    fixture_id: str,
+    question: Mapping[str, Any],
+    mode: str,
+    document: bytes,
+    prompt: bytes,
+    correlation_id: str,
+    path: str,
+) -> dict[str, Any]:
+    supplied = _object(
+        value,
+        (
+            "job_id",
+            "input_sha256",
+            "prompt_sha256",
+            "prompt_tokens",
+            "answer_id",
+            "response",
+            "outcome",
+            "code",
+        ),
+        path,
+    )
+    prompt_tokens = _record_nonnegative_integer(supplied["prompt_tokens"], f"{path}.prompt_tokens")
+    response = _string(supplied["response"], f"{path}.response")
+    if len(response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
+        refuse("WAI-E-PARITY.RECORD", f"{path}.response")
+    answer = _answer_record(response, question)
+    if answer["answer_id"] != question["required_answer"] or answer["outcome"] != "accepted":
+        refuse("WAI-E-PARITY.RECORD", f"{path}.answer_id")
+    expected = {
+        "job_id": _digest(
+            (correlation_id + profile["id"] + fixture_id + question["id"] + mode).encode("utf-8")
+        ),
+        "input_sha256": _digest(document),
+        "prompt_sha256": _digest(prompt),
+        "prompt_tokens": prompt_tokens,
+        **answer,
+    }
+    if canonical_record_bytes(supplied, allow_integers=True) != canonical_record_bytes(
+        expected, allow_integers=True
+    ):
+        refuse("WAI-E-PARITY.RECORD", path)
+    return expected
+
+
+def _validate_parity_record(
+    root: str | os.PathLike[str],
+    value: Any,
+    manifest: Mapping[str, Any],
+    evidence: Mapping[str, bytes],
+    families: Mapping[str, Any],
+) -> None:
+    path = "$.evidence.parity_record"
+    record = _object(
+        value,
+        (
+            "schema",
+            "correlation_id",
+            "corpus_sha256",
+            "family_profiles_sha256",
+            "family_ids",
+            "prompt_template_sha256",
+            "bootstrap_sha256",
+            "observed_on",
+            "results",
+            "summary",
+        ),
+        path,
+    )
+    profiles = families["profiles"]
+    bootstrap = evidence["decoder_bootstrap"]
+    template = evidence["parity_prompt"]
+    corpus_digest = _corpus_sha256(manifest)
+    correlation_id = _digest(
+        (
+            corpus_digest
+            + _digest(evidence["family_profiles"])
+            + _digest(template)
+            + _digest(bootstrap)
+        ).encode("ascii")
+    )
+    expected_result_count = len(profiles) * FIXTURE_QUESTION_COUNT
+    raw_results = _array(
+        record["results"],
+        f"{path}.results",
+        expected_result_count,
+        minimum=expected_result_count,
+    )
+    results: list[dict[str, Any]] = []
+    result_index = 0
+    for profile in profiles:
+        for fixture in manifest["fixtures"]:
+            fixture_id = fixture["id"]
+            source_file = read_confined(root, fixture["source"]["path"])
+            start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
+            end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
+            source = source_file[start:end]
+            compact = _load_bound_artifact(
+                root,
+                fixture["artifacts"]["compact"],
+                f"$.fixtures.{fixture_id}.compact",
+            )
+            questions_record = load_canonical_record(
+                _load_bound_artifact(
+                    root,
+                    fixture["artifacts"]["questions"],
+                    f"$.fixtures.{fixture_id}.questions",
+                )
+            )
+            _validate_questions(questions_record, fixture_id)
+            for question in questions_record["questions"]:
+                result_path = f"{path}.results[{result_index}]"
+                supplied = _object(
+                    raw_results[result_index],
+                    (
+                        "event",
+                        "correlation_id",
+                        "family_id",
+                        "family",
+                        "model",
+                        "fixture_id",
+                        "question_id",
+                        "required_answer",
+                        "context_sha256",
+                        "source",
+                        "compact",
+                        "verdict",
+                        "unknowns",
+                        "refusal_codes",
+                    ),
+                    result_path,
+                )
+                source_prompt = _render_parity_prompt(template, "source", bootstrap, source, question)
+                compact_prompt = _render_parity_prompt(template, "compact", bootstrap, compact, question)
+                source_record = _validate_parity_mode_record(
+                    supplied["source"],
+                    profile=profile,
+                    fixture_id=fixture_id,
+                    question=question,
+                    mode="source",
+                    document=source,
+                    prompt=source_prompt,
+                    correlation_id=correlation_id,
+                    path=f"{result_path}.source",
+                )
+                compact_record = _validate_parity_mode_record(
+                    supplied["compact"],
+                    profile=profile,
+                    fixture_id=fixture_id,
+                    question=question,
+                    mode="compact",
+                    document=compact,
+                    prompt=compact_prompt,
+                    correlation_id=correlation_id,
+                    path=f"{result_path}.compact",
+                )
+                expected_result = {
+                    "event": "parity.result",
+                    "correlation_id": correlation_id,
+                    "family_id": profile["id"],
+                    "family": profile["family"],
+                    "model": profile["model"],
+                    "fixture_id": fixture_id,
+                    "question_id": question["id"],
+                    "required_answer": question["required_answer"],
+                    "context_sha256": _digest(canonical_record_bytes(question["context"])),
+                    "source": source_record,
+                    "compact": compact_record,
+                    "verdict": "accepted",
+                    "unknowns": [],
+                    "refusal_codes": [],
+                }
+                if canonical_record_bytes(supplied, allow_integers=True) != canonical_record_bytes(
+                    expected_result, allow_integers=True
+                ):
+                    refuse("WAI-E-PARITY.RECORD", result_path)
+                results.append(expected_result)
+                result_index += 1
+    summary = {
+        "event": "run.summary",
+        "correlation_id": correlation_id,
+        "case_count": len(results) * 2,
+        "question_pair_count": len(results),
+        "passed": len(results),
+        "failed": 0,
+        "refused": 0,
+        "unknown": 0,
+        "verdict": "accepted",
+        "unknowns": [],
+        "refusal_codes": [],
+    }
+    expected = {
+        "schema": PARITY_SCHEMA,
+        "correlation_id": correlation_id,
+        "corpus_sha256": corpus_digest,
+        "family_profiles_sha256": _digest(evidence["family_profiles"]),
+        "family_ids": [profile["id"] for profile in profiles],
+        "prompt_template_sha256": _digest(template),
+        "bootstrap_sha256": _digest(bootstrap),
+        "observed_on": profiles[0]["observed_on"],
+        "results": results,
+        "summary": summary,
+    }
+    if canonical_record_bytes(record, allow_integers=True) != canonical_record_bytes(
+        expected, allow_integers=True
+    ):
+        refuse("WAI-E-PARITY.RECORD", path)
+
+
 def _load_evidence_artifacts(
     root: str | os.PathLike[str], manifest: Mapping[str, Any]
 ) -> dict[str, bytes]:
@@ -2731,6 +3193,8 @@ def _load_evidence_artifacts(
     family_ids = [profile["id"] for profile in families["profiles"]]
     if parity.get("family_ids") != family_ids:
         refuse("WAI-E-PARITY.IDENTITY", "$.evidence.parity_record")
+    _validate_measurement_record(root, measurement, manifest, evidence, tokenizer)
+    _validate_parity_record(root, parity, manifest, evidence, families)
     return evidence
 
 

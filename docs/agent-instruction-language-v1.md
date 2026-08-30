@@ -401,7 +401,7 @@ The strict three-document gate passes because `2,498 < 2,499`. The report also
 keeps each document and the bootstrap-amortised prefixes. A one-document run is
 not assumed to save tokens: the Fiat fixture reports `-44`, Horos reports
 `+740`, and Promise Machine reports `-157` after adding the entire bootstrap.
-The two-document prefix reports `+404`; only the declared three-document cohort
+The two-document prefix reports `+426`; only the declared three-document cohort
 is the acceptance cohort.
 
 ### Isolated family parity

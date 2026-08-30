@@ -2502,6 +2502,47 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
         self.assertIsInstance(report["totals"]["source_tokens"], int)
         self.assertIsInstance(report["bootstrap"]["tokens"], int)
 
+    def test_rebound_inconsistent_measurement_record_refuses(self):
+        manifest = manifest_record()
+        measurement_path = manifest["evidence"]["measurement_record"]["path"]
+        measurement = AI.load_canonical_record(
+            (ROOT / measurement_path).read_bytes(), allow_integers=True
+        )
+        measurement["totals"]["source_tokens"] = 0
+        mutated = AI.canonical_record_bytes(measurement, allow_integers=True)
+        manifest["evidence"]["measurement_record"]["sha256"] = hashlib.sha256(
+            mutated
+        ).hexdigest()
+
+        def artifact_bytes(root, artifact, path):
+            if artifact["path"] == measurement_path:
+                return mutated
+            return (ROOT / artifact["path"]).read_bytes()
+
+        with mock.patch.object(AI, "_load_bound_artifact", side_effect=artifact_bytes):
+            self.assertRefusal(
+                "WAI-E-MEASURE.RECORD",
+                AI._load_evidence_artifacts,
+                ROOT,
+                manifest,
+            )
+
+    def test_contract_reports_exact_two_document_token_delta(self):
+        manifest = manifest_record()
+        measurement = AI.load_canonical_record(
+            (ROOT / manifest["evidence"]["measurement_record"]["path"]).read_bytes(),
+            allow_integers=True,
+        )
+        two_document = next(
+            item for item in measurement["amortised"] if item["document_count"] == 2
+        )
+        delta = int(two_document["delta_tokens"])
+        contract = (ROOT / AI.CONTRACT_PATH).read_text(encoding="utf-8")
+        self.assertIn(
+            f"The two-document prefix reports `{delta:+d}`",
+            contract,
+        )
+
     def test_measure_cli_atomically_replaces_report(self):
         (self.root / "manifest.json").write_bytes(b"{}\n")
         (self.root / "report.json").write_bytes(b"old")
@@ -2776,6 +2817,31 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
         self.assertEqual(len(report["results"]), 18)
         self.assertEqual(report["summary"]["case_count"], 36)
         self.assertEqual(report["summary"]["passed"], 18)
+
+    def test_rebound_inconsistent_parity_record_refuses(self):
+        manifest = manifest_record()
+        parity_path = manifest["evidence"]["parity_record"]["path"]
+        parity = AI.load_canonical_record(
+            (ROOT / parity_path).read_bytes(), allow_integers=True
+        )
+        parity["summary"]["passed"] = 0
+        mutated = AI.canonical_record_bytes(parity, allow_integers=True)
+        manifest["evidence"]["parity_record"]["sha256"] = hashlib.sha256(
+            mutated
+        ).hexdigest()
+
+        def artifact_bytes(root, artifact, path):
+            if artifact["path"] == parity_path:
+                return mutated
+            return (ROOT / artifact["path"]).read_bytes()
+
+        with mock.patch.object(AI, "_load_bound_artifact", side_effect=artifact_bytes):
+            self.assertRefusal(
+                "WAI-E-PARITY.RECORD",
+                AI._load_evidence_artifacts,
+                ROOT,
+                manifest,
+            )
 
     def test_mismatch_and_required_failures_are_reported(self):
         def answer(profile, prompt, **kwargs):
