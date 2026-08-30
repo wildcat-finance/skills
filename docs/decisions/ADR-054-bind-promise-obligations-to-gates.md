@@ -54,6 +54,30 @@ Each later semantic step must add its marker, registry row, real selector, and
 red specimen atomically. A semantic rule is not counted merely because a
 fixture mentions it.
 
+Step 2 adds one closed transition record for consequence evaluation. Levels
+zero through two require successively different exact evidence roles. Level
+three requires the complete level-two set plus a digest-bound authority record
+and independently inspectable evidence, so replaying a level-two result cannot
+cross a level-three gate. `unknown`, `not-run`, missing and stale evidence are
+visible states but never satisfying states. A transition also resolves a
+digest-bound declaration for the same promise, gate, consequence, subject,
+scope and action before it can pass.
+
+An exception is a digest-bound record rather than a list of labels. It resolves
+the authority identity, promise and gate, subject, scope, durable reason,
+expiry rule, explicit revocation state and recovery. The transition supplies
+the recorded evaluation time; an absent, mismatched, expired or revoked record
+refuses. The exception does not bypass missing evidence or strengthen an
+evidence class.
+
+Every emitted finding is adapted to one actionable refusal shape before either
+renderer sees it. It carries a promise id, an obligation id when known, finding
+code, consequence, blocked transition and recovery. Text and canonical JSON
+therefore derive from the same object. The core checker also scans its own
+Python syntax for network, credential, shell, child-process and dynamic-code
+paths. A test runs the core check with network and child-process constructors
+denied. Neither guard executes an evidence command.
+
 The accepted study and runbook live under
 `docs/promise-machine/obligation-gates/`. They are the build contract for this
 framework change; this ADR is the standing reason for the interface choice.

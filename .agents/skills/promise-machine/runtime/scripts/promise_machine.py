@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import ast
+from datetime import datetime, timezone
 import hashlib
 import json
 import os
@@ -80,6 +82,27 @@ OBLIGATION_PATH = Path("tests/promise_machine_obligations.json")
 OBLIGATION_SCHEMA = "promise-machine-obligations/v1"
 OBLIGATION_SPECIMEN_SCHEMA = "promise-machine-obligation-specimen/v1"
 OBLIGATION_FIXTURE_ROOT = Path("tests/fixtures/promise-machine/obligations")
+PROMISE_MACHINE_FIXTURE_ROOT = Path("tests/fixtures/promise-machine")
+SEMANTIC_FIXTURE_DIRECTORIES = {
+    "consequences",
+    "exceptions",
+    "findings",
+    "imports",
+}
+TRANSITION_SCHEMA = "promise-machine-transition/v1"
+TRANSITION_DECLARATION_SCHEMA = "promise-machine-transition-declaration/v1"
+TRANSITION_AUTHORITY_SCHEMA = "promise-machine-transition-authority/v1"
+EXCEPTION_SCHEMA = "promise-machine-exception/v1"
+EXCEPTION_SPECIMEN_SCHEMA = "promise-machine-exception-specimen/v1"
+FINDING_SPECIMEN_SCHEMA = "promise-machine-finding-specimen/v1"
+IMPORT_SPECIMEN_SCHEMA = "promise-machine-import-specimen/v1"
+CONSEQUENCE_FIXTURES = tuple(
+    Path(f"tests/fixtures/promise-machine/consequences/level-{level}.json")
+    for level in range(4)
+)
+EXCEPTION_FIXTURE = Path("tests/fixtures/promise-machine/exceptions/valid.json")
+CORE_CHECKER_PATH = Path("scripts/promise_machine.py")
+SEMANTIC_PROMISE_ID = "promise-machine-contract"
 OBLIGATION_MARKER = re.compile(
     r"<!-- promise-machine-obligation: id=([a-z][a-z0-9]*(?:-[a-z0-9]+)*) -->"
 )
@@ -155,6 +178,11 @@ OBLIGATION_ROW_KEYS = {
     "recovery",
 }
 OBLIGATION_GATES = {
+    "law-consequence-separation": (
+        "transition.consequence",
+        "PM090",
+        "4ca54c2c47e119492b505fd0b1e2746f1b2da5eb297054147f29424a86637716",
+    ),
     "law-contract-identity": (
         "law.contract-identity",
         "PM007",
@@ -164,6 +192,16 @@ OBLIGATION_GATES = {
         "law.declaration-fields",
         "PM008",
         "d1c8a438b81fb26b5643574b201a7170cb7b557ccb62cb7ff03a0ff05ff58ca4",
+    ),
+    "law-core-checker-side-effects": (
+        "checker.side-effects",
+        "PM094",
+        "f60a0bf02e71859a024c223fa267f68d4d521900a0eb50c3933f8483e7ff20b9",
+    ),
+    "law-exception-resolution": (
+        "exception.resolution",
+        "PM093",
+        "d2867efaa4e5ac58beecd645d4c3b4e0673171911cb938c619aa8228eaad6b78",
     ),
     "law-generated-copy-identity": (
         "law.generated-copy-marker",
@@ -175,11 +213,145 @@ OBLIGATION_GATES = {
         "PM009",
         "f8cd9cdd6129e69f588f81143bc5f4f597246fb3b3e6ae5b9a7ced9c1911d07b",
     ),
+    "law-refusal-shape": (
+        "refusal.structured",
+        "PM092",
+        "e3383a98a024c4eecc2902f9cb0edae50cd3ff12f5c248ee47fd7cb1f86d17a1",
+    ),
     "law-required-sections": (
         "law.required-sections",
         "PM006",
         "111257083c3195d5592f77815bf2b7f963ea57ee682f21cedd7c4b35172336e8",
     ),
+    "law-unknowns-non-authorising": (
+        "transition.unknowns",
+        "PM091",
+        "0086ce72fafa819da188612d5c8399caa5097d16f38e2a4dc12ed2bbe69f1f1f",
+    ),
+}
+SEMANTIC_OBLIGATIONS = {
+    "law-consequence-separation": {
+        "code": "PM090",
+        "consequence": 3,
+        "blocked_transition": "authorise a transition without its consequence-specific evidence path",
+        "recovery": "supply the exact evidence required by the declared consequence and rerun the transition check",
+    },
+    "law-unknowns-non-authorising": {
+        "code": "PM091",
+        "consequence": 3,
+        "blocked_transition": "authorise a positive transition from unknown, not-run, missing, stale or unresolved evidence",
+        "recovery": "record resolved positive evidence for the same subject and scope, preserve remaining unknowns, and rerun the transition check",
+    },
+    "law-refusal-shape": {
+        "code": "PM092",
+        "consequence": 2,
+        "blocked_transition": "emit or consume an incomplete refusal record",
+        "recovery": "restore the complete refusal fields and render text and JSON again from the same finding",
+    },
+    "law-exception-resolution": {
+        "code": "PM093",
+        "consequence": 3,
+        "blocked_transition": "authorise a transition through an unresolved, mismatched, expired or revoked exception",
+        "recovery": "restore a digest-bound authority and reason record, matching promise, gate, subject and scope, valid expiry and explicit revocation state",
+    },
+    "law-core-checker-side-effects": {
+        "code": "PM094",
+        "consequence": 3,
+        "blocked_transition": "run a core checker capable of network, credential, shell, subprocess, dynamic-code or evidence-command access",
+        "recovery": "remove the forbidden import or call and rerun the offline core-checker guard",
+    },
+}
+CHECKER_REFUSAL_CONTEXT = {
+    "promise_id": SEMANTIC_PROMISE_ID,
+    "consequence": 2,
+    "blocked_transition": (
+        "accept or publish a repository state that fails Promise Machine conformance"
+    ),
+}
+POSITIVE_EVIDENCE_STATES = {
+    "attested",
+    "checked",
+    "inferred",
+    "measured",
+    "proved",
+    "recomputed",
+    "recorded",
+}
+NON_AUTHORISING_EVIDENCE_STATES = {"missing", "not-run", "stale", "unknown"}
+CONSEQUENCE_ROLES = {
+    0: {"content"},
+    1: {"content", "provenance", "structure"},
+    2: {"content", "negative", "provenance", "recovery", "structure", "tests"},
+    3: {
+        "content",
+        "independent",
+        "negative",
+        "provenance",
+        "recovery",
+        "structure",
+        "tests",
+    },
+}
+FORBIDDEN_IMPORT_ROOTS = {
+    "asyncio",
+    "ftplib",
+    "getpass",
+    "http",
+    "importlib",
+    "keyring",
+    "multiprocessing",
+    "netrc",
+    "requests",
+    "runpy",
+    "socket",
+    "smtplib",
+    "ssl",
+    "subprocess",
+    "telnetlib",
+    "urllib",
+    "webbrowser",
+}
+FORBIDDEN_CALLS = {
+    "__import__",
+    "compile",
+    "eval",
+    "exec",
+    "importlib.import_module",
+    "os.fork",
+    "os.forkpty",
+    "os.getenv",
+    "os.popen",
+    "os.posix_spawn",
+    "os.posix_spawnp",
+    "os.system",
+    "runpy.run_module",
+    "runpy.run_path",
+}
+FORBIDDEN_OS_IMPORTS = {
+    "environ",
+    "execl",
+    "execle",
+    "execlp",
+    "execlpe",
+    "execv",
+    "execve",
+    "execvp",
+    "execvpe",
+    "fork",
+    "forkpty",
+    "getenv",
+    "popen",
+    "posix_spawn",
+    "posix_spawnp",
+    "spawnl",
+    "spawnle",
+    "spawnlp",
+    "spawnlpe",
+    "spawnv",
+    "spawnve",
+    "spawnvp",
+    "spawnvpe",
+    "system",
 }
 COVERAGE_CODES = ("P", "M", "S", "O", "R", "X")
 EVALUATION_KEYS = {"status", "model", "prompt", "corpus", "disposition"}
@@ -1121,6 +1293,866 @@ def obligation_finding(code: str, path: str, message: str, remedy: str, row=None
     )
 
 
+def semantic_finding(
+    obligation_id: str,
+    path: str,
+    message: str,
+    *,
+    record: dict | None = None,
+    promise_id: str | None = None,
+    consequence: int | None = None,
+    blocked_transition: str | None = None,
+):
+    context = SEMANTIC_OBLIGATIONS[obligation_id]
+    record = record if isinstance(record, dict) else {}
+    candidate_promise = promise_id or record.get("promise_id")
+    if not isinstance(candidate_promise, str) or not PROMISE_ID.fullmatch(
+        candidate_promise
+    ):
+        candidate_promise = SEMANTIC_PROMISE_ID
+    candidate_consequence = consequence
+    if candidate_consequence is None:
+        candidate_consequence = record.get("consequence")
+    if type(candidate_consequence) is not int or candidate_consequence not in range(4):
+        candidate_consequence = context["consequence"]
+    candidate_transition = blocked_transition or record.get("transition")
+    if not isinstance(candidate_transition, str) or not candidate_transition.strip():
+        candidate_transition = context["blocked_transition"]
+    return Finding(
+        context["code"],
+        "obligation",
+        path,
+        message,
+        context["recovery"],
+        promise_id=candidate_promise,
+        obligation_id=obligation_id,
+        consequence=candidate_consequence,
+        blocked_transition=candidate_transition,
+        recovery=context["recovery"],
+    )
+
+
+def parse_json_object_bytes(payload: bytes, noun: str):
+    def reject_duplicate_keys(pairs):
+        document = {}
+        for key, value in pairs:
+            if key in document:
+                raise ValueError(f"duplicate object key: {key!r}")
+            document[key] = value
+        return document
+
+    def require_unicode_scalars(value):
+        pending = [value]
+        while pending:
+            item = pending.pop()
+            if isinstance(item, str):
+                item.encode("utf-8")
+            elif isinstance(item, dict):
+                pending.extend(item)
+                pending.extend(item.values())
+            elif isinstance(item, list):
+                pending.extend(item)
+
+    try:
+        document = json.loads(payload, object_pairs_hook=reject_duplicate_keys)
+        require_unicode_scalars(document)
+    except (UnicodeDecodeError, UnicodeEncodeError, json.JSONDecodeError, ValueError) as exc:
+        return None, f"{noun} is not valid UTF-8 JSON: {exc}"
+    if not isinstance(document, dict):
+        return None, f"{noun} root is not an object"
+    return document, None
+
+
+def read_bound_reference(root: Path, reference, noun: str):
+    if not isinstance(reference, dict) or set(reference) != {"path", "sha256"}:
+        return None, f"{noun} reference is not the closed path and sha256 object"
+    raw_path = reference.get("path")
+    digest = reference.get("sha256")
+    if (
+        not isinstance(raw_path, str)
+        or not raw_path
+        or raw_path != raw_path.strip()
+        or "\\" in raw_path
+        or any(ord(character) < 32 for character in raw_path)
+        or not isinstance(digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", digest) is None
+    ):
+        return None, f"{noun} reference has an invalid path or digest"
+    relative_path = Path(raw_path)
+    if (
+        relative_path.is_absolute()
+        or not relative_path.parts
+        or any(part in {"", ".", ".."} for part in relative_path.parts)
+        or relative_path.as_posix() != raw_path
+    ):
+        return None, f"{noun} reference path is not repository-relative"
+    try:
+        payload = bounded_read_bytes(root / relative_path, root, MAX_JSON_BYTES)
+    except (OSError, ValueError) as exc:
+        return None, f"{noun} reference could not be resolved: {exc}"
+    if len(payload) > MAX_JSON_BYTES:
+        return None, f"{noun} reference exceeds the {MAX_JSON_BYTES}-byte limit"
+    if hashlib.sha256(payload).hexdigest() != digest:
+        return None, f"{noun} reference digest is stale or mismatched"
+    return payload, None
+
+
+def read_bound_json_reference(root: Path, reference, noun: str):
+    payload, error = read_bound_reference(root, reference, noun)
+    if error is not None:
+        return None, error
+    return parse_json_object_bytes(payload, noun)
+
+
+def parse_utc_timestamp(raw):
+    if not isinstance(raw, str) or re.fullmatch(
+        r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z", raw
+    ) is None:
+        return None
+    try:
+        parsed = datetime.strptime(raw, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=timezone.utc
+        )
+    except ValueError:
+        return None
+    return parsed if parsed.strftime("%Y-%m-%dT%H:%M:%SZ") == raw else None
+
+
+def validate_declaration_reference(root: Path, reference, record: dict):
+    declaration, error = read_bound_json_reference(
+        root, reference, "transition declaration"
+    )
+    if error is not None:
+        return error
+    keys = {
+        "schema",
+        "promise_id",
+        "gate",
+        "consequence",
+        "subject",
+        "scope",
+        "transition",
+    }
+    if set(declaration) != keys or declaration.get("schema") != TRANSITION_DECLARATION_SCHEMA:
+        return "transition declaration has an unsupported or open shape"
+    for key in ("promise_id", "gate", "consequence", "subject", "scope", "transition"):
+        if declaration.get(key) != record.get(key):
+            return f"transition declaration does not match the requested {key}"
+    return None
+
+
+def validate_authority_reference(root: Path, reference, expected: dict):
+    authority, error = read_bound_json_reference(root, reference, "authority")
+    if error is not None:
+        return None, error
+    keys = {"schema", "id", "promise_id", "gate", "subject", "scope"}
+    if set(authority) != keys or authority.get("schema") != TRANSITION_AUTHORITY_SCHEMA:
+        return None, "authority record has an unsupported or open shape"
+    if not isinstance(authority.get("id"), str) or not authority["id"].strip():
+        return None, "authority record has no identity"
+    for key in ("promise_id", "gate", "subject", "scope"):
+        if authority.get(key) != expected.get(key):
+            return None, f"authority record does not match the requested {key}"
+    return authority, None
+
+
+def validate_exception_record(
+    root: Path,
+    document,
+    shown: str,
+    *,
+    expected: dict,
+    evaluated_at: str,
+):
+    evaluated = parse_utc_timestamp(evaluated_at)
+    keys = {
+        "schema",
+        "id",
+        "authority",
+        "promise_id",
+        "gate",
+        "subject",
+        "scope",
+        "record",
+        "expiry",
+        "revoked",
+        "recovery",
+    }
+    if evaluated is None:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception evaluation time is not a real UTC timestamp",
+                record=expected,
+            )
+        ]
+    if not isinstance(document, dict) or set(document) != keys:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception record does not have the exact required fields",
+                record=expected,
+            )
+        ]
+    scalars = ("id", "promise_id", "gate", "subject", "scope", "recovery")
+    if (
+        document.get("schema") != EXCEPTION_SCHEMA
+        or any(
+            not isinstance(document.get(key), str)
+            or not document[key].strip()
+            or document[key] != document[key].strip()
+            for key in scalars
+        )
+    ):
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception schema or scalar identity is invalid",
+                record=expected,
+            )
+        ]
+    for key in ("promise_id", "gate", "subject", "scope"):
+        if document[key] != expected.get(key):
+            return [
+                semantic_finding(
+                    "law-exception-resolution",
+                    shown,
+                    f"exception does not match the requested {key}",
+                    record=expected,
+                )
+            ]
+    authority = document.get("authority")
+    if not isinstance(authority, dict) or set(authority) != {"id", "reference"}:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception authority is not an identified resolvable reference",
+                record=expected,
+            )
+        ]
+    authority_document, error = validate_authority_reference(
+        root, authority.get("reference"), expected
+    )
+    if error is not None:
+        return [semantic_finding("law-exception-resolution", shown, error, record=expected)]
+    if authority.get("id") != authority_document.get("id"):
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception authority identity does not match its record",
+                record=expected,
+            )
+        ]
+    _reason, error = read_bound_reference(root, document.get("record"), "exception reason")
+    if error is not None:
+        return [semantic_finding("law-exception-resolution", shown, error, record=expected)]
+    expiry = document.get("expiry")
+    if not isinstance(expiry, dict) or len(expiry) != 1:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception expiry is not the closed at or not_applicable form",
+                record=expected,
+            )
+        ]
+    if "at" in expiry:
+        expires = parse_utc_timestamp(expiry["at"])
+        if expires is None or expires <= evaluated:
+            return [
+                semantic_finding(
+                    "law-exception-resolution",
+                    shown,
+                    "exception expiry is invalid or has elapsed",
+                    record=expected,
+                )
+            ]
+    elif "not_applicable" in expiry:
+        reason = expiry["not_applicable"]
+        if not isinstance(reason, str) or not reason.strip():
+            return [
+                semantic_finding(
+                    "law-exception-resolution",
+                    shown,
+                    "exception does not explain why expiry cannot apply",
+                    record=expected,
+                )
+            ]
+    else:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception expiry field is unknown",
+                record=expected,
+            )
+        ]
+    if type(document.get("revoked")) is not bool or document["revoked"]:
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception revocation state is absent, invalid or revoked",
+                record=expected,
+            )
+        ]
+    return []
+
+
+def evaluate_transition_record(
+    root: Path,
+    document,
+    shown: str,
+    *,
+    expected_obligation: str | None = None,
+):
+    keys = {
+        "schema",
+        "promise_id",
+        "obligation_id",
+        "gate",
+        "consequence",
+        "subject",
+        "scope",
+        "transition",
+        "evaluated_at",
+        "declaration",
+        "evidence",
+        "unknowns",
+        "authority",
+        "exception",
+    }
+    fallback = expected_obligation or "law-consequence-separation"
+    if not isinstance(document, dict) or set(document) != keys:
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                "transition record does not have the exact required fields",
+            )
+        ]
+    obligation_id = document.get("obligation_id")
+    scalars = (
+        "promise_id",
+        "obligation_id",
+        "gate",
+        "subject",
+        "scope",
+        "transition",
+        "evaluated_at",
+    )
+    if (
+        document.get("schema") != TRANSITION_SCHEMA
+        or any(
+            not isinstance(document.get(key), str)
+            or not document[key].strip()
+            or document[key] != document[key].strip()
+            for key in scalars
+        )
+        or PROMISE_ID.fullmatch(document["promise_id"]) is None
+        or obligation_id not in SEMANTIC_OBLIGATIONS
+        or (expected_obligation is not None and obligation_id != expected_obligation)
+        or parse_utc_timestamp(document["evaluated_at"]) is None
+        or type(document.get("consequence")) is not int
+        or document["consequence"] not in range(4)
+    ):
+        return [
+            semantic_finding(
+                fallback,
+                shown,
+                "transition schema, identity, timestamp or consequence is invalid",
+                record=document,
+            )
+        ]
+    declaration_error = validate_declaration_reference(
+        root, document.get("declaration"), document
+    )
+    if declaration_error is not None:
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                declaration_error,
+                record=document,
+            )
+        ]
+    unknowns = document.get("unknowns")
+    if not isinstance(unknowns, list) or len(unknowns) > 64 or any(
+        not isinstance(item, str) or not item.strip() for item in unknowns
+    ):
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                "transition unknowns are not a bounded list of visible strings",
+                record=document,
+            )
+        ]
+    if unknowns:
+        return [
+            semantic_finding(
+                "law-unknowns-non-authorising",
+                shown,
+                "positive transition retains unresolved unknowns",
+                record=document,
+            )
+        ]
+    evidence = document.get("evidence")
+    if not isinstance(evidence, list) or not evidence or len(evidence) > 16:
+        return [
+            semantic_finding(
+                "law-unknowns-non-authorising",
+                shown,
+                "positive transition has missing or unbounded evidence",
+                record=document,
+            )
+        ]
+    evidence_keys = {
+        "role",
+        "class",
+        "status",
+        "reference",
+        "subject",
+        "scope",
+        "independent",
+    }
+    roles: set[str] = set()
+    for entry in evidence:
+        if not isinstance(entry, dict) or set(entry) != evidence_keys:
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "evidence entry does not have the exact required fields",
+                    record=document,
+                )
+            ]
+        role = entry.get("role")
+        evidence_class = entry.get("class")
+        status = entry.get("status")
+        if (
+            not isinstance(role, str)
+            or not role
+            or role in roles
+            or evidence_class not in SUPPORTED_EVIDENCE_CLASSES
+            or status not in POSITIVE_EVIDENCE_STATES | NON_AUTHORISING_EVIDENCE_STATES
+            or entry.get("subject") != document["subject"]
+            or entry.get("scope") != document["scope"]
+            or type(entry.get("independent")) is not bool
+            or entry["independent"] != (role == "independent")
+        ):
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "evidence identity, role, subject, scope or independence is invalid",
+                    record=document,
+                )
+            ]
+        if status in NON_AUTHORISING_EVIDENCE_STATES or evidence_class == "unknown":
+            return [
+                semantic_finding(
+                    "law-unknowns-non-authorising",
+                    shown,
+                    f"evidence role {role} is {status}",
+                    record=document,
+                )
+            ]
+        if evidence_class != status:
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "evidence status does not preserve its declared class",
+                    record=document,
+                )
+            ]
+        _payload, error = read_bound_reference(root, entry.get("reference"), "evidence")
+        if error is not None:
+            return [
+                semantic_finding(
+                    "law-unknowns-non-authorising",
+                    shown,
+                    error,
+                    record=document,
+                )
+            ]
+        roles.add(role)
+    required_roles = CONSEQUENCE_ROLES[document["consequence"]]
+    if roles != required_roles:
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                f"consequence {document['consequence']} evidence roles are not exact",
+                record=document,
+            )
+        ]
+    if document["consequence"] == 3:
+        if document.get("authority") is None or "independent" not in roles:
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "level three lacks recorded authority or independently inspectable evidence",
+                    record=document,
+                )
+            ]
+        _authority, authority_error = validate_authority_reference(
+            root, document["authority"], document
+        )
+        if authority_error is not None:
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    authority_error,
+                    record=document,
+                )
+            ]
+    elif document.get("authority") is not None:
+        return [
+            semantic_finding(
+                "law-consequence-separation",
+                shown,
+                "levels zero through two must use their own non-authority path",
+                record=document,
+            )
+        ]
+    exception = document.get("exception")
+    if exception != "none":
+        exception_document, error = read_bound_json_reference(
+            root, exception, "exception"
+        )
+        if error is not None:
+            return [semantic_finding("law-exception-resolution", shown, error, record=document)]
+        exception_findings = validate_exception_record(
+            root,
+            exception_document,
+            shown,
+            expected=document,
+            evaluated_at=document["evaluated_at"],
+        )
+        if exception_findings:
+            return exception_findings
+    return []
+
+
+def validate_refusal_payload(payload, shown: str):
+    keys = {
+        "code",
+        "fault",
+        "path",
+        "message",
+        "remedy",
+        "promise_id",
+        "obligation_id",
+        "consequence",
+        "blocked_transition",
+        "recovery",
+    }
+    strings = (
+        "code",
+        "fault",
+        "path",
+        "message",
+        "remedy",
+        "promise_id",
+        "blocked_transition",
+        "recovery",
+    )
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != keys
+        or any(
+            not isinstance(payload.get(key), str) or not payload[key].strip()
+            for key in strings
+        )
+        or re.fullmatch(r"PM[0-9]{3}", payload["code"]) is None
+        or PROMISE_ID.fullmatch(payload["promise_id"]) is None
+        or (
+            payload.get("obligation_id") is not None
+            and (
+                not isinstance(payload["obligation_id"], str)
+                or PROMISE_ID.fullmatch(payload["obligation_id"]) is None
+            )
+        )
+        or type(payload.get("consequence")) is not int
+        or payload["consequence"] not in range(4)
+    ):
+        return [
+            semantic_finding(
+                "law-refusal-shape",
+                shown,
+                "refusal payload omits or mistypes an actionable field",
+            )
+        ]
+    return []
+
+
+def qualified_call_name(node):
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
+    if isinstance(node, ast.Name):
+        parts.append(node.id)
+    return ".".join(reversed(parts))
+
+
+def check_core_source_text(source: str, shown: str):
+    try:
+        tree = ast.parse(source, filename=shown)
+    except (SyntaxError, ValueError) as exc:
+        return [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                shown,
+                f"core checker source cannot be parsed: {exc.msg if isinstance(exc, SyntaxError) else exc}",
+            )
+        ]
+    violations: list[str] = []
+    aliases: dict[str, str] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                aliases[alias.asname or alias.name.split(".", 1)[0]] = alias.name
+                if alias.name.split(".", 1)[0] in FORBIDDEN_IMPORT_ROOTS:
+                    violations.append(f"forbidden import {alias.name}")
+        elif isinstance(node, ast.ImportFrom):
+            root = (node.module or "").split(".", 1)[0]
+            for alias in node.names:
+                aliases[alias.asname or alias.name] = (
+                    f"{node.module}.{alias.name}" if node.module else alias.name
+                )
+            if root in FORBIDDEN_IMPORT_ROOTS:
+                violations.append(f"forbidden import {node.module}")
+            if root == "os":
+                for alias in node.names:
+                    if alias.name in FORBIDDEN_OS_IMPORTS:
+                        violations.append(f"forbidden import os.{alias.name}")
+
+    def resolve_alias(name: str):
+        head, separator, tail = name.partition(".")
+        return aliases.get(head, head) + (separator + tail if separator else "")
+
+    def forbidden_operation(name: str):
+        return (
+            name in FORBIDDEN_CALLS
+            or name.startswith("asyncio.create_subprocess")
+            or name.startswith("multiprocessing.")
+            or name.startswith("os.exec")
+            or name.startswith("os.spawn")
+            or name.startswith("subprocess.")
+            or name.startswith("socket.")
+            or name.startswith("urllib.")
+            or name.startswith("http.client.")
+        )
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            name = resolve_alias(qualified_call_name(node.func))
+            if forbidden_operation(name):
+                violations.append(f"forbidden call {name}")
+            if (
+                name == "getattr"
+                and len(node.args) >= 2
+                and isinstance(node.args[1], ast.Constant)
+                and node.args[1].value in FORBIDDEN_OS_IMPORTS
+            ):
+                violations.append(
+                    f"forbidden dynamic process or credential lookup {node.args[1].value}"
+                )
+        elif isinstance(node, ast.Attribute):
+            name = resolve_alias(qualified_call_name(node))
+            if name == "os.environ" or name.startswith("os.environ."):
+                violations.append("forbidden credential or environment read os.environ")
+            elif forbidden_operation(name):
+                violations.append(f"forbidden process or dynamic-code reference {name}")
+    if violations:
+        return [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                shown,
+                sorted(set(violations))[0],
+            )
+        ]
+    return []
+
+
+def check_core_imports(root: Path):
+    try:
+        payload = bounded_read_bytes(root / CORE_CHECKER_PATH, root, MAX_RUNTIME_SOURCE_BYTES)
+    except OSError as exc:
+        return 0, [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                CORE_CHECKER_PATH.as_posix(),
+                f"core checker could not be read safely: {exc}",
+            )
+        ]
+    if len(payload) > MAX_RUNTIME_SOURCE_BYTES:
+        return 0, [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                CORE_CHECKER_PATH.as_posix(),
+                f"core checker exceeds the {MAX_RUNTIME_SOURCE_BYTES}-byte limit",
+            )
+        ]
+    try:
+        source = payload.decode("utf-8")
+    except UnicodeDecodeError:
+        return 0, [
+            semantic_finding(
+                "law-core-checker-side-effects",
+                CORE_CHECKER_PATH.as_posix(),
+                "core checker is not UTF-8",
+            )
+        ]
+    return 1, check_core_source_text(source, CORE_CHECKER_PATH.as_posix())
+
+
+def load_semantic_fixture(root: Path, relative_path: Path, obligation_id: str):
+    document, findings = read_json(
+        root / relative_path,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code=SEMANTIC_OBLIGATIONS[obligation_id]["code"],
+        unsafe_code=SEMANTIC_OBLIGATIONS[obligation_id]["code"],
+        malformed_code=SEMANTIC_OBLIGATIONS[obligation_id]["code"],
+        noun="Promise Machine semantic fixture",
+    )
+    if document is not None:
+        return document, []
+    return None, [
+        semantic_finding(obligation_id, item.path, item.message) for item in findings
+    ]
+
+
+def check_consequence_fixtures(root: Path):
+    findings: list[Finding] = []
+    for level, relative_path in enumerate(CONSEQUENCE_FIXTURES):
+        document, read_findings = load_semantic_fixture(
+            root, relative_path, "law-consequence-separation"
+        )
+        findings.extend(read_findings)
+        if document is None:
+            continue
+        if document.get("consequence") != level:
+            findings.append(
+                semantic_finding(
+                    "law-consequence-separation",
+                    relative_path.as_posix(),
+                    "positive consequence fixture is bound to the wrong level",
+                    record=document,
+                )
+            )
+            continue
+        findings.extend(
+            evaluate_transition_record(
+                root,
+                document,
+                relative_path.as_posix(),
+                expected_obligation="law-consequence-separation",
+            )
+        )
+    return len(CONSEQUENCE_FIXTURES), findings
+
+
+def check_exception_fixture(root: Path):
+    document, findings = load_semantic_fixture(
+        root, EXCEPTION_FIXTURE, "law-exception-resolution"
+    )
+    if document is None:
+        return 0, findings
+    expected = {
+        "promise_id": "fixture-promise",
+        "gate": "fixture.gate",
+        "subject": "fixture-subject",
+        "scope": "fixture-scope",
+        "consequence": 3,
+        "transition": "publish the fixture result",
+    }
+    return 1, validate_exception_record(
+        root,
+        document,
+        EXCEPTION_FIXTURE.as_posix(),
+        expected=expected,
+        evaluated_at="2026-08-30T00:00:00Z",
+    )
+
+
+def declared_exception_error(root: Path, raw: str, promise_id: str):
+    reference, error = parse_json_object_bytes(
+        raw.encode("utf-8"), "declared exception reference"
+    )
+    if error is not None:
+        return "exception is not a closed JSON path and digest reference"
+    exception, error = read_bound_json_reference(
+        root, reference, "declared exception"
+    )
+    if error is not None:
+        return error
+    keys = {
+        "schema",
+        "id",
+        "authority",
+        "promise_id",
+        "gate",
+        "subject",
+        "scope",
+        "record",
+        "expiry",
+        "revoked",
+        "recovery",
+    }
+    scalars = ("id", "promise_id", "gate", "subject", "scope", "recovery")
+    if (
+        set(exception) != keys
+        or exception.get("schema") != EXCEPTION_SCHEMA
+        or any(
+            not isinstance(exception.get(key), str) or not exception[key].strip()
+            for key in scalars
+        )
+        or exception.get("promise_id") != promise_id
+    ):
+        return "exception record has an unsupported shape or promise identity"
+    authority = exception.get("authority")
+    if not isinstance(authority, dict) or set(authority) != {"id", "reference"}:
+        return "exception authority is not an identified resolvable reference"
+    authority_document, error = validate_authority_reference(
+        root, authority.get("reference"), exception
+    )
+    if error is not None:
+        return error
+    if authority.get("id") != authority_document.get("id"):
+        return "exception authority identity does not match its record"
+    _reason, error = read_bound_reference(root, exception.get("record"), "exception reason")
+    if error is not None:
+        return error
+    expiry = exception.get("expiry")
+    if not isinstance(expiry, dict) or len(expiry) != 1:
+        return "exception expiry is not the closed at or not_applicable form"
+    if "at" in expiry:
+        if parse_utc_timestamp(expiry["at"]) is None:
+            return "exception expiry is not a real UTC timestamp"
+    elif "not_applicable" in expiry:
+        if not isinstance(expiry["not_applicable"], str) or not expiry[
+            "not_applicable"
+        ].strip():
+            return "exception does not explain why expiry cannot apply"
+    else:
+        return "exception expiry field is unknown"
+    if type(exception.get("revoked")) is not bool or exception["revoked"]:
+        return "exception revocation state is absent, invalid or revoked"
+    return None
+
+
 def repository_relative_fixture(raw: str):
     if not isinstance(raw, str) or not raw or raw != raw.strip():
         return None
@@ -1128,12 +2160,130 @@ def repository_relative_fixture(raw: str):
     if candidate.is_absolute() or ".." in candidate.parts or candidate.as_posix() != raw:
         return None
     try:
-        candidate.relative_to(OBLIGATION_FIXTURE_ROOT)
+        relative_fixture = candidate.relative_to(PROMISE_MACHINE_FIXTURE_ROOT)
     except ValueError:
+        return None
+    if not relative_fixture.parts or relative_fixture.parts[0] not in (
+        {"obligations"} | SEMANTIC_FIXTURE_DIRECTORIES
+    ):
         return None
     if candidate.suffix != ".json":
         return None
     return candidate
+
+
+def validate_semantic_specimen(root: Path, relative_specimen: Path, document, row):
+    schema = document.get("schema") if isinstance(document, dict) else None
+    if schema == TRANSITION_SCHEMA:
+        return evaluate_transition_record(
+            root,
+            document,
+            relative_specimen.as_posix(),
+            expected_obligation=row["id"],
+        )
+    if schema == EXCEPTION_SPECIMEN_SCHEMA:
+        if set(document) != {"schema", "evaluated_at", "expected", "exception"}:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "exception specimen does not have the exact required fields",
+                    "restore schema, evaluated_at, expected, and exception",
+                    row,
+                )
+            ]
+        expected = document.get("expected")
+        expected_keys = {
+            "promise_id",
+            "gate",
+            "subject",
+            "scope",
+            "consequence",
+            "transition",
+        }
+        if not isinstance(expected, dict) or set(expected) != expected_keys:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "exception specimen expected context is not closed",
+                    "restore the exact promise, gate, subject, scope, consequence, and transition context",
+                    row,
+                )
+            ]
+        if (
+            not isinstance(expected.get("promise_id"), str)
+            or PROMISE_ID.fullmatch(expected["promise_id"]) is None
+            or any(
+                not isinstance(expected.get(key), str)
+                or not expected[key].strip()
+                or expected[key] != expected[key].strip()
+                for key in ("gate", "subject", "scope", "transition")
+            )
+            or type(expected.get("consequence")) is not int
+            or expected["consequence"] not in range(4)
+        ):
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "exception specimen expected context is invalid",
+                    "restore bounded promise, gate, subject, scope, consequence, and transition values",
+                    row,
+                )
+            ]
+        return validate_exception_record(
+            root,
+            document.get("exception"),
+            relative_specimen.as_posix(),
+            expected=expected,
+            evaluated_at=document.get("evaluated_at"),
+        )
+    if schema == FINDING_SPECIMEN_SCHEMA:
+        if set(document) != {"schema", "finding"}:
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "finding specimen does not have the exact required fields",
+                    "restore the schema and finding fields",
+                    row,
+                )
+            ]
+        return validate_refusal_payload(
+            document.get("finding"), relative_specimen.as_posix()
+        )
+    if schema == IMPORT_SPECIMEN_SCHEMA:
+        if set(document) != {"schema", "source"} or not isinstance(
+            document.get("source"), str
+        ):
+            return [
+                obligation_finding(
+                    "PM088",
+                    relative_specimen.as_posix(),
+                    "import specimen does not have the exact source field",
+                    "restore the schema and UTF-8 Python source fields",
+                    row,
+                )
+            ]
+        return check_core_source_text(document["source"], relative_specimen.as_posix())
+    return None
+
+
+def verify_negative_specimen(relative_specimen: Path, produced, row):
+    expected = row["finding"]
+    if len(produced) != 1 or produced[0].code != expected:
+        observed = [item.code for item in produced]
+        return [
+            obligation_finding(
+                "PM089",
+                relative_specimen.as_posix(),
+                f"negative specimen produced {observed!r}; expected only {expected}",
+                "restore the selected production gate or narrow the specimen to its one expected finding",
+                row,
+            )
+        ]
+    return []
 
 
 def validate_obligation_specimen(root: Path, law_text: str, row: dict):
@@ -1144,8 +2294,8 @@ def validate_obligation_specimen(root: Path, law_text: str, row: dict):
             obligation_finding(
                 "PM087",
                 str(specimen_raw),
-                "negative specimen path is not a confined JSON path under the fixture root",
-                "use one repository-relative JSON fixture below tests/fixtures/promise-machine/obligations",
+                "negative specimen path is not a confined JSON path under an allowed fixture directory",
+                "use one repository-relative JSON fixture below tests/fixtures/promise-machine",
                 row,
             )
         ]
@@ -1170,6 +2320,9 @@ def validate_obligation_specimen(root: Path, law_text: str, row: dict):
             )
             for item in findings
         ]
+    semantic = validate_semantic_specimen(root, relative_specimen, document, row)
+    if semantic is not None:
+        return verify_negative_specimen(relative_specimen, semantic, row)
     if set(document) != {"schema", "obligation_id", "mutation"}:
         return [
             obligation_finding(
@@ -1245,19 +2398,7 @@ def validate_obligation_specimen(root: Path, law_text: str, row: dict):
     produced = validate_law_document(
         mutated_payload, mutated_text, relative_specimen.as_posix()
     )
-    expected = row["finding"]
-    if len(produced) != 1 or produced[0].code != expected:
-        observed = [item.code for item in produced]
-        return [
-            obligation_finding(
-                "PM089",
-                relative_specimen.as_posix(),
-                f"negative specimen produced {observed!r}; expected only {expected}",
-                "restore the selected production gate or narrow the specimen to its one expected finding",
-                row,
-            )
-        ]
-    return []
+    return verify_negative_specimen(relative_specimen, produced, row)
 
 
 def check_obligations(root: Path, law: bytes | None):
@@ -1952,25 +3093,15 @@ def parse_contract(skill: SkillRecord, root: Path, *, required: bool = False):
             )
         exceptions = fields.get("Exceptions", [])
         if len(exceptions) == 1 and exceptions[0].lower() != "none":
-            required = ("authority", "scope", "record", "expiry")
-            absent = [
-                item
-                for item in required
-                if re.search(
-                    rf"(?:^|;)\s*{item}\s*(?::|=)\s*[^;\s].*?(?=;|$)",
-                    exceptions[0],
-                    re.IGNORECASE,
-                )
-                is None
-            ]
-            if absent:
+            error = declared_exception_error(root, exceptions[0], promise_id)
+            if error is not None:
                 findings.append(
                     Finding(
                         "PM038",
                         "structural",
                         skill.path,
-                        f"exception omits required attribution: {absent!r}",
-                        "name authority, scope, record and expiry, or declare none",
+                        error,
+                        "use none or one digest-bound JSON exception reference that resolves the complete record",
                         promise_id=promise_id or None,
                     )
                 )
@@ -2303,25 +3434,15 @@ def check_overlays(root: Path, inventory: Inventory):
             )
         exceptions = fields.get("Exceptions", [])
         if len(exceptions) == 1 and exceptions[0].lower() != "none":
-            required = ("authority", "scope", "record", "expiry")
-            absent = [
-                item
-                for item in required
-                if re.search(
-                    rf"(?:^|;)\s*{item}\s*(?::|=)\s*[^;\s].*?(?=;|$)",
-                    exceptions[0],
-                    re.IGNORECASE,
-                )
-                is None
-            ]
-            if absent:
+            error = declared_exception_error(root, exceptions[0], promise_id)
+            if error is not None:
                 findings.append(
                     Finding(
                         "PM038",
                         "structural",
                         expected_overlay,
-                        f"exception omits required attribution: {absent!r}",
-                        "name authority, scope, record and expiry, or declare none",
+                        error,
+                        "use none or one digest-bound JSON exception reference that resolves the complete record",
                         promise_id=promise_id or None,
                     )
                 )
@@ -3688,6 +4809,44 @@ def sync_copies(root: Path, law: bytes, plugins: list[Path]):
     return written, findings
 
 
+def actionable_finding(item: Finding):
+    context = SEMANTIC_OBLIGATIONS.get(item.obligation_id or "", {})
+    promise_id = item.promise_id
+    if not isinstance(promise_id, str) or PROMISE_ID.fullmatch(promise_id) is None:
+        promise_id = CHECKER_REFUSAL_CONTEXT["promise_id"]
+    obligation_id = item.obligation_id
+    if (
+        obligation_id is not None
+        and (
+            not isinstance(obligation_id, str)
+            or PROMISE_ID.fullmatch(obligation_id) is None
+        )
+    ):
+        obligation_id = None
+    consequence = item.consequence
+    if type(consequence) is not int or consequence not in range(4):
+        consequence = context.get(
+            "consequence", CHECKER_REFUSAL_CONTEXT["consequence"]
+        )
+    blocked_transition = item.blocked_transition or context.get(
+        "blocked_transition",
+        CHECKER_REFUSAL_CONTEXT["blocked_transition"],
+    )
+    recovery = item.recovery or context.get("recovery") or item.remedy
+    return Finding(
+        item.code,
+        item.fault,
+        item.path,
+        item.message,
+        item.remedy,
+        promise_id=promise_id,
+        obligation_id=obligation_id,
+        consequence=consequence,
+        blocked_transition=blocked_transition,
+        recovery=recovery,
+    )
+
+
 def report(
     command: str,
     root: Path,
@@ -3702,7 +4861,10 @@ def report(
     obligations: int = 0,
     stats: dict[str, int] | None = None,
 ):
-    findings = sorted(findings, key=lambda item: (item.path, item.code, item.message))
+    findings = sorted(
+        (actionable_finding(item) for item in findings),
+        key=lambda item: (item.path, item.code, item.message),
+    )
     counts = {
         "plugins": len(plugins),
         "copies": copies,
@@ -3816,6 +4978,8 @@ def parse_only(raw: str):
         "coverage",
         "licences",
         "obligations",
+        "exceptions",
+        "imports",
     }
     unknown = sorted(set(requested) - allowed)
     if unknown or not requested:
@@ -3837,7 +5001,7 @@ def main(argv=None):
         "--only",
         default=(
             "law,copies,inventory,structure,contracts,overlays,identity,routers,"
-            "versions,hosts,coverage,licences,obligations"
+            "versions,hosts,coverage,licences,obligations,exceptions,imports"
         ),
     )
     check_parser.add_argument("--root", help=argparse.SUPPRESS)
@@ -3989,6 +5153,20 @@ def main(argv=None):
         if "obligations" in only:
             obligations, obligation_findings = check_obligations(root, law)
             findings.extend(obligation_findings)
+        if "contracts" in only:
+            consequence_fixtures, consequence_findings = check_consequence_fixtures(
+                root
+            )
+            stats["consequence_fixtures"] = consequence_fixtures
+            findings.extend(consequence_findings)
+        if "exceptions" in only:
+            exception_fixtures, exception_findings = check_exception_fixture(root)
+            stats["exception_fixtures"] = exception_fixtures
+            findings.extend(exception_findings)
+        if "imports" in only:
+            core_checkers, import_findings = check_core_imports(root)
+            stats["core_checkers"] = core_checkers
+            findings.extend(import_findings)
         return report(
             "check",
             root,

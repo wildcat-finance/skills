@@ -85,7 +85,11 @@ Evidence classes describe relations, not a universal strength ordering:
 
 A domain may refine a class, such as `proved: EIP-1186 account proof`, while
 keeping the base class recognisable. A consumer records any change of class and
-the evidence that supports it. Absence, ambiguity and `unknown` never pass.
+the evidence that supports it.
+
+<!-- promise-machine-obligation: id=law-unknowns-non-authorising -->
+> Obligation: `unknown`, `not-run`, missing, stale or unresolved evidence never
+> authorises a positive transition.
 
 ## Promise declarations
 
@@ -127,6 +131,10 @@ whole:
 | 1 | Derived artefact | Validate structure, provenance and visible gaps |
 | 2 | Repository or durable-data mutation | Tests, negative evidence and recoverable change |
 | 3 | Publication, deployment, external action, security or financial conclusion | Fail-closed gate, recorded authority and independently inspectable evidence |
+
+<!-- promise-machine-obligation: id=law-consequence-separation -->
+> Obligation: Consequence levels zero through three take distinct enforcement
+> paths, and level three never accepts level-two-only evidence.
 
 A skill with operations at different levels declares separate promises. A
 level-3 transition cannot rest only on model judgement, unrecorded operator
@@ -173,9 +181,12 @@ Failure blocks the dependent transition and no broader one. Inspection,
 diagnosis, repair, rerun, rollback and safe exit remain available unless the
 promise explains why a particular recovery cannot exist.
 
-A refusal report names the promise id, failed field or evidence, consequence
-level, blocked transition and recovery action. A checker never deletes,
-rewrites or quarantines the failing source merely to produce a passing result.
+<!-- promise-machine-obligation: id=law-refusal-shape -->
+> Obligation: Every refusal report names the promise id, failed field or
+> evidence, consequence level, blocked transition and recovery action.
+
+A checker never deletes, rewrites or quarantines the failing source merely to
+produce a passing result.
 
 ## Exceptions
 
@@ -187,6 +198,10 @@ An exception is evidence, not silence. It names:
 - the durable record holding the reason;
 - the expiry, or why expiry cannot apply; and
 - the recovery or revocation path.
+
+<!-- promise-machine-obligation: id=law-exception-resolution -->
+> Obligation: Every exception resolves its authority, promise and gate,
+> subject, scope, durable record, expiry, revocation state and recovery path.
 
 An exception cannot claim that missing evidence exists, strengthen an evidence
 class, erase a recorded conflict or authorise a transition beyond the named
@@ -208,7 +223,11 @@ divergent copies and unbound vendored instructions are failures.
 
 Checker output names a stable finding code, fault class, path, promise id when
 known and the action that clears it. JSON and text reports describe the same
-findings. The checker reaches no network and executes no evidence command.
+findings.
+
+<!-- promise-machine-obligation: id=law-core-checker-side-effects -->
+> Obligation: The core checker reaches no network, reads no credential and
+> executes no shell, subprocess, dynamic code or evidence command.
 
 ## First-party licence promise
 

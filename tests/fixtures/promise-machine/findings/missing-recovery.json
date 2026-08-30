@@ -1,0 +1,14 @@
+{
+  "schema": "promise-machine-finding-specimen/v1",
+  "finding": {
+    "code": "PM092",
+    "fault": "obligation",
+    "path": "fixture.json",
+    "message": "fixture refusal",
+    "remedy": "repair the fixture",
+    "promise_id": "fixture-promise",
+    "obligation_id": "law-refusal-shape",
+    "consequence": 2,
+    "blocked_transition": "publish the fixture"
+  }
+}

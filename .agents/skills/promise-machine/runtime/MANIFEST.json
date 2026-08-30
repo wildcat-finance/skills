@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1000,
-  "total_bytes": 21570842,
+  "file_count": 1024,
+  "total_bytes": 21654282,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -56,10 +56,10 @@
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
-      "bytes": 9125,
+      "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "ce4b500de7f5778a3e51cb93fab9f633340b741747bbeaddecdbcd35f086311c",
+      "sha256": "b7e055744f794f6e587e1b9c8202f663631667bcaeeed45a79f573f3d17ca86b",
       "source": null
     },
     {
@@ -81,9 +81,9 @@
       "source": "LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "PROMISE_MACHINE.md"
     },
     {
@@ -141,9 +141,9 @@
       "source": "plugins/alexandria/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/alexandria/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/alexandria/PROMISE_MACHINE.md"
     },
     {
@@ -501,9 +501,9 @@
       "source": "plugins/ariadne/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/ariadne/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/ariadne/PROMISE_MACHINE.md"
     },
     {
@@ -843,9 +843,9 @@
       "source": "plugins/berean/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/berean/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/berean/PROMISE_MACHINE.md"
     },
     {
@@ -1131,9 +1131,9 @@
       "source": "plugins/brevitas/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/brevitas/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/brevitas/PROMISE_MACHINE.md"
     },
     {
@@ -1389,9 +1389,9 @@
       "source": "plugins/hermes/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/hermes/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/hermes/PROMISE_MACHINE.md"
     },
     {
@@ -1473,9 +1473,9 @@
       "source": "plugins/hexaemeron/PROMISES.md"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/hexaemeron/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/hexaemeron/PROMISE_MACHINE.md"
     },
     {
@@ -3039,9 +3039,9 @@
       "source": "plugins/homologia/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/homologia/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/homologia/PROMISE_MACHINE.md"
     },
     {
@@ -3099,9 +3099,9 @@
       "source": "plugins/horos/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/horos/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/horos/PROMISE_MACHINE.md"
     },
     {
@@ -3711,9 +3711,9 @@
       "source": "plugins/janus/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/janus/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/janus/PROMISE_MACHINE.md"
     },
     {
@@ -3945,9 +3945,9 @@
       "source": "plugins/lazarus/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/lazarus/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/lazarus/PROMISE_MACHINE.md"
     },
     {
@@ -4575,9 +4575,9 @@
       "source": "plugins/lemma/NOTICE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/lemma/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/lemma/PROMISE_MACHINE.md"
     },
     {
@@ -4749,9 +4749,9 @@
       "source": "plugins/pandects/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/pandects/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/pandects/PROMISE_MACHINE.md"
     },
     {
@@ -5187,9 +5187,9 @@
       "source": "plugins/probitas/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/probitas/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/probitas/PROMISE_MACHINE.md"
     },
     {
@@ -5403,9 +5403,9 @@
       "source": "plugins/sapheneia/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/sapheneia/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/sapheneia/PROMISE_MACHINE.md"
     },
     {
@@ -5451,9 +5451,9 @@
       "source": "plugins/synkrisis/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/synkrisis/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/synkrisis/PROMISE_MACHINE.md"
     },
     {
@@ -5625,9 +5625,9 @@
       "source": "plugins/tabularium/LICENSE"
     },
     {
-      "bytes": 24398,
+      "bytes": 25192,
       "path": "plugins/tabularium/PROMISE_MACHINE.md",
-      "sha256": "30a44889d3022207bc6066fc8079d898cc7eeb7fcdc3a02557d5e00b439a428f",
+      "sha256": "ea8a02728bc4db3a3541d582633f348f201b2c2ca167fc070cd08c21cb9ef482",
       "source": "plugins/tabularium/PROMISE_MACHINE.md"
     },
     {
@@ -5997,9 +5997,15 @@
       "source": "schemas/promise-machine-run-observation-v1.schema.json"
     },
     {
-      "bytes": 148772,
+      "bytes": 9070,
+      "path": "schemas/promise-machine-semantic-v1.schema.json",
+      "sha256": "411453967d8f0eb625b24971e1c96bb80078c03cbd4dd88d5bb35c1603b37140",
+      "source": "schemas/promise-machine-semantic-v1.schema.json"
+    },
+    {
+      "bytes": 189546,
       "path": "scripts/promise_machine.py",
-      "sha256": "3210f0ac7a047f4b112f29e5071d082473c04970644685cd3bcd5a7876bf9a5d",
+      "sha256": "d28032d9672e8ae2de47fea4d40a1f7a2a997980bfb3dbf3df13ba0942c415bd",
       "source": "scripts/promise_machine.py"
     },
     {
@@ -6013,6 +6019,144 @@
       "path": "scripts/run_observation_capture.py",
       "sha256": "a2c964edb4024a6287e6d6173dba6d606a6fb247e75b19c4b2b6348b77390e55",
       "source": "scripts/run_observation_capture.py"
+    },
+    {
+      "bytes": 208,
+      "path": "tests/fixtures/promise-machine/consequences/authority.json",
+      "sha256": "774b4b64f3a01a80f1511f992851c0128fd9eb4e1d68b7cbb46a83998788cf25",
+      "source": "tests/fixtures/promise-machine/consequences/authority.json"
+    },
+    {
+      "bytes": 263,
+      "path": "tests/fixtures/promise-machine/consequences/declarations/level-0.json",
+      "sha256": "02f770a52e0fa1db466475c6a17b51851f80becdc8149876d00092a01e7b5c1d",
+      "source": "tests/fixtures/promise-machine/consequences/declarations/level-0.json"
+    },
+    {
+      "bytes": 262,
+      "path": "tests/fixtures/promise-machine/consequences/declarations/level-1.json",
+      "sha256": "d96e205e8220e68f26adc65c4451422b2a9c815043c59d54e7fa82c3e8bb713e",
+      "source": "tests/fixtures/promise-machine/consequences/declarations/level-1.json"
+    },
+    {
+      "bytes": 262,
+      "path": "tests/fixtures/promise-machine/consequences/declarations/level-2.json",
+      "sha256": "d8cafa0a84927a3f2a67c8118d647871fac8abf2f7bedd4ea70e8d17c39adf14",
+      "source": "tests/fixtures/promise-machine/consequences/declarations/level-2.json"
+    },
+    {
+      "bytes": 264,
+      "path": "tests/fixtures/promise-machine/consequences/declarations/level-3.json",
+      "sha256": "a38deafce6a168c79fcb1bb93257fa95f406b41a73c890d410ef63251715cf8d",
+      "source": "tests/fixtures/promise-machine/consequences/declarations/level-3.json"
+    },
+    {
+      "bytes": 31,
+      "path": "tests/fixtures/promise-machine/consequences/evidence/content.json",
+      "sha256": "c7b64c0ad06bc81a907fc7272472c089b35cdf578b345e567ffc05e38c89582e",
+      "source": "tests/fixtures/promise-machine/consequences/evidence/content.json"
+    },
+    {
+      "bytes": 49,
+      "path": "tests/fixtures/promise-machine/consequences/evidence/independent.json",
+      "sha256": "13b0b1c55297621a982ad40976838296e5c54025ae634346343c750c48981079",
+      "source": "tests/fixtures/promise-machine/consequences/evidence/independent.json"
+    },
+    {
+      "bytes": 32,
+      "path": "tests/fixtures/promise-machine/consequences/evidence/negative.json",
+      "sha256": "858f30b9a39ea049db44b086f003f8d4be8342570f97ac720fb01dffd3e1ce65",
+      "source": "tests/fixtures/promise-machine/consequences/evidence/negative.json"
+    },
+    {
+      "bytes": 34,
+      "path": "tests/fixtures/promise-machine/consequences/evidence/provenance.json",
+      "sha256": "8560848fd04b9cb223ec93b6c29e0647f48f0c7f92ab080d21791ff7b5405bf1",
+      "source": "tests/fixtures/promise-machine/consequences/evidence/provenance.json"
+    },
+    {
+      "bytes": 32,
+      "path": "tests/fixtures/promise-machine/consequences/evidence/recovery.json",
+      "sha256": "2c363b289dba117fa2ec5c0c9f7a635388f5ea67f6cfd84a9f3f1125ec971904",
+      "source": "tests/fixtures/promise-machine/consequences/evidence/recovery.json"
+    },
+    {
+      "bytes": 33,
+      "path": "tests/fixtures/promise-machine/consequences/evidence/structure.json",
+      "sha256": "8ba9c0b5674b3fcb9d29816eb002209553a40f782b2b721cadd78e6129387eaf",
+      "source": "tests/fixtures/promise-machine/consequences/evidence/structure.json"
+    },
+    {
+      "bytes": 28,
+      "path": "tests/fixtures/promise-machine/consequences/evidence/tests.json",
+      "sha256": "48328d44efdff17784515a157877aae4a9c3c4e4d98dce7fc44428f321fa7de0",
+      "source": "tests/fixtures/promise-machine/consequences/evidence/tests.json"
+    },
+    {
+      "bytes": 1002,
+      "path": "tests/fixtures/promise-machine/consequences/level-0.json",
+      "sha256": "d480dbd185bea795af2382cd3eec0aba36ffc1c15b26c221a9c064297586212c",
+      "source": "tests/fixtures/promise-machine/consequences/level-0.json"
+    },
+    {
+      "bytes": 1785,
+      "path": "tests/fixtures/promise-machine/consequences/level-1.json",
+      "sha256": "515e252768bab733e151b3039aa1f046715bfa744e7312eee9c4d0d8c9f644a3",
+      "source": "tests/fixtures/promise-machine/consequences/level-1.json"
+    },
+    {
+      "bytes": 2943,
+      "path": "tests/fixtures/promise-machine/consequences/level-2.json",
+      "sha256": "07fc540630ae0e75be9926f325ff49be816bba1c6f88eb8f76ac9169cf59e02b",
+      "source": "tests/fixtures/promise-machine/consequences/level-2.json"
+    },
+    {
+      "bytes": 3101,
+      "path": "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json",
+      "sha256": "ab9a6d58302057bea1ec83ad602aef7b7d3712530e01ace62a89c90921ea348f",
+      "source": "tests/fixtures/promise-machine/consequences/level-3-level-2-only.json"
+    },
+    {
+      "bytes": 3496,
+      "path": "tests/fixtures/promise-machine/consequences/level-3.json",
+      "sha256": "5153e71a2b878f12bd80a2c5e9e39585fafafcfb28e7ecc86afc68f3b21fc883",
+      "source": "tests/fixtures/promise-machine/consequences/level-3.json"
+    },
+    {
+      "bytes": 1041,
+      "path": "tests/fixtures/promise-machine/consequences/unknown.json",
+      "sha256": "9c0d1f8f97337c57d328570d5cc5bba96b95695b51312afabc69c890ee0159af",
+      "source": "tests/fixtures/promise-machine/consequences/unknown.json"
+    },
+    {
+      "bytes": 1128,
+      "path": "tests/fixtures/promise-machine/exceptions/expired.json",
+      "sha256": "66be71f33b3ca273f2b574c5ed7cfebb54fb728f529fb7a29488070468cdaf8d",
+      "source": "tests/fixtures/promise-machine/exceptions/expired.json"
+    },
+    {
+      "bytes": 117,
+      "path": "tests/fixtures/promise-machine/exceptions/reason.md",
+      "sha256": "b59fa83680f36d439dd817970656552ea97bb7b9e334527243a3461fc722f99d",
+      "source": "tests/fixtures/promise-machine/exceptions/reason.md"
+    },
+    {
+      "bytes": 749,
+      "path": "tests/fixtures/promise-machine/exceptions/valid.json",
+      "sha256": "022b02560c2a7cd9bcfcef94bee98d332549d5af34bfc348ff381f0970d3970f",
+      "source": "tests/fixtures/promise-machine/exceptions/valid.json"
+    },
+    {
+      "bytes": 369,
+      "path": "tests/fixtures/promise-machine/findings/missing-recovery.json",
+      "sha256": "218ec2606c2f17913efd57a59c9ba33e2f55d7446db663d482531e652c414078",
+      "source": "tests/fixtures/promise-machine/findings/missing-recovery.json"
+    },
+    {
+      "bytes": 117,
+      "path": "tests/fixtures/promise-machine/imports/subprocess.json",
+      "sha256": "1050c17faba8de2f7dfcd9cd3e4a00e96faf1756c6237d81ac708c10419faaf2",
+      "source": "tests/fixtures/promise-machine/imports/subprocess.json"
     },
     {
       "bytes": 288,
@@ -6045,9 +6189,9 @@
       "source": "tests/fixtures/promise-machine/obligations/law-required-sections.json"
     },
     {
-      "bytes": 2737,
+      "bytes": 5488,
       "path": "tests/promise_machine_obligations.json",
-      "sha256": "ee13ea7d1b526f96754b130f77546d71ca5f41a21cd2e9587e610a58f9275e3a",
+      "sha256": "5b990d2ddbd737055110aac6c45dcc67a13ca41dd295fbf54a2886dffe5ff934",
       "source": "tests/promise_machine_obligations.json"
     }
   ]
