@@ -1,0 +1,579 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/noema-v1.schema.json",
+  "title": "Noema version 1 shadow-prototype records",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/seedInventory"
+    },
+    {
+      "$ref": "#/$defs/lock"
+    },
+    {
+      "$ref": "#/$defs/manifest"
+    },
+    {
+      "$ref": "#/$defs/result"
+    },
+    {
+      "$ref": "#/$defs/evidence"
+    }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+    },
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^(?!.*//)(?!.*(?:^|/)\\.{1,2}(?:/|$))[A-Za-z0-9](?:[A-Za-z0-9._/-]*[A-Za-z0-9._-])?$"
+    },
+    "seedFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "bytes",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "seedInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "archive",
+        "files"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-seed-inventory/v1"
+        },
+        "archive": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "url",
+            "bytes",
+            "sha256",
+            "root"
+          ],
+          "properties": {
+            "name": {
+              "const": "noema-v0-evidence.zip"
+            },
+            "url": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2048,
+              "format": "uri"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1048576
+            },
+            "sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "root": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 256,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*/$"
+            }
+          }
+        },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/seedFile"
+          }
+        }
+      }
+    },
+    "moduleLock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "source_sha256",
+        "graph_sha256",
+        "compiler_sha256",
+        "kernel_sha256",
+        "profile_sha256",
+        "modules"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-lock/v1"
+        },
+        "source_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "graph_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "compiler_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "kernel_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "profile_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "modules": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/moduleLock"
+          }
+        }
+      }
+    },
+    "fact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "value",
+        "evidence_sha256"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "value": {
+          "enum": [
+            "true",
+            "false",
+            "unknown"
+          ]
+        },
+        "evidence_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "omission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "reason",
+        "fact"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "reason": {
+          "const": "checked-false-guard"
+        },
+        "fact": {
+          "$ref": "#/$defs/identifier"
+        }
+      }
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation",
+        "state",
+        "target",
+        "tools",
+        "authority",
+        "facts"
+      ],
+      "properties": {
+        "operation": {
+          "$ref": "#/$defs/identifier"
+        },
+        "state": {
+          "$ref": "#/$defs/identifier"
+        },
+        "target": {
+          "$ref": "#/$defs/identifier"
+        },
+        "tools": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "authority": {
+          "type": "array",
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "facts": {
+          "type": "array",
+          "maxItems": 4096,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/fact"
+          }
+        }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "graph_sha256",
+        "lock_sha256",
+        "compiler_sha256",
+        "kernel_sha256",
+        "profile_sha256",
+        "selection",
+        "included_ids",
+        "omitted",
+        "definitions",
+        "literals",
+        "projection_sha256"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-manifest/v1"
+        },
+        "graph_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "lock_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "compiler_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "kernel_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "profile_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "selection": {
+          "$ref": "#/$defs/selection"
+        },
+        "included_ids": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "omitted": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/omission"
+          }
+        },
+        "definitions": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "literals": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/identifier"
+          }
+        },
+        "projection_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "digestSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "archive": {
+          "$ref": "#/$defs/sha256"
+        },
+        "inventory": {
+          "$ref": "#/$defs/sha256"
+        },
+        "source": {
+          "$ref": "#/$defs/sha256"
+        },
+        "graph": {
+          "$ref": "#/$defs/sha256"
+        },
+        "lock": {
+          "$ref": "#/$defs/sha256"
+        },
+        "profile": {
+          "$ref": "#/$defs/sha256"
+        },
+        "kernel": {
+          "$ref": "#/$defs/sha256"
+        },
+        "projection": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifest": {
+          "$ref": "#/$defs/sha256"
+        },
+        "output": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "countSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1048576
+        },
+        "members": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "nodes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
+        },
+        "included": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "omitted": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "cases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4096
+        }
+      }
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "command",
+        "correlation_id",
+        "verdict",
+        "code",
+        "digests",
+        "counts"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-result/v1"
+        },
+        "command": {
+          "enum": [
+            "about",
+            "verify-seed",
+            "parse",
+            "format",
+            "project",
+            "semantic-diff",
+            "select",
+            "check",
+            "next",
+            "literal",
+            "explain",
+            "verify",
+            "mutations",
+            "measure",
+            "emit-evaluation",
+            "tally-evaluation",
+            "self-test",
+            "runtime-self-test"
+          ]
+        },
+        "correlation_id": {
+          "$ref": "#/$defs/sha256"
+        },
+        "verdict": {
+          "enum": [
+            "ok",
+            "refuse",
+            "unknown"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "pattern": "^NOE-(OK|I-[A-Z0-9_.-]+|E-[A-Z0-9_.-]+)$"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9_.\u005b\u005d-]+$"
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "digests": {
+          "$ref": "#/$defs/digestSet"
+        },
+        "counts": {
+          "$ref": "#/$defs/countSet"
+        }
+      }
+    },
+    "profileEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "family",
+        "identity",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/identifier"
+        },
+        "family": {
+          "enum": [
+            "openai",
+            "anthropic",
+            "google",
+            "open-weight"
+          ]
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "status": {
+          "enum": [
+            "measured",
+            "recorded",
+            "unknown"
+          ]
+        },
+        "executable_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "vocabulary_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "kind",
+        "tree_sha256",
+        "manifest_sha256",
+        "status",
+        "profiles"
+      ],
+      "properties": {
+        "schema": {
+          "const": "noema-evidence/v1"
+        },
+        "kind": {
+          "enum": [
+            "measurement",
+            "evaluation"
+          ]
+        },
+        "tree_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "status": {
+          "enum": [
+            "measured",
+            "recorded",
+            "unknown"
+          ]
+        },
+        "profiles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/profileEvidence"
+          }
+        }
+      }
+    }
+  }
+}
