@@ -88,7 +88,8 @@ relations. None implies another. Consequence-2 and consequence-3 effects
 default deny unless an applicable authority fact and every named gate are
 checked. Permission does not cancel prohibition. Conflicting requirements
 refuse unless one closed override record names the higher rule, authority,
-scope and evidence.
+scope and evidence. Precedence and override edges form one acyclic governing
+relation; a cycle within or across the two record forms refuses.
 
 An exception cannot assert absent evidence, strengthen an evidence class,
 change a source binding or operate outside its subject and scope. Missing,

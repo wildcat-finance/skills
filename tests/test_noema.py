@@ -993,6 +993,36 @@ class GraphValidationTests(unittest.TestCase):
             compile_records(records)
         self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.RELATION_CYCLE")
 
+    def test_override_and_mixed_relation_cycles_refuse(self):
+        actor = [":", "actor", "x"]
+        scope = [":", "scope", "x"]
+        evidence = [":", "evidence", "x"]
+        prefix = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", "a", ["+", [":", "effect", "x"]], source_binding(0, 1)],
+            ["rule", "b", ["+", [":", "effect", "y"]], source_binding(1, 2)],
+        ]
+        for relations in (
+            [
+                ["override", "o1", actor, "a", "b", scope, evidence],
+                ["override", "o2", actor, "b", "a", scope, evidence],
+            ],
+            [
+                ["precedence", "a", "b", actor, scope, evidence],
+                ["override", "o1", actor, "b", "a", scope, evidence],
+            ],
+        ):
+            with self.subTest(relations=relations):
+                try:
+                    compile_records(prefix + relations)
+                except noema.Refusal as raised:
+                    self.assertEqual(
+                        raised.code,
+                        "NOE-E-REFERENCE.RELATION_CYCLE",
+                    )
+                else:
+                    self.fail("cyclic governing relation compiled")
+
     def test_long_acyclic_definition_chain_does_not_recurse(self):
         count = 1_200
         definitions = [

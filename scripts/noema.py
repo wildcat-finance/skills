@@ -1588,6 +1588,7 @@ def _compile_records(
             low = _identifier(record[4], f"{field}.low")
             if high not in rules or low not in rules or high == low:
                 refuse("NOE-E-REFERENCE.RULE", field, "override names absent or identical rules")
+            precedence_edges.setdefault(high, set()).add(low)
             _assert_term(context, record[5], "scope", f"{field}.scope")
             _assert_term(context, record[6], "evidence", f"{field}.evidence")
             terms.extend((record[2], record[5], record[6]))
