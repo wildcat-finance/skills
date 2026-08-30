@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from collections import deque
 import json
 import re
 import sys
@@ -581,48 +582,62 @@ class Visitor(ast.NodeVisitor):
         before: tuple[int, int] | None = None,
         seen: frozenset[str] = frozenset(),
         depth: int = 0,
+        resolution_enabled: bool = True,
     ):
-        if isinstance(node, ast.Name):
-            if CREDENTIAL.search(node.id):
-                yield node.id
-                return
-            if (
-                self.local_bindings is None
-                or depth >= LOCAL_RESOLUTION_MAX_DEPTH
-                or node.id in seen
-            ):
-                return
-            assignment = self.local_bindings.preceding(
-                node.id,
-                before if before is not None else _position(node),
-            )
-            if assignment is None:
-                return
-            # Once `preceding` accepts a binding, every recursive position is
-            # fixed and strictly earlier; the result no longer depends on the sink.
-            cache_key = (self.local_bindings, node.id, depth)
-            cached = self.credential_names_cache.get(cache_key)
-            if cached is not None:
-                yield from cached
-                return
-            position, value = assignment
-            cached = tuple(
-                self._credential_names(
-                    value,
-                    before=position,
-                    seen=seen | {node.id},
-                    depth=depth + 1,
+        worklist = deque([(node, resolution_enabled)])
+        while worklist:
+            current, can_resolve = worklist.popleft()
+            if isinstance(current, ast.Name):
+                if CREDENTIAL.search(current.id):
+                    yield current.id
+                    continue
+                if (
+                    not can_resolve
+                    or self.local_bindings is None
+                    or depth >= LOCAL_RESOLUTION_MAX_DEPTH
+                    or current.id in seen
+                ):
+                    continue
+                assignment = self.local_bindings.preceding(
+                    current.id,
+                    before if before is not None else _position(current),
                 )
+                if assignment is None:
+                    continue
+                # Once `preceding` accepts a binding, every recursive position is
+                # fixed and strictly earlier; the result no longer depends on the sink.
+                cache_key = (self.local_bindings, current.id, depth)
+                cached = self.credential_names_cache.get(cache_key)
+                if cached is None:
+                    position, value = assignment
+                    cached = tuple(
+                        self._credential_names(
+                            value,
+                            before=position,
+                            seen=seen | {current.id},
+                            depth=depth + 1,
+                        )
+                    )
+                    self.credential_names_cache[cache_key] = cached
+                yield from cached
+                continue
+
+            child_resolution = can_resolve and not isinstance(
+                current,
+                (
+                    ast.Lambda,
+                    ast.ListComp,
+                    ast.SetComp,
+                    ast.DictComp,
+                    ast.GeneratorExp,
+                    ast.Attribute,
+                    ast.Subscript,
+                    ast.Starred,
+                ),
             )
-            self.credential_names_cache[cache_key] = cached
-            yield from cached
-            return
-        for child in ast.iter_child_nodes(node):
-            yield from self._credential_names(
-                child,
-                before=before,
-                seen=seen,
-                depth=depth,
+            worklist.extend(
+                (child, child_resolution)
+                for child in ast.iter_child_nodes(current)
             )
 
     def _add(self, node: ast.AST, code: str, message: str) -> None:
@@ -652,6 +667,12 @@ class Visitor(ast.NodeVisitor):
 
     def _check_p008(self, node: ast.Call) -> None:
         function = self._resolve_local(node.func)
+        original_binding = (
+            node.func.value.id
+            if isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            else node.func.id if isinstance(node.func, ast.Name) else None
+        )
         binding = (
             function.value.id
             if isinstance(function, ast.Attribute)
@@ -665,7 +686,13 @@ class Visitor(ast.NodeVisitor):
         if loader is not None:
             loader = self._resolve_local(loader)
         dynamic_source = self._resolve_local(node.args[0]) if node.args else None
-        for module in sorted(self._boundary_modules(function)):
+        modules = self._boundary_modules(node.func) | self._boundary_modules(function)
+        ambiguous = (
+            len(modules) > 1
+            or original_binding in self.ambiguous_boundary_calls
+            or binding in self.ambiguous_boundary_calls
+        )
+        for module in sorted(modules):
             if module == "yaml":
                 if loader is not None and self._safe_yaml_loader(loader):
                     continue
@@ -674,7 +701,7 @@ class Visitor(ast.NodeVisitor):
                     continue
             message = (
                 P008_AMBIGUOUS_MESSAGE
-                if binding in self.ambiguous_boundary_calls
+                if ambiguous
                 else P008_MESSAGES[module]
             )
             self._add(node, "P008", message)

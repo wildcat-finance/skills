@@ -156,6 +156,93 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
         self.assertNotIn(sentinel, str(result[0]))
         self.assertNotIn(sentinel, json.dumps(result[0].as_dict()))
 
+    def test_p004_preserves_inline_breadth_first_diagnostic_order(self):
+        result = findings(
+            "import subprocess\n"
+            "subprocess.run([[secret], auth_token])\n",
+            "sample.py",
+        )
+        self.assertEqual(
+            [
+                "credential-named value `auth_token` passed in command arguments",
+                "credential-named value `secret` passed in command arguments",
+            ],
+            [finding.message for finding in result],
+        )
+
+    def test_p004_does_not_resolve_through_nested_expression_scopes(self):
+        prefix = (
+            "import subprocess\n"
+            "def invoke(items):\n"
+            "    secret = load()\n"
+            "    value = secret\n"
+        )
+        suffix = "    subprocess.run(argv)\n"
+        self.assert_codes([], {
+            "lambda": prefix + "    argv = ['tool', lambda: value]\n" + suffix,
+            "list-comprehension": (
+                prefix
+                + "    argv = ['tool', *[value for _ in items]]\n"
+                + suffix
+            ),
+            "set-comprehension": (
+                prefix
+                + "    argv = ['tool', {value for _ in items}]\n"
+                + suffix
+            ),
+            "dict-comprehension": (
+                prefix
+                + "    argv = ['tool', {item: value for item in items}]\n"
+                + suffix
+            ),
+            "generator-expression": (
+                prefix
+                + "    argv = ['tool', *(value for _ in items)]\n"
+                + suffix
+            ),
+        })
+        self.assertEqual(["P004"], codes(
+            "import subprocess\n"
+            "def invoke(items, auth_token):\n"
+            "    argv = ['tool', *[auth_token for _ in items]]\n"
+            "    subprocess.run(argv)\n"
+        ))
+
+    def test_p004_does_not_resolve_through_excluded_expression_shapes(self):
+        prefix = (
+            "import subprocess\n"
+            "def invoke():\n"
+            "    secret = load()\n"
+            "    value = secret\n"
+        )
+        self.assert_codes([], {
+            "starred-command": prefix + "    subprocess.run(*value)\n",
+            "assigned-starred-element": (
+                prefix
+                + "    argv = ['tool', *value]\n"
+                + "    subprocess.run(argv)\n"
+            ),
+            "attribute-command": prefix + "    subprocess.run(value.argv)\n",
+            "subscript-command": prefix + "    subprocess.run(value[0])\n",
+        })
+        self.assert_codes(["P004"], {
+            "direct-starred-name": (
+                "import subprocess\n"
+                "def invoke(auth_token):\n"
+                "    subprocess.run(*auth_token)\n"
+            ),
+            "direct-attribute-base": (
+                "import subprocess\n"
+                "def invoke(auth_token):\n"
+                "    subprocess.run(auth_token.argv)\n"
+            ),
+            "direct-subscript-base": (
+                "import subprocess\n"
+                "def invoke(auth_token):\n"
+                "    subprocess.run(auth_token[0])\n"
+            ),
+        })
+
     def test_reused_assigned_argv_is_scanned_once(self):
         source = (
             "import subprocess\n"
@@ -278,6 +365,30 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
             "source-local bindings leave the boundary call family unresolved",
             result[0].message,
         )
+
+    def test_p008_resolution_does_not_erase_original_boundary_evidence(self):
+        self.assert_codes(["P008"], {
+            "bare-dynamic-shadow": (
+                "def decode(payload):\n"
+                "    eval = harmless\n"
+                "    return eval(payload)\n"
+            ),
+            "module-imported-direct-shadow": (
+                "from pickle import loads\n"
+                "def decode(payload):\n"
+                "    loads = harmless\n"
+                "    return loads(payload)\n"
+            ),
+        })
+        result = findings(
+            "import pickle\n"
+            "def decode(payload):\n"
+            "    eval = pickle.loads\n"
+            "    return eval(payload)\n",
+            "sample.py",
+        )
+        self.assertEqual(["P008"], [finding.code for finding in result])
+        self.assertEqual(phylax.P008_AMBIGUOUS_MESSAGE, result[0].message)
 
     def test_each_chain_definition_must_precede_its_rhs_use(self):
         self.assertEqual(["P002"], codes(
