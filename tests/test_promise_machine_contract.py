@@ -1538,25 +1538,37 @@ class PromiseSemanticGateTests(unittest.TestCase):
         self.assertEqual(semantic_codes(self.evaluate(document)), ["PM090"])
 
     def test_mismatched_transition_declaration_is_refused(self):
-        with tempfile.TemporaryDirectory() as directory:
-            target = Path(directory)
-            copy_semantic_fixtures(target)
-            transition_path = (
-                target
-                / "tests/fixtures/promise-machine/consequences/level-0.json"
-            )
-            document = json.loads(transition_path.read_text(encoding="utf-8"))
-            declaration_path = target / document["declaration"]["path"]
-            declaration = json.loads(declaration_path.read_text(encoding="utf-8"))
-            declaration["promise_id"] = "different-promise"
-            declaration_path.write_text(
-                json.dumps(declaration, indent=2) + "\n", encoding="utf-8"
-            )
-            document["declaration"]["sha256"] = hashlib.sha256(
-                declaration_path.read_bytes()
-            ).hexdigest()
-            findings = self.evaluate(document, root=target)
-        self.assertEqual(semantic_codes(findings), ["PM090"])
+        mutations = (
+            ("level-0.json", "promise_id", "different-promise"),
+            ("level-0.json", "consequence", False),
+            ("level-1.json", "consequence", True),
+        )
+        for fixture, field, value in mutations:
+            with self.subTest(fixture=fixture, field=field, value=value):
+                with tempfile.TemporaryDirectory() as directory:
+                    target = Path(directory)
+                    copy_semantic_fixtures(target)
+                    transition_path = (
+                        target
+                        / "tests/fixtures/promise-machine/consequences"
+                        / fixture
+                    )
+                    document = json.loads(
+                        transition_path.read_text(encoding="utf-8")
+                    )
+                    declaration_path = target / document["declaration"]["path"]
+                    declaration = json.loads(
+                        declaration_path.read_text(encoding="utf-8")
+                    )
+                    declaration[field] = value
+                    declaration_path.write_text(
+                        json.dumps(declaration, indent=2) + "\n", encoding="utf-8"
+                    )
+                    document["declaration"]["sha256"] = hashlib.sha256(
+                        declaration_path.read_bytes()
+                    ).hexdigest()
+                    findings = self.evaluate(document, root=target)
+                self.assertEqual(semantic_codes(findings), ["PM090"])
 
     def test_evidence_subject_must_match_the_transition(self):
         document = self.transition(1)
@@ -1680,9 +1692,13 @@ class PromiseSemanticGateTests(unittest.TestCase):
         self.assertEqual(semantic_codes(findings), ["PM093"])
 
     def test_non_expiring_exception_requires_a_reason(self):
-        document = self.valid_exception()
-        document["expiry"] = {"not_applicable": ""}
-        self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+        for reason in ("", " padded reason "):
+            with self.subTest(reason=reason):
+                document = self.valid_exception()
+                document["expiry"] = {"not_applicable": reason}
+                self.assertEqual(
+                    semantic_codes(self.check_exception(document)), ["PM093"]
+                )
 
     def test_repository_core_checker_source_is_static_guard_clean(self):
         count, findings = promise_machine_module.check_core_imports(ROOT)
@@ -1693,6 +1709,10 @@ class PromiseSemanticGateTests(unittest.TestCase):
         sources = (
             "import socket\n",
             "from urllib import request\n",
+            "import httpx\nhttpx.get('https://example.invalid')\n",
+            "import aiohttp\naiohttp.ClientSession()\n",
+            "import urllib3\nurllib3.PoolManager()\n",
+            "import websockets\nwebsockets.connect('wss://example.invalid')\n",
             "import getpass\n",
             "import subprocess\n",
             "import asyncio\n",
@@ -1789,6 +1809,22 @@ class PromiseSemanticGateTests(unittest.TestCase):
                 incomplete.pop(field)
                 findings = promise_machine_module.validate_refusal_payload(
                     incomplete, "fixture.json"
+                )
+                self.assertEqual(semantic_codes(findings), ["PM092"])
+
+        for field in (
+            "fault",
+            "path",
+            "message",
+            "remedy",
+            "blocked_transition",
+            "recovery",
+        ):
+            with self.subTest(padded=field):
+                padded = dict(valid)
+                padded[field] = f" {padded[field]} "
+                findings = promise_machine_module.validate_refusal_payload(
+                    padded, "fixture.json"
                 )
                 self.assertEqual(semantic_codes(findings), ["PM092"])
 

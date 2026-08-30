@@ -292,6 +292,20 @@ CONSEQUENCE_ROLES = {
         "tests",
     },
 }
+CORE_ALLOWED_IMPORT_ROOTS = {
+    "__future__",
+    "argparse",
+    "ast",
+    "dataclasses",
+    "datetime",
+    "hashlib",
+    "json",
+    "os",
+    "pathlib",
+    "re",
+    "stat",
+    "tempfile",
+}
 FORBIDDEN_IMPORT_ROOTS = {
     "asyncio",
     "concurrent",
@@ -1453,7 +1467,12 @@ def validate_declaration_reference(root: Path, reference, record: dict):
         "scope",
         "transition",
     }
-    if set(declaration) != keys or declaration.get("schema") != TRANSITION_DECLARATION_SCHEMA:
+    if (
+        set(declaration) != keys
+        or declaration.get("schema") != TRANSITION_DECLARATION_SCHEMA
+        or type(declaration.get("consequence")) is not int
+        or declaration["consequence"] not in range(4)
+    ):
         return "transition declaration has an unsupported or open shape"
     for key in ("promise_id", "gate", "consequence", "subject", "scope", "transition"):
         if declaration.get(key) != record.get(key):
@@ -1613,7 +1632,11 @@ def validate_exception_record(
             ]
     elif "not_applicable" in expiry:
         reason = expiry["not_applicable"]
-        if not isinstance(reason, str) or not reason.strip():
+        if (
+            not isinstance(reason, str)
+            or not reason.strip()
+            or reason != reason.strip()
+        ):
             return [
                 semantic_finding(
                     "law-exception-resolution",
@@ -1927,7 +1950,9 @@ def validate_refusal_payload(payload, shown: str):
         not isinstance(payload, dict)
         or set(payload) != keys
         or any(
-            not isinstance(payload.get(key), str) or not payload[key].strip()
+            not isinstance(payload.get(key), str)
+            or not payload[key].strip()
+            or payload[key] != payload[key].strip()
             for key in strings
         )
         or re.fullmatch(r"PM[0-9]{3}", payload["code"]) is None
@@ -1978,14 +2003,21 @@ def check_core_source_text(source: str, shown: str):
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                aliases[alias.asname or alias.name.split(".", 1)[0]] = alias.name
-                if alias.name.split(".", 1)[0] in FORBIDDEN_IMPORT_ROOTS:
+                root = alias.name.split(".", 1)[0]
+                aliases[alias.asname or root] = alias.name
+                if root not in CORE_ALLOWED_IMPORT_ROOTS:
+                    violations.append(f"unsupported core-checker import {alias.name}")
+                if root in FORBIDDEN_IMPORT_ROOTS:
                     violations.append(f"forbidden import {alias.name}")
         elif isinstance(node, ast.ImportFrom):
             root = (node.module or "").split(".", 1)[0]
             for alias in node.names:
                 aliases[alias.asname or alias.name] = (
                     f"{node.module}.{alias.name}" if node.module else alias.name
+                )
+            if root not in CORE_ALLOWED_IMPORT_ROOTS:
+                violations.append(
+                    f"unsupported core-checker import {node.module or '<relative>'}"
                 )
             if root in FORBIDDEN_IMPORT_ROOTS:
                 violations.append(f"forbidden import {node.module}")
@@ -2220,9 +2252,12 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
         if parse_utc_timestamp(expiry["at"]) is None:
             return "exception expiry is not a real UTC timestamp"
     elif "not_applicable" in expiry:
-        if not isinstance(expiry["not_applicable"], str) or not expiry[
-            "not_applicable"
-        ].strip():
+        reason = expiry["not_applicable"]
+        if (
+            not isinstance(reason, str)
+            or not reason.strip()
+            or reason != reason.strip()
+        ):
             return "exception does not explain why expiry cannot apply"
     else:
         return "exception expiry field is unknown"
