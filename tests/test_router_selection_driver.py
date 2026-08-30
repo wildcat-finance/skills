@@ -403,3 +403,36 @@ class TallyTests(unittest.TestCase):
             driver.tally(self.packet, path, "claude-opus-5", "2026-08-30")
         self.assertIn(first, str(caught.exception))
         self.assertIn("more than once", str(caught.exception))
+
+
+class DemonstrationTests(unittest.TestCase):
+    """The committed answers reproduce the run block already on the corpus.
+
+    This is the claim the whole driver exists to support: a result a person
+    produced by hand comes back out of the tool unchanged. If it ever stops
+    holding, either the driver's scoring moved or the recorded run did.
+    """
+
+    def test_the_committed_answers_reproduce_the_recorded_run_block(self):
+        corpus_path = driver.REPOSITORY_ROOT / driver.CORPUS_PATH
+        original = corpus_path.read_bytes()
+        self.addCleanup(corpus_path.write_bytes, original)
+        recorded = json.loads(original.decode("utf-8"))["runs"]
+
+        packet = Path(tempfile.mkdtemp(prefix="rs-demo-")) / "packet"
+        self.addCleanup(shutil.rmtree, packet.parent, ignore_errors=True)
+        driver.emit(packet)
+        answers = (
+            driver.REPOSITORY_ROOT
+            / "docs/router-selection-driver/demonstration-answers.json"
+        )
+        block = driver.tally(packet, answers, recorded[0]["model"], recorded[0]["date"])
+
+        self.assertEqual(
+            [block], recorded, "the driver no longer reproduces the recorded run"
+        )
+        self.assertEqual(
+            corpus_path.read_bytes(),
+            original,
+            "reproducing the recorded run still rewrote the corpus bytes",
+        )

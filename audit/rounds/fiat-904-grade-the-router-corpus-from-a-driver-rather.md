@@ -61,3 +61,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: round 1's two leads stand for the same reasons. Round 1's fix was re-driven rather than reread: removing the `object_pairs_hook` fails the duplicate guard and names the repeated case. Three further mutations were driven against the round-1 tree and each failed exactly one case, naming it: disabling the corpus-digest comparison, disabling the answer-vocabulary check, and moving the manifest write above the prompt loop. The three lints exit 0 and the root suite reports 524 of 524.
+
+## Step 3, round 1 -- 2026-08-30T02:03:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: prompt-leak=reviewed; packet-write=reviewed; corpus-drift=reviewed; answer-binding=reviewed; missing-answer=reviewed; answer-shape=reviewed
+
+Not checked: whether the 38 committed answers are the ones those contexts would return again. They are a record of one grading, not a claim about a rerun, and the driver reproduces the recorded block from them rather than establishing that a fresh grading agrees. Nothing here drove a graded context.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the refusal-reason leniency from step 2 round 1 stands unchanged, and the demonstration exercises it: `RS-34` is recorded as answered `refuse:uncovered` against an expectation of `phylax`, which fails on the canonical name rather than on the reason, so the leniency does not affect this result either way. ADR-051 takes the next free number against `origin/main` at this branch's cut, which is the collision surface [#798](https://github.com/wildcat-finance/skills/issues/798) owns; the record says so in its own status section rather than leaving a reader to find it. The demonstration guard was driven rather than reread: changing one committed answer fails it and names the block mismatch.
