@@ -2036,7 +2036,11 @@ class SliceTests(unittest.TestCase):
             [
                 "rule",
                 "rule.deny",
-                ["-", ["local.hidden_prohibition"]],
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["-", ["local.hidden_prohibition"]],
+                ],
                 source_binding(1, 2),
             ],
         ]
@@ -2147,7 +2151,7 @@ class PolicyCheckTests(unittest.TestCase):
         records = [
             ["import", "core", CORE_DIGEST],
             ["rule", "rule.high", [";", ["!", ["=", consequence, consequence]], ["!", proposition]], source_binding(0, 1)],
-            ["rule", "rule.low", ["!", ["~", proposition]], source_binding(1, 2)],
+            ["rule", "rule.low", [";", ["!", ["=", consequence, consequence]], ["!", ["~", proposition]]], source_binding(1, 2)],
         ]
         _build, manifest, _projection = select_records(records, runtime_selection("opposed", facts=(fact,)))
         result = noema.check_runtime("opposed", [fact], manifest)
@@ -2164,7 +2168,7 @@ class PolicyCheckTests(unittest.TestCase):
         records = [
             ["import", "core", CORE_DIGEST],
             ["rule", "rule.high", [";", ["!", ["=", consequence, consequence]], ["!", proposition]], source_binding(0, 1)],
-            ["rule", "rule.low", ["!", ["~", proposition]], source_binding(1, 2)],
+            ["rule", "rule.low", [";", ["!", ["=", consequence, consequence]], ["!", ["~", proposition]]], source_binding(1, 2)],
             ["override", "override.opposed", [":", "actor", "admin"], "rule.high", "rule.low", [":", "scope", "repository"], evidence],
         ]
         selection = runtime_selection("opposed", authority=("admin",), facts=facts)
@@ -2179,7 +2183,7 @@ class PolicyCheckTests(unittest.TestCase):
         records = [
             ["import", "core", CORE_DIGEST],
             ["rule", "rule.high", [";", ["!", ["=", consequence, consequence]], ["!", proposition]], source_binding(0, 1)],
-            ["rule", "rule.low", ["!", ["~", proposition]], source_binding(1, 2)],
+            ["rule", "rule.low", [";", ["!", ["=", consequence, consequence]], ["!", ["~", proposition]]], source_binding(1, 2)],
             ["precedence", "rule.high", "rule.low", [":", "actor", "admin"], [":", "scope", "repository"], [":", "evidence", "order"]],
         ]
         _build, manifest, _projection = select_records(records, runtime_selection("opposed", authority=("admin",), facts=(fact,)))
@@ -2209,6 +2213,234 @@ class PolicyCheckTests(unittest.TestCase):
         )
         result = noema.check_runtime("nested", selection["facts"], manifest)
         self.assertEqual(result["output"]["decision"], "unknown")
+
+    def test_structurally_valid_forged_manifest_cannot_drop_a_prohibition(self):
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", "forged"]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.deny",
+                ["-", [":", "effect", "forged"]],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("forged"),
+        )
+        forged = json.loads(json.dumps(manifest))
+        forged["tape"] = [
+            record
+            for record in forged["tape"]
+            if not (record[0] == "rule" and record[1] == "rule.deny")
+        ]
+        forged["included_ids"].remove("rule.deny")
+        forged["omitted"].append(
+            {
+                "id": "rule.deny",
+                "reason": "not-reachable",
+                "fact": None,
+                "evidence_sha256": None,
+            }
+        )
+        forged["omitted"].sort(key=lambda item: item["id"])
+        forged["tape_sha256"] = noema._value_sha256(forged["tape"])
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime("forged", [], forged)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MANIFEST")
+
+    def test_selected_manifest_mutation_invalidates_its_runtime_seal(self):
+        _build, manifest, _projection = select_records(
+            base_records(["+", [":", "effect", "sealed"]]),
+            runtime_selection("sealed"),
+        )
+        manifest["selection"]["target"] = "other"
+        manifest["selection_sha256"] = noema._value_sha256(manifest["selection"])
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime("sealed", [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MANIFEST")
+
+    def test_inactive_high_requirement_cannot_override_an_active_failure(self):
+        effect = "override.bypass"
+        proposition = [
+            "core.authorized",
+            [":", "actor", "operator"],
+            [":", "effect", effect],
+        ]
+        disabled = ["core.checked", [":", "evidence", "high.disabled"]]
+        override_evidence = [":", "evidence", "override.checked"]
+        consequence = [":", "core.consequence", "0"]
+        facts = sorted(
+            (
+                checked_fact(proposition, "false", "requirement-false"),
+                checked_fact(disabled, "false", "high-disabled"),
+                checked_fact(
+                    ["core.checked", override_evidence],
+                    "true",
+                    "override-checked",
+                ),
+            ),
+            key=lambda item: item["id"],
+        )
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.high",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["?", disabled, ["!", ["~", proposition]]],
+                ],
+                source_binding(1, 2),
+            ],
+            [
+                "rule",
+                "rule.low",
+                [";", ["!", ["=", consequence, consequence]], ["!", proposition]],
+                source_binding(2, 3),
+            ],
+            [
+                "override",
+                "override.bypass",
+                [":", "actor", "admin"],
+                "rule.high",
+                "rule.low",
+                [":", "scope", "repository"],
+                override_evidence,
+            ],
+        ]
+        selection = runtime_selection(
+            effect,
+            authority=("admin",),
+            facts=facts,
+        )
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "failed-requirement"),
+        )
+
+    def test_expired_exception_refuses_beside_a_low_consequence_permission(self):
+        effect = "exception.bypass"
+        evidence = [":", "evidence", "exception.checked"]
+        gate = ["core.checked", evidence]
+        fact = checked_fact(gate, "true", "exception-checked")
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.allow",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "exception",
+                "exception.expired",
+                [":", "actor", "admin"],
+                gate,
+                [":", "effect", effect],
+                [":", "scope", "repository"],
+                evidence,
+                [":", "value", "expired"],
+                ["+", [":", "effect", "recover"]],
+            ],
+        ]
+        selection = runtime_selection(
+            effect,
+            authority=("admin",),
+            facts=(fact,),
+        )
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "invalid-exception"),
+        )
+
+    def test_valid_exception_cannot_mint_permission(self):
+        effect = "exception.valid"
+        evidence = [":", "evidence", "exception.valid"]
+        gate = ["core.checked", evidence]
+        fact = checked_fact(gate, "true", "exception-valid")
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "exception",
+                "exception.valid",
+                [":", "actor", "admin"],
+                gate,
+                [":", "effect", effect],
+                [":", "scope", "repository"],
+                evidence,
+                [":", "value", "active"],
+                ["+", [":", "effect", "recover"]],
+            ],
+        ]
+        selection = runtime_selection(effect, authority=("admin",), facts=(fact,))
+        _build, manifest, _projection = select_records(records, selection)
+        result = noema.check_runtime(effect, selection["facts"], manifest)
+        self.assertEqual(
+            (result["output"]["decision"], result["output"]["reason"]),
+            ("refuse", "no-applicable-policy"),
+        )
+
+    def test_missing_consequence_marker_is_not_masked_by_an_explicit_zero(self):
+        effect = "mixed.consequence"
+        consequence = [":", "core.consequence", "0"]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.explicit",
+                [
+                    ";",
+                    ["!", ["=", consequence, consequence]],
+                    ["+", [":", "effect", effect]],
+                ],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.missing",
+                ["+", [":", "effect", effect]],
+                source_binding(1, 2),
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-POLICY.CONSEQUENCE")
 
     def test_requirement_alone_never_permits_an_effect(self):
         proposition = [
@@ -2818,7 +3050,7 @@ def _exception_cannot_authorize_test(expiry, scope, checked):
         selection = runtime_selection("exceptional", authority=("admin",), facts=facts)
         _build, manifest, _projection = select_records(records, selection)
         result = noema.check_runtime("exceptional", selection["facts"], manifest)
-        self.assertEqual((result["output"]["decision"], result["output"]["reason"]), ("refuse", "no-applicable-policy"))
+        self.assertEqual((result["output"]["decision"], result["output"]["reason"]), ("refuse", "invalid-exception"))
 
     return test
 

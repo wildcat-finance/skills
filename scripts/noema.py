@@ -168,6 +168,12 @@ class Refusal(ValueError):
         self.message = message
 
 
+class _VerifiedManifest(dict[str, object]):
+    """One manifest whose complete value was derived or artifact-verified here."""
+
+    __slots__ = ("_verified_sha256",)
+
+
 def refuse(code: str, field: str, message: str) -> None:
     raise Refusal(code, field, message)
 
@@ -3081,7 +3087,7 @@ def select_runtime(
         "artifacts": artifact_map,
     }
     _validate_manifest_value(manifest)
-    return manifest, projection
+    return _seal_manifest(manifest), projection
 
 
 def _validate_manifest_value(value: object) -> dict[str, object]:
@@ -3208,6 +3214,26 @@ def _validate_manifest_value(value: object) -> dict[str, object]:
     for key in sorted(RUNTIME_ARTIFACT_LEAVES):
         _artifact_leaf(artifacts[key], f"manifest.artifacts.{key}")
     _canonical_json(manifest)
+    return manifest
+
+
+def _seal_manifest(manifest: dict[str, object]) -> _VerifiedManifest:
+    sealed = _VerifiedManifest(manifest)
+    sealed._verified_sha256 = _value_sha256(sealed)
+    return sealed
+
+
+def _runtime_manifest(value: object) -> _VerifiedManifest:
+    manifest = _validate_manifest_value(value)
+    if (
+        not isinstance(manifest, _VerifiedManifest)
+        or manifest._verified_sha256 != _value_sha256(manifest)
+    ):
+        refuse(
+            "NOE-E-DIGEST.MANIFEST",
+            "manifest",
+            "runtime manifest was not derived or artifact-verified in this process",
+        )
     return manifest
 
 
@@ -3365,9 +3391,12 @@ def _effect_consequence(
         effects = {value for kind, value in atoms if kind == "effect"}
         if effect not in effects:
             continue
-        for kind, value in atoms:
-            if kind == "core.consequence" and value in {"0", "1", "2", "3"}:
-                values.add(int(value))
+        markers = {
+            int(value)
+            for kind, value in atoms
+            if kind == "core.consequence" and value in {"0", "1", "2", "3"}
+        }
+        values.update(markers or {3})
     if len(values) > 1:
         refuse("NOE-E-POLICY.CONSEQUENCE", "effect", "reachable rules disagree on consequence")
     return next(iter(values), 3)
@@ -3379,7 +3408,7 @@ def check_runtime(
     manifest_value: object,
 ) -> dict[str, object]:
     effect_id = _identifier(effect, "effect")
-    manifest = _validate_manifest_value(manifest_value)
+    manifest = _runtime_manifest(manifest_value)
     facts = _validate_facts(facts_value, "facts")
     selection = manifest["selection"]
     assert isinstance(selection, dict)
@@ -3412,7 +3441,13 @@ def check_runtime(
 
     overridden: set[tuple[str, int]] = set()
     requirement_conflicts: list[dict[str, object]] = []
-    requirement_candidates = [item for item in candidates if item["kind"] == "require"]
+    requirement_candidates = [
+        item
+        for item in candidates
+        if item["kind"] == "require"
+        and item["scope_applies"]
+        and item["activity"] != "false"
+    ]
     for left_index, left in enumerate(requirement_candidates):
         left_subject = _expand_runtime_term(left["subject"], definitions)
         for right in requirement_candidates[left_index + 1 :]:
@@ -3437,7 +3472,8 @@ def check_runtime(
                 if override[0] != "override":
                     continue
                 high, low = str(override[3]), str(override[4])
-                if {high, low} != {str(left["node"]), str(right["node"])}:
+                by_node = {str(left["node"]): left, str(right["node"]): right}
+                if set(by_node) != {high, low}:
                     continue
                 actor = _atom_value(override[2], "actor")
                 scope = _atom_value(override[5], "scope")
@@ -3445,11 +3481,12 @@ def check_runtime(
                     ["core.checked", override[6]], fact_map, definitions
                 )
                 if (
-                    actor in authority_values
+                    by_node[high]["activity"] == "true"
+                    and actor in authority_values
                     and scope in {"global", "repository", target}
                     and evidence_truth == "true"
                 ):
-                    lower = left if left["node"] == low else right
+                    lower = by_node[low]
                     overridden.add((str(lower["node"]), int(lower["order"])))
                     resolved = True
                     break
@@ -3480,6 +3517,22 @@ def check_runtime(
         for item in active
         if item["authority"] is not None and not item["authority_applies"]
     ]
+    invalid_exceptions: list[dict[str, object]] = []
+    for record in relevant:
+        if record[0] != "exception":
+            continue
+        gate_truth, _gate_facts = _evaluate_truth(record[3], fact_map, definitions)
+        evidence_truth, _evidence_facts = _evaluate_truth(
+            ["core.checked", record[6]], fact_map, definitions
+        )
+        if not (
+            _atom_value(record[2], "actor") in authority_values
+            and _atom_value(record[5], "scope") in {"global", "repository", target}
+            and gate_truth == "true"
+            and evidence_truth == "true"
+            and _atom_value(record[7], "value") == "active"
+        ):
+            invalid_exceptions.append({"node": str(record[1]), "order": 0})
     if requirement_conflicts:
         controlling = first(requirement_conflicts)
         decision, reason = "refuse", "conflicting-requirements"
@@ -3492,6 +3545,9 @@ def check_runtime(
     elif authority_failures:
         controlling = first(authority_failures)
         decision, reason = "refuse", "authority-mismatch"
+    elif invalid_exceptions:
+        controlling = first(invalid_exceptions)
+        decision, reason = "refuse", "invalid-exception"
     elif not rule_records:
         controlling = {"node": "default.no-policy", "order": 0}
         decision, reason = "refuse", "no-applicable-policy"
@@ -3566,7 +3622,7 @@ def next_runtime(
     machine_id = _identifier(machine, "machine")
     state_id = _identifier(state_value, "state")
     event_id = _identifier(event, "event")
-    manifest = _validate_manifest_value(manifest_value)
+    manifest = _runtime_manifest(manifest_value)
     receipts = _validate_facts(receipts_value, "receipts")
     selection = manifest["selection"]
     assert isinstance(selection, dict)
@@ -3652,7 +3708,7 @@ def next_runtime(
 
 def literal_runtime(identifier_value: object, manifest_value: object) -> dict[str, object]:
     identifier = _identifier(identifier_value, "literal")
-    manifest = _validate_manifest_value(manifest_value)
+    manifest = _runtime_manifest(manifest_value)
     literals, _definitions, _selectable = _manifest_registry(manifest)
     if identifier not in literals:
         refuse("NOE-E-REFERENCE.LITERAL", "literal", "literal is not reachable in this manifest")
@@ -3680,7 +3736,7 @@ def literal_runtime(identifier_value: object, manifest_value: object) -> dict[st
 
 def explain_runtime(node_value: object, manifest_value: object) -> dict[str, object]:
     node = _node_id(node_value, "node")
-    manifest = _validate_manifest_value(manifest_value)
+    manifest = _runtime_manifest(manifest_value)
     _literals, _definitions, selectable = _manifest_registry(manifest)
     tape = manifest["tape"]
     assert isinstance(tape, list)
@@ -3824,10 +3880,10 @@ def _verify_manifest_path(path: Path) -> tuple[dict[str, object], dict[str, obje
         "projection",
         maximum_depth=MAX_DEPTH + 5,
     )
-    projection = _validate_slice_projection(projection_value, manifest, profile_value)
+    projection = _validate_slice_projection(projection_value, expected_manifest, profile_value)
     if projection != expected_projection:
         refuse("NOE-E-DIGEST.PROJECTION", "projection", "runtime projection is stale")
-    return manifest, projection
+    return expected_manifest, projection
 
 
 def _read_fact_array(path: Path, field: str) -> list[dict[str, object]]:
