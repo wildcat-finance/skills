@@ -121,6 +121,12 @@ by the form order
 published above, then by id; precedence uses the `(higher,lower)` pair. These
 rules make the source byte string singular.
 
+The published JSON Schema closes object keys, record and module tuple shapes,
+term tags and structural arities. It is an interchange envelope, not a second
+type checker: canonical ordering, NFC and UTF-8 byte limits, digest relations,
+name resolution, nominal types and cross-record invariants remain executable
+validator obligations. Schema acceptance alone never creates a NIR.
+
 Canonicalization is singular: no insignificant alternate whitespace, key
 order, escape, Unicode normalization or integer spelling exists. Parsing must
 complete validation before a graph is returned. Formatting that graph must

@@ -220,6 +220,60 @@ class NoemaScaffoldTests(unittest.TestCase):
             ["properties"]["root"]["pattern"],
         )
 
+    def test_schema_closes_graph_tuple_shapes(self):
+        definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
+        self.assertEqual(set(definitions["term"]), {"oneOf"})
+        term_tags = set()
+        call_branches = 0
+        for branch in definitions["term"]["oneOf"]:
+            head = branch["prefixItems"][0]
+            if "const" in head:
+                term_tags.add(head["const"])
+            elif "enum" in head:
+                term_tags.update(head["enum"])
+            else:
+                self.assertEqual(head, {"$ref": "#/$defs/qualifiedIdentifier"})
+                call_branches += 1
+        self.assertEqual(term_tags, set(noema.TERM_TAGS | noema.OPERATORS))
+        self.assertEqual(call_branches, 1)
+        source_records = {
+            branch["prefixItems"][0]["const"]: branch
+            for branch in definitions["sourceRecord"]["oneOf"]
+        }
+        expected_arities = {
+            "import": 3,
+            "literal": 5,
+            "definition": 4,
+            "rule": 4,
+            "precedence": 6,
+            "override": 7,
+            "transition": 8,
+            "promise": 11,
+            "handoff": 11,
+            "exception": 9,
+        }
+        for form, arity in expected_arities.items():
+            with self.subTest(form=form):
+                self.assertEqual(len(source_records[form]["prefixItems"]), arity)
+                self.assertEqual(source_records[form]["minItems"], arity)
+                self.assertEqual(source_records[form]["maxItems"], arity)
+        for collection, item_ref in {
+            "types": "#/$defs/typeDeclaration",
+            "signatures": "#/$defs/signature",
+            "definitions": "#/$defs/moduleDefinition",
+        }.items():
+            self.assertEqual(
+                definitions["module"]["properties"][collection]["items"]["$ref"],
+                item_ref,
+            )
+        self.assertEqual(
+            definitions["profile"]["properties"]["reserved"],
+            {"const": sorted(noema.RESERVED_SYMBOLS)},
+        )
+        self.assertEqual(
+            definitions["identifier"]["not"], {"pattern": r"\.\."}
+        )
+
     def test_contract_magic_and_about_result_are_fixed(self):
         self.assertEqual((noema.CONTRACT, noema.SOURCE_MAGIC, noema.PROJECTION_MAGIC),
                          ("noema/v1", "NOE1", "NT1"))
