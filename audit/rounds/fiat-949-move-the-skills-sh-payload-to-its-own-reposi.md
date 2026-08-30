@@ -80,3 +80,19 @@ Elenchus verdict: guarded
 | S3-R1-02 | medium | `plugins/hexaemeron/skills/fiat/scripts/hexctl.py` | `GENERATOR_AGGREGATE_REGISTRY` registers `promise-machine-portable-runtime-v1` against the prefix `.agents/skills/promise-machine/runtime/` and the command `python3 scripts/portable_promise_machine.py check`. This step empties that prefix, so the entry names a directory the repository no longer carries and a command that exits non-zero on a clean checkout. The entry is dormant rather than broken, because the aggregate engages only when a revalidation surface holds paths under its prefix and no tracked path does. | not fixed here; filed as [#971](https://github.com/wildcat-finance/skills/issues/971) |
 
 Leads not pursued: S3-R1-02 was left rather than fixed because this runbook does not cover `plugins/hexaemeron/skills/fiat/`, an edit to `hexctl.py` cascades into its digest bindings, and the controller that executes is the installed plugin copy rather than the tree's, so an edit here would change no behaviour until the plugin is re-released. Historical records naming the removed paths were left intact: `docs/skills-sh-payload-siting-study.md`, ADR-054, the \#940 audit rounds and `plugins/probitas/docs/morpho-midnight-fixed-maturity-runbook.md` all describe a tree that was true when they were written, and rewriting a durable record to match a later tree would be worse than the staleness. `scripts/portable_promise_machine.py check` now fails on a clean checkout by design, because there is nothing in-tree to check; `sync` still writes the runtime for local use and the directory is ignored. The three lints exit 0 on the fixed tree, `repo_contract.py` still resolves `ROUTER` and `CODEX_MARKETPLACE`, `plugins.sapheneia.tests.test_sapheneia` passes 6 of 6, and the root suite reports 740 of 740 with the payload absent.
+
+## Step 3, round 2 -- 2026-08-30T11:45:19Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: authored-file-loss=reviewed; broken-install-window=reviewed; suite-coverage-loss=reviewed; stale-destination=reviewed; generator-output-escape=not-applicable; publish-unverified=not-applicable; workflow-drift=not-applicable; token-scope=not-applicable
+
+Not checked: the same two boundaries as round 1. The destination job has still completed no publish, and step 3 changes nothing about the published package, so no fresh install was driven against it in this round.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: round 1's leads stand unchanged, and S3-R1-02 remains open against [#971](https://github.com/wildcat-finance/skills/issues/971) for the reasons recorded there. Round 1's fix was re-driven rather than reread, and so were the two guards beside it. Three mutations were driven against the fixed tree and each failed exactly one case: adding the removed manifest back to the expected tracked set, removing the runtime directory from `.gitignore`, and restoring the old install command in `README.md`. Every file was restored byte-for-byte afterwards and `git status` reports the tree clean. The runner contract reports 740 of 740 with the payload absent.
