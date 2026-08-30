@@ -1134,6 +1134,40 @@ class CanonicalSourceTests(unittest.TestCase):
 
 
 class GraphValidationTests(unittest.TestCase):
+    def test_source_alias_uses_stable_file_identity_not_mutable_metadata(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "a",
+                ["+", [":", "effect", "x"]],
+                ["src", "a.txt", sha256(b"a").hexdigest(), "0", "1"],
+            ],
+            [
+                "rule",
+                "b",
+                ["+", [":", "effect", "y"]],
+                ["src", "b.txt", sha256(b"b").hexdigest(), "0", "1"],
+            ],
+        ]
+        mode = stat.S_IFREG | 0o644
+        observations = {
+            "a.txt": (b"a", (1, 2, mode, 1, 10, 10)),
+            "b.txt": (b"b", (1, 2, mode, 1, 20, 20)),
+        }
+
+        def same_inode_different_observation(_root, relative, _field, _limit):
+            return observations[relative]
+
+        with mock.patch.object(
+            noema,
+            "_read_repository_regular",
+            side_effect=same_inode_different_observation,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                compile_records(records)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.SOURCE_ALIAS")
+
     def test_macro_expansion_counts_repeated_parameter_substitution(self):
         self.assertEqual(4 * (2**14), noema.MAX_EXPANDED_NODES)
         definitions = [
@@ -1717,6 +1751,48 @@ class ModuleLockTests(unittest.TestCase):
             with self.assertRaises(noema.Refusal) as raised:
                 noema.compile_source(noema._canonical_source(base_records()), directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
             self.assertEqual(raised.exception.code, "NOE-E-PATH.REGULAR")
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
+    def test_module_directory_cannot_be_replaced_after_confinement_check(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / "modules"
+            displaced = root / "modules-displaced"
+            directory.mkdir()
+            shutil.copy2(MODULES_FIXTURE / "core.json", directory / "core.json")
+            original = noema._read_directory_regular
+            swapped = False
+
+            def replace_before_read(descriptor, leaf, field, limit):
+                nonlocal swapped
+                if not swapped and leaf == "core.json" and field == "module.core":
+                    directory.rename(displaced)
+                    directory.symlink_to(MODULES_FIXTURE, target_is_directory=True)
+                    swapped = True
+                return original(descriptor, leaf, field, limit)
+
+            with mock.patch.object(
+                noema,
+                "_read_directory_regular",
+                side_effect=replace_before_read,
+            ):
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema.compile_source(
+                        noema._canonical_source(base_records()),
+                        directory,
+                        PROFILE_FIXTURE,
+                        KERNEL_FIXTURE,
+                    )
+            self.assertTrue(swapped)
+            self.assertIn(
+                raised.exception.code,
+                {
+                    "NOE-E-IO.CHANGED",
+                    "NOE-E-IO.READ",
+                    "NOE-E-PATH.CONFINEMENT",
+                    "NOE-E-PATH.IDENTITY",
+                },
+            )
 
     def test_stale_build_lock_refuses(self):
         build, _artifacts = noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
@@ -4399,6 +4475,22 @@ class PathBoundaryTests(unittest.TestCase):
             self.assertEqual(target.read_bytes(), b"old")
             self.assertEqual([path.name for path in directory.iterdir()], ["output"])
 
+    def test_unsupported_descriptor_replace_is_a_bounded_refusal(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            target = directory / "output"
+            target.write_bytes(b"old")
+            with mock.patch.object(
+                noema.os,
+                "replace",
+                side_effect=TypeError("descriptor replacement is unavailable"),
+            ):
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema._atomic_write(target, b"new")
+            self.assertEqual(raised.exception.code, "NOE-E-IO.WRITE")
+            self.assertEqual(target.read_bytes(), b"old")
+            self.assertEqual([path.name for path in directory.iterdir()], ["output"])
+
     def test_maximum_leaf_name_succeeds_and_plus_one_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
@@ -4410,17 +4502,104 @@ class PathBoundaryTests(unittest.TestCase):
             self.assertEqual(raised.exception.code, "NOE-E-PATH.LEAF")
 
     def test_temporary_prefix_is_target_independent(self):
-        real_mkstemp = tempfile.mkstemp
+        real_open = os.open
         observed = []
 
-        def capture(*args, **kwargs):
-            observed.append(kwargs.get("prefix"))
-            return real_mkstemp(*args, **kwargs)
+        def capture(path, flags, mode=0o777, *, dir_fd=None):
+            if dir_fd is not None and flags & os.O_CREAT:
+                observed.append(str(path))
+            if dir_fd is None:
+                return real_open(path, flags, mode)
+            return real_open(path, flags, mode, dir_fd=dir_fd)
 
         with tempfile.TemporaryDirectory() as temporary:
-            with mock.patch.object(noema.tempfile, "mkstemp", side_effect=capture):
+            with mock.patch.object(noema.os, "open", side_effect=capture):
                 noema._atomic_write(Path(temporary) / "secret-target-name", b"x")
-        self.assertEqual(observed, [".noema-write-"])
+        self.assertEqual(len(observed), 1)
+        self.assertTrue(observed[0].startswith(".noema-write-"))
+        self.assertNotIn("secret-target-name", observed[0])
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
+    def test_output_parent_cannot_be_replaced_after_validation(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            parent = root / "safe"
+            displaced = root / "safe-displaced"
+            outside = root / "outside"
+            parent.mkdir()
+            outside.mkdir()
+            target = parent / "output"
+            outside_target = outside / "output"
+            target.write_bytes(b"old-safe")
+            outside_target.write_bytes(b"old-outside")
+            real_replace = os.replace
+            swapped = False
+
+            def replace_after_validation(
+                source,
+                destination,
+                *,
+                src_dir_fd=None,
+                dst_dir_fd=None,
+            ):
+                nonlocal swapped
+                if not swapped:
+                    parent.rename(displaced)
+                    parent.symlink_to(outside, target_is_directory=True)
+                    swapped = True
+                return real_replace(
+                    source,
+                    destination,
+                    src_dir_fd=src_dir_fd,
+                    dst_dir_fd=dst_dir_fd,
+                )
+
+            with mock.patch.object(
+                noema.os,
+                "replace",
+                side_effect=replace_after_validation,
+            ):
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema._atomic_write(target, b"new")
+            self.assertTrue(swapped)
+            self.assertEqual(outside_target.read_bytes(), b"old-outside")
+            self.assertEqual((displaced / "output").read_bytes(), b"new")
+            self.assertEqual(raised.exception.code, "NOE-E-IO.SYNC")
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
+    def test_manifest_parent_is_anchored_through_artifact_verification(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / "runtime"
+            displaced = root / "runtime-displaced"
+            outside = root / "outside"
+            shutil.copytree(RUNTIME_FIXTURE, directory)
+            shutil.copytree(RUNTIME_FIXTURE, outside)
+            manifest_path = directory / "manifest.json"
+            build_path = directory / "build.json"
+            original = noema._read_canonical_json
+            swapped = False
+
+            def replace_before_path_reads(path, field, **kwargs):
+                nonlocal swapped
+                if not swapped and Path(path) == build_path:
+                    directory.rename(displaced)
+                    directory.symlink_to(outside, target_is_directory=True)
+                    swapped = True
+                return original(path, field, **kwargs)
+
+            with mock.patch.object(
+                noema,
+                "_read_canonical_json",
+                side_effect=replace_before_path_reads,
+            ):
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema._verify_manifest_path(manifest_path)
+            self.assertTrue(swapped)
+            self.assertIn(
+                raised.exception.code,
+                {"NOE-E-IO.CHANGED", "NOE-E-PATH.IDENTITY"},
+            )
 
 
 class SourceBindingTests(unittest.TestCase):
@@ -4490,6 +4669,30 @@ class SourceBindingTests(unittest.TestCase):
             with self.assertRaises(noema.Refusal) as raised:
                 noema.verify_specimen_corpus(root / "manifest.json")
         self.assertEqual(raised.exception.code, "NOE-E-DIGEST.INVENTORY")
+
+    def test_seed_inventory_snapshot_is_held_through_the_corpus_verdict(self):
+        with copied_corpus() as root:
+            original = noema._verify_specimen
+            mutated = False
+
+            def mutate_after_specimen(directory, repository_root, snapshots=None):
+                nonlocal mutated
+                result = original(directory, repository_root, snapshots)
+                if not mutated:
+                    path = root / "seed-inventory.json"
+                    path.write_bytes(path.read_bytes() + b"\n")
+                    mutated = True
+                return result
+
+            with mock.patch.object(
+                noema,
+                "_verify_specimen",
+                side_effect=mutate_after_specimen,
+            ):
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertTrue(mutated)
+        self.assertEqual(raised.exception.code, "NOE-E-IO.CHANGED")
 
     def test_seed_inventory_metadata_uses_the_full_archive_validator(self):
         with copied_corpus() as root:
@@ -4565,6 +4768,45 @@ class SourceBindingTests(unittest.TestCase):
                 noema.verify_specimen_corpus(root / "manifest.json")
         self.assertEqual(raised.exception.code, "NOE-E-DIGEST.SOURCE")
 
+    def test_canonical_source_snapshot_is_held_through_the_corpus_verdict(self):
+        with copied_corpus() as root, tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            for relative in noema.SPECIMEN_SOURCE_PATHS.values():
+                target = repository / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / relative, target)
+            original = noema._verify_specimen
+            calls = 0
+
+            def mutate_after_later_specimen(
+                directory,
+                repository_root,
+                snapshots=None,
+            ):
+                nonlocal calls
+                result = original(directory, repository_root, snapshots)
+                calls += 1
+                if calls == 2:
+                    relative = noema.SPECIMEN_SOURCE_PATHS["brevitas"]
+                    target = repository / relative
+                    target.write_bytes(target.read_bytes() + b"\n")
+                return result
+
+            with mock.patch.object(
+                noema,
+                "_verify_specimen",
+                side_effect=mutate_after_later_specimen,
+            ):
+                with self.assertRaises(noema.Refusal) as raised:
+                    with noema._SnapshotSet() as snapshots:
+                        noema._verify_specimen_corpus_impl(
+                            root / "manifest.json",
+                            snapshots,
+                            repository_root=repository,
+                        )
+        self.assertEqual(calls, 4)
+        self.assertEqual(raised.exception.code, "NOE-E-IO.CHANGED")
+
     def test_source_span_gap_refuses(self):
         with copied_corpus() as root:
             path = specimen_directory("fiat", root) / "source-spans.json"
@@ -4621,6 +4863,33 @@ class SourceBindingTests(unittest.TestCase):
                 noema.verify_specimen_corpus(root / "manifest.json")
         self.assertEqual(raised.exception.code, "NOE-E-AUTHORITY.SEED")
 
+    def test_seed_mode_is_checked_on_the_same_bytes_that_are_hashed(self):
+        with copied_corpus() as root:
+            reference = root / "seed-reference"
+            target = reference / "bootstrap.txt"
+            target.chmod(0o755)
+            seed = read_json(root / "manifest.json")["seed"]
+            original = noema._read_directory_regular
+            hid_mode = False
+
+            def hide_mode_after_read(descriptor, leaf, field, limit):
+                nonlocal hid_mode
+                raw, identity = original(descriptor, leaf, field, limit)
+                if leaf == "bootstrap.txt":
+                    target.chmod(0o644)
+                    hid_mode = True
+                return raw, identity
+
+            with mock.patch.object(
+                noema,
+                "_read_directory_regular",
+                side_effect=hide_mode_after_read,
+            ):
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema._verify_seed_reference(root, seed)
+            self.assertTrue(hid_mode)
+            self.assertEqual(raised.exception.code, "NOE-E-AUTHORITY.SEED")
+
     def test_symlinked_seed_reference_member_refuses(self):
         with copied_corpus() as root:
             path = root / "seed-reference/bootstrap.txt"
@@ -4628,7 +4897,7 @@ class SourceBindingTests(unittest.TestCase):
             path.symlink_to(root / "seed-reference/coverage.md")
             with self.assertRaises(noema.Refusal) as raised:
                 noema.verify_specimen_corpus(root / "manifest.json")
-        self.assertEqual(raised.exception.code, "NOE-E-PATH.CONFINEMENT")
+        self.assertEqual(raised.exception.code, "NOE-E-PATH.REGULAR")
 
     def test_noncanonical_corpus_manifest_refuses(self):
         with copied_corpus() as root:
@@ -4723,6 +4992,168 @@ class SpecimenRoundTripTests(unittest.TestCase):
                 noema._value_sha256(inventory),
                 committed["artifact_inventory_sha256"],
             )
+
+    def test_specimen_root_replacement_cannot_hide_an_extra_member(self):
+        with copied_corpus() as root:
+            directory = specimen_directory("brevitas", root)
+            displaced = directory.with_name("brevitas-displaced")
+            alternate = directory.with_name("brevitas-alternate")
+            shutil.copytree(directory, alternate)
+            (alternate / "undeclared.txt").write_bytes(b"hidden after listing")
+            build = read_json(directory / "build.json")
+            plan = noema._mutation_plan(
+                read_json(directory / "mutation-plan.json"),
+                "brevitas",
+            )
+            paths = noema._specimen_artifact_paths(build, plan)
+            real_scandir = os.scandir
+            swapped = False
+
+            class SwapAfterListing:
+                def __init__(self, entries):
+                    self.entries = entries
+
+                def __enter__(self):
+                    self.entries.__enter__()
+                    return self
+
+                def __exit__(self, *args):
+                    return self.entries.__exit__(*args)
+
+                def __iter__(self):
+                    return self
+
+                def __next__(self):
+                    nonlocal swapped
+                    try:
+                        return next(self.entries)
+                    except StopIteration:
+                        if not swapped:
+                            directory.rename(displaced)
+                            alternate.rename(directory)
+                            swapped = True
+                        raise
+
+            calls = 0
+
+            def replace_after_root_listing(path):
+                nonlocal calls
+                calls += 1
+                entries = real_scandir(path)
+                if calls == 1:
+                    return SwapAfterListing(entries)
+                return entries
+
+            with mock.patch.object(noema.os, "scandir", side_effect=replace_after_root_listing):
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema._closed_specimen_inventory(directory, "brevitas", paths)
+            self.assertTrue(swapped)
+            self.assertIn(
+                raised.exception.code,
+                {"NOE-E-PATH.IDENTITY", "NOE-E-IO.CHANGED"},
+            )
+
+    def test_earlier_specimen_snapshot_is_held_through_the_corpus_verdict(self):
+        with copied_corpus() as root:
+            original = noema._verify_specimen
+            calls = 0
+
+            def mutate_after_later_specimen(
+                directory,
+                repository_root,
+                snapshots=None,
+            ):
+                nonlocal calls
+                result = original(directory, repository_root, snapshots)
+                calls += 1
+                if calls == 2:
+                    target = specimen_directory("brevitas", root) / "source.noe"
+                    target.write_bytes(target.read_bytes() + b"\n")
+                return result
+
+            with mock.patch.object(
+                noema,
+                "_verify_specimen",
+                side_effect=mutate_after_later_specimen,
+            ):
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-IO.CHANGED")
+
+    def test_closed_inventory_stops_at_the_first_unexpected_member(self):
+        class Entry:
+            name = "unexpected"
+
+        class HostileEntries:
+            def __init__(self):
+                self.calls = 0
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def __iter__(self):
+                return self
+
+            def __next__(self):
+                self.calls += 1
+                if self.calls == 1:
+                    return Entry()
+                raise AssertionError("directory enumeration continued after an extra member")
+
+        directory = specimen_directory("brevitas")
+        build = read_json(directory / "build.json")
+        plan = noema._mutation_plan(
+            read_json(directory / "mutation-plan.json"),
+            "brevitas",
+        )
+        paths = noema._specimen_artifact_paths(build, plan)
+        entries = HostileEntries()
+        with mock.patch.object(noema.os, "scandir", return_value=entries):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._closed_specimen_inventory(directory, "brevitas", paths)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.EXTRA_MEMBER")
+        self.assertEqual(entries.calls, 1)
+
+    def test_closed_inventory_enforces_the_aggregate_bound_while_reading(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "a").write_bytes(b"a" * 700_000)
+            (directory / "b").write_bytes(b"b" * 700_000)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._closed_specimen_inventory(
+                    directory,
+                    "bounded",
+                    {"a", "b"},
+                )
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.ARTIFACTS")
+
+    def test_snapshot_set_closes_retained_directory_descriptors(self):
+        directory = specimen_directory("brevitas")
+        build = read_json(directory / "build.json")
+        plan = noema._mutation_plan(
+            read_json(directory / "mutation-plan.json"),
+            "brevitas",
+        )
+        closed = noema._closed_specimen_inventory(
+            directory,
+            "brevitas",
+            noema._specimen_artifact_paths(build, plan),
+            hold_snapshot=True,
+        )
+        self.assertIsInstance(closed, tuple)
+        _inventory, snapshot = closed
+        descriptors = [
+            snapshot.root_descriptor,
+            *(descriptor for descriptor, _identity in snapshot.children.values()),
+        ]
+        with noema._SnapshotSet() as snapshots:
+            snapshots.add(snapshot)
+        for descriptor in descriptors:
+            with self.assertRaises(OSError):
+                os.fstat(descriptor)
 
     def test_extra_specimen_root_member_refuses(self):
         with copied_corpus() as root:

@@ -319,6 +319,14 @@ every specimen input and generated output. The specimen root and its `modules`
 and `mutations` directories are closed to that derived inventory: a changed
 mutation artifact, missing member, extra member, nested directory or link
 refuses even when the observed mutation result would otherwise be unchanged.
+Verification enumerates each closed directory through one retained descriptor,
+stops at the first unexpected member, reads every admitted leaf relative to
+that descriptor and enforces the aggregate byte cap while reading. It retains
+the seed and four specimen directory descriptors plus every observed file
+identity until the corpus verdict. The corpus manifest, exact seed-inventory
+bytes and all four canonical Markdown sources are also identity-rechecked at
+that boundary. Replacement, in-place mutation or mode drift during the
+aggregate verification therefore refuses instead of certifying mixed states.
 
 `noema-source-identity/v1` names one repository-relative Markdown path, exact
 byte count and SHA-256, and governs its complete byte range. Every rule source
@@ -378,13 +386,23 @@ runtime manifest or the source-bound specimen corpus by its schema identity.
 hostile and critical-vector outcomes. `self-test` performs the checked-in
 complete-fixture round trip without writing a file.
 
-All input leaves must be regular files; module resolution is confined to one
-real directory and never scans it. An output leaf must be Unicode-scalar UTF-8
-and at most 255 bytes. Output uses a random `.noema-write-` leaf independent of
-the target name, loops on partial writes, syncs file and parent, then replaces
-the target. A refusal before replacement leaves the prior target
-intact and removes the temporary. A post-replacement directory-sync failure is
-reported as uncertain durable state, never success.
+All input leaves must be regular files. Repository-bound reads open and recheck
+every ancestor relative to retained directory descriptors. Module resolution
+opens one real module directory, reads only digest-requested leaves relative to
+that descriptor, and never scans it; unmentioned files have no semantic role.
+File digest, byte count and mode evidence come from the same opened identity.
+Platforms without the required no-follow, descriptor-relative directory
+operations refuse. Runtime-manifest verification retains and rechecks the real
+manifest parent and anchored manifest leaf across every sibling-artifact check.
+An output leaf must be Unicode-scalar UTF-8 and at most 255 bytes. Output opens
+and retains the real parent directory, creates a random
+`.noema-write-` leaf independent of the target name within that descriptor,
+loops on partial writes, syncs file and parent, replaces the descriptor-relative
+target, rereads the exact payload and rechecks the requested parent path. A
+refusal before replacement leaves the prior target intact and removes the
+temporary. A post-replacement sync or parent-binding failure is reported as
+uncertain durable state, never success; a concurrently substituted path is
+never followed outside the retained parent.
 
 ## Policy runtime
 

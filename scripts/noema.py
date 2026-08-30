@@ -13,9 +13,9 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import secrets
 import stat
 import sys
-import tempfile
 import unicodedata
 import zipfile
 import zlib
@@ -382,6 +382,15 @@ RUNTIME_LINK_TYPES = frozenset(
     }
 )
 TRUTH_VALUES = frozenset({"true", "false", "unknown"})
+SUPPORTS_CONFINED_DIRECTORIES = (
+    hasattr(os, "O_NOFOLLOW")
+    and hasattr(os, "O_DIRECTORY")
+    and os.open in os.supports_dir_fd
+    and os.rename in os.supports_dir_fd
+    and os.stat in os.supports_dir_fd
+    and os.unlink in os.supports_dir_fd
+    and os.scandir in os.supports_fd
+)
 
 
 class Refusal(ValueError):
@@ -474,18 +483,29 @@ def _object_without_duplicates(pairs: list[tuple[str, object]]) -> dict[str, obj
     return result
 
 
+def _stat_identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
 def _read_open_regular(
     descriptor: int,
     field: str,
     limit: int,
-    expected_identity: tuple[int, int] | None = None,
-) -> tuple[bytes, tuple[int, int]]:
+    expected_identity: tuple[int, int, int, int, int, int] | None = None,
+) -> tuple[bytes, tuple[int, int, int, int, int, int]]:
     close_failed = False
     try:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             refuse("NOE-E-PATH.REGULAR", field, "opened input is not a regular file")
-        if expected_identity is not None and (before.st_dev, before.st_ino) != expected_identity:
+        if expected_identity is not None and _stat_identity(before) != expected_identity:
             refuse("NOE-E-PATH.IDENTITY", field, "input identity changed before read")
         if before.st_size > limit:
             refuse("NOE-E-BOUNDS.FILE", field, "input exceeds its byte limit")
@@ -514,26 +534,18 @@ def _read_open_regular(
     if close_failed:
         refuse("NOE-E-IO.READ", field, "regular input descriptor could not be closed")
 
-    before_identity = (
-        before.st_dev,
-        before.st_ino,
-        before.st_size,
-        before.st_mtime_ns,
-        before.st_ctime_ns,
-    )
-    after_identity = (
-        after.st_dev,
-        after.st_ino,
-        after.st_size,
-        after.st_mtime_ns,
-        after.st_ctime_ns,
-    )
+    before_identity = _stat_identity(before)
+    after_identity = _stat_identity(after)
     if before_identity != after_identity or total != after.st_size:
         refuse("NOE-E-IO.CHANGED", field, "input changed during read")
-    return b"".join(chunks), (before.st_dev, before.st_ino)
+    return b"".join(chunks), after_identity
 
 
-def _read_regular(path: Path, field: str, limit: int) -> bytes:
+def _read_regular_identity(
+    path: Path,
+    field: str,
+    limit: int,
+) -> tuple[bytes, tuple[int, int, int, int, int, int]]:
     if not hasattr(os, "O_NOFOLLOW"):
         refuse("NOE-E-PATH.PLATFORM", field, "no-follow file reads are unavailable")
     try:
@@ -552,13 +564,384 @@ def _read_regular(path: Path, field: str, limit: int) -> bytes:
         descriptor = os.open(path, flags)
     except OSError:
         refuse("NOE-E-IO.READ", field, "regular input cannot be opened")
-    payload, _identity = _read_open_regular(
+    return _read_open_regular(
         descriptor,
         field,
         limit,
-        (before_path.st_dev, before_path.st_ino),
+        _stat_identity(before_path),
     )
+
+
+def _read_regular(path: Path, field: str, limit: int) -> bytes:
+    payload, _identity = _read_regular_identity(path, field, limit)
     return payload
+
+
+def _assert_path_file_identity(
+    path: Path,
+    identity: tuple[int, int, int, int, int, int],
+    field: str,
+) -> None:
+    try:
+        current = path.lstat()
+    except OSError:
+        refuse("NOE-E-IO.CHANGED", field, "input identity cannot be rechecked")
+    if _stat_identity(current) != identity:
+        refuse("NOE-E-IO.CHANGED", field, "input changed during aggregate verification")
+
+
+def _directory_flags() -> int:
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    return flags
+
+
+def _file_flags() -> int:
+    flags = os.O_RDONLY | os.O_NOFOLLOW
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    return flags
+
+
+def _open_real_directory(
+    path: Path,
+    field: str,
+) -> tuple[int, tuple[int, int, int, int, int, int]]:
+    if not SUPPORTS_CONFINED_DIRECTORIES:
+        refuse(
+            "NOE-E-PATH.PLATFORM",
+            field,
+            "confined no-follow directory operations are unavailable",
+        )
+    try:
+        before = path.lstat()
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "directory cannot be inspected")
+    if not stat.S_ISDIR(before.st_mode) or stat.S_ISLNK(before.st_mode):
+        refuse("NOE-E-PATH.DIRECTORY", field, "path must be one real directory")
+    descriptor = -1
+    try:
+        descriptor = os.open(path, _directory_flags())
+        opened = os.fstat(descriptor)
+    except OSError:
+        if descriptor >= 0:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+        refuse("NOE-E-PATH.CONFINEMENT", field, "directory changed or cannot be opened")
+    identity = _stat_identity(opened)
+    if identity != _stat_identity(before):
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        refuse("NOE-E-PATH.IDENTITY", field, "directory identity changed before open")
+    return descriptor, identity
+
+
+def _open_child_directory(
+    parent_descriptor: int,
+    leaf: str,
+    field: str,
+) -> tuple[int, tuple[int, int, int, int, int, int]]:
+    descriptor = -1
+    try:
+        before = os.stat(
+            leaf,
+            dir_fd=parent_descriptor,
+            follow_symlinks=False,
+        )
+        if stat.S_ISLNK(before.st_mode):
+            refuse(
+                "NOE-E-PATH.CONFINEMENT",
+                field,
+                "child directory must not be a symbolic link",
+            )
+        if not stat.S_ISDIR(before.st_mode):
+            refuse("NOE-E-PATH.DIRECTORY", field, "child must be one real directory")
+        descriptor = os.open(
+            leaf,
+            _directory_flags(),
+            dir_fd=parent_descriptor,
+        )
+        opened = os.fstat(descriptor)
+    except Refusal:
+        raise
+    except OSError:
+        if descriptor >= 0:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+        refuse("NOE-E-PATH.CONFINEMENT", field, "child directory changed or cannot be opened")
+    identity = _stat_identity(opened)
+    if identity != _stat_identity(before):
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        refuse("NOE-E-PATH.IDENTITY", field, "child directory identity changed before open")
+    return descriptor, identity
+
+
+def _read_directory_regular(
+    directory_descriptor: int,
+    leaf: str,
+    field: str,
+    limit: int,
+) -> tuple[bytes, tuple[int, int, int, int, int, int]]:
+    try:
+        before = os.stat(
+            leaf,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        if not stat.S_ISREG(before.st_mode):
+            refuse("NOE-E-PATH.REGULAR", field, "input must be a regular file")
+        descriptor = os.open(
+            leaf,
+            _file_flags(),
+            dir_fd=directory_descriptor,
+        )
+    except Refusal:
+        raise
+    except FileNotFoundError:
+        refuse("NOE-E-IO.READ", field, "regular input cannot be opened")
+    except OSError:
+        refuse("NOE-E-PATH.CONFINEMENT", field, "input is absent, linked or escaping")
+    return _read_open_regular(
+        descriptor,
+        field,
+        limit,
+        _stat_identity(before),
+    )
+
+
+def _exact_directory_names(
+    descriptor: int,
+    expected: set[str],
+    field: str,
+) -> None:
+    if len(expected) > MAX_RECORDS:
+        refuse(
+            "NOE-E-BOUNDS.ARTIFACTS",
+            field,
+            "closed directory inventory exceeds its member limit",
+        )
+    seen: set[str] = set()
+    try:
+        with os.scandir(descriptor) as entries:
+            for entry in entries:
+                name = entry.name
+                if name not in expected or name in seen:
+                    refuse(
+                        "NOE-E-REFERENCE.EXTRA_MEMBER",
+                        field,
+                        "directory differs from its closed inventory",
+                    )
+                seen.add(name)
+    except Refusal:
+        raise
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "closed directory cannot be listed")
+    if seen != expected:
+        refuse(
+            "NOE-E-REFERENCE.EXTRA_MEMBER",
+            field,
+            "directory differs from its closed inventory",
+        )
+
+
+def _assert_directory_identity(
+    descriptor: int,
+    identity: tuple[int, int, int, int, int, int],
+    field: str,
+    *,
+    path: Path | None = None,
+    parent_descriptor: int | None = None,
+    leaf: str | None = None,
+) -> None:
+    try:
+        if _stat_identity(os.fstat(descriptor)) != identity:
+            refuse("NOE-E-IO.CHANGED", field, "directory changed during verification")
+        if path is not None:
+            current = path.lstat()
+        else:
+            assert parent_descriptor is not None and leaf is not None
+            current = os.stat(
+                leaf,
+                dir_fd=parent_descriptor,
+                follow_symlinks=False,
+            )
+    except Refusal:
+        raise
+    except OSError:
+        refuse("NOE-E-IO.CHANGED", field, "directory identity cannot be rechecked")
+    if _stat_identity(current) != identity:
+        refuse("NOE-E-PATH.IDENTITY", field, "directory path changed during verification")
+
+
+def _assert_directory_file_identity(
+    descriptor: int,
+    leaf: str,
+    identity: tuple[int, int, int, int, int, int],
+    field: str,
+) -> None:
+    try:
+        current = os.stat(
+            leaf,
+            dir_fd=descriptor,
+            follow_symlinks=False,
+        )
+    except OSError:
+        refuse("NOE-E-IO.CHANGED", field, "input identity cannot be rechecked")
+    if _stat_identity(current) != identity:
+        refuse("NOE-E-IO.CHANGED", field, "input changed during aggregate verification")
+
+
+class _DirectorySnapshot:
+    """Open directory identities retained until aggregate verification ends."""
+
+    __slots__ = (
+        "path",
+        "field",
+        "root_descriptor",
+        "root_identity",
+        "children",
+        "files",
+    )
+
+    def __init__(
+        self,
+        path: Path,
+        field: str,
+        root_descriptor: int,
+        root_identity: tuple[int, int, int, int, int, int],
+    ) -> None:
+        self.path = path
+        self.field = field
+        self.root_descriptor = root_descriptor
+        self.root_identity = root_identity
+        self.children: dict[
+            str,
+            tuple[int, tuple[int, int, int, int, int, int]],
+        ] = {}
+        self.files: dict[
+            str,
+            tuple[int, int, int, int, int, int],
+        ] = {}
+
+    def verify(self) -> None:
+        root_names = set(self.children)
+        child_names = {leaf: set() for leaf in self.children}
+        for path, identity in sorted(self.files.items()):
+            parts = PurePosixPath(path).parts
+            if len(parts) == 1:
+                descriptor = self.root_descriptor
+                leaf = parts[0]
+                root_names.add(leaf)
+            else:
+                descriptor = self.children[parts[0]][0]
+                leaf = parts[1]
+                child_names[parts[0]].add(leaf)
+            _assert_directory_file_identity(
+                descriptor,
+                leaf,
+                identity,
+                f"{self.field}.{path}",
+            )
+        for leaf, (descriptor, identity) in sorted(self.children.items()):
+            _exact_directory_names(
+                descriptor,
+                child_names[leaf],
+                f"{self.field}.{leaf}",
+            )
+            _assert_directory_identity(
+                descriptor,
+                identity,
+                f"{self.field}.{leaf}",
+                parent_descriptor=self.root_descriptor,
+                leaf=leaf,
+            )
+        _exact_directory_names(
+            self.root_descriptor,
+            root_names,
+            self.field,
+        )
+        _assert_directory_identity(
+            self.root_descriptor,
+            self.root_identity,
+            self.field,
+            path=self.path,
+        )
+
+    def close(self, *, refuse_on_error: bool = True) -> bool:
+        failed = False
+        for descriptor, _identity in reversed(list(self.children.values())):
+            try:
+                os.close(descriptor)
+            except OSError:
+                failed = True
+        self.children.clear()
+        if self.root_descriptor >= 0:
+            try:
+                os.close(self.root_descriptor)
+            except OSError:
+                failed = True
+            self.root_descriptor = -1
+        if failed and refuse_on_error:
+            refuse(
+                "NOE-E-IO.READ",
+                self.field,
+                "snapshot directory descriptor could not be closed",
+            )
+        return failed
+
+
+class _SnapshotSet:
+    """Close every retained aggregate snapshot on success or refusal."""
+
+    def __init__(self) -> None:
+        self.snapshots: list[_DirectorySnapshot] = []
+        self.files: list[
+            tuple[Path, tuple[int, int, int, int, int, int], str]
+        ] = []
+
+    def __enter__(self) -> _SnapshotSet:
+        return self
+
+    def add(self, snapshot: _DirectorySnapshot) -> None:
+        self.snapshots.append(snapshot)
+
+    def add_file(
+        self,
+        path: Path,
+        identity: tuple[int, int, int, int, int, int],
+        field: str,
+    ) -> None:
+        self.files.append((path, identity, field))
+
+    def verify(self) -> None:
+        for snapshot in self.snapshots:
+            snapshot.verify()
+        for path, identity, field in self.files:
+            _assert_path_file_identity(path, identity, field)
+
+    def __exit__(self, exception_type, _exception, _traceback) -> bool:
+        close_failed = False
+        for snapshot in reversed(self.snapshots):
+            close_failed = snapshot.close(refuse_on_error=False) or close_failed
+        self.snapshots.clear()
+        self.files.clear()
+        if close_failed and exception_type is None:
+            refuse(
+                "NOE-E-IO.READ",
+                "corpus",
+                "aggregate snapshot descriptor could not be closed",
+            )
+        return False
 
 
 def _read_repository_regular(
@@ -566,43 +949,60 @@ def _read_repository_regular(
     relative: str,
     field: str,
     limit: int,
-) -> tuple[bytes, tuple[int, int]]:
-    if (
-        not hasattr(os, "O_NOFOLLOW")
-        or not hasattr(os, "O_DIRECTORY")
-        or os.open not in os.supports_dir_fd
-    ):
-        refuse("NOE-E-PATH.PLATFORM", field, "confined no-follow reads are unavailable")
+) -> tuple[bytes, tuple[int, int, int, int, int, int]]:
     relative = _relative_path(relative, field)
     components = PurePosixPath(relative).parts
-    directory_flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY
-    file_flags = os.O_RDONLY | os.O_NOFOLLOW
-    if hasattr(os, "O_CLOEXEC"):
-        directory_flags |= os.O_CLOEXEC
-        file_flags |= os.O_CLOEXEC
-
-    directories: list[int] = []
+    root_descriptor = -1
+    root_identity: tuple[int, int, int, int, int, int] | None = None
+    directories: list[tuple[str, int, tuple[int, int, int, int, int, int], int]] = []
     close_failed = False
     try:
-        current = os.open(root, directory_flags)
-        directories.append(current)
-        if not stat.S_ISDIR(os.fstat(current).st_mode):
-            refuse("NOE-E-PATH.DIRECTORY", field, "repository root is not one real directory")
+        root_descriptor, root_identity = _open_real_directory(root, field)
+        current = root_descriptor
         for component in components[:-1]:
-            current = os.open(component, directory_flags, dir_fd=current)
-            directories.append(current)
-            if not stat.S_ISDIR(os.fstat(current).st_mode):
-                refuse("NOE-E-PATH.DIRECTORY", field, "source ancestor is not one real directory")
-        descriptor = os.open(components[-1], file_flags, dir_fd=current)
-        payload, identity = _read_open_regular(descriptor, field, limit)
-    except Refusal:
-        raise
-    except OSError:
-        refuse("NOE-E-PATH.CONFINEMENT", field, "source path is absent, linked or escaping")
+            descriptor, identity = _open_child_directory(
+                current,
+                component,
+                field,
+            )
+            directories.append((component, descriptor, identity, current))
+            current = descriptor
+        payload, identity = _read_directory_regular(
+            current,
+            components[-1],
+            field,
+            limit,
+        )
+        _assert_directory_file_identity(
+            current,
+            components[-1],
+            identity,
+            field,
+        )
+        for component, descriptor, directory_identity, parent in reversed(directories):
+            _assert_directory_identity(
+                descriptor,
+                directory_identity,
+                field,
+                parent_descriptor=parent,
+                leaf=component,
+            )
+        assert root_identity is not None
+        _assert_directory_identity(
+            root_descriptor,
+            root_identity,
+            field,
+            path=root,
+        )
     finally:
-        for descriptor in reversed(directories):
+        for _component, descriptor, _identity, _parent in reversed(directories):
             try:
                 os.close(descriptor)
+            except OSError:
+                close_failed = True
+        if root_descriptor >= 0:
+            try:
+                os.close(root_descriptor)
             except OSError:
                 close_failed = True
     if close_failed:
@@ -1055,19 +1455,6 @@ def _read_canonical_json(
     ), raw
 
 
-def _module_path(directory: Path, module_id: str) -> Path:
-    try:
-        status = directory.lstat()
-    except OSError:
-        refuse("NOE-E-IO.READ", "modules", "module directory cannot be inspected")
-    if not stat.S_ISDIR(status.st_mode) or stat.S_ISLNK(status.st_mode):
-        refuse("NOE-E-PATH.DIRECTORY", "modules", "modules must be one real directory")
-    leaf = f"{module_id}.json"
-    if len(leaf.encode("utf-8")) > 255:
-        refuse("NOE-E-PATH.LEAF", "modules", "module filename exceeds the leaf-name limit")
-    return directory / leaf
-
-
 def _validate_type(value: object, known_types: dict[str, str], field: str) -> str:
     name = _identifier(value, field, qualified=isinstance(value, str) and "." in value)
     if name not in known_types:
@@ -1102,6 +1489,14 @@ def _load_module_value(raw: bytes, expected_id: str, field: str) -> dict[str, ob
 def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str, dict[str, object]]:
     loaded: dict[str, dict[str, object]] = {}
     visiting: set[str] = set()
+    directory_descriptor, directory_identity = _open_real_directory(
+        directory,
+        "modules",
+    )
+    file_identities: dict[
+        str,
+        tuple[int, int, int, int, int, int],
+    ] = {}
 
     def visit(module_id: str, expected_digest: str) -> None:
         if module_id in visiting:
@@ -1113,8 +1508,20 @@ def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str
         if len(loaded) + len(visiting) >= MAX_IMPORTS:
             refuse("NOE-E-BOUNDS.IMPORTS", "modules", "transitive module count exceeds its limit")
         visiting.add(module_id)
-        path = _module_path(directory, module_id)
-        raw = _read_regular(path, f"module.{module_id}", MAX_INPUT_BYTES)
+        leaf = f"{module_id}.json"
+        if len(leaf.encode("utf-8")) > 255:
+            refuse(
+                "NOE-E-PATH.LEAF",
+                "modules",
+                "module filename exceeds the leaf-name limit",
+            )
+        raw, file_identity = _read_directory_regular(
+            directory_descriptor,
+            leaf,
+            f"module.{module_id}",
+            MAX_INPUT_BYTES,
+        )
+        file_identities[leaf] = file_identity
         actual_digest = sha256(raw).hexdigest()
         if actual_digest != expected_digest:
             refuse("NOE-E-DIGEST.MODULE", module_id, "module digest does not match its import")
@@ -1134,8 +1541,32 @@ def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str
         loaded[module_id] = {"id": module_id, "sha256": actual_digest, "value": module}
         visiting.remove(module_id)
 
-    for module_id, digest in requested:
-        visit(module_id, digest)
+    try:
+        for module_id, digest in requested:
+            visit(module_id, digest)
+        for leaf, identity in sorted(file_identities.items()):
+            _assert_directory_file_identity(
+                directory_descriptor,
+                leaf,
+                identity,
+                f"module.{leaf.removesuffix('.json')}",
+            )
+        _assert_directory_identity(
+            directory_descriptor,
+            directory_identity,
+            "modules",
+            path=directory,
+        )
+    except BaseException:
+        try:
+            os.close(directory_descriptor)
+        except OSError:
+            pass
+        raise
+    try:
+        os.close(directory_descriptor)
+    except OSError:
+        refuse("NOE-E-IO.READ", "modules", "module directory descriptor could not be closed")
     return loaded
 
 
@@ -2091,9 +2522,10 @@ def _compile_records(
                     f"{field}.source",
                     MAX_INPUT_BYTES,
                 )
-                if identity in source_identities and source_identities[identity] != path:
+                file_key = identity[:2]
+                if file_key in source_identities and source_identities[file_key] != path:
                     refuse("NOE-E-REFERENCE.SOURCE_ALIAS", field, "one source file is named by multiple paths")
-                source_identities[identity] = path
+                source_identities[file_key] = path
                 if sha256(payload).hexdigest() != digest:
                     refuse("NOE-E-DIGEST.SOURCE", field, "bound source digest differs from repository bytes")
                 try:
@@ -2257,28 +2689,50 @@ def _atomic_write(path: Path, payload: bytes) -> None:
     if leaf in {"", ".", ".."} or len(encoded_leaf) > 255:
         refuse("NOE-E-PATH.LEAF", "output", "output leaf name is invalid")
     parent = path.parent
+    parent_descriptor, parent_identity = _open_real_directory(parent, "output")
     try:
-        parent_status = parent.lstat()
-    except OSError:
-        refuse("NOE-E-IO.WRITE", "output", "output directory cannot be inspected")
-    if not stat.S_ISDIR(parent_status.st_mode) or stat.S_ISLNK(parent_status.st_mode):
-        refuse("NOE-E-PATH.DIRECTORY", "output", "output parent must be one real directory")
-    try:
-        target_status = path.lstat()
+        target_status = os.stat(
+            leaf,
+            dir_fd=parent_descriptor,
+            follow_symlinks=False,
+        )
     except FileNotFoundError:
         target_status = None
     except OSError:
+        try:
+            os.close(parent_descriptor)
+        except OSError:
+            pass
         refuse("NOE-E-IO.WRITE", "output", "output target cannot be inspected")
     if target_status is not None and not stat.S_ISREG(target_status.st_mode):
+        try:
+            os.close(parent_descriptor)
+        except OSError:
+            pass
         refuse("NOE-E-PATH.REGULAR", "output", "existing output must be a regular file")
 
     descriptor = -1
-    directory_descriptor = -1
     temporary_name: str | None = None
     replaced = False
     try:
-        descriptor, temporary_name = tempfile.mkstemp(prefix=".noema-write-", dir=parent)
-        os.fchmod(descriptor, 0o600)
+        temporary_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+        if hasattr(os, "O_CLOEXEC"):
+            temporary_flags |= os.O_CLOEXEC
+        for _attempt in range(128):
+            candidate = f".noema-write-{secrets.token_hex(16)}"
+            try:
+                descriptor = os.open(
+                    candidate,
+                    temporary_flags,
+                    0o600,
+                    dir_fd=parent_descriptor,
+                )
+            except FileExistsError:
+                continue
+            temporary_name = candidate
+            break
+        if descriptor < 0 or temporary_name is None:
+            raise OSError("temporary output namespace is exhausted")
         offset = 0
         while offset < len(payload):
             written = os.write(descriptor, payload[offset:])
@@ -2288,19 +2742,41 @@ def _atomic_write(path: Path, payload: bytes) -> None:
         os.fsync(descriptor)
         os.close(descriptor)
         descriptor = -1
-        os.replace(temporary_name, path)
+        os.replace(
+            temporary_name,
+            leaf,
+            src_dir_fd=parent_descriptor,
+            dst_dir_fd=parent_descriptor,
+        )
         replaced = True
         temporary_name = None
-        flags = os.O_RDONLY
-        if hasattr(os, "O_DIRECTORY"):
-            flags |= os.O_DIRECTORY
-        if hasattr(os, "O_CLOEXEC"):
-            flags |= os.O_CLOEXEC
-        directory_descriptor = os.open(parent, flags)
-        os.fsync(directory_descriptor)
-        os.close(directory_descriptor)
-        directory_descriptor = -1
-    except OSError:
+        os.fsync(parent_descriptor)
+        written_payload, written_identity = _read_directory_regular(
+            parent_descriptor,
+            leaf,
+            "output",
+            MAX_OUTPUT_BYTES,
+        )
+        if written_payload != payload:
+            raise OSError("atomic output differs after replacement")
+        _assert_directory_file_identity(
+            parent_descriptor,
+            leaf,
+            written_identity,
+            "output",
+        )
+        current_parent = parent.lstat()
+        if (
+            current_parent.st_dev,
+            current_parent.st_ino,
+            current_parent.st_mode,
+        ) != (
+            parent_identity[0],
+            parent_identity[1],
+            parent_identity[2],
+        ):
+            raise OSError("output parent path changed during replacement")
+    except (OSError, Refusal, TypeError):
         refuse(
             "NOE-E-IO.SYNC" if replaced else "NOE-E-IO.WRITE",
             "output",
@@ -2312,16 +2788,25 @@ def _atomic_write(path: Path, payload: bytes) -> None:
                 os.close(descriptor)
             except OSError:
                 pass
-        if directory_descriptor >= 0:
-            try:
-                os.close(directory_descriptor)
-            except OSError:
-                pass
         if temporary_name is not None:
             try:
-                os.unlink(temporary_name)
+                os.unlink(temporary_name, dir_fd=parent_descriptor)
             except OSError:
                 pass
+        try:
+            os.close(parent_descriptor)
+        except OSError:
+            if not replaced:
+                refuse(
+                    "NOE-E-IO.WRITE",
+                    "output",
+                    "output directory descriptor could not be closed",
+                )
+            refuse(
+                "NOE-E-IO.SYNC",
+                "output",
+                "atomic output durable state is uncertain",
+            )
 
 
 def _strings(value: object) -> set[str]:
@@ -4441,7 +4926,9 @@ def _validate_slice_projection(
     return projection
 
 
-def _verify_manifest_path(path: Path) -> tuple[dict[str, object], dict[str, object]]:
+def _verify_manifest_path_contents(
+    path: Path,
+) -> tuple[dict[str, object], dict[str, object]]:
     value, _raw = _read_canonical_json(path, "manifest", maximum_depth=MAX_DEPTH + 5)
     manifest = _validate_manifest_value(value)
     artifacts = manifest["artifacts"]
@@ -4487,6 +4974,50 @@ def _verify_manifest_path(path: Path) -> tuple[dict[str, object], dict[str, obje
     if projection != expected_projection:
         refuse("NOE-E-DIGEST.PROJECTION", "projection", "runtime projection is stale")
     return expected_manifest, projection
+
+
+def _verify_manifest_path(path: Path) -> tuple[dict[str, object], dict[str, object]]:
+    root = path.parent
+    root_descriptor, root_identity = _open_real_directory(root, "manifest")
+    close_failed = False
+    try:
+        anchored_raw, manifest_identity = _read_directory_regular(
+            root_descriptor,
+            path.name,
+            "manifest",
+            MAX_INPUT_BYTES,
+        )
+        manifest, projection = _verify_manifest_path_contents(path)
+        if _canonical_json(manifest) != anchored_raw:
+            refuse(
+                "NOE-E-DIGEST.MANIFEST",
+                "manifest",
+                "verified manifest differs from the anchored manifest leaf",
+            )
+        _assert_directory_file_identity(
+            root_descriptor,
+            path.name,
+            manifest_identity,
+            "manifest",
+        )
+        _assert_directory_identity(
+            root_descriptor,
+            root_identity,
+            "manifest",
+            path=root,
+        )
+    finally:
+        try:
+            os.close(root_descriptor)
+        except OSError:
+            close_failed = True
+    if close_failed:
+        refuse(
+            "NOE-E-IO.READ",
+            "manifest",
+            "manifest directory descriptor could not be closed",
+        )
+    return manifest, projection
 
 
 def _read_fact_array(path: Path, field: str) -> list[dict[str, object]]:
@@ -4715,6 +5246,7 @@ def _source_identity(
     value: object,
     repository_root: Path,
     field: str = "source_identity",
+    snapshots: _SnapshotSet | None = None,
 ) -> tuple[dict[str, object], bytes]:
     identity = _exact_keys(
         value,
@@ -4753,12 +5285,18 @@ def _source_identity(
             f"{field}.governed",
             "the specimen must partition the complete source byte range",
         )
-    raw, _file_identity = _read_repository_regular(
+    raw, file_identity = _read_repository_regular(
         repository_root,
         source_path,
         f"{field}.path",
         MAX_INPUT_BYTES,
     )
+    if snapshots is not None:
+        snapshots.add_file(
+            repository_root / source_path,
+            file_identity,
+            f"{field}.path",
+        )
     if len(raw) != byte_count or sha256(raw).hexdigest() != source_digest:
         refuse(
             "NOE-E-DIGEST.SOURCE",
@@ -5916,7 +6454,12 @@ def _closed_specimen_inventory(
     directory: Path,
     specimen: str,
     paths: set[str],
-) -> list[dict[str, object]]:
+    *,
+    hold_snapshot: bool = False,
+) -> (
+    list[dict[str, object]]
+    | tuple[list[dict[str, object]], _DirectorySnapshot]
+):
     field = f"specimen.{specimen}.artifact_inventory"
     root_files: set[str] = set()
     children: dict[str, set[str]] = {}
@@ -5932,49 +6475,75 @@ def _closed_specimen_inventory(
                 field,
                 "specimen artifacts must be root leaves or one-level module and mutation leaves",
             )
+    root_descriptor, root_identity = _open_real_directory(directory, field)
+    snapshot = _DirectorySnapshot(
+        directory,
+        field,
+        root_descriptor,
+        root_identity,
+    )
     try:
-        root_status = directory.lstat()
-        root_names = sorted(entry.name for entry in os.scandir(directory))
-    except OSError:
-        refuse("NOE-E-IO.READ", field, "specimen directory cannot be inspected")
-    if not stat.S_ISDIR(root_status.st_mode) or stat.S_ISLNK(root_status.st_mode):
-        refuse("NOE-E-PATH.DIRECTORY", field, "specimen root must be one real directory")
-    expected_root = sorted(root_files | set(children))
-    if root_names != expected_root:
-        refuse(
-            "NOE-E-REFERENCE.EXTRA_MEMBER",
+        _exact_directory_names(
+            root_descriptor,
+            root_files | set(children),
             field,
-            "specimen root differs from its closed artifact inventory",
         )
-    for child, expected_names in sorted(children.items()):
-        child_path = directory / child
-        try:
-            child_status = child_path.lstat()
-            actual_names = sorted(entry.name for entry in os.scandir(child_path))
-        except OSError:
-            refuse("NOE-E-IO.READ", f"{field}.{child}", "artifact directory cannot be inspected")
-        if not stat.S_ISDIR(child_status.st_mode) or stat.S_ISLNK(child_status.st_mode):
-            refuse(
-                "NOE-E-PATH.DIRECTORY",
+        for child, expected_names in sorted(children.items()):
+            descriptor, identity = _open_child_directory(
+                root_descriptor,
+                child,
                 f"{field}.{child}",
-                "artifact collection must be one real directory",
             )
-        if actual_names != sorted(expected_names):
-            refuse(
-                "NOE-E-REFERENCE.EXTRA_MEMBER",
+            snapshot.children[child] = (descriptor, identity)
+            _exact_directory_names(
+                descriptor,
+                expected_names,
                 f"{field}.{child}",
-                "artifact collection differs from its closed inventory",
             )
-    payloads = {
-        path: _read_confined(directory, path, f"{field}.{path}", MAX_INPUT_BYTES)
-        for path in paths
-    }
-    return _specimen_inventory(payloads, field)
+        payloads: dict[str, bytes] = {}
+        total = 0
+        for path in sorted(paths):
+            parts = PurePosixPath(path).parts
+            if len(parts) == 1:
+                descriptor = root_descriptor
+                leaf = parts[0]
+            else:
+                descriptor = snapshot.children[parts[0]][0]
+                leaf = parts[1]
+            remaining = MAX_TOTAL_MEMBER_BYTES - total
+            try:
+                raw, identity = _read_directory_regular(
+                    descriptor,
+                    leaf,
+                    f"{field}.{path}",
+                    min(MAX_INPUT_BYTES, remaining),
+                )
+            except Refusal as error:
+                if error.code == "NOE-E-BOUNDS.FILE":
+                    refuse(
+                        "NOE-E-BOUNDS.ARTIFACTS",
+                        field,
+                        "specimen artifacts exceed their byte limits",
+                    )
+                raise
+            total += len(raw)
+            payloads[path] = raw
+            snapshot.files[path] = identity
+        inventory = _specimen_inventory(payloads, field)
+        snapshot.verify()
+    except BaseException:
+        snapshot.close(refuse_on_error=False)
+        raise
+    if hold_snapshot:
+        return inventory, snapshot
+    snapshot.close()
+    return inventory
 
 
 def _derive_specimen(
     directory: Path,
     repository_root: Path,
+    snapshots: _SnapshotSet | None = None,
 ) -> tuple[
     dict[str, bytes],
     dict[str, object],
@@ -5984,7 +6553,11 @@ def _derive_specimen(
     identity_value, identity_raw = _read_confined_json(
         directory, "source.json", "specimen.source_identity"
     )
-    identity, bound_source = _source_identity(identity_value, repository_root)
+    identity, bound_source = _source_identity(
+        identity_value,
+        repository_root,
+        snapshots=snapshots,
+    )
     specimen = str(identity["id"])
     source_raw = _read_confined(
         directory, "source.noe", "specimen.canonical", MAX_INPUT_BYTES
@@ -6135,9 +6708,17 @@ def _derive_specimen(
 def _verify_specimen(
     directory: Path,
     repository_root: Path,
-) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
+    snapshots: _SnapshotSet | None = None,
+) -> tuple[
+    dict[str, object],
+    dict[str, object],
+    dict[str, object],
+    _DirectorySnapshot,
+]:
     outputs, record, plan, mutation_results = _derive_specimen(
-        directory, repository_root
+        directory,
+        repository_root,
+        snapshots,
     )
     specimen = str(record["id"])
     identity_value, _identity_raw = _read_confined_json(
@@ -6147,6 +6728,7 @@ def _verify_specimen(
         identity_value,
         repository_root,
         f"specimen.{specimen}.source_identity",
+        snapshots,
     )
     stored_build, _stored_raw, stored_artifacts = load_build(
         directory / "build.json",
@@ -6223,24 +6805,37 @@ def _verify_specimen(
                 "stored specimen artifact differs from deterministic regeneration",
             )
     artifact_paths = _specimen_artifact_paths(stored_build, plan)
-    artifact_inventory = _closed_specimen_inventory(
+    closed = _closed_specimen_inventory(
         directory,
         specimen,
         artifact_paths,
+        hold_snapshot=True,
     )
-    if _value_sha256(artifact_inventory) != record["artifact_inventory_sha256"]:
-        refuse(
-            "NOE-E-DIGEST.ARTIFACT_INVENTORY",
-            f"specimen.{specimen}.artifact_inventory",
-            "stored specimen artifact inventory differs from regeneration",
-        )
-    return record, plan, mutation_results
+    assert isinstance(closed, tuple)
+    artifact_inventory, snapshot = closed
+    try:
+        if _value_sha256(artifact_inventory) != record["artifact_inventory_sha256"]:
+            refuse(
+                "NOE-E-DIGEST.ARTIFACT_INVENTORY",
+                f"specimen.{specimen}.artifact_inventory",
+                "stored specimen artifact inventory differs from regeneration",
+            )
+    except BaseException:
+        snapshot.close(refuse_on_error=False)
+        raise
+    return record, plan, mutation_results, snapshot
 
 
 def _verify_seed_reference(
     root: Path,
     seed_value: object,
-) -> tuple[dict[str, object], int]:
+    *,
+    hold_snapshot: bool = False,
+    snapshots: _SnapshotSet | None = None,
+) -> (
+    tuple[dict[str, object], int]
+    | tuple[dict[str, object], int, _DirectorySnapshot]
+):
     seed = _exact_keys(
         seed_value,
         {
@@ -6270,12 +6865,18 @@ def _verify_seed_reference(
     expected_reference_digest = _digest(
         seed["reference_sha256"], "corpus.seed.reference_sha256"
     )
-    inventory_raw = _read_confined(
+    inventory_raw, inventory_identity = _read_repository_regular(
         root,
         inventory_path,
         "corpus.seed.inventory",
         MAX_INPUT_BYTES,
     )
+    if snapshots is not None:
+        snapshots.add_file(
+            root / inventory_path,
+            inventory_identity,
+            "corpus.seed.inventory",
+        )
     if sha256(inventory_raw).hexdigest() != expected_inventory_digest:
         refuse(
             "NOE-E-DIGEST.INVENTORY",
@@ -6299,15 +6900,8 @@ def _verify_seed_reference(
             "corpus.seed.inventory.files",
             "the admitted seed reference must contain exactly 17 files",
         )
-    reference_directory = root / reference
-    try:
-        reference_stat = os.lstat(reference_directory)
-    except OSError:
-        refuse("NOE-E-PATH.DIRECTORY", "corpus.seed.reference", "seed reference directory is absent")
-    if not stat.S_ISDIR(reference_stat.st_mode) or stat.S_ISLNK(reference_stat.st_mode):
-        refuse("NOE-E-PATH.DIRECTORY", "corpus.seed.reference", "seed reference must be one real directory")
     expected_names: list[str] = []
-    evidence: list[dict[str, object]] = []
+    expected_files: list[tuple[str, int, str]] = []
     prior = ""
     for index, item_value in enumerate(files):
         item = _exact_keys(
@@ -6326,12 +6920,6 @@ def _verify_seed_reference(
             )
         prior = relative
         expected_names.append(relative)
-        raw = _read_confined(
-            root,
-            f"{reference}/{relative}",
-            f"corpus.seed.reference.{relative}",
-            MAX_MEMBER_BYTES,
-        )
         byte_count = _bounded_integer(
             item["bytes"],
             f"corpus.seed.inventory.files[{index}].bytes",
@@ -6340,35 +6928,62 @@ def _verify_seed_reference(
         digest = _digest(
             item["sha256"], f"corpus.seed.inventory.files[{index}].sha256"
         )
-        try:
-            file_stat = os.lstat(reference_directory / relative)
-        except OSError:
-            refuse("NOE-E-PATH.REGULAR", f"corpus.seed.reference.{relative}", "seed reference file is absent")
-        if not stat.S_ISREG(file_stat.st_mode) or file_stat.st_mode & 0o111:
-            refuse(
-                "NOE-E-AUTHORITY.SEED",
-                f"corpus.seed.reference.{relative}",
-                "seed evidence must be regular and non-executable",
+        expected_files.append((relative, byte_count, digest))
+    reference_directory = root / reference
+    reference_descriptor, reference_identity = _open_real_directory(
+        reference_directory,
+        "corpus.seed.reference",
+    )
+    snapshot = _DirectorySnapshot(
+        reference_directory,
+        "corpus.seed.reference",
+        reference_descriptor,
+        reference_identity,
+    )
+    evidence: list[dict[str, object]] = []
+    try:
+        _exact_directory_names(
+            reference_descriptor,
+            set(expected_names),
+            "corpus.seed.reference",
+        )
+        for relative, byte_count, digest in expected_files:
+            field = f"corpus.seed.reference.{relative}"
+            raw, identity = _read_directory_regular(
+                reference_descriptor,
+                relative,
+                field,
+                MAX_MEMBER_BYTES,
             )
-        if len(raw) != byte_count or sha256(raw).hexdigest() != digest:
+            snapshot.files[relative] = identity
+            if identity[2] & 0o111:
+                refuse(
+                    "NOE-E-AUTHORITY.SEED",
+                    field,
+                    "seed evidence must be regular and non-executable",
+                )
+            if len(raw) != byte_count or sha256(raw).hexdigest() != digest:
+                refuse(
+                    "NOE-E-DIGEST.MEMBER",
+                    field,
+                    "seed reference bytes differ from the verified inventory",
+                )
+            evidence.append(
+                {"path": relative, "bytes": byte_count, "sha256": digest}
+            )
+        if _value_sha256(evidence) != expected_reference_digest:
             refuse(
                 "NOE-E-DIGEST.MEMBER",
-                f"corpus.seed.reference.{relative}",
-                "seed reference bytes differ from the verified inventory",
+                "corpus.seed.reference",
+                "seed reference aggregate digest differs",
             )
-        evidence.append({"path": relative, "bytes": byte_count, "sha256": digest})
-    try:
-        actual_names = sorted(entry.name for entry in os.scandir(reference_directory))
-    except OSError:
-        refuse("NOE-E-IO.READ", "corpus.seed.reference", "seed reference directory cannot be listed")
-    if actual_names != expected_names:
-        refuse(
-            "NOE-E-REFERENCE.EXTRA_MEMBER",
-            "corpus.seed.reference",
-            "seed reference directory differs from the closed inventory",
-        )
-    if _value_sha256(evidence) != expected_reference_digest:
-        refuse("NOE-E-DIGEST.MEMBER", "corpus.seed.reference", "seed reference aggregate digest differs")
+        snapshot.verify()
+    except BaseException:
+        snapshot.close(refuse_on_error=False)
+        raise
+    if hold_snapshot:
+        return seed, len(files), snapshot
+    snapshot.close()
     return seed, len(files)
 
 
@@ -6425,8 +7040,14 @@ def _specimen_record(value: object, field: str) -> dict[str, object]:
     return record
 
 
-def verify_specimen_corpus(path: Path) -> dict[str, object]:
-    value, raw = _read_canonical_json(path, "corpus")
+def _verify_specimen_corpus_impl(
+    path: Path,
+    snapshots: _SnapshotSet,
+    repository_root: Path | None = None,
+) -> dict[str, object]:
+    raw, corpus_identity = _read_regular_identity(path, "corpus", MAX_INPUT_BYTES)
+    snapshots.add_file(path, corpus_identity, "corpus")
+    value = _decode_json(raw, "corpus", canonical=True)
     corpus = _exact_keys(
         value,
         {"schema", "seed", "specimens", "critical_vectors"},
@@ -6435,8 +7056,17 @@ def verify_specimen_corpus(path: Path) -> dict[str, object]:
     if corpus["schema"] != SPECIMEN_CORPUS_SCHEMA:
         refuse("NOE-E-TYPE.VERSION", "corpus.schema", "unsupported specimen corpus")
     root = path.parent
-    repository_root = Path(__file__).resolve().parents[1]
-    _seed, seed_files = _verify_seed_reference(root, corpus["seed"])
+    if repository_root is None:
+        repository_root = Path(__file__).resolve().parents[1]
+    seed_result = _verify_seed_reference(
+        root,
+        corpus["seed"],
+        hold_snapshot=True,
+        snapshots=snapshots,
+    )
+    assert len(seed_result) == 3
+    _seed, seed_files, seed_snapshot = seed_result
+    snapshots.add(seed_snapshot)
     specimen_values = corpus["specimens"]
     if not isinstance(specimen_values, list) or len(specimen_values) != 4:
         refuse("NOE-E-BOUNDS.SPECIMENS", "corpus.specimens", "corpus must bind exactly four specimens")
@@ -6453,7 +7083,12 @@ def verify_specimen_corpus(path: Path) -> dict[str, object]:
         if committed["id"] != expected_ids[index]:
             refuse("NOE-E-SYNTAX.ORDER", "corpus.specimens", "specimen ids must be the four sorted names")
         directory = root / str(committed["directory"])
-        actual, plan, outcomes = _verify_specimen(directory, repository_root)
+        actual, plan, outcomes, specimen_snapshot = _verify_specimen(
+            directory,
+            repository_root,
+            snapshots,
+        )
+        snapshots.add(specimen_snapshot)
         if committed != actual:
             refuse(
                 "NOE-E-DIGEST.SPECIMEN",
@@ -6524,7 +7159,7 @@ def verify_specimen_corpus(path: Path) -> dict[str, object]:
             refuse("NOE-E-REFERENCE.CRITICAL", f"corpus.critical_vectors[{index}]", "critical vector names the wrong mutation category")
     if [str(item["id"]) for item in critical_values] != sorted(CRITICAL_VECTORS):
         refuse("NOE-E-REFERENCE.CRITICAL", "corpus.critical_vectors", "critical-vector identities differ")
-    return {
+    result = {
         "manifest": corpus,
         "raw": raw,
         "counts": {
@@ -6544,6 +7179,13 @@ def verify_specimen_corpus(path: Path) -> dict[str, object]:
             ),
         },
     }
+    snapshots.verify()
+    return result
+
+
+def verify_specimen_corpus(path: Path) -> dict[str, object]:
+    with _SnapshotSet() as snapshots:
+        return _verify_specimen_corpus_impl(path, snapshots)
 
 
 def mutations_command(path: Path) -> dict[str, object]:
