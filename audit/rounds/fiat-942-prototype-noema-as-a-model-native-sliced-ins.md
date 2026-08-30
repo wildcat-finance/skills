@@ -78,3 +78,19 @@ Elenchus verdict: guarded
 | S1-R5-02 | low | scripts/noema.py | A ZIP member name marked UTF-8 but containing invalid UTF-8 raised raw `UnicodeDecodeError` while `zipfile` built its directory, bypassing the archive parser's bounded refusal. | fixed in this working tree; one parent-red binary-header guard reproduced the raw exception; Unicode decoder failures now normalize to `NOE-E-SYNTAX.ZIP`; the guard passes |
 
 Leads not pursued: The inventory repair catches only UTF-8 encoding failure after JSON decoding; it does not relabel wrong types, empty strings, over-limit text, non-NFC text or control characters, which retain their distinct refusal families. The archive repair joins Unicode decoder faults to the existing malformed-ZIP boundary without swallowing a typed `Refusal`. These guards cover deterministic constructions at both entry points, not every possible Unicode or ZIP mutation. The four earlier fixes remain effective under the complete focused suite. The exact public archive still returns `NOE-OK` with 24,907 bytes, 17 files, archive SHA-256 `1e1eb5e9908551f1337b7ec58a37ae7f37fd97e41d5ac424bc4992eb1d11b540` and inventory SHA-256 `8286bad9bf07f95f5297e536c50ad23ee7b96866bf94d86387626d6d8b573cbf`. The 40 focused scaffold tests pass; Phylax, Ephoros and Hypomnema each exit zero over the changed tree; `git diff --check` exits zero. The exact audit declaration is `--audit-filter sapheneia:sapheneia`; the checked candidate retained both identifiers, severities, exception types, attacker-controlled forms, refusal codes, parent-red evidence, verdicts, statuses, negative space and prior-round facts. The first four records remain byte-identical.
+
+## Step 1, round 6 -- 2026-08-30T06:38:58Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-omission=not-applicable; semantic-drift=reviewed; slice-omission=not-applicable; authority-confusion=reviewed; module-drift=not-applicable; alias-collision=reviewed; literal-injection=reviewed; parser-exhaustion=reviewed; profile-mismatch=not-applicable; hidden-overhead=not-applicable; evaluation-contamination=not-applicable; provider-boundary=not-applicable; derived-drift=reviewed; parallel-stack=reviewed
+
+Not checked: the waived Pashov X-Ray and Solidity suite because Step 1 ships no Solidity; parser, module, projection, slicer, policy-runtime, source-binding, measurement and provider-adapter behavior reserved for Steps 2 through 5; hosted CI; remote publication, pull requests and GitHub-side signature verification
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: Fresh review traced every `verify-seed` input from no-follow bounded reads through closed inventory validation, archive metadata gates, bounded member decoding and the one-line result boundary. The five prior repairs remain effective, and the exception boundaries preserve typed refusals before normalizing expected file, ZIP, deflate and Unicode decoder failures. A deterministic 1,728-case sweep applied seven masks at every byte and every prefix truncation to one self-consistently inventoried deflated archive; no case raised an unhandled exception. This is bounded adversarial evidence, not a proof over every Python `zipfile` state or interpreter-fatal condition. The exact public archive still returns `NOE-OK` with 24,907 bytes, 17 files and the digests recorded in round 5. The 40 focused scaffold tests and 776-test affected runner pass; Phylax, Ephoros and Hypomnema each exit zero; the audit synopsis, Horos boundary and `git diff --check` are clean. The exact audit declaration is `--audit-filter sapheneia:sapheneia`; the checked candidate retained the zero-finding verdict, all coverage and negative-space qualifications, exact counts and prior-round evidence. The first five records remain byte-identical.
