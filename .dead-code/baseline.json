@@ -981,52 +981,52 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:d2405e930598659cac0d2af8120fdb69ecd4f52c5f2910f9a0b8e45f502eb81a",
+      "id": "sha256:3d0d25184724aa1b5a3c34724c5df7fa090038c49df63b469c0eba3d80cbfa9a",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "_recover_runbook_amendment.canonical_path@8452"
+      "symbol": "_recover_runbook_amendment.canonical_path@8490"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:12f225ae32b2453707d45f8638ed76993fecf8ecd4b76c1704ebe7c4ecf8eda3",
+      "id": "sha256:b566e1bc09904b685c14366ff2671330c63320cafd571a494476ed7bd5242d85",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "_recover_study_amendment.canonical_path@8308"
+      "symbol": "_recover_study_amendment.canonical_path@8346"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:f3a2fa2c80d87e0b083c93ff06e3ac611cfe008640f3f6566c8e9cff3863569c",
+      "id": "sha256:729deab61f260d1d183c7299efd338bba1168ae62afac0ea86ee1f7d8314d9d6",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "cmd_checkpoint_restore.root@12106"
+      "symbol": "cmd_checkpoint_restore.root@12144"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:a46e7c5953f9167a5aee5e73f1208ef4fef8881abc7d3d0cc31c632aea4bd8ce",
+      "id": "sha256:0c712af7527084eb098cf5bf8878c2507600ac84dec92dc7e4183c5350870a20",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "line:10529:constant-true"
+      "symbol": "line:10567:constant-true"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:0abf33e290f3d6e93c99764d1bc8e49ecc97085ff44d72d72d0c36a0064174e3",
+      "id": "sha256:e24ac66913b61b42e5a3b270acc9b6c414a5a93ba2e07a9c58160986cf07c963",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "line:10701:constant-true"
+      "symbol": "line:10739:constant-true"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:9cfa9c16905d8a006b9655126296ca21ab082a0869295188b4e924619990b727",
+      "id": "sha256:f06b617aa2a0a99f204c09cb5dcb0b064725aadfdb1d183600af38653dbd9904",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "line:11688:constant-true"
+      "symbol": "line:11726:constant-true"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:1d81b20125459188f5b050c66f77e20e50ad79b46a2ae1055f564642a3a2b8eb",
+      "id": "sha256:9fe512dd9df547a1d5f83473e02e6bab5c8487e40da1b68507c025efab710f50",
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
       "suppressed": false,
-      "symbol": "line:11782:constant-true"
+      "symbol": "line:11820:constant-true"
     },
     {
       "analyser_id": "python",
@@ -1310,10 +1310,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:7ce423ae6a5dda665a466e95ef9426d3215446804e959f1a8862f972dd2b7f93",
+      "id": "sha256:956e04a31549de347fbd73f0f449b2ea7564c97f6c79961aad3ca3f920be4fc3",
       "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
       "suppressed": false,
-      "symbol": "annotations@63"
+      "symbol": "annotations@64"
     },
     {
       "analyser_id": "python",
@@ -1639,17 +1639,17 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:2f73d1fc52e569993612a0c65d938f4ae2f27f47078b7513715782186c575292",
+      "id": "sha256:5d8c3d0dd19bd887faef21b14df38a59f9fd7adce429c03d544c4c64ae8bd7fe",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "suppressed": false,
-      "symbol": "test_sync_run_receipts_exact_merge_and_allows_integration.state@1970"
+      "symbol": "test_sync_run_receipts_exact_merge_and_allows_integration.state@1972"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:3d71b2619736cee7adf82353a2c6e605e591d5b6e22f6475c5f4c686f0c6374e",
+      "id": "sha256:3fe4637a2851b315172823bed0a643b3d3ec03a7c85008be27f558921bb669f1",
       "path": "plugins/hexaemeron/tests/test_hexctl.py",
       "suppressed": false,
-      "symbol": "test_sync_run_refuses_stale_remote_base.base_sha@2323"
+      "symbol": "test_sync_run_refuses_stale_remote_base.base_sha@2325"
     },
     {
       "analyser_id": "python",
@@ -3076,10 +3076,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "bd3c2cd352af90326b3aad44c641823242b916c6",
-    "git_tree": "0c08d6d908442ebd25f5c7609a654186651752d7"
+    "commit": "b991877d6252cbd788fe65730b6f767f4d69255f",
+    "git_tree": "a5f21ebce35909a14d2d6237d0d3c730834ce3f9"
   },
   "universe": {
-    "id": "sha256:d1021a9ecdd1d4faf7f1cd8cea568c1ad3ee05447852a3155d8e73d49664e96d"
+    "id": "sha256:1ab1eaef079578293742c2f2352b7beeebbb1298642cdccb4945b7f058b6558a"
   }
 }
