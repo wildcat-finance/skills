@@ -1,0 +1,16 @@
+## Step 1, round 1 -- 2026-08-30T04:44:27Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-parse=reviewed; scope-identity=reviewed; write-count=reviewed; statement-order=reviewed; branch-exclusion=reviewed; resolution-cycle=reviewed; p002-classification=reviewed; p004-name-first=reviewed; p008-call-identity=reviewed; safe-neighbour=reviewed; diagnostic-output=reviewed; classification-drift=reviewed; analysis-work=reviewed; partial-run=reviewed; ledger-integrity=reviewed
+
+Not checked: the Pashov security suite did not run under `waived: issue #502 changes Python static analysis and tests only; no Solidity or applicable Pashov suite surface exists`; hosted CI, controller receipt, push, pull request, publication, and merge were also outside this round
+
+Elenchus verdict: inconclusive
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S1-R1-01 | medium | plugins/hexaemeron/skills/phylax/scripts/phylax.py | P004 recursively walked the same assigned argv RHS once per subprocess sink, so a function with N sinks over an N-name argv forced quadratic AST work despite the study's linear-or-bounded analysis contract. | fixed in this commit; credential-name expansion is memoized per function, name, and depth, and a guard proves 20 reused sinks visit the argv RHS once |
+| S1-R1-02 | medium | plugins/hexaemeron/skills/phylax/scripts/phylax.py | The containing-function collector counted a comprehension loop target as an outer write, so a same-named comprehension between one direct assignment and its sink disqualified the eligible local and suppressed P002 even though Python 3 comprehension targets have their own scope. | fixed in this commit; loop targets are excluded, comprehension NamedExpr writes still disqualify, and sinks inside comprehensions remain isolated |
+
+Leads not pursued: no further defect was confirmed after reading signed implementation `374c6780b252f319ff7e7293e0321767472ad57a` against base `7e97b5195d5b0e43146b4200f26cd41b89003413`, the 15-row risk register at SHA-256 `6a790085e77beb322eafb6c07fb4c8951401682211d22795eab9860370c7b74b`, and Step 1 with all four amendments at canonical SHA-256 `e406d5ba89b4d577f58fc93966defc7920eabecd52bb6996477f3feaa8b9f913` and effective SHA-256 `3650a8b39a03684c243a9915a4cb1ddc43137fc16627395a8f1c3ad60fde998f`. Independent probes covered per-hop RHS order, duplicate and unsupported bindings, function, class, lambda and comprehension scopes, P004 name-first output, P008 ambiguous import identity, safe neighbours, fixed secret-free diagnostics, and bounded work. The focused Phylax suite passes 94 of 94, the final root suite passes 736 of 736, and every in-scope command in the effective Exit exits 0, including Phylax, Ephoros, Hypomnema, synopsis currency and Horos currency. The complete Hexaemeron runner is not promoted to green: it ran 1,999 tests with three failure events, one error event, five fixture-blocked tests and one skip, exactly the effective Exit's entry-commit Homologia ownership, Node 26 fixture-version, macOS long-path and root-audit pin predicates, with no added failure or error. Elenchus is `inconclusive`, not `guarded`, because that exact runner's parent-overlay report retains the infrastructure error.

@@ -298,6 +298,28 @@ class _FunctionBindingCollector(ast.NodeVisitor):
     def visit_Lambda(self, node: ast.Lambda) -> None:
         self._visit_function_header(node)
 
+    def _visit_comprehension_scope(
+        self,
+        node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp,
+    ) -> None:
+        # Comprehension targets belong to the implicit comprehension scope.
+        # The other expressions can still contain a NamedExpr, whose target
+        # Python binds in this containing function and must count as a write.
+        if isinstance(node, ast.DictComp):
+            self.visit(node.key)
+            self.visit(node.value)
+        else:
+            self.visit(node.elt)
+        for generator in node.generators:
+            self.visit(generator.iter)
+            for condition in generator.ifs:
+                self.visit(condition)
+
+    visit_ListComp = _visit_comprehension_scope
+    visit_SetComp = _visit_comprehension_scope
+    visit_DictComp = _visit_comprehension_scope
+    visit_GeneratorExp = _visit_comprehension_scope
+
 
 def _function_bindings(tree: ast.AST) -> dict[ast.AST, _FunctionBindings]:
     return {
@@ -410,6 +432,9 @@ class Visitor(ast.NodeVisitor):
         self.direct: set[str] = set()
         self.function_bindings = _function_bindings(tree)
         self.local_bindings: _FunctionBindings | None = None
+        self.credential_names_cache: dict[
+            tuple[_FunctionBindings, str, int], tuple[str, ...]
+        ] = {}
         (
             self.boundary_modules,
             self.boundary_direct,
@@ -565,13 +590,24 @@ class Visitor(ast.NodeVisitor):
             )
             if assignment is None:
                 return
+            # Once `preceding` accepts a binding, every recursive position is
+            # fixed and strictly earlier; the result no longer depends on the sink.
+            cache_key = (self.local_bindings, node.id, depth)
+            cached = self.credential_names_cache.get(cache_key)
+            if cached is not None:
+                yield from cached
+                return
             position, value = assignment
-            yield from self._credential_names(
-                value,
-                before=position,
-                seen=seen | {node.id},
-                depth=depth + 1,
+            cached = tuple(
+                self._credential_names(
+                    value,
+                    before=position,
+                    seen=seen | {node.id},
+                    depth=depth + 1,
+                )
             )
+            self.credential_names_cache[cache_key] = cached
+            yield from cached
             return
         for child in ast.iter_child_nodes(node):
             yield from self._credential_names(

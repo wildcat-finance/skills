@@ -13,6 +13,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills" / "phylax" / "scripts" / "phylax.py"
@@ -154,6 +155,39 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
         )
         self.assertNotIn(sentinel, str(result[0]))
         self.assertNotIn(sentinel, json.dumps(result[0].as_dict()))
+
+    def test_reused_assigned_argv_is_scanned_once(self):
+        source = (
+            "import subprocess\n"
+            "def invoke():\n"
+            "    value = ordinary()\n"
+            "    argv = ['tool', value]\n"
+            + "    subprocess.run(argv)\n" * 20
+        )
+        tree = phylax.ast.parse(source)
+        argv = next(
+            node.value
+            for node in phylax.ast.walk(tree)
+            if isinstance(node, phylax.ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], phylax.ast.Name)
+            and node.targets[0].id == "argv"
+        )
+        visitor = phylax.Visitor(Path("sample.py"), tree)
+        original = phylax.ast.iter_child_nodes
+        argv_visits = 0
+
+        def counted(node):
+            nonlocal argv_visits
+            if node is argv:
+                argv_visits += 1
+            return original(node)
+
+        with mock.patch.object(phylax.ast, "iter_child_nodes", side_effect=counted):
+            visitor.visit(tree)
+
+        self.assertEqual([], visitor.findings)
+        self.assertEqual(1, argv_visits)
 
     def test_p008_callable_and_safe_neighbour_resolution(self):
         self.assert_codes(["P008"], {
@@ -463,6 +497,28 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
                 "import subprocess\n"
                 "def invoke(values):\n"
                 "    [command for command in values]\n"
+                "    subprocess.run(command)\n"
+            ),
+        })
+
+    def test_comprehension_targets_do_not_disqualify_outer_assignments(self):
+        self.assert_codes(["P002"], {
+            "same-name-target": (
+                "import subprocess\n"
+                "def invoke(values):\n"
+                "    command = 'git status'\n"
+                "    [command for command in values]\n"
+                "    subprocess.run(command)\n"
+            ),
+        })
+
+    def test_comprehension_named_expression_disqualifies_outer_assignment(self):
+        self.assert_codes([], {
+            "containing-function-write": (
+                "import subprocess\n"
+                "def invoke(values):\n"
+                "    command = 'git status'\n"
+                "    [value for value in values if (command := value)]\n"
                 "    subprocess.run(command)\n"
             ),
         })

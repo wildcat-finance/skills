@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 994,
-  "total_bytes": 21525541,
+  "total_bytes": 21527077,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -2721,9 +2721,9 @@
       "source": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py"
     },
     {
-      "bytes": 42566,
+      "bytes": 44102,
       "path": "plugins/hexaemeron/skills/phylax/scripts/phylax.py",
-      "sha256": "199f28782b85acb093c3ba9f3bc7de5dd42a91edc9d26f558ca7f16fbe3878de",
+      "sha256": "ff5475db0d2aaea308db15261775f22126bebffa9bf5d32d07135888ca75f946",
       "source": "plugins/hexaemeron/skills/phylax/scripts/phylax.py"
     },
     {
