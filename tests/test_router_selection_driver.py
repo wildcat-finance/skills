@@ -154,6 +154,36 @@ class PacketEmissionTests(unittest.TestCase):
             "a refused emit wrote into the directory it refused",
         )
 
+    def test_a_packet_killed_part_way_through_has_no_manifest(self):
+        """The manifest is written last, so a partial packet is refusable.
+
+        `tally` reads the manifest first, so a packet without one cannot be
+        graded against. Writing the manifest before the prompts would turn a
+        half-emitted packet into one that looks complete, which is the
+        `packet-write` concern in the study's register.
+        """
+        original = driver.render_prompt
+        seen = []
+
+        def failing(request):
+            seen.append(request)
+            if len(seen) > 3:
+                raise OSError("no space left on device")
+            return original(request)
+
+        driver.render_prompt = failing
+        self.addCleanup(setattr, driver, "render_prompt", original)
+        with self.assertRaises(OSError):
+            driver.emit(self.out)
+        self.assertTrue(
+            any(self.out.glob("*.txt")), "the fixture wrote no prompts, so it proves nothing"
+        )
+        self.assertFalse(
+            (self.out / driver.MANIFEST_NAME).exists(),
+            "a packet that died part-way through carries a manifest, so a "
+            "later tally would read it as complete",
+        )
+
     def test_an_empty_directory_that_exists_is_accepted(self):
         self.out.mkdir(parents=True)
         manifest = driver.emit(self.out)

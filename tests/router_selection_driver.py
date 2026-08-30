@@ -141,6 +141,11 @@ def emit(out: Path) -> dict:
     }
     for cid, request in pairs:
         (out / f"{cid}.txt").write_text(render_prompt(request), encoding="utf-8")
+    # The manifest is written last, and the ordering is load-bearing rather
+    # than incidental. A run killed part-way through the prompts leaves a
+    # directory with no manifest in it, and a packet with no manifest is one
+    # `tally` refuses to read. Write it first and a half-emitted packet becomes
+    # one that looks complete enough to grade against.
     (out / MANIFEST_NAME).write_text(
         json.dumps(manifest, indent=1, sort_keys=True) + "\n", encoding="utf-8"
     )
