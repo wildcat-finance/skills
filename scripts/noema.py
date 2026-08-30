@@ -56,16 +56,10 @@ SEED_RELATIVE_PATH_RE = re.compile(
 )
 SEED_ROOT_PATH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/$")
 UNIMPLEMENTED = (
-    "select",
-    "check",
-    "next",
-    "literal",
-    "explain",
     "mutations",
     "measure",
     "emit-evaluation",
     "tally-evaluation",
-    "runtime-self-test",
 )
 IMPLEMENTED = (
     "about",
@@ -74,8 +68,14 @@ IMPLEMENTED = (
     "format",
     "project",
     "semantic-diff",
+    "select",
+    "check",
+    "next",
+    "literal",
+    "explain",
     "verify",
     "self-test",
+    "runtime-self-test",
 )
 KNOWN_COMMANDS = frozenset((*IMPLEMENTED, *UNIMPLEMENTED))
 ALLOWED_COMPRESSION = {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}
@@ -127,6 +127,35 @@ BUILD_SCHEMA = "noema-build/v1"
 PROJECTION_SCHEMA = "noema-projection/v1"
 PROJECTION_MANIFEST_SCHEMA = "noema-projection-manifest/v1"
 DIFF_SCHEMA = "noema-semantic-diff/v1"
+MANIFEST_SCHEMA = "noema-manifest/v1"
+SLICE_GRAPH_SCHEMA = "noema-slice-graph/v1"
+SLICE_PROJECTION_SCHEMA = "noema-slice-projection/v1"
+EXPLANATION_SCHEMA = "noema-explanation/v1"
+RUNTIME_ARTIFACT_LEAVES = frozenset(
+    {"build", "modules", "profile", "kernel", "selection", "projection"}
+)
+SELECTABLE_FORMS = frozenset(
+    {"rule", "precedence", "override", "transition", "promise", "handoff", "exception"}
+)
+RUNTIME_LINK_TYPES = frozenset(
+    {
+        "action",
+        "actor",
+        "artifact",
+        "claim",
+        "command",
+        "effect",
+        "event",
+        "operation",
+        "promise",
+        "repository",
+        "rule",
+        "scope",
+        "state",
+        "transition",
+    }
+)
+TRUTH_VALUES = frozenset({"true", "false", "unknown"})
 
 
 class Refusal(ValueError):
@@ -174,6 +203,7 @@ def _result(
     message: str | None = None,
     digests: dict[str, str] | None = None,
     counts: dict[str, int] | None = None,
+    output: dict[str, object] | None = None,
 ) -> dict[str, object]:
     payload: dict[str, object] = {
         "schema": RESULT_SCHEMA,
@@ -188,6 +218,8 @@ def _result(
         payload["field"] = field
     if message is not None:
         payload["message"] = message
+    if output is not None:
+        payload["output"] = output
     return payload
 
 
@@ -2376,6 +2408,1522 @@ def semantic_diff(before: dict[str, object], after: dict[str, object]) -> dict[s
     return result
 
 
+def _value_sha256(value: object) -> str:
+    return sha256(_canonical_json(value)).hexdigest()
+
+
+def fact_id(proposition: object) -> str:
+    """Return the only fact identity admitted for one exact proposition."""
+    _bounded_value_depth(proposition, "fact.proposition")
+    return f"fact.{_value_sha256(proposition)}"
+
+
+def _fact_identifier(value: object, field: str) -> str:
+    identifier = _identifier(value, field)
+    if re.fullmatch(r"fact\.[0-9a-f]{64}", identifier) is None:
+        refuse(
+            "NOE-E-TYPE.FACT_ID",
+            field,
+            "fact identity must be the digest of one exact proposition",
+        )
+    return identifier
+
+
+def _validate_facts(value: object, field: str) -> list[dict[str, object]]:
+    if not isinstance(value, list) or len(value) > MAX_SET_MEMBERS:
+        refuse("NOE-E-BOUNDS.FACTS", field, "fact collection exceeds its limit")
+    facts: list[dict[str, object]] = []
+    previous = ""
+    for index, item in enumerate(value):
+        fact = _exact_keys(
+            item,
+            {"id", "value", "evidence_sha256"},
+            f"{field}[{index}]",
+        )
+        identifier = _fact_identifier(fact["id"], f"{field}[{index}].id")
+        if identifier <= previous:
+            refuse(
+                "NOE-E-SYNTAX.ORDER",
+                field,
+                "facts must be unique and sorted by identity",
+            )
+        if fact["value"] not in TRUTH_VALUES:
+            refuse(
+                "NOE-E-TYPE.TRUTH",
+                f"{field}[{index}].value",
+                "fact truth is outside the closed three-valued domain",
+            )
+        _digest(fact["evidence_sha256"], f"{field}[{index}].evidence_sha256")
+        facts.append(fact)
+        previous = identifier
+    return facts
+
+
+def _validate_identifier_set(value: object, field: str, limit: int = 256) -> list[str]:
+    if not isinstance(value, list) or len(value) > limit:
+        refuse("NOE-E-BOUNDS.SET", field, "identifier collection exceeds its limit")
+    result: list[str] = []
+    previous = ""
+    for index, item in enumerate(value):
+        identifier = _identifier(item, f"{field}[{index}]")
+        if identifier <= previous:
+            refuse(
+                "NOE-E-SYNTAX.ORDER",
+                field,
+                "identifiers must be unique and sorted",
+            )
+        result.append(identifier)
+        previous = identifier
+    return result
+
+
+def _validate_selection(value: object, field: str = "selection") -> dict[str, object]:
+    selection = _exact_keys(
+        value,
+        {"operation", "state", "target", "tools", "authority", "facts"},
+        field,
+    )
+    _identifier(selection["operation"], f"{field}.operation")
+    _identifier(selection["state"], f"{field}.state")
+    _identifier(selection["target"], f"{field}.target")
+    _validate_identifier_set(selection["tools"], f"{field}.tools")
+    _validate_identifier_set(selection["authority"], f"{field}.authority")
+    _validate_facts(selection["facts"], f"{field}.facts")
+    return selection
+
+
+def _artifact_leaf(value: object, field: str) -> str:
+    leaf = _safe_text(value, field, 255)
+    if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", leaf) is None:
+        refuse(
+            "NOE-E-PATH.LEAF",
+            field,
+            "runtime artifact must be one plain leaf below its manifest",
+        )
+    return leaf
+
+
+def _runtime_record_id(record: list[object], field: str = "record") -> str:
+    form = record[0]
+    if form == "precedence":
+        higher = _identifier(record[1], f"{field}.higher")
+        lower = _identifier(record[2], f"{field}.lower")
+        return f"precedence:{higher}>{lower}"
+    return _identifier(record[1], f"{field}.id", qualified=form == "definition")
+
+
+def _node_id(value: object, field: str) -> str:
+    text = _safe_text(value, field, 280)
+    if re.fullmatch(r"(?:[A-Za-z][A-Za-z0-9_.-]{0,127}|precedence:[A-Za-z][A-Za-z0-9_.-]{0,127}>[A-Za-z][A-Za-z0-9_.-]{0,127})", text) is None:
+        refuse("NOE-E-TYPE.NODE_ID", field, "node identity is outside the closed alphabet")
+    return text
+
+
+def _runtime_registry(
+    graph: dict[str, object],
+) -> tuple[
+    dict[str, list[object]],
+    dict[str, tuple[list[list[object]], object]],
+]:
+    literals: dict[str, list[object]] = {}
+    definitions: dict[str, tuple[list[list[object]], object]] = {}
+    modules = graph["modules"]
+    assert isinstance(modules, list)
+    for module_entry in modules:
+        assert isinstance(module_entry, dict)
+        module = module_entry["value"]
+        assert isinstance(module, dict)
+        for entry in module["definitions"]:
+            assert isinstance(entry, list)
+            name = str(entry[0])
+            parameters = entry[1]
+            assert isinstance(parameters, list)
+            definitions[name] = (parameters, entry[2])
+    records = graph["records"]
+    assert isinstance(records, list)
+    for value in records:
+        assert isinstance(value, list)
+        if value[0] == "literal":
+            literals[str(value[1])] = value
+        elif value[0] == "definition":
+            parameters = value[2]
+            assert isinstance(parameters, list)
+            definitions[str(value[1])] = (parameters, value[3])
+    return literals, definitions
+
+
+def _typed_atoms(value: object) -> set[tuple[str, str]]:
+    atoms: set[tuple[str, str]] = set()
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        if not isinstance(current, list) or not current:
+            continue
+        if (
+            current[0] == ":"
+            and len(current) == 3
+            and isinstance(current[1], str)
+            and isinstance(current[2], str)
+        ):
+            atoms.add((current[1], current[2]))
+            continue
+        pending.extend(_term_children(current))
+    return atoms
+
+
+def _term_dependencies(
+    value: object,
+    definitions: dict[str, tuple[list[list[object]], object]],
+) -> tuple[set[str], set[str]]:
+    literal_ids: set[str] = set()
+    definition_ids: set[str] = set()
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        if not isinstance(current, list) or not current:
+            continue
+        tag = current[0]
+        if tag == "$" and len(current) == 2 and isinstance(current[1], str):
+            literal_ids.add(current[1])
+            continue
+        if isinstance(tag, str) and tag in definitions:
+            definition_ids.add(tag)
+        pending.extend(_term_children(current))
+    return literal_ids, definition_ids
+
+
+def _substitute_term(value: object, bindings: dict[str, object]) -> object:
+    if not isinstance(value, list) or not value:
+        return value
+    if value[0] == "%" and len(value) == 2 and isinstance(value[1], str):
+        return bindings.get(value[1], value)
+    return [value[0], *[_substitute_term(item, bindings) for item in value[1:]]]
+
+
+def _expand_runtime_term(
+    value: object,
+    definitions: dict[str, tuple[list[list[object]], object]],
+    *,
+    depth: int = 0,
+    nodes: list[int] | None = None,
+) -> object:
+    if nodes is None:
+        nodes = [0]
+    nodes[0] += 1
+    if depth > MAX_DEPTH or nodes[0] > MAX_EXPANDED_NODES:
+        refuse("NOE-E-BOUNDS.EXPANSION", "runtime", "runtime macro expansion exceeds its limit")
+    if not isinstance(value, list) or not value:
+        return value
+    tag = value[0]
+    if isinstance(tag, str) and tag in definitions:
+        parameters, body = definitions[tag]
+        if len(parameters) != len(value) - 1:
+            refuse("NOE-E-TYPE.ARITY", "runtime", "runtime definition call has stale arity")
+        bindings = {
+            str(parameter[0]): argument
+            for parameter, argument in zip(parameters, value[1:], strict=True)
+        }
+        return _expand_runtime_term(
+            _substitute_term(body, bindings),
+            definitions,
+            depth=depth + 1,
+            nodes=nodes,
+        )
+    return [
+        tag,
+        *[
+            _expand_runtime_term(item, definitions, depth=depth + 1, nodes=nodes)
+            for item in value[1:]
+        ],
+    ]
+
+
+def _truth_not(value: str) -> str:
+    return "false" if value == "true" else "true" if value == "false" else "unknown"
+
+
+def _truth_and(values: list[str]) -> str:
+    if "false" in values:
+        return "false"
+    if "unknown" in values:
+        return "unknown"
+    return "true"
+
+
+def _truth_or(values: list[str]) -> str:
+    if "true" in values:
+        return "true"
+    if "unknown" in values:
+        return "unknown"
+    return "false"
+
+
+def _resolved_scalar(value: object) -> tuple[str, object] | None:
+    if not isinstance(value, list) or not value:
+        return None
+    if value[0] == ":" and len(value) == 3 and isinstance(value[1], str):
+        return value[1], value[2]
+    if value[0] == "{}" and len(value) >= 2 and isinstance(value[1], str):
+        members = [_resolved_scalar(item) for item in value[2:]]
+        if any(item is None for item in members):
+            return None
+        return f"set:{value[1]}", tuple(item for item in members)
+    if value[0] == "count" and len(value) == 2:
+        collection = _resolved_scalar(value[1])
+        if collection is not None and collection[0].startswith("set:"):
+            return "value", str(len(collection[1]))
+    return None
+
+
+def _evaluate_truth(
+    proposition: object,
+    facts: dict[str, dict[str, object]],
+    definitions: dict[str, tuple[list[list[object]], object]],
+) -> tuple[str, set[str]]:
+    direct_id = fact_id(proposition)
+    direct = facts.get(direct_id)
+    if direct is not None:
+        return str(direct["value"]), {direct_id}
+    expanded = _expand_runtime_term(proposition, definitions)
+    if expanded != proposition:
+        expanded_id = fact_id(expanded)
+        expanded_fact = facts.get(expanded_id)
+        if expanded_fact is not None:
+            return str(expanded_fact["value"]), {expanded_id}
+    if not isinstance(expanded, list) or not expanded:
+        return "unknown", set()
+    tag = expanded[0]
+    if tag in {"&", "|"}:
+        evaluated = [_evaluate_truth(item, facts, definitions) for item in expanded[1:]]
+        values = [item[0] for item in evaluated]
+        used = set().union(*(item[1] for item in evaluated))
+        return (_truth_and(values) if tag == "&" else _truth_or(values)), used
+    if tag == "~" and len(expanded) == 2:
+        value, used = _evaluate_truth(expanded[1], facts, definitions)
+        return _truth_not(value), used
+    if tag == "=>" and len(expanded) == 3:
+        left, left_used = _evaluate_truth(expanded[1], facts, definitions)
+        right, right_used = _evaluate_truth(expanded[2], facts, definitions)
+        return _truth_or([_truth_not(left), right]), left_used | right_used
+    if tag == "=" and len(expanded) == 3:
+        if expanded[1] == expanded[2]:
+            return "true", set()
+        left = _resolved_scalar(expanded[1])
+        right = _resolved_scalar(expanded[2])
+        if left is not None and right is not None:
+            return ("true" if left == right else "false"), set()
+    if tag in {"lt", "le", "gt", "ge"} and len(expanded) == 3:
+        left = _resolved_scalar(expanded[1])
+        right = _resolved_scalar(expanded[2])
+        if left is not None and right is not None and left[0] == right[0] == "value":
+            try:
+                left_number = int(str(left[1]))
+                right_number = int(str(right[1]))
+            except ValueError:
+                return "unknown", set()
+            comparisons = {
+                "lt": left_number < right_number,
+                "le": left_number <= right_number,
+                "gt": left_number > right_number,
+                "ge": left_number >= right_number,
+            }
+            return ("true" if comparisons[str(tag)] else "false"), set()
+    if tag in {"in", "subset"} and len(expanded) == 3:
+        left = _resolved_scalar(expanded[1])
+        right = _resolved_scalar(expanded[2])
+        if left is not None and right is not None and right[0].startswith("set:"):
+            if tag == "in":
+                return ("true" if left in right[1] else "false"), set()
+            if left[0] == right[0]:
+                return ("true" if set(left[1]) <= set(right[1]) else "false"), set()
+    if tag in {"all", "any", "one"} and len(expanded) == 4:
+        binder = expanded[1]
+        collection = expanded[2]
+        if (
+            isinstance(binder, list)
+            and len(binder) == 2
+            and isinstance(binder[0], str)
+            and isinstance(collection, list)
+            and len(collection) >= 2
+            and collection[0] == "{}"
+        ):
+            evaluated = [
+                _evaluate_truth(
+                    _substitute_term(expanded[3], {binder[0]: member}),
+                    facts,
+                    definitions,
+                )
+                for member in collection[2:]
+            ]
+            values = [item[0] for item in evaluated]
+            used = set().union(*(item[1] for item in evaluated))
+            if tag == "all":
+                return _truth_and(values), used
+            if tag == "any":
+                return _truth_or(values), used
+            if "unknown" in values:
+                return "unknown", used
+            return ("true" if values.count("true") == 1 else "false"), used
+    return "unknown", set()
+
+
+def _outer_directive_activity(
+    directive: object,
+    facts: dict[str, dict[str, object]],
+    definitions: dict[str, tuple[list[list[object]], object]],
+) -> tuple[str, str | None, str | None]:
+    if not isinstance(directive, list) or not directive:
+        return "unknown", None, None
+    tag = directive[0]
+    if tag in {"@", "^"} and len(directive) == 3:
+        return _outer_directive_activity(directive[2], facts, definitions)
+    if tag in {"?", "/"} and len(directive) == 3:
+        value, used = _evaluate_truth(directive[1], facts, definitions)
+        active = value if tag == "?" else _truth_not(value)
+        if active == "false" and used:
+            identifier = sorted(used)[0]
+            reason = "checked-false-guard" if value == "false" else "checked-true-guard"
+            return active, identifier, reason
+        if active != "true":
+            return active, None, None
+        return _outer_directive_activity(directive[2], facts, definitions)
+    return "true", None, None
+
+
+def _record_rule_references(record: list[object]) -> set[str]:
+    if record[0] == "precedence":
+        return {str(record[1]), str(record[2])}
+    if record[0] == "override":
+        return {str(record[3]), str(record[4])}
+    return set()
+
+
+def _record_links(record: list[object]) -> set[tuple[str, str]]:
+    return {
+        atom
+        for atom in _typed_atoms(record)
+        if atom[0] in RUNTIME_LINK_TYPES
+    }
+
+
+def _runtime_projection(
+    graph: dict[str, object],
+    profile: dict[str, object],
+    profile_digest: str,
+    selection_digest: str,
+    tape: list[list[object]],
+) -> dict[str, object]:
+    slice_graph = {
+        "schema": SLICE_GRAPH_SCHEMA,
+        "graph_sha256": _value_sha256(graph),
+        "selection_sha256": selection_digest,
+        "tape": tape,
+    }
+    aliases = _projection_aliases(profile, graph)
+    projected = _replace_strings(slice_graph, aliases)
+    text = (
+        f"{PROJECTION_MAGIC} {profile_digest} {slice_graph['graph_sha256']}\n".encode("ascii")
+        + _canonical_json(projected)
+    )
+    if len(text) > MAX_OUTPUT_BYTES:
+        refuse("NOE-E-BOUNDS.OUTPUT", "projection", "slice projection exceeds its byte limit")
+    projection = {
+        "schema": SLICE_PROJECTION_SCHEMA,
+        "graph_sha256": slice_graph["graph_sha256"],
+        "profile_sha256": profile_digest,
+        "selection_sha256": selection_digest,
+        "aliases_sha256": _value_sha256(profile["aliases"]),
+        "text": text.decode("utf-8"),
+    }
+    recovered = _replace_strings(projected, {value: key for key, value in aliases.items()})
+    if recovered != slice_graph:
+        refuse("NOE-E-DIGEST.RECOVERY", "projection", "slice projection did not recover its tape")
+    _canonical_json(projection)
+    return projection
+
+
+def select_runtime(
+    build: dict[str, object],
+    profile: dict[str, object],
+    profile_digest: str,
+    selection_value: object,
+    *,
+    artifacts: dict[str, str] | None = None,
+) -> tuple[dict[str, object], dict[str, object]]:
+    selection = _validate_selection(selection_value)
+    profile = _validate_profile_value(profile, None)
+    graph = build["graph"]
+    lock = build["lock"]
+    assert isinstance(graph, dict) and isinstance(lock, dict)
+    if lock["graph_sha256"] != _value_sha256(graph) or lock["profile_sha256"] != profile_digest:
+        refuse("NOE-E-DIGEST.LOCK", "selection", "selection inputs do not match the locked graph")
+    literals, definitions = _runtime_registry(graph)
+    records_value = graph["records"]
+    assert isinstance(records_value, list)
+    selectable: dict[str, list[object]] = {}
+    for index, record_value in enumerate(records_value):
+        assert isinstance(record_value, list)
+        if record_value[0] in SELECTABLE_FORMS:
+            identifier = _runtime_record_id(record_value, f"graph.records[{index}]")
+            selectable[identifier] = record_value
+
+    facts_list = selection["facts"]
+    assert isinstance(facts_list, list)
+    fact_map = {str(item["id"]): item for item in facts_list if isinstance(item, dict)}
+    inactive: dict[str, tuple[str, str]] = {}
+    for identifier, record in selectable.items():
+        if record[0] != "rule":
+            continue
+        activity, controlling_fact, reason = _outer_directive_activity(
+            record[2], fact_map, definitions
+        )
+        if activity == "false" and controlling_fact is not None and reason is not None:
+            inactive[identifier] = (controlling_fact, reason)
+
+    operation = str(selection["operation"])
+    state_value = str(selection["state"])
+    target = str(selection["target"])
+    tools = set(str(item) for item in selection["tools"])
+    primary: set[str] = set()
+    secondary: set[str] = set()
+    for identifier, record in selectable.items():
+        if identifier in inactive:
+            continue
+        atoms = _typed_atoms(record)
+        if any(kind in {"operation", "effect"} and value == operation for kind, value in atoms):
+            primary.add(identifier)
+        if record[0] == "transition" and any(
+            kind == "state" and value == state_value for kind, value in atoms
+        ):
+            primary.add(identifier)
+        if any(
+            (kind in {"artifact", "repository", "path", "scope"} and value == target)
+            or (kind in {"action", "command"} and value in tools)
+            for kind, value in atoms
+        ):
+            secondary.add(identifier)
+    included = set(primary or secondary)
+    if not included:
+        included = set(selectable) - set(inactive)
+
+    rule_by_id = {
+        str(record[1]): identifier
+        for identifier, record in selectable.items()
+        if record[0] == "rule"
+    }
+    changed = True
+    while changed:
+        changed = False
+        links = set().union(*(_record_links(selectable[item]) for item in included)) if included else set()
+        focused_links = {
+            atom
+            for atom in links
+            if atom[0] in {"action", "artifact", "claim", "command", "effect", "event", "operation", "repository", "state", "transition"}
+        }
+        for identifier, record in selectable.items():
+            if identifier in included or identifier in inactive:
+                continue
+            form = record[0]
+            references = _record_rule_references(record)
+            if references:
+                endpoints = {rule_by_id[item] for item in references if item in rule_by_id}
+                if endpoints and endpoints <= (set(selectable) - set(inactive)) and endpoints & included:
+                    included.add(identifier)
+                    included.update(endpoints)
+                    changed = True
+                    continue
+            record_links = _record_links(record)
+            relevant_links = record_links if form in {"promise", "handoff", "exception"} else {
+                atom
+                for atom in record_links
+                if atom[0] in {"action", "artifact", "claim", "command", "effect", "event", "operation", "repository", "state", "transition"}
+            }
+            if relevant_links & (links if form in {"promise", "handoff", "exception"} else focused_links):
+                included.add(identifier)
+                changed = True
+
+    reachable_literals: set[str] = set()
+    reachable_definitions: set[str] = set()
+    for identifier in sorted(included):
+        literal_ids, definition_ids = _term_dependencies(selectable[identifier], definitions)
+        reachable_literals.update(literal_ids)
+        reachable_definitions.update(definition_ids)
+    pending_definitions = list(reachable_definitions)
+    while pending_definitions:
+        name = pending_definitions.pop()
+        if name not in definitions:
+            refuse("NOE-E-REFERENCE.DEFINITION", "selection", "slice references an absent definition")
+        literal_ids, definition_ids = _term_dependencies(definitions[name][1], definitions)
+        reachable_literals.update(literal_ids)
+        for dependency in definition_ids:
+            if dependency not in reachable_definitions:
+                reachable_definitions.add(dependency)
+                pending_definitions.append(dependency)
+    if not reachable_literals <= set(literals):
+        refuse("NOE-E-REFERENCE.LITERAL", "selection", "slice references an absent literal")
+
+    tape: list[list[object]] = [literals[name] for name in sorted(reachable_literals)]
+    tape.extend(
+        ["definition", name, definitions[name][0], definitions[name][1]]
+        for name in sorted(reachable_definitions)
+    )
+    tape.extend(selectable[name] for name in sorted(included))
+    tape.sort(key=lambda record: _record_key(record, "manifest.tape"))
+    selection_digest = _value_sha256(selection)
+    projection = _runtime_projection(
+        graph,
+        profile,
+        profile_digest,
+        selection_digest,
+        tape,
+    )
+    omitted: list[dict[str, object]] = []
+    for identifier in sorted(set(selectable) - included):
+        if identifier in inactive:
+            fact, reason = inactive[identifier]
+            omitted.append(
+                {
+                    "id": identifier,
+                    "reason": reason,
+                    "fact": fact,
+                    "evidence_sha256": fact_map[fact]["evidence_sha256"],
+                }
+            )
+        else:
+            omitted.append(
+                {
+                    "id": identifier,
+                    "reason": "not-reachable",
+                    "fact": None,
+                    "evidence_sha256": None,
+                }
+            )
+    artifact_map = artifacts or {
+        "build": "build.json",
+        "modules": "modules",
+        "profile": "profile.json",
+        "kernel": "kernel.noe",
+        "selection": "selection.json",
+        "projection": "projection.json",
+    }
+    manifest = {
+        "schema": MANIFEST_SCHEMA,
+        "graph_sha256": lock["graph_sha256"],
+        "lock_sha256": _value_sha256(lock),
+        "compiler_sha256": lock["compiler_sha256"],
+        "kernel_sha256": lock["kernel_sha256"],
+        "profile_sha256": lock["profile_sha256"],
+        "selection": selection,
+        "selection_sha256": selection_digest,
+        "facts_sha256": _value_sha256(facts_list),
+        "included_ids": sorted(included),
+        "omitted": omitted,
+        "definitions": sorted(reachable_definitions),
+        "literals": sorted(reachable_literals),
+        "tape": tape,
+        "tape_sha256": _value_sha256(tape),
+        "projection_sha256": sha256(str(projection["text"]).encode("utf-8")).hexdigest(),
+        "artifacts": artifact_map,
+    }
+    _validate_manifest_value(manifest)
+    return manifest, projection
+
+
+def _validate_manifest_value(value: object) -> dict[str, object]:
+    manifest = _exact_keys(
+        value,
+        {
+            "schema",
+            "graph_sha256",
+            "lock_sha256",
+            "compiler_sha256",
+            "kernel_sha256",
+            "profile_sha256",
+            "selection",
+            "selection_sha256",
+            "facts_sha256",
+            "included_ids",
+            "omitted",
+            "definitions",
+            "literals",
+            "tape",
+            "tape_sha256",
+            "projection_sha256",
+            "artifacts",
+        },
+        "manifest",
+    )
+    if manifest["schema"] != MANIFEST_SCHEMA:
+        refuse("NOE-E-TYPE.VERSION", "manifest.schema", "unsupported runtime manifest")
+    for key in (
+        "graph_sha256",
+        "lock_sha256",
+        "compiler_sha256",
+        "kernel_sha256",
+        "profile_sha256",
+        "selection_sha256",
+        "facts_sha256",
+        "tape_sha256",
+        "projection_sha256",
+    ):
+        _digest(manifest[key], f"manifest.{key}")
+    selection = _validate_selection(manifest["selection"], "manifest.selection")
+    if _value_sha256(selection) != manifest["selection_sha256"]:
+        refuse("NOE-E-DIGEST.SELECTION", "manifest", "manifest selection digest differs")
+    if _value_sha256(selection["facts"]) != manifest["facts_sha256"]:
+        refuse("NOE-E-DIGEST.FACTS", "manifest", "manifest fact digest differs")
+    included = _validate_node_id_set(manifest["included_ids"], "manifest.included_ids")
+    definitions = _validate_identifier_set(
+        manifest["definitions"], "manifest.definitions", MAX_RECORDS
+    )
+    literals = _validate_identifier_set(manifest["literals"], "manifest.literals", MAX_RECORDS)
+    tape = manifest["tape"]
+    if not isinstance(tape, list) or len(tape) > MAX_RECORDS:
+        refuse("NOE-E-BOUNDS.RECORDS", "manifest.tape", "runtime tape exceeds its record limit")
+    _preflight_records(tape)
+    seen_nodes: set[str] = set()
+    tape_included: list[str] = []
+    tape_definitions: list[str] = []
+    tape_literals: list[str] = []
+    for index, value_record in enumerate(tape):
+        assert isinstance(value_record, list)
+        form = value_record[0]
+        node = _runtime_record_id(value_record, f"manifest.tape[{index}]")
+        if node in seen_nodes:
+            refuse("NOE-E-REFERENCE.DUPLICATE_ID", "manifest.tape", "runtime tape node is duplicated")
+        seen_nodes.add(node)
+        _bounded_value_depth(value_record, f"manifest.tape[{index}]")
+        if form == "literal":
+            kind = _safe_text(value_record[2], f"manifest.tape[{index}].kind", 16)
+            if kind not in LITERAL_KINDS:
+                refuse("NOE-E-TYPE.LITERAL_KIND", "manifest.tape", "runtime tape literal kind is unknown")
+            literal_value = _literal_value(kind, value_record[4], f"manifest.tape[{index}].value")
+            if _bounded_decimal(value_record[3], f"manifest.tape[{index}].bytes", MAX_LITERAL_BYTES) != len(literal_value.encode("utf-8")):
+                refuse("NOE-E-DIGEST.LITERAL_SIZE", "manifest.tape", "runtime tape literal byte count differs")
+            tape_literals.append(node)
+        elif form == "definition":
+            tape_definitions.append(node)
+        elif form in SELECTABLE_FORMS:
+            tape_included.append(node)
+        else:
+            refuse("NOE-E-TYPE.RECORD", "manifest.tape", "runtime tape carries a non-runtime record")
+    if sorted(tape_included) != included or sorted(tape_definitions) != definitions or sorted(tape_literals) != literals:
+        refuse("NOE-E-DIGEST.TAPE", "manifest", "runtime tape inventory differs from manifest ids")
+    if _value_sha256(tape) != manifest["tape_sha256"]:
+        refuse("NOE-E-DIGEST.TAPE", "manifest", "runtime tape digest differs")
+    omitted = manifest["omitted"]
+    if not isinstance(omitted, list) or len(omitted) > MAX_RECORDS:
+        refuse("NOE-E-BOUNDS.RECORDS", "manifest.omitted", "omission list exceeds its limit")
+    omitted_ids: list[str] = []
+    prior = ""
+    for index, item in enumerate(omitted):
+        omission = _exact_keys(
+            item,
+            {"id", "reason", "fact", "evidence_sha256"},
+            f"manifest.omitted[{index}]",
+        )
+        identifier = _node_id(omission["id"], f"manifest.omitted[{index}].id")
+        if identifier <= prior or identifier in included:
+            refuse("NOE-E-SYNTAX.ORDER", "manifest.omitted", "omission ids must be sorted and disjoint")
+        reason = omission["reason"]
+        if reason == "not-reachable":
+            if omission["fact"] is not None or omission["evidence_sha256"] is not None:
+                refuse("NOE-E-TYPE.OMISSION", "manifest.omitted", "unreachable omission cannot claim fact evidence")
+        elif reason in {"checked-false-guard", "checked-true-guard"}:
+            fact = _fact_identifier(omission["fact"], f"manifest.omitted[{index}].fact")
+            evidence = _digest(
+                omission["evidence_sha256"],
+                f"manifest.omitted[{index}].evidence_sha256",
+            )
+            fact_values = {
+                str(item["id"]): item
+                for item in selection["facts"]
+                if isinstance(item, dict)
+            }
+            if fact not in fact_values or fact_values[fact]["evidence_sha256"] != evidence:
+                refuse("NOE-E-DIGEST.OMISSION", "manifest.omitted", "guard omission proof differs from selected facts")
+            expected_truth = "false" if reason == "checked-false-guard" else "true"
+            if fact_values[fact]["value"] != expected_truth:
+                refuse("NOE-E-DIGEST.OMISSION", "manifest.omitted", "guard omission truth differs")
+        else:
+            refuse("NOE-E-TYPE.OMISSION", "manifest.omitted", "unknown omission reason")
+        omitted_ids.append(identifier)
+        prior = identifier
+    artifacts = _exact_keys(manifest["artifacts"], set(RUNTIME_ARTIFACT_LEAVES), "manifest.artifacts")
+    for key in sorted(RUNTIME_ARTIFACT_LEAVES):
+        _artifact_leaf(artifacts[key], f"manifest.artifacts.{key}")
+    _canonical_json(manifest)
+    return manifest
+
+
+def _validate_node_id_set(value: object, field: str) -> list[str]:
+    if not isinstance(value, list) or len(value) > MAX_RECORDS:
+        refuse("NOE-E-BOUNDS.RECORDS", field, "node id collection exceeds its limit")
+    result: list[str] = []
+    previous = ""
+    for index, item in enumerate(value):
+        identifier = _node_id(item, f"{field}[{index}]")
+        if identifier <= previous:
+            refuse("NOE-E-SYNTAX.ORDER", field, "node ids must be unique and sorted")
+        result.append(identifier)
+        previous = identifier
+    return result
+
+
+def _manifest_registry(
+    manifest: dict[str, object],
+) -> tuple[
+    dict[str, list[object]],
+    dict[str, tuple[list[list[object]], object]],
+    dict[str, list[object]],
+]:
+    literals: dict[str, list[object]] = {}
+    definitions: dict[str, tuple[list[list[object]], object]] = {}
+    selectable: dict[str, list[object]] = {}
+    tape = manifest["tape"]
+    assert isinstance(tape, list)
+    for value in tape:
+        assert isinstance(value, list)
+        if value[0] == "literal":
+            literals[str(value[1])] = value
+        elif value[0] == "definition":
+            parameters = value[2]
+            assert isinstance(parameters, list)
+            definitions[str(value[1])] = (parameters, value[3])
+        else:
+            selectable[_runtime_record_id(value)] = value
+    return literals, definitions, selectable
+
+
+def _atom_value(term: object, expected_type: str) -> str | None:
+    if (
+        isinstance(term, list)
+        and len(term) == 3
+        and term[0] == ":"
+        and term[1] == expected_type
+        and isinstance(term[2], str)
+    ):
+        return term[2]
+    return None
+
+
+def _combine_activity(left: str, right: str) -> str:
+    return _truth_and([left, right])
+
+
+def _directive_intents(
+    directive: object,
+    facts: dict[str, dict[str, object]],
+    definitions: dict[str, tuple[list[list[object]], object]],
+    *,
+    activity: str = "true",
+    authority: str | None = None,
+    scope: str | None = None,
+    order: list[int] | None = None,
+) -> list[dict[str, object]]:
+    if order is None:
+        order = [0]
+    expanded = _expand_runtime_term(directive, definitions)
+    if not isinstance(expanded, list) or not expanded:
+        refuse("NOE-E-TYPE.DIRECTIVE", "runtime", "runtime tape contains a malformed directive")
+    tag = expanded[0]
+    if tag in {"?", "/"} and len(expanded) == 3:
+        guard, used = _evaluate_truth(expanded[1], facts, definitions)
+        gated = guard if tag == "?" else _truth_not(guard)
+        return _directive_intents(
+            expanded[2],
+            facts,
+            definitions,
+            activity=_combine_activity(activity, gated),
+            authority=authority,
+            scope=scope,
+            order=order,
+        )
+    if tag == "@" and len(expanded) == 3:
+        return _directive_intents(
+            expanded[2],
+            facts,
+            definitions,
+            activity=activity,
+            authority=authority,
+            scope=_atom_value(expanded[1], "scope"),
+            order=order,
+        )
+    if tag == "^" and len(expanded) == 3:
+        return _directive_intents(
+            expanded[2],
+            facts,
+            definitions,
+            activity=activity,
+            authority=_atom_value(expanded[1], "actor"),
+            scope=scope,
+            order=order,
+        )
+    if tag == ";" and len(expanded) >= 2:
+        intents: list[dict[str, object]] = []
+        for child in expanded[1:]:
+            intents.extend(
+                _directive_intents(
+                    child,
+                    facts,
+                    definitions,
+                    activity=activity,
+                    authority=authority,
+                    scope=scope,
+                    order=order,
+                )
+            )
+        return intents
+    if tag not in {"+", "-", "!"} or len(expanded) != 2:
+        refuse("NOE-E-TYPE.DIRECTIVE", "runtime", "runtime tape contains an unknown directive")
+    subject = expanded[1]
+    proposition_truth = "true"
+    used: set[str] = set()
+    if tag == "!" and _atom_value(subject, "effect") is None:
+        proposition_truth, used = _evaluate_truth(subject, facts, definitions)
+    effects = sorted(value for kind, value in _typed_atoms(subject) if kind == "effect")
+    position = order[0]
+    order[0] += 1
+    return [
+        {
+            "kind": "permit" if tag == "+" else "prohibit" if tag == "-" else "require",
+            "subject": subject,
+            "effects": effects,
+            "activity": activity,
+            "truth": proposition_truth,
+            "facts": sorted(used),
+            "authority": authority,
+            "scope": scope,
+            "order": position,
+        }
+    ]
+
+
+def _effect_consequence(records: list[list[object]], effect: str) -> int:
+    values: set[int] = set()
+    for record in records:
+        effects = {value for kind, value in _typed_atoms(record) if kind == "effect"}
+        if effect not in effects:
+            continue
+        for kind, value in _typed_atoms(record):
+            if kind == "core.consequence" and value in {"0", "1", "2", "3"}:
+                values.add(int(value))
+    if len(values) > 1:
+        refuse("NOE-E-POLICY.CONSEQUENCE", "effect", "reachable rules disagree on consequence")
+    return next(iter(values), 3)
+
+
+def check_runtime(
+    effect: object,
+    facts_value: object,
+    manifest_value: object,
+) -> dict[str, object]:
+    effect_id = _identifier(effect, "effect")
+    manifest = _validate_manifest_value(manifest_value)
+    facts = _validate_facts(facts_value, "facts")
+    selection = manifest["selection"]
+    assert isinstance(selection, dict)
+    if facts != selection["facts"]:
+        refuse("NOE-E-DIGEST.FACTS", "facts", "policy facts differ from the selected manifest")
+    fact_map = {str(item["id"]): item for item in facts}
+    _literals, definitions, selectable = _manifest_registry(manifest)
+    relevant = [
+        record
+        for record in selectable.values()
+        if record[0] in {"rule", "exception"}
+        and ("effect", effect_id) in _typed_atoms(record)
+    ]
+    rule_records = [record for record in relevant if record[0] == "rule"]
+    consequence = _effect_consequence(rule_records, effect_id)
+    authority_values = set(str(item) for item in selection["authority"])
+    target = str(selection["target"])
+    candidates: list[dict[str, object]] = []
+    for record in rule_records:
+        for intent in _directive_intents(record[2], fact_map, definitions):
+            if effect_id not in intent["effects"]:
+                continue
+            intent = dict(intent)
+            intent["node"] = str(record[1])
+            scope = intent["scope"]
+            intent["scope_applies"] = scope is None or scope in {"global", "repository", target}
+            actor = intent["authority"]
+            intent["authority_applies"] = actor is None or actor in authority_values
+            candidates.append(intent)
+
+    overridden: set[tuple[str, int]] = set()
+    requirement_conflicts: list[dict[str, object]] = []
+    requirement_candidates = [item for item in candidates if item["kind"] == "require"]
+    for left_index, left in enumerate(requirement_candidates):
+        left_subject = _expand_runtime_term(left["subject"], definitions)
+        for right in requirement_candidates[left_index + 1 :]:
+            if left["node"] == right["node"]:
+                continue
+            right_subject = _expand_runtime_term(right["subject"], definitions)
+            opposed = (
+                isinstance(left_subject, list)
+                and len(left_subject) == 2
+                and left_subject[0] == "~"
+                and left_subject[1] == right_subject
+            ) or (
+                isinstance(right_subject, list)
+                and len(right_subject) == 2
+                and right_subject[0] == "~"
+                and right_subject[1] == left_subject
+            )
+            if not opposed:
+                continue
+            resolved = False
+            for override in selectable.values():
+                if override[0] != "override":
+                    continue
+                high, low = str(override[3]), str(override[4])
+                if {high, low} != {str(left["node"]), str(right["node"])}:
+                    continue
+                actor = _atom_value(override[2], "actor")
+                scope = _atom_value(override[5], "scope")
+                evidence_truth, _used = _evaluate_truth(
+                    ["core.checked", override[6]], fact_map, definitions
+                )
+                if (
+                    actor in authority_values
+                    and scope in {"global", "repository", target}
+                    and evidence_truth == "true"
+                ):
+                    lower = left if left["node"] == low else right
+                    overridden.add((str(lower["node"]), int(lower["order"])))
+                    resolved = True
+                    break
+            if not resolved:
+                requirement_conflicts.append(
+                    left if str(left["node"]) < str(right["node"]) else right
+                )
+
+    if overridden:
+        candidates = [
+            item
+            for item in candidates
+            if (str(item["node"]), int(item["order"])) not in overridden
+        ]
+
+    def first(items: list[dict[str, object]]) -> dict[str, object]:
+        return sorted(items, key=lambda item: (str(item["node"]), int(item["order"])))[0]
+
+    active = [item for item in candidates if item["scope_applies"] and item["activity"] == "true"]
+    prohibitions = [item for item in active if item["kind"] == "prohibit"]
+    failed_requirements = [
+        item
+        for item in active
+        if item["kind"] == "require" and item["truth"] == "false"
+    ]
+    authority_failures = [
+        item
+        for item in active
+        if item["authority"] is not None and not item["authority_applies"]
+    ]
+    if requirement_conflicts:
+        controlling = first(requirement_conflicts)
+        decision, reason = "refuse", "conflicting-requirements"
+    elif prohibitions:
+        controlling = first(prohibitions)
+        decision, reason = "refuse", "prohibition"
+    elif failed_requirements:
+        controlling = first(failed_requirements)
+        decision, reason = "refuse", "failed-requirement"
+    elif authority_failures:
+        controlling = first(authority_failures)
+        decision, reason = "refuse", "authority-mismatch"
+    elif not rule_records:
+        controlling = {"node": "default.no-policy", "order": 0}
+        decision, reason = "refuse", "no-applicable-policy"
+    else:
+        unknown = [
+            item
+            for item in candidates
+            if item["scope_applies"]
+            and (
+                item["activity"] == "unknown"
+                or (item["kind"] == "require" and item["truth"] == "unknown")
+            )
+        ]
+        permits = [
+            item
+            for item in active
+            if item["kind"] in {"permit", "require"}
+            and item["truth"] == "true"
+            and item["authority_applies"]
+        ]
+        authorised = any(
+            item["authority"] is not None and item["authority_applies"]
+            for item in permits
+        )
+        if unknown:
+            controlling = first(unknown)
+            decision, reason = "unknown", "unestablished-guard"
+        elif consequence >= 2 and not authorised:
+            controlling = {"node": f"default.consequence-{consequence}", "order": 0}
+            decision, reason = "refuse", "default-deny"
+        elif permits or consequence < 2:
+            controlling = first(permits) if permits else {"node": f"default.consequence-{consequence}", "order": 0}
+            decision, reason = "permit", "applicable-policy" if permits else "low-consequence-default"
+        else:
+            controlling = {"node": "default.no-policy", "order": 0}
+            decision, reason = "refuse", "no-applicable-policy"
+    output = {
+        "schema": "noema-check/v1",
+        "decision": decision,
+        "effect": effect_id,
+        "consequence": consequence,
+        "controlling_node": controlling["node"],
+        "reason": reason,
+    }
+    verdict = "ok" if decision == "permit" else decision
+    code = "NOE-OK" if decision == "permit" else "NOE-I-POLICY_UNKNOWN" if decision == "unknown" else "NOE-I-POLICY_REFUSE"
+    return _result(
+        "check",
+        verdict,
+        code,
+        correlation_values=(str(manifest["graph_sha256"]), str(manifest["facts_sha256"]), effect_id),
+        message="policy decision returned without executing an effect",
+        digests={"graph": str(manifest["graph_sha256"]), "manifest": _value_sha256(manifest)},
+        counts={"nodes": len(relevant)},
+        output=output,
+    )
+
+
+def _ordered_effects(directive: object) -> list[object]:
+    if isinstance(directive, list) and directive and directive[0] == ";":
+        return list(directive[1:])
+    return [directive]
+
+
+def next_runtime(
+    machine: object,
+    state_value: object,
+    event: object,
+    receipts_value: object,
+    manifest_value: object,
+) -> dict[str, object]:
+    machine_id = _identifier(machine, "machine")
+    state_id = _identifier(state_value, "state")
+    event_id = _identifier(event, "event")
+    manifest = _validate_manifest_value(manifest_value)
+    receipts = _validate_facts(receipts_value, "receipts")
+    selection = manifest["selection"]
+    assert isinstance(selection, dict)
+    combined: dict[str, dict[str, object]] = {
+        str(item["id"]): item
+        for item in selection["facts"]
+        if isinstance(item, dict)
+    }
+    for receipt in receipts:
+        identifier = str(receipt["id"])
+        if identifier in combined and combined[identifier] != receipt:
+            refuse("NOE-E-DIGEST.FACTS", "receipts", "receipt contradicts the selected fact")
+        combined[identifier] = receipt
+    _literals, definitions, selectable = _manifest_registry(manifest)
+    matched: list[tuple[list[object], str, set[str]]] = []
+    unknown: list[list[object]] = []
+    for record in selectable.values():
+        if record[0] != "transition":
+            continue
+        if (
+            _atom_value(record[2], "state") != machine_id
+            or _atom_value(record[3], "state") != state_id
+            or _atom_value(record[4], "event") != event_id
+        ):
+            continue
+        truth, used = _evaluate_truth(record[5], combined, definitions)
+        if truth == "true":
+            matched.append((record, truth, used))
+        elif truth == "unknown":
+            unknown.append(record)
+    if len(matched) > 1:
+        refuse("NOE-E-POLICY.TRANSITION", "transition", "more than one transition is enabled")
+    if matched:
+        record = matched[0][0]
+        output = {
+            "schema": "noema-next/v1",
+            "status": "transition",
+            "transition": str(record[1]),
+            "state": state_id,
+            "next_state": _atom_value(record[6], "state"),
+            "effects": _ordered_effects(record[7]),
+            "controlling_node": str(record[1]),
+            "reason": "established-transition",
+        }
+        verdict, code = "ok", "NOE-OK"
+    elif unknown:
+        record = sorted(unknown, key=lambda item: str(item[1]))[0]
+        output = {
+            "schema": "noema-next/v1",
+            "status": "stop",
+            "transition": None,
+            "state": state_id,
+            "next_state": None,
+            "effects": [],
+            "controlling_node": str(record[1]),
+            "reason": "unestablished-guard",
+        }
+        verdict, code = "unknown", "NOE-I-TRANSITION_UNKNOWN"
+    else:
+        output = {
+            "schema": "noema-next/v1",
+            "status": "stop",
+            "transition": None,
+            "state": state_id,
+            "next_state": None,
+            "effects": [],
+            "controlling_node": "default.stop",
+            "reason": "no-enabled-transition",
+        }
+        verdict, code = "ok", "NOE-I-TRANSITION_STOP"
+    receipts_digest = _value_sha256(receipts)
+    return _result(
+        "next",
+        verdict,
+        code,
+        correlation_values=(str(manifest["graph_sha256"]), machine_id, state_id, event_id, receipts_digest),
+        message="transition data returned without executing its ordered effects",
+        digests={"graph": str(manifest["graph_sha256"]), "manifest": _value_sha256(manifest), "output": receipts_digest},
+        counts={"entries": len(output["effects"])},
+        output=output,
+    )
+
+
+def literal_runtime(identifier_value: object, manifest_value: object) -> dict[str, object]:
+    identifier = _identifier(identifier_value, "literal")
+    manifest = _validate_manifest_value(manifest_value)
+    literals, _definitions, _selectable = _manifest_registry(manifest)
+    if identifier not in literals:
+        refuse("NOE-E-REFERENCE.LITERAL", "literal", "literal is not reachable in this manifest")
+    record = literals[identifier]
+    value = str(record[4])
+    output = {
+        "schema": "noema-literal/v1",
+        "id": identifier,
+        "kind": record[2],
+        "bytes": len(value.encode("utf-8")),
+        "sha256": sha256(value.encode("utf-8")).hexdigest(),
+        "value": value,
+    }
+    return _result(
+        "literal",
+        "ok",
+        "NOE-OK",
+        correlation_values=(str(manifest["graph_sha256"]), identifier),
+        message="reachable inert literal returned as data",
+        digests={"graph": str(manifest["graph_sha256"]), "output": output["sha256"]},
+        counts={"bytes": output["bytes"]},
+        output=output,
+    )
+
+
+def explain_runtime(node_value: object, manifest_value: object) -> dict[str, object]:
+    node = _node_id(node_value, "node")
+    manifest = _validate_manifest_value(manifest_value)
+    _literals, _definitions, selectable = _manifest_registry(manifest)
+    tape = manifest["tape"]
+    assert isinstance(tape, list)
+    by_id = {
+        _runtime_record_id(record): record
+        for record in tape
+        if isinstance(record, list)
+    }
+    if node not in by_id:
+        refuse("NOE-E-REFERENCE.NODE", "node", "node is not reachable in this manifest")
+    render = _canonical_json(by_id[node]).decode("utf-8").removesuffix("\n")
+    output = {
+        "schema": EXPLANATION_SCHEMA,
+        "authoritative": False,
+        "node": node,
+        "render": render,
+    }
+    return _result(
+        "explain",
+        "ok",
+        "NOE-I-NON_AUTHORITATIVE",
+        correlation_values=(str(manifest["graph_sha256"]), node),
+        message="non-authoritative render returned for inspection only",
+        digests={"graph": str(manifest["graph_sha256"]), "output": _value_sha256(output)},
+        counts={"bytes": len(render.encode("utf-8"))},
+        output=output,
+    )
+
+
+def _validate_slice_projection(
+    value: object,
+    manifest: dict[str, object],
+    profile: dict[str, object],
+) -> dict[str, object]:
+    projection = _exact_keys(
+        value,
+        {
+            "schema",
+            "graph_sha256",
+            "profile_sha256",
+            "selection_sha256",
+            "aliases_sha256",
+            "text",
+        },
+        "projection",
+    )
+    if projection["schema"] != SLICE_PROJECTION_SCHEMA:
+        refuse("NOE-E-TYPE.VERSION", "projection.schema", "unsupported slice projection")
+    for key in ("graph_sha256", "profile_sha256", "selection_sha256", "aliases_sha256"):
+        _digest(projection[key], f"projection.{key}")
+    if (
+        projection["graph_sha256"] != manifest["graph_sha256"]
+        or projection["profile_sha256"] != manifest["profile_sha256"]
+        or projection["selection_sha256"] != manifest["selection_sha256"]
+    ):
+        refuse("NOE-E-DIGEST.PROJECTION", "projection", "projection identities differ from the manifest")
+    if projection["aliases_sha256"] != _value_sha256(profile["aliases"]):
+        refuse("NOE-E-DIGEST.PROFILE", "projection", "projection binds another alias dictionary")
+    text_value = _safe_text(projection["text"], "projection.text", MAX_OUTPUT_BYTES, controls=True)
+    text = text_value.encode("utf-8")
+    if sha256(text).hexdigest() != manifest["projection_sha256"]:
+        refuse("NOE-E-DIGEST.PROJECTION", "projection", "projection bytes differ from the manifest")
+    lines = text.split(b"\n")
+    if len(lines) != 3 or lines[-1] != b"":
+        refuse("NOE-E-SYNTAX.PROJECTION", "projection", "slice projection must contain one header and tape line")
+    try:
+        header = lines[0].decode("ascii").split(" ")
+    except UnicodeDecodeError:
+        refuse("NOE-E-SYNTAX.PROJECTION", "projection", "slice projection header must be ASCII")
+    if (
+        len(header) != 3
+        or header[0] != PROJECTION_MAGIC
+        or header[1] != manifest["profile_sha256"]
+        or header[2] != manifest["graph_sha256"]
+    ):
+        refuse("NOE-E-DIGEST.PROJECTION", "projection", "slice projection header differs")
+    projected = _decode_json(
+        lines[1] + b"\n",
+        "projection.slice",
+        canonical=True,
+        maximum_depth=MAX_DEPTH + 4,
+    )
+    aliases = profile["aliases"]
+    assert isinstance(aliases, list)
+    inverse = {str(item[1]): str(item[0]) for item in aliases}
+    recovered = _replace_strings(projected, inverse)
+    slice_graph = _exact_keys(
+        recovered,
+        {"schema", "graph_sha256", "selection_sha256", "tape"},
+        "projection.slice",
+    )
+    if (
+        slice_graph["schema"] != SLICE_GRAPH_SCHEMA
+        or slice_graph["graph_sha256"] != manifest["graph_sha256"]
+        or slice_graph["selection_sha256"] != manifest["selection_sha256"]
+        or slice_graph["tape"] != manifest["tape"]
+    ):
+        refuse("NOE-E-DIGEST.RECOVERY", "projection", "slice projection recovers different policy data")
+    return projection
+
+
+def _verify_manifest_path(path: Path) -> tuple[dict[str, object], dict[str, object]]:
+    value, _raw = _read_canonical_json(path, "manifest", maximum_depth=MAX_DEPTH + 5)
+    manifest = _validate_manifest_value(value)
+    artifacts = manifest["artifacts"]
+    assert isinstance(artifacts, dict)
+    root = path.parent
+    try:
+        root_status = root.lstat()
+    except OSError:
+        refuse("NOE-E-IO.READ", "manifest", "manifest directory cannot be inspected")
+    if not stat.S_ISDIR(root_status.st_mode) or stat.S_ISLNK(root_status.st_mode):
+        refuse("NOE-E-PATH.DIRECTORY", "manifest", "manifest parent must be one real directory")
+    build_path = root / str(artifacts["build"])
+    modules_path = root / str(artifacts["modules"])
+    profile_path = root / str(artifacts["profile"])
+    kernel_path = root / str(artifacts["kernel"])
+    selection_path = root / str(artifacts["selection"])
+    projection_path = root / str(artifacts["projection"])
+    build, _build_raw, build_artifacts = load_build(
+        build_path,
+        modules_path,
+        profile_path,
+        kernel_path,
+    )
+    selection_value, _selection_raw = _read_canonical_json(selection_path, "selection")
+    selection = _validate_selection(selection_value)
+    profile_value = _decode_json(build_artifacts["profile"], "profile", canonical=True)
+    assert isinstance(profile_value, dict)
+    expected_manifest, expected_projection = select_runtime(
+        build,
+        profile_value,
+        sha256(build_artifacts["profile"]).hexdigest(),
+        selection,
+        artifacts={key: str(artifacts[key]) for key in sorted(RUNTIME_ARTIFACT_LEAVES)},
+    )
+    if expected_manifest != manifest:
+        refuse("NOE-E-DIGEST.MANIFEST", "manifest", "runtime manifest is stale")
+    projection_value, _projection_raw = _read_canonical_json(
+        projection_path,
+        "projection",
+        maximum_depth=MAX_DEPTH + 5,
+    )
+    projection = _validate_slice_projection(projection_value, manifest, profile_value)
+    if projection != expected_projection:
+        refuse("NOE-E-DIGEST.PROJECTION", "projection", "runtime projection is stale")
+    return manifest, projection
+
+
+def _read_fact_array(path: Path, field: str) -> list[dict[str, object]]:
+    value, _raw = _read_canonical_json(path, field)
+    return _validate_facts(value, field)
+
+
+def _select_command(arguments: argparse.Namespace) -> dict[str, object]:
+    build, _raw, artifacts = load_build(
+        arguments.build,
+        arguments.modules,
+        arguments.profile,
+        arguments.kernel,
+    )
+    selection_value, _selection_raw = _read_canonical_json(arguments.selection, "selection")
+    profile = _decode_json(artifacts["profile"], "profile", canonical=True)
+    assert isinstance(profile, dict)
+    manifest, projection = select_runtime(
+        build,
+        profile,
+        sha256(artifacts["profile"]).hexdigest(),
+        selection_value,
+    )
+    manifest_digest = _value_sha256(manifest)
+    changed: bool | None = None
+    if arguments.previous_manifest is not None:
+        previous, _previous_projection = _verify_manifest_path(arguments.previous_manifest)
+        changed = _value_sha256(previous) != manifest_digest
+    output = {
+        "schema": "noema-select/v1",
+        "manifest_sha256": manifest_digest,
+        "projection_sha256": manifest["projection_sha256"],
+        "included_ids": manifest["included_ids"],
+        "omitted_ids": [item["id"] for item in manifest["omitted"]],
+        "changed": changed,
+    }
+    return _result(
+        "select",
+        "ok",
+        "NOE-I-CHANGED" if changed else "NOE-OK",
+        correlation_values=(str(manifest["graph_sha256"]), str(manifest["selection_sha256"])),
+        message="dependency-closed runtime slice returned as data",
+        digests={
+            "graph": str(manifest["graph_sha256"]),
+            "manifest": manifest_digest,
+            "projection": str(manifest["projection_sha256"]),
+        },
+        counts={
+            "included": len(manifest["included_ids"]),
+            "omitted": len(manifest["omitted"]),
+            "nodes": len(manifest["tape"]),
+        },
+        output=output,
+    )
+
+
+def _check_command(arguments: argparse.Namespace) -> dict[str, object]:
+    manifest, _projection = _verify_manifest_path(arguments.manifest)
+    facts = _read_fact_array(arguments.facts, "facts")
+    return check_runtime(arguments.effect, facts, manifest)
+
+
+def _next_command(arguments: argparse.Namespace) -> dict[str, object]:
+    manifest, _projection = _verify_manifest_path(arguments.manifest)
+    receipts = _read_fact_array(arguments.receipts, "receipts")
+    return next_runtime(
+        arguments.machine,
+        arguments.state,
+        arguments.event,
+        receipts,
+        manifest,
+    )
+
+
+def _literal_command(arguments: argparse.Namespace) -> dict[str, object]:
+    manifest, _projection = _verify_manifest_path(arguments.manifest)
+    return literal_runtime(arguments.id, manifest)
+
+
+def _explain_command(arguments: argparse.Namespace) -> dict[str, object]:
+    manifest, _projection = _verify_manifest_path(arguments.manifest)
+    return explain_runtime(arguments.node, manifest)
+
+
+def runtime_self_test() -> dict[str, object]:
+    root = Path(__file__).resolve().parents[1]
+    fixture = root / "tests" / "fixtures" / "noema-v1" / "runtime"
+    manifest, _projection = _verify_manifest_path(fixture / "manifest.json")
+    selection = manifest["selection"]
+    assert isinstance(selection, dict)
+    facts = selection["facts"]
+    permit = check_runtime("inspect", facts, manifest)
+    if permit["output"]["decision"] != "permit":
+        refuse("NOE-E-SELF_TEST.PERMIT", "runtime-self-test", "low-consequence case did not permit")
+    transition = next_runtime(
+        "workflow",
+        "idle",
+        "requested",
+        _read_fact_array(fixture / "receipts.json", "receipts"),
+        manifest,
+    )
+    if transition["output"]["status"] != "transition" or len(transition["output"]["effects"]) != 2:
+        refuse("NOE-E-SELF_TEST.TRANSITION", "runtime-self-test", "ordered transition case did not advance")
+    literal = literal_runtime("lit.instruction", manifest)
+    if literal["output"]["kind"] != "command":
+        refuse("NOE-E-SELF_TEST.LITERAL", "runtime-self-test", "reachable literal changed kind")
+    explanation = explain_runtime("rule.inspect", manifest)
+    if explanation["output"]["authoritative"] is not False:
+        refuse("NOE-E-SELF_TEST.EXPLAIN", "runtime-self-test", "explanation acquired authority")
+    build, _raw, artifacts = load_build(
+        fixture / "build.json",
+        fixture / "modules",
+        fixture / "profile.json",
+        fixture / "kernel.noe",
+    )
+    profile = _decode_json(artifacts["profile"], "profile", canonical=True)
+    assert isinstance(profile, dict)
+    outcomes: list[str] = []
+    for name, effect in (
+        ("selection-deploy.json", "deploy"),
+        ("selection-unknown.json", "review"),
+        ("selection-false.json", "beta"),
+    ):
+        value, _selection_raw = _read_canonical_json(fixture / name, "selection")
+        case_manifest, _case_projection = select_runtime(
+            build,
+            profile,
+            sha256(artifacts["profile"]).hexdigest(),
+            value,
+        )
+        if effect == "beta":
+            if not any(item["reason"] == "checked-false-guard" for item in case_manifest["omitted"]):
+                refuse("NOE-E-SELF_TEST.OMISSION", "runtime-self-test", "false guard lacked omission proof")
+            outcomes.append("omitted")
+        else:
+            case_selection = case_manifest["selection"]
+            assert isinstance(case_selection, dict)
+            decision = check_runtime(effect, case_selection["facts"], case_manifest)
+            outcomes.append(str(decision["output"]["decision"]))
+    if outcomes != ["refuse", "unknown", "omitted"]:
+        refuse("NOE-E-SELF_TEST.POLICY", "runtime-self-test", "runtime policy demonstration changed")
+    return _result(
+        "runtime-self-test",
+        "ok",
+        "NOE-OK",
+        correlation_values=(str(manifest["graph_sha256"]), str(manifest["selection_sha256"])),
+        message="slice, policy, transition, literal and explanation demonstrations passed",
+        digests={
+            "graph": str(manifest["graph_sha256"]),
+            "manifest": _value_sha256(manifest),
+            "projection": str(manifest["projection_sha256"]),
+        },
+        counts={"cases": 7, "included": len(manifest["included_ids"]), "omitted": len(manifest["omitted"])},
+    )
+
+
 def _common_paths(command: argparse.ArgumentParser, *, build: str = "--build") -> None:
     command.add_argument(build, required=True, type=Path)
     command.add_argument("--modules", required=True, type=Path)
@@ -2449,6 +3997,34 @@ def _diff_command(arguments: argparse.Namespace) -> dict[str, object]:
 
 
 def _verify_command(arguments: argparse.Namespace) -> dict[str, object]:
+    if arguments.manifest is not None:
+        manifest, projection = _verify_manifest_path(arguments.manifest)
+        return _result(
+            "verify",
+            "ok",
+            "NOE-OK",
+            correlation_values=(str(manifest["graph_sha256"]), str(manifest["selection_sha256"])),
+            message="runtime manifest, tape, projection and locked inputs match",
+            digests={
+                "graph": str(manifest["graph_sha256"]),
+                "manifest": _value_sha256(manifest),
+                "projection": sha256(str(projection["text"]).encode("utf-8")).hexdigest(),
+            },
+            counts={
+                "included": len(manifest["included_ids"]),
+                "omitted": len(manifest["omitted"]),
+                "nodes": len(manifest["tape"]),
+            },
+        )
+    if any(
+        value is None
+        for value in (arguments.build, arguments.modules, arguments.profile, arguments.kernel)
+    ):
+        refuse(
+            "NOE-E-TYPE.ARGUMENTS",
+            "command",
+            "build verification requires build, module, profile and kernel paths",
+        )
     build, raw, _artifacts = load_build(arguments.build, arguments.modules, arguments.profile, arguments.kernel)
     lock = build["lock"]
     graph = build["graph"]
@@ -2533,9 +4109,35 @@ def parser() -> argparse.ArgumentParser:
     diff_parser.add_argument("--profile", required=True, type=Path)
     diff_parser.add_argument("--kernel", required=True, type=Path)
     diff_parser.add_argument("--output", required=True, type=Path)
-    verify_parser = subparsers.add_parser("verify", help="verify graph, lock and dependency identities")
-    _common_paths(verify_parser)
+    select_parser = subparsers.add_parser("select", help="derive one dependency-closed runtime slice")
+    _common_paths(select_parser)
+    select_parser.add_argument("--selection", required=True, type=Path)
+    select_parser.add_argument("--previous-manifest", type=Path)
+    check_parser = subparsers.add_parser("check", help="return one non-executing policy decision")
+    check_parser.add_argument("--manifest", required=True, type=Path)
+    check_parser.add_argument("--effect", required=True)
+    check_parser.add_argument("--facts", required=True, type=Path)
+    next_parser = subparsers.add_parser("next", help="return one enabled transition without executing it")
+    next_parser.add_argument("--manifest", required=True, type=Path)
+    next_parser.add_argument("--machine", required=True)
+    next_parser.add_argument("--state", required=True)
+    next_parser.add_argument("--event", required=True)
+    next_parser.add_argument("--receipts", required=True, type=Path)
+    literal_parser = subparsers.add_parser("literal", help="return one reachable inert literal")
+    literal_parser.add_argument("--manifest", required=True, type=Path)
+    literal_parser.add_argument("--id", required=True)
+    explain_parser = subparsers.add_parser("explain", help="render one reachable node without authority")
+    explain_parser.add_argument("--manifest", required=True, type=Path)
+    explain_parser.add_argument("--node", required=True)
+    verify_parser = subparsers.add_parser("verify", help="verify a build or runtime manifest")
+    verify_group = verify_parser.add_mutually_exclusive_group(required=True)
+    verify_group.add_argument("--build", type=Path)
+    verify_group.add_argument("--manifest", type=Path)
+    verify_parser.add_argument("--modules", type=Path)
+    verify_parser.add_argument("--profile", type=Path)
+    verify_parser.add_argument("--kernel", type=Path)
     subparsers.add_parser("self-test", help="run the bounded codec/module/profile round trip")
+    subparsers.add_parser("runtime-self-test", help="run the checked-in non-executing runtime demonstration")
     for command in UNIMPLEMENTED:
         subparsers.add_parser(command, help="reserved by the receipted runbook")
     return root
@@ -2563,10 +4165,22 @@ def main(argv: list[str] | None = None) -> int:
             payload = _project_command(arguments)
         elif command == "semantic-diff":
             payload = _diff_command(arguments)
+        elif command == "select":
+            payload = _select_command(arguments)
+        elif command == "check":
+            payload = _check_command(arguments)
+        elif command == "next":
+            payload = _next_command(arguments)
+        elif command == "literal":
+            payload = _literal_command(arguments)
+        elif command == "explain":
+            payload = _explain_command(arguments)
         elif command == "verify":
             payload = _verify_command(arguments)
         elif command == "self-test":
             payload = self_test()
+        elif command == "runtime-self-test":
+            payload = runtime_self_test()
         else:
             payload = unimplemented(command)
     except Refusal as error:

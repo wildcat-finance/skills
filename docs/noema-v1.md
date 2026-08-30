@@ -244,21 +244,40 @@ kinds expose changes that do not collapse honestly into the nine rule facets.
 ## Conservative slicing
 
 `select` receives graph and lock identity, operation, state, target, tools,
-authority inputs and checked facts. Roots are the requested operation, its
-possible effects and output type plus every applicable higher-precedence rule.
-Closure retains referenced definitions, literals, promises, handoffs,
-exceptions, prohibitions, authority constraints, ordering, refusal and
-recovery.
+authority inputs and checked facts. An operation or effect match and a
+transition from the selected state are primary roots. Target or tool matches
+are secondary roots when no primary root exists. If neither class resolves,
+the safe fallback is the full selectable graph rather than an empty slice.
+Closure follows shared typed effect, operation, state, event, artifact, action,
+claim and command identities, then retains each connected promise, handoff,
+exception, prohibition, authority constraint, order edge, refusal and recovery.
+An order or override edge pulls both named rules into the slice.
 
 A checked-true guard retains its dependent rule. A checked-false guard may omit
 it only when the manifest carries the exact fact and evidence identity. An
 unknown guard retains it. Any rule that can forbid, constrain, order or recover
 a reachable effect remains reachable.
 
+Facts are addressed as `fact.` followed by SHA-256 over the canonical
+proposition bytes. A fact has exactly that id, `true`, `false` or `unknown`, and
+the SHA-256 identity of its evidence. A caller cannot attach truth to a free
+name, and an explanation object does not fit the fact shape.
+
 `noema-manifest/v1` commits to the complete graph and lock, compiler, profile,
 kernel, selection inputs, checked facts, included ids, omitted ids with reasons,
-reachable definitions and literals, projection and every digest. Included and
-omitted ids form an exact partition of the full graph's selectable ids.
+reachable definitions and literals, the complete runtime tape, the slice
+projection and every digest. The tape contains the included selectable records
+plus normalized reachable definition and literal records. Included and omitted
+ids form an exact partition of the full graph's selectable ids. A
+checked-inactive omission repeats the exact fact and evidence digest; an
+ordinary unreachable omission carries null fact fields.
+
+The manifest's `artifacts` object names six plain sibling leaves: build,
+module directory, profile, kernel, selection and projection. `verify
+--manifest` rereads those bytes, recompiles the build, recomputes the selection
+and recovers the projection before accepting the manifest. The leaf-only rule
+is intentional: a portable fixture cannot smuggle path traversal or a linked
+dependency into verification.
 
 ## Local codec interface
 
@@ -266,10 +285,11 @@ omitted ids form an exact partition of the full graph's selectable ids.
 kernel and output paths. It validates everything before atomically writing one
 `noema-build/v1` object containing the graph and lock. `format` recovers the
 canonical source; `project` writes one `noema-projection/v1` bundle;
-`semantic-diff` compares two builds; and `verify` rereads every dependency and
-lock identity. Those four commands take the same module, profile and kernel
-paths. `self-test` performs the checked-in complete-fixture round trip without
-writing a file.
+`semantic-diff` compares two builds; and `verify --build` rereads every
+dependency and lock identity. Those four commands take the same module,
+profile and kernel paths. `verify --manifest` instead checks the self-described
+runtime corpus above. `self-test` performs the checked-in complete-fixture
+round trip without writing a file.
 
 All input leaves must be regular files; module resolution is confined to one
 real directory and never scans it. An output leaf must be Unicode-scalar UTF-8
@@ -296,6 +316,41 @@ guard and ordered effects. `literal` refuses an unreachable id. `explain`
 labels its output and no policy operation may consume that render as evidence.
 The runtime has no operation for subprocess, network, Git, GitHub, file
 mutation, publication or deployment.
+
+All five operations consume data and return data. Their CLI forms accept only
+input paths and identifiers; none exposes an output path. `select` reports the
+manifest and projection identities and exact partitions. The in-process
+operation returns those two derived objects so a caller can preserve them at a
+separately authorised boundary. A prior manifest is optional comparison input;
+when supplied, the result states whether the exact manifest identity changed.
+
+Policy evaluation first expands only locked pure definitions. A checked fact
+can settle any exact proposition. Otherwise the runtime evaluates the closed
+three-valued Boolean operators, finite quantifiers, typed equality,
+membership, containment and unsigned comparisons; an opaque predicate remains
+unknown. A self-identical closed term is true without external evidence.
+Unknown guards retain their dependent directive and yield unknown rather than
+permission.
+
+`check` evaluates applicable `+`, `-` and `!` intents in authored `;` order
+under their `?`, `/`, `@` and `^` wrappers. A prohibition or failed requirement
+refuses before any permission is considered. Opposed requirements refuse
+unless one included `override` names the higher and lower rules and its typed
+authority, scope and `core.checked(evidence)` fact all hold. Precedence alone
+does not resolve that conflict. A rule carries at most one
+`core.consequence` atom with value `0` through `3`; disagreement refuses and an
+absent marker defaults to consequence 3. Consequence 2 and 3 default deny
+without an applicable `^` authority and satisfied gates. An exception is
+retained as policy and recovery context but cannot by itself cancel a
+prohibition or mint authority in this shadow runtime.
+
+`next` matches one machine, from-state and event. Zero established matches
+stop, an unknown guard stops unknown, and more than one established match
+refuses. A successful result returns the next state and the exact ordered
+directive terms without applying them. `literal` returns the kind, byte count,
+digest and exact reachable value; even `command`, `path` and `url` values stay
+inert. `explain` returns canonical record JSON under
+`noema-explanation/v1` with `authoritative:false`.
 
 ## Resource limits
 
@@ -335,7 +390,9 @@ exact alphabets published in the seed-inventory schema.
 Each command writes at most one `noema-result/v1` JSON line to standard output.
 It names command, deterministic correlation id, verdict, stable code, input and
 output digests and bounded counts that exist for that command. It never carries
-source text, literal payloads, prompts, model output or credentials.
+source text, prompts, model output or credentials. The sole payload exception
+is a successful `literal` result, whose purpose is to return one exact reachable
+inert value with its kind, byte count and digest.
 Malformed argument vectors use the same line with `NOE-E-TYPE.ARGUMENTS` and
 never echo argument bytes; `command` is the recognised operation or `invalid`.
 
