@@ -30,7 +30,7 @@ RUNTIME = PACKAGE / "runtime"
 MANIFEST = RUNTIME / "MANIFEST.json"
 GENERATOR = ROOT / "scripts" / "portable_promise_machine.py"
 CONFIG = ROOT / "skills.sh.json"
-AGENTS = ROOT / ".agents"
+PAYLOAD_ROOT = ROOT / ".agents"
 
 SCHEMA = "promise-machine-portable-runtime/v1"
 CONTRACT = "promise-machine/v1"
@@ -318,7 +318,7 @@ class SkillsShPackageTests(unittest.TestCase):
         Growth is not wrong, but it is not free and it is not silent: this
         fails with the new figure so the record can be updated deliberately.
         """
-        files = sorted(path for path in AGENTS.rglob("*") if path.is_file())
+        files = sorted(path for path in PAYLOAD_ROOT.rglob("*") if path.is_file())
         total = sum(path.stat().st_size for path in files)
         self.assertLessEqual(
             len(files),
