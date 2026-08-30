@@ -395,12 +395,13 @@ select(operation,state,target,tools,authority,facts) -> manifest + projection
 check(effect,facts,manifest)                         -> permit | refuse | unknown
 next(machine,state,event,receipts,manifest)          -> transition | stop
 literal(id,manifest)                                 -> kind + exact bytes
-explain(node,manifest)                               -> non-authoritative render
+explain(policy-node,manifest)                        -> non-authoritative render
 ```
 
 `next` owns no external domain judgment; it evaluates declared state, event,
 guard and ordered effects. `literal` refuses an unreachable id. `explain`
-labels its output and no policy operation may consume that render as evidence.
+accepts only a reachable policy record, never a literal or definition, labels
+its output and no policy operation may consume that render as evidence.
 The runtime has no operation for subprocess, network, Git, GitHub, file
 mutation, publication or deployment.
 
@@ -469,7 +470,8 @@ exact ordered directive terms without applying them.
 `literal` returns the kind, byte count, digest and exact reachable value; even
 `command`, `path` and `url` values stay inert. `explain` returns canonical
 record JSON under
-`noema-explanation/v1` with `authoritative:false`.
+`noema-explanation/v1` with `authoritative:false`. Literal records use only the
+separate `literal` result channel.
 
 ## Resource limits
 
@@ -521,7 +523,10 @@ exact alphabets published in the seed-inventory schema.
 
 ## Result and refusal contract
 
-Each command writes at most one `noema-result/v1` JSON line to standard output.
+Each command writes at most one `noema-result/v1` canonical JSON line to
+standard output. The final emission boundary applies the 1,048,576-byte output
+limit; an oversized result becomes one bounded refusal instead of a partial or
+over-limit success.
 It names command, deterministic correlation id, verdict, stable code, input and
 output digests and bounded counts that exist for that command. It never carries
 source text, prompts, model output or credentials. The sole payload exception

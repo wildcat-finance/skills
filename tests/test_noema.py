@@ -3974,6 +3974,14 @@ class ExplainTests(unittest.TestCase):
             noema.explain_runtime("rule.absent", manifest)
         self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.NODE")
 
+    def test_literal_node_cannot_bypass_the_literal_result_channel(self):
+        _build, _selection, manifest, _projection = runtime_fixture()
+        hostile = "$(touch /tmp/noema-owned)"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.explain_runtime("lit.instruction", manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.NODE")
+        self.assertNotIn(hostile, raised.exception.message)
+
     def test_precedence_node_can_be_explained(self):
         _build, _selection, manifest, _projection = runtime_fixture()
         node = "precedence:rule.deploy.prohibit>rule.deploy.permit"
@@ -4021,6 +4029,19 @@ class RuntimeResultTests(unittest.TestCase):
                 result["digests"]["cases"],
             ),
         )
+
+    def test_final_emission_enforces_the_result_byte_limit(self):
+        oversized = noema._result(
+            "about",
+            "ok",
+            "NOE-OK",
+            message="x" * noema.MAX_OUTPUT_BYTES,
+        )
+        with mock.patch.object(noema, "about", return_value=oversized):
+            status, result = self.run_main(["about"])
+        self.assertEqual(status, 2)
+        self.assertEqual(result["code"], "NOE-E-BOUNDS.OUTPUT")
+        self.assertEqual(result["field"], "output")
 
     def test_manifest_verify_cli_passes(self):
         status, result = self.run_main(["verify", "--manifest", str(RUNTIME_FIXTURE / "manifest.json")])
