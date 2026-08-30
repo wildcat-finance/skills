@@ -98,8 +98,26 @@ expired, unattributed, unrecorded or over-broad exceptions refuse.
 
 Canonical `.noe` is UTF-8, line-oriented and ends with one LF. Its first record
 is `NOE1`. Structural opcodes, qualified predicates, stable ids and typed
-literal references are governing syntax; prose is not. Step 2 fixes the exact
-token grammar while preserving the semantic and resource contract here.
+literal references are governing syntax; prose is not. Every later line is one
+canonical JSON array. The first item is the record form and the remaining items
+occur in the field order above. Arrays avoid field-name bootstrap cost without
+making arity contextual.
+
+Terms are prefix arrays. `['$',id]` references an inert literal; `['%',id]`
+references a bound variable; `[':',type,text]` is a typed atom; and
+`['{}',type,...members]` is a finite typed set. An operator or qualified
+predicate is the first item of every other term. Quantifiers use
+`[operator,[variable,type],finite-set,proposition]`. These examples use single
+quotes only for exposition; governing source uses canonical JSON double
+quotes. Numeric fields and values are unsigned decimal strings, never JSON
+numbers.
+
+JSON is canonical with UTF-8 NFC scalar strings, no BOM, CR, blank line,
+insignificant whitespace, alternate escape, duplicate object key or non-finite
+number. Object keys in module, profile and derived records are lexicographically
+sorted. Arrays retain semantic order. Records are sorted by the form order
+published above, then by id; precedence uses the `(higher,lower)` pair. These
+rules make the source byte string singular.
 
 Canonicalization is singular: no insignificant alternate whitespace, key
 order, escape, Unicode normalization or integer spelling exists. Parsing must
@@ -120,6 +138,14 @@ typed predicate signatures and pure definitions over already admitted
 operators and signatures. Imports bind complete module SHA-256 values. Import
 cycles, definition cycles, absent modules, multiple bytes for one identity and
 ambient lookup refuse.
+
+`noema-module/v1` has exactly `schema`, `id`, `imports`, `types`, `signatures`
+and `definitions`. Import entries are `[id,sha256]`; nominal subtype entries are
+`[qualified-name,core-parent]`; signatures are
+`[qualified-name,[parameter-types],result-type]`; definitions are
+`[qualified-name,[[parameter,type],...],pure-term]`. Collections are unique and
+source-sorted. A source import resolves only `<module-id>.json` below the named
+module directory. Unmentioned files have no meaning.
 
 `noema-lock/v1` binds source, graph, compiler, kernel and projection-profile
 SHA-256 values plus the ordered module id/digest list. Any changed or missing
@@ -146,6 +172,14 @@ the version-1 projection grammar. A profile binds its text alphabet, reserved
 opcodes, tokenizer or vocabulary identity, kernel bytes, alias dictionary and
 their SHA-256 values. Raw token ids are forbidden because text APIs and
 tokenizer revisions do not share their meaning.
+
+`noema-profile/v1` fixes the printable-ASCII alias alphabet and stores sorted
+`[source,target]` pairs. A projection contains exactly an ASCII header
+`NT1 <profile-sha256> <graph-sha256>`, one canonical JSON graph line and a final
+LF. The graph line substitutes exact strings using the profile. Its
+`noema-projection-manifest/v1` binds graph, lock, profile, alias-list and
+projection digests. Inverse substitution must recover the byte-identical graph
+before the bundle is returned.
 
 Aliases are injective across reserved opcodes, qualified predicates, literal
 ids and values visible in the same slice. Arity does not disambiguate an alias.
@@ -175,6 +209,11 @@ gates, authority, scope, evidence classes, literals, transitions, precedence
 and source bindings. A changed semantic digest with no entry, or an entry with
 unchanged before and after identities, refuses.
 
+`noema-semantic-diff/v1` entries contain exactly `node`, `kind`, `change`,
+`before` and `after`. The final two fields are canonical-value SHA-256 values or
+null on addition/removal. Definition, module, promise, handoff and exception
+kinds expose changes that do not collapse honestly into the nine rule facets.
+
 ## Conservative slicing
 
 `select` receives graph and lock identity, operation, state, target, tools,
@@ -193,6 +232,24 @@ a reachable effect remains reachable.
 kernel, selection inputs, checked facts, included ids, omitted ids with reasons,
 reachable definitions and literals, projection and every digest. Included and
 omitted ids form an exact partition of the full graph's selectable ids.
+
+## Local codec interface
+
+`scripts/noema.py parse` accepts named source, module-directory, profile,
+kernel and output paths. It validates everything before atomically writing one
+`noema-build/v1` object containing the graph and lock. `format` recovers the
+canonical source; `project` writes one `noema-projection/v1` bundle;
+`semantic-diff` compares two builds; and `verify` rereads every dependency and
+lock identity. Those four commands take the same module, profile and kernel
+paths. `self-test` performs the checked-in complete-fixture round trip without
+writing a file.
+
+All input leaves must be regular files; module resolution is confined to one
+real directory and never scans it. Output uses a random `.noema-write-` leaf
+independent of the target name, loops on partial writes, syncs file and parent,
+then replaces the target. A refusal before replacement leaves the prior target
+intact and removes the temporary. A post-replacement directory-sync failure is
+reported as uncertain durable state, never success.
 
 ## Policy runtime
 

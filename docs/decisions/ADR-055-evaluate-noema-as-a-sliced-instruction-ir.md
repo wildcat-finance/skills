@@ -40,6 +40,13 @@ marketplace, router, Promise Machine claim, CI workflow, #909 path or external
 repository. Native Noema authorship, a skill conversion and Shoggoth migration
 each require a later decision with separate evidence.
 
+Use fixed-position canonical JSON arrays for authored records and prefix terms,
+then derive a profile-bound `NT1` text projection by injective exact-string
+substitution. Store graph and lock together as one atomic build artifact. This
+keeps the governing layer structural and provider-neutral while retaining Git
+review, byte recovery and ordinary standard-library parsing. The text carrier
+is not the semantics; the recovered typed graph is.
+
 ## Alternatives
 
 ### Extend `wildcat-agent-instruction/v1`
@@ -89,3 +96,7 @@ not permit native skill authorship, a plugin registration, a repository-wide
 conversion or migration. A rejected result stays useful: it records which
 semantic, compression or transfer gate failed without moving the gate after
 observation.
+
+This run stops after its final prototype checkpoint. Fiat integration, merging
+the run branch, closing #942 or adopting Noema anywhere is outside this ADR and
+requires separately scoped follow-up issues.

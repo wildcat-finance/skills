@@ -24,6 +24,14 @@ SCHEMA = ROOT / "schemas" / "noema-v1.schema.json"
 INVENTORY = ROOT / "tests" / "fixtures" / "noema-v1" / "seed-inventory.json"
 STUDY = ROOT / "docs" / "noema" / "study.md"
 RUNBOOK = ROOT / "docs" / "noema" / "runbook.md"
+NOEMA_FIXTURES = ROOT / "tests" / "fixtures" / "noema-v1"
+CODEC_FIXTURE = NOEMA_FIXTURES / "codec" / "complete.noe"
+MODULES_FIXTURE = NOEMA_FIXTURES / "modules"
+PROFILE_FIXTURE = NOEMA_FIXTURES / "profiles" / "ascii-baseline.json"
+KERNEL_FIXTURE = NOEMA_FIXTURES / "profiles" / "kernel.noe"
+CORE_DIGEST = "df97b7f39b31fcad8d75fe6d7079b12ee7c8326bd4ec1758a6577764ad1b6b76"
+BOUND_SOURCE = NOEMA_FIXTURES / "codec" / "bound-source.txt"
+SOURCE_DIGEST = "34a6411e347aa461190a71ceaa666418923ac947101c4d6db2f5e62f2b386dac"
 
 
 def load_noema():
@@ -36,6 +44,36 @@ def load_noema():
 
 
 noema = load_noema()
+
+
+def source_binding(start: int = 0, end: int = 1):
+    return [
+        "src",
+        "tests/fixtures/noema-v1/codec/bound-source.txt",
+        SOURCE_DIGEST,
+        str(start),
+        str(end),
+    ]
+
+
+def base_records(directive=None, *, literals=None, definitions=None):
+    records = [["import", "core", CORE_DIGEST]]
+    records.extend(literals or [])
+    records.extend(definitions or [])
+    records.append(
+        [
+            "rule",
+            "rule.test",
+            directive or ["+", ["core.ready", [":", "state", "ready"]]],
+            source_binding(),
+        ]
+    )
+    return records
+
+
+def compile_records(records):
+    raw = noema._canonical_source(records)
+    return noema.compile_source(raw, MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
 
 
 def write_bytes(path: Path, payload: bytes) -> None:
@@ -152,14 +190,15 @@ class NoemaScaffoldTests(unittest.TestCase):
         self.assertEqual(
             set(schema), {"$schema", "$id", "title", "oneOf", "$defs"}
         )
+        public_records = {
+            "seedInventory", "module", "profile", "build", "projection",
+            "semanticDiff", "lock", "manifest", "result", "evidence",
+        }
         self.assertEqual(
-            {"seedInventory", "lock", "manifest", "result", "evidence"},
-            {
-                reference["$ref"].rsplit("/", 1)[-1]
-                for reference in schema["oneOf"]
-            },
+            public_records,
+            {reference["$ref"].rsplit("/", 1)[-1] for reference in schema["oneOf"]},
         )
-        for name in ("seedInventory", "lock", "manifest", "result", "evidence"):
+        for name in public_records:
             self.assertFalse(schema["$defs"][name]["additionalProperties"])
 
     def test_schema_rejects_noncanonical_archive_member_paths(self):
@@ -594,6 +633,583 @@ class NoemaScaffoldTests(unittest.TestCase):
             linked.symlink_to(archive_path)
             error = refusal(linked, inventory_path)
             self.assertEqual(error.code, "NOE-E-PATH.REGULAR")
+
+
+class CanonicalSourceTests(unittest.TestCase):
+    def test_checked_in_source_is_byte_identical_after_format(self):
+        raw = CODEC_FIXTURE.read_bytes()
+        build, artifacts = noema.compile_source(raw, MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
+        self.assertEqual(artifacts["source"], raw)
+        self.assertEqual(noema._canonical_source(build["graph"]["records"]), raw)
+
+    def test_noncanonical_json_spacing_refuses(self):
+        raw = b'NOE1\n["import", "core","' + CORE_DIGEST.encode() + b'"]\n'
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._parse_source_lines(raw)
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.CANONICAL")
+
+    def test_missing_final_lf_refuses(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._parse_source_lines(b"NOE1")
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.FINAL_LF")
+
+    def test_extra_final_lf_refuses(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._parse_source_lines(b"NOE1\n\n")
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.LINES")
+
+    def test_cr_refuses(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._parse_source_lines(b"NOE1\r\n")
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.LINES")
+
+    def test_wrong_magic_refuses(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._parse_source_lines(b"NOE0\n")
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.MAGIC")
+
+    def test_record_order_refuses(self):
+        records = base_records()
+        records.reverse()
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(records)
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.ORDER")
+
+    def test_duplicate_record_key_refuses(self):
+        records = base_records()
+        records.append(records[-1])
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(records)
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.ORDER")
+
+    def test_unknown_record_refuses(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records([["wat", "x"]])
+        self.assertEqual(raised.exception.code, "NOE-E-TYPE.RECORD")
+
+    def test_duplicate_json_key_refuses(self):
+        raw = b'NOE1\n{"x":1,"x":2}\n'
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._parse_source_lines(raw)
+        self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.DUPLICATE_KEY")
+
+    def test_line_cap_accepts_exact_and_refuses_plus_one(self):
+        exact_line = b'"' + b"a" * (noema.MAX_LINE_BYTES - 3) + b'"\n'
+        self.assertEqual(len(exact_line), noema.MAX_LINE_BYTES)
+        self.assertEqual(len(noema._parse_source_lines(b"NOE1\n" + exact_line)), 1)
+        too_long = b'"' + b"a" * (noema.MAX_LINE_BYTES - 2) + b'"\n'
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._parse_source_lines(b"NOE1\n" + too_long)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.LINE")
+
+    def test_input_cap_accepts_exact_and_refuses_plus_one(self):
+        remaining = noema.MAX_INPUT_BYTES - len(b"NOE1\n")
+        lines = []
+        while remaining:
+            size = min(noema.MAX_LINE_BYTES, remaining)
+            if size < 3:
+                take = 3 - size
+                lines[-1] = lines[-1][:-take]
+                remaining += take
+                continue
+            lines.append(b'"' + b"a" * (size - 3) + b'"\n')
+            remaining -= size
+        exact = b"NOE1\n" + b"".join(lines)
+        self.assertEqual(len(exact), noema.MAX_INPUT_BYTES)
+        noema._parse_source_lines(exact)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._parse_source_lines(exact + b"0\n")
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.FILE")
+
+    def test_record_cap_accepts_exact_and_refuses_plus_one(self):
+        exact = b"NOE1\n" + b"[]\n" * noema.MAX_RECORDS
+        self.assertEqual(len(noema._parse_source_lines(exact)), noema.MAX_RECORDS)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._parse_source_lines(exact + b"[]\n")
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.RECORDS")
+
+    def test_literal_cap_accepts_exact_and_refuses_plus_one(self):
+        value = "x" * noema.MAX_LITERAL_BYTES
+        literal = ["literal", "lit.big", "text", str(noema.MAX_LITERAL_BYTES), value]
+        compile_records(base_records(literals=[literal]))
+        literal[4] += "x"
+        literal[3] = str(noema.MAX_LITERAL_BYTES + 1)
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(base_records(literals=[literal]))
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.STRING")
+
+    def test_literal_aggregate_cap_accepts_exact_and_refuses_plus_one(self):
+        sizes = [65_000] * 12 + [6_432]
+        literals = [
+            ["literal", f"lit.{index:02d}", "text", str(size), "x" * size]
+            for index, size in enumerate(sizes)
+        ]
+        compile_records(base_records(literals=literals))
+        literals[-1][3] = "6433"
+        literals[-1][4] += "x"
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(base_records(literals=literals))
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.LITERAL_TOTAL")
+
+    def test_import_cap_accepts_exact_and_refuses_plus_one(self):
+        exact = [["import", f"m{index:02d}", "0" * 64] for index in range(noema.MAX_IMPORTS)]
+        imports, _definitions = noema._preflight_records(exact)
+        self.assertEqual(len(imports), noema.MAX_IMPORTS)
+        extra = exact + [["import", "mz", "0" * 64]]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._preflight_records(extra)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.IMPORTS")
+
+    def test_finite_set_cap_accepts_exact_and_refuses_plus_one(self):
+        literal = ["literal", "n", "number", "1", "1"]
+        members = [["$", "n"]] * noema.MAX_SET_MEMBERS
+        quantified = ["all", ["x", "value"], ["{}", "value", *members], ["=", ["%", "x"], ["$", "n"]]]
+        compile_records(base_records(["+", quantified], literals=[literal]))
+        quantified[2].append(["$", "n"])
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(base_records(["+", quantified], literals=[literal]))
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.SET")
+
+    def test_very_long_decimal_never_enters_integer_conversion(self):
+        literal = ["literal", "n", "number", "65000", "9" * 65_000]
+        compile_records(base_records(literals=[literal]))
+
+
+class GraphValidationTests(unittest.TestCase):
+    def test_unknown_operator_refuses(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(base_records(["wat", [":", "state", "ready"]]))
+        self.assertEqual(raised.exception.code, "NOE-E-TYPE.OPERATOR")
+
+    def test_wrong_arity_refuses(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(base_records(["+", [":", "effect", "x"], [":", "effect", "y"]]))
+        self.assertEqual(raised.exception.code, "NOE-E-TYPE.ARITY")
+
+    def test_type_mismatch_refuses(self):
+        directive = ["@", [":", "actor", "alice"], ["+", [":", "effect", "x"]]]
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(base_records(directive))
+        self.assertEqual(raised.exception.code, "NOE-E-TYPE.MISMATCH")
+
+    def test_unresolved_literal_refuses(self):
+        directive = ["+", ["core.invokes", [":", "effect", "x"], ["$", "absent"]]]
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(base_records(directive))
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.LITERAL")
+
+    def test_unresolved_predicate_refuses(self):
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(base_records(["+", ["core.absent"]]))
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.PREDICATE")
+
+    def test_definition_cycle_refuses(self):
+        definitions = [
+            ["definition", "local.a", [], ["local.b"]],
+            ["definition", "local.b", [], ["local.a"]],
+        ]
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(base_records(definitions=definitions))
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.DEFINITION_CYCLE")
+
+    def test_precedence_cycle_refuses(self):
+        records = [["import", "core", CORE_DIGEST]]
+        records.extend(
+            [
+                ["rule", "a", ["+", [":", "effect", "x"]], source_binding(0, 1)],
+                ["rule", "b", ["+", [":", "effect", "y"]], source_binding(1, 2)],
+                ["precedence", "a", "b", [":", "actor", "x"], [":", "scope", "x"], [":", "evidence", "x"]],
+                ["precedence", "b", "a", [":", "actor", "x"], [":", "scope", "x"], [":", "evidence", "x"]],
+            ]
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(records)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.RELATION_CYCLE")
+
+    def test_overlapping_source_spans_refuse(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", "a", ["+", [":", "effect", "x"]], source_binding(0, 2)],
+            ["rule", "b", ["+", [":", "effect", "y"]], source_binding(1, 3)],
+        ]
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(records)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.SPAN")
+
+    def test_graph_node_budget_refuses_limit_plus_one(self):
+        budget = noema._Budget()
+        for _index in range(noema.MAX_GRAPH_NODES):
+            budget.node("test")
+        with self.assertRaises(noema.Refusal) as raised:
+            budget.node("test")
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.NODES")
+
+
+class ModuleLockTests(unittest.TestCase):
+    def test_lock_binds_every_dependency_byte_string(self):
+        build, artifacts = noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
+        lock = build["lock"]
+        self.assertEqual(lock["source_sha256"], sha256(artifacts["source"]).hexdigest())
+        self.assertEqual(lock["graph_sha256"], sha256(artifacts["graph"]).hexdigest())
+        self.assertEqual(lock["kernel_sha256"], sha256(KERNEL_FIXTURE.read_bytes()).hexdigest())
+        self.assertEqual(lock["profile_sha256"], sha256(PROFILE_FIXTURE.read_bytes()).hexdigest())
+        self.assertEqual(lock["modules"], [{"id": "core", "sha256": CORE_DIGEST}])
+
+    def test_stale_module_digest_refuses(self):
+        records = base_records()
+        records[0][2] = "0" * 64
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(records)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.MODULE")
+
+    def test_absent_module_refuses(self):
+        records = [["import", "absent", "0" * 64]]
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(records)
+        self.assertEqual(raised.exception.code, "NOE-E-IO.READ")
+
+    def test_ambient_module_file_is_not_loaded(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "core.json").write_bytes((MODULES_FIXTURE / "core.json").read_bytes())
+            (directory / "ambient.json").write_text("not json\n")
+            raw = noema._canonical_source(base_records())
+            build, _artifacts = noema.compile_source(raw, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+            self.assertEqual([item["id"] for item in build["graph"]["modules"]], ["core"])
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
+    def test_linked_module_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            (directory / "core.json").symlink_to(MODULES_FIXTURE / "core.json")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.compile_source(noema._canonical_source(base_records()), directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.REGULAR")
+
+    def test_stale_build_lock_refuses(self):
+        build, _artifacts = noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
+        build["lock"]["compiler_sha256"] = "0" * 64
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._verify_build_value(build, MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.BUILD")
+
+    def test_kernel_profile_mismatch_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            kernel = Path(temporary) / "kernel"
+            kernel.write_text("different\n")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, kernel)
+            self.assertEqual(raised.exception.code, "NOE-E-DIGEST.KERNEL")
+
+
+class ProjectionTests(unittest.TestCase):
+    def setUp(self):
+        self.build, self.artifacts = noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
+        self.profile = noema._decode_json(PROFILE_FIXTURE.read_bytes(), "profile", canonical=True)
+        self.profile_digest = sha256(PROFILE_FIXTURE.read_bytes()).hexdigest()
+
+    def test_projection_recovers_exact_graph(self):
+        bundle = noema.project_build(self.build, self.profile, self.profile_digest)
+        self.assertEqual(noema.recover_projection(bundle, self.profile), self.build["graph"])
+
+    def test_projection_text_is_idempotent(self):
+        first = noema.project_build(self.build, self.profile, self.profile_digest)
+        second = noema.project_build(self.build, self.profile, self.profile_digest)
+        self.assertEqual(noema._canonical_json(first), noema._canonical_json(second))
+
+    def test_alias_collision_with_visible_literal_refuses(self):
+        profile = json.loads(json.dumps(self.profile))
+        profile["aliases"][0][1] = "operator"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.project_build(self.build, profile, self.profile_digest)
+        self.assertEqual(raised.exception.code, "NOE-E-ALIAS.COLLISION")
+
+    def test_alias_collision_by_arity_still_refuses(self):
+        profile = json.loads(json.dumps(self.profile))
+        profile["aliases"][1][1] = profile["aliases"][0][1]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.project_build(self.build, profile, self.profile_digest)
+        self.assertEqual(raised.exception.code, "NOE-E-ALIAS.COLLISION")
+
+    def test_unused_alias_refuses(self):
+        profile = json.loads(json.dumps(self.profile))
+        profile["aliases"].append(["zz.absent", "Z"])
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.project_build(self.build, profile, self.profile_digest)
+        self.assertEqual(raised.exception.code, "NOE-E-ALIAS.UNUSED")
+
+    def test_tampered_projection_refuses(self):
+        bundle = noema.project_build(self.build, self.profile, self.profile_digest)
+        bundle["text"] = bundle["text"].replace("NT1", "NT0", 1)
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.recover_projection(bundle, self.profile)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.PROJECTION")
+
+    def test_manifest_profile_mismatch_refuses(self):
+        bundle = noema.project_build(self.build, self.profile, self.profile_digest)
+        bundle["manifest"]["profile_sha256"] = "0" * 64
+        bundle["manifest"]["projection_sha256"] = sha256(bundle["text"].encode()).hexdigest()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.recover_projection(bundle, self.profile)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.PROFILE")
+
+
+class SemanticDiffTests(unittest.TestCase):
+    def setUp(self):
+        self.build, _artifacts = noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
+
+    def test_noop_diff_has_no_entries(self):
+        self.assertEqual(noema.semantic_diff(self.build, self.build)["entries"], [])
+
+    def test_effect_change_is_named(self):
+        records = json.loads(json.dumps(self.build["graph"]["records"]))
+        records[4][2] = ["-", ["core.ready", [":", "state", "ready"]]]
+        changed, _artifacts = compile_records(records)
+        kinds = {entry["kind"] for entry in noema.semantic_diff(self.build, changed)["entries"]}
+        self.assertIn("effect", kinds)
+
+    def test_source_binding_change_is_named(self):
+        records = json.loads(json.dumps(self.build["graph"]["records"]))
+        records[4][3][4] = "9"
+        changed, _artifacts = compile_records(records)
+        kinds = {entry["kind"] for entry in noema.semantic_diff(self.build, changed)["entries"]}
+        self.assertIn("source_binding", kinds)
+
+    def test_literal_change_is_named(self):
+        records = json.loads(json.dumps(self.build["graph"]["records"]))
+        records[1][3:] = ["11", "git status!"]
+        changed, _artifacts = compile_records(records)
+        kinds = {entry["kind"] for entry in noema.semantic_diff(self.build, changed)["entries"]}
+        self.assertIn("literal", kinds)
+
+    def test_precedence_change_is_named(self):
+        records = json.loads(json.dumps(self.build["graph"]["records"]))
+        records[-1][3] = [":", "actor", "alternate"]
+        changed, _artifacts = compile_records(records)
+        kinds = {entry["kind"] for entry in noema.semantic_diff(self.build, changed)["entries"]}
+        self.assertIn("authority", kinds)
+
+    def test_diff_entries_are_closed_and_digest_bound(self):
+        records = json.loads(json.dumps(self.build["graph"]["records"]))
+        records[4][2] = ["-", ["core.ready", [":", "state", "ready"]]]
+        changed, _artifacts = compile_records(records)
+        diff = noema.semantic_diff(self.build, changed)
+        for entry in diff["entries"]:
+            self.assertEqual(set(entry), {"node", "kind", "change", "before", "after"})
+            for digest in (entry["before"], entry["after"]):
+                if digest is not None:
+                    self.assertRegex(digest, r"^[0-9a-f]{64}$")
+
+
+class PathBoundaryTests(unittest.TestCase):
+    @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
+    def test_linked_input_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            link = Path(temporary) / "source.noe"
+            link.symlink_to(CODEC_FIXTURE)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._read_regular(link, "source", noema.MAX_INPUT_BYTES)
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.REGULAR")
+
+    def test_directory_input_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._read_regular(Path(temporary), "source", noema.MAX_INPUT_BYTES)
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.REGULAR")
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "FIFOs are unavailable")
+    def test_fifo_input_refuses_without_opening(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            fifo = Path(temporary) / "pipe"
+            os.mkfifo(fifo)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._read_regular(fifo, "source", noema.MAX_INPUT_BYTES)
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.REGULAR")
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
+    def test_linked_output_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            target = directory / "target"
+            target.write_text("old")
+            link = directory / "link"
+            link.symlink_to(target)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._atomic_write(link, b"new")
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.REGULAR")
+            self.assertEqual(target.read_text(), "old")
+
+    def test_directory_output_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._atomic_write(Path(temporary), b"new")
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.REGULAR")
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "FIFOs are unavailable")
+    def test_fifo_output_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            fifo = Path(temporary) / "pipe"
+            os.mkfifo(fifo)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._atomic_write(fifo, b"new")
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.REGULAR")
+
+    def test_partial_writes_are_completed(self):
+        real_write = os.write
+        calls = 0
+
+        def partial(descriptor, payload):
+            nonlocal calls
+            calls += 1
+            return real_write(descriptor, payload[: max(1, len(payload) // 2)])
+
+        with tempfile.TemporaryDirectory() as temporary:
+            target = Path(temporary) / "output"
+            with mock.patch.object(noema.os, "write", side_effect=partial):
+                noema._atomic_write(target, b"abcdefghij")
+            self.assertGreater(calls, 1)
+            self.assertEqual(target.read_bytes(), b"abcdefghij")
+
+    def test_zero_write_refuses_and_leaks_no_temporary(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            with mock.patch.object(noema.os, "write", return_value=0), self.assertRaises(noema.Refusal) as raised:
+                noema._atomic_write(directory / "output", b"x")
+            self.assertEqual(raised.exception.code, "NOE-E-IO.WRITE")
+            self.assertEqual(list(directory.iterdir()), [])
+
+    def test_sync_failure_preserves_old_target_and_leaks_no_temporary(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            target = directory / "output"
+            target.write_bytes(b"old")
+            with mock.patch.object(noema.os, "fsync", side_effect=OSError("fault")), self.assertRaises(noema.Refusal) as raised:
+                noema._atomic_write(target, b"new")
+            self.assertEqual(raised.exception.code, "NOE-E-IO.WRITE")
+            self.assertEqual(target.read_bytes(), b"old")
+            self.assertEqual([path.name for path in directory.iterdir()], ["output"])
+
+    def test_replace_failure_preserves_old_target_and_leaks_no_temporary(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            target = directory / "output"
+            target.write_bytes(b"old")
+            with mock.patch.object(noema.os, "replace", side_effect=OSError("fault")), self.assertRaises(noema.Refusal) as raised:
+                noema._atomic_write(target, b"new")
+            self.assertEqual(raised.exception.code, "NOE-E-IO.WRITE")
+            self.assertEqual(target.read_bytes(), b"old")
+            self.assertEqual([path.name for path in directory.iterdir()], ["output"])
+
+    def test_maximum_leaf_name_succeeds_and_plus_one_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            exact = directory / ("a" * 255)
+            noema._atomic_write(exact, b"x")
+            self.assertEqual(exact.read_bytes(), b"x")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._atomic_write(directory / ("b" * 256), b"x")
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.LEAF")
+
+    def test_temporary_prefix_is_target_independent(self):
+        real_mkstemp = tempfile.mkstemp
+        observed = []
+
+        def capture(*args, **kwargs):
+            observed.append(kwargs.get("prefix"))
+            return real_mkstemp(*args, **kwargs)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            with mock.patch.object(noema.tempfile, "mkstemp", side_effect=capture):
+                noema._atomic_write(Path(temporary) / "secret-target-name", b"x")
+        self.assertEqual(observed, [".noema-write-"])
+
+
+def _literal_test(kind, value):
+    def test(self):
+        encoded = value.encode("utf-8")
+        literal = ["literal", f"lit.{kind}", kind, str(len(encoded)), value]
+        build, _artifacts = compile_records(base_records(literals=[literal]))
+        self.assertEqual(build["graph"]["records"][1], literal)
+
+    return test
+
+
+for _kind, _value in {
+    "id": "alpha",
+    "path": "a/b",
+    "sha256": "0" * 64,
+    "command": "git status",
+    "number": "123",
+    "date": "2026-08-30",
+    "url": "https://example.invalid/x",
+    "quote": "say 'x'",
+    "text": "plain text",
+    "bytes": "00ff",
+}.items():
+    setattr(CanonicalSourceTests, f"test_literal_kind_{_kind}", _literal_test(_kind, _value))
+
+
+def _core_type_test(type_name):
+    def test(self):
+        atom = [":", type_name, "x"]
+        build, _artifacts = compile_records(base_records(["+", ["=", atom, atom]]))
+        self.assertEqual(build["schema"], noema.BUILD_SCHEMA)
+
+    return test
+
+
+for _type_name in sorted(noema.CORE_TYPES):
+    setattr(GraphValidationTests, f"test_core_type_{_type_name}", _core_type_test(_type_name))
+
+
+def _operator_term(operator):
+    proposition = ["core.ready", [":", "state", "ready"]]
+    permit = ["+", proposition]
+    atom = [":", "actor", "a"]
+    finite = ["{}", "actor", atom]
+    cases = {
+        "!": ["!", proposition],
+        "-": ["-", proposition],
+        "+": permit,
+        "?": ["?", proposition, permit],
+        "/": ["/", proposition, permit],
+        "@": ["@", [":", "scope", "repo"], permit],
+        "^": ["^", [":", "actor", "owner"], permit],
+        ";": [";", permit, ["-", proposition]],
+        "&": ["+", ["&", proposition, proposition]],
+        "|": ["+", ["|", proposition, proposition]],
+        "~": ["+", ["~", proposition]],
+        "=": ["+", ["=", atom, atom]],
+        "=>": ["+", ["=>", proposition, proposition]],
+        "all": ["+", ["all", ["x", "actor"], finite, ["=", ["%", "x"], atom]]],
+        "any": ["+", ["any", ["x", "actor"], finite, ["=", ["%", "x"], atom]]],
+        "one": ["+", ["one", ["x", "actor"], finite, ["=", ["%", "x"], atom]]],
+        "in": ["+", ["in", atom, finite]],
+        "subset": ["+", ["subset", finite, finite]],
+        "lt": ["+", ["lt", [":", "value", "1"], [":", "value", "2"]]],
+        "le": ["+", ["le", [":", "value", "1"], [":", "value", "2"]]],
+        "gt": ["+", ["gt", [":", "value", "2"], [":", "value", "1"]]],
+        "ge": ["+", ["ge", [":", "value", "2"], [":", "value", "1"]]],
+        "count": ["+", ["=", ["count", finite], [":", "value", "1"]]],
+    }
+    return cases.get(operator)
+
+
+def _operator_test(operator):
+    def test(self):
+        if operator == "<":
+            definitions = [["definition", "local.order", [], ["<", [":", "state", "a"], [":", "state", "b"]]]]
+            build, _artifacts = compile_records(base_records(definitions=definitions))
+        else:
+            build, _artifacts = compile_records(base_records(_operator_term(operator)))
+        self.assertEqual(build["schema"], noema.BUILD_SCHEMA)
+
+    return test
+
+
+for _operator in sorted(noema.OPERATORS):
+    safe_name = {"!": "require", "-": "prohibit", "+": "permit", "?": "when_true", "/": "when_false", "@": "scope", "^": "authority", ";": "sequence", "&": "and", "|": "or", "~": "not", "=": "equal", "=>": "implies", "<": "before"}.get(_operator, _operator)
+    setattr(GraphValidationTests, f"test_operator_{safe_name}", _operator_test(_operator))
 
 
 if __name__ == "__main__":

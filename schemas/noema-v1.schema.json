@@ -7,6 +7,21 @@
       "$ref": "#/$defs/seedInventory"
     },
     {
+      "$ref": "#/$defs/module"
+    },
+    {
+      "$ref": "#/$defs/profile"
+    },
+    {
+      "$ref": "#/$defs/build"
+    },
+    {
+      "$ref": "#/$defs/projection"
+    },
+    {
+      "$ref": "#/$defs/semanticDiff"
+    },
+    {
       "$ref": "#/$defs/lock"
     },
     {
@@ -487,6 +502,229 @@
         "counts": {
           "$ref": "#/$defs/countSet"
         }
+      }
+    },
+    "sourceRecord": {
+      "oneOf": [
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "import" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/sha256" }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "literal" },
+            { "$ref": "#/$defs/identifier" },
+            { "enum": ["id", "path", "sha256", "command", "number", "date", "url", "quote", "text", "bytes"] },
+            { "type": "string", "pattern": "^(?:0|[1-9][0-9]*)$" },
+            { "type": "string", "maxLength": 65000 }
+          ],
+          "minItems": 5,
+          "maxItems": 5
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "definition" },
+            { "$ref": "#/$defs/identifier" },
+            { "type": "array", "maxItems": 64 },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "rule" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "type": "array", "minItems": 5, "maxItems": 5 }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "prefixItems": [{ "const": "precedence" }],
+          "minItems": 6,
+          "maxItems": 6
+        },
+        {
+          "type": "array",
+          "prefixItems": [{ "const": "override" }],
+          "minItems": 7,
+          "maxItems": 7
+        },
+        {
+          "type": "array",
+          "prefixItems": [{ "const": "transition" }],
+          "minItems": 8,
+          "maxItems": 8
+        },
+        {
+          "type": "array",
+          "prefixItems": [{ "const": "promise" }],
+          "minItems": 11,
+          "maxItems": 11
+        },
+        {
+          "type": "array",
+          "prefixItems": [{ "const": "handoff" }],
+          "minItems": 11,
+          "maxItems": 11
+        },
+        {
+          "type": "array",
+          "prefixItems": [{ "const": "exception" }],
+          "minItems": 9,
+          "maxItems": 9
+        }
+      ]
+    },
+    "term": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4098,
+      "prefixItems": [
+        { "type": "string", "minLength": 1, "maxLength": 128 }
+      ]
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "imports", "types", "signatures", "definitions"],
+      "properties": {
+        "schema": { "const": "noema-module/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "imports": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              { "$ref": "#/$defs/identifier" },
+              { "$ref": "#/$defs/sha256" }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "types": { "type": "array", "maxItems": 16384, "uniqueItems": true },
+        "signatures": { "type": "array", "maxItems": 16384, "uniqueItems": true },
+        "definitions": { "type": "array", "maxItems": 16384, "uniqueItems": true }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "alphabet", "tokenizer", "vocabulary_sha256", "kernel_sha256", "reserved", "aliases"],
+      "properties": {
+        "schema": { "const": "noema-profile/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "alphabet": { "const": "ascii-printable-v1" },
+        "tokenizer": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "vocabulary_sha256": { "$ref": "#/$defs/sha256" },
+        "kernel_sha256": { "$ref": "#/$defs/sha256" },
+        "reserved": { "type": "array", "minItems": 1, "maxItems": 64, "uniqueItems": true, "items": { "type": "string" } },
+        "aliases": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              { "type": "string", "minLength": 1, "maxLength": 128 },
+              { "type": "string", "minLength": 1, "maxLength": 16, "pattern": "^[A-Za-z0-9!#$%&*+./:<=>?@^_|~-]+$" }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "graphModule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sha256", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "value": { "$ref": "#/$defs/module" }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "source_sha256", "records", "modules"],
+      "properties": {
+        "schema": { "const": "noema-graph/v1" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "records": { "type": "array", "maxItems": 16384, "uniqueItems": true, "items": { "$ref": "#/$defs/sourceRecord" } },
+        "modules": { "type": "array", "maxItems": 64, "uniqueItems": true, "items": { "$ref": "#/$defs/graphModule" } }
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "graph", "lock"],
+      "properties": {
+        "schema": { "const": "noema-build/v1" },
+        "graph": { "$ref": "#/$defs/graph" },
+        "lock": { "$ref": "#/$defs/lock" }
+      }
+    },
+    "projectionManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "graph_sha256", "lock_sha256", "profile_sha256", "aliases_sha256", "projection_sha256"],
+      "properties": {
+        "schema": { "const": "noema-projection-manifest/v1" },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "lock_sha256": { "$ref": "#/$defs/sha256" },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "aliases_sha256": { "$ref": "#/$defs/sha256" },
+        "projection_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "manifest", "text"],
+      "properties": {
+        "schema": { "const": "noema-projection/v1" },
+        "manifest": { "$ref": "#/$defs/projectionManifest" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1048576 }
+      }
+    },
+    "diffEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "kind", "change", "before", "after"],
+      "properties": {
+        "node": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "kind": { "enum": ["effect", "gate", "authority", "scope", "evidence_class", "literal", "transition", "precedence", "source_binding", "definition", "module", "promise", "handoff", "exception"] },
+        "change": { "enum": ["added", "removed", "modified"] },
+        "before": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "after": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
+      }
+    },
+    "semanticDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "before_graph_sha256", "after_graph_sha256", "entries"],
+      "properties": {
+        "schema": { "const": "noema-semantic-diff/v1" },
+        "before_graph_sha256": { "$ref": "#/$defs/sha256" },
+        "after_graph_sha256": { "$ref": "#/$defs/sha256" },
+        "entries": { "type": "array", "maxItems": 65536, "uniqueItems": true, "items": { "$ref": "#/$defs/diffEntry" } }
       }
     },
     "profileEvidence": {
