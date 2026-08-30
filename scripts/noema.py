@@ -203,7 +203,13 @@ def _exact_keys(value: object, expected: set[str], field: str) -> dict[str, obje
 
 
 def _bounded_string(value: object, field: str, limit: int) -> str:
-    if not isinstance(value, str) or not value or len(value.encode("utf-8")) > limit:
+    if not isinstance(value, str) or not value:
+        refuse("NOE-E-TYPE.STRING", field, "expected one bounded non-empty string")
+    try:
+        encoded = value.encode("utf-8")
+    except UnicodeEncodeError:
+        refuse("NOE-E-SYNTAX.UNICODE", field, "string must contain Unicode scalar values")
+    if len(encoded) > limit:
         refuse("NOE-E-TYPE.STRING", field, "expected one bounded non-empty string")
     if unicodedata.normalize("NFC", value) != value:
         refuse("NOE-E-SYNTAX.UNICODE", field, "string must be NFC")
@@ -399,6 +405,7 @@ def verify_seed(archive_path: Path, inventory_path: Path) -> dict[str, object]:
     except (
         OSError,
         RuntimeError,
+        UnicodeError,
         zipfile.BadZipFile,
         zipfile.LargeZipFile,
         zlib.error,
