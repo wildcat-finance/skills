@@ -7,6 +7,21 @@
       "$ref": "#/$defs/seedInventory"
     },
     {
+      "$ref": "#/$defs/module"
+    },
+    {
+      "$ref": "#/$defs/profile"
+    },
+    {
+      "$ref": "#/$defs/build"
+    },
+    {
+      "$ref": "#/$defs/projection"
+    },
+    {
+      "$ref": "#/$defs/semanticDiff"
+    },
+    {
       "$ref": "#/$defs/lock"
     },
     {
@@ -28,7 +43,8 @@
       "type": "string",
       "minLength": 1,
       "maxLength": 128,
-      "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$"
+      "pattern": "^[A-Za-z][A-Za-z0-9_.-]*$",
+      "not": { "pattern": "\\.\\." }
     },
     "relativePath": {
       "type": "string",
@@ -357,6 +373,9 @@
         "graph": {
           "$ref": "#/$defs/sha256"
         },
+        "build": {
+          "$ref": "#/$defs/sha256"
+        },
         "lock": {
           "$ref": "#/$defs/sha256"
         },
@@ -373,6 +392,15 @@
           "$ref": "#/$defs/sha256"
         },
         "output": {
+          "$ref": "#/$defs/sha256"
+        },
+        "before": {
+          "$ref": "#/$defs/sha256"
+        },
+        "after": {
+          "$ref": "#/$defs/sha256"
+        },
+        "diff": {
           "$ref": "#/$defs/sha256"
         }
       }
@@ -395,6 +423,21 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 16384
+        },
+        "modules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "aliases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "entries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
         },
         "nodes": {
           "type": "integer",
@@ -436,6 +479,7 @@
         },
         "command": {
           "enum": [
+            "invalid",
             "about",
             "verify-seed",
             "parse",
@@ -473,7 +517,7 @@
         "field": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
+          "maxLength": 640,
           "pattern": "^[A-Za-z0-9_.\u005b\u005d-]+$"
         },
         "message": {
@@ -487,6 +531,463 @@
         "counts": {
           "$ref": "#/$defs/countSet"
         }
+      }
+    },
+    "decimalString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 20,
+      "pattern": "^(?:0|[1-9][0-9]*)$"
+    },
+    "qualifiedIdentifier": {
+      "allOf": [
+        { "$ref": "#/$defs/identifier" },
+        { "pattern": "\\." }
+      ]
+    },
+    "parameter": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/identifier" },
+        { "$ref": "#/$defs/identifier" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "sourceBinding": {
+      "type": "array",
+      "prefixItems": [
+        { "const": "src" },
+        { "$ref": "#/$defs/relativePath" },
+        { "$ref": "#/$defs/sha256" },
+        { "$ref": "#/$defs/decimalString" },
+        { "$ref": "#/$defs/decimalString" }
+      ],
+      "minItems": 5,
+      "maxItems": 5
+    },
+    "term": {
+      "oneOf": [
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "$" },
+            { "$ref": "#/$defs/identifier" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "%" },
+            { "$ref": "#/$defs/identifier" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": ":" },
+            { "$ref": "#/$defs/identifier" },
+            { "type": "string", "maxLength": 65000 }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "{}" },
+            { "$ref": "#/$defs/identifier" }
+          ],
+          "items": { "$ref": "#/$defs/term" },
+          "minItems": 2,
+          "maxItems": 4098
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "enum": ["!", "-", "+", "~", "count"] },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "enum": ["?", "/", "@", "^", "=", "=>", "<", "in", "subset", "lt", "le", "gt", "ge"] },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "enum": [";", "&", "|"] }
+          ],
+          "items": { "$ref": "#/$defs/term" },
+          "minItems": 2,
+          "maxItems": 16385
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "enum": ["all", "any", "one"] },
+            { "$ref": "#/$defs/parameter" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/qualifiedIdentifier" }
+          ],
+          "items": { "$ref": "#/$defs/term" },
+          "minItems": 1,
+          "maxItems": 65
+        }
+      ]
+    },
+    "sourceRecord": {
+      "oneOf": [
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "import" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/sha256" }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "literal" },
+            { "$ref": "#/$defs/identifier" },
+            { "enum": ["id", "path", "sha256", "command", "number", "date", "url", "quote", "text", "bytes"] },
+            { "$ref": "#/$defs/decimalString" },
+            { "type": "string", "maxLength": 65000 }
+          ],
+          "minItems": 5,
+          "maxItems": 5
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "definition" },
+            { "$ref": "#/$defs/qualifiedIdentifier" },
+            {
+              "type": "array",
+              "maxItems": 64,
+              "uniqueItems": true,
+              "items": { "$ref": "#/$defs/parameter" }
+            },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "rule" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/sourceBinding" }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "precedence" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 6,
+          "maxItems": 6
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "override" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 7,
+          "maxItems": 7
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "transition" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 8,
+          "maxItems": 8
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "promise" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 11,
+          "maxItems": 11
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "handoff" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 11,
+          "maxItems": 11
+        },
+        {
+          "type": "array",
+          "prefixItems": [
+            { "const": "exception" },
+            { "$ref": "#/$defs/identifier" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" },
+            { "$ref": "#/$defs/term" }
+          ],
+          "minItems": 9,
+          "maxItems": 9
+        }
+      ]
+    },
+    "typeDeclaration": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/qualifiedIdentifier" },
+        { "$ref": "#/$defs/identifier" }
+      ],
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "signature": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/qualifiedIdentifier" },
+        {
+          "type": "array",
+          "maxItems": 64,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        { "$ref": "#/$defs/identifier" }
+      ],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "moduleDefinition": {
+      "type": "array",
+      "prefixItems": [
+        { "$ref": "#/$defs/qualifiedIdentifier" },
+        {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/parameter" }
+        },
+        { "$ref": "#/$defs/term" }
+      ],
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "module": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "imports", "types", "signatures", "definitions"],
+      "properties": {
+        "schema": { "const": "noema-module/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "imports": {
+          "type": "array",
+          "maxItems": 64,
+          "uniqueItems": true,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              { "$ref": "#/$defs/identifier" },
+              { "$ref": "#/$defs/sha256" }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
+        "types": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/typeDeclaration" }
+        },
+        "signatures": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/signature" }
+        },
+        "definitions": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/moduleDefinition" }
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "alphabet", "tokenizer", "vocabulary_sha256", "kernel_sha256", "reserved", "aliases"],
+      "properties": {
+        "schema": { "const": "noema-profile/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "alphabet": { "const": "ascii-printable-v1" },
+        "tokenizer": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "vocabulary_sha256": { "$ref": "#/$defs/sha256" },
+        "kernel_sha256": { "$ref": "#/$defs/sha256" },
+        "reserved": {
+          "const": ["!", "$", "%", "&", "+", "-", "/", ":", ";", "<", "=", "=>", "?", "@", "NOE1", "NT1", "^", "all", "any", "count", "definition", "exception", "ge", "gt", "handoff", "import", "in", "le", "literal", "lt", "one", "override", "precedence", "promise", "rule", "src", "subset", "transition", "{}", "|", "~"]
+        },
+        "aliases": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": {
+            "type": "array",
+            "prefixItems": [
+              { "type": "string", "minLength": 1, "maxLength": 128 },
+              { "type": "string", "minLength": 1, "maxLength": 16, "pattern": "^[A-Za-z0-9!#$%&*+./:<=>?@^_|~-]+$" }
+            ],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      }
+    },
+    "graphModule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "sha256", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "value": { "$ref": "#/$defs/module" }
+      }
+    },
+    "graph": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "source_sha256", "records", "modules"],
+      "properties": {
+        "schema": { "const": "noema-graph/v1" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "records": { "type": "array", "maxItems": 16384, "uniqueItems": true, "items": { "$ref": "#/$defs/sourceRecord" } },
+        "modules": { "type": "array", "maxItems": 64, "uniqueItems": true, "items": { "$ref": "#/$defs/graphModule" } }
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "graph", "lock"],
+      "properties": {
+        "schema": { "const": "noema-build/v1" },
+        "graph": { "$ref": "#/$defs/graph" },
+        "lock": { "$ref": "#/$defs/lock" }
+      }
+    },
+    "projectionManifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "graph_sha256", "lock_sha256", "profile_sha256", "aliases_sha256", "projection_sha256"],
+      "properties": {
+        "schema": { "const": "noema-projection-manifest/v1" },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "lock_sha256": { "$ref": "#/$defs/sha256" },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "aliases_sha256": { "$ref": "#/$defs/sha256" },
+        "projection_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "lock", "manifest", "text"],
+      "properties": {
+        "schema": { "const": "noema-projection/v1" },
+        "lock": { "$ref": "#/$defs/lock" },
+        "manifest": { "$ref": "#/$defs/projectionManifest" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1048576 }
+      }
+    },
+    "diffEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node", "kind", "change", "before", "after"],
+      "properties": {
+        "node": { "type": "string", "minLength": 1, "maxLength": 268 },
+        "kind": { "enum": ["effect", "gate", "authority", "scope", "evidence_class", "literal", "transition", "precedence", "source_binding", "definition", "module", "promise", "handoff", "exception"] },
+        "change": { "enum": ["added", "removed", "modified"] },
+        "before": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "after": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] }
+      }
+    },
+    "semanticDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "before_graph_sha256", "after_graph_sha256", "entries"],
+      "properties": {
+        "schema": { "const": "noema-semantic-diff/v1" },
+        "before_graph_sha256": { "$ref": "#/$defs/sha256" },
+        "after_graph_sha256": { "$ref": "#/$defs/sha256" },
+        "entries": { "type": "array", "maxItems": 65536, "uniqueItems": true, "items": { "$ref": "#/$defs/diffEntry" } }
       }
     },
     "profileEvidence": {

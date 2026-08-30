@@ -436,3 +436,23 @@ rerun. hypomnema: ADR-055 receives the measured choice, rejected alternatives,
 unknowns and authority condition; the public contract and fixtures retain
 interface and evidence details without turning the study into the standing
 record.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Files: For Step 2, change `scripts/noema.py`, `schemas/noema-v1.schema.json`, `docs/noema-v1.md`, `docs/decisions/ADR-056-evaluate-noema-as-a-sliced-instruction-ir.md` and `tests/test_noema.py`; create bounded codec samples, core modules and the baseline profile below `tests/fixtures/noema-v1/`; permit deterministic Horos and configured audit record or synopsis updates; change no #909, plugin, dependency, toolchain, CI, Promise Machine or marketplace file. For Step 3, change those same five product files and create the complete runtime corpus below `tests/fixtures/noema-v1/runtime/`; permit the same generated audit files; change no adapter, external service, plugin, #909 or shared-authority surface. For Step 4, change those five product files plus `tests/fixtures/noema-v1/manifest.json`; create the seed reference below `tests/fixtures/noema-v1/seed-reference/` and specimen evidence below `tests/fixtures/noema-v1/specimens/`; permit the same generated audit files; change none of the four source skills, their plugins, generated copies or #909 paths. For Step 5, change those five product files plus `tests/fixtures/noema-v1/manifest.json` and profile records below `tests/fixtures/noema-v1/profiles/`; create evidence below `tests/fixtures/noema-v1/evidence/`; permit the same generated audit files; add no dependency, credential, provider SDK, model bytes, raw response transcript, plugin, Promise Machine claim, README entry, CI workflow, #909 file or external-repository change.
+
+**Why.** After this run receipted its specification, `origin/main` added `ADR-055-stage-the-portable-sync-and-check-mirror-closure.md`; the repository uniqueness gate now rejects the Noema record under the same number. Renumbering only the Noema record to the next free number preserves both decisions and leaves the concurrent work untouched.
+
+**Steps touched.** Steps 2, 3, 4 and 5.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Files: For Step 2, change `scripts/noema.py`, `schemas/noema-v1.schema.json`, `docs/noema-v1.md`, `docs/decisions/ADR-059-evaluate-noema-as-a-sliced-instruction-ir.md` and `tests/test_noema.py`; create bounded codec samples, core modules and the baseline profile below `tests/fixtures/noema-v1/`; permit deterministic Horos and configured audit record or synopsis updates; change no #909, plugin, dependency, toolchain, CI, Promise Machine or marketplace file. For Step 3, change those same five product files and create the complete runtime corpus below `tests/fixtures/noema-v1/runtime/`; permit the same generated audit files; change no adapter, external service, plugin, #909 or shared-authority surface. For Step 4, change those five product files plus `tests/fixtures/noema-v1/manifest.json`; create the seed reference below `tests/fixtures/noema-v1/seed-reference/` and specimen evidence below `tests/fixtures/noema-v1/specimens/`; permit the same generated audit files; change none of the four source skills, their plugins, generated copies or #909 paths. For Step 5, change those five product files plus `tests/fixtures/noema-v1/manifest.json` and profile records below `tests/fixtures/noema-v1/profiles/`; create evidence below `tests/fixtures/noema-v1/evidence/`; permit the same generated audit files; add no dependency, credential, provider SDK, model bytes, raw response transcript, plugin, Promise Machine claim, README entry, CI workflow, #909 file or external-repository change.
+
+**Why.** After the first collision amendment, `origin/main` added `ADR-056-require-the-complete-plugin-graph.md` and the live registry now occupies ADR-055 through ADR-058. The repository uniqueness gate therefore rejects the Noema record at ADR-056. Moving only that unmerged record to the current next-free ADR-059 preserves every landed decision and the prior amendment history.
+
+**Steps touched.** Steps 2, 3, 4 and 5.
+
+**Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
