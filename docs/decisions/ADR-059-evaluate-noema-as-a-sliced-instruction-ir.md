@@ -69,6 +69,12 @@ transition stops the state machine. Runtime calls accept only locally derived
 or fully artifact-verified manifests and reject later mutation. Overrides need
 an active applicable higher requirement, invalid exceptions refuse before
 permission, and a missing consequence marker defaults per relevant rule.
+Selection also requires an attested build and an exactly hashed profile.
+Nested authority and scope wrappers accumulate, low-consequence defaulting
+requires an active applicable directive, and runtime typed fields expand their
+locked pure definitions before comparison. Requirement conflict work has a
+fixed pair budget and indexed override lookup, while recursive and quantified
+truth evaluation shares one expansion-work counter.
 
 ## Alternatives
 
