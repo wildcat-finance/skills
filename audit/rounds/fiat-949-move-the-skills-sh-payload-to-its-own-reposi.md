@@ -47,3 +47,19 @@ Elenchus verdict: guarded
 | S2-R1-02 | low | `distribution/skills-runtime/sync.yml` | The commit message extracted the source SHA from the generated `README.md` with `sed`. A non-match yielded an empty value and committed `Rebuild from wildcat-finance/skills@`, recording a rebuild of nothing identifiable as a success. | fixed in the same commit |
 
 Leads not pursued: the job trusts whatever `portable_promise_machine.py` the cloned source carries, which is the same trust boundary as the repository itself and is not narrowed by pinning a commit, because the point of the job is to track the tip. `cp -R "/package/." .` copies over a tree the preceding `find` already emptied of everything but `.git`, `.github` and `source`, so a file dropped from the package is removed rather than left behind; that ordering is load-bearing and untested, and testing it needs a runner. The published package carries no signature, so it cannot prove which commit produced it against a hostile publisher; the destination is written only by its own job, and publisher authenticity sits outside ADR-040's boundary and this run. The three lints exit 0 and the runner contract reports 742 of 742.
+
+## Step 2, round 2 -- 2026-08-30T06:53:22Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: token-scope=reviewed; publish-unverified=reviewed; workflow-drift=reviewed; stale-destination=reviewed; broken-install-window=reviewed; generator-output-escape=reviewed; authored-file-loss=not-applicable; suite-coverage-loss=not-applicable
+
+Not checked: the same two boundaries as round 1. No scheduled or dispatched run of the destination job has been observed, because its drift step reads a canonical copy that reaches `main` only at integration. The published `README.md` still names the step-2 branch commit that built it.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: round 1's three leads stand unchanged and for the same reasons. Round 1's fixes were re-driven rather than reread. Four mutations were driven against the fixed workflow and each failed exactly one case: restoring credential persistence, removing the explicit push token, removing the empty-SHA refusal, and replacing the repository guard with `if: true`. A fifth attempt in the same batch did not mutate the file at all, because the shell quoting around the guard string broke before the replacement ran; it was redriven on its own and is the fourth result above, so the batch's apparent pass for it established nothing and is not counted. The file was restored byte-for-byte after each and `git status` reports it unmodified. The three lints exit 0 and the runner contract reports 742 of 742.
