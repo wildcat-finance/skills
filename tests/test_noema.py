@@ -457,6 +457,29 @@ class NoemaScaffoldTests(unittest.TestCase):
             error = refusal(archive_path, inventory_path)
             self.assertEqual(error.code, "NOE-E-SYNTAX.COMPRESSION")
 
+    def test_corrupt_deflate_member_refuses(self):
+        import io
+
+        files = [("a.txt", b"alpha" * 8)]
+        payload = bytearray(archive_bytes(files))
+        with zipfile.ZipFile(io.BytesIO(payload), "r") as archive:
+            info = archive.getinfo("seed/a.txt")
+            compressed_start = (
+                info.header_offset
+                + 30
+                + len(info.filename.encode("utf-8"))
+                + len(info.extra)
+            )
+        payload[compressed_start] ^= 0x55
+        corrupted = bytes(payload)
+        record = inventory_for(corrupted, files)
+        with tempfile.TemporaryDirectory() as temporary:
+            archive_path, inventory_path = write_case(
+                Path(temporary), files, payload=corrupted, inventory=record
+            )
+            error = refusal(archive_path, inventory_path)
+            self.assertEqual(error.code, "NOE-E-SYNTAX.ZIP")
+
     def test_archive_digest_mismatch_refuses_before_member_read(self):
         files = [("a.txt", b"alpha")]
         payload = archive_bytes(files)
