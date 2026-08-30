@@ -1992,6 +1992,15 @@ class TestPublicationBindings(FooterReappearanceCases, HexctlCase):
         self.assertEqual(sync["revalidation"]["affected_paths"], [
             "shared.json", "upstream.py",
         ])
+        self.assertEqual(
+            sync["resolution_guard"],
+            {
+                "schema": "fiat-sync-resolution-guard/v1",
+                "side_selected_paths": [],
+                "superseded_intersection_paths": [],
+                "acknowledged_paths": [],
+            },
+        )
         status = self.run_ctl("status").stdout
         self.assertIn("product eeeeeeeeeeee preserved", status)
         self.assertIn("1 integration revalidation check(s) recorded", status)

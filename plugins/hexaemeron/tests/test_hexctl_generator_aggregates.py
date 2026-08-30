@@ -352,6 +352,12 @@ class IncidentAggregateTests(unittest.TestCase):
 
     def test_acceptance_2_v2_sync_receipt_survives_done_integrate(self):
         artifact = self.v2_artifact()
+        resolution_guard = {
+            "schema": "fiat-sync-resolution-guard/v1",
+            "side_selected_paths": [],
+            "superseded_intersection_paths": [],
+            "acknowledged_paths": [],
+        }
         descriptor, path = scratch_directory(".fiat-710-transition-")
         try:
             with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
@@ -411,6 +417,11 @@ class IncidentAggregateTests(unittest.TestCase):
                 mock.patch.object(self.module, "verify_local_commit"),
                 mock.patch.object(
                     self.module,
+                    "sync_resolution_guard_record",
+                    return_value=resolution_guard,
+                ),
+                mock.patch.object(
+                    self.module,
                     "verify_github_commits",
                     return_value=[self.fixture["sync_commit"]],
                 ),
@@ -427,6 +438,9 @@ class IncidentAggregateTests(unittest.TestCase):
             self.assertEqual(
                 state["integrate"]["sync"]["revalidation"]["required_path_count"],
                 1095,
+            )
+            self.assertEqual(
+                state["integrate"]["sync"]["resolution_guard"], resolution_guard
             )
 
             integrate_args = SimpleNamespace(
@@ -453,6 +467,11 @@ class IncidentAggregateTests(unittest.TestCase):
                 mock.patch.object(
                     self.module, "verify_github_commits", return_value=["a" * 40]
                 ),
+                mock.patch.object(
+                    self.module,
+                    "sync_resolution_guard_record",
+                    return_value=resolution_guard,
+                ),
                 mock.patch.object(self.module, "merged_attribution", return_value={}),
                 mock.patch.object(self.module, "carried_forward_record", return_value=[]),
                 mock.patch.object(self.module, "commit"),
@@ -462,6 +481,10 @@ class IncidentAggregateTests(unittest.TestCase):
             self.assertEqual(
                 state["receipts"]["integrate"]["sync"]["revalidation"]["schema"],
                 "fiat-integration-revalidation/v2",
+            )
+            self.assertEqual(
+                state["receipts"]["integrate"]["sync"]["resolution_guard"],
+                resolution_guard,
             )
         finally:
             Path(path).unlink(missing_ok=True)
