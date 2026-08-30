@@ -179,7 +179,7 @@ class NoemaScaffoldTests(unittest.TestCase):
     def test_receipted_runbook_copy_is_exact(self):
         self.assertEqual(
             sha256(RUNBOOK.read_bytes()).hexdigest(),
-            "9a1e1f79bab399789cf7a504dfb3865a35f66d861da30ee3808f263bed8be145",
+            "3984d411c2ad227764e5807fa711bbc6ae2cec46043333c8c4fb4958853408e2",
         )
 
     def test_repository_python_pin_is_exact(self):
@@ -919,6 +919,55 @@ class GraphValidationTests(unittest.TestCase):
         with self.assertRaises(noema.Refusal) as raised:
             compile_records(records)
         self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.RELATION_CYCLE")
+
+    def test_long_acyclic_definition_chain_does_not_recurse(self):
+        count = 1_200
+        definitions = [
+            ["definition", f"local.d{index:04d}", [], [f"local.d{index + 1:04d}"]]
+            for index in range(count - 1)
+        ]
+        definitions.append(
+            ["definition", f"local.d{count - 1:04d}", [], [":", "effect", "x"]]
+        )
+        try:
+            compile_records(
+                base_records(["+", ["local.d0000"]], definitions=definitions)
+            )
+        except RecursionError:
+            self.fail("acyclic definition chain reached the interpreter recursion limit")
+
+    def test_long_acyclic_precedence_chain_does_not_recurse(self):
+        count = 1_500
+        source_digest = sha256(SCRIPT.read_bytes()).hexdigest()
+        records = [["import", "core", CORE_DIGEST]]
+        records.extend(
+            [
+                [
+                    "rule",
+                    f"r{index:04d}",
+                    ["+", [":", "effect", "x"]],
+                    ["src", "scripts/noema.py", source_digest, str(index), str(index + 1)],
+                ]
+                for index in range(count)
+            ]
+        )
+        records.extend(
+            [
+                [
+                    "precedence",
+                    f"r{index:04d}",
+                    f"r{index + 1:04d}",
+                    [":", "actor", "x"],
+                    [":", "scope", "x"],
+                    [":", "evidence", "x"],
+                ]
+                for index in range(count - 1)
+            ]
+        )
+        try:
+            compile_records(records)
+        except RecursionError:
+            self.fail("acyclic precedence chain reached the interpreter recursion limit")
 
     def test_overlapping_source_spans_refuse(self):
         records = [

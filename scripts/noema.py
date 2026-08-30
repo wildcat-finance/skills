@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from datetime import date
 from hashlib import sha256
+import heapq
 import io
 import json
 import os
@@ -849,7 +850,7 @@ class _TypeContext:
         self.literals = literals
         self.budget = budget
         self.definition_returns: dict[str, str] = {}
-        self.definition_stack: list[str] = []
+        self.resolving_definitions = False
 
     def compatible(self, actual: str, expected: str) -> bool:
         return actual == expected or self.known_types.get(actual) == expected
@@ -861,18 +862,35 @@ class _TypeContext:
     def definition_type(self, name: str) -> str:
         if name in self.definition_returns:
             return self.definition_returns[name]
-        if name in self.definition_stack:
-            refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", name, "definition graph contains a cycle")
         if name not in self.definitions:
             refuse("NOE-E-REFERENCE.DEFINITION", name, "definition is unresolved")
-        parameters, body = self.definitions[name]
-        self.definition_stack.append(name)
-        result = self.term(body, dict(parameters), f"definition.{name}.body", pure=True)
-        self.definition_stack.pop()
-        if result == "directive":
-            refuse("NOE-E-TYPE.PURITY", name, "pure definition cannot produce a directive")
-        self.definition_returns[name] = result
-        return result
+        if self.resolving_definitions:
+            refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", name, "definition graph contains a cycle")
+        self.resolve_definitions()
+        return self.definition_returns[name]
+
+    def resolve_definitions(self) -> None:
+        if len(self.definition_returns) == len(self.definitions):
+            return
+        if self.resolving_definitions:
+            refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", "definitions", "definition graph contains a cycle")
+        self.resolving_definitions = True
+        try:
+            for name in _definition_order(self.definitions):
+                if name in self.definition_returns:
+                    continue
+                parameters, body = self.definitions[name]
+                result = self.term(
+                    body,
+                    dict(parameters),
+                    f"definition.{name}.body",
+                    pure=True,
+                )
+                if result == "directive":
+                    refuse("NOE-E-TYPE.PURITY", name, "pure definition cannot produce a directive")
+                self.definition_returns[name] = result
+        finally:
+            self.resolving_definitions = False
 
     def numeric(self, term: object) -> bool:
         if isinstance(term, list) and term:
@@ -1150,8 +1168,7 @@ def _build_registry(
         )
 
     context = _TypeContext(known_types, signatures, definitions, literals, budget)
-    for name in sorted(definitions):
-        context.definition_type(name)
+    context.resolve_definitions()
     return context
 
 
@@ -1167,29 +1184,115 @@ def _term_children(value: object) -> list[object]:
     return value[1:]
 
 
+def _definition_dependencies(
+    value: object,
+    definitions: dict[str, tuple[list[tuple[str, str]], object]],
+) -> set[str]:
+    found: set[str] = set()
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        if not isinstance(current, list) or not current:
+            continue
+        tag = current[0]
+        if isinstance(tag, str) and tag in definitions:
+            found.add(tag)
+        pending.extend(_term_children(current))
+    return found
+
+
+def _definition_order(
+    definitions: dict[str, tuple[list[tuple[str, str]], object]],
+) -> list[str]:
+    dependencies = {
+        name: _definition_dependencies(body, definitions)
+        for name, (_parameters, body) in definitions.items()
+    }
+    dependents = {name: set() for name in definitions}
+    for name, required in dependencies.items():
+        for dependency in required:
+            dependents[dependency].add(name)
+    remaining = {name: len(required) for name, required in dependencies.items()}
+    ready = [name for name, count in remaining.items() if count == 0]
+    heapq.heapify(ready)
+    ordered: list[str] = []
+    while ready:
+        name = heapq.heappop(ready)
+        ordered.append(name)
+        for dependent in sorted(dependents[name]):
+            remaining[dependent] -= 1
+            if remaining[dependent] == 0:
+                heapq.heappush(ready, dependent)
+    if len(ordered) != len(definitions):
+        refuse(
+            "NOE-E-REFERENCE.DEFINITION_CYCLE",
+            "definitions",
+            "definition graph contains a cycle",
+        )
+    return ordered
+
+
+def _expanded_term_size(
+    value: object,
+    definitions: dict[str, tuple[list[tuple[str, str]], object]],
+    memo: dict[str, int],
+) -> int:
+    total = 0
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        total += 1
+        if total > MAX_EXPANDED_NODES:
+            refuse("NOE-E-BOUNDS.EXPANSION", "graph", "macro expansion exceeds its node limit")
+        if not isinstance(current, list) or not current:
+            continue
+        tag = current[0]
+        if isinstance(tag, str) and tag in definitions:
+            if tag not in memo:
+                refuse("NOE-E-REFERENCE.DEFINITION", tag, "definition expansion order is incomplete")
+            total += memo[tag]
+            if total > MAX_EXPANDED_NODES:
+                refuse("NOE-E-BOUNDS.EXPANSION", "graph", "macro expansion exceeds its node limit")
+        pending.extend(_term_children(current))
+    return total
+
+
 def _expanded_size(
     value: object,
     definitions: dict[str, tuple[list[tuple[str, str]], object]],
     memo: dict[str, int],
-    stack: set[str],
 ) -> int:
-    if not isinstance(value, list) or not value:
-        return 1
-    total = 1
-    tag = value[0]
-    if isinstance(tag, str) and tag in definitions:
-        if tag in stack:
-            refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", tag, "definition graph contains a cycle")
-        if tag not in memo:
-            stack.add(tag)
-            memo[tag] = _expanded_size(definitions[tag][1], definitions, memo, stack)
-            stack.remove(tag)
-        total += memo[tag]
-    for child in _term_children(value):
-        total += _expanded_size(child, definitions, memo, stack)
-        if total > MAX_EXPANDED_NODES:
-            refuse("NOE-E-BOUNDS.EXPANSION", "graph", "macro expansion exceeds its node limit")
-    return total
+    roots = _definition_dependencies(value, definitions)
+    active: set[str] = set()
+    for root in sorted(roots):
+        if root in memo:
+            continue
+        pending: list[tuple[str, bool]] = [(root, False)]
+        while pending:
+            name, leaving = pending.pop()
+            if name in memo:
+                continue
+            if leaving:
+                memo[name] = _expanded_term_size(definitions[name][1], definitions, memo)
+                active.remove(name)
+                continue
+            if name in active:
+                refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", name, "definition graph contains a cycle")
+            active.add(name)
+            pending.append((name, True))
+            for dependency in sorted(
+                _definition_dependencies(definitions[name][1], definitions),
+                reverse=True,
+            ):
+                if dependency in active:
+                    refuse(
+                        "NOE-E-REFERENCE.DEFINITION_CYCLE",
+                        dependency,
+                        "definition graph contains a cycle",
+                    )
+                if dependency not in memo:
+                    pending.append((dependency, False))
+    return _expanded_term_size(value, definitions, memo)
 
 
 def _assert_term(
@@ -1202,22 +1305,37 @@ def _assert_term(
 
 
 def _acyclic_edges(edges: dict[str, set[str]], field: str) -> None:
-    visiting: set[str] = set()
-    visited: set[str] = set()
-
-    def visit(node: str) -> None:
-        if node in visiting:
-            refuse("NOE-E-REFERENCE.RELATION_CYCLE", field, "governing relation contains a cycle")
-        if node in visited:
-            return
-        visiting.add(node)
-        for child in sorted(edges.get(node, set())):
-            visit(child)
-        visiting.remove(node)
-        visited.add(node)
-
-    for node in sorted(edges):
-        visit(node)
+    state: dict[str, int] = {}
+    for root in sorted(edges):
+        if state.get(root) == 2:
+            continue
+        pending: list[tuple[str, bool]] = [(root, False)]
+        while pending:
+            node, leaving = pending.pop()
+            if leaving:
+                state[node] = 2
+                continue
+            status = state.get(node, 0)
+            if status == 2:
+                continue
+            if status == 1:
+                refuse(
+                    "NOE-E-REFERENCE.RELATION_CYCLE",
+                    field,
+                    "governing relation contains a cycle",
+                )
+            state[node] = 1
+            pending.append((node, True))
+            for child in sorted(edges.get(node, set()), reverse=True):
+                child_status = state.get(child, 0)
+                if child_status == 1:
+                    refuse(
+                        "NOE-E-REFERENCE.RELATION_CYCLE",
+                        field,
+                        "governing relation contains a cycle",
+                    )
+                if child_status == 0:
+                    pending.append((child, False))
 
 
 def _preflight_records(records: list[object]) -> tuple[list[tuple[str, str]], list[list[object]]]:
@@ -1412,7 +1530,7 @@ def _compile_records(
     expansion = 0
     memo: dict[str, int] = {}
     for term in terms:
-        expansion += _expanded_size(term, context.definitions, memo, set())
+        expansion += _expanded_size(term, context.definitions, memo)
         if expansion > MAX_EXPANDED_NODES:
             refuse("NOE-E-BOUNDS.EXPANSION", "graph", "macro expansion exceeds its node limit")
 

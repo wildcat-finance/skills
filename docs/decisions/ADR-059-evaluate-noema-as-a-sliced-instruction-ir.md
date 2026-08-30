@@ -1,4 +1,4 @@
-# ADR-056: evaluate Noema as a sliced instruction IR in shadow mode
+# ADR-059: evaluate Noema as a sliced instruction IR in shadow mode
 
 ## Status
 
