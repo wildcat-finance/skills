@@ -23,7 +23,11 @@ from tests.emit_run_observation_report import (  # noqa: E402
 )
 
 REQUIRED_SURFACE = (
+    Path(".dead-code/baseline.json"),
+    Path(".dead-code/suppressions.json"),
+    Path("docs/promise-machine/dead-code-v1.md"),
     Path("schemas/dead-code-report-v1.schema.json"),
+    Path("schemas/dead-code-suppressions-v1.schema.json"),
     Path("scripts/dead_code.py"),
     Path("scripts/dead_code_monitoring/sitecustomize.py"),
     Path("tests/test_dead_code.py"),

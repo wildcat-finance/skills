@@ -30,7 +30,7 @@ import tomllib
 import uuid
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Sequence
 
 SCHEMA_ID = "dead-code-report/v1"
 TOOL_ID = "dead-code"
@@ -63,12 +63,33 @@ COVERAGE_DRAIN_SECONDS = 5.0
 CHECK_RUNNER = Path("scripts") / "run_checks.py"
 MONITOR_DIRECTORY = Path("scripts") / "dead_code_monitoring"
 COVERAGE_SCHEMA_ID = "dead-code-coverage/v1"
+BASELINE_SCHEMA_ID = "dead-code-baseline/v1"
+SUPPRESSIONS_SCHEMA_ID = "dead-code-suppressions/v1"
+BASELINE_PATH = Path(".dead-code") / "baseline.json"
+SUPPRESSIONS_PATH = Path(".dead-code") / "suppressions.json"
+BASELINE_ANALYSERS = ("python", "repository")
+BASELINE_COMMAND = (
+    "python3",
+    "scripts/dead_code.py",
+    "report",
+    "--json",
+    "--analyser",
+    ",".join(BASELINE_ANALYSERS),
+)
+BASELINE_PUBLICATION_PATHS = frozenset({BASELINE_PATH.as_posix()})
+REPOSITORY_NON_AUTHORITATIVE_SOURCES = frozenset(
+    {BASELINE_PATH.as_posix(), SUPPRESSIONS_PATH.as_posix()}
+)
+MAX_BASELINE_BYTES = 32 * 1024 * 1024
+MAX_SUPPRESSIONS_BYTES = 4 * 1024 * 1024
+MAX_SUPPRESSIONS = 10_000
+MAX_SUPPRESSION_TEXT_BYTES = 4096
 COVERAGE_ACTIVE_ENV = "WILDCAT_DEAD_CODE_COVERAGE_ACTIVE"
 COVERAGE_OUTPUT_ENV = "WILDCAT_DEAD_CODE_COVERAGE_OUTPUT"
 CHECK_CONTAINMENT_ENV = "WILDCAT_CHECK_CONTAINMENT"
 PYTHON_ANALYSER_VERSION = "1"
 COVERAGE_ANALYSER_VERSION = "sys.monitoring/3.14"
-REPOSITORY_ANALYSER_VERSION = "repository-graph/1"
+REPOSITORY_ANALYSER_VERSION = "repository-graph/2"
 SOLIDITY_ANALYSER_VERSION = "slither+forge/1"
 SOLIDITY_VERSION_TIMEOUT_SECONDS = 30
 SOLIDITY_TOOL_TIMEOUT_SECONDS = 600
@@ -87,6 +108,7 @@ REPOSITORY_FAMILIES = (
     "schema",
 )
 ANALYSER_STATES = frozenset({"ran", "not-available", "degraded", "failed"})
+BASELINE_ANALYSER_STATES = frozenset({"ran", "degraded"})
 CONFIDENCE_LEVELS = frozenset({"high", "medium", "low"})
 ANALYSER_RECORD_KINDS = frozenset({"file", "check", "family", "project"})
 ANALYSER_RECORD_STATES = frozenset(
@@ -248,6 +270,24 @@ class Finding:
             "evidence": self.evidence,
             "confidence": self.confidence,
             "false_positive_boundary": self.false_positive_boundary,
+        }
+
+
+@dataclass(frozen=True)
+class Suppression:
+    finding_id: str
+    path: str
+    symbol: str | None
+    reason: str
+    owner: str
+
+    def as_dict(self) -> dict[str, object]:
+        return {
+            "finding_id": self.finding_id,
+            "path": self.path,
+            "symbol": self.symbol,
+            "reason": self.reason,
+            "owner": self.owner,
         }
 
 
@@ -720,16 +760,25 @@ def universe_identity(
     )
 
 
-def discover(root: Path, *, root_fd: int | None = None) -> Universe:
+def discover(
+    root: Path,
+    *,
+    root_fd: int | None = None,
+    commit: str | None = None,
+) -> Universe:
     owns_root_fd = root_fd is None
     if root_fd is None:
         root_fd = open_repository_directory(root)
     try:
         require_clean_tree(root, root_fd=root_fd)
-        commit = resolve_commit(root, root_fd=root_fd)
-        tree = resolve_tree(root, commit, root_fd=root_fd)
-        tracked = tracked_paths(root, commit, root_fd=root_fd)
-        classified = load_boundary(root, commit=commit, root_fd=root_fd)
+        recorded_commit = (
+            resolve_commit(root, root_fd=root_fd)
+            if commit is None
+            else _require_oid(commit, "recorded commit")
+        )
+        tree = resolve_tree(root, recorded_commit, root_fd=root_fd)
+        tracked = tracked_paths(root, recorded_commit, root_fd=root_fd)
+        classified = load_boundary(root, commit=recorded_commit, root_fd=root_fd)
 
         analysed: list[str] = []
         excluded: list[ClassifiedPath] = []
@@ -752,7 +801,7 @@ def discover(root: Path, *, root_fd: int | None = None) -> Universe:
     analysed_tuple = tuple(analysed)
     excluded_tuple = tuple(excluded)
     return Universe(
-        commit=commit,
+        commit=recorded_commit,
         tree=tree,
         identity=universe_identity(tree, analysed_tuple, excluded_tuple),
         tracked_count=len(tracked),
@@ -1334,8 +1383,11 @@ def _repository_source_paths(universe: Universe) -> tuple[str, ...]:
     return tuple(
         path
         for path in universe.analysed
-        if PurePosixPath(path).suffix.lower() in REPOSITORY_SOURCE_SUFFIXES
-        or PurePosixPath(path).name in {"SKILL.md", "AGENTS.md", "PROMISE_MACHINE.md"}
+        if path not in REPOSITORY_NON_AUTHORITATIVE_SOURCES
+        and (
+            PurePosixPath(path).suffix.lower() in REPOSITORY_SOURCE_SUFFIXES
+            or PurePosixPath(path).name in {"SKILL.md", "AGENTS.md", "PROMISE_MACHINE.md"}
+        )
     )
 
 
@@ -3334,8 +3386,9 @@ def build_report(
     root_fd: int | None = None,
     analyser_ids: tuple[str, ...] = (),
     coverage_path: str | None = None,
+    commit: str | None = None,
 ) -> Report:
-    universe = discover(root, root_fd=root_fd)
+    universe = discover(root, root_fd=root_fd, commit=commit)
     statuses, findings = collect(root, universe, analyser_ids, coverage_path)
     report = Report(universe=universe, statuses=statuses, findings=findings)
     validate_report(report)
@@ -3349,6 +3402,387 @@ def render_json(report: Report) -> str:
         indent=2,
         sort_keys=True,
     ) + chr(10)
+
+
+def _render_json_document(document: dict[str, object]) -> str:
+    return json.dumps(
+        document,
+        ensure_ascii=False,
+        indent=2,
+        sort_keys=True,
+    ) + chr(10)
+
+
+def _parse_json_object(raw: str, label: str) -> dict[str, object]:
+    try:
+        document = json.loads(raw, object_pairs_hook=reject_duplicate_keys)
+    except DuplicateKey as error:
+        raise Refusal(f"{label} repeats JSON key {error.args[0]}") from error
+    except json.JSONDecodeError as error:
+        raise Refusal(f"{label} is not valid JSON: {error}") from error
+    if not isinstance(document, dict):
+        raise Refusal(f"{label} is not a JSON object")
+    return document
+
+
+def _require_closed_fields(
+    document: dict[str, object],
+    required: set[str],
+    label: str,
+) -> None:
+    missing = sorted(required - set(document))
+    unknown = sorted(set(document) - required)
+    if missing:
+        raise Refusal(f"{label} omits field(s): " + ", ".join(missing))
+    if unknown:
+        raise Refusal(f"{label} has unknown field(s): " + ", ".join(unknown))
+
+
+def _require_sha256_identity(value: object, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or not value.startswith("sha256:")
+        or len(value) != 71
+        or any(character not in "0123456789abcdef" for character in value[7:])
+    ):
+        raise Refusal(f"{label} is not a sha256 identity")
+    return value
+
+
+def _suppression_text(value: object, label: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise Refusal(f"{label} is not a non-empty string")
+    if len(value.encode("utf-8")) > MAX_SUPPRESSION_TEXT_BYTES:
+        raise Refusal(f"{label} exceeds {MAX_SUPPRESSION_TEXT_BYTES} bytes")
+    if any(ord(character) < 32 or ord(character) == 127 for character in value):
+        raise Refusal(f"{label} contains a control character")
+    return value
+
+
+def parse_suppressions(
+    raw: str,
+    report: Report,
+    *,
+    label: str = SUPPRESSIONS_PATH.as_posix(),
+) -> tuple[dict[str, object], tuple[Suppression, ...]]:
+    document = _parse_json_object(raw, label)
+    _require_closed_fields(document, {"schema", "entries"}, label)
+    if document["schema"] != SUPPRESSIONS_SCHEMA_ID:
+        raise Refusal(f"{label} does not declare {SUPPRESSIONS_SCHEMA_ID}")
+    entries = document["entries"]
+    if not isinstance(entries, list):
+        raise Refusal(f"{label} entries is not a list")
+    if len(entries) > MAX_SUPPRESSIONS:
+        raise Refusal(f"{label} exceeds {MAX_SUPPRESSIONS} entries")
+
+    finding_by_id = {finding.identity: finding for finding in report.findings}
+    analysed = set(report.universe.analysed)
+    suppressions: list[Suppression] = []
+    seen: set[str] = set()
+    required = {"finding_id", "path", "symbol", "reason", "owner"}
+    for index, entry in enumerate(entries):
+        entry_label = f"{label} entry {index}"
+        if not isinstance(entry, dict):
+            raise Refusal(f"{entry_label} is not an object")
+        _require_closed_fields(entry, required, entry_label)
+        finding_id = _require_sha256_identity(entry["finding_id"], f"{entry_label} finding_id")
+        if finding_id in seen:
+            raise Refusal(f"{label} repeats suppression {finding_id}")
+        seen.add(finding_id)
+        path_value = entry["path"]
+        if not isinstance(path_value, str):
+            raise Refusal(f"{entry_label} path is not a string")
+        path = validate_repository_path(path_value, f"{entry_label} path")
+        symbol = entry["symbol"]
+        if symbol is not None:
+            symbol = _suppression_text(symbol, f"{entry_label} symbol")
+        reason = _suppression_text(entry["reason"], f"{entry_label} reason")
+        owner = _suppression_text(entry["owner"], f"{entry_label} owner")
+        if path not in analysed:
+            raise Refusal(f"{entry_label} has stale target {path}")
+        finding = finding_by_id.get(finding_id)
+        if finding is None:
+            raise Refusal(f"{entry_label} is unused; finding {finding_id} is absent")
+        if (path, symbol) != (finding.path, finding.symbol):
+            raise Refusal(f"{entry_label} target does not match finding {finding_id}")
+        suppressions.append(Suppression(finding_id, path, symbol, reason, owner))
+
+    ordered = tuple(sorted(suppressions, key=lambda item: item.finding_id))
+    if tuple(suppressions) != ordered:
+        raise Refusal(f"{label} entries are not sorted by finding_id")
+    canonical = {
+        "schema": SUPPRESSIONS_SCHEMA_ID,
+        "entries": [item.as_dict() for item in ordered],
+    }
+    if document != canonical or raw != _render_json_document(canonical):
+        raise Refusal(f"{label} is not canonical JSON")
+    return canonical, ordered
+
+
+def load_suppressions(
+    root: Path,
+    commit: str,
+    report: Report,
+    *,
+    root_fd: int,
+) -> tuple[dict[str, object], tuple[Suppression, ...]]:
+    label = SUPPRESSIONS_PATH.as_posix()
+    raw = read_commit_regular(
+        root,
+        commit,
+        label,
+        limit=MAX_SUPPRESSIONS_BYTES,
+        label=label,
+        root_fd=root_fd,
+    )
+    return parse_suppressions(raw, report, label=label)
+
+
+def build_baseline_document(
+    report: Report,
+    suppressions_document: dict[str, object],
+    suppressions: tuple[Suppression, ...],
+) -> dict[str, object]:
+    unusable = sorted(
+        f"{status.analyser_id}={status.state}"
+        for status in report.statuses
+        if status.state not in BASELINE_ANALYSER_STATES
+    )
+    if unusable:
+        raise Refusal("baseline analyser state is not admissible: " + ", ".join(unusable))
+    suppressed = {item.finding_id for item in suppressions}
+    findings = sorted(
+        (
+            {
+                "id": finding.identity,
+                "analyser_id": finding.analyser_id,
+                "path": finding.path,
+                "symbol": finding.symbol,
+                "suppressed": finding.identity in suppressed,
+            }
+            for finding in report.findings
+        ),
+        key=lambda item: (
+            item["analyser_id"],
+            item["path"],
+            item["symbol"] or "",
+            item["id"],
+        ),
+    )
+    return {
+        "schema": BASELINE_SCHEMA_ID,
+        "tool": {"id": TOOL_ID, "version": TOOL_VERSION},
+        "command": list(BASELINE_COMMAND),
+        "tree": {
+            "commit": report.universe.commit,
+            "git_tree": report.universe.tree,
+        },
+        "universe": {"id": report.universe.identity},
+        "analysers": [
+            {
+                "id": status.analyser_id,
+                "version": status.version,
+                "state": status.state,
+            }
+            for status in report.statuses
+        ],
+        "findings": findings,
+        "suppressions": {
+            "path": SUPPRESSIONS_PATH.as_posix(),
+            "digest": digest_json(suppressions_document),
+        },
+    }
+
+
+def validate_baseline_document(document: dict[str, object]) -> None:
+    label = BASELINE_PATH.as_posix()
+    _require_closed_fields(
+        document,
+        {"schema", "tool", "command", "tree", "universe", "analysers", "findings", "suppressions"},
+        label,
+    )
+    if document["schema"] != BASELINE_SCHEMA_ID:
+        raise Refusal(f"{label} does not declare {BASELINE_SCHEMA_ID}")
+    tool = document["tool"]
+    if not isinstance(tool, dict):
+        raise Refusal(f"{label} tool is not an object")
+    _require_closed_fields(tool, {"id", "version"}, f"{label} tool")
+    if tool != {"id": TOOL_ID, "version": TOOL_VERSION}:
+        raise Refusal(f"{label} tool identity is not {TOOL_ID} {TOOL_VERSION}")
+    if document["command"] != list(BASELINE_COMMAND):
+        raise Refusal(f"{label} generating command drifted")
+
+    tree = document["tree"]
+    if not isinstance(tree, dict):
+        raise Refusal(f"{label} tree is not an object")
+    _require_closed_fields(tree, {"commit", "git_tree"}, f"{label} tree")
+    _require_oid(tree["commit"] if isinstance(tree["commit"], str) else "", "baseline commit")
+    _require_oid(tree["git_tree"] if isinstance(tree["git_tree"], str) else "", "baseline tree")
+    universe = document["universe"]
+    if not isinstance(universe, dict):
+        raise Refusal(f"{label} universe is not an object")
+    _require_closed_fields(universe, {"id"}, f"{label} universe")
+    _require_sha256_identity(universe["id"], "baseline universe")
+
+    analysers = document["analysers"]
+    if not isinstance(analysers, list):
+        raise Refusal(f"{label} analysers is not a list")
+    analyser_ids: list[str] = []
+    for index, analyser in enumerate(analysers):
+        analyser_label = f"{label} analyser {index}"
+        if not isinstance(analyser, dict):
+            raise Refusal(f"{analyser_label} is not an object")
+        _require_closed_fields(analyser, {"id", "version", "state"}, analyser_label)
+        identifier = analyser["id"]
+        if not isinstance(identifier, str) or not re.fullmatch(r"[a-z][a-z0-9-]*", identifier):
+            raise Refusal(f"{analyser_label} id is invalid")
+        version = analyser["version"]
+        if version is not None and (not isinstance(version, str) or not version):
+            raise Refusal(f"{analyser_label} version is invalid")
+        if analyser["state"] not in BASELINE_ANALYSER_STATES:
+            raise Refusal(
+                f"{analyser_label} state {analyser['state']} cannot be recorded in a baseline"
+            )
+        analyser_ids.append(identifier)
+    if analyser_ids != sorted(set(analyser_ids)):
+        raise Refusal(f"{label} analyser identities are not sorted and unique")
+
+    findings = document["findings"]
+    if not isinstance(findings, list):
+        raise Refusal(f"{label} findings is not a list")
+    finding_ids: set[str] = set()
+    finding_order: list[tuple[str, str, str, str]] = []
+    for index, finding in enumerate(findings):
+        finding_label = f"{label} finding {index}"
+        if not isinstance(finding, dict):
+            raise Refusal(f"{finding_label} is not an object")
+        _require_closed_fields(
+            finding,
+            {"id", "analyser_id", "path", "symbol", "suppressed"},
+            finding_label,
+        )
+        identity = _require_sha256_identity(finding["id"], f"{finding_label} id")
+        if identity in finding_ids:
+            raise Refusal(f"{label} repeats finding {identity}")
+        finding_ids.add(identity)
+        analyser_id = finding["analyser_id"]
+        if analyser_id not in analyser_ids:
+            raise Refusal(f"{finding_label} names an unknown analyser")
+        path_value = finding["path"]
+        if not isinstance(path_value, str):
+            raise Refusal(f"{finding_label} path is not a string")
+        path = validate_repository_path(path_value, f"{finding_label} path")
+        symbol = finding["symbol"]
+        if symbol is not None:
+            symbol = _suppression_text(symbol, f"{finding_label} symbol")
+        if not isinstance(finding["suppressed"], bool):
+            raise Refusal(f"{finding_label} suppressed is not a boolean")
+        finding_order.append((analyser_id, path, symbol or "", identity))
+    if finding_order != sorted(finding_order):
+        raise Refusal(f"{label} findings are not sorted by stable identity")
+
+    suppressions = document["suppressions"]
+    if not isinstance(suppressions, dict):
+        raise Refusal(f"{label} suppressions is not an object")
+    _require_closed_fields(suppressions, {"path", "digest"}, f"{label} suppressions")
+    if suppressions["path"] != SUPPRESSIONS_PATH.as_posix():
+        raise Refusal(f"{label} suppression path drifted")
+    _require_sha256_identity(suppressions["digest"], "baseline suppression digest")
+
+
+def compare_baseline_documents(
+    recorded: dict[str, object],
+    expected: dict[str, object],
+) -> None:
+    validate_baseline_document(recorded)
+    if recorded["tree"]["commit"] != expected["tree"]["commit"]:
+        raise Refusal("baseline commit drift")
+    if recorded["tree"]["git_tree"] != expected["tree"]["git_tree"]:
+        raise Refusal("baseline Git tree drift")
+    if recorded["universe"] != expected["universe"]:
+        raise Refusal("baseline universe drift")
+    recorded_analysers = recorded["analysers"]
+    expected_analysers = expected["analysers"]
+    if [item["id"] for item in recorded_analysers] != [item["id"] for item in expected_analysers]:
+        raise Refusal("baseline analyser set drift")
+    for actual, wanted in zip(recorded_analysers, expected_analysers, strict=True):
+        if actual["version"] != wanted["version"]:
+            raise Refusal(f"baseline analyser version drift: {actual['id']}")
+        if actual["state"] != wanted["state"]:
+            raise Refusal(f"baseline analyser status drift: {actual['id']}")
+    if recorded["suppressions"] != expected["suppressions"]:
+        raise Refusal("baseline suppression drift")
+    if recorded["findings"] != expected["findings"]:
+        raise Refusal("baseline finding identity drift")
+    if recorded != expected:
+        raise Refusal("baseline document drift")
+
+
+def require_baseline_publication(
+    root: Path,
+    source_commit: str,
+    current_commit: str,
+    *,
+    root_fd: int,
+) -> None:
+    if source_commit == current_commit:
+        raise Refusal("baseline was not published after its recorded source commit")
+    _stdout, _stderr, returncode = run_process(
+        ["git", "merge-base", "--is-ancestor", source_commit, current_commit],
+        cwd=root,
+        timeout_seconds=GIT_TIMEOUT_SECONDS,
+        output_limit=MAX_GIT_OUTPUT_BYTES,
+        cwd_fd=root_fd,
+    )
+    if returncode != 0:
+        raise Refusal("baseline source commit is not an ancestor of the checkout")
+    changed_raw = run_git(
+        root,
+        "diff",
+        "--name-only",
+        "-z",
+        f"{source_commit}..{current_commit}",
+        "--",
+        root_fd=root_fd,
+    )
+    changed = {
+        validate_repository_path(path, "baseline publication path")
+        for path in changed_raw.split(chr(0))
+        if path
+    }
+    unexpected = sorted(changed - BASELINE_PUBLICATION_PATHS)
+    if unexpected:
+        raise Refusal(
+            "baseline is stale; source changed after publication: "
+            + ", ".join(unexpected[:5])
+        )
+    if changed != BASELINE_PUBLICATION_PATHS:
+        raise Refusal("baseline publication does not change exactly its owned record")
+
+
+def _baseline_summary(document: dict[str, object]) -> str:
+    findings = document["findings"]
+    suppressed = [item for item in findings if item["suppressed"]]
+    lines = [
+        f"{TOOL_ID} {TOOL_VERSION} baseline check  schema {document['schema']}",
+        f"source    {document['tree']['commit']}",
+        f"tree      {document['tree']['git_tree']}",
+        f"universe  {document['universe']['id']}",
+        "analysers " + ", ".join(
+            f"{item['id']}={item['state']}@{item['version'] or 'unknown'}"
+            for item in document["analysers"]
+        ),
+        (
+            f"findings  {len(findings)} candidate(s), "
+            f"{len(findings) - len(suppressed)} active, {len(suppressed)} suppressed; report-only"
+        ),
+        "changes   added=0 resolved=0 stale_suppressions=0",
+    ]
+    for item in suppressed:
+        symbol = f" {item['symbol']}" if item["symbol"] else ""
+        lines.append(f"suppressed {item['analyser_id']} {item['path']}{symbol} {item['id']}")
+    lines.append("status    matched; candidate count did not gate this command")
+    return chr(10).join(lines) + chr(10)
 
 
 def _text_field(value: object) -> str:
@@ -3625,6 +4059,80 @@ def command_report(arguments: argparse.Namespace) -> int:
             os.close(root_fd)
 
 
+def command_baseline(arguments: argparse.Namespace) -> int:
+    root = repository_root(Path(arguments.directory).resolve())
+    root_fd = open_repository_directory(root)
+    try:
+        require_clean_tree(root, root_fd=root_fd)
+        current_commit = resolve_commit(root, root_fd=root_fd)
+        if arguments.mode == "write":
+            report = build_report(
+                root,
+                root_fd=root_fd,
+                analyser_ids=BASELINE_ANALYSERS,
+                commit=current_commit,
+            )
+            suppressions_document, suppressions = load_suppressions(
+                root,
+                current_commit,
+                report,
+                root_fd=root_fd,
+            )
+            document = build_baseline_document(report, suppressions_document, suppressions)
+            validate_baseline_document(document)
+            target = confine(root, BASELINE_PATH.as_posix())
+            atomic_write(
+                root,
+                target,
+                _render_json_document(document),
+                root_fd=root_fd,
+            )
+            sys.stdout.write(
+                f"baseline written for {current_commit}: "
+                f"{len(document['findings'])} candidate(s), report-only{chr(10)}"
+            )
+            return 0
+
+        label = BASELINE_PATH.as_posix()
+        raw = read_commit_regular(
+            root,
+            current_commit,
+            label,
+            limit=MAX_BASELINE_BYTES,
+            label=label,
+            root_fd=root_fd,
+        )
+        recorded = _parse_json_object(raw, label)
+        validate_baseline_document(recorded)
+        if raw != _render_json_document(recorded):
+            raise Refusal(f"{label} is not canonical JSON")
+        source_commit = recorded["tree"]["commit"]
+        require_baseline_publication(
+            root,
+            source_commit,
+            current_commit,
+            root_fd=root_fd,
+        )
+        report = build_report(
+            root,
+            root_fd=root_fd,
+            analyser_ids=BASELINE_ANALYSERS,
+            commit=source_commit,
+        )
+        suppressions_document, suppressions = load_suppressions(
+            root,
+            source_commit,
+            report,
+            root_fd=root_fd,
+        )
+        expected = build_baseline_document(report, suppressions_document, suppressions)
+        compare_baseline_documents(recorded, expected)
+        sys.stdout.write(_baseline_summary(recorded))
+        return 0
+    finally:
+        os.close(root_fd)
+
+
 def parse_analyser_ids(value: str | None) -> tuple[str, ...]:
     if value is None:
         return ()
@@ -3689,6 +4197,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="coverage record below the owned .dead-code sink",
     )
     report.set_defaults(handler=command_report)
+    baseline = subparsers.add_parser(
+        "baseline",
+        help="write or verify the pinned report-only baseline",
+    )
+    mode = baseline.add_mutually_exclusive_group(required=True)
+    mode.add_argument(
+        "--write",
+        action="store_const",
+        const="write",
+        dest="mode",
+        help="replace the owned baseline with the current static report",
+    )
+    mode.add_argument(
+        "--check",
+        action="store_const",
+        const="check",
+        dest="mode",
+        help="read and verify the committed baseline without writing",
+    )
+    baseline.set_defaults(handler=command_baseline)
     return parser
 
 

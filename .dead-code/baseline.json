@@ -1,0 +1,2917 @@
+{
+  "analysers": [
+    {
+      "id": "python",
+      "state": "ran",
+      "version": "1"
+    },
+    {
+      "id": "repository",
+      "state": "degraded",
+      "version": "repository-graph/2"
+    }
+  ],
+  "command": [
+    "python3",
+    "scripts/dead_code.py",
+    "report",
+    "--json",
+    "--analyser",
+    "python,repository"
+  ],
+  "findings": [
+    {
+      "analyser_id": "python",
+      "id": "sha256:855cac3940622e64d075c3f1525291d91d655e46cf527e641e5917e3f570771e",
+      "path": ".agents/skills/promise-machine/scripts/verify_runtime.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8f0792d9f12adaf0d5e60fc8e40ee957b2f4ef606bc157d17cd4b4c6e32a7ee4",
+      "path": "plugins/alexandria/examples/credit-history-v0/demo.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c9c871dc76b5768c7404d17275b17e8d59ce7bc2a71ded93850ba96ede352a37",
+      "path": "plugins/alexandria/scripts/alexandria_lib/canonical.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c31b417403bf9773d2a5aa4b8ceb6e53c2af16674a98e1868a50d1e591af2b0e",
+      "path": "plugins/alexandria/scripts/alexandria_lib/canonical.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5fb562f264c0a430392b31bf34a2d889aec5adf2c8c521ddc04260d2d7628fdc",
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_phase0.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:4dd968e85377fe132ca044912a214a45726bf335d9e6279276e1e1c78693b87d",
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_phase0.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b12a47a35e18e399288083a5e8596119cef3f303ddb50211988c95c4f3725b7b",
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:daa768304f4cc9bb790f1001a2a2e4a1a0023adb144db961a8559f13bba5109f",
+      "path": "plugins/alexandria/scripts/alexandria_lib/compound_registry.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2ecf14587fd9f449a437fb9a4ad6c4e4dbef1a42a6259ec831b52c3354665002",
+      "path": "plugins/alexandria/scripts/alexandria_lib/derivation.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d02a09b2ad6657ff84626ba092f45924cf39950819bb33e9950f6b45f1159794",
+      "path": "plugins/alexandria/scripts/alexandria_lib/derivation.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0a2115f78c5b5431b477e6afa536f9b3a6bf8b78f7aa697d062444d3ae695de5",
+      "path": "plugins/alexandria/scripts/alexandria_lib/errors.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:11d1b26abf2cac6d411b85764d6d8a2caff0c10a911d9b8d7bf823ebf0bb3793",
+      "path": "plugins/alexandria/scripts/alexandria_lib/index.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8b64b093605ba2b0f1f56d197ac63b93626c59c350d13c66191f040e5ff0e79a",
+      "path": "plugins/alexandria/scripts/alexandria_lib/index.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:18062f3e44e2eee4a24848f6c1b9031e946287d47085df71feda92600030cc6f",
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/__init__.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7e2ed2a0a69a6820f64cfa357cbe5b68c795560c3b76968e2d510269c1fdb860",
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/clearpool.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6ec2e913ad48e7694cbebe6b31231ef8e318c6daf18bb7470edd1c241e362949",
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/clearpool.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:32c4d8de634cfffa9af7503cfadf06af370c1c481b1fb1cacd6e24279fdf029b",
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/common.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6846a74ad626bf6e5ff51d98e9aba8cecad19be7f22d886b50c1f3c7712c2936",
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/common.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:76b6aa0c790b5976d7951705eda4466585b3af05bd267b0414b97b79d550eef0",
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/goldfinch.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9626da1833f31d3cb7af24c31b1c2185ba9ab357fd2c80a5c99a97367f5195c4",
+      "path": "plugins/alexandria/scripts/alexandria_lib/mappings/goldfinch.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7fee5f4fec3f1119838af02991130130e68993a4907b5069f43bec35381a3670",
+      "path": "plugins/alexandria/scripts/alexandria_lib/paths.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b10dd710a49aff873b18d5bcccd9888e6a43d1730815518a9349b7c269e7714d",
+      "path": "plugins/alexandria/scripts/alexandria_lib/paths.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6ca2f38d7af502f52f7dc950a640cdaef44603cf277ac1c7fd7370c1c21d2ef9",
+      "path": "plugins/alexandria/scripts/alexandria_lib/probitas.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:22f5b829851cabd89f4912bc7f8d0fb6d2c53db392255103e9e8027ee972e664",
+      "path": "plugins/alexandria/scripts/alexandria_lib/probitas.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:afa8c843bddb8a2bc978401df37455e4486d612ed39401cf52dc82ab5afb49f1",
+      "path": "plugins/alexandria/scripts/alexandria_lib/query.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2c036c1dd316ec888c89d169ff94afc0d1112f093eb5581025d1af211edb6152",
+      "path": "plugins/alexandria/scripts/alexandria_lib/query.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:10ed7ab9075aff07094baf4c7753a2df91031ab68364f355fa39009a1c45a50a",
+      "path": "plugins/alexandria/scripts/alexandria_lib/release.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:57d3657f55ba5f20855119cae208beae6c215a90bf08838aa068186abe61b367",
+      "path": "plugins/alexandria/scripts/alexandria_lib/release.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8c8e2948bf92164ff3ddaf839dad650a923eb232faed7c973198fe0a54c43e9d",
+      "path": "plugins/alexandria/scripts/alexandria_lib/rows.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a119caa4bcadbea219c129c8b7221c5ff580f9c22782db4cead45d9e584b1932",
+      "path": "plugins/alexandria/scripts/alexandria_lib/rows.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5894d873402c1edc4291561059ccebc9a1e52817be05d3cf24618b77bc9891e7",
+      "path": "plugins/alexandria/scripts/alexandria_lib/statement.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:81f8861fe61383c41f5e231f9710832e7e1685a5ca2c78f3bf44e5ee0148a687",
+      "path": "plugins/alexandria/scripts/alexandria_lib/statement.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c587b4c69bd99cab1233854c8d0a23e6234f7ba5e1d4301246a9a46c2ba07d1e",
+      "path": "plugins/alexandria/tests/test_index.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:60c7ac00850f42419ab00cd046c61fb2441f672029dc4bacfbce7164c79c2d06",
+      "path": "plugins/alexandria/tests/test_release.py",
+      "suppressed": false,
+      "symbol": "hashlib@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c4316ac601019652975df7faa9897a605c85566623773225a333ae83833f406b",
+      "path": "plugins/ariadne/scripts/ariadne_lib/capture/dataset.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f5ecd520e1abea14c263591f79824403bb869d5b50f0bd98bdf07b06460762fd",
+      "path": "plugins/ariadne/scripts/ariadne_lib/capture/foundry.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:177af0f3bcdf4d40394761029b36c6d15dca98c74ca1e58e3ac742c20890b647",
+      "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:820cc14db506daa0e4db530737366b28166cf3538dc0db73fac98b0dcc748eab",
+      "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
+      "suppressed": false,
+      "symbol": "line:223:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:bbd6ef005a29c52e4f4719e9696d9a134f94c8c62338a6a55e187c3f7b87393b",
+      "path": "plugins/ariadne/scripts/ariadne_lib/capture/grounded_agent.py",
+      "suppressed": false,
+      "symbol": "line:291:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8f68316e635a7602513e1afcbd8681e43e9bdfc36222c2bfc549fb61c0075bfb",
+      "path": "plugins/ariadne/scripts/ariadne_lib/capture/state_fixture.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f6616359ac9dfb224301252f559eadf9c96131566001a731446eb1a930547cdf",
+      "path": "plugins/ariadne/scripts/ariadne_lib/capture/tree.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5de7e6ead8126fc385270f72bf86539409bbddfec82866eca1b53e7c0f920720",
+      "path": "plugins/ariadne/scripts/ariadne_lib/core_predicate.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d87ef1331bb04001f219112aa18c1494ac5b6e8c9362f45a267736a87f72e14f",
+      "path": "plugins/ariadne/scripts/ariadne_lib/deltas.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5a26fb44a4f5fe1578e4055627d03c146290e2c7510327be8f4ec64b1cb5f830",
+      "path": "plugins/ariadne/scripts/ariadne_lib/digests.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d2ee6ecca4a668262302b05fe5e4cff4f38656ea64e79b18caeb053bcc0d001d",
+      "path": "plugins/ariadne/scripts/ariadne_lib/envelope.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9d8920d3d04613da1cafa31286a638c581abfc053e3e9931e9c77167acc50ad2",
+      "path": "plugins/ariadne/scripts/ariadne_lib/gates.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:dff8dc4232e12143d823ab43ad0aede6969f85adbf0826d82190553069c652c2",
+      "path": "plugins/ariadne/scripts/ariadne_lib/predicates/dataset.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:cb42d7cafdb8f8ee6b8f6506025f3a90b3863faf01afd162374811f762336208",
+      "path": "plugins/ariadne/scripts/ariadne_lib/predicates/grounded_agent.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9ec57b4b1e3328c08876c8e98fdb4d8f027fd41064e59b9df9061b540e3123bf",
+      "path": "plugins/ariadne/scripts/ariadne_lib/predicates/solidity_release.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d150253f1a2c12ae40c692c45329580718c620d9c4aad0633c215489e4aaffaa",
+      "path": "plugins/ariadne/scripts/ariadne_lib/predicates/state_fixture.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6551266e347de5ea2125ebab72554a7a65443224ed2821306ace9218746724d5",
+      "path": "plugins/ariadne/scripts/ariadne_lib/registry.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7f06ab9eabb3142b8f44676784470c46763072cfd520fee3e8b21bfeda7a746b",
+      "path": "plugins/ariadne/scripts/ariadne_lib/replay.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0fc0f9fd72df5931563ef4be459d82e8ca69fd6a70ec5eab99940fd37b964b30",
+      "path": "plugins/ariadne/scripts/ariadne_lib/safejson.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b9a467dd755a41de85ceb59e9fb46b3c2995319266b28e59bacc8296a5b78c64",
+      "path": "plugins/ariadne/scripts/ariadne_lib/scrub.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:fb5ea27671a0140a749282d44c884f90966cad3bf3f26d63895a679439068f5e",
+      "path": "plugins/ariadne/scripts/ariadne_lib/statement.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a5a6ca2ee0d2e42c9f2d2f0501dc43aa4398290fa2773e3cfbdea8d46c4b34b1",
+      "path": "plugins/ariadne/scripts/ariadne_lib/verify.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:aa5a29b51dcc45f82be7eea6df8bdca15cf60c96faefb6c31dca3157b95eaa38",
+      "path": "plugins/ariadne/tests/test_capture_dataset.py",
+      "suppressed": false,
+      "symbol": "ariadne_lib@13"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:bd0326d944619e07a862d2ce875aede75afe8861107c782e171b46db19b53ee4",
+      "path": "plugins/ariadne/tests/test_capture_dataset.py",
+      "suppressed": false,
+      "symbol": "statement@12"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:40260d32bed031f4e273d041d628b1353e5b3f724900562c7ff31af855879322",
+      "path": "plugins/ariadne/tests/test_capture_dataset.py",
+      "suppressed": false,
+      "symbol": "support@10"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2140b7c5455ea5d64a998b1418e8a5e788632c36967efb4f10d65499f1e9680f",
+      "path": "plugins/ariadne/tests/test_capture_foundry.py",
+      "suppressed": false,
+      "symbol": "support@16"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a1fbaa92079adb97b76f51809748c129cffb04ceb392843a0afe25700efa573f",
+      "path": "plugins/ariadne/tests/test_capture_scrubbing.py",
+      "suppressed": false,
+      "symbol": "support@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:58c985b6bfd386d73c5a30fd0c2709f7de046133a915bb589345a4f7a0247a0d",
+      "path": "plugins/ariadne/tests/test_capture_state_fixture.py",
+      "suppressed": false,
+      "symbol": "ariadne_lib@20"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e0669b66386c94531d682896afea9a7bb2494de6cada11c48ef58168bf8e6bc0",
+      "path": "plugins/ariadne/tests/test_cli.py",
+      "suppressed": false,
+      "symbol": "support@16"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6ea9a413ac5071b1241191766b61c9c39d674caa1819b8ee872898f3112d5282",
+      "path": "plugins/ariadne/tests/test_conformance.py",
+      "suppressed": false,
+      "symbol": "ariadne_lib@18"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:18f1bb4de8cc04b09334f509de8fba5f7b5fdd860e9a966c243abba753f200e7",
+      "path": "plugins/ariadne/tests/test_conformance.py",
+      "suppressed": false,
+      "symbol": "support@15"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:72b3301fae3f40751913459a3f5499d7dcfd171e5d11729b4d506ec429eed012",
+      "path": "plugins/ariadne/tests/test_dataset.py",
+      "suppressed": false,
+      "symbol": "support@6"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a13c6dd01dcfee6f63ab9492ed58b834c5164d3e3356e035566b734cb2ae3a02",
+      "path": "plugins/ariadne/tests/test_deltas.py",
+      "suppressed": false,
+      "symbol": "support@5"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1df770f2009cf0d5c423c4c30a880ce74929ffd9d588cba0d56ad41329a71170",
+      "path": "plugins/ariadne/tests/test_digests.py",
+      "suppressed": false,
+      "symbol": "support@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:30eb3593702b612aa7eb6c98e04e24f7137659d66516b54b6828cd1ea5dcdff4",
+      "path": "plugins/ariadne/tests/test_docs.py",
+      "suppressed": false,
+      "symbol": "support@12"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2f22b1396e44193f6895d77eb897aabb9fc218ad86125f07dd91e7220882f817",
+      "path": "plugins/ariadne/tests/test_envelope.py",
+      "suppressed": false,
+      "symbol": "support@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d9a3b80d1b382ba9f737f347ba66410f47f1279f67596b1201a0c8d1913df603",
+      "path": "plugins/ariadne/tests/test_examples.py",
+      "suppressed": false,
+      "symbol": "ariadne_lib@11"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7a7b8d710f71a5bebb406ffc240f3b9c5e3f3547a2fd07308609e256314e0979",
+      "path": "plugins/ariadne/tests/test_examples.py",
+      "suppressed": false,
+      "symbol": "support@8"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:bb54b36f38e76a5e75ec543ba301f46bbc1dad1dc6579ae3f50562cbb19bfc8b",
+      "path": "plugins/ariadne/tests/test_gates.py",
+      "suppressed": false,
+      "symbol": "support@8"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:90705733844ddf93d55da0ee1d148b40f86efd2080961a93ba584487eb6d6626",
+      "path": "plugins/ariadne/tests/test_grounded_agent.py",
+      "suppressed": false,
+      "symbol": "support@17"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f8181f01b5e56899746b8a0b7ca02b7de8673299b0999cbe971831038a4b4cd5",
+      "path": "plugins/ariadne/tests/test_predicate_robustness.py",
+      "suppressed": false,
+      "symbol": "ariadne_lib@24"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7ae2fec7151bf5282beffc9394683ef77881dd1a7e64b11ef76d815bd38c88b1",
+      "path": "plugins/ariadne/tests/test_predicate_robustness.py",
+      "suppressed": false,
+      "symbol": "support@21"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c8d3cea0851b12d5272b5fd87861a6bd0e69f67eb35636143d55fe6107109373",
+      "path": "plugins/ariadne/tests/test_registry.py",
+      "suppressed": false,
+      "symbol": "support@5"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0d087d37639bb2486a707b63c41a94bd3d01e5754355264754145416a14cc84e",
+      "path": "plugins/ariadne/tests/test_replay.py",
+      "suppressed": false,
+      "symbol": "support@13"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:99d29437bfb39eb4ecfe7a5d794540b4aa04fda62ecb49e5e5ec2fe9eba4cba4",
+      "path": "plugins/ariadne/tests/test_schema_agreement.py",
+      "suppressed": false,
+      "symbol": "ariadne_lib@26"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a5fa3debe26fe58178ebc8e231b4a469591d0a828b0e032422009e9196c8624d",
+      "path": "plugins/ariadne/tests/test_schema_agreement.py",
+      "suppressed": false,
+      "symbol": "support@23"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1558084e609526d209a3c87982a57e816ea9e73a1136e8a5fe0a05d29f1ba935",
+      "path": "plugins/ariadne/tests/test_schema_drift.py",
+      "suppressed": false,
+      "symbol": "predicates@1151"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:faf7669c8708256f959b3d4b4e6bd9f53a5a183cab414b59c46fc4328563d715",
+      "path": "plugins/ariadne/tests/test_schema_drift.py",
+      "suppressed": false,
+      "symbol": "support@21"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8b097ea3b58d125aaab5f42ce8eaa8b2bf2473cbba386f04a79b76afc285ed15",
+      "path": "plugins/ariadne/tests/test_statement.py",
+      "suppressed": false,
+      "symbol": "support@7"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:52ed50cee448f2c851d03f52015cca67b062df7448262a9a49583e50f4db845b",
+      "path": "plugins/ariadne/tests/test_untrusted_input.py",
+      "suppressed": false,
+      "symbol": "support@7"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2a60295d3c4d618a2a2ca1a147f22564241eec8e123de9fff89e98a50899e860",
+      "path": "plugins/ariadne/tests/test_verify.py",
+      "suppressed": false,
+      "symbol": "support@18"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e4cb3ee718ea65c03c244dfdc8e7fd5790bafdb26e75adb1e8f1949310cb95ba",
+      "path": "plugins/berean/scripts/berean_lib/answers.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:4ba1dfd6379b9736b0fbbe3ecb37f622d9004b4dee90f6697142b9854ebb04ae",
+      "path": "plugins/berean/scripts/berean_lib/canonical.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:465255184b51e885a4eee9a37169b38a44d06b9d1c973db6e4224aa500daeac8",
+      "path": "plugins/berean/scripts/berean_lib/citations.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6bb726ce8067ac9bafd6404afaf2877d859af4f1d24b3a71d1f8a65f60780a7f",
+      "path": "plugins/berean/scripts/berean_lib/corpus.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:fe7d5ffa897f26f494b0238a8db338f985e58f19d0f9ae1f6f23b88c9b2d8d6f",
+      "path": "plugins/berean/scripts/berean_lib/digests.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c8f169eaad3458ab79215bc21d298b7e04a12bdc0681eb03d23081a44c505c34",
+      "path": "plugins/berean/scripts/berean_lib/evals.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9973156f4b87f49998a6e6e1f73ecf1ce17b66441763b99e48e00d1b39017222",
+      "path": "plugins/berean/scripts/berean_lib/jsonio.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:05049c94b154cae5ba42d7e57789a97718a7c870b26f640bd05bfb43e58f0b36",
+      "path": "plugins/berean/scripts/berean_lib/jsonio.py",
+      "suppressed": false,
+      "symbol": "digests@12"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:541fa7863227706825c73040390107f997922dd0a6fd54bd50e0ba551b26a995",
+      "path": "plugins/berean/scripts/berean_lib/paths.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:3241282d9b4d8c493ba78d82bb9b4f4e7fa496d59fc85a65c9ff19eb22215233",
+      "path": "plugins/berean/scripts/berean_lib/promote.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1631228cffefa269329aa508e21108ebc364506d64aa5764f8178c4555a23202",
+      "path": "plugins/berean/scripts/berean_lib/reads.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5141995cf86c675b27ce0a5a5f5404667c44afeff6fb528198138c475ebe4341",
+      "path": "plugins/berean/scripts/berean_lib/release.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:91801d3f7c3b50bdc09533bd23f3932fce21f10bc1b9de263419d1eb4fc22cab",
+      "path": "plugins/berean/tests/emit_report.py",
+      "suppressed": false,
+      "symbol": "tests@21"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:edbac01f77d9f2b8926b85d153bd815975ad45f84c9e83a95b7f04e682103f23",
+      "path": "plugins/berean/tests/release_fixture.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1907af5ea7064473640225db77a4b85a84d9d7e860361788c46554b6e00ef097",
+      "path": "plugins/berean/tests/support.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:55fff8c2813eb1640b9a5a8317c3d67a184d122227bb35b0f6eaab9883bb171e",
+      "path": "plugins/berean/tests/test_answers.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@8"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:17bfc414b6a71bc4abdc8879c45aa2fd302e9695b9ed075bc304d56856db6056",
+      "path": "plugins/berean/tests/test_canonical.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@5"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:3009e9771055cb8016bf5ef83ade77cb70ec38cc3a2310e47625666186a942a0",
+      "path": "plugins/berean/tests/test_citations.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@7"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f9db3753aafde11081fa1e1dd4c249eb9bf5f5f94284f76ae5970a0b1739dd1c",
+      "path": "plugins/berean/tests/test_corpus.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@8"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:cd5a9c9e5feba075289d3401be878960913ccef3126af6dec9a7d1332720dbe5",
+      "path": "plugins/berean/tests/test_digests.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@7"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:902c0bd2280c3bb8473584431a987f0806bd878017895cc844dda7cad8a42d96",
+      "path": "plugins/berean/tests/test_evals.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:cb78c8312c17428e4ddd5ceda5c43a287edcf053e4ff3729f1ddb9fa16f82cbc",
+      "path": "plugins/berean/tests/test_evals.py",
+      "suppressed": false,
+      "symbol": "release_fixture@12"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e6f70fcbd890a30942020298b846bb888c6b376178a05aae921c0d1265342442",
+      "path": "plugins/berean/tests/test_examples.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@10"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:fc10abb6bca72659222bf9e4116d1c8fdc6acd5e64ac38d6cbff21a68f95d154",
+      "path": "plugins/berean/tests/test_examples.py",
+      "suppressed": false,
+      "symbol": "promote@12"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d8e2f5289ec795400d4f6ac96629fb57bbe8a309bd6b3345024da6d8a695a6eb",
+      "path": "plugins/berean/tests/test_promote.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@11"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:227b401a8d4c6775a3c1aea405d326a5ea10b2ac62339e939cac6dd993a3d7d1",
+      "path": "plugins/berean/tests/test_reads.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@7"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f868b8cb5c9eb9fac431d40534d1c09f545c30c59fc18d55a2cdb3fd3af52d20",
+      "path": "plugins/berean/tests/test_release.py",
+      "suppressed": false,
+      "symbol": "SCRIPTS@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:194a61dc3f0e41f27ee59fd09f1f751d0d4d122d886b76892adfb8d6283ad2d1",
+      "path": "plugins/berean/tests/test_release.py",
+      "suppressed": false,
+      "symbol": "jsonio_lib@179"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9c21984a40423ea4c6f1698885b9870bfa5d563fdb4e3f408aab23ea6cdf54df",
+      "path": "plugins/berean/tests/test_release.py",
+      "suppressed": false,
+      "symbol": "test_the_digest_covers_every_identity_field.directory@37"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b66e3be08767704debcf7b715c7e992206a128acd458f540f592af8c6c65f6a8",
+      "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:611b714c58ac37f788082ad6f62203487129235b6dbb41b24bad073b255e626c",
+      "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
+      "suppressed": false,
+      "symbol": "defaultdict@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8350e1b0fe2b747e907c060fc7964c4a2512737fee42de10dc09a4164c95647a",
+      "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
+      "suppressed": false,
+      "symbol": "lint_text.fences@395"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:91ad1e8ea540778870f57260934539f285be3495303eccebb41a817b2c66fef8",
+      "path": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d972c96a8f4430b75435e77325e7cbee657e986c85045851ebc38e3c8b4c3b42",
+      "path": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:93400088ae89c4fa5b65fac8c144839d71c54a819cc6ae235caa18e7ea49317e",
+      "path": "plugins/brevitas/skills/brevitas/scripts/held_corpus.py",
+      "suppressed": false,
+      "symbol": "validate_corpus.manifest_bytes@792"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:521286598058cba5e82bb7fec70d4d719607a3627b77bc497a416ade4517b2e9",
+      "path": "plugins/brevitas/skills/brevitas/scripts/run_evals.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:46288a7c7123a1d1bfdc67bd4fcb744182d1327e04e66b2be1dbd1f6c927ed39",
+      "path": "plugins/brevitas/tests/run_tests.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:daf45def0ae5b8ecc12181052049369aa709bc80dbb13cf265f2dfe014673db4",
+      "path": "plugins/brevitas/tests/test_brevitas.py",
+      "suppressed": false,
+      "symbol": "annotations@1"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e390d03b6e3deaac007a56defc8808a30c44104b62e41f7a9d84ed9cd58edb92",
+      "path": "plugins/brevitas/tests/test_held_corpus.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:716880f9b7970130f3ef366622a55d3948dc16789b262b752d106bb1df439700",
+      "path": "plugins/brevitas/tests/test_held_corpus.py",
+      "suppressed": false,
+      "symbol": "annotations@1"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:161a880e737ccd022b7aff7b03a509e79ac4d9af39793738777b132abedc935a",
+      "path": "plugins/brevitas/tests/test_runner.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5dd50f073cac8399b02d6f071698927d5e595baf5c8a9f709de7d166cb0389a5",
+      "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2d0e1a88de0aca3e3f6db7f7e4ba4f43edafd889d5285a21203e995b0df6fd2e",
+      "path": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:dbb8706571531c18c817b8610ec897c9fda9e18088cd9b48b9b157a64984b6cd",
+      "path": "plugins/hexaemeron/lib/typescript_lexer.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8bea720a71ce5b477dcfc545f2e852a80ba7fc97978b9e6df09d0514fabacd0f",
+      "path": "plugins/hexaemeron/lib/xray_reuse.py",
+      "suppressed": false,
+      "symbol": "annotations@17"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:10fc9dce9b7670e3bfd656cd77497977e0dbd68ee2c9f044f384e0f8f4089e06",
+      "path": "plugins/hexaemeron/lib/xray_reuse.py",
+      "suppressed": false,
+      "symbol": "line:166:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:57d5a1e3d6031a22729848a4c274b722ab8d14ef124c7ac398c121bf38ce20ee",
+      "path": "plugins/hexaemeron/skills/elenchus/scripts/elenchus.py",
+      "suppressed": false,
+      "symbol": "annotations@12"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:611a8f5dc940838af1f1b0d1d6bbaef8cdd6aa04a849e13b4ef9532ee95763ad",
+      "path": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py",
+      "suppressed": false,
+      "symbol": "annotations@19"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:63fe61bd990591a3f3a96417047c1ecc95ad4f208e8e7b1ce7a0bf6e5c867f22",
+      "path": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py",
+      "suppressed": false,
+      "symbol": "line:581:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e8942df34d495327ab980b24c35abda8b04caab1eafd9bd3d3a6b15075e50461",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py",
+      "suppressed": false,
+      "symbol": "line:583:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:45fe5081c117ab5fb96e95643b4a5a3babca6a0207089b04e122779e995bb1d8",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1e492ef68739b0676322edb00c983ea1474d4f7da36678178f075345ab088735",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "suppressed": false,
+      "symbol": "Path@43"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8169859aad940a2d2802183f62238f5fc9b966aa628b44118dbbd0465c97402a",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "suppressed": false,
+      "symbol": "_recover_runbook_amendment.canonical_path@6099"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:276cf0797744239941da2b4474ae7bb0e2a636638c5b605eb9806b1f237fac25",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "suppressed": false,
+      "symbol": "_recover_study_amendment.canonical_path@5955"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6b6aa389f47e99aaae22242c8295b2bc3fe10496238abfc6906871d8c0fc9ef3",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "suppressed": false,
+      "symbol": "cmd_checkpoint_restore.root@9588"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b3a48546a5c8bfec464c0acd8028844607eef9fa132689d838da96ef6065943e",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "suppressed": false,
+      "symbol": "line:2220:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:53375bad364335070b4547685ced69a82b2e134eac52c0ea5cd2fd48c9fe7ae3",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "suppressed": false,
+      "symbol": "line:8011:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ef8ce632280211ca21ceba1f084138f26fe988e4f5a793343a405e62934ff375",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "suppressed": false,
+      "symbol": "line:8183:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:72e4ba5880d5efb7e7c751d3abc76a837c0e577882728524ca12a260706882ae",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "suppressed": false,
+      "symbol": "line:9170:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1eade5209ded634b2a24317aa46f62b6b13ef0815917dc94fdbf0251b0f9c9ba",
+      "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+      "suppressed": false,
+      "symbol": "line:9264:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:251aba75141866439180c0cc707e7fc0d05433b63041fb6be89f7c3dff58676b",
+      "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+      "suppressed": false,
+      "symbol": "annotations@58"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7bac061ca9e94c1663aec5272788cd73d764f12ab7f2eb47e89c7656869cbdc0",
+      "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+      "suppressed": false,
+      "symbol": "line:421:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c28641838207af2ca49acfd7e138dc49594caf097a004f68401a55f477887d8b",
+      "path": "plugins/hexaemeron/skills/imprimatur/scripts/evaluate_labelled_corpus.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:330153eb8addc9e388ae1fcc3d4e5e3fe664d4ad7ded5384c7d018fe3685abc4",
+      "path": "plugins/hexaemeron/skills/imprimatur/scripts/evaluate_labelled_corpus.py",
+      "suppressed": false,
+      "symbol": "validate_fixture.families@385"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:91f4006ff5b19ad3f28612e23b1ff4ea0df4a20ad7455f9725fb9d39c8beb0cc",
+      "path": "plugins/hexaemeron/skills/imprimatur/scripts/hook_gate.py",
+      "suppressed": false,
+      "symbol": "annotations@17"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5546c45ad4eeca74331183aad9ceac3c8f59cf768ecdd97b937758d70d7bf162",
+      "path": "plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py",
+      "suppressed": false,
+      "symbol": "annotations@16"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:fa38781629bd7fb3af88b839fa360ea869c48a98535208c0efcda274286354d7",
+      "path": "plugins/hexaemeron/skills/imprimatur/tests/run_tests.py",
+      "suppressed": false,
+      "symbol": "annotations@14"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a95b2958481df7f9b27a9063fac12354e110c4c0372f03e5f123c2dd8f4e3d5f",
+      "path": "plugins/hexaemeron/skills/imprimatur/tests/test_labelled_corpus.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:06a3d4c23151aebcacf27963c3c9ba96a9fc9f3f3651f6a0570b7159efd6d623",
+      "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+      "suppressed": false,
+      "symbol": "annotations@73"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a0e3883e039134404671d0f94648a13a94b79a63a03e39b75476d27cefe2adf2",
+      "path": "plugins/hexaemeron/skills/metron/scripts/metron.py",
+      "suppressed": false,
+      "symbol": "annotations@33"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f964796b619a052c887d406cfcf83297e227501e8709b46b3a208d2a20aa6b27",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b4a95bed995a15395d2ddf426de17ef08d40d366d5c64d4e2c99ba5e4690f0a6",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/canonical.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c726aca026bd949e0b285cf0ae93a38308c3178fc9c1897637ac14e037709460",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/canonical.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:73db5278ff5eb8a64ea2984ea2dd9383438164a07148441cdd06e0adb96bb8b3",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:37d602ad6ed8ee058cd348b71ec56b077395d12dd8f87a3a8d1d13d31fd2694e",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py",
+      "suppressed": false,
+      "symbol": "ProviderProfile@26"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:193035abe81fc22eb1c4392acb6833d576f73305afa7009ed59561aa8330ecda",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/conformance.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a03ed6659fd7fe32d1726331033cd8fd77796c555aff695d5bafaaeaa52886e8",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/errors.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2ad8550b626d0d7c5ce2c7a7e431b084e49ba73dfe4e677c2d7fcc6d95dad7ac",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/errors.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d32ed12ccae0351d27096035bffa530d5174470c78fcd44f9ef0cabbdaf197a6",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:99cc3782fc038290f5226cf4bc2322628a5bd6b2f51242c4017f68d3cb505aba",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/framing.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1f2d64ba6fcbd796a9660e21aca58ff9eac2169255802c9ea9071b1a421090c0",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c0efbb80f54d1675ca3232e7e7e727d45685ca286f91242471d6230d92f6c847",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/lifecycle.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:09f4cd371cf1f5e820215dd4f53664328ec5cd9f019a2546ac5d455ec844f068",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/operator.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2066d389c2366dfe3c95fc49aaa252dc0854d2bc9d4595553962e36a02bd7956",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/operator.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8c3b850f212f9da9198957d2f1b6d2b24371efc4dfe8e206794217e861476fba",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e9a063fe9c06c22b47e0684bf3915f6aff258ab555e63b00709242cdb1301c0d",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py",
+      "suppressed": false,
+      "symbol": "PolicyError@19"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8061a68f90ab069ab0246fe627ebedd603850e0b54e01fc043b8c2c1a1eaa806",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py",
+      "suppressed": false,
+      "symbol": "_project.features@233"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5cae258a9c328afc33599f3370227475cacef764e3f2fbec43a9d11c82097ff2",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/policy.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0f5bf50761ba4e4a856ab4276453a8ebe21633a75d9305dee8f1ef78dd236c04",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/profiles.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d0f50379fc52aeeedb6796c5f3097422c5d69c6bbd35c54bc052693f4bb0f781",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/profiles.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:25bb0fa25722b8239d6e82d0d001b5929fd37dec0a686d025efb6432ba3b2e0a",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b883964afbd3c9be50c31e636c078f42d53d0641fae87a7256c704abdbff0464",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:631447fe9780fe42fe194f0bebedd34092150f2e1093e24d849957daeed89da2",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/provider.py",
+      "suppressed": false,
+      "symbol": "field@5"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:cdd401fa0b822ffe15ef1cf37ad367138edd7c8081b0946381afab4fa4a97380",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/receipts.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:dfc6c5d3458df8130086026b5290d4ae5bb4424486510e6bef3bf01c9996dc22",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/receipts.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:df33f0387523ffd4fff534f5ffeaebe69ab739cd563dc64b904c1a0d1101521a",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e39001060289e5449da446d3dbef14c40e47293f5ad6f68b82f7ec6cbdd965e3",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:09bd993fa4c5cfce644d6dc494834654ceb365cd8593ca5c7a353d1d4964ec3c",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/model_proxy_lib/transport.py",
+      "suppressed": false,
+      "symbol": "line:496:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:45a4deb5b560b2602660a529e1878cdb64d555583111cc475bd20d2211473a0a",
+      "path": "plugins/hexaemeron/skills/phylax/scripts/phylax.py",
+      "suppressed": false,
+      "symbol": "annotations@19"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e2a9817c4291fa526da2ce059c517fe78e2cd00c36d516c4cba855c594b33e06",
+      "path": "plugins/hexaemeron/skills/protasis/scripts/protasis.py",
+      "suppressed": false,
+      "symbol": "annotations@58"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:3bdea800e21124d3cb67f40e6b03a04ee9b494ea4af3e2897b3f27c6a97431cb",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+      "suppressed": false,
+      "symbol": "Path@25"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ab091db58432b1400469463b7e5a110994e4fb562408d3cfebc41aa46df9c19f",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+      "suppressed": false,
+      "symbol": "_count_sol_files.root@870"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f5c6576fd7b2e25ffc49a695878573dd4574528260f4dcc3250ff45772c82c56",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+      "suppressed": false,
+      "symbol": "annotations@13"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:60e70c2e4b0d6240a88ef6c448a7cd85daff0f231222661ab7183381755af80a",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+      "suppressed": false,
+      "symbol": "dataclasses@16"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:642b128988144909bd08b21e213e10cf0f1415e288c02e4bdb7948966b51299e",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/analyze_git_security.py",
+      "suppressed": false,
+      "symbol": "sys@21"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:aef8266ff1e9b4f5be624af70d1f8a5e5f690cfea0855a84ab5a43711e4ca94b",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+      "suppressed": false,
+      "symbol": "deque@20"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d4f5b7fa666879b4a6c40d1abc9fb02350d2e80cd5b7ba67edb55ee2a67fe7f0",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+      "suppressed": false,
+      "symbol": "generate.bh@777"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:bc7dbe9416dcb67b3c88af9a2eee0f45c08b1b41a6ee200704d6d3b0321a29ef",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+      "suppressed": false,
+      "symbol": "generate.by@777"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5071b27114dd18feceecaa66ef19b9c1534e25d63ee16913daf3b8171939e587",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+      "suppressed": false,
+      "symbol": "generate.dummy_chains@629"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:bc20729430ed433685ef8cf9c4aec2418d9bbba0b82d9ef154fe4ed20e4c0fd4",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+      "suppressed": false,
+      "symbol": "generate.original_edges@628"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:69a2f9a319951cd58cba77814b00b8ead998ea07652fc4d957faad35c38aebfc",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+      "suppressed": false,
+      "symbol": "route_edge.bid@437"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:71a1e50e7b9050a52b2cb4ac5071e32e0e6a4e2c07fb18ccaa03ce7d6ef9c7f4",
+      "path": "plugins/hexaemeron/skills/x-ray/scripts/generate_svg.py",
+      "suppressed": false,
+      "symbol": "route_edge.cy@436"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e597b456761ee74d5355cb7c9aa405de6702e65674a619382acfc6f5f6f5eb4b",
+      "path": "plugins/hexaemeron/tests/fixtures/hypomnema/source/cites_missing_record.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:74659a36ad474f5ba87d8daa335b646583c6941654fa3911a9c3f3319051485c",
+      "path": "plugins/hexaemeron/tests/fixtures/xray-reuse/run_demo.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7c92b835718083b80594f41321f1b3305b978f0b55aeef122e77c446857ed479",
+      "path": "plugins/hexaemeron/tests/fixtures/xray-reuse/run_demo.py",
+      "suppressed": false,
+      "symbol": "execute.source_paths@152"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:205d0eff3b9f20479787ecc3e7a3b1ec385ece3f080a1c30e1cfbad0cb5911ff",
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "suppressed": false,
+      "symbol": "line:1624:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7efac94a9ebe004fed73bc2289fcdf8a77a5024b0a3c0935f8277a08c2b29eae",
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "suppressed": false,
+      "symbol": "line:1753:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0ab8d082a4962a437fdf2991de2d1800d357168d974878a8220f62c11b6dd508",
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "suppressed": false,
+      "symbol": "line:3037:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:37c1a093b8b611e492c6037f28e935e049e9e0f732bab1be93458db781cb00da",
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "suppressed": false,
+      "symbol": "line:3219:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:149a36cdd6cafe367ba631bf53992246d7258e1cb51fc5d31fa8454ffb925e88",
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "suppressed": false,
+      "symbol": "line:466:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:3f0058275aa188ec39fa0a071e5c6d9867231e61e5f1c3c21be979b079d49945",
+      "path": "plugins/hexaemeron/tests/run_tests.py",
+      "suppressed": false,
+      "symbol": "line:493:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c040e95a0e2c051d6d08b59e244d7b4c61f99a6ef6816f02e9221e931698a64e",
+      "path": "plugins/hexaemeron/tests/test_audit_log_path.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f3a88ee82a272a6e8dd751fc23b1895e03b33fb1cdac7509854f7b0af86f2a96",
+      "path": "plugins/hexaemeron/tests/test_audit_log_path.py",
+      "suppressed": false,
+      "symbol": "unittest@13"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1ebd85a08bd2d51b8e4bb696092b1630ab7d45ccbef08d3bd57ab2318eafa46f",
+      "path": "plugins/hexaemeron/tests/test_check_runner.py",
+      "suppressed": false,
+      "symbol": "annotations@10"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:503f6b329a62c2c27171e3214463e7c44290000cee06e14900a1dfada33b910d",
+      "path": "plugins/hexaemeron/tests/test_disposable_git_signing.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:821a83b611032adc096e1205f7b32f74c91768b035ea2bf5ce5e01af59b18ce1",
+      "path": "plugins/hexaemeron/tests/test_fiat_config_write_gate.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:eedfee9af4694f0cac8d9b6d19cd00a9d1b4a2b1c040496533a53a66603277f0",
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "suppressed": false,
+      "symbol": "BytesIO@16"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:4d8d1e8d01ed02a37498ad9cc1e8d22a76407dd9c87b1749f8ae964680a6a5cf",
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "suppressed": false,
+      "symbol": "ExitStack@15"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:11f62a23677cae177b6dc0dc7c414881d2ea4f58bad885f2897a6e7383715f0b",
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "suppressed": false,
+      "symbol": "TextIOWrapper@16"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a78f72fab7b4fa4305fd75e807db7517124afbfe604188721e22c8fe648954b0",
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "suppressed": false,
+      "symbol": "test_sync_run_receipts_exact_merge_and_allows_integration.state@2754"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9e67c91332caea78679b422fbc65052ea5326a25db2bb2a6ed18c65b2d5736ff",
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "suppressed": false,
+      "symbol": "test_sync_run_refuses_stale_remote_base.base_sha@3107"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e4e54a2251c1d5fb48161680e536e85f9e1ffb583f7e5c68d3ed1b21d20f4a70",
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
+      "suppressed": false,
+      "symbol": "test_export_manifest_closes_the_controller_capsule.controller@272"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d87bcc8e3a29ea93f0b0a8eec24c4e9299149d9f3a1048ff2aa44734346cb8e2",
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
+      "suppressed": false,
+      "symbol": "test_restore_moved_private_stage_cannot_redirect_writes.worktree@1261"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:821841706f31bf5f5d2f75f729d6bdd3a05f4edffd3a1dad5ede44ff78adc450",
+      "path": "plugins/hexaemeron/tests/test_hexctl_checkpoint.py",
+      "suppressed": false,
+      "symbol": "test_restore_moved_worktree_home_cannot_redirect_writes.imported@1221"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8bd9e16eb117e2082ca11ba691f612edcfade5f5fb11987e81e0ae9a27c50bcc",
+      "path": "plugins/hexaemeron/tests/test_hexctl_currency.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:364ff99160c64dfedbc27fce37f3c14f5f5552a87c32f1b759c9dcdd5461feb7",
+      "path": "plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py",
+      "suppressed": false,
+      "symbol": "re@24"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e183044cf9bf39a91a1f3f71c819223ef3abb84582ada18397f3a395e67aacef",
+      "path": "plugins/hexaemeron/tests/test_hexctl_frontier_receipt.py",
+      "suppressed": false,
+      "symbol": "test_the_reader_and_the_writer_share_one_key.module@298"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:194784b3ccbc777846f18ba6c2bf091b5ec820a56393c52a821909b4497c72f5",
+      "path": "plugins/hexaemeron/tests/test_hexctl_generator_aggregates.py",
+      "suppressed": false,
+      "symbol": "annotations@7"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2ac3adbbf0391e871f25c9cf5cc3fc58b6c6612393b37fd9bd4dd81466ed1b2f",
+      "path": "plugins/hexaemeron/tests/test_hexctl_generator_aggregates.py",
+      "suppressed": false,
+      "symbol": "sys@15"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1b5255f3746d6ebd8264b8a1e40d5e5e368d32d34f32f2b90020391424841f13",
+      "path": "plugins/hexaemeron/tests/test_hexctl_integration_path_bounds.py",
+      "suppressed": false,
+      "symbol": "annotations@14"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8814ae54d7569829e298ff171c1957b4ee18585f58ff815b1605634ea855d9f2",
+      "path": "plugins/hexaemeron/tests/test_hexctl_remote_refs.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9d0bf6bfc9f6c902226026e3f1fd59a6c517c71d809719dd957b472daf435f2d",
+      "path": "plugins/hexaemeron/tests/test_phylax_model_proxy.py",
+      "suppressed": false,
+      "symbol": "TextRequest@58"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e4b75cb9c917f7fe5b4f295e19b8cae73f0d85a921669f8bebb635770847477d",
+      "path": "plugins/hexaemeron/tests/test_phylax_model_proxy.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e9442f1f55106eb83b85f450ea451ea651d53ea2364b183de18d4569fed94329",
+      "path": "plugins/horos/examples/fixture/build/util.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6bc9287746ea2a689df6090ac147f2e140b6179c1c65d8f36d8b642730d151dd",
+      "path": "plugins/horos/examples/fixture/src/app.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0722ce8cfd430f831ea37ae8d884bf3e1e52cf84f964719eb618a4b85b44ce8e",
+      "path": "plugins/horos/skills/horos/scripts/horos.py",
+      "suppressed": false,
+      "symbol": "line:1065:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:757a3e8617f0779056fca3b92958b3480b424c725b40a9ce9d0d2bd5a10a9ec3",
+      "path": "plugins/horos/skills/horos/scripts/languages/cpp/cpp.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:58639b44c82cb99715e7ea42ef86fbcd67d31f67ff86a641685ed0db13ded597",
+      "path": "plugins/horos/skills/horos/scripts/languages/cpp/cpp.py",
+      "suppressed": false,
+      "symbol": "_scan_raw.n@179"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d69734ac8ad1246161113527e6be705b8121df6b4af75212bf826a780aa8e141",
+      "path": "plugins/horos/skills/horos/scripts/languages/go/go.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1b9c6f2764f7e5fdc8432181f31406aa39ccb83e388239d1f03885bef9c1a563",
+      "path": "plugins/horos/skills/horos/scripts/languages/python/python.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0cb8d1d54b32b9cfa298371175566dce8f8b3de0c0122f453feb2c526c4cb595",
+      "path": "plugins/horos/skills/horos/scripts/languages/solidity/solidity.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6e5f178ea1adcb10602fdfabb20719aaeaf690ada15cbba4fc2746d3e4413617",
+      "path": "plugins/horos/skills/horos/scripts/languages/typescript/typescript.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8787f9b336da44ba559d8c90e1b40c0cff489efa5264b4786bba9d4bd475c081",
+      "path": "plugins/horos/tests/test_scoped_entry.py",
+      "suppressed": false,
+      "symbol": "json@17"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d7f4642796a15426b3d20055656f974be467c36fdb70c4b4e9bb8b35c2a705ab",
+      "path": "plugins/horos/tests/test_ts_lexer.py",
+      "suppressed": false,
+      "symbol": "test_the_newline_guard_reclassifies_a_false_regex.spans@68"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:01206cf11cc22816d18a4b6a5d6f4965494237590c3ca18f56ffe00aad641f18",
+      "path": "plugins/horos/tests/test_universe.py",
+      "suppressed": false,
+      "symbol": "json@6"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7c0c9175349b574c7ca3bd120ad120181925a380a43288ac16c9bc4d25d82970",
+      "path": "plugins/janus/scripts/janus.py",
+      "suppressed": false,
+      "symbol": "annotations@11"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:4c815d672973c5ee76f8a93a7b9e64b5f7301955a9a20f99265e78a7150f91f8",
+      "path": "plugins/lazarus/examples/goldfinch-v0-release/fixture/demo.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8470b356cd5f2ef6aea11a27f817ba4ef13f51109b5689e2b24b45e473f3bcf9",
+      "path": "plugins/lazarus/examples/goldfinch-v0/demo.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f71001ed789c6291ce012715aa800f91b6a7fbdc738153abdb7ee07b47e8dfca",
+      "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:961c8ea57c2a9d03297b647bead3b2c7941f27848294d238a0eceb77d2f425c3",
+      "path": "plugins/lazarus/examples/goldfinch-v1-release/fixture/demo.py",
+      "suppressed": false,
+      "symbol": "release_digest@52"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e6885fafaf153bea4fcd4d1e905c344bb203fe13f37d94a7214a4d410e72be4f",
+      "path": "plugins/lazarus/examples/goldfinch-v1/demo.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e2127ed4c5093792d7ffb7275d0ae7e0cff036c13fdcc09ff225178eea1c3c5c",
+      "path": "plugins/lazarus/examples/goldfinch-v1/demo.py",
+      "suppressed": false,
+      "symbol": "release_digest@52"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b0d4f784684b7f23da2f817a6bdbc0ffac72feca522b6e9ba2266bf5d49dbe5a",
+      "path": "plugins/lazarus/examples/preservation-release-demo.py",
+      "suppressed": false,
+      "symbol": "annotations@29"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5692b105ab038a6933803a4fdcd0fbcf67c16144ad0038d36cd1bc4e40ae726d",
+      "path": "plugins/lazarus/scripts/lazarus.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c07628f802780cfd916988897fe763d5fe09b8574ec337e53bcd0749f12c4d1c",
+      "path": "plugins/lazarus/scripts/lazarus_lib/binding.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c59fed00bf8cd6a63eb498fa13b180519ced838cf91281aba4ea3b9264388179",
+      "path": "plugins/lazarus/scripts/lazarus_lib/binding.py",
+      "suppressed": false,
+      "symbol": "annotations@34"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1bce7b2ec1c940e41b8f4316c9f94d1a3ab650fabe8797b1fa178a0ce24974b7",
+      "path": "plugins/lazarus/scripts/lazarus_lib/canonical.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ca0c067e0c3a6390d2b78a367040df32f9999587cc7ebe42085a2e71e21cf68e",
+      "path": "plugins/lazarus/scripts/lazarus_lib/canonical.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ba9ad2d9044a9b5e5490afecec9234df89c21502c344cb43d6bf60329a5d9f6f",
+      "path": "plugins/lazarus/scripts/lazarus_lib/capture.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:80a795a0ffb472caef6a41505353b1483ed1dc2e3f141623a36791954a61f59d",
+      "path": "plugins/lazarus/scripts/lazarus_lib/capture.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ac94bec417fb04aa0b0be082dd024691795652d4b26bf4616a0e66935f3b5161",
+      "path": "plugins/lazarus/scripts/lazarus_lib/errors.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:dcc3096142acb767805fab7d4f004e13976838a4c3a17a4bc94113b48f9d9191",
+      "path": "plugins/lazarus/scripts/lazarus_lib/header.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0b042ce7e2aa90addcb3e78439d09eb9ea592d06a944319d60c055a5a10dd8a4",
+      "path": "plugins/lazarus/scripts/lazarus_lib/header.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b021f1f338f7b701a8ed1e229463dbb78bd4e4ae76e878e52d2128b7022c5030",
+      "path": "plugins/lazarus/scripts/lazarus_lib/hexvalue.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:206e7a46cc4cc821642f9625c501ab4deb6e1a55cec3f961e262bf28b2fffba5",
+      "path": "plugins/lazarus/scripts/lazarus_lib/hexvalue.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c7081114b854c69893eb905f54e4987ee97fab554ebc808e20a9c6161759dc4f",
+      "path": "plugins/lazarus/scripts/lazarus_lib/limits.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:657e6dce2efdbebf1a08721ee74b4648befd92a610395341231735906d65ab6d",
+      "path": "plugins/lazarus/scripts/lazarus_lib/limits.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:85958df86e97abb60011fbeae0e052c2bf2891960b8837c9409fcf4bbd5f17c2",
+      "path": "plugins/lazarus/scripts/lazarus_lib/manifest.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:da8a5e0e87baeb522145ae4c50e2dbbf81955b58c3b2c4f80e46b6645b97fccc",
+      "path": "plugins/lazarus/scripts/lazarus_lib/manifest.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:90e995be541795358c54acc61677ac82d3f0e5f97e8868cf1044f876030ce91b",
+      "path": "plugins/lazarus/scripts/lazarus_lib/paths.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b2a0549346caaa4dbd03ddea4d845f6eab05e30014e8173c493ec33565a07b45",
+      "path": "plugins/lazarus/scripts/lazarus_lib/paths.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9a7184d081454a13b45891145d2c06caabd236df574f2e6d122592504d63cd77",
+      "path": "plugins/lazarus/scripts/lazarus_lib/proofs.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:95dc9b1cc1479d67fab7bdd5611b9dd5361bf93ee8e4dbd02750cd8e478bcc5f",
+      "path": "plugins/lazarus/scripts/lazarus_lib/proofs.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:da6803947931d031d5415cf0a0cd622e014e65fe87f5e9dcb15fd595e11d5a18",
+      "path": "plugins/lazarus/scripts/lazarus_lib/receipts.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:95617230e1eb0be70b7e1b5fd262f178109f49100743cd1153fbfa02ca642f4d",
+      "path": "plugins/lazarus/scripts/lazarus_lib/receipts.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:3de15a87cab23dd0cc182a4886e19564dfe378323c11c8d1bd7ae44bd9f7b833",
+      "path": "plugins/lazarus/scripts/lazarus_lib/records.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f50dc6e161b464d9b942f4a4f33f2cfea00c9cba5cde9b1033833b93c2d71185",
+      "path": "plugins/lazarus/scripts/lazarus_lib/records.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f7cc5136d34446dd01c6cdb5fcc6e0fc60ea441ffed175d773dad3e943c20a41",
+      "path": "plugins/lazarus/scripts/lazarus_lib/release.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f4b76f45f79c5a7e13abf15a6df97c458c14d05da76dfddda4fe32344f3a2257",
+      "path": "plugins/lazarus/scripts/lazarus_lib/release.py",
+      "suppressed": false,
+      "symbol": "annotations@27"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e5c7782c812ad1acd634f5e439cf75dac2fc5d1df7ed5032f091a3d95b282e33",
+      "path": "plugins/lazarus/scripts/lazarus_lib/replay.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b82041be56ae77a8fdad53351bec50eb8b764f4395541f0dedfc3bb4e131e13f",
+      "path": "plugins/lazarus/scripts/lazarus_lib/replay.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:3a81b955b843b850f905c0c2caf7fa782990aaf2b9e1ac4479c8c37c69d44210",
+      "path": "plugins/lazarus/scripts/lazarus_lib/rlp.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:86de037c619b1ac69ede7f5ddfb20af49b1ca8b34d3f972d5746c9a2d05dccdc",
+      "path": "plugins/lazarus/scripts/lazarus_lib/rlp.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0bda8010f4645579bb202046771fd11c0199284ef47a9167e94dc41f8e60f8f4",
+      "path": "plugins/lazarus/scripts/lazarus_lib/rpc.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:cefcc04dc5841c74df75711858cd75f50f66c4b8c2f287bf3fbbbd640009f268",
+      "path": "plugins/lazarus/scripts/lazarus_lib/rpc.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9c18808c3d9aae19f76927db68870963b23034ac05d89baf63d09d8774e6bac8",
+      "path": "plugins/lazarus/scripts/lazarus_lib/schemas.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:fa109a5310ebfc7d5f16a0cb7bc951ab9ebc705d536e14de1957e7c8fff8613d",
+      "path": "plugins/lazarus/scripts/lazarus_lib/schemas.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:bc1a928896883a6e71df9bc8535d9f675f005c47835464f252e52f62f4624867",
+      "path": "plugins/lazarus/scripts/lazarus_lib/scrub.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:653401b50c24afd81c669b7d6682b3176a94b0084fb24b1eaa52163f5a6d90b9",
+      "path": "plugins/lazarus/scripts/lazarus_lib/scrub.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a7dbaa93cfbecb53c43f5eaa86a674063b4ed1ad93554d1162490a8455702290",
+      "path": "plugins/lazarus/scripts/lazarus_lib/server.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1a403fe40fc766ad7bbafcf08ae7797cef795379672866aee7c3ba58bd52443b",
+      "path": "plugins/lazarus/scripts/lazarus_lib/server.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:281cbd272fe40f1dd537637a1462069e07dafbdb171d72b3b87fa2a039f5e766",
+      "path": "plugins/lazarus/scripts/lazarus_lib/text.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b6c8530f9e83d79d6128feaa4f6681ba01393c0790bd0fdd1426d349202cb64b",
+      "path": "plugins/lazarus/scripts/lazarus_lib/text.py",
+      "suppressed": false,
+      "symbol": "annotations@26"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c24b13c1241e29c1005da18a45941c03947094232ab1085cfbfec173bb5fc4a7",
+      "path": "plugins/lazarus/scripts/lazarus_lib/trieproof.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:404269d73b345a77beec589e0d03c6c789817d87363cdd6642f2cf604dbcd0c2",
+      "path": "plugins/lazarus/scripts/lazarus_lib/trieproof.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:007d37f9e3cd71d97550e54d3aab288991756e34ad2f6ef0ef107204b0598974",
+      "path": "plugins/lazarus/scripts/lazarus_lib/trieproof.py",
+      "suppressed": false,
+      "symbol": "line:174:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:21562e0eb35374164461fcc766c0b01cfd38348e9a0bdffb8da711a87daa5d10",
+      "path": "plugins/lazarus/scripts/lazarus_lib/verifier.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:94af9f61d8b5348977cda3d6406320ca45fa006f09bd3ee17142d32f338c3d88",
+      "path": "plugins/lazarus/scripts/lazarus_lib/verifier.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2c2aa9fc44dda2a72910350c3f196752c37c5fae94beb778229a8c655d003a9c",
+      "path": "plugins/lazarus/scripts/lazarus_lib/version.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c511a138f837ebc2123283b7ea3492c0ac5a3d908e6c22149147fa810a54ac1f",
+      "path": "plugins/lazarus/tests/fake_rpc.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a67685fd87b1f0129e6188627cf64fd74481115151b611c9f0f4fc3e4a5684ce",
+      "path": "plugins/lazarus/tests/run_receipt_delivery_tests.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ec968628831f585c932a6b4f76a43c27165da0f8dcd5c7c10f1591b317311d75",
+      "path": "plugins/lazarus/tests/test_receipts.py",
+      "suppressed": false,
+      "symbol": "Path@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ba5497d2c33b56a7c89f30e57b5c8a5cb47df70366c67d4b01e03451d4d128de",
+      "path": "plugins/lazarus/tests/test_receipts.py",
+      "suppressed": false,
+      "symbol": "keccak@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:39cd24f64d5675e2bc3a34f7b8a0ca6eaf19d59c6b8166553f0edf2f0b54cf4b",
+      "path": "plugins/lemma/baseline/standard_input.py",
+      "suppressed": false,
+      "symbol": "annotations@24"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:9534ae87703a5d26d88452b4c61513cc5088e586bce0d85e6f321204493bc9fb",
+      "path": "plugins/lemma/chunkers/markdown.py",
+      "suppressed": false,
+      "symbol": "annotations@31"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f49eb722b84a42525292b617c4d51718fb1d31c63fcc31fde71a879e6e54f43b",
+      "path": "plugins/lemma/chunkers/markdown.py",
+      "suppressed": false,
+      "symbol": "fnmatch@34"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6919071a7ee3e48a89b773ff20c69e9c54ec378354c70d299858954e6e9cec0f",
+      "path": "plugins/lemma/chunkers/markdown.py",
+      "suppressed": false,
+      "symbol": "line:293:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:063f018630c6b629398165899fa2033174e706e4d06c5b2b86f8a2eda49ae11c",
+      "path": "plugins/lemma/chunkers/solidity.py",
+      "suppressed": false,
+      "symbol": "annotations@24"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8e05ad1e9f5acec09c9ef88cb4a3670bac0b9af17cd0cd32e37b0dc6823bbf81",
+      "path": "plugins/lemma/chunkers/solidity.py",
+      "suppressed": false,
+      "symbol": "line:755:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f9ca73a9c82ae718c8b1943a034416d3ca7d6c6b765b986ca605220733a4540b",
+      "path": "plugins/lemma/chunkers/solidity.py",
+      "suppressed": false,
+      "symbol": "resolve_inheritance.cid@653"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:49ff33f890f71909191aea4a52a1bfc799aef768da1f0cef3f84356801f5904c",
+      "path": "plugins/lemma/schema.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:448e40b73719465d6aba266016b5190f62118c3b246ddde810007c862aef7e19",
+      "path": "plugins/lemma/schema.py",
+      "suppressed": false,
+      "symbol": "annotations@32"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0b62a20ebcdd5cd1273766cc539caffa83a0d9af571d15da2fdf7b4518844e20",
+      "path": "plugins/lemma/tests/test_markdown.py",
+      "suppressed": false,
+      "symbol": "annotations@15"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:265f28c39e0f7dc37b8f2efd241bfc93adabf9dfb546986c46e6b1edac616637",
+      "path": "plugins/lemma/tests/test_solidity.py",
+      "suppressed": false,
+      "symbol": "annotations@16"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c44e170368d8a715424d897f1306059f6089c3ea77e8b32e0090f1ad287da61d",
+      "path": "plugins/lemma/tools/verify_anchors.py",
+      "suppressed": false,
+      "symbol": "annotations@30"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:966c3dd7c5bd0d04c48933065a7822bd4502c03d91042abb50223f0b04e599e2",
+      "path": "plugins/pandects/scripts/pandects_lib/catalogue.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0bff0c898e393db5b3d7f458c9e407253f7fc7ffa2d6c39af4ec5b130c829a5a",
+      "path": "plugins/pandects/scripts/pandects_lib/checker.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d0bc6e4a8e74c084b70f8fd49abf1f4f1db666ef9cf1230334abd79642987b80",
+      "path": "plugins/pandects/scripts/pandects_lib/render.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ef39147d55c62eee8c92488763f552357c225aa0e265a03568c3f5436d1f0de1",
+      "path": "plugins/pandects/scripts/pandects_lib/run.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f8abb19664107fb213a6303644b582028aceff7e1cfc31a4edea35b539dcfc89",
+      "path": "plugins/pandects/scripts/pandects_lib/safejson.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d11e76e9c35aa9c047f22464750604e05204f03aa27fa67d5f5f01cb50c642b7",
+      "path": "plugins/pandects/tests/test_catalogue.py",
+      "suppressed": false,
+      "symbol": "support@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:bbea83bd9c2f96de19050f68df92d0e228f4ab480dc05f925fcca53099b4f3b5",
+      "path": "plugins/pandects/tests/test_checker.py",
+      "suppressed": false,
+      "symbol": "json@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c62c00c0eeaa4500fbbb642a49fec144f406a2d7c6d78a0a436c7a38cbadb404",
+      "path": "plugins/pandects/tests/test_checker.py",
+      "suppressed": false,
+      "symbol": "support@15"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:28dc5017888ff2e4ef7c10ceacab7f229b909db5efb70f2e35687dc61bcc133c",
+      "path": "plugins/pandects/tests/test_cli.py",
+      "suppressed": false,
+      "symbol": "support@11"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:3999c9d0d5a2df0137e58002aa2d5488bfd14c0a0ed84248ac3a16be15d5d0a3",
+      "path": "plugins/pandects/tests/test_documents.py",
+      "suppressed": false,
+      "symbol": "support@14"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:30943e3cc21fd3e70627736f59f9f128793672f9cabc380ce72e340fb2aba8ae",
+      "path": "plugins/pandects/tests/test_search_record.py",
+      "suppressed": false,
+      "symbol": "support@15"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:326c76649e8a381fff6314ddd86e34c29eeeb7a8224de8d09d4737729a442f8f",
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/euler.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1c1c8ecbacdf629498ce7a740e1ecbf12230dafc2b1b317184fc93787b2ccd7c",
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/euler.py",
+      "suppressed": false,
+      "symbol": "_fetch_events.page_number@247"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e0c870e2653a1a0525af53f0c3d560d286df48abc08e5b9f22a6fcf87e37e9b0",
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/euler_v1.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:88bd4de9aee8332155cd639b3777df7ba24d71585aa6149b700313ec76726f20",
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/morpho.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:27116270b9711c90d2dd5428cf104d81267c4294df2b402768650f516bca136c",
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/morpho_midnight.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f745390da6fcedf1bdb53682c7334f08b8a4423a55ab1f6f78d6de7a7afef83b",
+      "path": "plugins/probitas/scripts/probitas_lib/adapters/wildcat.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:429c177a1d3739610e1ca5b4bd2c8b54d533aee0da30d79fc524b9d522d209f3",
+      "path": "plugins/probitas/scripts/probitas_lib/endpoints.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a2412937f588da841be10ac7f30d281e6413b5ebdfa86e22c3c5fac645e5c8e3",
+      "path": "plugins/probitas/scripts/probitas_lib/evidence.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e6a1a62e11c76d73f1de7cd63fcbef07ed4e2a5d80ff54c1a4ba4613e8d675fe",
+      "path": "plugins/probitas/scripts/probitas_lib/formatting.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:93b2573305dd269cb31b863a0408e85a20de16fd8e13f6316c268f24e0a4c8e9",
+      "path": "plugins/probitas/scripts/probitas_lib/gates.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a11fd6fbb0ea66ffc9a92e4e3eba49f0eec77a17723ceb43e5925cae2047827b",
+      "path": "plugins/probitas/scripts/probitas_lib/graphql.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:91e009ac2cdf64785ca7cbba310e2b11ff90bffe0b70c0e289b58c9168ce0c90",
+      "path": "plugins/probitas/scripts/probitas_lib/registry.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a61aa93b1fabe831dd3390e65c89dabf590e09a4b1740542cb1d04f7097d9d36",
+      "path": "plugins/probitas/scripts/probitas_lib/render.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:eeed86398bbd993e6dba73f2721506e5c04312004762394d615947e82eb16f63",
+      "path": "plugins/probitas/scripts/probitas_lib/sanitise.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e9cc230f955f11449bf716611e8959c4207c789b49fc3903772055c8abbe3eaa",
+      "path": "plugins/probitas/tests/test_graphql.py",
+      "suppressed": false,
+      "symbol": "support@15"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:af13e7b2a8d0346822cdbe8c5e1a3bed378d0a531eecf0183bda91a4c956d9c8",
+      "path": "plugins/probitas/tests/test_registry.py",
+      "suppressed": false,
+      "symbol": "support@6"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:67c65416627e1aab2d3d71d007b0e9c9f9124502defd3fac33681b9a7713d046",
+      "path": "plugins/probitas/tests/test_registry.py",
+      "suppressed": false,
+      "symbol": "test_record_count_comes_from_the_records.records@92"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0033b711e1e20912da236e1a3747d7ef5f90eb176a2296bc67b4feedb0f252a1",
+      "path": "plugins/probitas/tests/test_sanitise.py",
+      "suppressed": false,
+      "symbol": "support@5"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5c97bcbe1868da993bc215386e6eacf24c69d7ba6cb9145abb57c508a22b6b86",
+      "path": "plugins/synkrisis/scripts/bench_synkrisis.py",
+      "suppressed": false,
+      "symbol": "annotations@13"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5ede1051a3c03f50ad1f031a621c14275d4d1c9fb653b2dff519a2b7e155077f",
+      "path": "plugins/synkrisis/scripts/synkrisis.py",
+      "suppressed": false,
+      "symbol": "annotations@14"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5a09da913fd9ba1e5b8252ab06c167ae5fe301c017d3559204136d546230d8f5",
+      "path": "plugins/synkrisis/tests/support.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:de48f05ba9527f8aa4a56e5305ab75ee2ad8f9f71bc9767bd156a5fe040a6ad8",
+      "path": "plugins/synkrisis/tests/support.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f34c2a7fca334b848c73fb87c2e45d9f1fa7fcee8a8757015ec3492dd900ec4b",
+      "path": "plugins/synkrisis/tests/test_bench.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b2005817bc3c3107fc325b53dd5241131dace1a571cdd804b5e9c9630aad0d01",
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:42ad57013110025ca7ba1386f7a2a764294ed1ab5fd1347e290bfbcbb6740b58",
+      "path": "plugins/synkrisis/tests/test_diagnose.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7d3f2486a5fd385aba48205e8d2170ab53a65eb601c1de8c454d57e7e1d514e9",
+      "path": "plugins/synkrisis/tests/test_render.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:6faf658f5a0f9b4bf13f7c5f844fc570cd228def76e22e10a65bda335632a874",
+      "path": "plugins/synkrisis/tests/test_scaffold.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8b8fd058d08ee2241c3f8414bbb52345d4ae15aeac89b5a3b597d864ddb6f5c8",
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5dfe0f4f4c7dc71e4da1faeb03cbcb1f8dfa7fca330f8b2a18636a43b7181608",
+      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/euler_common.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2f7cb307fb4cb660332358d5f01202ede6ef64ea4965e35ecb8110c367c985a5",
+      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v1.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b066dddabb622d2779f4b967e17539652c2f19032f83ce513534008973bb855a",
+      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/euler_v2.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a611a277d60ac138fe1addf25ed538f843e091c2fe22ddc6b7d6a27968af3b6e",
+      "path": "plugins/tabularium/scripts/tabularium_lib/adapters/goldfinch.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e5bddad723f97791c89f096dccd6f7f36917fb87425a57740fb2661927b0bd6a",
+      "path": "plugins/tabularium/scripts/tabularium_lib/builder.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8a711e669d6c1061de3e3f592f9a06f0ae3bea02527ada5034c43747289b1192",
+      "path": "plugins/tabularium/scripts/tabularium_lib/compound_witness.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e3c5e58d4988410aa0dc7fe3d92f4d3a80ef6ac10abb3f83b5a81e786b42c22c",
+      "path": "plugins/tabularium/scripts/tabularium_lib/compound_witness.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2f7f0239a6f750334d01f56be49385e9072898f9801b0b0bdd4b72736fe067d3",
+      "path": "plugins/tabularium/scripts/tabularium_lib/core.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:130afe6d156a79b15fa439fb0130f61794de7f22b879e541f302e9bfa12adde5",
+      "path": "plugins/tabularium/scripts/tabularium_lib/keccak.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5936967360b78e72bd05a769763e28a822387d59f4acd04deb456ae4b4b4e31a",
+      "path": "plugins/tabularium/scripts/tabularium_lib/paths.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:97c62f969e18c5a1bd666dd117f2f121e177dc76cd8a2eb9f87891ced224947c",
+      "path": "plugins/tabularium/scripts/tabularium_lib/release.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ca0787c3a75ae105a635ec962ab0e9d7df36355ff919bb3e6886a578dcef715d",
+      "path": "plugins/tabularium/scripts/tabularium_lib/release.py",
+      "suppressed": false,
+      "symbol": "MAX_SAFE_INTEGER@7"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:25a83f131a341f15361b5aa4bfb6be295b37b33445020f6794fadeebed826b53",
+      "path": "plugins/tabularium/scripts/tabularium_lib/release_v2.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:2e256fdc2da310eaa865b35fb0518338c25f8a2b915a7ba1a1f98fd7a010e946",
+      "path": "plugins/tabularium/scripts/tabularium_lib/verifier.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:63e75535cae3700599d58faa1549a9b1e6a90899f9b0e5c20a6a82e66a321ab9",
+      "path": "plugins/tabularium/tests/test_builder_cli.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b25ec6ef527f99d7197ea4af6265fa43b6f28d6514b9881bdf01e5d9a750d4b4",
+      "path": "plugins/tabularium/tests/test_core.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:eb0e4cb2aaa7052b2ab9913d2faab2c271c7bb9f59d0575f648821326bc68fe2",
+      "path": "plugins/tabularium/tests/test_goldfinch.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:79a4aecada240809894fc2e27f4fd35c89fdf70b3b6179faf2b69ef6e1f733b9",
+      "path": "plugins/tabularium/tests/test_goldfinch.py",
+      "suppressed": false,
+      "symbol": "Path@6"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8605d9b950caf25bbaa18b8c730652896cbcf7713bec46f8a769feab650f0db6",
+      "path": "plugins/tabularium/tests/test_goldfinch.py",
+      "suppressed": false,
+      "symbol": "test_duplicate_source_identifiers_fail_across_collections.repay@100"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:4199c3053333689f1a95845d5c7127370f63910ea4009d9505dbcbf47a7e9a09",
+      "path": "plugins/tabularium/tests/test_schemas.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:33a327354219dc2690bda2d565b0d2a908c1f13fd45795577201ccc5bf5c97ce",
+      "path": "plugins/tabularium/tests/test_verify.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a6a6bd94a89a93a65f0b620c00ff83cf1adc29bce704460fbc3ca128cbe27b50",
+      "path": "scripts/build_child_or_golden_retriever_primer.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c25db2ebff090885999e653716e7235eb161c51b8a9e7cb85a0ee11062833abf",
+      "path": "scripts/build_contributor_guide.py",
+      "suppressed": false,
+      "symbol": "annotations@12"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d85dcde843934c95ea913c74a246952be827e64b9b7efbcc3c3b7259fae4fd41",
+      "path": "scripts/contributors.py",
+      "suppressed": false,
+      "symbol": "annotations@22"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:18507165ce6f4c12ec452871d50d9be75f0fc31a7b50f85de5049e9a5ecebfe5",
+      "path": "scripts/dead_code.py",
+      "suppressed": false,
+      "symbol": "annotations@11"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:784643a15ccf1e4b40d4560764e7c8150a3a90a39f01106a64fb3cdd7860efd0",
+      "path": "scripts/dead_code_monitoring/sitecustomize.py",
+      "suppressed": false,
+      "symbol": "<module>"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:8b63ccc5fe31108c893c5b807fe606f4c53d347f42e726bd17458d0953a69d66",
+      "path": "scripts/dead_code_monitoring/sitecustomize.py",
+      "suppressed": false,
+      "symbol": "annotations@8"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:89f98eb043744377759ff1d5190eb3466a6863fde9b738cf78e879072866dcff",
+      "path": "scripts/portable_promise_machine.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b4a29e8c64bbea74a42dc3caf21826c0d4151d02ffb9be34a2d120182b5d4d1d",
+      "path": "scripts/promise_machine.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ad26d8312a20256938ba66ae641330eb169e73a0353a7187624bb6b0d0ab81af",
+      "path": "scripts/promise_machine.py",
+      "suppressed": false,
+      "symbol": "line:592:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a00ccac32187d80e3a898df86302e20e068565974478c3b2fa41cb3caf52ad16",
+      "path": "scripts/run_checks.py",
+      "suppressed": false,
+      "symbol": "annotations@17"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f63fc68f78de9a3312a2eae67a62232164a995aca047dba03d3baf93541015f9",
+      "path": "scripts/run_checks.py",
+      "suppressed": false,
+      "symbol": "line:1199:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f80d6cd750aea6cfd51340ad6eae8711d2c13c0dd84e70466e5a39579ee679e2",
+      "path": "scripts/run_checks.py",
+      "suppressed": false,
+      "symbol": "line:2063:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:c624fa086783199eddbd3e1276a6d76c1b3fed7e1fa2b430937f7a5ecadb4af0",
+      "path": "scripts/run_checks.py",
+      "suppressed": false,
+      "symbol": "line:2438:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:0ab86140bcb3abdbeccb27af939741260d8dd2e38117afd4b991f4467a054cd5",
+      "path": "scripts/run_checks.py",
+      "suppressed": false,
+      "symbol": "line:841:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a87d7fb18677e8a8c50416968dbde7a9ab7ead9e1d6d710a21e18f45828fe4c7",
+      "path": "scripts/run_checks.py",
+      "suppressed": false,
+      "symbol": "line:934:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:279468ee2b7ba34a166128699026a1199135ee4c7b269ff8110b90f328a31493",
+      "path": "scripts/run_observation.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:15ee8dba5a75076ada0e927e42c1cac074bc1b498e63e11e552442df5b223331",
+      "path": "scripts/run_observation.py",
+      "suppressed": false,
+      "symbol": "line:1020:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a543a1dcca7346610517c1b02487a541d199d4143128e015d1899d56e74b6d97",
+      "path": "scripts/run_observation.py",
+      "suppressed": false,
+      "symbol": "line:841:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e97f263c0e7f586051bb31dd51221abbfd676529b9e2cb31c0ec61049fdaf936",
+      "path": "scripts/run_observation_capture.py",
+      "suppressed": false,
+      "symbol": "annotations@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:13549cef9edc79c28a968d00d78429b5cefb35ab3bf77b7dbf75d0450d6817a2",
+      "path": "scripts/run_observation_capture.py",
+      "suppressed": false,
+      "symbol": "sys@19"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:77d805e2820f2e4e8580efda3f5f7e4b7245c98dc1423bb6ab3b0ad59e50c2f8",
+      "path": "tests/emit_router_selection_report.py",
+      "suppressed": false,
+      "symbol": "annotations@23"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:a93eac382cdf6941a7d1bbee4a09913f7fc3570d25760be796864b1a5023b625",
+      "path": "tests/emit_run_observation_capture_report.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:b2fba0e86a88aae0dd2811a61f8fedc325ba08a31dae4d5fc7422c554e9a289c",
+      "path": "tests/test_child_or_golden_retriever_primer.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:1c5f40729f5a24f8fe9c7c44a5b2445ed2953a8d41ce840149b897c57575b942",
+      "path": "tests/test_contributors.py",
+      "suppressed": false,
+      "symbol": "annotations@10"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e92307baa7ffc56509465d5ef7620a34e405153e05749f164ae553a93435f872",
+      "path": "tests/test_decision_records.py",
+      "suppressed": false,
+      "symbol": "annotations@15"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5227e46494fc09a846118e22d3ac7afeca335cae92748927dea349c9950eee25",
+      "path": "tests/test_fiat_checkpoint_decision_record.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:eaeece00366f6e22a07d69e94a48f422431b79c0085f59fadb647c9268388ded",
+      "path": "tests/test_promise_machine_contract.py",
+      "suppressed": false,
+      "symbol": "test_missing_root_licence_is_refused.plugin@248"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:ea41c3dfe0b287dc9d3e71602511d80b4d6387eed6b12e7f610cf7648d1886f4",
+      "path": "tests/test_router_selection.py",
+      "suppressed": false,
+      "symbol": "annotations@33"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:02d0fcb07aa121122ade910d02835fc4b6eae5cfcba8295187dbc111be5e4dd3",
+      "path": "tests/test_run_observation_capture.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:4eadaa74c4d401eb9d498552290352aca37d2fe50d6cab2ab4814aefeb045753",
+      "path": "tests/test_run_observation_capture.py",
+      "suppressed": false,
+      "symbol": "io@7"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:d5fbafe6f3b6c588e1602e8a76cd0b769847f14c9a4f36420a47bad7ba20b053",
+      "path": "tests/test_run_observation_capture.py",
+      "suppressed": false,
+      "symbol": "os@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:eef4b07c0c2131d21c848d905e60483bcd3655715c53b1f38af5d20e175db981",
+      "path": "tests/test_run_observation_capture.py",
+      "suppressed": false,
+      "symbol": "redirect_stdout@16"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:228b381a3ddca97e097beff6d570e1bd1d4c8555aab82a86721f0379fbc954b2",
+      "path": "tests/test_run_observation_capture_inoculation.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:189c3b56df6759d1850200ce84befc0666a7794de0d95abb37facf51e5fc698a",
+      "path": "tests/test_run_observation_inoculation.py",
+      "suppressed": false,
+      "symbol": "io@6"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:f228999ca17f5c1108df624c7780590fa127c12aeae2d03430d99173ccbc0675",
+      "path": "tests/test_run_observation_inoculation.py",
+      "suppressed": false,
+      "symbol": "tempfile@9"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:558a815b60ecadfd5f051781197b5e7ad7d57be19832bd2d3f168418fb487756",
+      "path": "tests/test_scratch_quiescence.py",
+      "suppressed": false,
+      "symbol": "annotations@18"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:171a3c821679d92b3e4db1e068fb0081300dff57930e5a0715afcb0a03bc9413",
+      "path": "tests/test_skills_sh_package.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:28c1d58c7c36d47f6fe90fd38123d9ca34a9306575516119e3a48fccaf3c6514",
+      "path": "tests/test_unique_identifiers.py",
+      "suppressed": false,
+      "symbol": "annotations@19"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:4ff383839cd1062d18b5f41916495922c2c1ded462e8f6695a372c91f512da54",
+      "path": "tests/test_unique_identifiers.py",
+      "suppressed": false,
+      "symbol": "bound_promise_ids.key@82"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:cf7ec627fc8a0e36e3610de93559641cd586a3d99ef21976876a33992cab314d",
+      "path": "tests/test_unique_identifiers.py",
+      "suppressed": false,
+      "symbol": "test_no_two_coverage_entries_share_an_id.key@124"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:860bf768b41bd4dc75c64b70d0e29d1f6d10d56771e4cf38ef4bef035f7c5a33",
+      "path": "tests/test_version_propagation.py",
+      "suppressed": false,
+      "symbol": "test_the_three_manifests_agree.directory@98"
+    }
+  ],
+  "schema": "dead-code-baseline/v1",
+  "suppressions": {
+    "digest": "sha256:a73a936d825ae5a51592cb6f4acb172d0251f7cbe9d8592d32f209042d899ffc",
+    "path": ".dead-code/suppressions.json"
+  },
+  "tool": {
+    "id": "dead-code",
+    "version": "1"
+  },
+  "tree": {
+    "commit": "fce7250141c8de44459f742147d28e51cdfd0072",
+    "git_tree": "a8ef22500c2593394fc2311374987bfe8841f830"
+  },
+  "universe": {
+    "id": "sha256:52f70a0e2ab6df2020a7186506855181533f964ce18ad22d83ee6d164df8c36e"
+  }
+}
