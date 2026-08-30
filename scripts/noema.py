@@ -2675,21 +2675,11 @@ def _resolved_scalar(value: object) -> tuple[str, object] | None:
     return None
 
 
-def _evaluate_truth(
-    proposition: object,
+def _evaluate_derived_truth(
+    expanded: object,
     facts: dict[str, dict[str, object]],
     definitions: dict[str, tuple[list[list[object]], object]],
 ) -> tuple[str, set[str]]:
-    direct_id = fact_id(proposition)
-    direct = facts.get(direct_id)
-    if direct is not None:
-        return str(direct["value"]), {direct_id}
-    expanded = _expand_runtime_term(proposition, definitions)
-    if expanded != proposition:
-        expanded_id = fact_id(expanded)
-        expanded_fact = facts.get(expanded_id)
-        if expanded_fact is not None:
-            return str(expanded_fact["value"]), {expanded_id}
     if not isinstance(expanded, list) or not expanded:
         return "unknown", set()
     tag = expanded[0]
@@ -2767,6 +2757,50 @@ def _evaluate_truth(
     return "unknown", set()
 
 
+def _evaluate_truth(
+    proposition: object,
+    facts: dict[str, dict[str, object]],
+    definitions: dict[str, tuple[list[list[object]], object]],
+) -> tuple[str, set[str]]:
+    expanded = _expand_runtime_term(proposition, definitions)
+    identities = [fact_id(proposition)]
+    expanded_id = fact_id(expanded)
+    if expanded_id != identities[0]:
+        identities.append(expanded_id)
+    supplied = [(identifier, facts[identifier]) for identifier in identities if identifier in facts]
+    established = {
+        str(fact["value"])
+        for _identifier_value, fact in supplied
+        if fact["value"] != "unknown"
+    }
+    if len(established) > 1:
+        refuse(
+            "NOE-E-POLICY.FACT_CONFLICT",
+            "facts",
+            "equivalent proposition facts contradict one another",
+        )
+    derived, derived_used = _evaluate_derived_truth(expanded, facts, definitions)
+    if established:
+        supplied_truth = next(iter(established))
+        if derived != "unknown" and supplied_truth != derived:
+            refuse(
+                "NOE-E-POLICY.FACT_CONFLICT",
+                "facts",
+                "checked fact contradicts closed proposition evaluation",
+            )
+        identifier = next(
+            identifier
+            for identifier, fact in supplied
+            if fact["value"] == supplied_truth
+        )
+        return supplied_truth, {identifier}
+    if derived != "unknown":
+        return derived, derived_used
+    if supplied:
+        return "unknown", {supplied[0][0]}
+    return "unknown", derived_used
+
+
 def _outer_directive_activity(
     directive: object,
     facts: dict[str, dict[str, object]],
@@ -2778,12 +2812,24 @@ def _outer_directive_activity(
     if tag in {"@", "^"} and len(directive) == 3:
         return _outer_directive_activity(directive[2], facts, definitions)
     if tag in {"?", "/"} and len(directive) == 3:
-        value, used = _evaluate_truth(directive[1], facts, definitions)
+        guard = directive[1]
+        value, _used = _evaluate_truth(guard, facts, definitions)
         active = value if tag == "?" else _truth_not(value)
-        if active == "false" and used:
-            identifier = sorted(used)[0]
+        expanded = _expand_runtime_term(guard, definitions)
+        proof_ids = [fact_id(guard)]
+        if expanded != guard:
+            proof_ids.append(fact_id(expanded))
+        proof = next(
+            (
+                identifier
+                for identifier in proof_ids
+                if identifier in facts and facts[identifier]["value"] == value
+            ),
+            None,
+        )
+        if active == "false" and proof is not None:
             reason = "checked-false-guard" if value == "false" else "checked-true-guard"
-            return active, identifier, reason
+            return active, proof, reason
         if active != "true":
             return active, None, None
         return _outer_directive_activity(directive[2], facts, definitions)
@@ -2798,12 +2844,11 @@ def _record_rule_references(record: list[object]) -> set[str]:
     return set()
 
 
-def _record_links(record: list[object]) -> set[tuple[str, str]]:
-    return {
-        atom
-        for atom in _typed_atoms(record)
-        if atom[0] in RUNTIME_LINK_TYPES
-    }
+def _runtime_atoms(
+    record: list[object],
+    definitions: dict[str, tuple[list[list[object]], object]],
+) -> set[tuple[str, str]]:
+    return _typed_atoms(_expand_runtime_term(record, definitions))
 
 
 def _runtime_projection(
@@ -2866,6 +2911,16 @@ def select_runtime(
         if record_value[0] in SELECTABLE_FORMS:
             identifier = _runtime_record_id(record_value, f"graph.records[{index}]")
             selectable[identifier] = record_value
+    record_atoms = {
+        identifier: _runtime_atoms(record, definitions)
+        for identifier, record in selectable.items()
+    }
+    record_links = {
+        identifier: {
+            atom for atom in atoms if atom[0] in RUNTIME_LINK_TYPES
+        }
+        for identifier, atoms in record_atoms.items()
+    }
 
     facts_list = selection["facts"]
     assert isinstance(facts_list, list)
@@ -2889,7 +2944,7 @@ def select_runtime(
     for identifier, record in selectable.items():
         if identifier in inactive:
             continue
-        atoms = _typed_atoms(record)
+        atoms = record_atoms[identifier]
         if any(kind in {"operation", "effect"} and value == operation for kind, value in atoms):
             primary.add(identifier)
         if record[0] == "transition" and any(
@@ -2914,7 +2969,7 @@ def select_runtime(
     changed = True
     while changed:
         changed = False
-        links = set().union(*(_record_links(selectable[item]) for item in included)) if included else set()
+        links = set().union(*(record_links[item] for item in included)) if included else set()
         focused_links = {
             atom
             for atom in links
@@ -2932,10 +2987,10 @@ def select_runtime(
                     included.update(endpoints)
                     changed = True
                     continue
-            record_links = _record_links(record)
-            relevant_links = record_links if form in {"promise", "handoff", "exception"} else {
+            links_for_record = record_links[identifier]
+            relevant_links = links_for_record if form in {"promise", "handoff", "exception"} else {
                 atom
-                for atom in record_links
+                for atom in links_for_record
                 if atom[0] in {"action", "artifact", "claim", "command", "effect", "event", "operation", "repository", "state", "transition"}
             }
             if relevant_links & (links if form in {"promise", "handoff", "exception"} else focused_links):
@@ -3299,13 +3354,18 @@ def _directive_intents(
     ]
 
 
-def _effect_consequence(records: list[list[object]], effect: str) -> int:
+def _effect_consequence(
+    records: list[list[object]],
+    effect: str,
+    definitions: dict[str, tuple[list[list[object]], object]],
+) -> int:
     values: set[int] = set()
     for record in records:
-        effects = {value for kind, value in _typed_atoms(record) if kind == "effect"}
+        atoms = _runtime_atoms(record, definitions)
+        effects = {value for kind, value in atoms if kind == "effect"}
         if effect not in effects:
             continue
-        for kind, value in _typed_atoms(record):
+        for kind, value in atoms:
             if kind == "core.consequence" and value in {"0", "1", "2", "3"}:
                 values.add(int(value))
     if len(values) > 1:
@@ -3331,10 +3391,10 @@ def check_runtime(
         record
         for record in selectable.values()
         if record[0] in {"rule", "exception"}
-        and ("effect", effect_id) in _typed_atoms(record)
+        and ("effect", effect_id) in _runtime_atoms(record, definitions)
     ]
     rule_records = [record for record in relevant if record[0] == "rule"]
-    consequence = _effect_consequence(rule_records, effect_id)
+    consequence = _effect_consequence(rule_records, effect_id, definitions)
     authority_values = set(str(item) for item in selection["authority"])
     target = str(selection["target"])
     candidates: list[dict[str, object]] = []
@@ -3448,7 +3508,7 @@ def check_runtime(
         permits = [
             item
             for item in active
-            if item["kind"] in {"permit", "require"}
+            if item["kind"] == "permit"
             and item["truth"] == "true"
             and item["authority_applies"]
         ]
@@ -3539,20 +3599,7 @@ def next_runtime(
             unknown.append(record)
     if len(matched) > 1:
         refuse("NOE-E-POLICY.TRANSITION", "transition", "more than one transition is enabled")
-    if matched:
-        record = matched[0][0]
-        output = {
-            "schema": "noema-next/v1",
-            "status": "transition",
-            "transition": str(record[1]),
-            "state": state_id,
-            "next_state": _atom_value(record[6], "state"),
-            "effects": _ordered_effects(record[7]),
-            "controlling_node": str(record[1]),
-            "reason": "established-transition",
-        }
-        verdict, code = "ok", "NOE-OK"
-    elif unknown:
+    if unknown:
         record = sorted(unknown, key=lambda item: str(item[1]))[0]
         output = {
             "schema": "noema-next/v1",
@@ -3565,6 +3612,19 @@ def next_runtime(
             "reason": "unestablished-guard",
         }
         verdict, code = "unknown", "NOE-I-TRANSITION_UNKNOWN"
+    elif matched:
+        record = matched[0][0]
+        output = {
+            "schema": "noema-next/v1",
+            "status": "transition",
+            "transition": str(record[1]),
+            "state": state_id,
+            "next_state": _atom_value(record[6], "state"),
+            "effects": _ordered_effects(record[7]),
+            "controlling_node": str(record[1]),
+            "reason": "established-transition",
+        }
+        verdict, code = "ok", "NOE-OK"
     else:
         output = {
             "schema": "noema-next/v1",
