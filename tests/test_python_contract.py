@@ -14,6 +14,7 @@ packages are trustworthy or free of advisories.
 """
 
 from pathlib import Path
+import json
 import re
 import sys
 import tomllib
@@ -35,13 +36,14 @@ PYTHON_WORKFLOWS = {
     "janus.yml",
     "lazarus.yml",
     "pandects.yml",
+    "plugins.yml",
     "repo.yml",
     "synkrisis.yml",
 }
 PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml"}
-# The root gate carries no path filter, so it has no filter to inspect.
-ROOT_GATE = "repo.yml"
-PATH_FILTERED_PULL_REQUEST_WORKFLOWS = PULL_REQUEST_WORKFLOWS - {ROOT_GATE}
+# Required gates carry no path filter, so they have no filter to inspect.
+UNFILTERED_GATES = {"plugins.yml", "repo.yml"}
+PATH_FILTERED_PULL_REQUEST_WORKFLOWS = PULL_REQUEST_WORKFLOWS - UNFILTERED_GATES
 BRANCH_CI_WORKFLOWS = PULL_REQUEST_WORKFLOWS | {
     "janus-forge.yml",
     "pandects-forge.yml",
@@ -294,8 +296,8 @@ class PythonRuntimeContractTests(unittest.TestCase):
                 with self.subTest(workflow=name, event=event):
                     self.assertEqual(workflow_event_paths(text, event), expected)
 
-    def test_root_gate_carries_no_path_filter(self):
-        """The gate main requires must run on every pull request.
+    def test_required_gates_carry_no_path_filter(self):
+        """Every gate main requires must run on every pull request.
 
         A required status check that a pull request never produces blocks that
         pull request with no way to clear it, and the suite already asserts
@@ -303,11 +305,83 @@ class PythonRuntimeContractTests(unittest.TestCase):
         CONTRIBUTORS.md, LICENSE and .gitignore. Both reasons say the root
         gate is unfiltered, so no filter may reappear on either event.
         """
-        text = (WORKFLOWS / ROOT_GATE).read_text(encoding="utf-8")
-        for event in ("push", "pull_request"):
-            with self.subTest(event=event):
-                with self.assertRaises(ValueError):
-                    workflow_event_paths(text, event)
+        for name in sorted(UNFILTERED_GATES):
+            text = (WORKFLOWS / name).read_text(encoding="utf-8")
+            for event in ("push", "pull_request"):
+                with self.subTest(workflow=name, event=event):
+                    with self.assertRaises(ValueError):
+                        workflow_event_paths(text, event)
+
+    def test_complete_plugin_gate_runs_the_one_full_graph(self):
+        workflow = WORKFLOWS / "plugins.yml"
+        self.assertTrue(workflow.is_file(), "the complete plugin workflow is missing")
+        text = workflow.read_text(encoding="utf-8")
+        self.assertEqual(text.count("  plugins:\n"), 1)
+        self.assertIn("permissions:\n  contents: read\n", text)
+        self.assertEqual(text.count("fetch-depth: 0"), 1)
+        self.assertIn("uses: actions/setup-node@v7", text)
+        self.assertIn('node-version: "26.6.0"', text)
+        self.assertIn("uses: foundry-rs/foundry-toolchain@v1", text)
+        self.assertIn("version: v1.7.1", text)
+        self.assertIn(
+            "run: python3 -m pip install --requirement "
+            "plugins/lazarus/requirements.lock",
+            text,
+        )
+        historical_key = (
+            ROOT
+            / "plugins"
+            / "hexaemeron"
+            / "tests"
+            / "fixtures"
+            / "signing-keys"
+            / "shoggoth-636ec19d.asc"
+        )
+        self.assertTrue(historical_key.is_file())
+        self.assertIn(
+            "EXPECTED_GPG_FINGERPRINT: "
+            "636EC19DE45DF10F3CE6206F57742DA1ABED6F46",
+            text,
+        )
+        self.assertIn(
+            "gpg --batch --import \"$key_path\"",
+            text,
+        )
+        self.assertEqual(
+            text.count(
+                "run: python3 scripts/run_checks.py --full "
+                "--report tmp/checks/plugins.json"
+            ),
+            1,
+        )
+        self.assertIn("if: always()", text)
+        self.assertIn("uses: actions/upload-artifact@v4", text)
+        self.assertIn("path: tmp/checks/plugins.json", text)
+        self.assertNotIn("continue-on-error", text)
+        self.assertNotIn("github.event.pull_request", text)
+
+    def test_complete_graph_has_one_owned_suite_scope_for_every_plugin(self):
+        graph = json.loads((ROOT / "tests" / "check-map-v1.json").read_text())
+        plugins = {
+            path.name for path in (ROOT / "plugins").iterdir() if path.is_dir()
+        }
+        owners = {
+            item["path"].removeprefix("plugins/"): item["scope"]
+            for item in graph["owners"]
+            if item["path"].startswith("plugins/")
+            and "/" not in item["path"][8:]
+        }
+        self.assertEqual(set(owners), plugins)
+        for plugin in sorted(plugins):
+            with self.subTest(plugin=plugin):
+                self.assertEqual(owners[plugin], plugin)
+                self.assertIn(plugin, graph["scopes"])
+                self.assertIn(plugin, graph["dependencies"])
+                checks = [
+                    graph["checks"][check_id]
+                    for check_id in graph["scopes"][plugin]["checks"]
+                ]
+                self.assertTrue(any(check["kind"] == "suite" for check in checks))
 
     def test_readme_points_to_both_contract_layers_and_the_decision(self):
         text = README.read_text(encoding="utf-8")

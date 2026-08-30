@@ -71,6 +71,30 @@ class CheckMapContractTests(unittest.TestCase):
         unowned = [p for p in listing if p and run_checks.owner_of(self.check_map, p) is None]
         self.assertEqual(unowned, [], f"paths without a declared owner: {unowned[:10]}")
 
+    def test_every_plugin_directory_has_one_owned_suite_scope(self) -> None:
+        plugins = {
+            path.name for path in (REPO_ROOT / "plugins").iterdir() if path.is_dir()
+        }
+        owners = {
+            path.removeprefix("plugins/"): scope
+            for path, scope in self.check_map.owners
+            if path.startswith("plugins/") and "/" not in path[8:]
+        }
+        self.assertEqual(set(owners), plugins)
+        for plugin in sorted(plugins):
+            with self.subTest(plugin=plugin):
+                self.assertEqual(owners[plugin], plugin)
+                self.assertIn(plugin, self.check_map.scopes)
+                self.assertIn(plugin, self.check_map.dependencies)
+                checks = [
+                    self.check_map.checks[check_id]
+                    for check_id in self.check_map.scopes[plugin].checks
+                ]
+                self.assertTrue(
+                    any(check.kind == "suite" for check in checks),
+                    f"{plugin} has no suite check",
+                )
+
     def test_a_written_elenchus_report_does_not_refuse_the_plan(self) -> None:
         """Regression: the step's own runner contract broke its own planner.
 

@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.39.1"
+  version: "5.40.1"
 ---
 
 <p align="center">
@@ -754,7 +754,7 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 - Boundary: The capsule proves the exact controller bytes, declared resources, semantic directive and Git boundary checked by these commands. It does not create or verify the Git bundle or outer archive, handle signing keys, publish to GitHub or Drive, make the manifest digest a semantic checkpoint identity, prove the recorded delivery claims true, or authorise the emitted next directive to run.
 - Authorises: Packaging the exported controller directory through the standing outer checkpoint procedure and, after that transport and its Git boundary have been verified, restoring the same ledger once into the fresh checkout and reporting the recomputed directive without executing it.
 - Consequence: 2
-- Refuses: Any unaccepted or moving boundary, pending controller mutation, unsafe or unstable path, symlink, hard link or special file, duplicate JSON key, non-finite number, resource-cap breach, occupied destination, manifest or file drift, wrong controller version, state-ledger disagreement, missing or moved Git ref, dirty checkout, conflicting transaction marker, or replay.
+- Refuses: Any unaccepted or moving boundary, pending controller mutation, unsafe or unstable path, symlink, hard link or special file, duplicate JSON key, non-finite number, JSON nesting above 128 containers, resource-cap breach, occupied destination, manifest or file drift, wrong controller version, state-ledger disagreement, missing or moved Git ref, dirty checkout, conflicting transaction marker, or replay.
 - Recovery: Preserve the source controller and any interrupted private stage or marker for inspection, repair the named boundary without editing ledger history, re-establish the exact Git refs and clean destination, then rerun export or restore with the manifest digest printed by the successful export.
 - Exceptions: none
 

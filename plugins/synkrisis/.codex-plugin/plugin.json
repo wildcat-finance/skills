@@ -1,6 +1,6 @@
 {
   "name": "synkrisis",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Checked cohort construction, bounded diagnosis, fixed-template rendering and whole-path verification over validated run observations, held to a measured work budget.",
   "author": {
     "name": "Wildcat Labs",
@@ -20,7 +20,7 @@
   "interface": {
     "displayName": "Synkrisis",
     "shortDescription": "Checked cohort construction, bounded diagnosis, fixed-template rendering and whole-path verification over validated run observations, held to a measured work budget.",
-    "longDescription": "Synkrisis owns bounded comparison across validated Promise Machine run observations, and version 0.5.0 delivers all four of its operations under a measured work budget. An operator names a manifest of validated, redacted, receipt-bound observation records and a comparison policy classifying every run-context dimension; cohort construction checks the producer contract, recomputes digests and bound prefixes, holds the declared caps, and classifies every declared run as included, excluded with the exact policy field responsible, or unknown. Diagnosis applies a digest-bound catalogue of deterministic rules to that cohort, running only the rules whose required dimensions, fields and minimum samples hold and recording every refused rule with its reason. Rendering emits a fixed-template report, and verification independently recomputes the cohort, findings and report bytes from the original inputs, refusing replacement, truncation, reordering, a stale rule digest and an edited narrative. A finding is a bounded inferred relation with its evidence, counterevidence, unknown runs, the nearest claim it refuses and one suggested handoff. A person decides what happens. Synkrisis never calls a model, judges model quality, states a cause, files an issue, edits a repository or dispatches another skill.",
+    "longDescription": "Synkrisis owns bounded comparison across validated Promise Machine run observations, and version 0.5.1 delivers all four of its operations under a measured work budget. An operator names a manifest of validated, redacted, receipt-bound observation records and a comparison policy classifying every run-context dimension; cohort construction checks the producer contract, recomputes digests and bound prefixes, holds the declared caps, and classifies every declared run as included, excluded with the exact policy field responsible, or unknown. Diagnosis applies a digest-bound catalogue of deterministic rules to that cohort, running only the rules whose required dimensions, fields and minimum samples hold and recording every refused rule with its reason. Rendering emits a fixed-template report, and verification independently recomputes the cohort, findings and report bytes from the original inputs, refusing replacement, truncation, reordering, a stale rule digest and an edited narrative. A finding is a bounded inferred relation with its evidence, counterevidence, unknown runs, the nearest claim it refuses and one suggested handoff. A person decides what happens. Synkrisis never calls a model, judges model quality, states a cause, files an issue, edits a repository or dispatches another skill.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

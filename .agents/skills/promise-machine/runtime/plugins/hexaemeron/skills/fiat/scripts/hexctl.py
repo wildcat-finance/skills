@@ -304,6 +304,7 @@ CHECKPOINT_TOTAL_BYTES_MAX = 256 * 1024 * 1024
 CHECKPOINT_FILE_BYTES_MAX = 64 * 1024 * 1024
 CHECKPOINT_MANIFEST_BYTES_MAX = 1024 * 1024
 CHECKPOINT_PATH_BYTES_MAX = 1024
+CHECKPOINT_JSON_DEPTH_MAX = 128
 CHECKPOINT_IO_CHUNK = 64 * 1024
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
 VERSION_RELATIONS_INFO = "version-relations"
@@ -10758,7 +10759,34 @@ def _checkpoint_read_staged(path: str, ceiling: int) -> bytes:
     return bytes(data)
 
 
+def _checkpoint_json_depth_within_limit(data: bytes) -> bool:
+    """Bound JSON container nesting without interpreting string punctuation."""
+    depth = 0
+    in_string = False
+    escaped = False
+    for byte in data:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif byte == 0x5C:  # backslash
+                escaped = True
+            elif byte == 0x22:  # double quote
+                in_string = False
+            continue
+        if byte == 0x22:
+            in_string = True
+        elif byte in (0x5B, 0x7B):  # [ {
+            depth += 1
+            if depth > CHECKPOINT_JSON_DEPTH_MAX:
+                return False
+        elif byte in (0x5D, 0x7D) and depth:
+            depth -= 1
+    return True
+
+
 def _checkpoint_json(data: bytes, label: str):
+    if not _checkpoint_json_depth_within_limit(data):
+        die(f"checkpoint {label} exceeds the JSON nesting ceiling")
     try:
         return json.loads(
             data.decode("utf-8"),
@@ -10767,7 +10795,7 @@ def _checkpoint_json(data: bytes, label: str):
                 ValueError("non-finite number")
             ),
         )
-    except (RecursionError, UnicodeDecodeError, ValueError):
+    except (MemoryError, RecursionError, UnicodeDecodeError, ValueError):
         die(f"checkpoint {label} is not strict UTF-8 JSON")
 
 

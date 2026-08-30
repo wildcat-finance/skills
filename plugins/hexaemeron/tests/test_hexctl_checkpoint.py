@@ -484,17 +484,20 @@ class HexctlCheckpointTests(HexctlCase):
         finally:
             oversized.unlink()
 
-        long_root = root
-        for index in range(6):
-            long_root = long_root / ((chr(ord("a") + index)) * 200)
-            long_root.mkdir()
-        long_file = long_root / "value"
+        existing_max = max(
+            len((Path(current) / name).relative_to(root).as_posix().encode("utf-8"))
+            for current, directories, files in os.walk(root)
+            for name in [*directories, *files]
+        )
+        long_file = root / ("z" * (existing_max + 1))
         long_file.write_text("x", encoding="utf-8")
         try:
-            error = self.direct_refusal(hexctl_module(), Path(self.dir) / "limit-path")
+            module = hexctl_module()
+            with mock.patch.object(module, "CHECKPOINT_PATH_BYTES_MAX", existing_max):
+                error = self.direct_refusal(module, Path(self.dir) / "limit-path")
             self.assertIn("path exceeds", error)
         finally:
-            shutil.rmtree(root / ("a" * 200))
+            long_file.unlink()
 
         empty = root / "bounded-directory"
         empty.mkdir()
@@ -609,11 +612,25 @@ class HexctlCheckpointTests(HexctlCase):
             module._checkpoint_json(b'{"value":NaN}', "state")
         self.assertIn("strict UTF-8 JSON", stderr.getvalue())
 
+    def test_checkpoint_json_has_an_interpreter_independent_depth_ceiling(self):
+        module = hexctl_module()
+        limit = getattr(module, "CHECKPOINT_JSON_DEPTH_MAX", 128)
+
+        at_limit = b"[" * limit + b"0" + b"]" * limit
+        self.assertIsInstance(module._checkpoint_json(at_limit, "state"), list)
+        punctuation = json.dumps(
+            {"value": "[" * (limit + 1) + "\\\"{"}
+        ).encode("utf-8")
+        self.assertEqual(
+            module._checkpoint_json(punctuation, "state")["value"],
+            "[" * (limit + 1) + '\\"{',
+        )
+
         stderr = StringIO()
-        nested = b"[" * 50_000 + b"0" + b"]" * 50_000
+        nested = b"[" * (limit + 1) + b"0" + b"]" * (limit + 1)
         with redirect_stderr(stderr), self.assertRaises(SystemExit):
             module._checkpoint_json(nested, "state")
-        self.assertIn("strict UTF-8 JSON", stderr.getvalue())
+        self.assertIn("JSON nesting ceiling", stderr.getvalue())
 
     def test_moving_input_refuses_before_publication(self):
         self.to_post_push()

@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 994,
-  "total_bytes": 21533450,
+  "total_bytes": 21537166,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1911,15 +1911,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 49700,
+      "bytes": 51431,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "77191d33c79fc2c1a16ee855f241a42375cedad7a13e747ce5c451618bf60690",
+      "sha256": "6b04f5bdec2d749e5fcaae27e6ed937caef2ccae9719a325172b3f82e2fb6ecd",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 62417,
+      "bytes": 62452,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "d7eccc1d68142a7dd4d401a8316b8c6f2de2f56bc4e1375c65f5a80f9f3189ca",
+      "sha256": "d2badac85cea7b0fa9bae96b215030225a0a28eb5d9d8e66ed1c364e15f7e828",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1971,9 +1971,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/xray-reuse.md"
     },
     {
-      "bytes": 46770,
+      "bytes": 46847,
       "path": "plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py",
-      "sha256": "2972258d0c363bee0cc7e97668da96bcbb5ea19421fc278eefdae60ddcde9d75",
+      "sha256": "34e639a4f14856b16c27c382117b25191e357b249e5e3373f975c939d3c41c1b",
       "source": "plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py"
     },
     {
@@ -1983,9 +1983,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 514334,
+      "bytes": 515260,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "5af4bd1510229af8afec709bf797726a3a02d70e0954d23e4a37de90aad91670",
+      "sha256": "8106309bb7db62a621e912e224fdbc525d7299c7c5e5721caede6a097e97a74e",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
@@ -5589,9 +5589,9 @@
       "source": "plugins/synkrisis/references/rules-v1.json"
     },
     {
-      "bytes": 8766,
+      "bytes": 9094,
       "path": "plugins/synkrisis/scripts/bench_synkrisis.py",
-      "sha256": "36654fe2369fda03188c1e8be18d91c5a576377966da7f48264518ecf45de518",
+      "sha256": "966e79a020edf89dcf72175f4228c5ac1937abf9fdc4a427e982d1b082c7bf54",
       "source": "plugins/synkrisis/scripts/bench_synkrisis.py"
     },
     {
@@ -5601,15 +5601,15 @@
       "source": "plugins/synkrisis/scripts/synkrisis.py"
     },
     {
-      "bytes": 6096,
+      "bytes": 6715,
       "path": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md",
-      "sha256": "e0a66fb126a60cbc2ba86eb9eda4366150a80ecfcbbd4607ef8174786be71013",
+      "sha256": "5d42111c26d7debb2ff496b5514b82a16f3d3e951545c986955907473b64d97d",
       "source": "plugins/synkrisis/skills/synkrisis/EVOLUTION.md"
     },
     {
       "bytes": 13283,
       "path": "plugins/synkrisis/skills/synkrisis/SKILL.md",
-      "sha256": "c7554b77521df9fefeb63f2cc13443bb7924edd9cd5d2107722f94114c932398",
+      "sha256": "5b6e0c65644de57f87c16d6e4520ed5112f0a917f1c751cf8d3c690cf78f15eb",
       "source": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {
