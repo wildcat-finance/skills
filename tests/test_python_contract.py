@@ -38,6 +38,9 @@ PYTHON_WORKFLOWS = {
     "synkrisis.yml",
 }
 PULL_REQUEST_WORKFLOWS = PYTHON_WORKFLOWS - {"contributors.yml"}
+# The root gate carries no path filter, so it has no filter to inspect.
+ROOT_GATE = "repo.yml"
+PATH_FILTERED_PULL_REQUEST_WORKFLOWS = PULL_REQUEST_WORKFLOWS - {ROOT_GATE}
 BRANCH_CI_WORKFLOWS = PULL_REQUEST_WORKFLOWS | {
     "janus-forge.yml",
     "pandects-forge.yml",
@@ -267,7 +270,7 @@ class PythonRuntimeContractTests(unittest.TestCase):
         self.assertEqual(invokes_python, found)
 
     def test_pull_request_workflows_run_when_either_contract_file_changes(self):
-        for name in sorted(PULL_REQUEST_WORKFLOWS):
+        for name in sorted(PATH_FILTERED_PULL_REQUEST_WORKFLOWS):
             text = (WORKFLOWS / name).read_text(encoding="utf-8")
             with self.subTest(workflow=name):
                 self.assertEqual(text.count('- ".python-version"'), 2)
@@ -290,9 +293,20 @@ class PythonRuntimeContractTests(unittest.TestCase):
                 with self.subTest(workflow=name, event=event):
                     self.assertEqual(workflow_event_paths(text, event), expected)
 
-    def test_root_gate_runs_when_any_workflow_changes(self):
-        text = (WORKFLOWS / "repo.yml").read_text(encoding="utf-8")
-        self.assertEqual(text.count('- ".github/workflows/*.yml"'), 2)
+    def test_root_gate_carries_no_path_filter(self):
+        """The gate main requires must run on every pull request.
+
+        A required status check that a pull request never produces blocks that
+        pull request with no way to clear it, and the suite already asserts
+        over paths no filter listed: .horos/boundary.json, audit/,
+        CONTRIBUTORS.md, LICENSE and .gitignore. Both reasons say the root
+        gate is unfiltered, so no filter may reappear on either event.
+        """
+        text = (WORKFLOWS / ROOT_GATE).read_text(encoding="utf-8")
+        for event in ("push", "pull_request"):
+            with self.subTest(event=event):
+                with self.assertRaises(ValueError):
+                    workflow_event_paths(text, event)
 
     def test_readme_points_to_both_contract_layers_and_the_decision(self):
         text = README.read_text(encoding="utf-8")
