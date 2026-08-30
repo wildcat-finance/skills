@@ -338,7 +338,15 @@ class ScaffoldTests(unittest.TestCase):
         for event in ("push", "pull_request"):
             with self.subTest(aggregate_event=event):
                 self.assertIsNone(event_paths(plugins_workflow, event, required=False))
-        self.assertIn("python3 scripts/run_checks.py --full", plugins_workflow)
+        # The aggregate gate shards the declared graph, one job per scope, so
+        # Lazarus is covered by its own shard rather than by a single --full
+        # invocation. What matters here is unchanged: the gate carries no path
+        # filter, so its context reaches every pull request.
+        self.assertIn(
+            "python3 scripts/run_checks.py\n          --scope ${{ matrix.scope }}",
+            plugins_workflow,
+        )
+        self.assertIn("          - lazarus\n", plugins_workflow)
 
         self.assertIn('python-version-file: ".python-version"', workflow)
         self.assertNotIn("matrix.python-version", workflow)
