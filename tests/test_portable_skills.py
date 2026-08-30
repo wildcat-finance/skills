@@ -287,6 +287,23 @@ class ImportClosureTests(unittest.TestCase):
                 self.assertIn("does not resolve inside the tree", found[0])
                 self.assertIn(target, found[0])
 
+    def test_every_legal_import_form_naming_a_path_is_seen(self):
+        # A check that exists to catch a lost import must not lose one to its
+        # own pattern. `import "p" as N;` is legal and was skipped silently.
+        forms = (
+            'import "./A.sol";',
+            'import {X} from "./A.sol";',
+            'import * as N from "./A.sol";',
+            'import "./A.sol" as N;',
+            'import {X as Y} from "./A.sol";',
+            "import './A.sol';",
+        )
+        for statement in forms:
+            with self.subTest(statement=statement):
+                self.assertEqual(
+                    self.module.SOLIDITY_IMPORT.findall(statement), ["./A.sol"]
+                )
+
     def test_the_resolver_never_returns_a_path_outside_the_tree(self):
         for target in ("../x.sol", "../../x.sol", "/x.sol", "./../../x.sol"):
             with self.subTest(target=target):

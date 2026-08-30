@@ -267,7 +267,14 @@ def _actual_files(target: Path) -> dict[str, bytes]:
     return actual
 
 
-SOLIDITY_IMPORT = re.compile(r"""import\s+(?:[^;]*?\bfrom\s+)?["']([^"'\n]+)["']\s*;""")
+# `import "p";`, `import "p" as N;`, `import {A} from "p";` and
+# `import * as N from "p";` are all legal and all name a path. The trailing
+# alias matters: without it the pattern skips the statement silently, and a
+# check that exists to catch a lost import must not lose one to its own regex.
+SOLIDITY_IMPORT = re.compile(
+    r"""import\s+(?:[^;]*?\bfrom\s+)?["']([^"'\n]+)["']\s*"""
+    r"""(?:as\s+[A-Za-z_$][A-Za-z0-9_$]*\s*)?;"""
+)
 
 
 def _resolve_relative(importer: str, target: str) -> str | None:
