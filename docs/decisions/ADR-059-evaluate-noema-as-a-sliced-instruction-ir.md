@@ -77,7 +77,12 @@ fixed pair budget and indexed override lookup, while recursive and quantified
 truth evaluation shares one expansion-work counter.
 Slice fixed-point closure likewise has one aggregate record-scan budget, and
 nested directive traversal shares one expansion-work counter. A transition is
-a selection root only when its declared from-state matches the selected state.
+a selection root only when its declared from-state matches the selected state;
+`next` refuses any other state because its transitions may have been omitted.
+Runtime substitution respects nested binder shadowing, expanded finite sets
+have set rather than multiset semantics, and decimal order is independent of
+the host interpreter's integer conversion ceiling. Recursive evaluation keeps
+authored subfact identities beside their expanded terms.
 
 ## Alternatives
 
