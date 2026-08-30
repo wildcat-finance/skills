@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import subprocess
 import sys
@@ -407,7 +408,7 @@ class NoemaScaffoldTests(unittest.TestCase):
         self.assertTrue(
             {"archive", "inventory", "source", "graph", "build", "profile",
              "projection", "manifest", "facts", "receipts", "output",
-             "before", "after", "diff"} <= digest_dimensions
+             "before", "after", "diff", "cases"} <= digest_dimensions
         )
         self.assertTrue(
             {"bytes", "members", "records", "modules", "aliases", "entries"}
@@ -3925,10 +3926,60 @@ class RuntimeResultTests(unittest.TestCase):
     def test_runtime_self_test_cli_passes(self):
         status, result = self.run_main(["runtime-self-test"])
         self.assertEqual((status, result["counts"]["cases"]), (0, 7))
+        self.assertEqual(
+            result["correlation_id"],
+            noema._correlation(
+                "runtime-self-test",
+                result["digests"]["manifest"],
+                result["digests"]["cases"],
+            ),
+        )
 
     def test_manifest_verify_cli_passes(self):
         status, result = self.run_main(["verify", "--manifest", str(RUNTIME_FIXTURE / "manifest.json")])
         self.assertEqual((status, result["verdict"]), (0, "ok"))
+        self.assertEqual(
+            result["correlation_id"],
+            noema._correlation("verify", result["digests"]["manifest"]),
+        )
+
+    def test_runtime_self_test_binds_receipts_and_case_selections(self):
+        with scratch_directory("noema-self-test-evidence-") as temporary:
+            root = Path(temporary)
+            fixture = root / "tests" / "fixtures" / "noema-v1" / "runtime"
+            shutil.copytree(RUNTIME_FIXTURE, fixture)
+            script = root / "scripts" / "noema.py"
+            script.parent.mkdir()
+            shutil.copy2(SCRIPT, script)
+            with mock.patch.object(noema, "__file__", str(script)):
+                baseline = noema.runtime_self_test()
+
+                receipts_path = fixture / "receipts.json"
+                receipts = json.loads(receipts_path.read_text(encoding="utf-8"))
+                receipts[0]["evidence_sha256"] = "f" * 64
+                receipts_path.write_bytes(noema._canonical_json(receipts))
+                changed_receipts = noema.runtime_self_test()
+
+                selection_path = fixture / "selection-deploy.json"
+                selection = json.loads(selection_path.read_text(encoding="utf-8"))
+                selection["facts"][0]["evidence_sha256"] = "e" * 64
+                selection_path.write_bytes(noema._canonical_json(selection))
+                changed_selection = noema.runtime_self_test()
+
+        self.assertNotEqual(
+            baseline["digests"]["cases"], changed_receipts["digests"]["cases"]
+        )
+        self.assertNotEqual(
+            baseline["correlation_id"], changed_receipts["correlation_id"]
+        )
+        self.assertNotEqual(
+            changed_receipts["digests"]["cases"],
+            changed_selection["digests"]["cases"],
+        )
+        self.assertNotEqual(
+            changed_receipts["correlation_id"],
+            changed_selection["correlation_id"],
+        )
 
     def test_check_cli_returns_policy_data(self):
         status, result = self.run_main([

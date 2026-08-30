@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16280338,
+    "bytes_blob": 16288071,
     "bytes_generated": 98
   },
   "entries": [
@@ -238,14 +238,14 @@
       "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
     },
     {
-      "bytes": 72512,
+      "bytes": 76358,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 70464",
+      "evidence": "mean line length above 400 in a window at offset 38179",
       "grade": "candidate",
       "path": "audit/rounds/fiat-942-prototype-noema-as-a-model-native-sliced-ins.md"
     },
     {
-      "bytes": 73689,
+      "bytes": 77576,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",

@@ -92,6 +92,9 @@ reachable context without becoming the exception's checked policy subject.
 Secondary-rooted governing edges close over both active endpoints, literal
 references retain set identity while number literals remain comparable, and
 runtime receipts bind the exact slice, inputs and output they describe.
+Manifest verification correlates to the exact manifest identity, while the
+runtime self-test binds all seven exact case results, including receipts and
+alternate selections, under one reported digest.
 
 ## Alternatives
 
