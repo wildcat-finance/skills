@@ -406,7 +406,8 @@ class NoemaScaffoldTests(unittest.TestCase):
         count_dimensions = set(definitions["countSet"]["properties"])
         self.assertTrue(
             {"archive", "inventory", "source", "graph", "build", "profile",
-             "projection", "before", "after", "diff"} <= digest_dimensions
+             "projection", "manifest", "facts", "receipts", "output",
+             "before", "after", "diff"} <= digest_dimensions
         )
         self.assertTrue(
             {"bytes", "members", "records", "modules", "aliases", "entries"}
@@ -451,6 +452,21 @@ class NoemaScaffoldTests(unittest.TestCase):
         self.assertEqual(result["code"], "NOE-I-ABOUT")
         self.assertEqual(result["verdict"], "ok")
         self.assertRegex(result["correlation_id"], r"^[0-9a-f]{64}$")
+
+    def test_public_contract_names_every_emitted_refusal_family(self):
+        emitted = set(
+            re.findall(
+                r'''["'](NOE-E-[A-Z_]+)(?:\.[A-Z0-9_]+)?["']''',
+                SCRIPT.read_text(encoding="utf-8"),
+            )
+        )
+        declared = set(
+            re.findall(
+                r"\| `(NOE-E-[A-Z_]+)` \|",
+                (ROOT / "docs" / "noema-v1.md").read_text(encoding="utf-8"),
+            )
+        )
+        self.assertLessEqual(emitted, declared)
 
     def test_cli_help_names_only_scaffold_and_reserved_operations(self):
         completed = subprocess.run(
@@ -2138,6 +2154,81 @@ class SliceTests(unittest.TestCase):
             <= set(manifest["included_ids"])
         )
 
+    def test_secondary_relation_root_closes_both_named_rules(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.alpha",
+                ["+", [":", "effect", "alpha"]],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.beta",
+                ["+", [":", "effect", "beta"]],
+                source_binding(1, 2),
+            ],
+            [
+                "precedence",
+                "rule.alpha",
+                "rule.beta",
+                [":", "actor", "reviewer"],
+                [":", "scope", "selected"],
+                [":", "evidence", "order"],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("absent", target="selected"),
+        )
+        self.assertEqual(
+            set(manifest["included_ids"]),
+            {
+                "rule.alpha",
+                "rule.beta",
+                "precedence:rule.alpha>rule.beta",
+            },
+        )
+
+    def test_secondary_relation_with_an_inactive_endpoint_falls_back_safely(self):
+        guard = ["core.checked", [":", "evidence", "beta.active"]]
+        fact = checked_fact(guard, "false", "beta-inactive")
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.alpha",
+                ["+", [":", "effect", "alpha"]],
+                source_binding(0, 1),
+            ],
+            [
+                "rule",
+                "rule.beta",
+                ["?", guard, ["+", [":", "effect", "beta"]]],
+                source_binding(1, 2),
+            ],
+            [
+                "precedence",
+                "rule.alpha",
+                "rule.beta",
+                [":", "actor", "reviewer"],
+                [":", "scope", "selected"],
+                [":", "evidence", "order"],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("absent", target="selected", facts=(fact,)),
+        )
+        self.assertEqual(manifest["included_ids"], ["rule.alpha"])
+        omissions = {item["id"]: item["reason"] for item in manifest["omitted"]}
+        self.assertEqual(omissions["rule.beta"], "checked-false-guard")
+        self.assertEqual(
+            omissions["precedence:rule.alpha>rule.beta"],
+            "not-reachable",
+        )
+
     def test_recovery_directive_survives_support_closure(self):
         _build, _selection, manifest, _projection = runtime_fixture()
         promise = next(item for item in manifest["tape"] if item[0] == "promise")
@@ -3224,6 +3315,61 @@ class PolicyCheckTests(unittest.TestCase):
         result = noema.check_runtime(effect, [], manifest)
         self.assertEqual(result["output"]["decision"], "permit")
 
+    def test_number_literal_is_a_numeric_comparison_operand(self):
+        effect = "literal.numeric"
+        consequence = [":", "core.consequence", "0"]
+        guard = ["lt", ["$", "lit.one"], [":", "value", "2"]]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", guard, ["+", [":", "effect", effect]]],
+        ]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["literal", "lit.one", "number", "1", "1"],
+            ["rule", "rule.literal.numeric", directive, source_binding()],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
+    def test_literal_references_are_distinct_finite_set_scalars(self):
+        effect = "literal.set"
+        consequence = [":", "core.consequence", "0"]
+        collection = [
+            "{}",
+            "literal",
+            ["$", "lit.alpha"],
+            ["$", "lit.beta"],
+        ]
+        singleton = ["{}", "literal", ["$", "lit.alpha"]]
+        guard = [
+            "&",
+            ["=", ["count", collection], [":", "value", "2"]],
+            ["in", ["$", "lit.alpha"], collection],
+            ["subset", singleton, collection],
+        ]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            ["?", guard, ["+", [":", "effect", effect]]],
+        ]
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["literal", "lit.alpha", "text", "12", "same-payload"],
+            ["literal", "lit.beta", "text", "12", "same-payload"],
+            ["rule", "rule.literal.set", directive, source_binding()],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection(effect),
+        )
+        result = noema.check_runtime(effect, [], manifest)
+        self.assertEqual(result["output"]["decision"], "permit")
+
     def test_expanded_set_aliases_do_not_inflate_cardinality(self):
         effect = "set.cardinality"
         consequence = [":", "core.consequence", "0"]
@@ -3842,6 +3988,110 @@ class RuntimeResultTests(unittest.TestCase):
             with self.subTest(command=result["command"]):
                 self.assertRegex(result["correlation_id"], r"^[0-9a-f]{64}$")
                 self.assertLessEqual(len(result["message"]), 512)
+
+    def test_runtime_results_bind_the_slice_inputs_and_exact_output(self):
+        _build, selection, manifest, _projection = runtime_fixture()
+        receipts = noema._read_fact_array(
+            RUNTIME_FIXTURE / "receipts.json",
+            "receipts",
+        )
+        check = noema.check_runtime("inspect", selection["facts"], manifest)
+        transition = noema.next_runtime(
+            "workflow",
+            "idle",
+            "requested",
+            receipts,
+            manifest,
+        )
+        literal = noema.literal_runtime("lit.note", manifest)
+        explanation = noema.explain_runtime("rule.inspect", manifest)
+        manifest_digest = noema._value_sha256(manifest)
+        receipts_digest = noema._value_sha256(receipts)
+        correlations = {
+            "check": noema._correlation(
+                "check",
+                manifest_digest,
+                manifest["facts_sha256"],
+                "inspect",
+            ),
+            "next": noema._correlation(
+                "next",
+                manifest_digest,
+                "workflow",
+                "idle",
+                "requested",
+                receipts_digest,
+            ),
+            "literal": noema._correlation("literal", manifest_digest, "lit.note"),
+            "explain": noema._correlation("explain", manifest_digest, "rule.inspect"),
+        }
+        for result in (check, transition, literal, explanation):
+            with self.subTest(command=result["command"]):
+                self.assertEqual(
+                    result["correlation_id"],
+                    correlations[result["command"]],
+                )
+                self.assertEqual(result["digests"]["manifest"], manifest_digest)
+                self.assertEqual(
+                    result["digests"]["output"],
+                    noema._value_sha256(result["output"]),
+                )
+        self.assertEqual(check["digests"]["facts"], manifest["facts_sha256"])
+        self.assertEqual(transition["digests"]["facts"], manifest["facts_sha256"])
+        self.assertEqual(transition["digests"]["receipts"], receipts_digest)
+        self.assertEqual(
+            transition["digests"]["output"],
+            noema._value_sha256(transition["output"]),
+        )
+
+    def test_select_result_binds_the_manifest_and_exact_output(self):
+        arguments = [
+            "select",
+            "--build", str(RUNTIME_FIXTURE / "build.json"),
+            "--modules", str(RUNTIME_FIXTURE / "modules"),
+            "--profile", str(RUNTIME_FIXTURE / "profile.json"),
+            "--kernel", str(RUNTIME_FIXTURE / "kernel.noe"),
+            "--selection", str(RUNTIME_FIXTURE / "selection.json"),
+        ]
+        status, result = self.run_main(arguments)
+        self.assertEqual(status, 0)
+        self.assertEqual(
+            result["correlation_id"],
+            noema._correlation("select", result["digests"]["manifest"], "none"),
+        )
+        self.assertEqual(
+            result["digests"]["output"],
+            noema._value_sha256(result["output"]),
+        )
+
+    def test_select_comparison_names_its_baseline(self):
+        status, result = self.run_main([
+            "select",
+            "--build", str(RUNTIME_FIXTURE / "build.json"),
+            "--modules", str(RUNTIME_FIXTURE / "modules"),
+            "--profile", str(RUNTIME_FIXTURE / "profile.json"),
+            "--kernel", str(RUNTIME_FIXTURE / "kernel.noe"),
+            "--selection", str(RUNTIME_FIXTURE / "selection.json"),
+            "--previous-manifest", str(RUNTIME_FIXTURE / "manifest.json"),
+        ])
+        self.assertEqual(status, 0)
+        self.assertFalse(result["output"]["changed"])
+        self.assertEqual(
+            result["digests"]["before"],
+            result["digests"]["manifest"],
+        )
+        self.assertEqual(
+            result["digests"]["after"],
+            result["digests"]["manifest"],
+        )
+        self.assertEqual(
+            result["correlation_id"],
+            noema._correlation(
+                "select",
+                result["digests"]["manifest"],
+                result["digests"]["before"],
+            ),
+        )
 
     def test_invalid_effect_is_redacted(self):
         status, result = self.run_main([

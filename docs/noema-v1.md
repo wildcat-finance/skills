@@ -102,6 +102,11 @@ rule, the lower rule, authority, scope and evidence. Precedence and override
 edges form one acyclic governing relation; a cycle within or across the two
 record forms refuses.
 
+Literal references remain distinct scalar identities inside finite sets even
+when their payload bytes match. A reachable `number` literal supplies its exact
+canonical decimal bytes to `lt`, `le`, `gt` and `ge`; no other literal kind is
+coerced for numeric comparison.
+
 An exception cannot assert absent evidence, strengthen an evidence class,
 change a source binding or operate outside its subject and scope. Missing,
 expired, unattributed, unrecorded or over-broad exceptions refuse.
@@ -259,7 +264,9 @@ Closure expands locked pure definitions before following shared typed effect,
 operation, state, event, artifact, action, claim and command identities, then
 retains each connected promise, handoff, exception, prohibition, authority
 constraint, order edge, refusal and recovery. An order or override edge pulls
-both named rules into the slice; a macro cannot hide one of those links.
+both named rules into the slice even when the edge itself is a secondary root;
+an edge with an inactive endpoint cannot survive alone, and a macro cannot hide
+one of those links.
 
 A checked-true guard retains its dependent rule. A checked-false guard may omit
 it only when the manifest carries one checked fact for that exact full guard
@@ -447,6 +454,11 @@ output digests and bounded counts that exist for that command. It never carries
 source text, prompts, model output or credentials. The sole payload exception
 is a successful `literal` result, whose purpose is to return one exact reachable
 inert value with its kind, byte count and digest.
+Every runtime correlation binds the exact manifest identity. Runtime digest
+maps name that manifest and the exact output; `check` also names selected facts,
+while `next` names selected facts and additional receipts separately. A
+`select` comparison binds its prior and current manifest identities as `before`
+and `after`; an invocation without a prior manifest has no comparison digests.
 Malformed argument vectors use the same line with `NOE-E-TYPE.ARGUMENTS` and
 never echo argument bytes; `command` is the recognised operation or `invalid`.
 
@@ -464,6 +476,8 @@ Stable refusal families are:
 | `NOE-E-AUTHORITY` | missing, conflicting or over-broad authority | supply applicable checked authority or refuse the effect |
 | `NOE-E-PATH` | unsafe, escaping, linked or special path | select a confined regular path |
 | `NOE-E-IO` | read, write, sync or atomic replacement uncertainty | inspect complete old/new state and rerun safely |
+| `NOE-E-POLICY` | contradictory facts, consequence declarations or transition state | repair the inconsistent policy input or graph and reselect |
+| `NOE-E-SELF_TEST` | checked-in demonstration no longer satisfies its fixed outcome | repair or regenerate the fixture before relying on the prototype |
 | `NOE-E-EVALUATION` | packet, profile, family, case or answer mismatch | restore the exact isolated cohort and retally |
 | `NOE-E-UNIMPLEMENTED` | operation reserved for a later prototype step | finish and verify its declared step |
 
