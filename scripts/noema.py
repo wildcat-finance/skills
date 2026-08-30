@@ -1851,7 +1851,12 @@ def load_build(
 def _atomic_write(path: Path, payload: bytes) -> None:
     if len(payload) > MAX_OUTPUT_BYTES:
         refuse("NOE-E-BOUNDS.OUTPUT", "output", "derived output exceeds its byte limit")
-    if path.name in {"", ".", ".."} or len(path.name.encode("utf-8")) > 255:
+    try:
+        leaf = path.name
+        encoded_leaf = leaf.encode("utf-8")
+    except UnicodeEncodeError:
+        refuse("NOE-E-PATH.LEAF", "output", "output leaf name is invalid")
+    if leaf in {"", ".", ".."} or len(encoded_leaf) > 255:
         refuse("NOE-E-PATH.LEAF", "output", "output leaf name is invalid")
     parent = path.parent
     try:

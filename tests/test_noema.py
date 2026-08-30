@@ -1591,6 +1591,36 @@ class SemanticDiffTests(unittest.TestCase):
 
 
 class PathBoundaryTests(unittest.TestCase):
+    def test_non_scalar_output_leaf_refuses_through_cli(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = str(Path(temporary) / "output") + "\udcff"
+            arguments = [
+                "parse",
+                "--source",
+                str(CODEC_FIXTURE),
+                "--modules",
+                str(MODULES_FIXTURE),
+                "--profile",
+                str(PROFILE_FIXTURE),
+                "--kernel",
+                str(KERNEL_FIXTURE),
+                "--output",
+                output,
+            ]
+            stdout = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(stdout):
+                    status = noema.main(arguments)
+            except UnicodeEncodeError:
+                self.fail("non-scalar output leaf escaped the refusal channel")
+            self.assertEqual(status, 2)
+            lines = stdout.getvalue().splitlines()
+            self.assertEqual(len(lines), 1)
+            result = json.loads(lines[0])
+            self.assertEqual(result["code"], "NOE-E-PATH.LEAF")
+            self.assertEqual(result["field"], "output")
+            self.assertEqual(list(Path(temporary).iterdir()), [])
+
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
     def test_linked_input_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:

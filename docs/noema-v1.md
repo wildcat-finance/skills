@@ -272,9 +272,10 @@ paths. `self-test` performs the checked-in complete-fixture round trip without
 writing a file.
 
 All input leaves must be regular files; module resolution is confined to one
-real directory and never scans it. Output uses a random `.noema-write-` leaf
-independent of the target name, loops on partial writes, syncs file and parent,
-then replaces the target. A refusal before replacement leaves the prior target
+real directory and never scans it. An output leaf must be Unicode-scalar UTF-8
+and at most 255 bytes. Output uses a random `.noema-write-` leaf independent of
+the target name, loops on partial writes, syncs file and parent, then replaces
+the target. A refusal before replacement leaves the prior target
 intact and removes the temporary. A post-replacement directory-sync failure is
 reported as uncertain durable state, never success.
 
