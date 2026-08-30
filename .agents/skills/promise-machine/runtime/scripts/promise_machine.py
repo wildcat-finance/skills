@@ -529,8 +529,26 @@ def read_json(
             document[key] = value
         return document
 
+    def require_unicode_scalars(value):
+        pending = [value]
+        while pending:
+            item = pending.pop()
+            if isinstance(item, str):
+                try:
+                    item.encode("utf-8")
+                except UnicodeEncodeError as exc:
+                    raise ValueError(
+                        "JSON strings must contain only Unicode scalar values"
+                    ) from exc
+            elif isinstance(item, dict):
+                pending.extend(item)
+                pending.extend(item.values())
+            elif isinstance(item, list):
+                pending.extend(item)
+
     try:
         document = json.loads(payload, object_pairs_hook=reject_duplicate_keys)
+        require_unicode_scalars(document)
     except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         return None, [
             Finding(
@@ -1043,7 +1061,7 @@ def discover_obligations(text: str):
         previous = index - 1
         while (
             previous >= 0
-            and lines[previous] is not None
+            and isinstance(lines[previous], str)
             and not lines[previous].strip()
         ):
             previous -= 1
@@ -1063,7 +1081,7 @@ def discover_obligations(text: str):
         end = index + 1
         while (
             end < len(lines)
-            and lines[end] is not None
+            and isinstance(lines[end], str)
             and lines[end].startswith(">")
         ):
             end += 1
