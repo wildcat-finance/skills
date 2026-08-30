@@ -274,6 +274,19 @@ class NoemaScaffoldTests(unittest.TestCase):
             definitions["identifier"]["not"], {"pattern": r"\.\."}
         )
 
+    def test_schema_covers_every_emitted_result_dimension(self):
+        definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
+        digest_dimensions = set(definitions["digestSet"]["properties"])
+        count_dimensions = set(definitions["countSet"]["properties"])
+        self.assertTrue(
+            {"archive", "inventory", "source", "graph", "build", "profile",
+             "projection", "before", "after", "diff"} <= digest_dimensions
+        )
+        self.assertTrue(
+            {"bytes", "members", "records", "modules", "aliases", "entries"}
+            <= count_dimensions
+        )
+
     def test_contract_magic_and_about_result_are_fixed(self):
         self.assertEqual((noema.CONTRACT, noema.SOURCE_MAGIC, noema.PROJECTION_MAGIC),
                          ("noema/v1", "NOE1", "NT1"))

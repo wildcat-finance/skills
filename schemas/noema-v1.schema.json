@@ -373,6 +373,9 @@
         "graph": {
           "$ref": "#/$defs/sha256"
         },
+        "build": {
+          "$ref": "#/$defs/sha256"
+        },
         "lock": {
           "$ref": "#/$defs/sha256"
         },
@@ -389,6 +392,15 @@
           "$ref": "#/$defs/sha256"
         },
         "output": {
+          "$ref": "#/$defs/sha256"
+        },
+        "before": {
+          "$ref": "#/$defs/sha256"
+        },
+        "after": {
+          "$ref": "#/$defs/sha256"
+        },
+        "diff": {
           "$ref": "#/$defs/sha256"
         }
       }
@@ -411,6 +423,21 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 16384
+        },
+        "modules": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 64
+        },
+        "aliases": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16384
+        },
+        "entries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65536
         },
         "nodes": {
           "type": "integer",
