@@ -438,6 +438,18 @@ class PromiseObligationTests(unittest.TestCase):
         )
         self.assertIn("## Scope", paragraph_lines)
 
+    def test_law_gates_ignore_type_seven_closing_tag_blocks(self):
+        law = LAW.read_text(encoding="utf-8")
+        for tag in ("script", "pre", "style", "textarea"):
+            with self.subTest(tag=tag):
+                text = law.replace(
+                    "## Scope", f"</{tag}>\n## Scope\n\n", 1
+                )
+                findings = promise_machine_module.validate_law_document(
+                    text.encode("utf-8"), text, f"{tag}-closing-tag-decoy.md"
+                )
+                self.assertIn("PM006", [finding.code for finding in findings])
+
     def test_law_gates_track_blocks_before_a_generic_html_block(self):
         cases = {
             "setext-heading": "lead\n---",
