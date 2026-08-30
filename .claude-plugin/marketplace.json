@@ -292,7 +292,7 @@
       "displayName": "Brevitas",
       "source": "./plugins/brevitas",
       "description": "Evidence-preserving budgets for engineering prose.",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "author": {
         "name": "Wildcat Labs",
         "url": "https://wildcat.finance"

@@ -40,7 +40,7 @@ DELIVERY_PACKAGE_VERSIONS = {
     "alexandria": "0.3.1",
     "ariadne": "1.3.0",
     "berean": "0.1.2",
-    "brevitas": "0.2.1",
+    "brevitas": "0.2.2",
     "hermes": "0.1.1",
     "hexaemeron": "1.6.17",
     "homologia": "0.1.0",
