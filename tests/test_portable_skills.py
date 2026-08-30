@@ -206,6 +206,16 @@ class RuntimeStagingTests(unittest.TestCase):
         self.assertEqual(self.module.stage_runtime(self.root), "staged")
         self.assertNotIn("%s/LICENSE" % self.target, tracked(self.root))
 
+    def test_a_repository_that_ignores_the_mirror_skips_staging(self):
+        # `git add` exits 1 on an ignored pathspec, so staging without this
+        # check would turn a working sync into a failing one for any consumer
+        # that ignores its generated mirror.
+        self.mirror("AGENTS.md")
+        write(self.root, ".gitignore", "%s/\n" % self.target)
+        status = self.module.stage_runtime(self.root)
+        self.assertEqual(status, "mirror is ignored here; written but not staged")
+        self.assertNotIn("%s/AGENTS.md" % self.target, tracked(self.root))
+
     def test_a_root_git_cannot_answer_for_skips_staging_without_failing(self):
         with tempfile.TemporaryDirectory() as raw:
             outside = Path(raw)

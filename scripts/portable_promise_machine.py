@@ -319,6 +319,26 @@ def _git_work_tree(root: Path) -> bool:
     return result.returncode == 0 and result.stdout.strip() == b"true"
 
 
+def _git_ignores(root: Path, relative: str) -> bool:
+    """True when the repository's ignore rules cover `relative`.
+
+    Asked before staging because `git add` treats an ignored pathspec as an
+    error and exits 1. A repository that ignores its generated mirror is a
+    reasonable thing to be; refusing to sync in one would regress the
+    copy-mode install this script exists to serve.
+    """
+    try:
+        result = subprocess.run(  # phylax: allow subprocess: fixed argv git, no shell
+            ["git", "-C", str(root), "check-ignore", "-q", "--", relative],
+            check=False,
+            capture_output=True,
+            env=_git_environment(),
+        )
+    except OSError:
+        return False
+    return result.returncode == 0
+
+
 def stage_runtime(root: Path) -> str:
     """Stage the mirror so the scan that runs next can see it.
 
@@ -336,6 +356,8 @@ def stage_runtime(root: Path) -> str:
     """
     if not _git_work_tree(root):
         return "not a git work tree; mirror written but not staged"
+    if _git_ignores(root, TARGET.as_posix()):
+        return "mirror is ignored here; written but not staged"
     result = subprocess.run(  # phylax: allow subprocess: fixed argv git, no shell
         ["git", "-C", str(root), "add", "--all", "--", TARGET.as_posix()],
         check=False,
