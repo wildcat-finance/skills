@@ -621,6 +621,7 @@
             "failed-requirement",
             "conflicting-requirements",
             "authority-mismatch",
+            "invalid-exception",
             "unestablished-guard",
             "default-deny",
             "applicable-policy",

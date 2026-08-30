@@ -65,7 +65,10 @@ runtime into an agent.
 The Step 3 audit hardens that boundary further: definition expansion precedes
 slice link discovery, closed truth rejects contradictory supplied facts,
 requirements cannot stand in for permission, and an unknown competing
-transition stops the state machine.
+transition stops the state machine. Runtime calls accept only locally derived
+or fully artifact-verified manifests and reject later mutation. Overrides need
+an active applicable higher requirement, invalid exceptions refuse before
+permission, and a missing consequence marker defaults per relevant rule.
 
 ## Alternatives
 

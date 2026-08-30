@@ -91,9 +91,10 @@ Capability, authority, execution, receipt and verification are separate typed
 relations. None implies another. Consequence-2 and consequence-3 effects
 default deny unless an applicable authority fact and every named gate are
 checked. Permission does not cancel prohibition. Conflicting requirements
-refuse unless one closed override record names the higher rule, authority,
-scope and evidence. Precedence and override edges form one acyclic governing
-relation; a cycle within or across the two record forms refuses.
+refuse unless one closed override record names an active, applicable higher
+rule, the lower rule, authority, scope and evidence. Precedence and override
+edges form one acyclic governing relation; a cycle within or across the two
+record forms refuses.
 
 An exception cannot assert absent evidence, strengthen an evidence class,
 change a source binding or operate outside its subject and scope. Missing,
@@ -325,6 +326,10 @@ manifest and projection identities and exact partitions. The in-process
 operation returns those two derived objects so a caller can preserve them at a
 separately authorised boundary. A prior manifest is optional comparison input;
 when supplied, the result states whether the exact manifest identity changed.
+In-process policy operations accept only a freshly selected manifest or the
+fully rederived result of artifact verification. Deserialized manifest data
+must cross that verifier; structural validity alone does not establish its
+provenance, and mutation after verification invalidates the manifest.
 
 Policy evaluation first expands only locked pure definitions. A checked fact
 can settle any exact proposition whose closed evaluation is unknown; a fact
@@ -341,12 +346,15 @@ refuses before any permission is considered; a satisfied `!` is a gate, never
 a permission. Opposed requirements refuse unless one included `override` names
 the higher and lower rules and its typed authority, scope and
 `core.checked(evidence)` fact all hold. Precedence alone does not resolve that
-conflict. A rule carries at most one
-`core.consequence` atom with value `0` through `3`; disagreement refuses and an
-absent marker defaults to consequence 3. Consequence 2 and 3 default deny
+conflict, and an inactive or inapplicable higher rule cannot resolve it. A rule
+carries at most one `core.consequence` atom with value `0` through `3`; each
+relevant rule without a marker defaults independently to consequence 3, and
+any resulting disagreement refuses. Consequence 2 and 3 default deny
 without an applicable `^` authority and satisfied gates. An exception is
 retained as policy and recovery context but cannot by itself cancel a
-prohibition or mint authority in this shadow runtime.
+prohibition or mint authority in this shadow runtime. Any relevant exception
+without applicable authority and scope, established gate and record evidence,
+and an active expiry refuses before permission can be granted.
 
 `next` matches one machine, from-state and event. Zero established matches
 stop, an unknown guard stops unknown even beside one established competitor,
