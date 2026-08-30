@@ -13,6 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 import warnings
 import zipfile
 
@@ -384,6 +385,42 @@ class NoemaScaffoldTests(unittest.TestCase):
                 )
                 error = refusal(archive_path, inventory_path)
                 self.assertEqual(error.code, "NOE-E-PATH.ROOT")
+
+    def test_descriptor_read_failure_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "input"
+            write_bytes(path, b"alpha")
+            with mock.patch.object(
+                noema.os, "read", side_effect=OSError("injected read fault")
+            ), self.assertRaises(noema.Refusal) as raised:
+                noema._read_regular(path, "archive", 16)
+            self.assertEqual(raised.exception.code, "NOE-E-IO.READ")
+
+    def test_descriptor_inspection_failure_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "input"
+            write_bytes(path, b"alpha")
+            with mock.patch.object(
+                noema.os, "fstat", side_effect=OSError("injected fstat fault")
+            ), self.assertRaises(noema.Refusal) as raised:
+                noema._read_regular(path, "archive", 16)
+            self.assertEqual(raised.exception.code, "NOE-E-IO.READ")
+
+    def test_descriptor_close_failure_refuses(self):
+        real_close = os.close
+
+        def close_then_fail(descriptor):
+            real_close(descriptor)
+            raise OSError("injected close fault")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "input"
+            write_bytes(path, b"alpha")
+            with mock.patch.object(
+                noema.os, "close", side_effect=close_then_fail
+            ), self.assertRaises(noema.Refusal) as raised:
+                noema._read_regular(path, "archive", 16)
+            self.assertEqual(raised.exception.code, "NOE-E-IO.READ")
 
     def test_symbolic_link_archive_member_refuses(self):
         expected = [("link", b"target")]

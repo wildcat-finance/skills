@@ -139,6 +139,7 @@ def _read_regular(path: Path, field: str, limit: int) -> bytes:
         descriptor = os.open(path, flags)
     except OSError:
         refuse("NOE-E-IO.READ", field, "regular input cannot be opened")
+    close_failed = False
     try:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
@@ -159,8 +160,18 @@ def _read_regular(path: Path, field: str, limit: int) -> bytes:
             if total > limit:
                 refuse("NOE-E-BOUNDS.FILE", field, "input exceeds its byte limit")
         after = os.fstat(descriptor)
+    except Refusal:
+        raise
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "regular input failed during descriptor read")
     finally:
-        os.close(descriptor)
+        try:
+            os.close(descriptor)
+        except OSError:
+            close_failed = True
+
+    if close_failed:
+        refuse("NOE-E-IO.READ", field, "regular input descriptor could not be closed")
 
     before_identity = (
         before.st_dev,
