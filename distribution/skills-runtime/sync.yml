@@ -29,6 +29,12 @@ jobs:
     steps:
       - name: Check out this repository
         uses: actions/checkout@v4
+        with:
+          # The job runs the generator out of a clone of another repository.
+          # Leaving a push-capable credential in .git/config while that code
+          # executes would let it push here; the final step supplies the token
+          # explicitly instead.
+          persist-credentials: false
 
       - name: Clone the public source
         run: git clone --depth=1 https://github.com/wildcat-finance/skills.git source
@@ -72,5 +78,13 @@ jobs:
             exit 0
           fi
           commit=$(sed -n 's/^This package was generated from commit `\(.*\)` by$/\1/p' README.md)
+          if [ -z "${commit}" ]; then
+            echo "::error::the generated README names no source commit"
+            exit 1
+          fi
           git commit -m "Rebuild from wildcat-finance/skills@${commit}"
-          git push
+          git push \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            HEAD:main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

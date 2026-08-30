@@ -488,6 +488,14 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertEqual(writes, [])
         self.assertIn("source/distribution/skills-runtime/sync.yml", text)
         self.assertIn("verify_runtime.py", text)
+        # The job executes a generator cloned from another repository. A
+        # push-capable credential must not be sitting in .git/config while that
+        # runs, so the checkout drops it and the push supplies one explicitly.
+        self.assertIn("persist-credentials: false", text)
+        self.assertIn("x-access-token:${GITHUB_TOKEN}", text)
+        # An unparsed README would otherwise commit "…/skills@" and read as a
+        # successful rebuild of nothing identifiable.
+        self.assertIn("the generated README names no source commit", text)
 
 
 if __name__ == "__main__":
