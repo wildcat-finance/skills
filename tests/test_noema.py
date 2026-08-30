@@ -1092,6 +1092,26 @@ class GraphValidationTests(unittest.TestCase):
 
 
 class ModuleLockTests(unittest.TestCase):
+    @staticmethod
+    def module_bytes(
+        module_id,
+        *,
+        imports=None,
+        types=None,
+        signatures=None,
+        definitions=None,
+    ):
+        return noema._canonical_json(
+            {
+                "schema": "noema-module/v1",
+                "id": module_id,
+                "imports": imports or [],
+                "types": types or [],
+                "signatures": signatures or [],
+                "definitions": definitions or [],
+            }
+        )
+
     def _module_chain(self, directory, count):
         child = None
         child_digest = None
@@ -1158,6 +1178,86 @@ class ModuleLockTests(unittest.TestCase):
             raw = noema._canonical_source(base_records())
             build, _artifacts = noema.compile_source(raw, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
             self.assertEqual([item["id"] for item in build["graph"]["modules"]], ["core"])
+
+    def test_module_symbol_requires_its_declared_import_closure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            child = self.module_bytes(
+                "b",
+                signatures=[["b.pred", [], "proposition"]],
+            )
+            child_digest = sha256(child).hexdigest()
+            parent = self.module_bytes(
+                "a",
+                definitions=[["a.ready", [], ["b.pred"]]],
+            )
+            write_bytes(directory / "a.json", parent)
+            write_bytes(directory / "b.json", child)
+            records = [
+                ["import", "a", sha256(parent).hexdigest()],
+                ["import", "b", child_digest],
+                ["rule", "rule.test", ["+", ["a.ready"]], source_binding()],
+            ]
+            try:
+                noema.compile_source(
+                    noema._canonical_source(records),
+                    directory,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )
+            except noema.Refusal as raised:
+                self.assertEqual(
+                    raised.code,
+                    "NOE-E-REFERENCE.MODULE_AMBIENT",
+                )
+            else:
+                self.fail("module used a source co-import as an ambient dependency")
+
+            parent = self.module_bytes(
+                "a",
+                imports=[["b", child_digest]],
+                definitions=[["a.ready", [], ["b.pred"]]],
+            )
+            write_bytes(directory / "a.json", parent)
+            records[0][2] = sha256(parent).hexdigest()
+            build, _artifacts = noema.compile_source(
+                noema._canonical_source(records),
+                directory,
+                PROFILE_FIXTURE,
+                KERNEL_FIXTURE,
+            )
+            self.assertEqual(
+                [item["id"] for item in build["graph"]["modules"]],
+                ["a", "b"],
+            )
+
+    def test_module_definition_cannot_bind_a_source_local_definition(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            module = self.module_bytes(
+                "a",
+                definitions=[["a.ready", [], ["local.helper"]]],
+            )
+            write_bytes(directory / "a.json", module)
+            records = [
+                ["import", "a", sha256(module).hexdigest()],
+                ["definition", "local.helper", [], [":", "proposition", "yes"]],
+                ["rule", "rule.test", ["+", ["a.ready"]], source_binding()],
+            ]
+            try:
+                noema.compile_source(
+                    noema._canonical_source(records),
+                    directory,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )
+            except noema.Refusal as raised:
+                self.assertEqual(
+                    raised.code,
+                    "NOE-E-REFERENCE.MODULE_AMBIENT",
+                )
+            else:
+                self.fail("module bound a source-local definition")
 
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
     def test_linked_module_refuses(self):

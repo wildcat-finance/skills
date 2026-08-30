@@ -929,14 +929,21 @@ class _TypeContext:
         definitions: dict[str, tuple[list[tuple[str, str]], object]],
         literals: dict[str, tuple[str, str]],
         budget: _Budget,
+        type_owners: dict[str, str],
+        symbol_owners: dict[str, str | None],
+        definition_access: dict[str, set[str] | None],
     ) -> None:
         self.known_types = known_types
         self.signatures = signatures
         self.definitions = definitions
         self.literals = literals
         self.budget = budget
+        self.type_owners = type_owners
+        self.symbol_owners = symbol_owners
+        self.definition_access = definition_access
         self.definition_returns: dict[str, str] = {}
         self.resolving_definitions = False
+        self.active_modules: set[str] | None = None
 
     def compatible(self, actual: str, expected: str) -> bool:
         return actual == expected or self.known_types.get(actual) == expected
@@ -944,6 +951,28 @@ class _TypeContext:
     def require(self, actual: str, expected: str, field: str) -> None:
         if not self.compatible(actual, expected):
             refuse("NOE-E-TYPE.MISMATCH", field, "term type does not match its closed position")
+
+    def type_name(self, value: object, field: str) -> str:
+        name = _validate_type(value, self.known_types, field)
+        owner = self.type_owners.get(name)
+        if self.active_modules is not None and owner is not None and owner not in self.active_modules:
+            refuse(
+                "NOE-E-REFERENCE.MODULE_AMBIENT",
+                field,
+                "module term uses a type outside its declared import closure",
+            )
+        return name
+
+    def admit_symbol(self, name: str, field: str) -> None:
+        if self.active_modules is None:
+            return
+        owner = self.symbol_owners.get(name)
+        if owner is None or owner not in self.active_modules:
+            refuse(
+                "NOE-E-REFERENCE.MODULE_AMBIENT",
+                field,
+                "module term uses a symbol outside its declared import closure",
+            )
 
     def definition_type(self, name: str) -> str:
         if name in self.definition_returns:
@@ -966,12 +995,17 @@ class _TypeContext:
                 if name in self.definition_returns:
                     continue
                 parameters, body = self.definitions[name]
-                result = self.term(
-                    body,
-                    dict(parameters),
-                    f"definition.{name}.body",
-                    pure=True,
-                )
+                previous_access = self.active_modules
+                self.active_modules = self.definition_access[name]
+                try:
+                    result = self.term(
+                        body,
+                        dict(parameters),
+                        f"definition.{name}.body",
+                        pure=True,
+                    )
+                finally:
+                    self.active_modules = previous_access
                 if result == "directive":
                     refuse("NOE-E-TYPE.PURITY", name, "pure definition cannot produce a directive")
                 self.definition_returns[name] = result
@@ -1003,6 +1037,12 @@ class _TypeContext:
         tag = value[0]
         if tag == "$":
             term = _exact_list(value, 2, field)
+            if self.active_modules is not None:
+                refuse(
+                    "NOE-E-REFERENCE.MODULE_AMBIENT",
+                    field,
+                    "module definition cannot bind a source-local literal",
+                )
             literal_id = _identifier(term[1], f"{field}.literal")
             if literal_id not in self.literals:
                 refuse("NOE-E-REFERENCE.LITERAL", field, "literal reference is unresolved")
@@ -1015,7 +1055,7 @@ class _TypeContext:
             return variables[name]
         if tag == ":":
             term = _exact_list(value, 3, field)
-            type_name = _validate_type(term[1], self.known_types, f"{field}.type")
+            type_name = self.type_name(term[1], f"{field}.type")
             text = _safe_text(term[2], f"{field}.value", MAX_ATOM_BYTES)
             if type_name == "value" and len(text) > MAX_LITERAL_BYTES:
                 refuse("NOE-E-BOUNDS.STRING", field, "typed atom exceeds its byte limit")
@@ -1025,7 +1065,7 @@ class _TypeContext:
                 refuse("NOE-E-TYPE.ARITY", field, "finite set is missing its element type")
             if len(value) - 2 > MAX_SET_MEMBERS:
                 refuse("NOE-E-BOUNDS.SET", field, "finite set exceeds its member limit")
-            element_type = _validate_type(value[1], self.known_types, f"{field}.type")
+            element_type = self.type_name(value[1], f"{field}.type")
             previous_member: bytes | None = None
             for index, member in enumerate(value[2:]):
                 actual = self.term(member, variables, f"{field}[{index}]", pure=pure, depth=depth + 1)
@@ -1040,6 +1080,7 @@ class _TypeContext:
                 refuse("NOE-E-TYPE.PURITY", field, "pure definition contains a directive operator")
             return _term_operator(self, value, variables, field, pure=pure, depth=depth)
         if tag in self.signatures:
+            self.admit_symbol(tag, field)
             parameters, result = self.signatures[tag]
             if len(value) - 1 != len(parameters):
                 refuse("NOE-E-TYPE.ARITY", field, "predicate call has the wrong declared arity")
@@ -1048,6 +1089,7 @@ class _TypeContext:
                 self.require(actual, expected, f"{field}[{index}]")
             return result
         if tag in self.definitions:
+            self.admit_symbol(tag, field)
             parameters, _body = self.definitions[tag]
             if len(value) - 1 != len(parameters):
                 refuse("NOE-E-TYPE.ARITY", field, "definition call has the wrong declared arity")
@@ -1137,7 +1179,7 @@ def _term_operator(
         _exact_list(value, 4, field)
         binder = _exact_list(value[1], 2, f"{field}.binder")
         name = _identifier(binder[0], f"{field}.binder.name")
-        type_name = _validate_type(binder[1], context.known_types, f"{field}.binder.type")
+        type_name = context.type_name(binder[1], f"{field}.binder.type")
         collection = child(2)
         if collection != f"set:{type_name}":
             refuse("NOE-E-TYPE.MISMATCH", field, "quantifier binder and finite set differ")
@@ -1190,6 +1232,56 @@ def _parameters(value: object, known_types: dict[str, str], field: str) -> list[
     return result
 
 
+def _module_closures(modules: dict[str, dict[str, object]]) -> dict[str, set[str]]:
+    direct: dict[str, set[str]] = {}
+    for module_id in sorted(modules):
+        module = modules[module_id]["value"]
+        assert isinstance(module, dict)
+        children: set[str] = set()
+        for index, item in enumerate(module["imports"]):
+            entry = _exact_list(item, 2, f"module.{module_id}.imports[{index}]")
+            child = _identifier(entry[0], f"module.{module_id}.imports[{index}].id")
+            if child not in modules:
+                refuse(
+                    "NOE-E-REFERENCE.MODULE_AMBIENT",
+                    f"module.{module_id}.imports[{index}]",
+                    "module import is absent from the loaded registry",
+                )
+            children.add(child)
+        direct[module_id] = children
+
+    closures: dict[str, set[str]] = {}
+    for module_id in sorted(modules):
+        closure = {module_id}
+        pending = list(direct[module_id])
+        while pending:
+            child = pending.pop()
+            if child in closure:
+                continue
+            closure.add(child)
+            pending.extend(direct[child])
+        closures[module_id] = closure
+    return closures
+
+
+def _module_type(
+    value: object,
+    known_types: dict[str, str],
+    type_owners: dict[str, str],
+    allowed_modules: set[str],
+    field: str,
+) -> str:
+    name = _validate_type(value, known_types, field)
+    owner = type_owners.get(name)
+    if owner is not None and owner not in allowed_modules:
+        refuse(
+            "NOE-E-REFERENCE.MODULE_AMBIENT",
+            field,
+            "module declaration uses a type outside its declared import closure",
+        )
+    return name
+
+
 def _build_registry(
     modules: dict[str, dict[str, object]],
     source_definitions: list[list[object]],
@@ -1198,6 +1290,8 @@ def _build_registry(
 ) -> _TypeContext:
     known_types = {name: name for name in CORE_TYPES}
     known_types.update({name: name for name in ("proposition", "directive", "relation")})
+    type_owners: dict[str, str] = {}
+    module_closures = _module_closures(modules)
 
     for module_id in sorted(modules):
         module = modules[module_id]["value"]
@@ -1213,12 +1307,16 @@ def _build_registry(
                 refuse("NOE-E-REFERENCE.DUPLICATE_ID", f"module.{module_id}.types", "module types must be unique and sorted")
             previous = name
             known_types[name] = parent
+            type_owners[name] = module_id
 
     signatures: dict[str, tuple[list[str], str]] = {}
     definitions: dict[str, tuple[list[tuple[str, str]], object]] = {}
+    symbol_owners: dict[str, str | None] = {}
+    definition_access: dict[str, set[str] | None] = {}
     for module_id in sorted(modules):
         module = modules[module_id]["value"]
         assert isinstance(module, dict)
+        allowed_modules = module_closures[module_id]
         previous = ""
         for index, item in enumerate(module["signatures"]):
             entry = _exact_list(item, 3, f"module.{module_id}.signatures[{index}]")
@@ -1228,12 +1326,25 @@ def _build_registry(
             if not isinstance(entry[1], list) or len(entry[1]) > 64:
                 refuse("NOE-E-BOUNDS.PARAMETERS", f"module.{module_id}.signatures[{index}]", "signature arity exceeds its limit")
             parameters = [
-                _validate_type(item_type, known_types, f"module.{module_id}.signatures[{index}].parameters")
+                _module_type(
+                    item_type,
+                    known_types,
+                    type_owners,
+                    allowed_modules,
+                    f"module.{module_id}.signatures[{index}].parameters",
+                )
                 for item_type in entry[1]
             ]
-            result = _validate_type(entry[2], known_types, f"module.{module_id}.signatures[{index}].result")
+            result = _module_type(
+                entry[2],
+                known_types,
+                type_owners,
+                allowed_modules,
+                f"module.{module_id}.signatures[{index}].result",
+            )
             previous = name
             signatures[name] = (parameters, result)
+            symbol_owners[name] = module_id
         previous = ""
         for index, item in enumerate(module["definitions"]):
             entry = _exact_list(item, 3, f"module.{module_id}.definitions[{index}]")
@@ -1241,8 +1352,18 @@ def _build_registry(
             if not name.startswith(module_id + ".") or name <= previous or name in definitions or name in signatures:
                 refuse("NOE-E-REFERENCE.DUPLICATE_ID", f"module.{module_id}.definitions", "definitions must be namespaced, unique and sorted")
             parameters = _parameters(entry[1], known_types, f"module.{module_id}.definitions[{index}].parameters")
+            for parameter_index, (_parameter, parameter_type) in enumerate(parameters):
+                owner = type_owners.get(parameter_type)
+                if owner is not None and owner not in allowed_modules:
+                    refuse(
+                        "NOE-E-REFERENCE.MODULE_AMBIENT",
+                        f"module.{module_id}.definitions[{index}].parameters[{parameter_index}]",
+                        "module definition uses a type outside its declared import closure",
+                    )
             previous = name
             definitions[name] = (parameters, entry[2])
+            symbol_owners[name] = module_id
+            definition_access[name] = allowed_modules
 
     for index, record in enumerate(source_definitions):
         name = _identifier(record[1], f"source.definition[{index}].name", qualified=True)
@@ -1252,8 +1373,19 @@ def _build_registry(
             _parameters(record[2], known_types, f"source.definition[{index}].parameters"),
             record[3],
         )
+        symbol_owners[name] = None
+        definition_access[name] = None
 
-    context = _TypeContext(known_types, signatures, definitions, literals, budget)
+    context = _TypeContext(
+        known_types,
+        signatures,
+        definitions,
+        literals,
+        budget,
+        type_owners,
+        symbol_owners,
+        definition_access,
+    )
     context.resolve_definitions()
     return context
 

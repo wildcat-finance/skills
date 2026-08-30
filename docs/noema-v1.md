@@ -146,7 +146,9 @@ A module is canonical data containing one module identity, a closed list of
 typed predicate signatures and pure definitions over already admitted
 operators and signatures. Imports bind complete module SHA-256 values. Import
 cycles, definition cycles, absent modules, multiple bytes for one identity and
-ambient lookup refuse.
+ambient lookup refuse. A module may use only core forms and symbols/types owned
+by itself or its transitive declared imports; source co-imports and
+source-local definitions or literals do not widen that closure.
 
 `noema-module/v1` has exactly `schema`, `id`, `imports`, `types`, `signatures`
 and `definitions`. Import entries are `[id,sha256]`; nominal subtype entries are
