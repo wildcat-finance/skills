@@ -367,6 +367,7 @@
       "additionalProperties": false,
       "required": [
         "id",
+        "claim",
         "evidence",
         "evidence_classes",
         "boundary",
@@ -379,6 +380,9 @@
       "properties": {
         "id": {
           "$ref": "#/$defs/nodeId"
+        },
+        "claim": {
+          "$ref": "#/$defs/literal"
         },
         "evidence": {
           "type": "array",

@@ -67,6 +67,12 @@ class AgentInstructionScaffoldTests(unittest.TestCase):
             ["require", "forbid", "permit", "refuse", "recover", "unknown"],
         )
 
+    def test_schema_promise_carries_the_governed_claim(self):
+        document = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        promise = document["$defs"]["promise"]
+        self.assertIn("claim", promise["required"])
+        self.assertEqual(promise["properties"]["claim"], {"$ref": "#/$defs/literal"})
+
     def test_script_freezes_version_magic(self):
         module = load_script()
         self.assertEqual(module.SCHEMA_ID, SCHEMA_ID)

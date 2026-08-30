@@ -27,8 +27,8 @@ One model carries one ordered document with:
   `unknown`;
 - nested `when`, `unless`, `scope`, and `exception` expressions;
 - explicit `before`, `after`, and `overrides` relations;
-- Promise Machine evidence, evidence classes, boundary, authorised actions,
-  consequence, refusals, recovery, and structured exceptions;
+- Promise Machine claims, evidence, evidence classes, boundary, authorised
+  actions, consequence, refusals, recovery, and structured exceptions;
 - exact literals typed as `identifier`, `path`, `sha256`, `command`, `number`,
   `date`, `link`, `quotation`, or `text`; and
 - reviewed source bindings from model-node id to source id, half-open byte span,
@@ -58,8 +58,9 @@ order:
 Every object rejects unknown fields. Every array is present, including an
 empty `relations` array. A directive always carries `expressions`; its
 `promise` value is either `null` or the complete promise object. An empty
-Promise Machine field is not inferred from absence: required promise lists are
-non-empty and `exceptions: []` explicitly means none.
+Promise Machine field is not inferred from absence: the claim is an exact
+literal, required promise lists are non-empty, and `exceptions: []` explicitly
+means none.
 
 Ids are lowercase ASCII and match `[a-z][a-z0-9.-]*`. References resolve to
 one declared id of the expected kind. Section and directive arrays preserve
@@ -154,7 +155,7 @@ Records occur only in this order and at these depths:
 | `N` | 3 or deeper | `unless` predicate and child expressions |
 | `C` | 3 or deeper | `scope` id and child expressions |
 | `E` | 3 or deeper | `exception` target, predicate, and child expressions |
-| `M` | 3 | promise id; promise fields are its children |
+| `M` | 3 | promise id and exact claim; remaining promise fields are its children |
 | `V` | 4 | one evidence literal |
 | `K` | 4 | one fixed evidence-class token |
 | `G` | 4 | promise boundary literal |
@@ -172,7 +173,8 @@ Every id, reference, path, digest, decimal span, and free value is represented
 by the literal kind the schema assigns. Fixed enums such as evidence classes
 and consequences are bare tokens. Repeated `V`, `K`, `A`, `J`, `Z`, and `I`
 records preserve their corresponding array order. Exactly one `G` and `Q` are
-required in each `M`; at least one `V`, `K`, `A`, `J`, and `Z` is required.
+required in each `M`; its claim is required; and at least one `V`, `K`, `A`,
+`J`, and `Z` is required.
 
 The formatter emits sources, sections, directives, expressions, promises,
 relations, and bindings in canonical-model order. The decoder accepts no
