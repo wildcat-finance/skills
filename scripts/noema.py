@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from datetime import date
 from hashlib import sha256
+import heapq
 import io
 import json
 import os
@@ -66,12 +67,24 @@ UNIMPLEMENTED = (
     "tally-evaluation",
     "runtime-self-test",
 )
+IMPLEMENTED = (
+    "about",
+    "verify-seed",
+    "parse",
+    "format",
+    "project",
+    "semantic-diff",
+    "verify",
+    "self-test",
+)
+KNOWN_COMMANDS = frozenset((*IMPLEMENTED, *UNIMPLEMENTED))
 ALLOWED_COMPRESSION = {zipfile.ZIP_STORED, zipfile.ZIP_DEFLATED}
 
 CORE_TYPES = frozenset(
     "actor artifact action claim command effect event evidence literal operation "
     "path predicate promise repository rule scope state transition type value".split()
 )
+STRUCTURAL_TYPES = frozenset({"proposition", "directive", "relation"})
 LITERAL_KINDS = frozenset(
     {"id", "path", "sha256", "command", "number", "date", "url", "quote", "text", "bytes"}
 )
@@ -130,6 +143,17 @@ def refuse(code: str, field: str, message: str) -> None:
     raise Refusal(code, field, message)
 
 
+class _BoundedArgumentParser(argparse.ArgumentParser):
+    """Turn malformed argument vectors into the same bounded refusal channel."""
+
+    def error(self, _message: str) -> None:
+        refuse(
+            "NOE-E-TYPE.ARGUMENTS",
+            "command",
+            "command arguments do not match the closed interface",
+        )
+
+
 def _correlation(command: str, *values: str) -> str:
     digest = sha256()
     digest.update(b"noema-result/v1\x00")
@@ -180,31 +204,18 @@ def _object_without_duplicates(pairs: list[tuple[str, object]]) -> dict[str, obj
     return result
 
 
-def _read_regular(path: Path, field: str, limit: int) -> bytes:
-    if not hasattr(os, "O_NOFOLLOW"):
-        refuse("NOE-E-PATH.PLATFORM", field, "no-follow file reads are unavailable")
-    try:
-        before_path = path.lstat()
-    except OSError:
-        refuse("NOE-E-IO.READ", field, "regular input cannot be inspected")
-    if not stat.S_ISREG(before_path.st_mode):
-        refuse("NOE-E-PATH.REGULAR", field, "input must be a regular file")
-    if before_path.st_size > limit:
-        refuse("NOE-E-BOUNDS.FILE", field, "input exceeds its byte limit")
-
-    flags = os.O_RDONLY | os.O_NOFOLLOW
-    if hasattr(os, "O_CLOEXEC"):
-        flags |= os.O_CLOEXEC
-    try:
-        descriptor = os.open(path, flags)
-    except OSError:
-        refuse("NOE-E-IO.READ", field, "regular input cannot be opened")
+def _read_open_regular(
+    descriptor: int,
+    field: str,
+    limit: int,
+    expected_identity: tuple[int, int] | None = None,
+) -> tuple[bytes, tuple[int, int]]:
     close_failed = False
     try:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             refuse("NOE-E-PATH.REGULAR", field, "opened input is not a regular file")
-        if (before.st_dev, before.st_ino) != (before_path.st_dev, before_path.st_ino):
+        if expected_identity is not None and (before.st_dev, before.st_ino) != expected_identity:
             refuse("NOE-E-PATH.IDENTITY", field, "input identity changed before read")
         if before.st_size > limit:
             refuse("NOE-E-BOUNDS.FILE", field, "input exceeds its byte limit")
@@ -249,7 +260,84 @@ def _read_regular(path: Path, field: str, limit: int) -> bytes:
     )
     if before_identity != after_identity or total != after.st_size:
         refuse("NOE-E-IO.CHANGED", field, "input changed during read")
-    return b"".join(chunks)
+    return b"".join(chunks), (before.st_dev, before.st_ino)
+
+
+def _read_regular(path: Path, field: str, limit: int) -> bytes:
+    if not hasattr(os, "O_NOFOLLOW"):
+        refuse("NOE-E-PATH.PLATFORM", field, "no-follow file reads are unavailable")
+    try:
+        before_path = path.lstat()
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "regular input cannot be inspected")
+    if not stat.S_ISREG(before_path.st_mode):
+        refuse("NOE-E-PATH.REGULAR", field, "input must be a regular file")
+    if before_path.st_size > limit:
+        refuse("NOE-E-BOUNDS.FILE", field, "input exceeds its byte limit")
+
+    flags = os.O_RDONLY | os.O_NOFOLLOW
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    try:
+        descriptor = os.open(path, flags)
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "regular input cannot be opened")
+    payload, _identity = _read_open_regular(
+        descriptor,
+        field,
+        limit,
+        (before_path.st_dev, before_path.st_ino),
+    )
+    return payload
+
+
+def _read_repository_regular(
+    root: Path,
+    relative: str,
+    field: str,
+    limit: int,
+) -> tuple[bytes, tuple[int, int]]:
+    if (
+        not hasattr(os, "O_NOFOLLOW")
+        or not hasattr(os, "O_DIRECTORY")
+        or os.open not in os.supports_dir_fd
+    ):
+        refuse("NOE-E-PATH.PLATFORM", field, "confined no-follow reads are unavailable")
+    relative = _relative_path(relative, field)
+    components = PurePosixPath(relative).parts
+    directory_flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY
+    file_flags = os.O_RDONLY | os.O_NOFOLLOW
+    if hasattr(os, "O_CLOEXEC"):
+        directory_flags |= os.O_CLOEXEC
+        file_flags |= os.O_CLOEXEC
+
+    directories: list[int] = []
+    close_failed = False
+    try:
+        current = os.open(root, directory_flags)
+        directories.append(current)
+        if not stat.S_ISDIR(os.fstat(current).st_mode):
+            refuse("NOE-E-PATH.DIRECTORY", field, "repository root is not one real directory")
+        for component in components[:-1]:
+            current = os.open(component, directory_flags, dir_fd=current)
+            directories.append(current)
+            if not stat.S_ISDIR(os.fstat(current).st_mode):
+                refuse("NOE-E-PATH.DIRECTORY", field, "source ancestor is not one real directory")
+        descriptor = os.open(components[-1], file_flags, dir_fd=current)
+        payload, identity = _read_open_regular(descriptor, field, limit)
+    except Refusal:
+        raise
+    except OSError:
+        refuse("NOE-E-PATH.CONFINEMENT", field, "source path is absent, linked or escaping")
+    finally:
+        for descriptor in reversed(directories):
+            try:
+                os.close(descriptor)
+            except OSError:
+                close_failed = True
+    if close_failed:
+        refuse("NOE-E-IO.READ", field, "source directory descriptor could not be closed")
+    return payload, identity
 
 
 def _exact_keys(value: object, expected: set[str], field: str) -> dict[str, object]:
@@ -520,7 +608,13 @@ def _json_pairs(field: str):
     return pairs_hook
 
 
-def _decode_json(raw: bytes, field: str, *, canonical: bool) -> object:
+def _decode_json(
+    raw: bytes,
+    field: str,
+    *,
+    canonical: bool,
+    maximum_depth: int = MAX_DEPTH,
+) -> object:
     try:
         text = raw.decode("utf-8")
     except UnicodeDecodeError:
@@ -539,17 +633,22 @@ def _decode_json(raw: bytes, field: str, *, canonical: bool) -> object:
         raise
     except (ValueError, RecursionError):
         refuse("NOE-E-SYNTAX.JSON", field, "input is not bounded JSON")
-    _bounded_value_depth(value, field)
+    _bounded_value_depth(value, field, maximum=maximum_depth)
     if canonical and raw != _canonical_json(value):
         refuse("NOE-E-SYNTAX.CANONICAL", field, "JSON bytes are not the singular canonical spelling")
     return value
 
 
-def _bounded_value_depth(value: object, field: str) -> None:
+def _bounded_value_depth(
+    value: object,
+    field: str,
+    *,
+    maximum: int = MAX_DEPTH,
+) -> None:
     stack: list[tuple[object, int]] = [(value, 1)]
     while stack:
         current, depth = stack.pop()
-        if depth > MAX_DEPTH:
+        if depth > maximum:
             refuse("NOE-E-BOUNDS.DEPTH", field, "value nesting exceeds the graph depth limit")
         if isinstance(current, dict):
             stack.extend((item, depth + 1) for item in current.values())
@@ -663,9 +762,19 @@ def _literal_value(kind: str, value: object, field: str) -> str:
     return text
 
 
-def _read_canonical_json(path: Path, field: str) -> tuple[object, bytes]:
+def _read_canonical_json(
+    path: Path,
+    field: str,
+    *,
+    maximum_depth: int = MAX_DEPTH,
+) -> tuple[object, bytes]:
     raw = _read_regular(path, field, MAX_INPUT_BYTES)
-    return _decode_json(raw, field, canonical=True), raw
+    return _decode_json(
+        raw,
+        field,
+        canonical=True,
+        maximum_depth=maximum_depth,
+    ), raw
 
 
 def _module_path(directory: Path, module_id: str) -> Path:
@@ -700,6 +809,12 @@ def _load_module_value(raw: bytes, expected_id: str, field: str) -> dict[str, ob
     module_id = _identifier(module["id"], f"{field}.id")
     if module_id != expected_id:
         refuse("NOE-E-REFERENCE.MODULE_ID", f"{field}.id", "module bytes carry a different identity")
+    if module_id == "local" or module_id.startswith("local."):
+        refuse(
+            "NOE-E-REFERENCE.MODULE_NAMESPACE",
+            f"{field}.id",
+            "the local namespace is reserved for source definitions",
+        )
     for key, limit in (("imports", MAX_IMPORTS), ("types", MAX_RECORDS), ("signatures", MAX_RECORDS), ("definitions", MAX_RECORDS)):
         if not isinstance(module[key], list) or len(module[key]) > limit:
             refuse("NOE-E-BOUNDS.MODULE", f"{field}.{key}", "module collection exceeds its limit")
@@ -717,6 +832,8 @@ def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str
             if loaded[module_id]["sha256"] != expected_digest:
                 refuse("NOE-E-DIGEST.MODULE", module_id, "one module identity binds multiple byte strings")
             return
+        if len(loaded) + len(visiting) >= MAX_IMPORTS:
+            refuse("NOE-E-BOUNDS.IMPORTS", "modules", "transitive module count exceeds its limit")
         visiting.add(module_id)
         path = _module_path(directory, module_id)
         raw = _read_regular(path, f"module.{module_id}", MAX_INPUT_BYTES)
@@ -744,8 +861,10 @@ def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str
     return loaded
 
 
-def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], bytes, str]:
-    value, raw = _read_canonical_json(path, "profile")
+def _validate_profile_value(
+    value: object,
+    expected_kernel_sha256: str | None,
+) -> dict[str, object]:
     profile = _exact_keys(
         value,
         {"schema", "id", "alphabet", "tokenizer", "vocabulary_sha256", "kernel_sha256", "reserved", "aliases"},
@@ -756,9 +875,11 @@ def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], byt
     _identifier(profile["id"], "profile.id")
     if profile["alphabet"] != "ascii-printable-v1":
         refuse("NOE-E-TYPE.ALPHABET", "profile.alphabet", "unsupported projection alphabet")
-    _safe_text(profile["tokenizer"], "profile.tokenizer", 256)
+    if not _safe_text(profile["tokenizer"], "profile.tokenizer", 256):
+        refuse("NOE-E-TYPE.TOKENIZER", "profile.tokenizer", "tokenizer identity must not be empty")
     _digest(profile["vocabulary_sha256"], "profile.vocabulary_sha256")
-    if _digest(profile["kernel_sha256"], "profile.kernel_sha256") != sha256(kernel_raw).hexdigest():
+    kernel_digest = _digest(profile["kernel_sha256"], "profile.kernel_sha256")
+    if expected_kernel_sha256 is not None and kernel_digest != expected_kernel_sha256:
         refuse("NOE-E-DIGEST.KERNEL", "profile.kernel_sha256", "profile binds different kernel bytes")
     if not isinstance(profile["reserved"], list) or profile["reserved"] != sorted(RESERVED_SYMBOLS):
         refuse("NOE-E-REFERENCE.RESERVED", "profile.reserved", "profile must bind the exact reserved symbol set")
@@ -768,9 +889,12 @@ def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], byt
     prior = ""
     targets: set[str] = set()
     for index, item in enumerate(aliases):
-        pair = _exact_list(item, 2, f"profile.aliases[{index}]")
-        source = _safe_text(pair[0], f"profile.aliases[{index}].source", MAX_IDENTIFIER_BYTES)
-        target = _safe_text(pair[1], f"profile.aliases[{index}].target", 16)
+        if not isinstance(item, list) or len(item) != 2:
+            refuse("NOE-E-ALIAS.SHAPE", f"profile.aliases[{index}]", "alias must be one source-target pair")
+        source = _safe_text(item[0], f"profile.aliases[{index}].source", MAX_IDENTIFIER_BYTES)
+        target = _safe_text(item[1], f"profile.aliases[{index}].target", 16)
+        if not source or not target:
+            refuse("NOE-E-ALIAS.SHAPE", f"profile.aliases[{index}]", "alias strings must not be empty")
         if source <= prior:
             refuse("NOE-E-SYNTAX.ORDER", "profile.aliases", "aliases must be unique and source-sorted")
         if ALIAS_RE.fullmatch(target) is None:
@@ -779,6 +903,12 @@ def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], byt
             refuse("NOE-E-ALIAS.COLLISION", f"profile.aliases[{index}]", "alias target is not injective")
         prior = source
         targets.add(target)
+    return profile
+
+
+def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], bytes, str]:
+    value, raw = _read_canonical_json(path, "profile")
+    profile = _validate_profile_value(value, sha256(kernel_raw).hexdigest())
     return profile, raw, sha256(raw).hexdigest()
 
 
@@ -827,14 +957,21 @@ class _TypeContext:
         definitions: dict[str, tuple[list[tuple[str, str]], object]],
         literals: dict[str, tuple[str, str]],
         budget: _Budget,
+        type_owners: dict[str, str],
+        symbol_owners: dict[str, str | None],
+        definition_access: dict[str, set[str] | None],
     ) -> None:
         self.known_types = known_types
         self.signatures = signatures
         self.definitions = definitions
         self.literals = literals
         self.budget = budget
+        self.type_owners = type_owners
+        self.symbol_owners = symbol_owners
+        self.definition_access = definition_access
         self.definition_returns: dict[str, str] = {}
-        self.definition_stack: list[str] = []
+        self.resolving_definitions = False
+        self.active_modules: set[str] | None = None
 
     def compatible(self, actual: str, expected: str) -> bool:
         return actual == expected or self.known_types.get(actual) == expected
@@ -843,21 +980,65 @@ class _TypeContext:
         if not self.compatible(actual, expected):
             refuse("NOE-E-TYPE.MISMATCH", field, "term type does not match its closed position")
 
+    def type_name(self, value: object, field: str) -> str:
+        name = _validate_type(value, self.known_types, field)
+        owner = self.type_owners.get(name)
+        if self.active_modules is not None and owner is not None and owner not in self.active_modules:
+            refuse(
+                "NOE-E-REFERENCE.MODULE_AMBIENT",
+                field,
+                "module term uses a type outside its declared import closure",
+            )
+        return name
+
+    def admit_symbol(self, name: str, field: str) -> None:
+        if self.active_modules is None:
+            return
+        owner = self.symbol_owners.get(name)
+        if owner is None or owner not in self.active_modules:
+            refuse(
+                "NOE-E-REFERENCE.MODULE_AMBIENT",
+                field,
+                "module term uses a symbol outside its declared import closure",
+            )
+
     def definition_type(self, name: str) -> str:
         if name in self.definition_returns:
             return self.definition_returns[name]
-        if name in self.definition_stack:
-            refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", name, "definition graph contains a cycle")
         if name not in self.definitions:
             refuse("NOE-E-REFERENCE.DEFINITION", name, "definition is unresolved")
-        parameters, body = self.definitions[name]
-        self.definition_stack.append(name)
-        result = self.term(body, dict(parameters), f"definition.{name}.body", pure=True)
-        self.definition_stack.pop()
-        if result == "directive":
-            refuse("NOE-E-TYPE.PURITY", name, "pure definition cannot produce a directive")
-        self.definition_returns[name] = result
-        return result
+        if self.resolving_definitions:
+            refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", name, "definition graph contains a cycle")
+        self.resolve_definitions()
+        return self.definition_returns[name]
+
+    def resolve_definitions(self) -> None:
+        if len(self.definition_returns) == len(self.definitions):
+            return
+        if self.resolving_definitions:
+            refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", "definitions", "definition graph contains a cycle")
+        self.resolving_definitions = True
+        try:
+            for name in _definition_order(self.definitions):
+                if name in self.definition_returns:
+                    continue
+                parameters, body = self.definitions[name]
+                previous_access = self.active_modules
+                self.active_modules = self.definition_access[name]
+                try:
+                    result = self.term(
+                        body,
+                        dict(parameters),
+                        f"definition.{name}.body",
+                        pure=True,
+                    )
+                finally:
+                    self.active_modules = previous_access
+                if result == "directive":
+                    refuse("NOE-E-TYPE.PURITY", name, "pure definition cannot produce a directive")
+                self.definition_returns[name] = result
+        finally:
+            self.resolving_definitions = False
 
     def numeric(self, term: object) -> bool:
         if isinstance(term, list) and term:
@@ -884,6 +1065,12 @@ class _TypeContext:
         tag = value[0]
         if tag == "$":
             term = _exact_list(value, 2, field)
+            if self.active_modules is not None:
+                refuse(
+                    "NOE-E-REFERENCE.MODULE_AMBIENT",
+                    field,
+                    "module definition cannot bind a source-local literal",
+                )
             literal_id = _identifier(term[1], f"{field}.literal")
             if literal_id not in self.literals:
                 refuse("NOE-E-REFERENCE.LITERAL", field, "literal reference is unresolved")
@@ -896,7 +1083,13 @@ class _TypeContext:
             return variables[name]
         if tag == ":":
             term = _exact_list(value, 3, field)
-            type_name = _validate_type(term[1], self.known_types, f"{field}.type")
+            type_name = self.type_name(term[1], f"{field}.type")
+            if type_name in STRUCTURAL_TYPES:
+                refuse(
+                    "NOE-E-TYPE.STRUCTURAL_ATOM",
+                    field,
+                    "structural result types cannot be minted by typed atoms",
+                )
             text = _safe_text(term[2], f"{field}.value", MAX_ATOM_BYTES)
             if type_name == "value" and len(text) > MAX_LITERAL_BYTES:
                 refuse("NOE-E-BOUNDS.STRING", field, "typed atom exceeds its byte limit")
@@ -906,16 +1099,22 @@ class _TypeContext:
                 refuse("NOE-E-TYPE.ARITY", field, "finite set is missing its element type")
             if len(value) - 2 > MAX_SET_MEMBERS:
                 refuse("NOE-E-BOUNDS.SET", field, "finite set exceeds its member limit")
-            element_type = _validate_type(value[1], self.known_types, f"{field}.type")
+            element_type = self.type_name(value[1], f"{field}.type")
+            previous_member: bytes | None = None
             for index, member in enumerate(value[2:]):
                 actual = self.term(member, variables, f"{field}[{index}]", pure=pure, depth=depth + 1)
                 self.require(actual, element_type, f"{field}[{index}]")
+                canonical_member = _canonical_json(member)
+                if previous_member is not None and canonical_member <= previous_member:
+                    refuse("NOE-E-SYNTAX.SET_ORDER", field, "finite set members must be unique and canonically sorted")
+                previous_member = canonical_member
             return f"set:{element_type}"
         if tag in OPERATORS:
             if pure and tag in DIRECTIVE_OPERATORS:
                 refuse("NOE-E-TYPE.PURITY", field, "pure definition contains a directive operator")
             return _term_operator(self, value, variables, field, pure=pure, depth=depth)
         if tag in self.signatures:
+            self.admit_symbol(tag, field)
             parameters, result = self.signatures[tag]
             if len(value) - 1 != len(parameters):
                 refuse("NOE-E-TYPE.ARITY", field, "predicate call has the wrong declared arity")
@@ -924,6 +1123,7 @@ class _TypeContext:
                 self.require(actual, expected, f"{field}[{index}]")
             return result
         if tag in self.definitions:
+            self.admit_symbol(tag, field)
             parameters, _body = self.definitions[tag]
             if len(value) - 1 != len(parameters):
                 refuse("NOE-E-TYPE.ARITY", field, "definition call has the wrong declared arity")
@@ -1013,7 +1213,7 @@ def _term_operator(
         _exact_list(value, 4, field)
         binder = _exact_list(value[1], 2, f"{field}.binder")
         name = _identifier(binder[0], f"{field}.binder.name")
-        type_name = _validate_type(binder[1], context.known_types, f"{field}.binder.type")
+        type_name = context.type_name(binder[1], f"{field}.binder.type")
         collection = child(2)
         if collection != f"set:{type_name}":
             refuse("NOE-E-TYPE.MISMATCH", field, "quantifier binder and finite set differ")
@@ -1066,6 +1266,56 @@ def _parameters(value: object, known_types: dict[str, str], field: str) -> list[
     return result
 
 
+def _module_closures(modules: dict[str, dict[str, object]]) -> dict[str, set[str]]:
+    direct: dict[str, set[str]] = {}
+    for module_id in sorted(modules):
+        module = modules[module_id]["value"]
+        assert isinstance(module, dict)
+        children: set[str] = set()
+        for index, item in enumerate(module["imports"]):
+            entry = _exact_list(item, 2, f"module.{module_id}.imports[{index}]")
+            child = _identifier(entry[0], f"module.{module_id}.imports[{index}].id")
+            if child not in modules:
+                refuse(
+                    "NOE-E-REFERENCE.MODULE_AMBIENT",
+                    f"module.{module_id}.imports[{index}]",
+                    "module import is absent from the loaded registry",
+                )
+            children.add(child)
+        direct[module_id] = children
+
+    closures: dict[str, set[str]] = {}
+    for module_id in sorted(modules):
+        closure = {module_id}
+        pending = list(direct[module_id])
+        while pending:
+            child = pending.pop()
+            if child in closure:
+                continue
+            closure.add(child)
+            pending.extend(direct[child])
+        closures[module_id] = closure
+    return closures
+
+
+def _module_type(
+    value: object,
+    known_types: dict[str, str],
+    type_owners: dict[str, str],
+    allowed_modules: set[str],
+    field: str,
+) -> str:
+    name = _validate_type(value, known_types, field)
+    owner = type_owners.get(name)
+    if owner is not None and owner not in allowed_modules:
+        refuse(
+            "NOE-E-REFERENCE.MODULE_AMBIENT",
+            field,
+            "module declaration uses a type outside its declared import closure",
+        )
+    return name
+
+
 def _build_registry(
     modules: dict[str, dict[str, object]],
     source_definitions: list[list[object]],
@@ -1073,7 +1323,9 @@ def _build_registry(
     budget: _Budget,
 ) -> _TypeContext:
     known_types = {name: name for name in CORE_TYPES}
-    known_types.update({name: name for name in ("proposition", "directive", "relation")})
+    known_types.update({name: name for name in STRUCTURAL_TYPES})
+    type_owners: dict[str, str] = {}
+    module_closures = _module_closures(modules)
 
     for module_id in sorted(modules):
         module = modules[module_id]["value"]
@@ -1089,12 +1341,16 @@ def _build_registry(
                 refuse("NOE-E-REFERENCE.DUPLICATE_ID", f"module.{module_id}.types", "module types must be unique and sorted")
             previous = name
             known_types[name] = parent
+            type_owners[name] = module_id
 
     signatures: dict[str, tuple[list[str], str]] = {}
     definitions: dict[str, tuple[list[tuple[str, str]], object]] = {}
+    symbol_owners: dict[str, str | None] = {}
+    definition_access: dict[str, set[str] | None] = {}
     for module_id in sorted(modules):
         module = modules[module_id]["value"]
         assert isinstance(module, dict)
+        allowed_modules = module_closures[module_id]
         previous = ""
         for index, item in enumerate(module["signatures"]):
             entry = _exact_list(item, 3, f"module.{module_id}.signatures[{index}]")
@@ -1104,12 +1360,31 @@ def _build_registry(
             if not isinstance(entry[1], list) or len(entry[1]) > 64:
                 refuse("NOE-E-BOUNDS.PARAMETERS", f"module.{module_id}.signatures[{index}]", "signature arity exceeds its limit")
             parameters = [
-                _validate_type(item_type, known_types, f"module.{module_id}.signatures[{index}].parameters")
+                _module_type(
+                    item_type,
+                    known_types,
+                    type_owners,
+                    allowed_modules,
+                    f"module.{module_id}.signatures[{index}].parameters",
+                )
                 for item_type in entry[1]
             ]
-            result = _validate_type(entry[2], known_types, f"module.{module_id}.signatures[{index}].result")
+            result = _module_type(
+                entry[2],
+                known_types,
+                type_owners,
+                allowed_modules,
+                f"module.{module_id}.signatures[{index}].result",
+            )
+            if result == "directive":
+                refuse(
+                    "NOE-E-TYPE.SIGNATURE_RESULT",
+                    f"module.{module_id}.signatures[{index}].result",
+                    "module signatures cannot construct directives",
+                )
             previous = name
             signatures[name] = (parameters, result)
+            symbol_owners[name] = module_id
         previous = ""
         for index, item in enumerate(module["definitions"]):
             entry = _exact_list(item, 3, f"module.{module_id}.definitions[{index}]")
@@ -1117,8 +1392,18 @@ def _build_registry(
             if not name.startswith(module_id + ".") or name <= previous or name in definitions or name in signatures:
                 refuse("NOE-E-REFERENCE.DUPLICATE_ID", f"module.{module_id}.definitions", "definitions must be namespaced, unique and sorted")
             parameters = _parameters(entry[1], known_types, f"module.{module_id}.definitions[{index}].parameters")
+            for parameter_index, (_parameter, parameter_type) in enumerate(parameters):
+                owner = type_owners.get(parameter_type)
+                if owner is not None and owner not in allowed_modules:
+                    refuse(
+                        "NOE-E-REFERENCE.MODULE_AMBIENT",
+                        f"module.{module_id}.definitions[{index}].parameters[{parameter_index}]",
+                        "module definition uses a type outside its declared import closure",
+                    )
             previous = name
             definitions[name] = (parameters, entry[2])
+            symbol_owners[name] = module_id
+            definition_access[name] = allowed_modules
 
     for index, record in enumerate(source_definitions):
         name = _identifier(record[1], f"source.definition[{index}].name", qualified=True)
@@ -1128,48 +1413,229 @@ def _build_registry(
             _parameters(record[2], known_types, f"source.definition[{index}].parameters"),
             record[3],
         )
+        symbol_owners[name] = None
+        definition_access[name] = None
 
-    context = _TypeContext(known_types, signatures, definitions, literals, budget)
-    for name in sorted(definitions):
-        context.definition_type(name)
+    context = _TypeContext(
+        known_types,
+        signatures,
+        definitions,
+        literals,
+        budget,
+        type_owners,
+        symbol_owners,
+        definition_access,
+    )
+    context.resolve_definitions()
     return context
 
 
 def _term_children(value: object) -> list[object]:
     if not isinstance(value, list) or not value:
         return []
-    if value[0] in {"$", "%", ":"}:
+    tag = value[0]
+    if not isinstance(tag, str):
+        return value[1:]
+    if tag in {"$", "%", ":"}:
         return []
-    if value[0] == "{}":
+    if tag == "{}":
         return value[2:]
-    if value[0] in {"all", "any", "one"}:
+    if tag in {"all", "any", "one"}:
         return value[2:]
     return value[1:]
+
+
+def _definition_dependencies(
+    value: object,
+    definitions: dict[str, tuple[list[tuple[str, str]], object]],
+) -> set[str]:
+    found: set[str] = set()
+    pending = [value]
+    while pending:
+        current = pending.pop()
+        if not isinstance(current, list) or not current:
+            continue
+        tag = current[0]
+        if isinstance(tag, str) and tag in definitions:
+            found.add(tag)
+        pending.extend(_term_children(current))
+    return found
+
+
+def _definition_order(
+    definitions: dict[str, tuple[list[tuple[str, str]], object]],
+) -> list[str]:
+    dependencies = {
+        name: _definition_dependencies(body, definitions)
+        for name, (_parameters, body) in definitions.items()
+    }
+    dependents = {name: set() for name in definitions}
+    for name, required in dependencies.items():
+        for dependency in required:
+            dependents[dependency].add(name)
+    remaining = {name: len(required) for name, required in dependencies.items()}
+    ready = [name for name, count in remaining.items() if count == 0]
+    heapq.heapify(ready)
+    ordered: list[str] = []
+    while ready:
+        name = heapq.heappop(ready)
+        ordered.append(name)
+        for dependent in sorted(dependents[name]):
+            remaining[dependent] -= 1
+            if remaining[dependent] == 0:
+                heapq.heappush(ready, dependent)
+    if len(ordered) != len(definitions):
+        refuse(
+            "NOE-E-REFERENCE.DEFINITION_CYCLE",
+            "definitions",
+            "definition graph contains a cycle",
+        )
+    return ordered
+
+
+def _capped_expansion_add(left: int, right: int) -> int:
+    if left > MAX_EXPANDED_NODES or right > MAX_EXPANDED_NODES - left:
+        return MAX_EXPANDED_NODES + 1
+    return left + right
+
+
+def _capped_expansion_multiply(left: int, right: int) -> int:
+    if not left or not right:
+        return 0
+    if left > MAX_EXPANDED_NODES or right > MAX_EXPANDED_NODES // left:
+        return MAX_EXPANDED_NODES + 1
+    return left * right
+
+
+def _add_expansion(
+    total: tuple[int, dict[str, int]],
+    item: tuple[int, dict[str, int]],
+    factor: int = 1,
+) -> tuple[int, dict[str, int]]:
+    constant, coefficients = total
+    item_constant, item_coefficients = item
+    constant = _capped_expansion_add(
+        constant,
+        _capped_expansion_multiply(item_constant, factor),
+    )
+    coefficients = dict(coefficients)
+    for name, coefficient in item_coefficients.items():
+        coefficients[name] = _capped_expansion_add(
+            coefficients.get(name, 0),
+            _capped_expansion_multiply(coefficient, factor),
+        )
+    return constant, coefficients
+
+
+def _term_expansion(
+    value: object,
+    definitions: dict[str, tuple[list[tuple[str, str]], object]],
+    summaries: dict[str, tuple[int, dict[str, int]]],
+    parameters: frozenset[str],
+    shadowed: frozenset[str] = frozenset(),
+) -> tuple[int, dict[str, int]]:
+    if not isinstance(value, list) or not value:
+        return 1, {}
+    tag = value[0]
+    if tag == "%" and len(value) == 2 and isinstance(value[1], str):
+        name = value[1]
+        if name in parameters and name not in shadowed:
+            return 0, {name: 1}
+        return 1, {}
+    if isinstance(tag, str) and tag in definitions:
+        if tag not in summaries:
+            refuse(
+                "NOE-E-REFERENCE.DEFINITION",
+                tag,
+                "definition expansion order is incomplete",
+            )
+        callee_parameters, _body = definitions[tag]
+        constant, coefficients = summaries[tag]
+        result = (constant, {})
+        for argument, (name, _type) in zip(
+            value[1:],
+            callee_parameters,
+            strict=True,
+        ):
+            factor = coefficients.get(name, 0)
+            if factor:
+                result = _add_expansion(
+                    result,
+                    _term_expansion(
+                        argument,
+                        definitions,
+                        summaries,
+                        parameters,
+                        shadowed,
+                    ),
+                    factor,
+                )
+        return result
+    result = (1, {})
+    if isinstance(tag, str) and tag in {"all", "any", "one"}:
+        binder = value[1]
+        assert isinstance(binder, list) and isinstance(binder[0], str)
+        result = _add_expansion(
+            result,
+            _term_expansion(value[2], definitions, summaries, parameters, shadowed),
+        )
+        return _add_expansion(
+            result,
+            _term_expansion(
+                value[3],
+                definitions,
+                summaries,
+                parameters,
+                shadowed | {binder[0]},
+            ),
+        )
+    for child in _term_children(value):
+        result = _add_expansion(
+            result,
+            _term_expansion(
+                child,
+                definitions,
+                summaries,
+                parameters,
+                shadowed,
+            ),
+        )
+    return result
+
+
+def _definition_expansions(
+    definitions: dict[str, tuple[list[tuple[str, str]], object]],
+) -> dict[str, tuple[int, dict[str, int]]]:
+    summaries: dict[str, tuple[int, dict[str, int]]] = {}
+    for name in _definition_order(definitions):
+        parameters, body = definitions[name]
+        summaries[name] = _term_expansion(
+            body,
+            definitions,
+            summaries,
+            frozenset(parameter for parameter, _type in parameters),
+        )
+    return summaries
 
 
 def _expanded_size(
     value: object,
     definitions: dict[str, tuple[list[tuple[str, str]], object]],
-    memo: dict[str, int],
-    stack: set[str],
+    summaries: dict[str, tuple[int, dict[str, int]]],
 ) -> int:
-    if not isinstance(value, list) or not value:
-        return 1
-    total = 1
-    tag = value[0]
-    if isinstance(tag, str) and tag in definitions:
-        if tag in stack:
-            refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", tag, "definition graph contains a cycle")
-        if tag not in memo:
-            stack.add(tag)
-            memo[tag] = _expanded_size(definitions[tag][1], definitions, memo, stack)
-            stack.remove(tag)
-        total += memo[tag]
-    for child in _term_children(value):
-        total += _expanded_size(child, definitions, memo, stack)
-        if total > MAX_EXPANDED_NODES:
-            refuse("NOE-E-BOUNDS.EXPANSION", "graph", "macro expansion exceeds its node limit")
-    return total
+    constant, coefficients = _term_expansion(
+        value,
+        definitions,
+        summaries,
+        frozenset(),
+    )
+    if coefficients:
+        refuse(
+            "NOE-E-REFERENCE.VARIABLE",
+            "graph",
+            "expanded graph retains an unbound macro parameter",
+        )
+    return constant
 
 
 def _assert_term(
@@ -1182,22 +1648,37 @@ def _assert_term(
 
 
 def _acyclic_edges(edges: dict[str, set[str]], field: str) -> None:
-    visiting: set[str] = set()
-    visited: set[str] = set()
-
-    def visit(node: str) -> None:
-        if node in visiting:
-            refuse("NOE-E-REFERENCE.RELATION_CYCLE", field, "governing relation contains a cycle")
-        if node in visited:
-            return
-        visiting.add(node)
-        for child in sorted(edges.get(node, set())):
-            visit(child)
-        visiting.remove(node)
-        visited.add(node)
-
-    for node in sorted(edges):
-        visit(node)
+    state: dict[str, int] = {}
+    for root in sorted(edges):
+        if state.get(root) == 2:
+            continue
+        pending: list[tuple[str, bool]] = [(root, False)]
+        while pending:
+            node, leaving = pending.pop()
+            if leaving:
+                state[node] = 2
+                continue
+            status = state.get(node, 0)
+            if status == 2:
+                continue
+            if status == 1:
+                refuse(
+                    "NOE-E-REFERENCE.RELATION_CYCLE",
+                    field,
+                    "governing relation contains a cycle",
+                )
+            state[node] = 1
+            pending.append((node, True))
+            for child in sorted(edges.get(node, set()), reverse=True):
+                child_status = state.get(child, 0)
+                if child_status == 1:
+                    refuse(
+                        "NOE-E-REFERENCE.RELATION_CYCLE",
+                        field,
+                        "governing relation contains a cycle",
+                    )
+                if child_status == 0:
+                    pending.append((child, False))
 
 
 def _preflight_records(records: list[object]) -> tuple[list[tuple[str, str]], list[list[object]]]:
@@ -1217,7 +1698,12 @@ def _preflight_records(records: list[object]) -> tuple[list[tuple[str, str]], li
         "exception": 9,
     }
     for index, item in enumerate(records):
-        if not isinstance(item, list) or not item or item[0] not in lengths:
+        if (
+            not isinstance(item, list)
+            or not item
+            or not isinstance(item[0], str)
+            or item[0] not in lengths
+        ):
             refuse("NOE-E-TYPE.RECORD", f"source.record[{index}]", "unknown record form")
         record = _exact_list(item, lengths[item[0]], f"source.record[{index}]")
         key = _record_key(record, f"source.record[{index}]")
@@ -1240,6 +1726,13 @@ def _compile_records(
     source_raw: bytes,
 ) -> dict[str, object]:
     budget = _Budget()
+    for module_id in sorted(modules):
+        budget.node(f"module.{module_id}")
+        module_value = modules[module_id]["value"]
+        assert isinstance(module_value, dict)
+        for collection in ("imports", "types", "signatures", "definitions"):
+            for index, _item in enumerate(module_value[collection]):
+                budget.node(f"module.{module_id}.{collection}[{index}]")
     literals: dict[str, tuple[str, str]] = {}
     rules: set[str] = set()
     node_ids: set[str] = set()
@@ -1247,6 +1740,7 @@ def _compile_records(
     precedence_edges: dict[str, set[str]] = {}
     source_spans: dict[str, tuple[str, list[tuple[int, int]]]] = {}
     source_payloads: dict[str, bytes] = {}
+    source_boundaries: dict[str, set[int]] = {}
     source_identities: dict[tuple[int, int], str] = {}
     repository_root = Path(__file__).resolve().parents[1]
 
@@ -1311,21 +1805,32 @@ def _compile_records(
             if prior_digest != digest:
                 refuse("NOE-E-REFERENCE.SOURCE_ID", field, "one source path binds multiple blob identities")
             if path not in source_payloads:
-                source_path = repository_root / path
-                payload = _read_regular(source_path, f"{field}.source", MAX_INPUT_BYTES)
-                try:
-                    source_status = source_path.lstat()
-                except OSError:
-                    refuse("NOE-E-IO.READ", field, "bound source cannot be inspected")
-                identity = (source_status.st_dev, source_status.st_ino)
+                payload, identity = _read_repository_regular(
+                    repository_root,
+                    path,
+                    f"{field}.source",
+                    MAX_INPUT_BYTES,
+                )
                 if identity in source_identities and source_identities[identity] != path:
                     refuse("NOE-E-REFERENCE.SOURCE_ALIAS", field, "one source file is named by multiple paths")
                 source_identities[identity] = path
                 if sha256(payload).hexdigest() != digest:
                     refuse("NOE-E-DIGEST.SOURCE", field, "bound source digest differs from repository bytes")
+                try:
+                    source_text = payload.decode("utf-8")
+                except UnicodeDecodeError:
+                    refuse("NOE-E-SYNTAX.SOURCE_UTF8", field, "bound source must be valid UTF-8")
+                boundaries = {0}
+                offset = 0
+                for character in source_text:
+                    offset += len(character.encode("utf-8"))
+                    boundaries.add(offset)
                 source_payloads[path] = payload
+                source_boundaries[path] = boundaries
             if end > len(source_payloads[path]):
                 refuse("NOE-E-REFERENCE.SPAN", field, "source span exceeds the bound file")
+            if start not in source_boundaries[path] or end not in source_boundaries[path]:
+                refuse("NOE-E-REFERENCE.SPAN_UTF8", field, "source span splits one UTF-8 scalar value")
             if any(start < old_end and old_start < end for old_start, old_end in spans):
                 refuse("NOE-E-REFERENCE.SPAN", field, "source spans overlap")
             spans.append((start, end))
@@ -1345,6 +1850,7 @@ def _compile_records(
             low = _identifier(record[4], f"{field}.low")
             if high not in rules or low not in rules or high == low:
                 refuse("NOE-E-REFERENCE.RULE", field, "override names absent or identical rules")
+            precedence_edges.setdefault(high, set()).add(low)
             _assert_term(context, record[5], "scope", f"{field}.scope")
             _assert_term(context, record[6], "evidence", f"{field}.evidence")
             terms.extend((record[2], record[5], record[6]))
@@ -1370,9 +1876,12 @@ def _compile_records(
 
     _acyclic_edges(precedence_edges, "precedence")
     expansion = 0
-    memo: dict[str, int] = {}
+    summaries = _definition_expansions(context.definitions)
     for term in terms:
-        expansion += _expanded_size(term, context.definitions, memo, set())
+        expansion = _capped_expansion_add(
+            expansion,
+            _expanded_size(term, context.definitions, summaries),
+        )
         if expansion > MAX_EXPANDED_NODES:
             refuse("NOE-E-BOUNDS.EXPANSION", "graph", "macro expansion exceeds its node limit")
 
@@ -1448,7 +1957,11 @@ def load_build(
     profile_path: Path,
     kernel_path: Path,
 ) -> tuple[dict[str, object], bytes, dict[str, object]]:
-    value, raw = _read_canonical_json(path, "build")
+    value, raw = _read_canonical_json(
+        path,
+        "build",
+        maximum_depth=MAX_DEPTH + 4,
+    )
     build, artifacts = _verify_build_value(value, modules_directory, profile_path, kernel_path)
     return build, raw, artifacts
 
@@ -1456,7 +1969,12 @@ def load_build(
 def _atomic_write(path: Path, payload: bytes) -> None:
     if len(payload) > MAX_OUTPUT_BYTES:
         refuse("NOE-E-BOUNDS.OUTPUT", "output", "derived output exceeds its byte limit")
-    if path.name in {"", ".", ".."} or len(path.name.encode("utf-8")) > 255:
+    try:
+        leaf = path.name
+        encoded_leaf = leaf.encode("utf-8")
+    except UnicodeEncodeError:
+        refuse("NOE-E-PATH.LEAF", "output", "output leaf name is invalid")
+    if leaf in {"", ".", ".."} or len(encoded_leaf) > 255:
         refuse("NOE-E-PATH.LEAF", "output", "output leaf name is invalid")
     parent = path.parent
     try:
@@ -1554,16 +2072,57 @@ def _replace_strings(value: object, replacements: dict[str, str]) -> object:
     return value
 
 
+def _projection_namespaces(graph: dict[str, object]) -> dict[str, set[str]]:
+    namespaces: dict[str, set[str]] = {}
+
+    def bind(value: object, namespace: str) -> None:
+        if isinstance(value, str):
+            namespaces.setdefault(value, set()).add(namespace)
+
+    for symbol in RESERVED_SYMBOLS:
+        bind(symbol, "reserved")
+    modules = graph.get("modules")
+    if isinstance(modules, list):
+        for module in modules:
+            if not isinstance(module, dict):
+                continue
+            value = module.get("value")
+            if not isinstance(value, dict):
+                continue
+            signatures = value.get("signatures")
+            if isinstance(signatures, list):
+                for signature in signatures:
+                    if isinstance(signature, list) and signature:
+                        bind(signature[0], "predicate")
+            definitions = value.get("definitions")
+            if isinstance(definitions, list):
+                for definition in definitions:
+                    if isinstance(definition, list) and definition:
+                        bind(definition[0], "definition")
+    records = graph.get("records")
+    if isinstance(records, list):
+        for record in records:
+            if not isinstance(record, list) or len(record) < 2:
+                continue
+            if record[0] == "definition":
+                bind(record[1], "definition")
+            elif record[0] == "literal" and len(record) == 5:
+                bind(record[1], "literal-id")
+                bind(record[4], "literal-value")
+    return namespaces
+
+
 def _projection_aliases(profile: dict[str, object], graph: dict[str, object]) -> dict[str, str]:
     visible = _strings(graph)
+    namespaces = _projection_namespaces(graph)
     aliases: dict[str, str] = {}
     targets: set[str] = set()
     for index, item in enumerate(profile["aliases"]):
         assert isinstance(item, list)
         source, target = item
         assert isinstance(source, str) and isinstance(target, str)
-        if source not in visible:
-            refuse("NOE-E-ALIAS.UNUSED", f"profile.aliases[{index}]", "alias source is absent from this graph")
+        if len(namespaces.get(source, ())) > 1:
+            refuse("NOE-E-ALIAS.OVERLOAD", f"profile.aliases[{index}]", "alias source occupies multiple semantic namespaces")
         if target in visible or target in RESERVED_SYMBOLS or target in targets:
             refuse("NOE-E-ALIAS.COLLISION", f"profile.aliases[{index}]", "alias collides with visible graph text")
         aliases[source] = target
@@ -1571,11 +2130,36 @@ def _projection_aliases(profile: dict[str, object], graph: dict[str, object]) ->
     return aliases
 
 
+def _projection_lock(value: object) -> dict[str, object]:
+    lock = _exact_keys(
+        value,
+        {"schema", "source_sha256", "graph_sha256", "compiler_sha256", "kernel_sha256", "profile_sha256", "modules"},
+        "projection.lock",
+    )
+    if lock["schema"] != "noema-lock/v1":
+        refuse("NOE-E-TYPE.VERSION", "projection.lock.schema", "unsupported lock schema")
+    for key in ("source_sha256", "graph_sha256", "compiler_sha256", "kernel_sha256", "profile_sha256"):
+        _digest(lock[key], f"projection.lock.{key}")
+    modules = lock["modules"]
+    if not isinstance(modules, list) or len(modules) > MAX_IMPORTS:
+        refuse("NOE-E-BOUNDS.IMPORTS", "projection.lock.modules", "lock module count exceeds its limit")
+    previous = ""
+    for index, value in enumerate(modules):
+        module = _exact_keys(value, {"id", "sha256"}, f"projection.lock.modules[{index}]")
+        module_id = _identifier(module["id"], f"projection.lock.modules[{index}].id")
+        _digest(module["sha256"], f"projection.lock.modules[{index}].sha256")
+        if module_id <= previous:
+            refuse("NOE-E-SYNTAX.ORDER", "projection.lock.modules", "lock modules must be unique and sorted")
+        previous = module_id
+    return lock
+
+
 def project_build(
     build: dict[str, object],
     profile: dict[str, object],
     profile_digest: str,
 ) -> dict[str, object]:
+    profile = _validate_profile_value(profile, None)
     graph = build["graph"]
     lock = build["lock"]
     assert isinstance(graph, dict) and isinstance(lock, dict)
@@ -1598,6 +2182,7 @@ def project_build(
     }
     bundle = {
         "schema": PROJECTION_SCHEMA,
+        "lock": lock,
         "manifest": manifest,
         "text": projection.decode("utf-8"),
     }
@@ -1609,7 +2194,8 @@ def project_build(
 
 
 def recover_projection(bundle_value: object, profile: dict[str, object]) -> dict[str, object]:
-    bundle = _exact_keys(bundle_value, {"schema", "manifest", "text"}, "projection")
+    profile = _validate_profile_value(profile, None)
+    bundle = _exact_keys(bundle_value, {"schema", "lock", "manifest", "text"}, "projection")
     if bundle["schema"] != PROJECTION_SCHEMA:
         refuse("NOE-E-TYPE.VERSION", "projection.schema", "unsupported projection bundle")
     manifest = _exact_keys(
@@ -1621,6 +2207,11 @@ def recover_projection(bundle_value: object, profile: dict[str, object]) -> dict
         refuse("NOE-E-TYPE.VERSION", "projection.manifest.schema", "unsupported projection manifest")
     for key in ("graph_sha256", "lock_sha256", "profile_sha256", "aliases_sha256", "projection_sha256"):
         _digest(manifest[key], f"projection.manifest.{key}")
+    lock = _projection_lock(bundle["lock"])
+    if sha256(_canonical_json(lock)).hexdigest() != manifest["lock_sha256"]:
+        refuse("NOE-E-DIGEST.LOCK", "projection", "projection manifest binds different lock bytes")
+    if lock["graph_sha256"] != manifest["graph_sha256"] or lock["profile_sha256"] != manifest["profile_sha256"]:
+        refuse("NOE-E-DIGEST.LOCK", "projection", "projection lock and manifest identities differ")
     if sha256(_canonical_json(profile)).hexdigest() != manifest["profile_sha256"]:
         refuse("NOE-E-DIGEST.PROFILE", "projection", "projection manifest binds different profile bytes")
     aliases = profile.get("aliases")
@@ -1641,12 +2232,38 @@ def recover_projection(bundle_value: object, profile: dict[str, object]) -> dict
         refuse("NOE-E-SYNTAX.PROJECTION", "projection", "projection header is malformed")
     if header[1] != manifest["profile_sha256"] or header[2] != manifest["graph_sha256"]:
         refuse("NOE-E-DIGEST.PROJECTION", "projection", "projection header and manifest differ")
-    projected = _decode_json(lines[1] + b"\n", "projection.graph", canonical=True)
+    projected = _decode_json(
+        lines[1] + b"\n",
+        "projection.graph",
+        canonical=True,
+        maximum_depth=MAX_DEPTH + 3,
+    )
     inverse = {item[1]: item[0] for item in aliases}
     graph = _replace_strings(projected, inverse)
     graph_object = _exact_keys(graph, {"schema", "source_sha256", "records", "modules"}, "projection.graph")
     if graph_object["schema"] != GRAPH_SCHEMA:
         refuse("NOE-E-TYPE.GRAPH", "projection.graph", "projection recovered an unknown graph")
+    _digest(graph_object["source_sha256"], "projection.graph.source_sha256")
+    records = graph_object["records"]
+    modules = graph_object["modules"]
+    if not isinstance(records, list) or len(records) > MAX_RECORDS:
+        refuse("NOE-E-TYPE.GRAPH", "projection.graph.records", "projection graph records are invalid")
+    if not isinstance(modules, list) or len(modules) > MAX_IMPORTS:
+        refuse("NOE-E-TYPE.GRAPH", "projection.graph.modules", "projection graph modules are invalid")
+    for index, record in enumerate(records):
+        _bounded_value_depth(record, f"projection.graph.records[{index}]")
+    for index, module_value in enumerate(modules):
+        module = _exact_keys(
+            module_value,
+            {"id", "sha256", "value"},
+            f"projection.graph.modules[{index}]",
+        )
+        _identifier(module["id"], f"projection.graph.modules[{index}].id")
+        _digest(module["sha256"], f"projection.graph.modules[{index}].sha256")
+        _bounded_value_depth(
+            module["value"],
+            f"projection.graph.modules[{index}].value",
+        )
     if sha256(_canonical_json(graph_object)).hexdigest() != manifest["graph_sha256"]:
         refuse("NOE-E-DIGEST.RECOVERY", "projection", "recovered graph digest differs")
     return graph_object
@@ -1717,7 +2334,7 @@ def _semantic_facets(graph: dict[str, object]) -> dict[tuple[str, str], object]:
             facets[(node, "gate")] = record[3]
             facets[(node, "scope")] = record[5]
             facets[(node, "evidence_class")] = record[6]
-            facets[(node, "effect")] = record[8]
+            facets[(node, "effect")] = [record[4], record[8]]
         else:
             refuse("NOE-E-TYPE.RECORD", f"graph.records[{index}]", "unknown record in semantic diff")
     modules = graph["modules"]
@@ -1891,7 +2508,7 @@ def unimplemented(command: str) -> dict[str, object]:
 
 
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(description=__doc__)
+    root = _BoundedArgumentParser(description=__doc__)
     subparsers = root.add_subparsers(dest="command", required=True)
     subparsers.add_parser("about", help="print the bounded contract identity")
     seed = subparsers.add_parser("verify-seed", help="verify an archive against its exact inventory")
@@ -1925,9 +2542,15 @@ def parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    arguments = parser().parse_args(argv)
-    command = arguments.command
+    raw_arguments = list(sys.argv[1:] if argv is None else argv)
+    command = (
+        raw_arguments[0]
+        if raw_arguments and raw_arguments[0] in KNOWN_COMMANDS
+        else "invalid"
+    )
     try:
+        arguments = parser().parse_args(raw_arguments)
+        command = arguments.command
         if command == "about":
             payload = about()
         elif command == "verify-seed":

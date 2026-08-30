@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 from hashlib import sha256
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -46,6 +48,13 @@ def load_noema():
 noema = load_noema()
 
 
+def scratch_directory(prefix="noema-"):
+    """Return transient in-repository space below the ignored scratch root."""
+    scratch = ROOT / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
+
+
 def source_binding(start: int = 0, end: int = 1):
     return [
         "src",
@@ -80,6 +89,61 @@ def write_bytes(path: Path, payload: bytes) -> None:
     """Write one test-owned file below its disposable directory."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(payload)
+
+
+def nested_proposition(wrappers):
+    proposition = [
+        "=",
+        [":", "state", "ready"],
+        [":", "state", "ready"],
+    ]
+    for _index in range(wrappers):
+        proposition = ["~", proposition]
+    return proposition
+
+
+def assert_build_and_projection_round_trip(test, build, artifacts, modules):
+    profile = noema._decode_json(
+        artifacts["profile"],
+        "profile",
+        canonical=True,
+    )
+    with tempfile.TemporaryDirectory() as temporary:
+        build_path = Path(temporary) / "build.json"
+        write_bytes(build_path, artifacts["build"])
+        actions = (
+            (
+                "build",
+                lambda: noema.load_build(
+                    build_path,
+                    modules,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )[0],
+                build,
+            ),
+            (
+                "projection",
+                lambda: noema.recover_projection(
+                    noema.project_build(
+                        build,
+                        profile,
+                        build["lock"]["profile_sha256"],
+                    ),
+                    profile,
+                ),
+                build["graph"],
+            ),
+        )
+        for name, action, expected in actions:
+            with test.subTest(name=name):
+                try:
+                    recovered = action()
+                except noema.Refusal as raised:
+                    test.fail(
+                        f"maximum-depth {name} round trip refused: {raised.code}"
+                    )
+                test.assertEqual(recovered, expected)
 
 
 def zip_info(name: str, kind: int = stat.S_IFREG, compression: int = zipfile.ZIP_DEFLATED):
@@ -179,7 +243,7 @@ class NoemaScaffoldTests(unittest.TestCase):
     def test_receipted_runbook_copy_is_exact(self):
         self.assertEqual(
             sha256(RUNBOOK.read_bytes()).hexdigest(),
-            "29a63b93e77f4022d145520d2b29cfd52dbff55ff2d97a6568e8285d7ce67acc",
+            "3984d411c2ad227764e5807fa711bbc6ae2cec46043333c8c4fb4958853408e2",
         )
 
     def test_repository_python_pin_is_exact(self):
@@ -220,6 +284,103 @@ class NoemaScaffoldTests(unittest.TestCase):
             ["properties"]["root"]["pattern"],
         )
 
+    def test_schema_closes_graph_tuple_shapes(self):
+        definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
+        self.assertEqual(set(definitions["term"]), {"oneOf"})
+        term_tags = set()
+        call_branches = 0
+        for branch in definitions["term"]["oneOf"]:
+            head = branch["prefixItems"][0]
+            if "const" in head:
+                term_tags.add(head["const"])
+            elif "enum" in head:
+                term_tags.update(head["enum"])
+            else:
+                self.assertEqual(head, {"$ref": "#/$defs/qualifiedIdentifier"})
+                call_branches += 1
+        self.assertEqual(term_tags, set(noema.TERM_TAGS | noema.OPERATORS))
+        self.assertEqual(call_branches, 1)
+        source_records = {
+            branch["prefixItems"][0]["const"]: branch
+            for branch in definitions["sourceRecord"]["oneOf"]
+        }
+        expected_arities = {
+            "import": 3,
+            "literal": 5,
+            "definition": 4,
+            "rule": 4,
+            "precedence": 6,
+            "override": 7,
+            "transition": 8,
+            "promise": 11,
+            "handoff": 11,
+            "exception": 9,
+        }
+        for form, arity in expected_arities.items():
+            with self.subTest(form=form):
+                self.assertEqual(len(source_records[form]["prefixItems"]), arity)
+                self.assertEqual(source_records[form]["minItems"], arity)
+                self.assertEqual(source_records[form]["maxItems"], arity)
+        for collection, item_ref in {
+            "types": "#/$defs/typeDeclaration",
+            "signatures": "#/$defs/signature",
+            "definitions": "#/$defs/moduleDefinition",
+        }.items():
+            self.assertEqual(
+                definitions["module"]["properties"][collection]["items"]["$ref"],
+                item_ref,
+            )
+        self.assertEqual(
+            definitions["profile"]["properties"]["reserved"],
+            {"const": sorted(noema.RESERVED_SYMBOLS)},
+        )
+        self.assertEqual(
+            definitions["identifier"]["not"], {"pattern": r"\.\."}
+        )
+
+    def test_schema_covers_every_emitted_result_dimension(self):
+        definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
+        digest_dimensions = set(definitions["digestSet"]["properties"])
+        count_dimensions = set(definitions["countSet"]["properties"])
+        self.assertTrue(
+            {"archive", "inventory", "source", "graph", "build", "profile",
+             "projection", "before", "after", "diff"} <= digest_dimensions
+        )
+        self.assertTrue(
+            {"bytes", "members", "records", "modules", "aliases", "entries"}
+            <= count_dimensions
+        )
+
+    def test_maximum_definition_refusal_field_fits_the_result_schema(self):
+        name = "local." + "x" * 122
+        records = base_records(
+            definitions=[
+                [
+                    "definition",
+                    name,
+                    [],
+                    ["=", [":", "actor", "x"], [":", "scope", "x"]],
+                ]
+            ]
+        )
+        try:
+            compile_records(records)
+        except noema.Refusal as raised:
+            result = noema._result(
+                "parse",
+                "refuse",
+                raised.code,
+                field=raised.field,
+                message=raised.message,
+            )
+        else:
+            self.fail("unlike definition operands compiled")
+        maximum = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"][
+            "result"
+        ]["properties"]["field"]["maxLength"]
+        self.assertEqual(len(result["field"]), 144)
+        self.assertLessEqual(len(result["field"]), maximum)
+
     def test_contract_magic_and_about_result_are_fixed(self):
         self.assertEqual((noema.CONTRACT, noema.SOURCE_MAGIC, noema.PROJECTION_MAGIC),
                          ("noema/v1", "NOE1", "NT1"))
@@ -257,6 +418,34 @@ class NoemaScaffoldTests(unittest.TestCase):
                 self.assertEqual(result["code"], "NOE-E-UNIMPLEMENTED")
                 self.assertEqual(result["command"], command)
                 self.assertEqual(result["verdict"], "refuse")
+
+    def test_malformed_cli_is_bounded_json_without_argument_echo(self):
+        hostile = "x" * 200_000
+        for arguments, expected_command in (
+            (["about", hostile], "about"),
+            ([hostile], "invalid"),
+        ):
+            with self.subTest(expected_command=expected_command):
+                stdout = io.StringIO()
+                stderr = io.StringIO()
+                try:
+                    with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+                        status = noema.main(arguments)
+                except SystemExit as error:
+                    status = error.code
+                self.assertEqual(status, 2)
+                self.assertEqual(stderr.getvalue(), "")
+                self.assertNotIn(hostile, stdout.getvalue())
+                self.assertLess(len(stdout.getvalue().encode("utf-8")), 1_024)
+                lines = stdout.getvalue().splitlines()
+                self.assertEqual(len(lines), 1)
+                result = json.loads(lines[0])
+                self.assertEqual(result["command"], expected_command)
+                self.assertEqual(result["code"], "NOE-E-TYPE.ARGUMENTS")
+                self.assertEqual(result["verdict"], "refuse")
+
+        commands = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]["result"]["properties"]["command"]["enum"]
+        self.assertIn("invalid", commands)
 
     def test_committed_seed_inventory_has_exact_public_shape(self):
         inventory, raw = noema.load_inventory(INVENTORY)
@@ -761,13 +950,16 @@ class CanonicalSourceTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.IMPORTS")
 
     def test_finite_set_cap_accepts_exact_and_refuses_plus_one(self):
-        literal = ["literal", "n", "number", "1", "1"]
-        members = [["$", "n"]] * noema.MAX_SET_MEMBERS
-        quantified = ["all", ["x", "value"], ["{}", "value", *members], ["=", ["%", "x"], ["$", "n"]]]
-        compile_records(base_records(["+", quantified], literals=[literal]))
-        quantified[2].append(["$", "n"])
+        literals = [
+            ["literal", f"n{index:04d}", "number", "1", "1"]
+            for index in range(noema.MAX_SET_MEMBERS + 1)
+        ]
+        members = [["$", f"n{index:04d}"] for index in range(noema.MAX_SET_MEMBERS)]
+        quantified = ["all", ["x", "value"], ["{}", "value", *members], ["=", ["%", "x"], ["$", "n0000"]]]
+        compile_records(base_records(["+", quantified], literals=literals[:-1]))
+        quantified[2].append(["$", f"n{noema.MAX_SET_MEMBERS:04d}"])
         with self.assertRaises(noema.Refusal) as raised:
-            compile_records(base_records(["+", quantified], literals=[literal]))
+            compile_records(base_records(["+", quantified], literals=literals))
         self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.SET")
 
     def test_very_long_decimal_never_enters_integer_conversion(self):
@@ -776,6 +968,154 @@ class CanonicalSourceTests(unittest.TestCase):
 
 
 class GraphValidationTests(unittest.TestCase):
+    def test_macro_expansion_counts_repeated_parameter_substitution(self):
+        self.assertEqual(4 * (2**14), noema.MAX_EXPANDED_NODES)
+        definitions = [
+            [
+                "definition",
+                "local.dup",
+                [["x", "proposition"]],
+                ["&", ["%", "x"], ["%", "x"]],
+            ]
+        ]
+
+        def expanded(levels):
+            proposition = [
+                "=",
+                [":", "state", "ready"],
+                [":", "state", "ready"],
+            ]
+            for _index in range(levels):
+                proposition = ["local.dup", proposition]
+            return proposition
+
+        compile_records(
+            base_records(["+", expanded(14)], definitions=definitions)
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(
+                base_records(
+                    ["+", ["~", expanded(14)]],
+                    definitions=definitions,
+                )
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_maximum_depth_source_build_and_projection_round_trip(self):
+        records = base_records(
+            ["+", nested_proposition(noema.MAX_DEPTH - 5)]
+        )
+        build, artifacts = compile_records(records)
+        assert_build_and_projection_round_trip(
+            self,
+            build,
+            artifacts,
+            MODULES_FIXTURE,
+        )
+
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(
+                base_records(
+                    ["+", nested_proposition(noema.MAX_DEPTH - 4)]
+                )
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.DEPTH")
+
+    def test_container_record_and_term_tags_refuse_without_raw_type_errors(self):
+        cases = (
+            ([[[]]], "NOE-E-TYPE.RECORD"),
+            (
+                base_records(
+                    definitions=[["definition", "local.bad", [], [[]]]]
+                ),
+                "NOE-E-TYPE.TERM",
+            ),
+        )
+        for records, code in cases:
+            with self.subTest(code=code):
+                try:
+                    compile_records(records)
+                except noema.Refusal as raised:
+                    self.assertEqual(raised.code, code)
+                except TypeError:
+                    self.fail("container tag escaped the refusal channel")
+                else:
+                    self.fail("container tag compiled")
+
+    def test_structural_results_cannot_be_minted_by_typed_atoms(self):
+        for directive in (
+            [":", "directive", "anything"],
+            ["+", [":", "proposition", "anything"]],
+            ["+", ["=", [":", "relation", "anything"], [":", "relation", "anything"]]],
+        ):
+            with self.subTest(directive=directive):
+                try:
+                    compile_records(base_records(directive))
+                except noema.Refusal as raised:
+                    self.assertEqual(raised.code, "NOE-E-TYPE.STRUCTURAL_ATOM")
+                else:
+                    self.fail("typed atom minted a structural result")
+
+    def test_source_bindings_require_utf8_and_scalar_boundaries(self):
+        modules = noema._load_modules(MODULES_FIXTURE, [("core", CORE_DIGEST)])
+        for payload, end, code in (
+            (b"\xff", 1, "NOE-E-SYNTAX.SOURCE_UTF8"),
+            ("é".encode("utf-8"), 1, "NOE-E-REFERENCE.SPAN_UTF8"),
+        ):
+            records = base_records()
+            records[-1][3][2] = sha256(payload).hexdigest()
+            records[-1][3][4] = str(end)
+            source = noema._canonical_source(records)
+            with self.subTest(payload=payload):
+                with mock.patch.object(
+                    noema, "_read_regular", return_value=payload
+                ), mock.patch.object(
+                    noema,
+                    "_read_repository_regular",
+                    return_value=(payload, (1, 1)),
+                    create=True,
+                ), self.assertRaises(noema.Refusal) as raised:
+                    noema._compile_records(records, modules, source)
+                self.assertEqual(raised.exception.code, code)
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
+    def test_source_binding_refuses_a_linked_ancestor(self):
+        with scratch_directory(
+            prefix="noema-source-"
+        ) as inside, tempfile.TemporaryDirectory(prefix="noema-outside-") as outside:
+            inside_path = Path(inside)
+            payload = b"x"
+            (Path(outside) / "payload.txt").write_bytes(payload)
+            (inside_path / "escape").symlink_to(outside, target_is_directory=True)
+            relative = (
+                inside_path.relative_to(ROOT) / "escape" / "payload.txt"
+            ).as_posix()
+            records = base_records()
+            records[-1][3] = [
+                "src",
+                relative,
+                sha256(payload).hexdigest(),
+                "0",
+                "1",
+            ]
+            modules = noema._load_modules(MODULES_FIXTURE, [("core", CORE_DIGEST)])
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._compile_records(
+                    records,
+                    modules,
+                    noema._canonical_source(records),
+                )
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.CONFINEMENT")
+
+    def test_finite_set_members_are_unique_and_canonically_ordered(self):
+        duplicate = ["+", ["in", [":", "actor", "a"], ["{}", "actor", [":", "actor", "a"], [":", "actor", "a"]]]]
+        reversed_members = ["+", ["in", [":", "actor", "a"], ["{}", "actor", [":", "actor", "b"], [":", "actor", "a"]]]]
+        for directive in (duplicate, reversed_members):
+            with self.subTest(directive=directive):
+                with self.assertRaises(noema.Refusal) as raised:
+                    compile_records(base_records(directive))
+                self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.SET_ORDER")
+
     def test_unknown_operator_refuses(self):
         with self.assertRaises(noema.Refusal) as raised:
             compile_records(base_records(["wat", [":", "state", "ready"]]))
@@ -826,6 +1166,85 @@ class GraphValidationTests(unittest.TestCase):
             compile_records(records)
         self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.RELATION_CYCLE")
 
+    def test_override_and_mixed_relation_cycles_refuse(self):
+        actor = [":", "actor", "x"]
+        scope = [":", "scope", "x"]
+        evidence = [":", "evidence", "x"]
+        prefix = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", "a", ["+", [":", "effect", "x"]], source_binding(0, 1)],
+            ["rule", "b", ["+", [":", "effect", "y"]], source_binding(1, 2)],
+        ]
+        for relations in (
+            [
+                ["override", "o1", actor, "a", "b", scope, evidence],
+                ["override", "o2", actor, "b", "a", scope, evidence],
+            ],
+            [
+                ["precedence", "a", "b", actor, scope, evidence],
+                ["override", "o1", actor, "b", "a", scope, evidence],
+            ],
+        ):
+            with self.subTest(relations=relations):
+                try:
+                    compile_records(prefix + relations)
+                except noema.Refusal as raised:
+                    self.assertEqual(
+                        raised.code,
+                        "NOE-E-REFERENCE.RELATION_CYCLE",
+                    )
+                else:
+                    self.fail("cyclic governing relation compiled")
+
+    def test_long_acyclic_definition_chain_does_not_recurse(self):
+        count = 1_200
+        definitions = [
+            ["definition", f"local.d{index:04d}", [], [f"local.d{index + 1:04d}"]]
+            for index in range(count - 1)
+        ]
+        definitions.append(
+            ["definition", f"local.d{count - 1:04d}", [], [":", "effect", "x"]]
+        )
+        try:
+            compile_records(
+                base_records(["+", ["local.d0000"]], definitions=definitions)
+            )
+        except RecursionError:
+            self.fail("acyclic definition chain reached the interpreter recursion limit")
+
+    def test_long_acyclic_precedence_chain_does_not_recurse(self):
+        count = 1_500
+        source_digest = sha256(SCRIPT.read_bytes()).hexdigest()
+        records = [["import", "core", CORE_DIGEST]]
+        records.extend(
+            [
+                [
+                    "rule",
+                    f"r{index:04d}",
+                    ["+", [":", "effect", "x"]],
+                    ["src", "scripts/noema.py", source_digest, str(index), str(index + 1)],
+                ]
+                for index in range(count)
+            ]
+        )
+        records.extend(
+            [
+                [
+                    "precedence",
+                    f"r{index:04d}",
+                    f"r{index + 1:04d}",
+                    [":", "actor", "x"],
+                    [":", "scope", "x"],
+                    [":", "evidence", "x"],
+                ]
+                for index in range(count - 1)
+            ]
+        )
+        try:
+            compile_records(records)
+        except RecursionError:
+            self.fail("acyclic precedence chain reached the interpreter recursion limit")
+
     def test_overlapping_source_spans_refuse(self):
         records = [
             ["import", "core", CORE_DIGEST],
@@ -846,6 +1265,105 @@ class GraphValidationTests(unittest.TestCase):
 
 
 class ModuleLockTests(unittest.TestCase):
+    @staticmethod
+    def module_bytes(
+        module_id,
+        *,
+        imports=None,
+        types=None,
+        signatures=None,
+        definitions=None,
+    ):
+        return noema._canonical_json(
+            {
+                "schema": "noema-module/v1",
+                "id": module_id,
+                "imports": imports or [],
+                "types": types or [],
+                "signatures": signatures or [],
+                "definitions": definitions or [],
+            }
+        )
+
+    def _module_chain(self, directory, count):
+        child = None
+        child_digest = None
+        root_digest = None
+        for index in reversed(range(count)):
+            module_id = f"m{index:02d}"
+            value = {
+                "schema": noema.MODULE_SCHEMA,
+                "id": module_id,
+                "imports": [] if child is None else [[child, child_digest]],
+                "types": [],
+                "signatures": [],
+                "definitions": [],
+            }
+            raw = noema._canonical_json(value)
+            (directory / f"{module_id}.json").write_bytes(raw)
+            child = module_id
+            child_digest = sha256(raw).hexdigest()
+            root_digest = child_digest
+        return root_digest
+
+    def _signature_module(self, directory, count):
+        value = {
+            "schema": noema.MODULE_SCHEMA,
+            "id": "m",
+            "imports": [],
+            "types": [],
+            "signatures": [
+                [f"m.p{index:05d}", [], "value"] for index in range(count)
+            ],
+            "definitions": [],
+        }
+        raw = noema._canonical_json(value)
+        (directory / "m.json").write_bytes(raw)
+        return sha256(raw).hexdigest()
+
+    def test_maximum_depth_module_build_and_projection_round_trip(self):
+        def module_at(wrappers):
+            return self.module_bytes(
+                "m",
+                definitions=[["m.deep", [], nested_proposition(wrappers)]],
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            module = module_at(noema.MAX_DEPTH - 6)
+            write_bytes(directory / "m.json", module)
+            records = [
+                ["import", "m", sha256(module).hexdigest()],
+                ["rule", "rule.test", ["+", ["m.deep"]], source_binding()],
+            ]
+            build, artifacts = noema.compile_source(
+                noema._canonical_source(records),
+                directory,
+                PROFILE_FIXTURE,
+                KERNEL_FIXTURE,
+            )
+            assert_build_and_projection_round_trip(
+                self,
+                build,
+                artifacts,
+                directory,
+            )
+
+            too_deep = module_at(noema.MAX_DEPTH - 5)
+            write_bytes(directory / "m.json", too_deep)
+            too_deep_records = [
+                ["import", "m", sha256(too_deep).hexdigest()],
+                ["rule", "rule.test", ["+", ["m.deep"]], source_binding()],
+            ]
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.compile_source(
+                    noema._canonical_source(too_deep_records),
+                    directory,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )
+            self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.DEPTH")
+
     def test_lock_binds_every_dependency_byte_string(self):
         build, artifacts = noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, KERNEL_FIXTURE)
         lock = build["lock"]
@@ -877,6 +1395,154 @@ class ModuleLockTests(unittest.TestCase):
             build, _artifacts = noema.compile_source(raw, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
             self.assertEqual([item["id"] for item in build["graph"]["modules"]], ["core"])
 
+    def test_module_symbol_requires_its_declared_import_closure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            child = self.module_bytes(
+                "b",
+                signatures=[["b.pred", [], "proposition"]],
+            )
+            child_digest = sha256(child).hexdigest()
+            parent = self.module_bytes(
+                "a",
+                definitions=[["a.ready", [], ["b.pred"]]],
+            )
+            write_bytes(directory / "a.json", parent)
+            write_bytes(directory / "b.json", child)
+            records = [
+                ["import", "a", sha256(parent).hexdigest()],
+                ["import", "b", child_digest],
+                ["rule", "rule.test", ["+", ["a.ready"]], source_binding()],
+            ]
+            try:
+                noema.compile_source(
+                    noema._canonical_source(records),
+                    directory,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )
+            except noema.Refusal as raised:
+                self.assertEqual(
+                    raised.code,
+                    "NOE-E-REFERENCE.MODULE_AMBIENT",
+                )
+            else:
+                self.fail("module used a source co-import as an ambient dependency")
+
+            parent = self.module_bytes(
+                "a",
+                imports=[["b", child_digest]],
+                definitions=[["a.ready", [], ["b.pred"]]],
+            )
+            write_bytes(directory / "a.json", parent)
+            records[0][2] = sha256(parent).hexdigest()
+            build, _artifacts = noema.compile_source(
+                noema._canonical_source(records),
+                directory,
+                PROFILE_FIXTURE,
+                KERNEL_FIXTURE,
+            )
+            self.assertEqual(
+                [item["id"] for item in build["graph"]["modules"]],
+                ["a", "b"],
+            )
+
+    def test_module_definition_cannot_bind_a_source_local_definition(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            module = self.module_bytes(
+                "a",
+                definitions=[["a.ready", [], ["local.helper"]]],
+            )
+            write_bytes(directory / "a.json", module)
+            records = [
+                ["import", "a", sha256(module).hexdigest()],
+                [
+                    "definition",
+                    "local.helper",
+                    [],
+                    ["=", [":", "state", "ready"], [":", "state", "ready"]],
+                ],
+                ["rule", "rule.test", ["+", ["a.ready"]], source_binding()],
+            ]
+            try:
+                noema.compile_source(
+                    noema._canonical_source(records),
+                    directory,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )
+            except noema.Refusal as raised:
+                self.assertEqual(
+                    raised.code,
+                    "NOE-E-REFERENCE.MODULE_AMBIENT",
+                )
+            else:
+                self.fail("module bound a source-local definition")
+
+    def test_module_cannot_capture_the_source_local_namespace(self):
+        for module_id in ("local", "local.vendor"):
+            with self.subTest(module_id=module_id), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                module = self.module_bytes(
+                    module_id,
+                    definitions=[
+                        [
+                            f"{module_id}.ready",
+                            [],
+                            ["=", [":", "state", "ready"], [":", "state", "ready"]],
+                        ]
+                    ],
+                )
+                write_bytes(directory / f"{module_id}.json", module)
+                records = [
+                    ["import", module_id, sha256(module).hexdigest()],
+                    [
+                        "rule",
+                        "rule.test",
+                        ["+", [f"{module_id}.ready"]],
+                        source_binding(),
+                    ],
+                ]
+                try:
+                    noema.compile_source(
+                        noema._canonical_source(records),
+                        directory,
+                        PROFILE_FIXTURE,
+                        KERNEL_FIXTURE,
+                    )
+                except noema.Refusal as raised:
+                    self.assertEqual(
+                        raised.code,
+                        "NOE-E-REFERENCE.MODULE_NAMESPACE",
+                    )
+                else:
+                    self.fail("module captured the source-local namespace")
+
+    def test_module_signature_cannot_construct_a_directive(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            module = self.module_bytes(
+                "m",
+                signatures=[["m.make", [], "directive"]],
+            )
+            write_bytes(directory / "m.json", module)
+            records = [
+                ["import", "m", sha256(module).hexdigest()],
+                ["rule", "rule.test", ["m.make"], source_binding()],
+            ]
+            try:
+                noema.compile_source(
+                    noema._canonical_source(records),
+                    directory,
+                    PROFILE_FIXTURE,
+                    KERNEL_FIXTURE,
+                )
+            except noema.Refusal as raised:
+                self.assertEqual(raised.code, "NOE-E-TYPE.SIGNATURE_RESULT")
+            else:
+                self.fail("module signature constructed a directive")
+
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
     def test_linked_module_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -900,6 +1566,36 @@ class ModuleLockTests(unittest.TestCase):
             with self.assertRaises(noema.Refusal) as raised:
                 noema.compile_source(CODEC_FIXTURE.read_bytes(), MODULES_FIXTURE, PROFILE_FIXTURE, kernel)
             self.assertEqual(raised.exception.code, "NOE-E-DIGEST.KERNEL")
+
+    def test_transitive_module_cap_accepts_exact_and_refuses_plus_one(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            digest = self._module_chain(directory, noema.MAX_IMPORTS)
+            source = noema._canonical_source([["import", "m00", digest]])
+            build, _artifacts = noema.compile_source(source, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+            self.assertEqual(len(build["graph"]["modules"]), noema.MAX_IMPORTS)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            digest = self._module_chain(directory, noema.MAX_IMPORTS + 1)
+            source = noema._canonical_source([["import", "m00", digest]])
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.compile_source(source, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+            self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.IMPORTS")
+
+    def test_module_declarations_consume_the_graph_node_budget(self):
+        exact_signatures = noema.MAX_GRAPH_NODES - 2
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            digest = self._signature_module(directory, exact_signatures)
+            source = noema._canonical_source([["import", "m", digest]])
+            noema.compile_source(source, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            digest = self._signature_module(directory, exact_signatures + 1)
+            source = noema._canonical_source([["import", "m", digest]])
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.compile_source(source, directory, PROFILE_FIXTURE, KERNEL_FIXTURE)
+            self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.NODES")
 
 
 class ProjectionTests(unittest.TestCase):
@@ -931,12 +1627,25 @@ class ProjectionTests(unittest.TestCase):
             noema.project_build(self.build, profile, self.profile_digest)
         self.assertEqual(raised.exception.code, "NOE-E-ALIAS.COLLISION")
 
-    def test_unused_alias_refuses(self):
+    def test_alias_cannot_overload_predicate_and_literal_id(self):
+        literal = ["literal", "core.ready", "text", "1", "x"]
+        build, _artifacts = compile_records(base_records(literals=[literal]))
+        profile = json.loads(json.dumps(self.profile))
+        profile["aliases"].insert(4, ["core.ready", "q"])
+        profile_digest = sha256(noema._canonical_json(profile)).hexdigest()
+        build["lock"]["profile_sha256"] = profile_digest
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.project_build(build, profile, profile_digest)
+        self.assertEqual(raised.exception.code, "NOE-E-ALIAS.OVERLOAD")
+
+    def test_unused_alias_is_inert(self):
         profile = json.loads(json.dumps(self.profile))
         profile["aliases"].append(["zz.absent", "Z"])
-        with self.assertRaises(noema.Refusal) as raised:
-            noema.project_build(self.build, profile, self.profile_digest)
-        self.assertEqual(raised.exception.code, "NOE-E-ALIAS.UNUSED")
+        profile_digest = sha256(noema._canonical_json(profile)).hexdigest()
+        build = json.loads(json.dumps(self.build))
+        build["lock"]["profile_sha256"] = profile_digest
+        bundle = noema.project_build(build, profile, profile_digest)
+        self.assertEqual(noema.recover_projection(bundle, profile), build["graph"])
 
     def test_tampered_projection_refuses(self):
         bundle = noema.project_build(self.build, self.profile, self.profile_digest)
@@ -948,10 +1657,36 @@ class ProjectionTests(unittest.TestCase):
     def test_manifest_profile_mismatch_refuses(self):
         bundle = noema.project_build(self.build, self.profile, self.profile_digest)
         bundle["manifest"]["profile_sha256"] = "0" * 64
+        bundle["lock"]["profile_sha256"] = "0" * 64
+        bundle["manifest"]["lock_sha256"] = sha256(noema._canonical_json(bundle["lock"])).hexdigest()
         bundle["manifest"]["projection_sha256"] = sha256(bundle["text"].encode()).hexdigest()
         with self.assertRaises(noema.Refusal) as raised:
             noema.recover_projection(bundle, self.profile)
         self.assertEqual(raised.exception.code, "NOE-E-DIGEST.PROFILE")
+
+    def test_manifest_lock_mismatch_refuses(self):
+        bundle = noema.project_build(self.build, self.profile, self.profile_digest)
+        bundle["manifest"]["lock_sha256"] = "0" * 64
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.recover_projection(bundle, self.profile)
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.LOCK")
+
+    def test_recovery_normalizes_malformed_alias_shape(self):
+        bundle = noema.project_build(self.build, self.profile, self.profile_digest)
+        profile = json.loads(json.dumps(self.profile))
+        profile["aliases"] = [[]]
+        profile_digest = sha256(noema._canonical_json(profile)).hexdigest()
+        bundle["lock"]["profile_sha256"] = profile_digest
+        bundle["manifest"]["profile_sha256"] = profile_digest
+        bundle["manifest"]["aliases_sha256"] = sha256(noema._canonical_json(profile["aliases"])).hexdigest()
+        bundle["manifest"]["lock_sha256"] = sha256(noema._canonical_json(bundle["lock"])).hexdigest()
+        header, graph, _empty = bundle["text"].split("\n")
+        _magic, _old_profile, graph_digest = header.split(" ")
+        bundle["text"] = f"NT1 {profile_digest} {graph_digest}\n{graph}\n"
+        bundle["manifest"]["projection_sha256"] = sha256(bundle["text"].encode()).hexdigest()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.recover_projection(bundle, profile)
+        self.assertEqual(raised.exception.code, "NOE-E-ALIAS.SHAPE")
 
 
 class SemanticDiffTests(unittest.TestCase):
@@ -966,6 +1701,29 @@ class SemanticDiffTests(unittest.TestCase):
         records[4][2] = ["-", ["core.ready", [":", "state", "ready"]]]
         changed, _artifacts = compile_records(records)
         kinds = {entry["kind"] for entry in noema.semantic_diff(self.build, changed)["entries"]}
+        self.assertIn("effect", kinds)
+
+    def test_exception_subject_change_is_named_as_an_effect(self):
+        exception = [
+            "exception",
+            "exception.test",
+            [":", "actor", "alice"],
+            ["=", [":", "state", "ready"], [":", "state", "ready"]],
+            [":", "effect", "old"],
+            [":", "scope", "repository"],
+            [":", "evidence", "record"],
+            [":", "value", "never"],
+            ["-", [":", "effect", "recovery"]],
+        ]
+        records = base_records() + [exception]
+        before, _artifacts = compile_records(records)
+        changed_records = json.loads(json.dumps(records))
+        changed_records[-1][4][2] = "new"
+        after, _artifacts = compile_records(changed_records)
+        kinds = {
+            entry["kind"]
+            for entry in noema.semantic_diff(before, after)["entries"]
+        }
         self.assertIn("effect", kinds)
 
     def test_source_binding_change_is_named(self):
@@ -1000,8 +1758,64 @@ class SemanticDiffTests(unittest.TestCase):
                 if digest is not None:
                     self.assertRegex(digest, r"^[0-9a-f]{64}$")
 
+    def test_maximum_precedence_node_fits_the_public_schema(self):
+        high = "a" + "x" * 127
+        low = "b" + "x" * 127
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", high, ["+", [":", "effect", "x"]], source_binding(0, 1)],
+            ["rule", low, ["+", [":", "effect", "y"]], source_binding(1, 2)],
+            [
+                "precedence",
+                high,
+                low,
+                [":", "actor", "x"],
+                [":", "scope", "x"],
+                [":", "evidence", "x"],
+            ],
+        ]
+        before, _artifacts = compile_records(records)
+        records[-1][3] = [":", "actor", "y"]
+        after, _artifacts = compile_records(records)
+        node = noema.semantic_diff(before, after)["entries"][0]["node"]
+        maximum = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"][
+            "diffEntry"
+        ]["properties"]["node"]["maxLength"]
+        self.assertEqual(len(node), 268)
+        self.assertLessEqual(len(node), maximum)
+
 
 class PathBoundaryTests(unittest.TestCase):
+    def test_non_scalar_output_leaf_refuses_through_cli(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = str(Path(temporary) / "output") + "\udcff"
+            arguments = [
+                "parse",
+                "--source",
+                str(CODEC_FIXTURE),
+                "--modules",
+                str(MODULES_FIXTURE),
+                "--profile",
+                str(PROFILE_FIXTURE),
+                "--kernel",
+                str(KERNEL_FIXTURE),
+                "--output",
+                output,
+            ]
+            stdout = io.StringIO()
+            try:
+                with contextlib.redirect_stdout(stdout):
+                    status = noema.main(arguments)
+            except UnicodeEncodeError:
+                self.fail("non-scalar output leaf escaped the refusal channel")
+            self.assertEqual(status, 2)
+            lines = stdout.getvalue().splitlines()
+            self.assertEqual(len(lines), 1)
+            result = json.loads(lines[0])
+            self.assertEqual(result["code"], "NOE-E-PATH.LEAF")
+            self.assertEqual(result["field"], "output")
+            self.assertEqual(list(Path(temporary).iterdir()), [])
+
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
     def test_linked_input_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:

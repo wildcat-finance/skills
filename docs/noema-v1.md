@@ -26,6 +26,10 @@ path predicate promise repository rule scope state transition type value
 Modules may define nominal subtypes, qualified predicate signatures and pure
 graph macros. They cannot add a core operator, change an operator's arity or
 meaning, shadow a qualified name, introduce ambient state or execute code.
+Typed atoms name only nominal core types or module subtypes. `proposition`,
+`directive` and `relation` are structural results, never atom labels. A module
+signature cannot return `directive`; directives originate only in the closed
+operators below.
 
 The closed structural operators and their meanings are:
 
@@ -88,7 +92,8 @@ relations. None implies another. Consequence-2 and consequence-3 effects
 default deny unless an applicable authority fact and every named gate are
 checked. Permission does not cancel prohibition. Conflicting requirements
 refuse unless one closed override record names the higher rule, authority,
-scope and evidence.
+scope and evidence. Precedence and override edges form one acyclic governing
+relation; a cycle within or across the two record forms refuses.
 
 An exception cannot assert absent evidence, strengthen an evidence class,
 change a source binding or operate outside its subject and scope. Missing,
@@ -110,14 +115,22 @@ predicate is the first item of every other term. Quantifiers use
 `[operator,[variable,type],finite-set,proposition]`. These examples use single
 quotes only for exposition; governing source uses canonical JSON double
 quotes. Numeric fields and values are unsigned decimal strings, never JSON
-numbers.
+numbers. Finite-set members are unique and sorted by their canonical term
+bytes; duplicate or descending members refuse.
 
 JSON is canonical with UTF-8 NFC scalar strings, no BOM, CR, blank line,
 insignificant whitespace, alternate escape, duplicate object key or non-finite
 number. Object keys in module, profile and derived records are lexicographically
-sorted. Arrays retain semantic order. Records are sorted by the form order
+sorted. Arrays retain semantic order except for finite sets. Records are sorted
+by the form order
 published above, then by id; precedence uses the `(higher,lower)` pair. These
 rules make the source byte string singular.
+
+The published JSON Schema closes object keys, record and module tuple shapes,
+term tags and structural arities. It is an interchange envelope, not a second
+type checker: canonical ordering, NFC and UTF-8 byte limits, digest relations,
+name resolution, nominal types and cross-record invariants remain executable
+validator obligations. Schema acceptance alone never creates a NIR.
 
 Canonicalization is singular: no insignificant alternate whitespace, key
 order, escape, Unicode normalization or integer spelling exists. Parsing must
@@ -137,15 +150,20 @@ A module is canonical data containing one module identity, a closed list of
 typed predicate signatures and pure definitions over already admitted
 operators and signatures. Imports bind complete module SHA-256 values. Import
 cycles, definition cycles, absent modules, multiple bytes for one identity and
-ambient lookup refuse.
+ambient lookup refuse. A module may use only core forms and symbols/types owned
+by itself or its transitive declared imports; source co-imports and
+source-local definitions or literals do not widen that closure. Module ids
+`local` and `local.*` refuse because the complete `local.*` namespace belongs
+only to source definitions.
 
 `noema-module/v1` has exactly `schema`, `id`, `imports`, `types`, `signatures`
 and `definitions`. Import entries are `[id,sha256]`; nominal subtype entries are
 `[qualified-name,core-parent]`; signatures are
 `[qualified-name,[parameter-types],result-type]`; definitions are
 `[qualified-name,[[parameter,type],...],pure-term]`. Collections are unique and
-source-sorted. A source import resolves only `<module-id>.json` below the named
-module directory. Unmentioned files have no meaning.
+source-sorted. The 64-import limit covers the complete transitive registry, not
+each file independently. A source import resolves only `<module-id>.json` below
+the named module directory. Unmentioned files have no meaning.
 
 `noema-lock/v1` binds source, graph, compiler, kernel and projection-profile
 SHA-256 values plus the ordered module id/digest list. Any changed or missing
@@ -178,13 +196,21 @@ tokenizer revisions do not share their meaning.
 `NT1 <profile-sha256> <graph-sha256>`, one canonical JSON graph line and a final
 LF. The graph line substitutes exact strings using the profile. Its
 `noema-projection-manifest/v1` binds graph, lock, profile, alias-list and
-projection digests. Inverse substitution must recover the byte-identical graph
-before the bundle is returned.
+projection digests. The projection bundle carries the closed lock whose digest
+the manifest names. Inverse substitution must recover the byte-identical graph,
+and lock graph/profile identities must agree, before the bundle is returned.
 
 Aliases are injective across reserved opcodes, qualified predicates, literal
 ids and values visible in the same slice. Arity does not disambiguate an alias.
-A collision refuses. The manifest plus projection must recover the same NIR;
-shorter bytes or tokens never excuse a changed graph.
+One alias source cannot occupy more than one of those semantic namespaces. A
+collision or namespace overload refuses. Recovery validates the complete
+profile shape before reading its aliases. The manifest plus projection must
+recover the same NIR; shorter bytes or tokens never excuse a changed graph.
+
+A profile may carry an alias whose source is absent from one graph or slice;
+that entry is inert there and still counts in profile/bootstrap bytes. Its
+target must remain disjoint from every visible string so inverse substitution
+cannot capture unrelated data.
 
 Prompt-only mode includes the complete kernel, every reachable definition,
 the slice and its reachable literals. All of those bytes and tokens count.
@@ -202,7 +228,8 @@ grants authority refuse.
 Source-span coverage is reviewed evidence. It establishes the recorded mapping
 for exact bytes and does not establish that the reviewer captured unexpressed
 intent. An unsupported remainder blocks authority migration and remains visible
-in every evidence record.
+in every evidence record. Bound files must decode as UTF-8, and span endpoints
+must fall between complete scalar values.
 
 A semantic diff has closed entries for added, removed or modified effects,
 gates, authority, scope, evidence classes, literals, transitions, precedence
@@ -245,9 +272,10 @@ paths. `self-test` performs the checked-in complete-fixture round trip without
 writing a file.
 
 All input leaves must be regular files; module resolution is confined to one
-real directory and never scans it. Output uses a random `.noema-write-` leaf
-independent of the target name, loops on partial writes, syncs file and parent,
-then replaces the target. A refusal before replacement leaves the prior target
+real directory and never scans it. An output leaf must be Unicode-scalar UTF-8
+and at most 255 bytes. Output uses a random `.noema-write-` leaf independent of
+the target name, loops on partial writes, syncs file and parent, then replaces
+the target. A refusal before replacement leaves the prior target
 intact and removes the temporary. A post-replacement directory-sync failure is
 reported as uncertain durable state, never success.
 
@@ -280,12 +308,20 @@ Version 1 applies every limit before returning a partial graph or result:
 | source records | 16,384 |
 | graph nodes | 16,384 |
 | imports | 64 |
-| nesting depth | 64 |
+| source-record or module-document nesting depth | 64 |
 | one literal | 65,000 decoded UTF-8 bytes |
 | all decoded literal occurrences | 786,432 bytes |
 | expanded macro graph | 65,536 nodes |
 | one finite quantifier set | 4,096 members |
 | one derived output | 1,048,576 bytes |
+
+The graph-node count includes source records, term nodes, each embedded module
+and every module import, subtype, signature and definition declaration.
+Derived graph and build envelopes add at most three and four fixed container
+levels respectively; every embedded source record and module document remains
+subject to the 64-level limit.
+Expanded-macro accounting substitutes an argument at every occurrence of its
+formal parameter; the macro-call node itself is absent from the expanded graph.
 
 The seed archive verifier separately accepts at most 1,048,576 archive bytes,
 64 members, 1,048,576 uncompressed bytes in aggregate, 1,048,576 bytes for one
@@ -300,6 +336,8 @@ Each command writes at most one `noema-result/v1` JSON line to standard output.
 It names command, deterministic correlation id, verdict, stable code, input and
 output digests and bounded counts that exist for that command. It never carries
 source text, literal payloads, prompts, model output or credentials.
+Malformed argument vectors use the same line with `NOE-E-TYPE.ARGUMENTS` and
+never echo argument bytes; `command` is the recognised operation or `invalid`.
 
 Stable refusal families are:
 
