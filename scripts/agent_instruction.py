@@ -3460,13 +3460,16 @@ def _answer_record(response: str, question: Mapping[str, Any]) -> dict[str, Any]
             "outcome": "refused",
             "code": "WAI-E-PARITY.ANSWER",
         }
+    safe_answer_id = _redact_text(answer_id)
+    if len(safe_answer_id.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
+        safe_answer_id = "[REDACTED: answer id exceeded stored bound]"
     if answer_id in question["accepted_answers"]:
         outcome, code = "accepted", "WAI-OK"
     elif answer_id in question["refusal_answers"]:
         outcome, code = "refused", "WAI-E-PARITY.MODEL_REFUSAL"
     else:
         outcome, code = "refused", "WAI-E-PARITY.UNLISTED"
-    return {"answer_id": answer_id, "response": safe_response, "outcome": outcome, "code": code}
+    return {"answer_id": safe_answer_id, "response": safe_response, "outcome": outcome, "code": code}
 
 
 def parity_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[dict[str, Any], bool]:

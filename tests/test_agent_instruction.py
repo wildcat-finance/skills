@@ -2887,6 +2887,36 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
                 self.assertNotIn("visible-secret", answer["response"])
                 self.assertIn("[REDACTED]", answer["response"])
 
+    def test_secret_shaped_unlisted_answer_id_is_redacted_from_refusal_record(self):
+        response = json.dumps(
+            {"answer_id": "token=visible-secret"},
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        answer = AI._answer_record(response, self.question())
+        self.assertEqual(answer["code"], "WAI-E-PARITY.UNLISTED")
+        self.assertNotIn("visible-secret", json.dumps(answer, sort_keys=True))
+        self.assertEqual(answer["answer_id"], "token=[REDACTED]")
+
+    def test_secret_answer_id_redaction_cannot_expand_past_response_cap(self):
+        answer_id = ("token=x " * 60).rstrip()
+        response = json.dumps(
+            {"answer_id": answer_id},
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        self.assertLessEqual(len(response.encode("utf-8")), AI.MAX_PARITY_RESPONSE_BYTES)
+        answer = AI._answer_record(response, self.question())
+        self.assertEqual(
+            answer["answer_id"],
+            "[REDACTED: answer id exceeded stored bound]",
+        )
+        self.assertLessEqual(
+            len(answer["answer_id"].encode("utf-8")),
+            AI.MAX_PARITY_RESPONSE_BYTES,
+        )
+        self.assertEqual(answer["code"], "WAI-E-PARITY.UNLISTED")
+
     def test_secret_redaction_cannot_expand_past_response_cap(self):
         response = ("token=x " * 64)[: AI.MAX_PARITY_RESPONSE_BYTES]
         self.assertEqual(len(response.encode("utf-8")), AI.MAX_PARITY_RESPONSE_BYTES)
