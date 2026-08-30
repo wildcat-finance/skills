@@ -77,3 +77,19 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the widened pattern was checked for over-reach as well as reach, because a looser regex is the obvious way to break this fix. The optional alias clause admits only `as` followed by one identifier before the semicolon, so it does not begin matching statements that are not imports, and the real tree still reports zero failures across 88 mirrored Solidity files with the mirror byte-identical before and after. All 18 cases in the module pass and the root suite is 539 at zero failures. Carried unchanged from round 1: Solidity is not parsed, closure is not extended to Python or Markdown, and bare-scope imports are not resolved through a remapping file.
+
+## Step 4, round 1 -- 2026-08-30T06:36:56Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: index-write-scope=reviewed; index-write-environment=reviewed; non-repository-root=reviewed; import-target-traversal=reviewed; closure-check-cost=reviewed; partial-write=reviewed; boundary-counts-churn=reviewed
+
+Not checked: x-ray, solidity-auditor and fizz did not run, under the recorded `security_suite` waiver; this step ships one Markdown record and changes no code. The register's seven concerns were re-read against the demonstration rather than against fresh code, because the demonstration is what exercises them from outside: the demo path runs `sync` and `check` over the real tree and the record states each control in prose that was compared against the implementation it describes. The record's claims about rejected alternatives were checked against the measurements they cite rather than accepted as written; the 218-of-265 count and the two `Market.sol` targets were recounted from the tree at this commit and both match. No claim is made that ADR-055 keeps its number: the collision check passes against `origin/main` at this commit and the number is re-read immediately before the integration merge, which the runbook now requires.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the demonstration was run in the documented order with no manual stage between `sync` and `scan`, which is the claim the run exists to make, and `test_boundary_currency` passed over the result at 7 cases. One thing worth stating rather than leaving implicit: the record's own file was staged before the demo path ran, because it is a hand-written file and the fix is about the sync's own output rather than about an author forgetting to add their work. Running the demo without that stage would fail, and would fail correctly. Not pursued: whether the demo path belongs in CI as a test rather than as a documented sequence, which would turn the ordering claim into a standing guard; `tests/test_boundary_currency.py` already fails when the committed boundary drifts, so the marginal gain is small and the change is larger than this step. Not pursued: renumbering ADR-055 now, since `main` moves several times an hour here and the correct moment is immediately before the merge.
