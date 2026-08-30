@@ -2787,6 +2787,13 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:1b083d7ec048e9621e899cc804e9b5498a5dcb9d81aacd1b1122914f5e2ff7ab",
+      "path": "scripts/check_commit_identity.py",
+      "suppressed": false,
+      "symbol": "annotations@4"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:d85dcde843934c95ea913c74a246952be827e64b9b7efbcc3c3b7259fae4fd41",
       "path": "scripts/contributors.py",
       "suppressed": false,
@@ -2941,6 +2948,13 @@
     },
     {
       "analyser_id": "python",
+      "id": "sha256:4f0b837327d1ff85c5c33532f506a53ddbc8b483744987f9d8f6feac3727ca2e",
+      "path": "tests/test_commit_identity.py",
+      "suppressed": false,
+      "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
       "id": "sha256:1c5f40729f5a24f8fe9c7c44a5b2445ed2953a8d41ce840149b897c57575b942",
       "path": "tests/test_contributors.py",
       "suppressed": false,
@@ -3083,10 +3097,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "88b451634849ff9200ca93a0dd2dc7e446f5b920",
-    "git_tree": "908dcca8d69c08265a97018e46eb75b9f3ccfd88"
+    "commit": "1b678576500fb35d784cc55e4f85c2c6b90800b8",
+    "git_tree": "44f68dfeac4a2778fea84870574f38acf3cccae8"
   },
   "universe": {
-    "id": "sha256:f1bfbd9a745407c6fb8907d0bae27c370f68d0c3c325dd0af81d1050bb031da6"
+    "id": "sha256:ef6a4570c20f3d8c7739b881cba14accb06a3129407974693a7b481805637a69"
   }
 }
