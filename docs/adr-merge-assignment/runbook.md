@@ -396,3 +396,61 @@ the draft path.
 
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: The tracked study and runbook are
+byte-identical to their receipted sources. The draft record has slug
+`assign-adr-numbers-at-merge-not-at-authoring`, starts with
+`# Decision: Assign ADR numbers at merge, not at authoring time`, carries the
+repository's dated status and five decision sections, and contains no assigned
+ADR number. Existing decision records and executable behaviour are unchanged.
+The dead-code baseline records the clean source commit containing the complete
+Step 1 source tree and is published by a signed descendant that changes only
+`.dead-code/baseline.json`. Prove the exit with:
+
+```bash
+cmp .hexaemeron/study.md docs/adr-merge-assignment/study.md
+cmp .hexaemeron/runbook.md docs/adr-merge-assignment/runbook.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/adr-merge-assignment/study.md
+python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py docs/adr-merge-assignment/runbook.md
+python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py docs/adr-merge-assignment docs/decisions/drafts/assign-adr-numbers-at-merge-not-at-authoring.md
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/adr-merge-assignment/study.md docs/adr-merge-assignment/runbook.md docs/decisions/drafts/assign-adr-numbers-at-merge-not-at-authoring.md
+python3 -m unittest tests.test_decision_records -v
+python3 scripts/run_checks.py --base 6e42389ef20c11c948b2c97a4915d4c592503ee8
+python3 scripts/dead_code.py baseline --check
+python3 plugins/horos/skills/horos/scripts/horos.py check .
+python3 -m unittest tests.test_boundary_currency.BoundaryCurrencyTests.test_the_committed_boundary_matches_a_fresh_scan -v
+git diff --check
+```
+
+Complete replacement Files: Create `docs/adr-merge-assignment/study.md`,
+`docs/adr-merge-assignment/runbook.md`, and
+`docs/decisions/drafts/assign-adr-numbers-at-merge-not-at-authoring.md`.
+Regenerate `.dead-code/baseline.json` through its clean-source, two-commit
+publication sequence after every other Step 1 product byte is stable. Permit
+Warden to append the configured issue-888 audit record and regenerate its
+synopsis. Regenerate `.horos/boundary.json` only if the deterministic scan earns
+a change. No other product path is in scope.
+
+Complete replacement Tests: Add no product test in this step. Preserve the 767
+root tests and 2,047 Hexaemeron tests and run every command in Exit. The
+dead-code baseline's existing two-commit publication tests remain the guard for
+the CI failure reproduced on pull requests 998 and 999. The source-bound audit
+fix runner is
+`python3 plugins/hexaemeron/tests/run_tests.py --elenchus-report {report}`;
+its CLI format is `unittest-json-v1`, expected schema is
+`elenchus.unittest.v1`, and report file is
+`.elenchus/fiat-888-step-1.json`. A fresh report must contain non-zero executed
+tests and no scheduler error when an audit fix requires one.
+
+**Why.** Both published Step 1 branches failed the `report` job because
+`python3 scripts/dead_code.py baseline --check` found source changes after the
+recorded baseline. The local committed-diff selector did not run that
+release-only check. The replacement adds the generated baseline to the bounded
+file set and requires its own two-commit proof before the push receipt.
+
+**Steps touched.** Step 1.
+
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds.
