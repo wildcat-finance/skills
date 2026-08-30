@@ -187,8 +187,10 @@ and lock graph/profile identities must agree, before the bundle is returned.
 
 Aliases are injective across reserved opcodes, qualified predicates, literal
 ids and values visible in the same slice. Arity does not disambiguate an alias.
-A collision refuses. The manifest plus projection must recover the same NIR;
-shorter bytes or tokens never excuse a changed graph.
+One alias source cannot occupy more than one of those semantic namespaces. A
+collision or namespace overload refuses. Recovery validates the complete
+profile shape before reading its aliases. The manifest plus projection must
+recover the same NIR; shorter bytes or tokens never excuse a changed graph.
 
 A profile may carry an alias whose source is absent from one graph or slice;
 that entry is inert there and still counts in profile/bootstrap bytes. Its

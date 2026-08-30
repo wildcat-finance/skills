@@ -746,8 +746,10 @@ def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str
     return loaded
 
 
-def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], bytes, str]:
-    value, raw = _read_canonical_json(path, "profile")
+def _validate_profile_value(
+    value: object,
+    expected_kernel_sha256: str | None,
+) -> dict[str, object]:
     profile = _exact_keys(
         value,
         {"schema", "id", "alphabet", "tokenizer", "vocabulary_sha256", "kernel_sha256", "reserved", "aliases"},
@@ -758,9 +760,11 @@ def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], byt
     _identifier(profile["id"], "profile.id")
     if profile["alphabet"] != "ascii-printable-v1":
         refuse("NOE-E-TYPE.ALPHABET", "profile.alphabet", "unsupported projection alphabet")
-    _safe_text(profile["tokenizer"], "profile.tokenizer", 256)
+    if not _safe_text(profile["tokenizer"], "profile.tokenizer", 256):
+        refuse("NOE-E-TYPE.TOKENIZER", "profile.tokenizer", "tokenizer identity must not be empty")
     _digest(profile["vocabulary_sha256"], "profile.vocabulary_sha256")
-    if _digest(profile["kernel_sha256"], "profile.kernel_sha256") != sha256(kernel_raw).hexdigest():
+    kernel_digest = _digest(profile["kernel_sha256"], "profile.kernel_sha256")
+    if expected_kernel_sha256 is not None and kernel_digest != expected_kernel_sha256:
         refuse("NOE-E-DIGEST.KERNEL", "profile.kernel_sha256", "profile binds different kernel bytes")
     if not isinstance(profile["reserved"], list) or profile["reserved"] != sorted(RESERVED_SYMBOLS):
         refuse("NOE-E-REFERENCE.RESERVED", "profile.reserved", "profile must bind the exact reserved symbol set")
@@ -770,9 +774,12 @@ def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], byt
     prior = ""
     targets: set[str] = set()
     for index, item in enumerate(aliases):
-        pair = _exact_list(item, 2, f"profile.aliases[{index}]")
-        source = _safe_text(pair[0], f"profile.aliases[{index}].source", MAX_IDENTIFIER_BYTES)
-        target = _safe_text(pair[1], f"profile.aliases[{index}].target", 16)
+        if not isinstance(item, list) or len(item) != 2:
+            refuse("NOE-E-ALIAS.SHAPE", f"profile.aliases[{index}]", "alias must be one source-target pair")
+        source = _safe_text(item[0], f"profile.aliases[{index}].source", MAX_IDENTIFIER_BYTES)
+        target = _safe_text(item[1], f"profile.aliases[{index}].target", 16)
+        if not source or not target:
+            refuse("NOE-E-ALIAS.SHAPE", f"profile.aliases[{index}]", "alias strings must not be empty")
         if source <= prior:
             refuse("NOE-E-SYNTAX.ORDER", "profile.aliases", "aliases must be unique and source-sorted")
         if ALIAS_RE.fullmatch(target) is None:
@@ -781,6 +788,12 @@ def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], byt
             refuse("NOE-E-ALIAS.COLLISION", f"profile.aliases[{index}]", "alias target is not injective")
         prior = source
         targets.add(target)
+    return profile
+
+
+def _load_profile(path: Path, kernel_raw: bytes) -> tuple[dict[str, object], bytes, str]:
+    value, raw = _read_canonical_json(path, "profile")
+    profile = _validate_profile_value(value, sha256(kernel_raw).hexdigest())
     return profile, raw, sha256(raw).hexdigest()
 
 
@@ -1581,14 +1594,57 @@ def _replace_strings(value: object, replacements: dict[str, str]) -> object:
     return value
 
 
+def _projection_namespaces(graph: dict[str, object]) -> dict[str, set[str]]:
+    namespaces: dict[str, set[str]] = {}
+
+    def bind(value: object, namespace: str) -> None:
+        if isinstance(value, str):
+            namespaces.setdefault(value, set()).add(namespace)
+
+    for symbol in RESERVED_SYMBOLS:
+        bind(symbol, "reserved")
+    modules = graph.get("modules")
+    if isinstance(modules, list):
+        for module in modules:
+            if not isinstance(module, dict):
+                continue
+            value = module.get("value")
+            if not isinstance(value, dict):
+                continue
+            signatures = value.get("signatures")
+            if isinstance(signatures, list):
+                for signature in signatures:
+                    if isinstance(signature, list) and signature:
+                        bind(signature[0], "predicate")
+            definitions = value.get("definitions")
+            if isinstance(definitions, list):
+                for definition in definitions:
+                    if isinstance(definition, list) and definition:
+                        bind(definition[0], "definition")
+    records = graph.get("records")
+    if isinstance(records, list):
+        for record in records:
+            if not isinstance(record, list) or len(record) < 2:
+                continue
+            if record[0] == "definition":
+                bind(record[1], "definition")
+            elif record[0] == "literal" and len(record) == 5:
+                bind(record[1], "literal-id")
+                bind(record[4], "literal-value")
+    return namespaces
+
+
 def _projection_aliases(profile: dict[str, object], graph: dict[str, object]) -> dict[str, str]:
     visible = _strings(graph)
+    namespaces = _projection_namespaces(graph)
     aliases: dict[str, str] = {}
     targets: set[str] = set()
     for index, item in enumerate(profile["aliases"]):
         assert isinstance(item, list)
         source, target = item
         assert isinstance(source, str) and isinstance(target, str)
+        if len(namespaces.get(source, ())) > 1:
+            refuse("NOE-E-ALIAS.OVERLOAD", f"profile.aliases[{index}]", "alias source occupies multiple semantic namespaces")
         if target in visible or target in RESERVED_SYMBOLS or target in targets:
             refuse("NOE-E-ALIAS.COLLISION", f"profile.aliases[{index}]", "alias collides with visible graph text")
         aliases[source] = target
@@ -1625,6 +1681,7 @@ def project_build(
     profile: dict[str, object],
     profile_digest: str,
 ) -> dict[str, object]:
+    profile = _validate_profile_value(profile, None)
     graph = build["graph"]
     lock = build["lock"]
     assert isinstance(graph, dict) and isinstance(lock, dict)
@@ -1659,6 +1716,7 @@ def project_build(
 
 
 def recover_projection(bundle_value: object, profile: dict[str, object]) -> dict[str, object]:
+    profile = _validate_profile_value(profile, None)
     bundle = _exact_keys(bundle_value, {"schema", "lock", "manifest", "text"}, "projection")
     if bundle["schema"] != PROJECTION_SCHEMA:
         refuse("NOE-E-TYPE.VERSION", "projection.schema", "unsupported projection bundle")

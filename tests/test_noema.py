@@ -179,7 +179,7 @@ class NoemaScaffoldTests(unittest.TestCase):
     def test_receipted_runbook_copy_is_exact(self):
         self.assertEqual(
             sha256(RUNBOOK.read_bytes()).hexdigest(),
-            "29a63b93e77f4022d145520d2b29cfd52dbff55ff2d97a6568e8285d7ce67acc",
+            "9a1e1f79bab399789cf7a504dfb3865a35f66d861da30ee3808f263bed8be145",
         )
 
     def test_repository_python_pin_is_exact(self):
@@ -1024,6 +1024,17 @@ class ProjectionTests(unittest.TestCase):
             noema.project_build(self.build, profile, self.profile_digest)
         self.assertEqual(raised.exception.code, "NOE-E-ALIAS.COLLISION")
 
+    def test_alias_cannot_overload_predicate_and_literal_id(self):
+        literal = ["literal", "core.ready", "text", "1", "x"]
+        build, _artifacts = compile_records(base_records(literals=[literal]))
+        profile = json.loads(json.dumps(self.profile))
+        profile["aliases"].insert(4, ["core.ready", "q"])
+        profile_digest = sha256(noema._canonical_json(profile)).hexdigest()
+        build["lock"]["profile_sha256"] = profile_digest
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.project_build(build, profile, profile_digest)
+        self.assertEqual(raised.exception.code, "NOE-E-ALIAS.OVERLOAD")
+
     def test_unused_alias_is_inert(self):
         profile = json.loads(json.dumps(self.profile))
         profile["aliases"].append(["zz.absent", "Z"])
@@ -1056,6 +1067,23 @@ class ProjectionTests(unittest.TestCase):
         with self.assertRaises(noema.Refusal) as raised:
             noema.recover_projection(bundle, self.profile)
         self.assertEqual(raised.exception.code, "NOE-E-DIGEST.LOCK")
+
+    def test_recovery_normalizes_malformed_alias_shape(self):
+        bundle = noema.project_build(self.build, self.profile, self.profile_digest)
+        profile = json.loads(json.dumps(self.profile))
+        profile["aliases"] = [[]]
+        profile_digest = sha256(noema._canonical_json(profile)).hexdigest()
+        bundle["lock"]["profile_sha256"] = profile_digest
+        bundle["manifest"]["profile_sha256"] = profile_digest
+        bundle["manifest"]["aliases_sha256"] = sha256(noema._canonical_json(profile["aliases"])).hexdigest()
+        bundle["manifest"]["lock_sha256"] = sha256(noema._canonical_json(bundle["lock"])).hexdigest()
+        header, graph, _empty = bundle["text"].split("\n")
+        _magic, _old_profile, graph_digest = header.split(" ")
+        bundle["text"] = f"NT1 {profile_digest} {graph_digest}\n{graph}\n"
+        bundle["manifest"]["projection_sha256"] = sha256(bundle["text"].encode()).hexdigest()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema.recover_projection(bundle, profile)
+        self.assertEqual(raised.exception.code, "NOE-E-ALIAS.SHAPE")
 
 
 class SemanticDiffTests(unittest.TestCase):
