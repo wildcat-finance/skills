@@ -434,7 +434,66 @@
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/mutationPlanEntry" }
         }
-      }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "specimen": { "const": "brevitas" },
+            "mutations": {
+              "minItems": 2,
+              "maxItems": 2,
+              "prefixItems": [
+                { "properties": { "id": { "const": "brevitas.alias-collision" }, "category": { "const": "alias-collision" } } },
+                { "properties": { "id": { "const": "brevitas.changed-exact-literal" }, "category": { "const": "changed-exact-literal" } } }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "specimen": { "const": "fiat" },
+            "mutations": {
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                { "properties": { "id": { "const": "fiat.dropped-negation" }, "category": { "const": "dropped-negation" } } },
+                { "properties": { "id": { "const": "fiat.missing-authority" }, "category": { "const": "missing-authority" } } },
+                { "properties": { "id": { "const": "fiat.reordered-effects" }, "category": { "const": "reordered-effects" } } },
+                { "properties": { "id": { "const": "fiat.stale-module" }, "category": { "const": "stale-module" } } }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "specimen": { "const": "phylax" },
+            "mutations": {
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                { "properties": { "id": { "const": "phylax.consequence-3-bypass" }, "category": { "const": "consequence-3-bypass" } } },
+                { "properties": { "id": { "const": "phylax.omitted-dependency" }, "category": { "const": "omitted-dependency" } } },
+                { "properties": { "id": { "const": "phylax.permission-for-prohibition" }, "category": { "const": "permission-for-prohibition" } } },
+                { "properties": { "id": { "const": "phylax.widened-scope" }, "category": { "const": "widened-scope" } } }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "specimen": { "const": "sapheneia" },
+            "mutations": {
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                { "properties": { "id": { "const": "sapheneia.swapped-actor" }, "category": { "const": "swapped-actor" } } },
+                { "properties": { "id": { "const": "sapheneia.unknown-guard-deletion" }, "category": { "const": "unknown-guard-deletion" } } },
+                { "properties": { "id": { "const": "sapheneia.unknown-opcode" }, "category": { "const": "unknown-opcode" } } }
+              ]
+            }
+          }
+        }
+      ]
     },
     "mutationRefusal": {
       "type": "object",
@@ -543,7 +602,16 @@
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/identifier" }
         }
-      }
+      },
+      "oneOf": [
+        { "properties": { "id": { "const": "authority" }, "mutations": { "const": ["fiat.missing-authority", "sapheneia.swapped-actor"] } } },
+        { "properties": { "id": { "const": "consequence-3" }, "mutations": { "const": ["phylax.consequence-3-bypass"] } } },
+        { "properties": { "id": { "const": "exact-literal" }, "mutations": { "const": ["brevitas.changed-exact-literal"] } } },
+        { "properties": { "id": { "const": "negation" }, "mutations": { "const": ["fiat.dropped-negation"] } } },
+        { "properties": { "id": { "const": "ordering" }, "mutations": { "const": ["fiat.reordered-effects"] } } },
+        { "properties": { "id": { "const": "permission-prohibition" }, "mutations": { "const": ["phylax.permission-for-prohibition"] } } },
+        { "properties": { "id": { "const": "unknown-guard" }, "mutations": { "const": ["sapheneia.unknown-guard-deletion"] } } }
+      ]
     },
     "specimenCorpus": {
       "type": "object",
