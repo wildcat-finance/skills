@@ -75,6 +75,9 @@ requires an active applicable directive, and runtime typed fields expand their
 locked pure definitions before comparison. Requirement conflict work has a
 fixed pair budget and indexed override lookup, while recursive and quantified
 truth evaluation shares one expansion-work counter.
+Slice fixed-point closure likewise has one aggregate record-scan budget, and
+nested directive traversal shares one expansion-work counter. A transition is
+a selection root only when its declared from-state matches the selected state.
 
 ## Alternatives
 

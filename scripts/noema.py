@@ -42,7 +42,9 @@ MAX_LITERAL_BYTES = 65_000
 MAX_LITERAL_TOTAL_BYTES = 786_432
 MAX_EXPANDED_NODES = 65_536
 MAX_TRUTH_EXPANSION_NODES = 65_536
+MAX_DIRECTIVE_EXPANSION_NODES = 65_536
 MAX_POLICY_PAIRS = 65_536
+MAX_SLICE_SCANS = 65_536
 MAX_SET_MEMBERS = 4_096
 MAX_OUTPUT_BYTES = 1_048_576
 MAX_IDENTIFIER_BYTES = 128
@@ -3016,8 +3018,9 @@ def select_runtime(
         atoms = record_atoms[identifier]
         if any(kind in {"operation", "effect"} and value == operation for kind, value in atoms):
             primary.add(identifier)
-        if record[0] == "transition" and any(
-            kind == "state" and value == state_value for kind, value in atoms
+        if (
+            record[0] == "transition"
+            and _runtime_atom_value(record[3], "state", definitions) == state_value
         ):
             primary.add(identifier)
         if any(
@@ -3036,6 +3039,7 @@ def select_runtime(
         if record[0] == "rule"
     }
     changed = True
+    slice_scans = 0
     while changed:
         changed = False
         links = set().union(*(record_links[item] for item in included)) if included else set()
@@ -3045,6 +3049,13 @@ def select_runtime(
             if atom[0] in {"action", "artifact", "claim", "command", "effect", "event", "operation", "repository", "state", "transition"}
         }
         for identifier, record in selectable.items():
+            slice_scans += 1
+            if slice_scans > MAX_SLICE_SCANS:
+                refuse(
+                    "NOE-E-BOUNDS.SLICE",
+                    "selection",
+                    "slice closure exceeds its closed scan budget",
+                )
             if identifier in included or identifier in inactive:
                 continue
             form = record[0]
@@ -3394,10 +3405,18 @@ def _directive_intents(
     authority: tuple[str, ...] = (),
     scope: tuple[str, ...] = (),
     order: list[int] | None = None,
+    expansion_nodes: list[int] | None = None,
 ) -> list[dict[str, object]]:
     if order is None:
         order = [0]
-    expanded = _expand_runtime_term(directive, definitions)
+    if expansion_nodes is None:
+        expansion_nodes = [0]
+    expanded = _expand_runtime_term(
+        directive,
+        definitions,
+        nodes=expansion_nodes,
+        limit=MAX_DIRECTIVE_EXPANSION_NODES,
+    )
     if not isinstance(expanded, list) or not expanded:
         refuse("NOE-E-TYPE.DIRECTIVE", "runtime", "runtime tape contains a malformed directive")
     tag = expanded[0]
@@ -3412,6 +3431,7 @@ def _directive_intents(
             authority=authority,
             scope=scope,
             order=order,
+            expansion_nodes=expansion_nodes,
         )
     if tag == "@" and len(expanded) == 3:
         scope_value = _atom_value(expanded[1], "scope")
@@ -3424,6 +3444,7 @@ def _directive_intents(
             authority=authority,
             scope=(*scope, scope_value),
             order=order,
+            expansion_nodes=expansion_nodes,
         )
     if tag == "^" and len(expanded) == 3:
         authority_value = _atom_value(expanded[1], "actor")
@@ -3436,6 +3457,7 @@ def _directive_intents(
             authority=(*authority, authority_value),
             scope=scope,
             order=order,
+            expansion_nodes=expansion_nodes,
         )
     if tag == ";" and len(expanded) >= 2:
         intents: list[dict[str, object]] = []
@@ -3449,6 +3471,7 @@ def _directive_intents(
                     authority=authority,
                     scope=scope,
                     order=order,
+                    expansion_nodes=expansion_nodes,
                 )
             )
         return intents

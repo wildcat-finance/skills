@@ -1848,6 +1848,71 @@ class SemanticDiffTests(unittest.TestCase):
 
 
 class SliceTests(unittest.TestCase):
+    def test_slice_closure_has_a_closed_scan_budget(self):
+        records = [["import", "core", CORE_DIGEST]]
+        links = [f"link.{index}" for index in range(4)]
+        for index in range(4):
+            left = "root" if index == 0 else f"step.{index}"
+            directives = [
+                [
+                    "!",
+                    [
+                        "core.effect_on",
+                        [":", "effect", left],
+                        [":", "artifact", links[index]],
+                    ],
+                ]
+            ]
+            if index:
+                directives.append(
+                    [
+                        "!",
+                        [
+                            "core.effect_on",
+                            [":", "effect", left],
+                            [":", "artifact", links[index - 1]],
+                        ],
+                    ]
+                )
+            records.append(
+                [
+                    "rule",
+                    f"rule.chain.{index}",
+                    [";", *directives],
+                    source_binding(index, index + 1),
+                ]
+            )
+        with mock.patch.object(noema, "MAX_SLICE_SCANS", 5, create=True):
+            with self.assertRaises(noema.Refusal) as raised:
+                select_records(records, runtime_selection("root"))
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.SLICE")
+
+    def test_transition_root_matches_only_the_selected_from_state(self):
+        records = [
+            ["import", "core", CORE_DIGEST],
+            [
+                "rule",
+                "rule.inspect",
+                ["+", [":", "effect", "inspect"]],
+                source_binding(0, 1),
+            ],
+            [
+                "transition",
+                "transition.unrelated",
+                [":", "state", "other.machine"],
+                [":", "state", "other.from"],
+                [":", "event", "other.event"],
+                ["=", [":", "state", "other.from"], [":", "state", "other.from"]],
+                [":", "state", "idle"],
+                ["+", [":", "effect", "other.effect"]],
+            ],
+        ]
+        _build, manifest, _projection = select_records(
+            records,
+            runtime_selection("inspect", state="idle"),
+        )
+        self.assertNotIn("transition.unrelated", manifest["included_ids"])
+
     def test_structurally_valid_forged_build_cannot_mint_a_sealed_manifest(self):
         effect = "forged.build"
         consequence = [":", "core.consequence", "0"]
@@ -2779,6 +2844,32 @@ class PolicyCheckTests(unittest.TestCase):
             noema,
             "MAX_TRUTH_EXPANSION_NODES",
             45,
+            create=True,
+        ):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.check_runtime(effect, [], manifest)
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
+    def test_nested_directives_share_one_expansion_budget(self):
+        effect = "directive.budget"
+        consequence = [":", "core.consequence", "0"]
+        guard = ["=", [":", "state", "ready"], [":", "state", "ready"]]
+        nested = ["+", [":", "effect", effect]]
+        for _index in range(6):
+            nested = ["?", guard, nested]
+        directive = [
+            ";",
+            ["!", ["=", consequence, consequence]],
+            nested,
+        ]
+        _build, manifest, _projection = select_records(
+            base_records(directive),
+            runtime_selection(effect),
+        )
+        with mock.patch.object(
+            noema,
+            "MAX_DIRECTIVE_EXPANSION_NODES",
+            80,
             create=True,
         ):
             with self.assertRaises(noema.Refusal) as raised:
