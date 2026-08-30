@@ -294,13 +294,19 @@ CONSEQUENCE_ROLES = {
 }
 FORBIDDEN_IMPORT_ROOTS = {
     "asyncio",
+    "concurrent",
+    "ctypes",
     "ftplib",
     "getpass",
     "http",
     "importlib",
     "keyring",
+    "marshal",
     "multiprocessing",
     "netrc",
+    "pickle",
+    "posix",
+    "pty",
     "requests",
     "runpy",
     "socket",
@@ -313,20 +319,33 @@ FORBIDDEN_IMPORT_ROOTS = {
 }
 FORBIDDEN_CALLS = {
     "__import__",
+    "builtins.__import__",
+    "builtins.compile",
+    "builtins.__dict__",
+    "builtins.eval",
+    "builtins.exec",
     "compile",
     "eval",
     "exec",
+    "__builtins__.__dict__",
+    "__builtins__.__import__",
+    "__builtins__.compile",
+    "__builtins__.eval",
+    "__builtins__.exec",
     "importlib.import_module",
+    "os.__dict__",
     "os.fork",
     "os.forkpty",
     "os.getenv",
     "os.popen",
     "os.posix_spawn",
     "os.posix_spawnp",
+    "os.startfile",
     "os.system",
     "runpy.run_module",
     "runpy.run_path",
 }
+FORBIDDEN_DYNAMIC_NAMES = {"__import__", "compile", "eval", "exec"}
 FORBIDDEN_OS_IMPORTS = {
     "environ",
     "execl",
@@ -351,6 +370,7 @@ FORBIDDEN_OS_IMPORTS = {
     "spawnve",
     "spawnvp",
     "spawnvpe",
+    "startfile",
     "system",
 }
 COVERAGE_CODES = ("P", "M", "S", "O", "R", "X")
@@ -1448,7 +1468,11 @@ def validate_authority_reference(root: Path, reference, expected: dict):
     keys = {"schema", "id", "promise_id", "gate", "subject", "scope"}
     if set(authority) != keys or authority.get("schema") != TRANSITION_AUTHORITY_SCHEMA:
         return None, "authority record has an unsupported or open shape"
-    if not isinstance(authority.get("id"), str) or not authority["id"].strip():
+    if (
+        not isinstance(authority.get("id"), str)
+        or not authority["id"].strip()
+        or authority["id"] != authority["id"].strip()
+    ):
         return None, "authority record has no identity"
     for key in ("promise_id", "gate", "subject", "scope"):
         if authority.get(key) != expected.get(key):
@@ -1525,7 +1549,13 @@ def validate_exception_record(
                 )
             ]
     authority = document.get("authority")
-    if not isinstance(authority, dict) or set(authority) != {"id", "reference"}:
+    if (
+        not isinstance(authority, dict)
+        or set(authority) != {"id", "reference"}
+        or not isinstance(authority.get("id"), str)
+        or not authority["id"].strip()
+        or authority["id"] != authority["id"].strip()
+    ):
         return [
             semantic_finding(
                 "law-exception-resolution",
@@ -1548,9 +1578,18 @@ def validate_exception_record(
                 record=expected,
             )
         ]
-    _reason, error = read_bound_reference(root, document.get("record"), "exception reason")
+    reason, error = read_bound_reference(root, document.get("record"), "exception reason")
     if error is not None:
         return [semantic_finding("law-exception-resolution", shown, error, record=expected)]
+    if not reason.strip():
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception reason record is empty",
+                record=expected,
+            )
+        ]
     expiry = document.get("expiry")
     if not isinstance(expiry, dict) or len(expiry) != 1:
         return [
@@ -1934,7 +1973,7 @@ def check_core_source_text(source: str, shown: str):
                 violations.append(f"forbidden import {node.module}")
             if root == "os":
                 for alias in node.names:
-                    if alias.name in FORBIDDEN_OS_IMPORTS:
+                    if alias.name == "*" or alias.name in FORBIDDEN_OS_IMPORTS:
                         violations.append(f"forbidden import os.{alias.name}")
 
     def resolve_alias(name: str):
@@ -1963,7 +2002,8 @@ def check_core_source_text(source: str, shown: str):
                 name == "getattr"
                 and len(node.args) >= 2
                 and isinstance(node.args[1], ast.Constant)
-                and node.args[1].value in FORBIDDEN_OS_IMPORTS
+                and node.args[1].value
+                in (FORBIDDEN_OS_IMPORTS | FORBIDDEN_DYNAMIC_NAMES)
             ):
                 violations.append(
                     f"forbidden dynamic process or credential lookup {node.args[1].value}"
@@ -1974,6 +2014,16 @@ def check_core_source_text(source: str, shown: str):
                 violations.append("forbidden credential or environment read os.environ")
             elif forbidden_operation(name):
                 violations.append(f"forbidden process or dynamic-code reference {name}")
+        elif (
+            isinstance(node, ast.Subscript)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "__builtins__"
+            and isinstance(node.slice, ast.Constant)
+            and node.slice.value in FORBIDDEN_DYNAMIC_NAMES
+        ):
+            violations.append(
+                f"forbidden dynamic-code reference __builtins__[{node.slice.value!r}]"
+            )
     if violations:
         return [
             semantic_finding(
@@ -2123,7 +2173,13 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
     ):
         return "exception record has an unsupported shape or promise identity"
     authority = exception.get("authority")
-    if not isinstance(authority, dict) or set(authority) != {"id", "reference"}:
+    if (
+        not isinstance(authority, dict)
+        or set(authority) != {"id", "reference"}
+        or not isinstance(authority.get("id"), str)
+        or not authority["id"].strip()
+        or authority["id"] != authority["id"].strip()
+    ):
         return "exception authority is not an identified resolvable reference"
     authority_document, error = validate_authority_reference(
         root, authority.get("reference"), exception
@@ -2132,9 +2188,11 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
         return error
     if authority.get("id") != authority_document.get("id"):
         return "exception authority identity does not match its record"
-    _reason, error = read_bound_reference(root, exception.get("record"), "exception reason")
+    reason, error = read_bound_reference(root, exception.get("record"), "exception reason")
     if error is not None:
         return error
+    if not reason.strip():
+        return "exception reason record is empty"
     expiry = exception.get("expiry")
     if not isinstance(expiry, dict) or len(expiry) != 1:
         return "exception expiry is not the closed at or not_applicable form"

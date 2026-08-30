@@ -1565,6 +1565,27 @@ class PromiseSemanticGateTests(unittest.TestCase):
             "sha256": "0" * 64,
         }
         self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            copy_semantic_fixtures(target)
+            blank = (
+                target
+                / "tests/fixtures/promise-machine/exceptions/blank.md"
+            )
+            blank.write_bytes(b"")
+            blank_document = self.valid_exception()
+            blank_document["record"] = {
+                "path": blank.relative_to(target).as_posix(),
+                "sha256": hashlib.sha256(b"").hexdigest(),
+            }
+            findings = promise_machine_module.validate_exception_record(
+                target,
+                blank_document,
+                "blank-reason.json",
+                expected=self.exception_expected(),
+                evaluated_at="2026-08-30T00:00:00Z",
+            )
+        self.assertEqual(semantic_codes(findings), ["PM093"])
 
     def test_expired_exception_is_refused(self):
         document = self.valid_exception()
@@ -1583,6 +1604,28 @@ class PromiseSemanticGateTests(unittest.TestCase):
             "sha256": "0" * 64,
         }
         self.assertEqual(semantic_codes(self.check_exception(document)), ["PM093"])
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            copy_semantic_fixtures(target)
+            padded = self.valid_exception()
+            authority_path = target / padded["authority"]["reference"]["path"]
+            authority = json.loads(authority_path.read_text(encoding="utf-8"))
+            authority["id"] = " fixture-authority "
+            authority_path.write_text(
+                json.dumps(authority, indent=2) + "\n", encoding="utf-8"
+            )
+            padded["authority"]["id"] = " fixture-authority "
+            padded["authority"]["reference"]["sha256"] = hashlib.sha256(
+                authority_path.read_bytes()
+            ).hexdigest()
+            findings = promise_machine_module.validate_exception_record(
+                target,
+                padded,
+                "padded-authority.json",
+                expected=self.exception_expected(),
+                evaluated_at="2026-08-30T00:00:00Z",
+            )
+        self.assertEqual(semantic_codes(findings), ["PM093"])
 
     def test_exception_promise_must_match_the_transition(self):
         document = self.valid_exception()
@@ -1632,6 +1675,10 @@ class PromiseSemanticGateTests(unittest.TestCase):
             "import getpass\n",
             "import subprocess\n",
             "import asyncio\n",
+            "import ctypes\nctypes.CDLL(None).system(b'fixture')\n",
+            "import pty\npty.spawn(['/bin/sh'])\n",
+            "import concurrent.futures\nconcurrent.futures.ProcessPoolExecutor()\n",
+            "from os import *\nsystem('fixture')\n",
         )
         for source in sources:
             with self.subTest(source=source.strip()):
@@ -1647,6 +1694,9 @@ class PromiseSemanticGateTests(unittest.TestCase):
             "eval('1 + 1')\n",
             "compile('1', '<fixture>', 'eval')\n",
             "import os\nos.environ['TOKEN']\n",
+            "import builtins\nbuiltins.eval('1 + 1')\n",
+            "__builtins__.eval('1 + 1')\n",
+            "__builtins__['exec']('fixture = 1')\n",
         )
         for source in sources:
             with self.subTest(source=source.splitlines()[-1]):
@@ -1660,6 +1710,9 @@ class PromiseSemanticGateTests(unittest.TestCase):
             "import os as operating\noperating.system('fixture')\n",
             "from os import system as launch\nlaunch('fixture')\n",
             "import os\ngetattr(os, 'system')('fixture')\n",
+            "import builtins\ngetattr(builtins, 'eval')('1 + 1')\n",
+            "import builtins\nbuiltins.__dict__['eval']('1 + 1')\n",
+            "import os\nos.__dict__['system']('fixture')\n",
         )
         for source in sources:
             with self.subTest(source=source.splitlines()[-1]):
@@ -1674,15 +1727,20 @@ class PromiseSemanticGateTests(unittest.TestCase):
             with mock.patch.object(
                 subprocess, "Popen", side_effect=AssertionError("child used")
             ):
-                with redirect_stdout(output):
-                    status = promise_machine_module.main(
-                        [
-                            "check",
-                            "--only",
-                            "obligations,contracts,exceptions,imports",
-                            "--json",
-                        ]
-                    )
+                with mock.patch.object(
+                    promise_machine_module,
+                    "atomic_write",
+                    side_effect=AssertionError("write used"),
+                ):
+                    with redirect_stdout(output):
+                        status = promise_machine_module.main(
+                            [
+                                "check",
+                                "--only",
+                                "obligations,contracts,exceptions,imports",
+                                "--json",
+                            ]
+                        )
         report = json.loads(output.getvalue())
         self.assertEqual(status, 0)
         self.assertEqual(report["findings"], [])
