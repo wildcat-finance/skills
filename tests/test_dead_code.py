@@ -15,6 +15,7 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "dead_code.py"
+MONITOR_SCRIPT = ROOT / "scripts" / "dead_code_monitoring" / "sitecustomize.py"
 SCHEMA_PATH = ROOT / "schemas" / "dead-code-report-v1.schema.json"
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "dead-code.yml"
 CHECK_MAP_PATH = ROOT / "tests" / "check-map-v1.json"
@@ -34,6 +35,11 @@ SPEC = importlib.util.spec_from_file_location("dead_code", SCRIPT)
 dead_code = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = dead_code
 SPEC.loader.exec_module(dead_code)
+
+MONITOR_SPEC = importlib.util.spec_from_file_location("dead_code_monitor", MONITOR_SCRIPT)
+dead_code_monitor = importlib.util.module_from_spec(MONITOR_SPEC)
+sys.modules[MONITOR_SPEC.name] = dead_code_monitor
+MONITOR_SPEC.loader.exec_module(dead_code_monitor)
 
 
 def git(directory, *arguments):
@@ -1004,6 +1010,745 @@ class CommandLineTests(TemporaryRepositoryTestCase):
         self.assertEqual(git(self.root, "status", "--porcelain"), "")
 
 
+class PythonAnalyserTests(TemporaryRepositoryTestCase):
+    def _analyse(self, files):
+        build_repository(self.root, files=files)
+        universe = dead_code.discover(self.root)
+        return universe, dead_code.analyse_python(self.root, universe)
+
+    def test_every_python_file_has_a_parse_record(self):
+        _universe, (status, _findings) = self._analyse(
+            {"main.py": "x = 1" + NL, "pkg/mod.py": "y = 2" + NL}
+        )
+        self.assertEqual(status.state, "ran")
+        self.assertEqual([item.record_id for item in status.records], ["main.py", "pkg/mod.py"])
+        self.assertTrue(all(item.state == "parsed" for item in status.records))
+
+    def test_syntax_error_degrades_and_names_the_file(self):
+        _universe, (status, findings) = self._analyse(
+            {"main.py": "if True print('no')" + NL, "ok.py": "x = 1" + NL}
+        )
+        self.assertEqual(status.state, "degraded")
+        record = next(item for item in status.records if item.record_id == "main.py")
+        self.assertEqual(record.state, "parse-error")
+        self.assertIn("SyntaxError", record.detail)
+        self.assertFalse(any(item.path == "main.py" for item in findings))
+
+    def test_unused_import_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "import os" + NL + "value = 1" + NL}
+        )
+        self.assertTrue(any(item.symbol == "os@1" for item in findings))
+
+    def test_loaded_import_is_retained(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "import os" + NL + "value = os.name" + NL}
+        )
+        self.assertFalse(any(item.symbol == "os@1" for item in findings))
+
+    def test_unused_local_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "def f():" + NL + "    spare = 1" + NL + "    return 2" + NL}
+        )
+        self.assertTrue(any(item.symbol == "f.spare@2" for item in findings))
+
+    def test_loaded_local_is_retained(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "def f():" + NL + "    kept = 1" + NL + "    return kept" + NL}
+        )
+        self.assertFalse(any(item.symbol == "f.kept@2" for item in findings))
+
+    def test_statement_after_return_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "def f():" + NL + "    return 1" + NL + "    spare()" + NL}
+        )
+        self.assertTrue(any(item.symbol == "line:3:unreachable" for item in findings))
+
+    def test_statement_before_return_is_not_unreachable(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "def f():" + NL + "    kept()" + NL + "    return 1" + NL}
+        )
+        self.assertFalse(any(item.symbol == "line:2:unreachable" for item in findings))
+
+    def test_literal_constant_branch_is_reported(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "if False:" + NL + "    spare()" + NL}
+        )
+        self.assertTrue(any(item.symbol == "line:1:constant-false" for item in findings))
+
+    def test_computed_import_lowers_candidate_confidence(self):
+        _universe, (status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "import os" + NL
+                    + "import importlib" + NL
+                    + "name = 'pkg.mod'" + NL
+                    + "importlib.import_module(name)" + NL
+                )
+            }
+        )
+        record = status.records[0]
+        self.assertIn("computed-import", record.detail)
+        candidate = next(item for item in findings if item.symbol == "os@1")
+        self.assertEqual(candidate.confidence, "low")
+
+    def test_literal_import_edge_reaches_the_module(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": "import live" + NL + "if __name__ == '__main__':" + NL + "    print(live.value)" + NL,
+                "live.py": "value = 1" + NL,
+            }
+        )
+        self.assertFalse(any(item.path == "live.py" and item.symbol == "<module>" for item in findings))
+
+    def test_unreachable_import_graph_module_is_low_confidence(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": "if __name__ == '__main__':" + NL + "    print('entry')" + NL,
+                "orphan.py": "value = 1" + NL,
+            }
+        )
+        candidate = next(item for item in findings if item.path == "orphan.py" and item.symbol == "<module>")
+        self.assertEqual(candidate.confidence, "low")
+
+    def test_decorator_registration_retains_the_definition(self):
+        source = "@registry" + NL + "def retained():" + NL + "    return 1" + NL
+        build_repository(self.root, files={"main.py": source})
+        snapshot = dead_code.parse_python_snapshot(self.root, dead_code.discover(self.root))
+        item = snapshot.files[0]
+        self.assertIn("retained", item.retained_names)
+        self.assertNotIn(("retained", 3), list(dead_code._function_targets(item)))
+
+    def test_dynamic_registration_argument_retains_the_definition(self):
+        source = "def retained():" + NL + "    return 1" + NL + "register(retained)" + NL
+        build_repository(self.root, files={"main.py": source})
+        item = dead_code.parse_python_snapshot(self.root, dead_code.discover(self.root)).files[0]
+        self.assertIn("retained", item.retained_names)
+
+    def test_literal_all_retains_exported_import(self):
+        _universe, (_status, findings) = self._analyse(
+            {"main.py": "from pkg import retained" + NL + "__all__ = ['retained']" + NL}
+        )
+        self.assertFalse(any(item.symbol == "retained@1" for item in findings))
+
+    def test_computed_getattr_is_a_visible_dynamic_boundary(self):
+        _universe, (status, _findings) = self._analyse(
+            {"main.py": "name = 'x'" + NL + "value = getattr(target, name)" + NL}
+        )
+        self.assertIn("computed-getattr", status.records[0].detail)
+
+    def test_main_guard_seeds_the_cli_module(self):
+        build_repository(
+            self.root,
+            files={"cli.py": "if __name__ == '__main__':" + NL + "    main()" + NL},
+        )
+        snapshot = dead_code.parse_python_snapshot(self.root, dead_code.discover(self.root))
+        self.assertIn("cli.py", snapshot.entry_paths)
+        self.assertIn("main", snapshot.files[0].retained_names)
+
+    def test_test_fixture_definitions_are_retained(self):
+        build_repository(
+            self.root,
+            files={"tests/fixtures/sample.py": "def helper():" + NL + "    return 1" + NL},
+        )
+        item = dead_code.parse_python_snapshot(self.root, dead_code.discover(self.root)).files[0]
+        self.assertIn("helper", item.retained_names)
+
+    def test_analysis_never_imports_the_parsed_module(self):
+        marker = self.root.parent / (self.root.name + "-executed")
+        source = f"from pathlib import Path{NL}Path({str(marker)!r}).write_text('bad'){NL}"
+        self._analyse({"hostile.py": source})
+        self.assertFalse(marker.exists())
+
+    def test_aggregate_python_limit_is_visible_as_skipped(self):
+        build_repository(self.root, files={"a.py": "x = 1" + NL, "b.py": "y = 2" + NL})
+        universe = dead_code.discover(self.root)
+        with mock.patch.object(dead_code, "MAX_PYTHON_TOTAL_BYTES", 1):
+            snapshot = dead_code.parse_python_snapshot(self.root, universe)
+        self.assertTrue(snapshot.degraded)
+        self.assertTrue(any(item.state == "skipped" for item in snapshot.records))
+
+    def test_global_assignment_is_not_reported_as_an_unused_local(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "def configure():" + NL
+                    + "    global setting" + NL
+                    + "    setting = 1" + NL
+                )
+            }
+        )
+        self.assertFalse(any(item.symbol == "configure.setting@3" for item in findings))
+
+    def test_nested_assignment_is_not_attributed_to_the_enclosing_function(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "def outer():" + NL
+                    + "    def inner():" + NL
+                    + "        nested = 1" + NL
+                    + "    return inner" + NL
+                )
+            }
+        )
+        self.assertFalse(any(item.symbol == "outer.nested@3" for item in findings))
+
+    def test_comprehension_target_is_not_reported_as_a_function_local(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "def values(items):" + NL
+                    + "    return [1 for item in items]" + NL
+                )
+            }
+        )
+        self.assertFalse(any(item.symbol == "values.item@2" for item in findings))
+
+
+class CoverageAggregationTests(unittest.TestCase):
+    def setUp(self):
+        self.run_id = "a" * 32
+        self.plan = {
+            "schema": "wildcat.check-plan.v1",
+            "map_digest": "b" * 64,
+            "requested_scopes": ["dead-code"],
+            "selected_checks": [
+                {"id": "alpha", "argv": ["python3", "alpha.py"], "cwd": "."}
+            ],
+        }
+        self.run = {
+            **self.plan,
+            "schema": "wildcat.check-run.v1",
+            "outcome": "green",
+            "checks": [
+                {"check": "alpha", "status": "passed", "duration_seconds": 0.1}
+            ],
+        }
+        self.universe = dead_code.Universe(
+            commit="1" * 40,
+            tree="2" * 40,
+            identity="sha256:" + "3" * 64,
+            tracked_count=1,
+            analysed=("alpha.py",),
+            excluded=(),
+        )
+
+    def _process(self, *, pid=10, marker="group-a", state="ran", argv=None):
+        return {
+            "schema": "dead-code-process-coverage/v1",
+            "run": self.run_id,
+            "process": {
+                "pid": pid,
+                "parent_pid": 1,
+                "containment": marker,
+                "argv": ["python3", "alpha.py"] if argv is None else argv,
+                "cwd": "/snapshot",
+            },
+            "status": {"state": state, "truncated": False, "errors": []},
+            "lines": [{"path": "alpha.py", "function": "f", "line": 2}],
+            "branches": [
+                {
+                    "path": "alpha.py",
+                    "function": "f",
+                    "from_line": 2,
+                    "to_line": 3,
+                    "direction": "left",
+                }
+            ],
+        }
+
+    def _aggregate(self, documents, run=None):
+        return dead_code.aggregate_coverage(
+            self.plan,
+            self.run if run is None else run,
+            [(document, 100) for document in documents],
+            self.universe,
+        )
+
+    def test_line_identity_survives_aggregation(self):
+        report = self._aggregate([self._process()])
+        self.assertEqual(report["processes"][0]["lines"][0]["line"], 2)
+
+    def test_branch_identity_survives_aggregation(self):
+        report = self._aggregate([self._process()])
+        branch = report["processes"][0]["branches"][0]
+        self.assertEqual((branch["from_line"], branch["to_line"]), (2, 3))
+
+    def test_multiple_processes_are_attributed_to_one_check(self):
+        report = self._aggregate([self._process(), self._process(pid=11)])
+        self.assertEqual(report["checks"][0]["processes"], 2)
+        self.assertEqual(report["checks"][0]["bytes"], 200)
+
+    def test_aggregation_is_deterministic_across_input_order(self):
+        first = self._process(pid=10)
+        second = self._process(pid=11)
+        self.assertEqual(
+            self._aggregate([first, second]),
+            self._aggregate([second, first]),
+        )
+
+    def test_public_coverage_does_not_retain_process_argv(self):
+        root_process = self._process(pid=10)
+        first_child = self._process(
+            pid=11,
+            argv=["python3", "child.py", "--token=first-secret"],
+        )
+        second_child = self._process(
+            pid=11,
+            argv=["python3", "child.py", "--token=second-secret"],
+        )
+
+        first = self._aggregate([root_process, first_child])
+        second = self._aggregate([root_process, second_child])
+
+        self.assertTrue(all("argv" not in process for process in first["processes"]))
+        first_child_id = next(
+            process["id"] for process in first["processes"] if process["pid"] == 11
+        )
+        second_child_id = next(
+            process["id"] for process in second["processes"] if process["pid"] == 11
+        )
+        self.assertEqual(first_child_id, second_child_id)
+        self.assertNotIn("first-secret", json.dumps(first))
+
+    def test_failed_check_degrades_coverage(self):
+        run = {
+            **self.run,
+            "outcome": "red",
+            "checks": [{"check": "alpha", "status": "failed", "duration_seconds": 0.1}],
+        }
+        report = self._aggregate([self._process()], run)
+        self.assertEqual(report["status"]["state"], "degraded")
+        self.assertIn("ended failed", report["status"]["detail"])
+
+    def test_not_started_check_degrades_coverage(self):
+        run = {
+            **self.run,
+            "outcome": "red",
+            "checks": [{"check": "alpha", "status": "not-started"}],
+        }
+        report = self._aggregate([], run)
+        self.assertEqual(report["status"]["state"], "degraded")
+        self.assertIn("no process record", report["status"]["detail"])
+
+    def test_degraded_process_degrades_coverage(self):
+        report = self._aggregate([self._process(state="degraded")])
+        self.assertEqual(report["status"]["state"], "degraded")
+
+    def test_unattributed_process_degrades_coverage(self):
+        report = self._aggregate([self._process(argv=["python3", "other.py"])])
+        self.assertEqual(report["status"]["state"], "degraded")
+        self.assertEqual(report["processes"], [])
+
+    def test_terminal_check_set_must_match_the_plan(self):
+        run = {**self.run, "checks": []}
+        with self.assertRaisesRegex(dead_code.Refusal, "do not match"):
+            self._aggregate([self._process()], run)
+
+    def test_duplicate_terminal_check_refuses_instead_of_overwriting(self):
+        run = {**self.run, "checks": [*self.run["checks"], *self.run["checks"]]}
+        with self.assertRaisesRegex(dead_code.Refusal, "repeated"):
+            self._aggregate([self._process()], run)
+
+    def test_contradictory_complete_process_status_degrades(self):
+        process = self._process()
+        process["status"]["truncated"] = True
+        report = self._aggregate([process])
+        self.assertEqual(report["status"]["state"], "degraded")
+
+    def test_non_string_process_state_refuses_instead_of_crashing(self):
+        process = self._process()
+        process["status"]["state"] = []
+        with self.assertRaisesRegex(dead_code.Refusal, "process status"):
+            self._aggregate([process])
+
+    def test_wrapper_recursion_is_detected_in_declared_argv(self):
+        self.assertTrue(
+            dead_code._coverage_recurses(
+                ["python3", "scripts/dead_code.py", "coverage", "--scope", "dead-code"]
+            )
+        )
+
+    def test_non_python_declared_command_is_not_coverable(self):
+        self.assertFalse(dead_code._python_argv(["forge", "test"]))
+
+    def test_plan_scope_mismatch_refuses(self):
+        payload = json.dumps({**self.plan, "requested_scopes": ["other"]}).encode()
+        with mock.patch.object(dead_code, "run_process", return_value=(payload, b"", 0)):
+            with self.assertRaisesRegex(dead_code.Refusal, "not bound"):
+                dead_code._runner_plan(ROOT, ("dead-code",))
+
+    def test_coverage_environment_prepends_the_current_runtime(self):
+        with mock.patch.dict(
+            os.environ,
+            {"PATH": "/usr/bin", "PYTHONPATH": "/fixture"},
+            clear=True,
+        ):
+            environment = dead_code._coverage_environment(
+                ROOT,
+                ROOT / ".dead-code" / "processes",
+                self.run_id,
+            )
+        self.assertEqual(
+            environment["PATH"].split(os.pathsep)[0],
+            str(Path(sys.executable).parent),
+        )
+        self.assertEqual(
+            environment["PYTHONPATH"].split(os.pathsep)[0],
+            str(ROOT / dead_code.MONITOR_DIRECTORY),
+        )
+
+    def test_run_map_digest_must_match_the_preflight_plan(self):
+        run = {**self.run, "map_digest": "c" * 64}
+        with self.assertRaisesRegex(dead_code.Refusal, "preflight plan"):
+            self._aggregate([self._process()], run)
+
+
+class MonitoringProbeTests(TemporaryRepositoryTestCase):
+    def _free_tool_id(self):
+        return next(identifier for identifier in range(6) if sys.monitoring.get_tool(identifier) is None)
+
+    @staticmethod
+    def _release_tool_id(identifier):
+        if sys.monitoring.get_tool(identifier) is None:
+            return
+        sys.monitoring.set_events(identifier, 0)
+        for event in (
+            sys.monitoring.events.LINE,
+            sys.monitoring.events.BRANCH_LEFT,
+            sys.monitoring.events.BRANCH_RIGHT,
+        ):
+            sys.monitoring.register_callback(identifier, event, None)
+        sys.monitoring.free_tool_id(identifier)
+
+    def test_probe_restores_its_tool_id_and_event_mask(self):
+        output = self.root / "records"
+        output.mkdir()
+        probe = dead_code_monitor.MonitoringProbe(output, ROOT, "a" * 32)
+        probe.tool_id = self._free_tool_id()
+        self.assertTrue(probe.start())
+        self.assertNotEqual(sys.monitoring.get_events(probe.tool_id), 0)
+        probe.close()
+        self.assertIsNone(sys.monitoring.get_tool(probe.tool_id))
+        self.assertEqual(sys.monitoring.get_events(probe.tool_id), 0)
+
+    def test_probe_does_not_clobber_an_occupied_tool_id(self):
+        identifier = self._free_tool_id()
+        sys.monitoring.use_tool_id(identifier, "fixture-owner")
+        self.addCleanup(sys.monitoring.free_tool_id, identifier)
+        output = self.root / "records"
+        output.mkdir()
+        probe = dead_code_monitor.MonitoringProbe(output, ROOT, "a" * 32)
+        probe.tool_id = identifier
+        self.assertFalse(probe.start())
+        probe.close()
+        self.assertEqual(sys.monitoring.get_tool(identifier), "fixture-owner")
+
+    def test_probe_does_not_clobber_a_reassigned_tool_id(self):
+        identifier = self._free_tool_id()
+        output = self.root / "records"
+        output.mkdir()
+        probe = dead_code_monitor.MonitoringProbe(output, ROOT, "a" * 32)
+        probe.tool_id = identifier
+        self.assertTrue(probe.start())
+        self._release_tool_id(identifier)
+        sys.monitoring.use_tool_id(identifier, "replacement-owner")
+        self.addCleanup(self._release_tool_id, identifier)
+
+        probe.close()
+
+        self.assertEqual(sys.monitoring.get_tool(identifier), "replacement-owner")
+        document = json.loads(next(output.iterdir()).read_text(encoding="utf-8"))
+        self.assertIn("restore:ownership-changed", document["status"]["errors"])
+
+    def test_probe_writes_named_lines_and_branches(self):
+        output = self.root / "records"
+        output.mkdir()
+        probe = dead_code_monitor.MonitoringProbe(output, ROOT, "a" * 32)
+        probe.tool_id = self._free_tool_id()
+        probe.start()
+
+        def exercised(value):
+            if value:
+                return "left"
+            return "right"
+
+        exercised(True)
+        probe.close()
+        documents = [json.loads(path.read_text(encoding="utf-8")) for path in output.iterdir()]
+        self.assertEqual(len(documents), 1)
+        self.assertTrue(any(item["function"].endswith("exercised") for item in documents[0]["lines"]))
+        self.assertTrue(documents[0]["branches"])
+
+    def test_event_cap_marks_the_process_record_truncated(self):
+        output = self.root / "records"
+        output.mkdir()
+        probe = dead_code_monitor.MonitoringProbe(output, ROOT, "a" * 32)
+        with mock.patch.object(dead_code_monitor, "MAX_EVENTS", 0):
+            probe._remember_line(self.test_event_cap_marks_the_process_record_truncated.__code__, 1)
+        self.assertTrue(probe.truncated)
+
+    def test_line_callback_never_resolves_the_filesystem(self):
+        output = self.root / "records"
+        output.mkdir()
+        probe = dead_code_monitor.MonitoringProbe(output, ROOT, "a" * 32)
+        with mock.patch.object(Path, "resolve", side_effect=AssertionError("hot-path resolve")):
+            result = probe._remember_line(
+                self.test_line_callback_never_resolves_the_filesystem.__code__,
+                1,
+            )
+        self.assertIs(result, sys.monitoring.DISABLE)
+
+
+class CoverageContainmentTests(unittest.TestCase):
+    @staticmethod
+    def _stop(process):
+        if process.poll() is None:
+            process.kill()
+        process.wait(timeout=5)
+
+    def test_recovery_terminates_a_process_carrying_the_run_identity(self):
+        run_id = "d" * 32
+        environment = dict(os.environ)
+        environment[dead_code.COVERAGE_ACTIVE_ENV] = run_id
+        process = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            env=environment,
+            start_new_session=True,
+        )
+        self.addCleanup(self._stop, process)
+        dead_code._terminate_coverage_processes(run_id)
+        process.wait(timeout=5)
+        self.assertIsNotNone(process.returncode)
+
+
+class CoverageCommandTests(TemporaryRepositoryTestCase):
+    def test_green_report_cannot_disagree_with_the_runner_exit(self):
+        build_repository(self.root)
+        universe = dead_code.discover(self.root)
+        plan = {
+            "schema": "wildcat.check-plan.v1",
+            "map_digest": "a" * 64,
+            "requested_scopes": ["dead-code"],
+            "selected_checks": [
+                {"id": "alpha", "argv": [sys.executable, "a.py"], "cwd": "."}
+            ],
+        }
+        run = {
+            **plan,
+            "schema": "wildcat.check-run.v1",
+            "outcome": "green",
+            "checks": [
+                {"check": "alpha", "status": "passed", "duration_seconds": 0.1}
+            ],
+        }
+
+        def failed_runner(*_args, **_kwargs):
+            target = self.root / ".dead-code" / "checks.json"
+            target.write_text(json.dumps(run), encoding="utf-8")
+            return b"", b"runner failed", 1
+
+        arguments = dead_code.argparse.Namespace(
+            directory=str(self.root),
+            scope=["dead-code"],
+            output=".dead-code/coverage.json",
+        )
+        with (
+            mock.patch.object(dead_code, "repository_root", return_value=self.root),
+            mock.patch.object(dead_code, "discover", return_value=universe),
+            mock.patch.object(dead_code, "_runner_plan", return_value=plan),
+            mock.patch.object(dead_code, "run_process", side_effect=failed_runner),
+            mock.patch.object(dead_code, "_coverage_survivor_pids", return_value=[]),
+            mock.patch.dict(os.environ, {dead_code.COVERAGE_ACTIVE_ENV: ""}),
+        ):
+            with self.assertRaisesRegex(dead_code.Refusal, "exit 1.*green"):
+                dead_code.command_coverage(arguments)
+
+
+class CoverageAnalyserTests(TemporaryRepositoryTestCase):
+    SOURCE = (
+        "def plain(flag):" + NL
+        + "    if flag:" + NL
+        + "        return 1" + NL
+        + "    else:" + NL
+        + "        return 2" + NL
+    )
+
+    def _fixture(self, *, state="ran", branches=None, lines=None, source=None):
+        build_repository(
+            self.root,
+            files={"app.py": self.SOURCE if source is None else source},
+        )
+        universe = dead_code.discover(self.root)
+        target = self.root / ".dead-code" / "coverage.json"
+        target.parent.mkdir()
+        document = {
+            "schema": dead_code.COVERAGE_SCHEMA_ID,
+            "tool": {"id": "sys.monitoring", "python": "3.14.6"},
+            "tree": {
+                "commit": universe.commit,
+                "git_tree": universe.tree,
+                "universe": universe.identity,
+            },
+            "plan": {
+                "schema": "wildcat.check-plan.v1",
+                "map_digest": "a" * 64,
+                "requested_scopes": ["dead-code"],
+                "selected_checks": ["alpha"],
+            },
+            "status": {"state": state, "detail": "fixture status"},
+            "checks": [
+                {
+                    "id": "alpha",
+                    "state": "passed" if state == "ran" else "failed",
+                    "duration_seconds": 0.1,
+                    "processes": 1,
+                    "bytes": 100,
+                }
+            ],
+            "processes": [
+                {
+                    "check": "alpha",
+                    "bytes": 100,
+                    "status": {"state": "ran", "truncated": False, "errors": []},
+                    "lines": [] if lines is None else lines,
+                    "branches": [] if branches is None else branches,
+                }
+            ],
+        }
+        target.write_text(json.dumps(document), encoding="utf-8")
+        return universe, target, document
+
+    def test_incomplete_coverage_emits_no_never_executed_findings(self):
+        universe, _target, _document = self._fixture(state="degraded")
+        status, findings = dead_code.analyse_coverage(
+            self.root, universe, ".dead-code/coverage.json"
+        )
+        self.assertEqual(status.state, "degraded")
+        self.assertEqual(findings, ())
+
+    def test_observed_branch_is_not_reported_and_other_branch_is(self):
+        branch = {
+            "path": "app.py",
+            "function": "plain",
+            "from_line": 2,
+            "to_line": 3,
+            "direction": "left",
+        }
+        universe, _target, _document = self._fixture(
+            branches=[branch], lines=[{"path": "app.py", "function": "plain", "line": 2}]
+        )
+        status, findings = dead_code.analyse_coverage(
+            self.root, universe, ".dead-code/coverage.json"
+        )
+        self.assertEqual(status.state, "ran")
+        symbols = {item.symbol for item in findings}
+        self.assertNotIn("branch:2->3:body", symbols)
+        self.assertIn("branch:2->5:else", symbols)
+
+    def test_observed_function_skips_its_optimised_away_docstring(self):
+        source = (
+            "def documented():" + NL
+            + "    \"\"\"metadata, not an executable body line\"\"\"" + NL
+            + "    return 1" + NL
+        )
+        universe, _target, _document = self._fixture(
+            source=source,
+            lines=[{"path": "app.py", "function": "documented", "line": 3}],
+        )
+
+        status, findings = dead_code.analyse_coverage(
+            self.root, universe, ".dead-code/coverage.json"
+        )
+
+        self.assertEqual(status.state, "ran")
+        self.assertFalse(any(item.symbol.startswith("documented@") for item in findings))
+
+    def test_coverage_tool_identity_is_required(self):
+        universe, target, document = self._fixture()
+        document["tool"]["id"] = "not-sys-monitoring"
+        target.write_text(json.dumps(document), encoding="utf-8")
+
+        with self.assertRaisesRegex(dead_code.Refusal, "sys.monitoring"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
+    def test_coverage_plan_schema_is_required(self):
+        universe, target, document = self._fixture()
+        document["plan"]["schema"] = "unknown-plan"
+        target.write_text(json.dumps(document), encoding="utf-8")
+
+        with self.assertRaisesRegex(dead_code.Refusal, "check-plan"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
+    def test_stale_coverage_identity_degrades_without_findings(self):
+        universe, target, document = self._fixture()
+        document["tree"]["commit"] = "f" * 40
+        target.write_text(json.dumps(document), encoding="utf-8")
+        status, findings = dead_code.analyse_coverage(
+            self.root, universe, ".dead-code/coverage.json"
+        )
+        self.assertEqual(status.state, "degraded")
+        self.assertEqual(findings, ())
+
+    def test_missing_coverage_argument_refuses_by_name(self):
+        build_repository(self.root, files={"app.py": self.SOURCE})
+        with self.assertRaisesRegex(dead_code.Refusal, "requires --coverage"):
+            dead_code.analyse_coverage(self.root, dead_code.discover(self.root), None)
+
+    def test_claimed_complete_without_process_aggregate_degrades(self):
+        universe, target, document = self._fixture()
+        document["checks"][0]["processes"] = 1
+        document["processes"] = []
+        target.write_text(json.dumps(document), encoding="utf-8")
+        status, findings = dead_code.analyse_coverage(
+            self.root, universe, ".dead-code/coverage.json"
+        )
+        self.assertEqual(status.state, "degraded")
+        self.assertEqual(findings, ())
+
+    def test_malformed_line_event_refuses_instead_of_implying_absence(self):
+        universe, target, document = self._fixture(
+            lines=[{"path": "app.py", "function": "plain", "line": "two"}]
+        )
+        target.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(dead_code.Refusal, "line event"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
+    def test_boolean_line_identity_refuses_instead_of_aliasing_line_one(self):
+        universe, target, document = self._fixture(
+            lines=[{"path": "app.py", "function": "plain", "line": True}]
+        )
+        target.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(dead_code.Refusal, "line event"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
+    def test_non_string_branch_direction_refuses_instead_of_crashing(self):
+        universe, target, document = self._fixture(
+            branches=[
+                {
+                    "path": "app.py",
+                    "function": "plain",
+                    "from_line": 2,
+                    "to_line": 3,
+                    "direction": [],
+                }
+            ]
+        )
+        target.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(dead_code.Refusal, "branch event"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
+
 class ShippedSurfaceTests(unittest.TestCase):
     def test_receipted_study_and_runbook_digests_are_preserved(self):
         self.assertEqual(
@@ -1039,6 +1784,7 @@ class ShippedSurfaceTests(unittest.TestCase):
             "universeIdentity",
             "analysisStatus",
             "analyserStatus",
+            "analyserRecord",
             "finding",
         ):
             self.assertFalse(schema["$defs"][name]["additionalProperties"])
@@ -1066,6 +1812,7 @@ class ShippedSurfaceTests(unittest.TestCase):
             "docs/decisions/ADR-051-keep-dead-code-discovery-report-only.md",
             "schemas/dead-code-report-v1.schema.json",
             "scripts/dead_code.py",
+            "scripts/dead_code_monitoring",
             "tests/emit_dead_code_report.py",
             "tests/test_dead_code.py",
         )
@@ -1096,6 +1843,8 @@ class ShippedSurfaceTests(unittest.TestCase):
         self.assertIn(dead_code.TEMP_PREFIX, text)
         self.assertIn("/.dead-code/report.json", text)
         self.assertIn("/.dead-code/checks.json", text)
+        self.assertIn("/.dead-code/coverage.json", text)
+        self.assertIn("/.dead-code/coverage-processes-*/", text)
 
 
 if __name__ == "__main__":

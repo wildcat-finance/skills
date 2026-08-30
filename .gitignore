@@ -51,6 +51,8 @@ plugins/*/harness/cache/
 **/.dead-code-tmp-*
 /.dead-code/report.json
 /.dead-code/checks.json
+/.dead-code/coverage.json
+/.dead-code/coverage-processes-*/
 
 # Elenchus reports. ADR-038 keeps them inside the invocation checkout and
 # outside every Git control namespace, so they land here as ordinary untracked

@@ -286,6 +286,7 @@
     {"path": "schemas/dead-code-report-v1.schema.json", "scope": "dead-code"},
     {"path": "scripts", "scope": "root"},
     {"path": "scripts/dead_code.py", "scope": "dead-code"},
+    {"path": "scripts/dead_code_monitoring", "scope": "dead-code"},
     {"path": "scripts/promise_machine.py", "scope": "promise-machine"},
     {"path": "tests", "scope": "root"},
     {"path": "tests/emit_dead_code_report.py", "scope": "dead-code"},
