@@ -336,7 +336,10 @@ answer retains the full result and digests. Every specimen must demonstrate
 permit, refuse and unknown.
 
 The mutation plan admits exactly the thirteen fixed hostile categories. Each
-category fixes its input kind and runtime query. A changed mutation records
+category fixes its input kind, runtime query and one canonical structural
+change derived from the specimen baseline. Exact artifact comparison happens
+before execution, so a different change that happens to produce the same
+facet, decision or refusal code cannot satisfy the category. A changed mutation records
 the exact semantic diff, changed graph, baseline answer and changed answer;
 all four digests are rederived. A refusing mutation records its exact stable
 code plus the checked baseline. Category contracts additionally require the

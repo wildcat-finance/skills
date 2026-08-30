@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 from datetime import date
 from hashlib import sha256
 import heapq
@@ -5305,6 +5306,223 @@ def _validate_mutation_semantics(
         )
 
 
+def _mutation_record(
+    records: list[list[object]],
+    form: str,
+    identifier: str,
+    field: str,
+) -> list[object]:
+    matches = [
+        record
+        for record in records
+        if len(record) >= 2 and record[0] == form and record[1] == identifier
+    ]
+    if len(matches) != 1:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "mutation recipe requires one exact baseline record",
+        )
+    return matches[0]
+
+
+def _expected_source_mutation(
+    category: str,
+    baseline_raw: bytes,
+    field: str,
+) -> bytes:
+    baseline = _parse_source_lines(baseline_raw)
+    changed = copy.deepcopy(baseline)
+
+    def malformed() -> None:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "baseline does not admit the fixed mutation recipe",
+        )
+
+    try:
+        if category == "changed-exact-literal":
+            record = _mutation_record(changed, "literal", "lit.command", field)
+            if record[2:] != ["command", "25", "$(touch /tmp/noema-owned)"]:
+                malformed()
+            record[3:] = ["27", "$(touch /tmp/noema-mutated)"]
+        elif category == "consequence-3-bypass":
+            directive = _mutation_record(
+                changed, "rule", "rule.default", field
+            )[2]
+            marker = [
+                "!",
+                [
+                    "=",
+                    [":", "core.consequence", "3"],
+                    [":", "core.consequence", "3"],
+                ],
+            ]
+            if not isinstance(directive, list) or directive[:2] != [";", marker]:
+                malformed()
+            directive[1][1][1][2] = "0"
+            directive[1][1][2][2] = "0"
+        elif category == "dropped-negation":
+            directive = _mutation_record(
+                changed, "rule", "rule.negated", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "?"
+                or not isinstance(directive[1], list)
+                or len(directive[1]) != 2
+                or directive[1][0] != "~"
+            ):
+                malformed()
+            directive[1] = directive[1][1]
+        elif category == "missing-authority":
+            record = _mutation_record(changed, "rule", "rule.authorized", field)
+            directive = record[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "^"
+                or directive[1] != [":", "actor", "reviewer"]
+            ):
+                malformed()
+            record[2] = directive[2]
+        elif category == "omitted-dependency":
+            definitions = [record for record in changed if record[0] == "definition"]
+            if len(definitions) != 1:
+                malformed()
+            changed.remove(definitions[0])
+        elif category == "permission-for-prohibition":
+            directive = _mutation_record(
+                changed, "rule", "rule.blocked", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or not isinstance(directive[2], list)
+                or directive[2][0] != "-"
+            ):
+                malformed()
+            directive[2][0] = "+"
+        elif category == "reordered-effects":
+            directive = _mutation_record(
+                changed, "rule", "rule.ordered", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 4
+                or directive[0] != ";"
+            ):
+                malformed()
+            directive[2], directive[3] = directive[3], directive[2]
+        elif category == "stale-module":
+            record = _mutation_record(changed, "import", "core", field)
+            if len(record) != 3 or _digest(record[2], field) == "0" * 64:
+                malformed()
+            record[2] = "0" * 64
+        elif category == "swapped-actor":
+            directive = _mutation_record(
+                changed, "rule", "rule.authorized", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "^"
+                or directive[1] != [":", "actor", "reviewer"]
+            ):
+                malformed()
+            directive[1][2] = "intruder"
+        elif category == "unknown-guard-deletion":
+            record = _mutation_record(changed, "rule", "rule.unknown", field)
+            directive = record[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "?"
+            ):
+                malformed()
+            record[2] = directive[2]
+        elif category == "unknown-opcode":
+            directive = _mutation_record(
+                changed, "rule", "rule.permit", field
+            )[2]
+            if not isinstance(directive, list) or not directive or directive[0] != ";":
+                malformed()
+            directive[0] = "zap"
+        elif category == "widened-scope":
+            directive = _mutation_record(
+                changed, "rule", "rule.scoped", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "@"
+                or directive[1] != [":", "scope", "restricted"]
+            ):
+                malformed()
+            directive[1][2] = "global"
+        else:
+            malformed()
+    except (IndexError, KeyError, TypeError):
+        malformed()
+    return _canonical_source(changed)
+
+
+def _expected_profile_mutation(
+    category: str,
+    baseline_raw: bytes,
+    field: str,
+) -> bytes:
+    if category != "alias-collision":
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "category has no profile mutation recipe",
+        )
+    value = _decode_json(baseline_raw, field, canonical=True)
+    if not isinstance(value, dict) or not isinstance(value.get("aliases"), list):
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "baseline profile cannot admit the fixed alias-collision recipe",
+        )
+    changed = copy.deepcopy(value)
+    aliases = changed["aliases"]
+    assert isinstance(aliases, list)
+    collision = ["transition", "P"]
+    if collision in aliases:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "baseline already contains the fixed collision alias",
+        )
+    aliases.append(collision)
+    aliases.sort(key=lambda item: str(item[0]) if isinstance(item, list) and item else "")
+    return _canonical_json(changed)
+
+
+def _validate_mutation_artifact(
+    planned: dict[str, object],
+    artifact_raw: bytes,
+    baseline_source_raw: bytes,
+    baseline_profile_raw: bytes,
+    field: str,
+) -> None:
+    category = str(planned["category"])
+    expected = (
+        _expected_profile_mutation(category, baseline_profile_raw, field)
+        if planned["kind"] == "profile"
+        else _expected_source_mutation(category, baseline_source_raw, field)
+    )
+    if artifact_raw != expected:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "mutation bytes differ from the fixed one-change baseline recipe",
+        )
+
+
 def _mutation_results(
     specimen: str,
     directory: Path,
@@ -5317,6 +5535,14 @@ def _mutation_results(
     plan: dict[str, object],
 ) -> dict[str, object]:
     results: list[dict[str, object]] = []
+    baseline_graph = baseline_build["graph"]
+    assert isinstance(baseline_graph, dict)
+    baseline_records = baseline_graph["records"]
+    assert isinstance(baseline_records, list)
+    baseline_source_raw = _canonical_source(baseline_records)
+    baseline_profile_raw = _read_regular(
+        profile_path, "mutation.baseline_profile", MAX_INPUT_BYTES
+    )
     mutations = plan["mutations"]
     assert isinstance(mutations, list)
     for index, item_value in enumerate(mutations):
@@ -5334,6 +5560,13 @@ def _mutation_results(
             artifact,
             f"mutation_plan.mutations[{index}].artifact",
             MAX_INPUT_BYTES,
+        )
+        _validate_mutation_artifact(
+            item_value,
+            artifact_raw,
+            baseline_source_raw,
+            baseline_profile_raw,
+            f"mutation.{item_value['id']}.artifact",
         )
         try:
             if item_value["kind"] == "profile":
@@ -5366,9 +5599,8 @@ def _mutation_results(
                 sha256(artifacts["profile"]).hexdigest(),
                 selection,
             )
-            baseline_graph = baseline_build["graph"]
             mutated_graph = mutated_build["graph"]
-            assert isinstance(baseline_graph, dict) and isinstance(mutated_graph, dict)
+            assert isinstance(mutated_graph, dict)
             before_digest = _value_sha256(baseline_graph)
             after_digest = _value_sha256(mutated_graph)
             difference = semantic_diff(baseline_build, mutated_build)

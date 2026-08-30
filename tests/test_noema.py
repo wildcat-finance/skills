@@ -4734,6 +4734,73 @@ class MutationTests(unittest.TestCase):
             suffix = ".json" if planned["kind"] == "profile" else ".noe"
             self.assertEqual(planned["artifact"], f"mutations/{planned['id']}{suffix}")
 
+    def test_every_mutation_artifact_matches_its_one_change_recipe(self):
+        for name in SPECIMEN_NAMES:
+            directory = specimen_directory(name)
+            baseline_source = (directory / "source.noe").read_bytes()
+            baseline_profile = (directory / "profile.json").read_bytes()
+            plan = read_json(directory / "mutation-plan.json")
+            for planned in plan["mutations"]:
+                artifact = (directory / planned["artifact"]).read_bytes()
+                noema._validate_mutation_artifact(
+                    planned,
+                    artifact,
+                    baseline_source,
+                    baseline_profile,
+                    planned["id"],
+                )
+
+    def test_source_mutation_recipes_are_pairwise_distinct(self):
+        source_categories = sorted(noema.MUTATION_CATEGORIES - {"alias-collision"})
+        for name in SPECIMEN_NAMES:
+            directory = specimen_directory(name)
+            baseline_source = (directory / "source.noe").read_bytes()
+            baseline_profile = (directory / "profile.json").read_bytes()
+            for planned in read_json(directory / "mutation-plan.json")["mutations"]:
+                if planned["kind"] != "source":
+                    continue
+                for alternate in source_categories:
+                    if alternate == planned["category"]:
+                        continue
+                    artifact = noema._expected_source_mutation(
+                        alternate,
+                        baseline_source,
+                        "test.alternate",
+                    )
+                    with self.assertRaises(noema.Refusal) as raised:
+                        noema._validate_mutation_artifact(
+                            planned,
+                            artifact,
+                            baseline_source,
+                            baseline_profile,
+                            "test.planned",
+                        )
+                    self.assertEqual(
+                        raised.exception.code,
+                        "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+                    )
+
+    def test_alias_collision_rejects_a_different_colliding_profile(self):
+        directory = specimen_directory("brevitas")
+        baseline_source = (directory / "source.noe").read_bytes()
+        baseline_profile = (directory / "profile.json").read_bytes()
+        profile = json.loads(baseline_profile)
+        profile["aliases"].append(["rule", "P"])
+        profile["aliases"].sort(key=lambda item: item[0])
+        planned = read_json(directory / "mutation-plan.json")["mutations"][0]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._validate_mutation_artifact(
+                planned,
+                noema._canonical_json(profile),
+                baseline_source,
+                baseline_profile,
+                "test.alias",
+            )
+        self.assertEqual(
+            raised.exception.code,
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+        )
+
     def test_refused_mutation_bytes_are_bound_even_when_the_outcome_is_unchanged(self):
         with copied_corpus() as root:
             path = specimen_directory("sapheneia", root) / (
@@ -4745,7 +4812,45 @@ class MutationTests(unittest.TestCase):
             path.write_bytes(changed)
             with self.assertRaises(noema.Refusal) as raised:
                 noema.verify_specimen_corpus(root / "manifest.json")
-        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.SPECIMEN")
+        self.assertEqual(
+            raised.exception.code,
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+        )
+
+    def test_swapped_actor_cannot_substitute_missing_authority(self):
+        with copied_corpus() as root:
+            directory = specimen_directory("sapheneia", root)
+            path = directory / "mutations/sapheneia.swapped-actor.noe"
+            path.write_bytes(
+                noema._expected_source_mutation(
+                    "missing-authority",
+                    (directory / "source.noe").read_bytes(),
+                    "test",
+                )
+            )
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._derive_specimen(directory, ROOT)
+        self.assertEqual(
+            raised.exception.code,
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+        )
+
+    def test_omitted_dependency_cannot_substitute_an_unknown_predicate(self):
+        with copied_corpus() as root:
+            directory = specimen_directory("phylax", root)
+            records = noema._parse_source_lines(
+                (directory / "source.noe").read_bytes()
+            )
+            definition = next(item for item in records if item[0] == "definition")
+            definition[3] = ["missing.predicate", ["%", "effect"]]
+            path = directory / "mutations/phylax.omitted-dependency.noe"
+            path.write_bytes(noema._canonical_source(records))
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._derive_specimen(directory, ROOT)
+        self.assertEqual(
+            raised.exception.code,
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+        )
 
     def test_changed_mutations_change_both_graph_and_observation(self):
         for _planned, outcome in mutation_index().values():
@@ -4768,7 +4873,10 @@ class MutationTests(unittest.TestCase):
             )
             with self.assertRaises(noema.Refusal) as raised:
                 noema._derive_specimen(directory, ROOT)
-        self.assertEqual(raised.exception.code, "NOE-E-MUTATION.UNCHANGED")
+        self.assertEqual(
+            raised.exception.code,
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+        )
 
     def test_wrong_mutation_query_refuses_the_fixed_contract(self):
         plan = read_json(specimen_directory("fiat") / "mutation-plan.json")
