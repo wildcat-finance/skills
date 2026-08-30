@@ -1637,6 +1637,26 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
         )
         self.assertIn((("forge", "coverage", "--report", "summary"), self.root), calls)
 
+    def test_foundry_outputs_are_confined_outside_the_repository(self):
+        universe = self._universe()
+        environments = []
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] in (["slither", "."], ["forge", "coverage"]):
+                environments.append(kwargs.get("env"))
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            dead_code.analyse_solidity(self.root, universe)
+        self.assertEqual(len(environments), 2)
+        for environment in environments:
+            self.assertIsNotNone(environment)
+            for name in ("FOUNDRY_OUT", "FOUNDRY_CACHE_PATH", "FOUNDRY_BROADCAST"):
+                target = Path(environment[name])
+                self.assertTrue(target.is_absolute())
+                self.assertFalse(target.is_relative_to(self.root))
+
     def test_slither_detector_maps_to_project_attributed_finding(self):
         universe = self._universe()
         detector = {

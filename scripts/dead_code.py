@@ -24,6 +24,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 import tomllib
 import uuid
@@ -1785,6 +1786,7 @@ def _invoke_optional_tool(
     cwd: Path,
     timeout_seconds: int,
     output_limit: int,
+    env: dict[str, str] | None = None,
 ) -> ToolInvocation:
     started = time.monotonic_ns()
     try:
@@ -1793,6 +1795,7 @@ def _invoke_optional_tool(
             cwd=cwd,
             timeout_seconds=timeout_seconds,
             output_limit=output_limit,
+            env=env,
         )
     except Refusal as error:
         state = "unavailable" if "not available on PATH" in str(error) else "failed"
@@ -2034,12 +2037,31 @@ def _solidity_project_tool(
         if tool == "slither"
         else ["forge", "coverage", "--report", "summary"]
     )
-    run = _invoke_optional_tool(
-        argv,
-        cwd=project_root,
-        timeout_seconds=SOLIDITY_TOOL_TIMEOUT_SECONDS,
-        output_limit=MAX_SOLIDITY_OUTPUT_BYTES,
-    )
+    with tempfile.TemporaryDirectory(
+        prefix=f"dead-code-{tool}-",
+        ignore_cleanup_errors=True,
+    ) as temporary:
+        temporary_root = Path(temporary).resolve(strict=True)
+        environment = dict(os.environ)
+        environment.update(
+            {
+                "TMPDIR": str(temporary_root / "tmp"),
+                "FOUNDRY_OUT": str(temporary_root / "out"),
+                "FOUNDRY_CACHE_PATH": str(temporary_root / "cache"),
+                "FOUNDRY_BROADCAST": str(temporary_root / "broadcast"),
+                "FOUNDRY_FUZZ_FAILURE_PERSIST_DIR": str(temporary_root / "fuzz"),
+                "FOUNDRY_INVARIANT_FAILURE_PERSIST_DIR": str(temporary_root / "invariant"),
+            }
+        )
+        for name in ("tmp", "out", "cache", "broadcast", "fuzz", "invariant"):
+            (temporary_root / name).mkdir(mode=0o700)
+        run = _invoke_optional_tool(
+            argv,
+            cwd=project_root,
+            timeout_seconds=SOLIDITY_TOOL_TIMEOUT_SECONDS,
+            output_limit=MAX_SOLIDITY_OUTPUT_BYTES,
+            env=environment,
+        )
     total_duration = version_run.duration_ms + run.duration_ms
     total_bytes = (
         len(version_run.stdout)
