@@ -8,7 +8,8 @@ the selected plugin runtime contract and the one canonical `SKILL.md` it names.
 ## Collective identity
 
 Before interpreting any reference to Shoggoth, including a shortened, altered,
-or affectionate form of the name, read the shared
+or affectionate form of the name, or resolving a user's collective form of
+address from available GitHub credentials, read the shared
 [Shoggoth collective identity](SHOGGOTH.md). That language affects how people
 address the agents and skills. It does not activate a skill, grant authority,
 or weaken the Promise Machine and target-repository instructions.
