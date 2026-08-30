@@ -46,6 +46,14 @@ plugins/*/harness/cache/
 .CONTRIBUTORS.md.*
 .README.md.*
 
+# Dead-code report temporaries and uncommitted workflow reports. Step 4 may
+# commit other files below .dead-code, so the directory itself stays visible.
+**/.dead-code-tmp-*
+/.dead-code/report.json
+/.dead-code/checks.json
+/.dead-code/coverage.json
+/.dead-code/coverage-processes-*/
+
 # Elenchus reports. ADR-038 keeps them inside the invocation checkout and
 # outside every Git control namespace, so they land here as ordinary untracked
 # files. They are generated evidence rather than source: without this rule
