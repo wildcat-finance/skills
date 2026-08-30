@@ -160,6 +160,12 @@ SPECIMEN_OUTPUTS = frozenset(
         "source-spans.json",
     }
 )
+SPECIMEN_SOURCE_PATHS = {
+    "brevitas": "plugins/brevitas/skills/brevitas/SKILL.md",
+    "fiat": "plugins/hexaemeron/skills/fiat/SKILL.md",
+    "phylax": "plugins/hexaemeron/skills/phylax/SKILL.md",
+    "sapheneia": "plugins/sapheneia/skills/sapheneia/SKILL.md",
+}
 MUTATION_CATEGORIES = frozenset(
     {
         "dropped-negation",
@@ -4673,8 +4679,17 @@ def _source_identity(
     )
     if identity["schema"] != SOURCE_IDENTITY_SCHEMA:
         refuse("NOE-E-TYPE.VERSION", f"{field}.schema", "unsupported source identity")
-    _identifier(identity["id"], f"{field}.id")
+    specimen = _identifier(identity["id"], f"{field}.id")
     source_path = _relative_path(identity["path"], f"{field}.path")
+    if (
+        specimen not in SPECIMEN_SOURCE_PATHS
+        or source_path != SPECIMEN_SOURCE_PATHS[specimen]
+    ):
+        refuse(
+            "NOE-E-REFERENCE.SOURCE",
+            f"{field}.path",
+            "specimen identity must name its fixed canonical skill source",
+        )
     byte_count = _bounded_integer(
         identity["bytes"], f"{field}.bytes", MAX_INPUT_BYTES, minimum=1
     )
@@ -5947,6 +5962,12 @@ def _specimen_record(value: object, field: str) -> dict[str, object]:
         _bounded_integer(record[key], f"{field}.{key}", maximum)
     if not isinstance(record["shadow"], bool):
         refuse("NOE-E-TYPE.BOOLEAN", f"{field}.shadow", "shadow must be Boolean")
+    if record["shadow"] is not True or record["unsupported_remainders"] < 1:
+        refuse(
+            "NOE-E-AUTHORITY.SHADOW",
+            field,
+            "every prototype specimen must retain an unsupported remainder and stay shadow-only",
+        )
     return record
 
 
