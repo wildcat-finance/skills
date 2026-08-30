@@ -515,6 +515,23 @@ class SynopsisRepositoryTests(unittest.TestCase):
             ):
                 self.module.process_repository(str(self.root), write=False)
 
+    def test_discovery_ignores_the_transient_root_tmp_tree(self):
+        source = self.source()
+        transient = self.root / "tmp"
+        transient.mkdir()
+        transient.chmod(0o000)
+        try:
+            try:
+                observed = self.module.discover_sources(str(self.root))
+            except self.module.SynopsisError as error:
+                self.fail(f"root tmp must be outside repository discovery: {error}")
+            self.assertEqual(
+                observed,
+                [source.relative_to(self.root).as_posix()],
+            )
+        finally:
+            transient.chmod(0o700)
+
     def test_duplicate_leads_and_wrapped_tail_are_not_lossy(self):
         path = self.root / "audit" / "AUDIT.md"
         path.parent.mkdir(parents=True)

@@ -82,13 +82,16 @@ missing argument does not fail: it falls through to the current branch's pull
 request, and on a chained stack that is the one holding every commit in the run.
 
 Two things refuse if the branch stops being where the loop left it. A waiting
-step whose branch has moved since its push refuses at the next merge-step, and so
-does a run branch carrying a merge this run did not receipt; `hexctl status`
-reports the second rather than refusing. Neither is repairable once the stack has
-landed out of order: a skipped step's pull request cannot be retargeted onto a
-branch its head already sits in, and cannot merge into a base it is an ancestor
-of. If it happens, halt with the reason and finish by hand rather than receipting
-a merge the loop did not make.
+step refuses at the next merge-step when its current tip no longer contains the
+head named by its push receipt, or when the native local object graph cannot
+answer that relation. A strict descendant remains eligible and earns fresh
+whole-range evidence when its own merge is receipted. A run branch carrying a
+merge this run did not receipt also refuses; `hexctl status` reports that second
+condition rather than refusing. Neither condition permits an out-of-order
+landing: a skipped step's pull request cannot be retargeted onto a branch its
+head already sits in, and cannot merge into a base it is an ancestor of. If that
+happens, halt with the reason and finish by hand rather than receipting a merge
+the loop did not make.
 
 ## The stacked pull request
 
@@ -340,9 +343,19 @@ superseded, with a comment saying where the same commits landed. Never import
 GitHub's public key to make the signature check pass; that removes the guarantee
 the check exists for.
 
-The controller enforces this before damage rather than after: `done merge-step`
-compares every waiting step's remote tip against the head its push receipt
-names, and refuses the moment any downstream branch has been rewritten.
+The controller enforces the evidence boundary before another merge receipt.
+Equality is the no-query path. For each unequal waiting tip it asks native
+`git merge-base --is-ancestor <recorded> <tip>` once, without replacement
+objects, inherited `GIT_*` substitution, lazy fetch, or prompts. Status 0 admits
+only the branch topology. When that step later reaches `done merge-step`, the
+controller verifies the complete live range again and records its current
+local signatures, provenance, GitHub verification, author, and committer under
+`effective_push`; the original push receipt remains unchanged. Status 1 refuses
+because the observed tip does not contain the recorded head. A start failure,
+timeout, output cap, missing object, or any other status refuses as unknown.
+Both refusals name the branch and exact commits without guessing which external
+operation moved the history. ADR-021 still governs a genuine rewritten stack,
+and importing GitHub's public key remains the wrong repair.
 
 **When GitHub has not claimed the chain**, the original order stands. For each
 step:
@@ -423,7 +436,9 @@ rebase or rewrite the signed stack. Fetch the exact remote base tip, merge it
 into the run branch once with `--no-ff`, resolve only the reported conflicts,
 and sign that merge with the two exact provenance trailers. Its first parent
 must be the final recorded step merge and its second parent the supplied base
-tip. Push it, require GitHub `verified: true` with `reason: valid`, then record
+tip. Never settle a shared registry by taking the complete `ours` or `theirs`
+side. Inspect its product and base entries and preserve the intended union.
+Push it, require GitHub `verified: true` with `reason: valid`, then record
 the exact topology and bounded composition checks before the integration pull
 request merges:
 
@@ -432,6 +447,13 @@ hexctl done sync-run --commit <signed merge sha> \
   --base-commit <remote base sha> \
   --revalidation .hexaemeron/integration-revalidation.json
 ```
+
+The controller compares the product, base and sync tree entries for every path
+both parents changed. If the sync takes either complete parent entry, it names
+the path and refuses until the operator repeats
+`--acknowledge-sync-path <path>` for the exact sorted set. This is an inspection
+receipt, not proof that one side was correct; revalidation still has to cover
+the path.
 
 The controller compares both remote tips, reads the two parents, verifies the
 local signature and trailers, and checks GitHub's result. One active sync is
@@ -463,6 +485,13 @@ hexctl done sync-run --commit <replacement signed merge sha> \
   --supersede-sync <active sync sha> \
   --reason "<failed composition check and repair>"
 ```
+
+A rebuild has a second mandatory review set. Fiat intersects the paths the old
+composition changed with the paths changed by the old-base to current-base
+advance. Repeat `--acknowledge-sync-path` for every path it names, even when the
+new tree is a semantic union: the old merge may have carried a manual repair
+that exists in neither parent. Missing, extra, duplicate or unsorted flags
+refuse before a receipt is written.
 
 Fiat requires the exact active SHA, a bounded reason, fresh topology,
 signatures, GitHub verification and revalidation. It retains every superseded

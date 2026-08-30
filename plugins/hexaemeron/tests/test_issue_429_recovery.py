@@ -42,8 +42,11 @@ INTEGRATED_HEXAEMERON_VERSION = "1.6.1"
 PRODUCT_CONTROLLER_SHA256 = (
     "2c29f696f2b368a334eb4a880e745fa3cd468cc9c385e36346000aed7c91ba9f"
 )
+RECOVERY_GENERATOR_SHA256 = (
+    "2972258d0c363bee0cc7e97668da96bcbb5ea19421fc278eefdae60ddcde9d75"
+)
 INTEGRATED_CONTROLLER_SHA256 = (
-    "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+    "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc"
 )
 PROOF_SHA256 = "badb5f3eeffe9927453e43b8d3dbdcfbda87773e5b9ce1cbb7973cc44796bafb"
 PRODUCT_SUFFIX = (
@@ -199,10 +202,11 @@ class Issue429RecoveryTests(unittest.TestCase):
                 self.assertTrue(item["product_behaviour"].strip())
                 self.assertTrue(item["resolution"].strip())
 
-    def test_root_audit_is_the_exact_pinned_base_blob(self):
+    def test_root_audit_retains_the_exact_pinned_base_blob_as_its_prefix(self):
         current = (ROOT / "audit" / "AUDIT.md").read_bytes()
-        self.assertEqual(hashlib.sha256(current).hexdigest(), ROOT_AUDIT_SHA256)
-        self.assertEqual(current, git("show", f"{PINNED_BASE}:audit/AUDIT.md"))
+        pinned = git("show", f"{PINNED_BASE}:audit/AUDIT.md")
+        self.assertEqual(hashlib.sha256(pinned).hexdigest(), ROOT_AUDIT_SHA256)
+        self.assertTrue(current.startswith(pinned))
 
     def test_product_suffix_is_exact_and_keeps_its_record_distribution(self):
         data = PRODUCT_SUFFIX.read_bytes()
@@ -223,6 +227,15 @@ class Issue429RecoveryTests(unittest.TestCase):
     def test_release_proof_binds_the_composed_runtime_and_generations(self):
         self.assertTrue(PROOF.is_file(), f"missing release proof: {PROOF}")
         self.assertEqual(sha256(PROOF), PROOF_SHA256)
+        recovered_generator = git(
+            "show",
+            f"{STEP_ONE_PRE_PROSE_HEAD}:"
+            "plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py",
+        )
+        self.assertEqual(
+            hashlib.sha256(recovered_generator).hexdigest(),
+            RECOVERY_GENERATOR_SHA256,
+        )
         proof = PROOF.read_text(encoding="utf-8")
         for value in (
             PRODUCT_HEAD,
@@ -232,7 +245,7 @@ class Issue429RecoveryTests(unittest.TestCase):
             RUNBOOK_SHA256,
             sha256(COMPOSITION_MANIFEST),
             PRODUCT_CONTROLLER_SHA256,
-            sha256(GENERATOR),
+            RECOVERY_GENERATOR_SHA256,
             f"fiat-v{PRODUCT_FIAT_VERSION}",
             f"Hexaemeron {PRODUCT_HEXAEMERON_VERSION}",
         ):

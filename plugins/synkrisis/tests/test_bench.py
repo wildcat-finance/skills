@@ -15,6 +15,19 @@ SPEC = support.PLUGIN_ROOT / "tests" / "fixtures" / "scale" / "100-runs" / "spec
 
 
 class ScaleFixtureTests(unittest.TestCase):
+    def test_peak_rss_uses_the_macos_byte_unit(self):
+        bench = support.bench()
+        normalise = getattr(
+            bench,
+            "peak_rss_mib",
+            lambda raw_peak, _platform_name: raw_peak // 1024,
+        )
+        self.assertEqual(normalise(29 * 1024 * 1024, "darwin"), 29)
+
+    def test_peak_rss_uses_the_posix_kib_unit(self):
+        bench = support.bench()
+        self.assertEqual(bench.peak_rss_mib(29 * 1024, "linux"), 29)
+
     def test_committed_spec_pins_the_studied_scale(self):
         document = support.read_json(SPEC)
         self.assertEqual(

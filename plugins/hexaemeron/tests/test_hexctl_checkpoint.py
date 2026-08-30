@@ -100,7 +100,7 @@ class HexctlCheckpointTests(HexctlCase):
         self.finish_step(1)
 
     @staticmethod
-    def rewrite_capsule_state(capsule, change):
+    def rewrite_capsule_state(capsule, change, *, controller_version=None):
         module = hexctl_module()
         controller = capsule / "controller"
         state_path = controller / "state.json"
@@ -129,6 +129,8 @@ class HexctlCheckpointTests(HexctlCase):
         inventory = module._checkpoint_snapshot(str(controller), None)
         manifest_path = capsule / "MANIFEST.json"
         manifest = json.loads(manifest_path.read_bytes())
+        if controller_version is not None:
+            manifest["controller"]["version"] = controller_version
         count, tail = module._checkpoint_ledger(ledger, state)
         state_bytes = state_path.read_bytes()
         manifest["source"] = {
@@ -484,17 +486,20 @@ class HexctlCheckpointTests(HexctlCase):
         finally:
             oversized.unlink()
 
-        long_root = root
-        for index in range(6):
-            long_root = long_root / ((chr(ord("a") + index)) * 200)
-            long_root.mkdir()
-        long_file = long_root / "value"
+        existing_max = max(
+            len((Path(current) / name).relative_to(root).as_posix().encode("utf-8"))
+            for current, directories, files in os.walk(root)
+            for name in [*directories, *files]
+        )
+        long_file = root / ("z" * (existing_max + 1))
         long_file.write_text("x", encoding="utf-8")
         try:
-            error = self.direct_refusal(hexctl_module(), Path(self.dir) / "limit-path")
+            module = hexctl_module()
+            with mock.patch.object(module, "CHECKPOINT_PATH_BYTES_MAX", existing_max):
+                error = self.direct_refusal(module, Path(self.dir) / "limit-path")
             self.assertIn("path exceeds", error)
         finally:
-            shutil.rmtree(root / ("a" * 200))
+            long_file.unlink()
 
         empty = root / "bounded-directory"
         empty.mkdir()
@@ -609,11 +614,25 @@ class HexctlCheckpointTests(HexctlCase):
             module._checkpoint_json(b'{"value":NaN}', "state")
         self.assertIn("strict UTF-8 JSON", stderr.getvalue())
 
+    def test_checkpoint_json_has_an_interpreter_independent_depth_ceiling(self):
+        module = hexctl_module()
+        limit = getattr(module, "CHECKPOINT_JSON_DEPTH_MAX", 128)
+
+        at_limit = b"[" * limit + b"0" + b"]" * limit
+        self.assertIsInstance(module._checkpoint_json(at_limit, "state"), list)
+        punctuation = json.dumps(
+            {"value": "[" * (limit + 1) + "\\\"{"}
+        ).encode("utf-8")
+        self.assertEqual(
+            module._checkpoint_json(punctuation, "state")["value"],
+            "[" * (limit + 1) + '\\"{',
+        )
+
         stderr = StringIO()
-        nested = b"[" * 50_000 + b"0" + b"]" * 50_000
+        nested = b"[" * (limit + 1) + b"0" + b"]" * (limit + 1)
         with redirect_stderr(stderr), self.assertRaises(SystemExit):
             module._checkpoint_json(nested, "state")
-        self.assertIn("strict UTF-8 JSON", stderr.getvalue())
+        self.assertIn("JSON nesting ceiling", stderr.getvalue())
 
     def test_moving_input_refuses_before_publication(self):
         self.to_post_push()
@@ -866,6 +885,153 @@ class HexctlCheckpointTests(HexctlCase):
             expected_runbook,
             restored.joinpath(".hexaemeron", "runbook.md").read_bytes(),
         )
+
+    def test_source_receipts_normalize_absolute_inputs_before_export(self):
+        self.init()
+        study = self.write(
+            ".hexaemeron/study.md",
+            "# Study\n\n```risk-register\npacket | boundary | check\n```\n",
+        )
+        self.run_ctl(
+            "done",
+            "study",
+            "--artifact",
+            str(Path(self.target) / study),
+        )
+        self.assertEqual(study, self.state()["receipts"]["study"]["artifact"])
+
+        runbook = self.write(
+            ".hexaemeron/runbook.md",
+            "# Runbook\n\n## Step 1: First\n\n**Goal.** First.\n",
+        )
+        steps = self.write(".hexaemeron/steps.json", json.dumps(["First"]))
+        self.run_ctl(
+            "done",
+            "runbook",
+            "--artifact",
+            str(Path(self.target) / runbook),
+            "--steps-file",
+            steps,
+        )
+        self.assertEqual(
+            runbook,
+            self.state()["receipts"]["runbook"]["artifact"],
+        )
+
+    def test_restore_rebases_legacy_absolute_source_from_recorded_worktree(self):
+        module = hexctl_module()
+        old_origin = "/retired/origin"
+        old_worktree = old_origin + "/tmp/fiat/fiat-example"
+        expected = "a" * 64
+        state = {
+            "config": {
+                "git": {"origin": old_origin, "worktree": old_worktree}
+            },
+            "run_branch": "fiat/example",
+            "receipts": {
+                "study": {
+                    "artifact": old_worktree + "/.hexaemeron/study.md",
+                    "sha256": expected,
+                }
+            },
+        }
+        stderr = StringIO()
+        with redirect_stderr(stderr):
+            try:
+                receipt = module._checkpoint_restore_source_receipt(state, "study")
+            except SystemExit as stopped:
+                self.fail(
+                    "a controller-local legacy source was refused with "
+                    f"exit {stopped.code}: {stderr.getvalue()}"
+                )
+        self.assertEqual((".hexaemeron/study.md", expected), receipt)
+
+    def test_restore_legacy_absolute_source_never_escapes_recorded_worktree(self):
+        module = hexctl_module()
+        old_origin = "/retired/origin"
+        old_worktree = old_origin + "/tmp/fiat/fiat-example"
+        state = {
+            "config": {
+                "git": {"origin": old_origin, "worktree": old_worktree}
+            },
+            "run_branch": "fiat/example",
+            "receipts": {"study": {"sha256": "a" * 64}},
+        }
+        hostile = (
+            old_worktree,
+            old_worktree + "-sibling/study.md",
+            old_worktree + "/../outside/study.md",
+            old_worktree + "/.hexaemeron/../../outside.md",
+        )
+        for artifact in hostile:
+            with self.subTest(artifact=artifact):
+                state["receipts"]["study"]["artifact"] = artifact
+                stderr = StringIO()
+                with redirect_stderr(stderr), self.assertRaises(SystemExit):
+                    module._checkpoint_restore_source_receipt(state, "study")
+                self.assertNotIn(artifact, stderr.getvalue())
+
+    def test_restore_legacy_absolute_source_requires_derived_worktree(self):
+        module = hexctl_module()
+        old_origin = "/retired/origin"
+        old_worktree = old_origin + "/tmp/fiat/not-the-recorded-run"
+        artifact = old_worktree + "/.hexaemeron/study.md"
+        state = {
+            "config": {
+                "git": {"origin": old_origin, "worktree": old_worktree}
+            },
+            "run_branch": "fiat/example",
+            "receipts": {
+                "study": {"artifact": artifact, "sha256": "a" * 64}
+            },
+        }
+        stderr = StringIO()
+        with redirect_stderr(stderr), self.assertRaises(SystemExit):
+            module._checkpoint_restore_source_receipt(state, "study")
+        self.assertNotIn(artifact, stderr.getvalue())
+
+    def test_restore_migrates_a_v5_37_absolute_source_receipt(self):
+        self.to_post_push_with_controller_sources()
+        capsule, _, _ = self.export("legacy-absolute-source")
+
+        def make_study_absolute(state):
+            old_worktree = state["config"]["git"]["worktree"]
+            state["receipts"]["study"]["artifact"] = os.path.join(
+                old_worktree, ".hexaemeron", "study.md"
+            )
+
+        digest = self.rewrite_capsule_state(
+            capsule,
+            make_study_absolute,
+            controller_version="fiat-v5.37.1",
+        )
+        source_ledger = capsule.joinpath("controller", "ledger.jsonl").read_bytes()
+        origin, manifest = self.fresh_origin_for(capsule)
+
+        result = self.restore_into(origin, capsule, digest)
+        restored = self.restored_worktree(origin)
+        state = json.loads(restored.joinpath(".hexaemeron", "state.json").read_bytes())
+        ledger = restored.joinpath(".hexaemeron", "ledger.jsonl").read_bytes()
+        self.assertEqual(
+            ".hexaemeron/study.md",
+            state["receipts"]["study"]["artifact"],
+        )
+        self.assertTrue(ledger.startswith(source_ledger))
+        self.assertEqual(manifest["boundary"]["next"], json.loads(result.stdout)["next"])
+
+    def test_restore_refuses_a_pre_checkpoint_controller_version(self):
+        self.to_post_push()
+        capsule, _, _ = self.export("pre-checkpoint-controller")
+        digest = self.rewrite_capsule_state(
+            capsule,
+            lambda state: None,
+            controller_version="fiat-v5.34.1",
+        )
+        origin, _ = self.fresh_origin_for(capsule)
+
+        refused = self.restore_into(origin, capsule, digest, expect=2)
+        self.assertIn("controller identity", refused.stderr)
+        self.assertFalse(origin.joinpath(".hexaemeron").exists())
 
     def test_restore_receipt_path_traversal_refuses_before_marker(self):
         self.to_post_push()

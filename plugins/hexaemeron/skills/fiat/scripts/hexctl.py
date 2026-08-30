@@ -231,6 +231,17 @@ INTEGRATION_COMMAND_BYTES_MAX = 2048
 INTEGRATION_CHECK_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 INTEGRATION_SYNC_SUPERSESSIONS_MAX = 8
 INTEGRATION_SYNC_REASON_BYTES_MAX = 1024
+SYNC_RESOLUTION_GUARD_SCHEMA = "fiat-sync-resolution-guard/v1"
+SYNC_RESOLUTION_GUARD_KEYS = frozenset(
+    {
+        "schema",
+        "side_selected_paths",
+        "superseded_intersection_paths",
+        "acknowledged_paths",
+    }
+)
+SYNC_TREE_PATH_BATCH_MAX = 64
+SYNC_TREE_ARG_BYTES_MAX = 64 * 1024
 GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN = b"fiat-generator-file/v1\0"
 GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN = b"fiat-generator-tree/v1\0"
 GENERATOR_AGGREGATE_REGISTRY = {
@@ -255,6 +266,7 @@ RESOLUTION_SYNC_KEYS = frozenset(
         "github_verified",
         "product_evidence",
         "revalidation",
+        "resolution_guard",
     }
 )
 RESOLUTION_REVALIDATION_KEYS = frozenset(
@@ -304,7 +316,21 @@ CHECKPOINT_TOTAL_BYTES_MAX = 256 * 1024 * 1024
 CHECKPOINT_FILE_BYTES_MAX = 64 * 1024 * 1024
 CHECKPOINT_MANIFEST_BYTES_MAX = 1024 * 1024
 CHECKPOINT_PATH_BYTES_MAX = 1024
+CHECKPOINT_JSON_DEPTH_MAX = 128
 CHECKPOINT_IO_CHUNK = 64 * 1024
+CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
+    {
+        "fiat-v5.35.1",
+        "fiat-v5.36.1",
+        "fiat-v5.37.1",
+        "fiat-v5.38.1",
+        "fiat-v5.39.1",
+        "fiat-v5.40.1",
+        "fiat-v5.41.1",
+        "fiat-v5.42.1",
+        "fiat-v5.43.1",
+    }
+)
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
 VERSION_RELATIONS_INFO = "version-relations"
 VERSION_RELATION = "next-generation-after-integration-base"
@@ -2631,10 +2657,8 @@ def parse_version_relation_source(text: str) -> dict | None:
     }
 
 
-def _native_relation_git(
-    base_dir: str, argv: list[str], refusal: str
-) -> bytes:
-    """Read native local objects without inherited Git substitution state."""
+def _native_relation_environment() -> dict[str, str]:
+    """A Git environment that cannot substitute for the repository relation."""
     environment = {
         name: value
         for name, value in os.environ.items()
@@ -2649,13 +2673,50 @@ def _native_relation_git(
             "GIT_TERMINAL_PROMPT": "0",
         }
     )
+    return environment
+
+
+def _native_relation_git(
+    base_dir: str, argv: list[str], refusal: str
+) -> bytes:
+    """Read native local objects without inherited Git substitution state."""
     return bounded_tool(
         base_dir,
         "git",
         ["--no-replace-objects", *argv],
         refusal,
-        environment=environment,
+        environment=_native_relation_environment(),
     )
+
+
+def _native_ancestry_status(
+    base_dir: str, candidate: str, descendant: str
+) -> int | None:
+    """Return Git's native ancestry answer, or ``None`` when it gave none.
+
+    This is topology admission only. It deliberately reads no signature,
+    attribution, or GitHub evidence; ``done merge-step`` owns those checks over
+    the exact current range. ``bounded_probe`` keeps startup, time, and output
+    failures inside the same unknown result instead of exposing child output or
+    turning an unavailable answer into a non-ancestor claim.
+    """
+    candidate = require_full_sha(candidate, "waiting step recorded head")
+    descendant = require_full_sha(descendant, "waiting step observed tip")
+    status, _output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "merge-base",
+            "--is-ancestor",
+            candidate,
+            descendant,
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in (0, 1):
+        return None
+    return status
 
 
 def _native_relation_commit(base_dir: str, ref: str, label: str) -> str:
@@ -3736,6 +3797,15 @@ def _require_resolution_sync(
         die("version resolution sync checks do not cover every affected path")
     if not needed.issubset(covered):
         die("version resolution sync checks do not cover each changed target path")
+    previous_sync = _active_sync_predecessor(
+        as_dict(state.get("integrate")), head_commit
+    )
+    _require_sync_resolution_guard(
+        base_dir,
+        sync,
+        product_head,
+        previous_sync=previous_sync,
+    )
 
 
 def _resolution_without_timestamp(receipt: dict) -> dict:
@@ -5003,10 +5073,23 @@ def _require_file(path: str, label: str) -> str:
     return path
 
 
+def _portable_receipt_artifact(base_dir: str, path: str) -> str:
+    """Store a verified source as one portable target-relative path."""
+    try:
+        relative = os.path.relpath(path, os.path.realpath(base_dir))
+    except (OSError, TypeError, ValueError):
+        die("source artefact path is not portable")
+    portable = relative.replace(os.sep, "/")
+    return _checkpoint_safe_relative(tuple(portable.split("/")))
+
+
 def done_study(args, state: dict) -> None:
     require_global_phase(state, "study")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "study artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "study artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
     skills = [s for s in (args.skills or "").split(",") if s]
     digest = hashlib.sha256(artifact_bytes).hexdigest()
     state["receipts"]["study"] = {
@@ -5027,7 +5110,10 @@ def done_study(args, state: dict) -> None:
 def done_runbook(args, state: dict) -> None:
     require_global_phase(state, "runbook")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "runbook artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "runbook artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
     artifact_text = decoded_source(artifact_bytes, "runbook artefact")
     relation_source = parse_version_relation_source(artifact_text)
     version_relations = None
@@ -5862,7 +5948,8 @@ def _integrate_directive(
     sync_then = (
         "hexctl done sync-run --commit <signed-merge-sha> "
         "--base-commit <remote-base-sha> "
-        f"--revalidation {INTEGRATION_REVALIDATION_FILE}"
+        f"--revalidation {INTEGRATION_REVALIDATION_FILE} "
+        "[--acknowledge-sync-path <exact-risk-path> ...]"
     )
     sync_recovery = "sync-run-and-revalidate"
     if sync:
@@ -5907,9 +5994,19 @@ def _integrate_directive(
             "recovery": sync_recovery,
             "artifact": INTEGRATION_REVALIDATION_FILE,
             "then": sync_then,
+            "resolution_guard": {
+                "schema": SYNC_RESOLUTION_GUARD_SCHEMA,
+                "flag": "--acknowledge-sync-path",
+                "rule": (
+                    "repeat the flag for the exact sorted paths named by the "
+                    "controller; acknowledgement records inspection and does "
+                    "not replace revalidation"
+                ),
+            },
             "boundary": (
-                "base advancement alone does not authorise a carryover or "
-                "invalidate the exact-tree product evidence"
+                "base advancement alone does not authorise a carryover, "
+                "invalidate the exact-tree product evidence, or permit a "
+                "whole-side or unreviewed rebuilt resolution"
             ),
         },
         "attribution": {
@@ -6053,6 +6150,199 @@ def _manifest_paths(value, label: str, allowed: set[str] | None = None) -> list[
         if allowed is not None and path not in allowed:
             die(f"{label} names a path outside the computed integration delta")
     return value
+
+
+def _sync_tree_path_batches(paths: list[str]) -> list[list[str]]:
+    """Keep literal ls-tree argv below one explicit path and byte envelope."""
+    batches = []
+    current = []
+    current_bytes = 0
+    for path in paths:
+        token_bytes = len(f":(literal){path}".encode("utf-8")) + 1
+        if current and (
+            len(current) >= SYNC_TREE_PATH_BATCH_MAX
+            or current_bytes + token_bytes > SYNC_TREE_ARG_BYTES_MAX
+        ):
+            batches.append(current)
+            current = []
+            current_bytes = 0
+        current.append(path)
+        current_bytes += token_bytes
+    if current:
+        batches.append(current)
+    return batches
+
+
+def _sync_tree_entries(
+    base_dir: str, commit_sha: str, paths: list[str], label: str
+) -> dict[str, str | None]:
+    """Read exact tree-entry identities for literal paths at one native commit."""
+    commit_sha = require_full_sha(commit_sha, f"{label} commit")
+    paths = _manifest_paths(paths, f"{label} paths")
+    identities = {path: None for path in paths}
+    for batch in _sync_tree_path_batches(paths):
+        literal_pathspecs = [f":(literal){path}" for path in batch]
+        raw = _native_relation_git(
+            base_dir,
+            ["ls-tree", "-z", "--full-tree", commit_sha, "--", *literal_pathspecs],
+            f"{label} tree entries cannot be read",
+        )
+        batch_set = set(batch)
+        seen = set()
+        for record in raw.split(b"\0"):
+            if not record:
+                continue
+            metadata, separator, path_bytes = record.partition(b"\t")
+            fields = metadata.split()
+            try:
+                path = path_bytes.decode("utf-8")
+                mode, kind, object_id = [field.decode("ascii") for field in fields]
+            except (UnicodeDecodeError, ValueError):
+                die(f"{label} tree entries are malformed")
+            if (
+                separator != b"\t"
+                or path not in batch_set
+                or path in seen
+                or re.fullmatch(r"[0-7]{6}", mode) is None
+                or kind not in {"blob", "tree", "commit"}
+                or COMMIT_RE.fullmatch(object_id) is None
+            ):
+                die(f"{label} tree entries are malformed")
+            seen.add(path)
+            identities[path] = f"{mode} {kind} {object_id}"
+    return identities
+
+
+def _active_sync_predecessor(integrate: dict, active_commit: str) -> dict | None:
+    """Return the sync immediately superseded by the active receipt."""
+    history = integrate.get("superseded_syncs") or []
+    if not isinstance(history, list):
+        die("recorded superseded integration syncs are malformed")
+    if not history:
+        return None
+    tail = history[-1]
+    previous = tail.get("sync") if isinstance(tail, dict) else None
+    if (
+        not isinstance(previous, dict)
+        or tail.get("superseded_by") != active_commit
+    ):
+        die("active integration sync is not joined to its supersession history")
+    return previous
+
+
+def sync_resolution_guard_record(
+    base_dir: str,
+    product_head: str,
+    base_head: str,
+    sync_head: str,
+    *,
+    current_sync: dict | None,
+    acknowledgements: list[str],
+) -> dict:
+    """Expose whole-side and rebuild-loss paths before a sync is receipted."""
+    product_head = require_full_sha(product_head, "sync resolution product head")
+    base_head = require_full_sha(base_head, "sync resolution base head")
+    sync_head = require_full_sha(sync_head, "sync resolution sync head")
+    acknowledgements = _manifest_paths(
+        acknowledgements, "--acknowledge-sync-path values"
+    )
+
+    base_before = merge_base_commit(base_dir, product_head, base_head)
+    product_paths = git_diff_paths(base_dir, base_before, product_head)
+    base_paths = git_diff_paths(base_dir, base_before, base_head)
+    overlap_paths = sorted(set(product_paths) & set(base_paths))
+    product_entries = _sync_tree_entries(
+        base_dir, product_head, overlap_paths, "sync resolution product"
+    )
+    base_entries = _sync_tree_entries(
+        base_dir, base_head, overlap_paths, "sync resolution base"
+    )
+    sync_entries = _sync_tree_entries(
+        base_dir, sync_head, overlap_paths, "sync resolution result"
+    )
+    side_selected_paths = [
+        path
+        for path in overlap_paths
+        if product_entries[path] != base_entries[path]
+        and sync_entries[path] in {product_entries[path], base_entries[path]}
+    ]
+
+    superseded_intersection_paths = []
+    if current_sync is not None:
+        if not isinstance(current_sync, dict):
+            die("active integration sync is malformed")
+        old_sync = require_full_sha(
+            current_sync.get("commit"), "active recorded sync commit"
+        )
+        old_base = require_full_sha(
+            current_sync.get(SYNC_BASE_HEAD_KEY), "active recorded sync base"
+        )
+        if _native_relation_parents(
+            base_dir, old_sync, "active recorded sync commit"
+        ) != [product_head, old_base]:
+            die("active recorded sync parents do not match product and old base")
+        old_composition_paths = git_diff_paths(base_dir, product_head, old_sync)
+        base_advance_paths = git_diff_paths(base_dir, old_base, base_head)
+        superseded_intersection_paths = sorted(
+            set(old_composition_paths) & set(base_advance_paths)
+        )
+
+    required = sorted(
+        set(side_selected_paths) | set(superseded_intersection_paths)
+    )
+    if acknowledgements != required:
+        missing = sorted(set(required) - set(acknowledgements))
+        extra = sorted(set(acknowledgements) - set(required))
+        die(
+            "integration sync resolution acknowledgements do not match; "
+            f"missing {json.dumps(missing, ensure_ascii=False)}; "
+            f"extra {json.dumps(extra, ensure_ascii=False)}; repeat "
+            "--acknowledge-sync-path once for each required path in this "
+            f"exact order: {json.dumps(required, ensure_ascii=False)}"
+        )
+    return {
+        "schema": SYNC_RESOLUTION_GUARD_SCHEMA,
+        "side_selected_paths": side_selected_paths,
+        "superseded_intersection_paths": superseded_intersection_paths,
+        "acknowledged_paths": acknowledgements,
+    }
+
+
+def _require_sync_resolution_guard(
+    base_dir: str,
+    sync: dict,
+    product_head: str,
+    *,
+    previous_sync: dict | None,
+) -> dict:
+    """Recompute one stored guard from its immutable Git objects."""
+    guard = sync.get("resolution_guard")
+    if (
+        not isinstance(guard, dict)
+        or set(guard) != SYNC_RESOLUTION_GUARD_KEYS
+        or guard.get("schema") != SYNC_RESOLUTION_GUARD_SCHEMA
+    ):
+        die(
+            "active integration sync has no current resolution guard; "
+            "supersede it with a fresh signed and revalidated sync"
+        )
+    for field in (
+        "side_selected_paths",
+        "superseded_intersection_paths",
+        "acknowledged_paths",
+    ):
+        _manifest_paths(guard.get(field), f"sync resolution guard {field}")
+    expected = sync_resolution_guard_record(
+        base_dir,
+        product_head,
+        sync.get(SYNC_BASE_HEAD_KEY),
+        sync.get("commit"),
+        current_sync=previous_sync,
+        acknowledgements=guard["acknowledged_paths"],
+    )
+    if guard != expected:
+        die("active integration sync resolution guard does not replay")
+    return expected
 
 
 def _sha256_value(value, label: str) -> str:
@@ -6926,23 +7216,19 @@ def refuse_unreceipted_run_branch_movement(
 
 
 def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> None:
-    """Refuse when a step branch that is still waiting has moved since its push.
+    """Refuse when a waiting branch no longer contains its receipted head.
 
-    GitHub's native stacked-pull-request flow rebases every downstream branch on
-    each merge and re-signs the rewritten commits with its own key. Author and
-    the provenance trailers survive; the local signature does not.
-
-    Without this check the first symptom is an invalid local signature at a later
-    merge-step, which reads as a broken signing setup rather than as a branch
-    rewrite, and by then several steps have already merged. Comparing each
-    waiting step's remote tip against the head its push receipt names finds the
-    rewrite at the first merge-step after it happened, and says what happened.
+    Equality is the zero-query path. A moved tip receives one bounded native
+    ancestry query: status 0 admits topology only, status 1 establishes that the
+    receipted head is absent, and every other outcome is unknown. Signatures,
+    provenance, GitHub verification, and attribution remain mandatory over the
+    exact live range at ``done merge-step``.
 
     A step whose branch cannot be read is reported rather than skipped: an absent
     downstream branch during integration is not a normal state.
     """
     merged = as_dict(state.get("integrate")).get("merged") or []
-    moved, unreadable = [], []
+    nonancestors, unknown, unreadable = [], [], []
     for step in state["steps"]:
         number = step["n"]
         if number == current_step or number in merged:
@@ -6957,7 +7243,9 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
         except SystemExit:
             unreadable.append(f"step {number} ('{branch}')")
             continue
-        if tip != recorded and len(recorded) < 40:
+        if tip == recorded:
+            continue
+        if len(recorded) < 40:
             # An abbreviated receipt is an older receipt format, not a moved
             # branch: `--head-commit` accepts any ref git resolves, and receipts
             # written before that value was stored resolved hold whatever was
@@ -6966,33 +7254,50 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
             # match. Only reached when they differ, so a full-length receipt
             # never shells out.
             try:
-                recorded = resolved_commit(
+                recorded = _native_relation_commit(
                     base_dir, recorded, f"step {number} recorded push head"
                 )
             except SystemExit:
                 unreadable.append(f"step {number} ('{branch}', recorded {recorded})")
                 continue
-        if tip != recorded:
-            moved.append(
-                f"step {number} ('{branch}') is at {tip} and its push receipt "
-                f"names {recorded}"
-            )
+            if tip == recorded:
+                continue
+        relation = _native_ancestry_status(base_dir, recorded, tip)
+        observation = (
+            f"step {number} ('{branch}') recorded head {recorded} and observed "
+            f"tip {tip}"
+        )
+        if relation == 0:
+            continue
+        if relation == 1:
+            nonancestors.append(observation)
+        else:
+            unknown.append(observation)
     if unreadable:
         die(
             "a step branch still waiting to merge could not be read: "
             + "; ".join(unreadable)
             + ". Integration cannot proceed while a downstream branch is missing."
         )
-    if moved:
+    if unknown:
         die(
-            "a step branch still waiting to merge has been rewritten since it was "
-            "pushed: " + "; ".join(moved) + ". GitHub's stacked-pull-request flow "
-            "rebases downstream branches on each merge and re-signs them with its "
-            "own key, which keeps the author and the provenance trailers and "
-            "discards the local signature. The range these receipts describe is no "
-            "longer the range on the remote. Land the run from a branch holding the "
-            "original commits rather than merging the rewritten stack, and do not "
-            "import GitHub's public key to make the signature check pass."
+            "a step branch still waiting to merge has unknown ancestry: "
+            + "; ".join(unknown)
+            + ". Its ancestry could not be determined from bounded native local "
+            "objects. Restore readable native objects and repository history, then "
+            "retry; integration cannot proceed on an unanswered relation."
+        )
+    if nonancestors:
+        die(
+            "a step branch still waiting to merge no longer contains its receipted "
+            "head: "
+            + "; ".join(nonancestors)
+            + ". Each recorded head is not an ancestor of its observed tip. The "
+            "controller has not established why the history moved, and the push "
+            "receipt no longer describes the current remote range. Land the run "
+            "from a branch holding the original commits rather than merging this "
+            "stack, and do not import GitHub's public key to make the signature "
+            "check pass."
         )
 
 
@@ -7208,6 +7513,16 @@ def done_sync_run(args, state: dict) -> None:
     revalidation = integration_revalidation_record(
         args.dir, args.revalidation, recorded_tip, base_tip, sync_tip
     )
+    resolution_guard = sync_resolution_guard_record(
+        args.dir,
+        recorded_tip,
+        base_tip,
+        sync_tip,
+        current_sync=(current_sync if current_sync else None),
+        acknowledgements=list(
+            getattr(args, "acknowledge_sync_paths", None) or []
+        ),
+    )
     verify_local_commit(args.dir, sync_tip, "run branch integration sync")
     github_verified = verify_github_commits(args.dir, [sync_tip])
     _require_native_relation_history(args.dir)
@@ -7222,6 +7537,7 @@ def done_sync_run(args, state: dict) -> None:
         "github_verified": github_verified,
         "product_evidence": product_evidence,
         "revalidation": revalidation,
+        "resolution_guard": resolution_guard,
     }
     if current_sync:
         superseded_sync = {
@@ -7245,8 +7561,9 @@ def done_sync_run(args, state: dict) -> None:
             f"{run_branch_of(state)} superseded integration sync "
             f"{superseded_sync['sync']['commit']} with {sync_tip}; "
             f"product evidence preserved; {len(revalidation['checks'])} "
-            "integration revalidation check(s) recorded; integration may "
-            "continue"
+            "integration revalidation check(s) recorded; "
+            f"{len(resolution_guard['acknowledged_paths'])} sync resolution "
+            "path(s) acknowledged; integration may continue"
         )
     else:
         commit(args.dir, state, "done:sync-run", new_sync)
@@ -7254,7 +7571,8 @@ def done_sync_run(args, state: dict) -> None:
             f"{run_branch_of(state)} synced with {integration_base} at "
             f"{base_tip}; product evidence preserved; "
             f"{len(revalidation['checks'])} integration revalidation check(s) "
-            "recorded; integration may continue"
+            f"recorded; {len(resolution_guard['acknowledged_paths'])} sync "
+            "resolution path(s) acknowledged; integration may continue"
         )
 
 
@@ -7596,6 +7914,15 @@ def done_integrate(args, state: dict) -> None:
             state, recorded_tip
         ):
             die("recorded product evidence changed after the integration sync")
+        previous_sync = _active_sync_predecessor(
+            integrate, sync.get("commit")
+        )
+        _require_sync_resolution_guard(
+            args.dir,
+            sync,
+            recorded_tip,
+            previous_sync=previous_sync,
+        )
         expected_tip = require_full_sha(sync.get("commit"), "recorded run sync commit")
     if remote_tip != expected_tip:
         if sync:
@@ -7857,7 +8184,11 @@ def markdown_lines(text: str):
 
 
 def _study_amendment_boundary(
-    text: str, expected: str, subject: str = "study"
+    text: str,
+    expected: str,
+    subject: str = "study",
+    *,
+    shape_already_accepted: bool = False,
 ) -> tuple[int, int, str]:
     """Find the one real final amendment whose byte prefix has the receipt hash."""
     headings = []
@@ -7891,10 +8222,11 @@ def _study_amendment_boundary(
     later = [start for start, _ in headings if start > heading_start]
     if later:
         die("amendment candidate appends more than one final amendment block")
-    try:
-        datetime.date.fromisoformat(date_text)
-    except ValueError:
-        die(f"amendment heading has an invalid calendar date: {date_text}")
+    if not shape_already_accepted:
+        try:
+            datetime.date.fromisoformat(date_text)
+        except ValueError:
+            die(f"amendment heading has an invalid calendar date: {date_text}")
     return boundary, heading_start, date_text
 
 
@@ -7938,6 +8270,37 @@ def _study_amendment_fields(
         if not value:
             die(f"amendment field '{name}' must not be empty")
         values[name] = value
+    return values
+
+
+def _accepted_study_amendment_fields(
+    text: str, heading_start: int
+) -> dict[str, str]:
+    """Extract controller-owned values after Protasis accepted the shape.
+
+    Protasis owns the dated four-field grammar. Fiat needs only the two fields
+    that join the accepted suffix to controller state, so this extractor makes
+    no second cardinality, ordering, name, or non-empty-value verdict.
+    """
+    fields = []
+    for start, end, line, in_fence, _ in markdown_lines(text):
+        if start <= heading_start or in_fence:
+            continue
+        match = ANY_AMENDMENT_FIELD_RE.fullmatch(line)
+        if match:
+            name, _, first_line = line[2:].partition(".**")
+            fields.append((start, end, name, first_line.strip()))
+
+    values = {}
+    for index, (_, end, name, first_line) in enumerate(fields):
+        stop = fields[index + 1][0] if index + 1 < len(fields) else len(text)
+        value = " ".join((first_line + "\n" + text[end:stop]).split())
+        if name in ("Steps touched", "Still holding"):
+            values[name] = value
+
+    missing = [name for name in ("Steps touched", "Still holding") if name not in values]
+    if missing:
+        die("Protasis accepted a study amendment Fiat could not consume", 1)
     return values
 
 
@@ -8171,10 +8534,12 @@ def _replace_runbook_bytes(path: str, data: bytes) -> None:
 def _study_amendment_record(
     state: dict, expected: str, candidate: bytes
 ) -> dict:
-    """Validate captured candidate bytes and return only bounded receipt data."""
+    """Join Protasis-accepted bytes to bounded controller receipt data."""
     text = decoded_source(candidate, "study amendment candidate")
-    boundary, heading_start, date_text = _study_amendment_boundary(text, expected)
-    fields = _study_amendment_fields(text, heading_start)
+    boundary, heading_start, date_text = _study_amendment_boundary(
+        text, expected, shape_already_accepted=True
+    )
+    fields = _accepted_study_amendment_fields(text, heading_start)
     touched, verdicts = _study_step_verdicts(fields, state)
     prefix_bytes = text[:boundary].encode("utf-8")
     amendment_bytes = candidate[len(prefix_bytes):]
@@ -8339,8 +8704,8 @@ def _recover_study_amendment(
             1,
         )
 
-    recovered = _study_amendment_record(state, prior, canonical)
     _check_amended_study(base_dir, canonical)
+    recovered = _study_amendment_record(state, prior, canonical)
     if recovered != amendment:
         die("pending study amendment metadata does not match the candidate bytes", 1)
     existing_history = receipt.get("amendments")
@@ -8397,8 +8762,8 @@ def cmd_amend_study(args) -> None:
                 "restore the receipted bytes or halt the run"
             )
 
-    amendment = _study_amendment_record(state, expected, candidate)
     _check_amended_study(args.dir, candidate)
+    amendment = _study_amendment_record(state, expected, candidate)
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)
@@ -10720,7 +11085,34 @@ def _checkpoint_read_staged(path: str, ceiling: int) -> bytes:
     return bytes(data)
 
 
+def _checkpoint_json_depth_within_limit(data: bytes) -> bool:
+    """Bound JSON container nesting without interpreting string punctuation."""
+    depth = 0
+    in_string = False
+    escaped = False
+    for byte in data:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif byte == 0x5C:  # backslash
+                escaped = True
+            elif byte == 0x22:  # double quote
+                in_string = False
+            continue
+        if byte == 0x22:
+            in_string = True
+        elif byte in (0x5B, 0x7B):  # [ {
+            depth += 1
+            if depth > CHECKPOINT_JSON_DEPTH_MAX:
+                return False
+        elif byte in (0x5D, 0x7D) and depth:
+            depth -= 1
+    return True
+
+
 def _checkpoint_json(data: bytes, label: str):
+    if not _checkpoint_json_depth_within_limit(data):
+        die(f"checkpoint {label} exceeds the JSON nesting ceiling")
     try:
         return json.loads(
             data.decode("utf-8"),
@@ -10729,7 +11121,7 @@ def _checkpoint_json(data: bytes, label: str):
                 ValueError("non-finite number")
             ),
         )
-    except (RecursionError, UnicodeDecodeError, ValueError):
+    except (MemoryError, RecursionError, UnicodeDecodeError, ValueError):
         die(f"checkpoint {label} is not strict UTF-8 JSON")
 
 
@@ -11204,8 +11596,43 @@ def _checkpoint_restore_source_receipt(
     if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
         die(f"checkpoint {name} receipt has an invalid sha256")
     artifact = receipt.get("artifact")
-    if not isinstance(artifact, str) or not artifact or os.path.isabs(artifact):
+    if not isinstance(artifact, str) or not artifact:
         die(f"checkpoint {name} artefact path is not relocatable")
+    if os.path.isabs(artifact):
+        old_origin = configured_git_path(state, "origin")
+        old_worktree = configured_git_path(state, "worktree")
+        run_branch = run_branch_of(state)
+        paths = (old_origin, old_worktree, artifact)
+        for path in paths:
+            try:
+                encoded = path.encode("utf-8") if isinstance(path, str) else b""
+            except UnicodeEncodeError:
+                encoded = b""
+            if (
+                not encoded
+                or not os.path.isabs(path)
+                or path.replace("\\", "/") != path
+                or os.path.normpath(path) != path
+                or any(
+                    ord(character) < 32 or ord(character) == 127
+                    for character in path
+                )
+            ):
+                die(f"checkpoint {name} artefact path is not relocatable")
+        if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        expected_worktree = os.path.join(
+            old_origin, *WORKTREE_HOME, run_branch.replace("/", "-")
+        )
+        if old_worktree != expected_worktree:
+            die(f"checkpoint {name} artefact path is not relocatable")
+        try:
+            relative = os.path.relpath(artifact, old_worktree).replace(os.sep, "/")
+        except (OSError, TypeError, ValueError):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        artifact = _checkpoint_safe_relative(tuple(relative.split("/")))
+        if os.path.join(old_worktree, *artifact.split("/")) != receipt["artifact"]:
+            die(f"checkpoint {name} artefact path is not relocatable")
     if artifact.replace("\\", "/") != artifact:
         die(f"checkpoint {name} artefact path is unsafe")
     if _checkpoint_safe_relative(tuple(artifact.split("/"))) != artifact:
@@ -11381,12 +11808,19 @@ def _checkpoint_restore_capsule(
     current_version = ledger_version(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
     )
-    if canonical(controller) != canonical(
-        {
-            "name": state.get("controller"),
-            "state_version": state.get("version"),
-            "version": current_version,
-        }
+    controller_identity = {
+        "name": controller["name"],
+        "state_version": controller["state_version"],
+    }
+    state_identity = {
+        "name": state.get("controller"),
+        "state_version": state.get("version"),
+    }
+    if (
+        canonical(controller_identity) != canonical(state_identity)
+        or not isinstance(controller["version"], str)
+        or controller["version"] not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
+        or current_version not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
     ):
         die("checkpoint controller identity does not match this controller")
     last_entry = None
@@ -11815,10 +12249,17 @@ def _checkpoint_restore_state(
     manifest: dict,
     manifest_digest: str,
 ) -> tuple[dict, dict]:
-    """Relocate only the controller's two path fields and shape its receipt."""
+    """Relocate controller paths and shape the same-ledger receipt."""
     state = json.loads(json.dumps(imported))
     old_origin = configured_git_path(state, "origin")
     old_worktree = configured_git_path(state, "worktree")
+    for name in ("study", "runbook"):
+        source_receipt = _checkpoint_restore_source_receipt(state, name)
+        if source_receipt is None:
+            continue
+        artifact, _ = source_receipt
+        receipt = as_dict(as_dict(state.get("receipts")).get(name))
+        receipt["artifact"] = artifact
     state.pop("origin", None)
     state.pop("worktree", None)
     state["config"]["git"]["origin"] = origin
@@ -12563,6 +13004,7 @@ def cmd_status(args) -> None:
         sync = as_dict(as_dict(state.get("integrate")).get("sync"))
         product = as_dict(sync.get("product_evidence"))
         revalidation = as_dict(sync.get("revalidation"))
+        resolution_guard = as_dict(sync.get("resolution_guard"))
         if product:
             print(
                 "evidence: product "
@@ -12570,6 +13012,21 @@ def cmd_status(args) -> None:
                 f"{len(revalidation.get('checks') or [])} integration "
                 "revalidation check(s) recorded"
             )
+            if resolution_guard:
+                print(
+                    "evidence: sync resolution "
+                    f"{len(resolution_guard.get('side_selected_paths') or [])} "
+                    "whole-side path(s), "
+                    f"{len(resolution_guard.get('superseded_intersection_paths') or [])} "
+                    "superseded-intersection path(s), "
+                    f"{len(resolution_guard.get('acknowledged_paths') or [])} "
+                    "acknowledged"
+                )
+            else:
+                print(
+                    "evidence: sync resolution guard missing; supersede with "
+                    "a fresh signed and revalidated sync"
+                )
             superseded = as_dict(state.get("integrate")).get(
                 "superseded_syncs"
             ) or []
@@ -12899,6 +13356,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--base-commit", dest="base_commit")
     sp.add_argument("--revalidation")
     sp.add_argument("--supersede-sync", dest="supersede_sync")
+    sp.add_argument(
+        "--acknowledge-sync-path",
+        dest="acknowledge_sync_paths",
+        action="append",
+        default=[],
+    )
     sp.add_argument("--tests")
     sp.add_argument("--no-further-leads", dest="no_further_leads", action="store_true")
     sp.add_argument("--reason")
