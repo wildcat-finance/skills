@@ -154,6 +154,12 @@ def _decimal(value: Any, path: str) -> str:
     return text
 
 
+def _decimal_key(text: str) -> tuple[int, str]:
+    """Return the numeric order of a canonical, non-negative decimal string."""
+
+    return len(text), text
+
+
 def _safe_relative_path(value: Any, path: str) -> str:
     text = _string(value, path)
     try:
@@ -432,8 +438,8 @@ def validate_model(model: Any) -> dict[str, Any]:
     _check_precedence(relations, state.directives)
 
     bindings = _array(root["bindings"], "$.bindings", MAX_BINDINGS, minimum=1)
-    binding_keys: list[tuple[str, int, int, str, str]] = []
-    intervals: dict[str, list[tuple[int, int, str, str]]] = defaultdict(list)
+    binding_keys: list[tuple[str, tuple[int, str], tuple[int, str], str, str]] = []
+    intervals: dict[str, list[tuple[tuple[int, str], tuple[int, str], str, str]]] = defaultdict(list)
     covered: set[str] = set()
     for index, raw_binding in enumerate(bindings):
         path = f"$.bindings[{index}]"
@@ -444,7 +450,7 @@ def validate_model(model: Any) -> dict[str, Any]:
             refuse("WAI-E-REFERENCE.BINDING", path)
         start_text = _decimal(binding["start"], f"{path}.start")
         end_text = _decimal(binding["end"], f"{path}.end")
-        start, end = int(start_text), int(end_text)
+        start, end = _decimal_key(start_text), _decimal_key(end_text)
         if end <= start:
             refuse("WAI-E-REFERENCE.SPAN", path)
         reviewer = state.literal(binding["reviewer"], f"{path}.reviewer", "identifier")["value"]
@@ -460,7 +466,7 @@ def validate_model(model: Any) -> dict[str, Any]:
     if missing:
         refuse("WAI-E-REFERENCE.UNCOVERED", "$.bindings")
     for source_intervals in intervals.values():
-        by_node: dict[str, list[tuple[int, int, str]]] = defaultdict(list)
+        by_node: dict[str, list[tuple[tuple[int, str], tuple[int, str], str]]] = defaultdict(list)
         for start, end, node, path in source_intervals:
             by_node[node].append((start, end, path))
         nodes = sorted(by_node)
@@ -570,9 +576,9 @@ def decode_literal(token: str, expected: str | None = None, path: str = "$") -> 
     count_text = token[1:colon]
     if DECIMAL_RE.fullmatch(count_text) is None:
         refuse("WAI-E-COMPACT.LENGTH", path)
-    expected_bytes = int(count_text)
-    if expected_bytes > MAX_LITERAL_BYTES:
+    if _decimal_key(count_text) > _decimal_key(str(MAX_LITERAL_BYTES)):
         refuse("WAI-E-BOUNDS.LITERAL", path)
+    expected_bytes = int(count_text)
     data = token[colon + 1 :]
     decoded: list[str] = []
     actual_bytes = 0
@@ -1041,7 +1047,7 @@ def write_confined_atomic(root: str | os.PathLike[str], relative: str, data: byt
     if len(data) > MAX_FILE_BYTES:
         refuse("WAI-E-BOUNDS.FILE", "$.path")
     parent, leaf = _open_parent(root, relative)
-    temporary = f".{leaf}.wai-{secrets.token_hex(8)}"
+    temporary = f".wai-{secrets.token_hex(16)}"
     descriptor = -1
     created = False
     try:

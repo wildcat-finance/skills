@@ -407,6 +407,48 @@ def exception_count_model(count: int) -> dict:
     return model
 
 
+def line_limit_model(end_extra: int = 0) -> dict:
+    model = minimal_model()
+    start_width = 32745
+    end_width = start_width + end_extra
+    start = "1" + "0" * (start_width - 1)
+    end = ("2" if end_extra == 0 else "1") + "0" * (end_width - 1)
+    outer_end = "1" + "0" * end_width
+    model["bindings"][0]["end"] = outer_end
+    model["bindings"][1]["end"] = outer_end
+    model["bindings"][2]["start"] = start
+    model["bindings"][2]["end"] = end
+    return model
+
+
+def file_and_line_count_limit_model() -> dict:
+    model = minimal_model()
+    directive = model["sections"][0]["directives"][0]
+    evidence = [literal("text", "") for _ in range(AI.MAX_EXPRESSIONS)]
+    authorisation_count = AI.MAX_LINES - 15 - len(evidence)
+    evidence[:12] = [literal("text", " " * 32759) for _ in range(12)]
+    evidence[12] = literal("text", " " * 16340 + "x")
+    directive["promise"] = {
+        "id": "promise",
+        "claim": literal("text", ""),
+        "evidence": evidence,
+        "evidence_classes": ["checked"],
+        "boundary": literal("text", ""),
+        "authorises": [literal("text", "") for _ in range(authorisation_count)],
+        "consequence": "0",
+        "refuses": [literal("text", "")],
+        "recovery": [literal("text", "")],
+        "exceptions": [],
+    }
+    model["bindings"] = [
+        {"source": "src", "node": "doc", "start": "0", "end": "100", "reviewer": reviewer()},
+        {"source": "src", "node": "section", "start": "0", "end": "100", "reviewer": reviewer()},
+        {"source": "src", "node": "rule", "start": "10", "end": "90", "reviewer": reviewer()},
+        {"source": "src", "node": "promise", "start": "20", "end": "80", "reviewer": reviewer()},
+    ]
+    return model
+
+
 class RefusalAssertions:
     def assertRefusal(self, code: str, function, *arguments):
         with self.assertRaises(AI.CodecError) as raised:
@@ -588,6 +630,23 @@ class CanonicalModelTests(RefusalAssertions, unittest.TestCase):
         model = minimal_model()
         model["bindings"][2]["end"] = model["bindings"][2]["start"]
         self.assertRefusal("WAI-E-REFERENCE.SPAN", AI.validate_model, model)
+
+    def test_large_decimal_spans_validate_without_runtime_conversion(self):
+        model = minimal_model()
+        outer_end = "2" + "0" * 4301
+        inner_start = "9" * 4301
+        inner_end = "1" + "0" * 4301
+        model["bindings"][0]["end"] = outer_end
+        model["bindings"][1]["end"] = outer_end
+        model["bindings"][2]["start"] = inner_start
+        model["bindings"][2]["end"] = inner_end
+        try:
+            compact = AI.format_compact(model)
+        except Exception as error:
+            self.fail(f"valid decimal spans raised {type(error).__name__}")
+        decoded, canonical = AI.decode_compact(compact)
+        self.assertEqual(decoded, model)
+        self.assertEqual(canonical, AI.canonical_json_bytes(model))
 
     def test_unrelated_binding_overlap_refuses(self):
         model = complete_model()
@@ -818,6 +877,15 @@ class CompactCodecTests(RefusalAssertions, unittest.TestCase):
     def test_declared_length_too_long_refuses(self):
         self.assertRefusal("WAI-E-COMPACT.LENGTH", AI.decode_literal, "t4:cat")
 
+    def test_oversized_decimal_length_refuses_without_runtime_conversion(self):
+        try:
+            AI.decode_literal("t" + "9" * 4301 + ":")
+        except Exception as error:
+            self.assertIsInstance(error, AI.CodecError)
+            self.assertTrue(error.code.startswith("WAI-E-BOUNDS.LITERAL"), error.code)
+        else:
+            self.fail("oversized decimal length was accepted")
+
     def test_lowercase_hex_escape_refuses(self):
         self.assertRefusal("WAI-E-COMPACT.ESCAPE", AI.decode_literal, "t1:\\x0f")
 
@@ -881,30 +949,33 @@ class CompactCodecTests(RefusalAssertions, unittest.TestCase):
         self.assertEqual(AI.decode_compact(compact)[0], model)
 
     def test_line_limit_plus_one_refuses(self):
-        compact = b"WAI1\n" + b"D " + b"x" * AI.MAX_LINE_BYTES + b"\n"
-        self.assertRefusal("WAI-E-BOUNDS.LINE", AI.decode_compact, compact)
+        try:
+            AI.format_compact(line_limit_model(end_extra=1))
+        except Exception as error:
+            self.assertIsInstance(error, AI.CodecError)
+            self.assertTrue(error.code.startswith("WAI-E-BOUNDS.LINE"), error.code)
+        else:
+            self.fail("a valid record one byte over the line limit was accepted")
 
-    def test_line_limit_at_limit_passes_the_boundary_guard(self):
-        body = b"D " + b"x" * (AI.MAX_LINE_BYTES - 2)
-        parser = AI.CompactParser(b"WAI1\n" + body + b"\n")
-        self.assertEqual(len(parser.records), 1)
+    def test_line_limit_at_limit_round_trips(self):
+        model = line_limit_model()
+        try:
+            compact = AI.format_compact(model)
+        except Exception as error:
+            self.fail(f"valid line-limit model raised {type(error).__name__}")
+        self.assertEqual(max(len(line) for line in compact.splitlines()), AI.MAX_LINE_BYTES)
+        self.assertEqual(AI.decode_compact(compact)[0], model)
 
-    def test_physical_line_count_at_limit_passes_the_boundary_guard(self):
-        parser = AI.CompactParser(b"WAI1\n" + b"?\n" * (AI.MAX_LINES - 1))
-        self.assertEqual(len(parser.records), AI.MAX_LINES - 1)
+    def test_file_and_physical_line_caps_at_limit_round_trip(self):
+        model = file_and_line_count_limit_model()
+        compact = AI.format_compact(model)
+        self.assertEqual(len(compact), AI.MAX_FILE_BYTES)
+        self.assertEqual(len(compact.splitlines()), AI.MAX_LINES)
+        self.assertEqual(AI.decode_compact(compact)[0], model)
 
     def test_physical_line_count_limit_plus_one_refuses(self):
         compact = b"WAI1\n" + b"?\n" * AI.MAX_LINES
         self.assertRefusal("WAI-E-BOUNDS.LINES", AI.decode_compact, compact)
-
-    def test_file_cap_at_limit_passes_the_boundary_guard(self):
-        full = b"D " + b"x" * (AI.MAX_LINE_BYTES - 2) + b"\n"
-        body = full * 15
-        remaining = AI.MAX_FILE_BYTES - len(b"WAI1\n") - len(body)
-        final = b"D " + b"x" * (remaining - 3) + b"\n"
-        data = b"WAI1\n" + body + final
-        self.assertEqual(len(data), AI.MAX_FILE_BYTES)
-        AI.CompactParser(data)
 
     def test_file_cap_limit_plus_one_refuses(self):
         data = b"WAI1\n" + b"x" * (AI.MAX_FILE_BYTES - len(b"WAI1\n") + 1)
@@ -1052,6 +1123,17 @@ class PathBoundaryTests(RefusalAssertions, unittest.TestCase):
         (self.root / "output").write_bytes(b"old")
         AI.write_confined_atomic(self.root, "output", b"new")
         self.assertEqual((self.root / "output").read_bytes(), b"new")
+
+    @unittest.skipUnless(hasattr(os, "pathconf"), "filesystem name limits are unavailable")
+    def test_atomic_write_replaces_maximum_component_length_file(self):
+        name_max = os.pathconf(self.root, "PC_NAME_MAX")
+        leaf = "a" * min(AI.MAX_PATH_BYTES, name_max)
+        (self.root / leaf).write_bytes(b"old")
+        try:
+            AI.write_confined_atomic(self.root, leaf, b"new")
+        except AI.CodecError as error:
+            self.fail(f"valid maximum-length output raised {error.code}")
+        self.assertEqual((self.root / leaf).read_bytes(), b"new")
 
     def test_atomic_replace_failure_preserves_old_file_and_cleans_temp(self):
         (self.root / "output").write_bytes(b"old")
