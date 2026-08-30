@@ -170,6 +170,37 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
             [finding.message for finding in result],
         )
 
+    def test_p004_preserves_breadth_first_order_across_local_expansion(self):
+        result = findings(
+            "import subprocess\n"
+            "def invoke(secret, auth_token):\n"
+            "    alias = [auth_token]\n"
+            "    subprocess.run([[secret], alias])\n",
+            "sample.py",
+        )
+        self.assertEqual(
+            [
+                "credential-named value `secret` passed in command arguments",
+                "credential-named value `auth_token` passed in command arguments",
+            ],
+            [finding.message for finding in result],
+        )
+
+    def test_p004_alias_fanout_does_not_multiply_findings(self):
+        result = findings(
+            "import subprocess\n"
+            "def invoke(secret):\n"
+            "    value_0 = [secret]\n"
+            "    value_1 = [value_0, value_0]\n"
+            "    value_2 = [value_1, value_1]\n"
+            "    subprocess.run(value_2)\n",
+            "sample.py",
+        )
+        self.assertEqual(
+            ["credential-named value `secret` passed in command arguments"],
+            [finding.message for finding in result],
+        )
+
     def test_p004_does_not_resolve_through_nested_expression_scopes(self):
         prefix = (
             "import subprocess\n"

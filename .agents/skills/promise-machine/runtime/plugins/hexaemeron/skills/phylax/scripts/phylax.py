@@ -584,42 +584,67 @@ class Visitor(ast.NodeVisitor):
         depth: int = 0,
         resolution_enabled: bool = True,
     ):
-        worklist = deque([(node, resolution_enabled)])
+        cache_key = None
+        if (
+            resolution_enabled
+            and self.local_bindings is not None
+            and isinstance(node, ast.Name)
+            and not CREDENTIAL.search(node.id)
+            and not seen
+            and depth < LOCAL_RESOLUTION_MAX_DEPTH
+            and node.id not in seen
+            and self.local_bindings.preceding(
+                node.id,
+                before if before is not None else _position(node),
+            )
+            is not None
+        ):
+            cache_key = (self.local_bindings, node.id, depth)
+            cached = self.credential_names_cache.get(cache_key)
+            if cached is not None:
+                yield from cached
+                return
+
+        found = []
+        expanded: set[tuple[str, int]] = set()
+        worklist = deque([(node, resolution_enabled, before, seen, depth)])
         while worklist:
-            current, can_resolve = worklist.popleft()
+            current, can_resolve, current_before, current_seen, current_depth = (
+                worklist.popleft()
+            )
             if isinstance(current, ast.Name):
                 if CREDENTIAL.search(current.id):
-                    yield current.id
+                    found.append(current.id)
                     continue
                 if (
                     not can_resolve
                     or self.local_bindings is None
-                    or depth >= LOCAL_RESOLUTION_MAX_DEPTH
-                    or current.id in seen
+                    or current_depth >= LOCAL_RESOLUTION_MAX_DEPTH
+                    or current.id in current_seen
                 ):
                     continue
                 assignment = self.local_bindings.preceding(
                     current.id,
-                    before if before is not None else _position(current),
+                    current_before
+                    if current_before is not None
+                    else _position(current),
                 )
                 if assignment is None:
                     continue
-                # Once `preceding` accepts a binding, every recursive position is
-                # fixed and strictly earlier; the result no longer depends on the sink.
-                cache_key = (self.local_bindings, current.id, depth)
-                cached = self.credential_names_cache.get(cache_key)
-                if cached is None:
-                    position, value = assignment
-                    cached = tuple(
-                        self._credential_names(
-                            value,
-                            before=position,
-                            seen=seen | {current.id},
-                            depth=depth + 1,
-                        )
+                expansion = (current.id, current_depth)
+                if expansion in expanded:
+                    continue
+                expanded.add(expansion)
+                position, value = assignment
+                worklist.append(
+                    (
+                        value,
+                        True,
+                        position,
+                        current_seen | {current.id},
+                        current_depth + 1,
                     )
-                    self.credential_names_cache[cache_key] = cached
-                yield from cached
+                )
                 continue
 
             child_resolution = can_resolve and not isinstance(
@@ -636,9 +661,20 @@ class Visitor(ast.NodeVisitor):
                 ),
             )
             worklist.extend(
-                (child, child_resolution)
+                (
+                    child,
+                    child_resolution,
+                    current_before,
+                    current_seen,
+                    current_depth,
+                )
                 for child in ast.iter_child_nodes(current)
             )
+
+        result = tuple(found)
+        if cache_key is not None:
+            self.credential_names_cache[cache_key] = result
+        yield from result
 
     def _add(self, node: ast.AST, code: str, message: str) -> None:
         self.findings.append(Finding(self.path, node.lineno, code, message))
