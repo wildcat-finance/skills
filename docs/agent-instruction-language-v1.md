@@ -238,8 +238,8 @@ descending further:
 | object members | 32 | members |
 | identifier | 128 | UTF-8 bytes |
 | repository-relative path | 512 | UTF-8 bytes |
-| one decoded literal | 65,000 | UTF-8 bytes |
-| all decoded literals | 786,432 | UTF-8 bytes |
+| one decoded literal or binding offset | 65,000 | UTF-8 bytes |
+| all decoded literals and binding offsets | 786,432 | UTF-8 bytes |
 | sources | 64 | records |
 | sections | 128 | records |
 | directives | 4,096 | records |
@@ -255,10 +255,12 @@ descending further:
 | adapter executable | 268,435,456 | bytes |
 
 Schema `maxLength` values count code points and are an early shape check. The
-byte limits in this table still apply. The literal limit leaves room for record
-framing when its bytes need no escape expansion; escapes and additional fields
-remain subject to the fixed 65,536-byte physical-line bound. A count at the
-limit is accepted when all other rules pass; limit plus one refuses.
+byte limits in this table still apply. Bare binding offsets consume the same
+per-value and aggregate decoded-byte budgets as length-prefixed literals. The
+per-value limit leaves room for record framing when its bytes need no escape
+expansion; escapes and additional fields remain subject to the fixed
+65,536-byte physical-line bound. A count at the limit is accepted when all
+other rules pass; limit plus one refuses.
 
 Paths are relative ASCII strings with no empty, `.`, or `..` component, no
 leading slash, backslash, control, or bidirectional-control character. Every

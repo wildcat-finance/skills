@@ -3203,6 +3203,11 @@ class AgentInstructionIntegrationTests(RefusalAssertions, unittest.TestCase):
         self.assertEqual(coverage["promise_id"], self.PROMISE_ID)
         self.assertIn("exact checked compact documents", coverage["transition"])
 
+    def test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets(self):
+        contract = (ROOT / "docs/agent-instruction-language-v1.md").read_text(encoding="utf-8")
+        self.assertIn("| one decoded literal or binding offset | 65,000 | UTF-8 bytes |", contract)
+        self.assertIn("| all decoded literals and binding offsets | 786,432 | UTF-8 bytes |", contract)
+
     def test_specialised_coverage_binds_runtime_documentation_and_manifest(self):
         coverage = self.coverage()
         self.assertEqual(coverage["checker"]["path"], "scripts/agent_instruction.py")

@@ -13,7 +13,7 @@
     "documentation": [
       {
         "path": "docs/agent-instruction-language-v1.md",
-        "sha256": "6591334e00abea510071ea0bd02a1df54dbc86995fb7b9f2fa80743026fdfb58"
+        "sha256": "2088b3b66ee5a9873955e59337aca129d1a359fdc8a36f43d20047a2b96499ec"
       },
       {
         "path": "docs/decisions/ADR-051-encode-a-closed-agent-instruction-model.md",
@@ -110,10 +110,11 @@
     ],
     "tests": {
       "path": "tests/test_agent_instruction.py",
-      "sha256": "c07a5caaaf04a5f5e68bdabb5d6815e2b82466f484d04d382a2e5baea0fb1e68",
+      "sha256": "cabbbbf1aa6cbb901665c8c88070ecb679bc66555697b156b7d796db0012da30",
       "selectors": [
         "test_root_promise_has_complete_exact_field_inventory",
         "test_specialised_coverage_binds_promise_and_contract",
+        "test_contract_counts_bare_binding_offsets_in_decoded_byte_budgets",
         "test_specialised_coverage_binds_runtime_documentation_and_manifest",
         "test_specialised_coverage_binds_all_fixture_artifacts",
         "test_specialised_coverage_binds_all_evidence_records",
