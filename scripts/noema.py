@@ -624,6 +624,49 @@ def _root_path(value: object, field: str) -> str:
     return text
 
 
+def _validate_inventory_value(
+    value: object,
+    field: str = "inventory",
+) -> dict[str, object]:
+    inventory = _exact_keys(value, {"schema", "archive", "files"}, field)
+    if inventory["schema"] != INVENTORY_SCHEMA:
+        refuse("NOE-E-TYPE.VERSION", f"{field}.schema", "unsupported inventory schema")
+
+    archive = _exact_keys(
+        inventory["archive"],
+        {"name", "url", "bytes", "sha256", "root"},
+        f"{field}.archive",
+    )
+    if _bounded_string(archive["name"], f"{field}.archive.name", 256) != "noema-v0-evidence.zip":
+        refuse("NOE-E-TYPE.ARCHIVE_NAME", f"{field}.archive.name", "unexpected archive name")
+    url = _bounded_string(archive["url"], f"{field}.archive.url", 2048)
+    if not url.startswith("https://"):
+        refuse("NOE-E-TYPE.URL", f"{field}.archive.url", "archive URL must use HTTPS")
+    _bounded_integer(archive["bytes"], f"{field}.archive.bytes", MAX_ARCHIVE_BYTES, minimum=1)
+    _digest(archive["sha256"], f"{field}.archive.sha256")
+    _root_path(archive["root"], f"{field}.archive.root")
+
+    files = inventory["files"]
+    if not isinstance(files, list) or not files or len(files) > MAX_MEMBERS:
+        refuse("NOE-E-BOUNDS.MEMBERS", f"{field}.files", "file inventory count is outside its limit")
+    paths: list[str] = []
+    total = 0
+    for index, item in enumerate(files):
+        entry = _exact_keys(item, {"path", "bytes", "sha256"}, f"{field}.files[{index}]")
+        paths.append(_relative_path(entry["path"], f"{field}.files[{index}].path"))
+        total += _bounded_integer(
+            entry["bytes"],
+            f"{field}.files[{index}].bytes",
+            MAX_MEMBER_BYTES,
+        )
+        _digest(entry["sha256"], f"{field}.files[{index}].sha256")
+    if paths != sorted(paths) or len(paths) != len(set(paths)):
+        refuse("NOE-E-REFERENCE.FILE_ORDER", f"{field}.files", "file paths must be unique and sorted")
+    if total > MAX_TOTAL_MEMBER_BYTES:
+        refuse("NOE-E-BOUNDS.TOTAL", f"{field}.files", "inventoried bytes exceed the aggregate limit")
+    return inventory
+
+
 def load_inventory(path: Path) -> tuple[dict[str, object], bytes]:
     raw = _read_regular(path, "inventory", MAX_JSON_BYTES)
     try:
@@ -639,42 +682,7 @@ def load_inventory(path: Path) -> tuple[dict[str, object], bytes]:
     except (ValueError, RecursionError):
         refuse("NOE-E-SYNTAX.JSON", "inventory", "inventory is not bounded JSON")
 
-    inventory = _exact_keys(value, {"schema", "archive", "files"}, "inventory")
-    if inventory["schema"] != INVENTORY_SCHEMA:
-        refuse("NOE-E-TYPE.VERSION", "inventory.schema", "unsupported inventory schema")
-
-    archive = _exact_keys(
-        inventory["archive"],
-        {"name", "url", "bytes", "sha256", "root"},
-        "inventory.archive",
-    )
-    if _bounded_string(archive["name"], "inventory.archive.name", 256) != "noema-v0-evidence.zip":
-        refuse("NOE-E-TYPE.ARCHIVE_NAME", "inventory.archive.name", "unexpected archive name")
-    url = _bounded_string(archive["url"], "inventory.archive.url", 2048)
-    if not url.startswith("https://"):
-        refuse("NOE-E-TYPE.URL", "inventory.archive.url", "archive URL must use HTTPS")
-    _bounded_integer(archive["bytes"], "inventory.archive.bytes", MAX_ARCHIVE_BYTES, minimum=1)
-    _digest(archive["sha256"], "inventory.archive.sha256")
-    _root_path(archive["root"], "inventory.archive.root")
-
-    files = inventory["files"]
-    if not isinstance(files, list) or not files or len(files) > MAX_MEMBERS:
-        refuse("NOE-E-BOUNDS.MEMBERS", "inventory.files", "file inventory count is outside its limit")
-    paths: list[str] = []
-    total = 0
-    for index, item in enumerate(files):
-        entry = _exact_keys(item, {"path", "bytes", "sha256"}, f"inventory.files[{index}]")
-        paths.append(_relative_path(entry["path"], f"inventory.files[{index}].path"))
-        total += _bounded_integer(
-            entry["bytes"],
-            f"inventory.files[{index}].bytes",
-            MAX_MEMBER_BYTES,
-        )
-        _digest(entry["sha256"], f"inventory.files[{index}].sha256")
-    if paths != sorted(paths) or len(paths) != len(set(paths)):
-        refuse("NOE-E-REFERENCE.FILE_ORDER", "inventory.files", "file paths must be unique and sorted")
-    if total > MAX_TOTAL_MEMBER_BYTES:
-        refuse("NOE-E-BOUNDS.TOTAL", "inventory.files", "inventoried bytes exceed the aggregate limit")
+    inventory = _validate_inventory_value(value)
     return inventory, raw
 
 
@@ -5772,6 +5780,7 @@ def _verify_seed_reference(
             "reference",
             "mode",
             "archive_sha256",
+            "inventory_sha256",
             "reference_sha256",
         },
         "corpus.seed",
@@ -5787,6 +5796,9 @@ def _verify_seed_reference(
     archive_digest = _digest(
         seed["archive_sha256"], "corpus.seed.archive_sha256"
     )
+    expected_inventory_digest = _digest(
+        seed["inventory_sha256"], "corpus.seed.inventory_sha256"
+    )
     expected_reference_digest = _digest(
         seed["reference_sha256"], "corpus.seed.reference_sha256"
     )
@@ -5796,21 +5808,20 @@ def _verify_seed_reference(
         "corpus.seed.inventory",
         MAX_INPUT_BYTES,
     )
+    if sha256(inventory_raw).hexdigest() != expected_inventory_digest:
+        refuse(
+            "NOE-E-DIGEST.INVENTORY",
+            "corpus.seed.inventory",
+            "seed inventory bytes differ from the corpus manifest",
+        )
     inventory_value = _decode_json(
         inventory_raw,
         "corpus.seed.inventory",
         canonical=False,
     )
-    inventory = _exact_keys(
-        inventory_value, {"schema", "archive", "files"}, "corpus.seed.inventory"
-    )
-    if inventory["schema"] != INVENTORY_SCHEMA:
-        refuse("NOE-E-TYPE.VERSION", "corpus.seed.inventory", "unsupported seed inventory")
-    archive = _exact_keys(
-        inventory["archive"],
-        {"name", "url", "bytes", "sha256", "root"},
-        "corpus.seed.inventory.archive",
-    )
+    inventory = _validate_inventory_value(inventory_value, "corpus.seed.inventory")
+    archive = inventory["archive"]
+    assert isinstance(archive, dict)
     if _digest(archive["sha256"], "corpus.seed.inventory.archive.sha256") != archive_digest:
         refuse("NOE-E-DIGEST.ARCHIVE", "corpus.seed", "seed archive digest differs")
     files = inventory["files"]

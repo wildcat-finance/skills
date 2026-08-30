@@ -334,14 +334,14 @@ missing dependency, unknown opcode and alias collision refuse under their
 specific code. An unchanged graph or unchanged declared observation refuses.
 
 The top manifest also binds the verified 17-file seed copy as
-`non-executable-reference-evidence`. Its inventory, archive digest, per-file
-size and digest, aggregate reference digest, flat closed member set and
-non-executable regular-file mode are checked. Seed Python is evidence bytes;
-the verifier never imports or executes it. Seven complete, sorted critical
-vectors cover permission/prohibition, authority, negation, unknown guard,
-ordering, exact literal and consequence-3. A vector passes only when every
-named mutation belongs to its fixed category and satisfies that category's
-outcome contract.
+`non-executable-reference-evidence`. Its exact inventory bytes, full inventory
+shape, archive digest, per-file size and digest, aggregate reference digest,
+flat closed member set and non-executable regular-file mode are checked. Seed
+Python is evidence bytes; the verifier never imports or executes it. Seven
+complete, sorted critical vectors cover permission/prohibition, authority,
+negation, unknown guard, ordering, exact literal and consequence-3. A vector
+passes only when every named mutation belongs to its fixed category and
+satisfies that category's outcome contract.
 
 ## Local codec interface
 
