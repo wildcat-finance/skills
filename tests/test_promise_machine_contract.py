@@ -1539,11 +1539,14 @@ class PromiseSemanticGateTests(unittest.TestCase):
 
     def test_mismatched_transition_declaration_is_refused(self):
         mutations = (
-            ("level-0.json", "promise_id", "different-promise"),
-            ("level-0.json", "consequence", False),
-            ("level-1.json", "consequence", True),
+            ("level-0.json", "promise_id", "different-promise", False),
+            ("level-0.json", "consequence", False, False),
+            ("level-1.json", "consequence", True, False),
+        ) + tuple(
+            ("level-0.json", "transition", f"publish{separator}second", True)
+            for separator in ("\n", "\r", "\u2028", "\u2029")
         )
-        for fixture, field, value in mutations:
+        for fixture, field, value, mirror in mutations:
             with self.subTest(fixture=fixture, field=field, value=value):
                 with tempfile.TemporaryDirectory() as directory:
                     target = Path(directory)
@@ -1561,6 +1564,8 @@ class PromiseSemanticGateTests(unittest.TestCase):
                         declaration_path.read_text(encoding="utf-8")
                     )
                     declaration[field] = value
+                    if mirror:
+                        document[field] = value
                     declaration_path.write_text(
                         json.dumps(declaration, indent=2) + "\n", encoding="utf-8"
                     )
@@ -1692,7 +1697,10 @@ class PromiseSemanticGateTests(unittest.TestCase):
         self.assertEqual(semantic_codes(findings), ["PM093"])
 
     def test_non_expiring_exception_requires_a_reason(self):
-        for reason in ("", " padded reason "):
+        reasons = ("", " padded reason ") + tuple(
+            f"reason{separator}second" for separator in ("\n", "\r", "\u2028", "\u2029")
+        )
+        for reason in reasons:
             with self.subTest(reason=reason):
                 document = self.valid_exception()
                 document["expiry"] = {"not_applicable": reason}
@@ -1825,6 +1833,23 @@ class PromiseSemanticGateTests(unittest.TestCase):
                 padded[field] = f" {padded[field]} "
                 findings = promise_machine_module.validate_refusal_payload(
                     padded, "fixture.json"
+                )
+                self.assertEqual(semantic_codes(findings), ["PM092"])
+
+        terminated = (
+            ("fault", "\n"),
+            ("path", "\r"),
+            ("message", "\u2028"),
+            ("remedy", "\u2029"),
+            ("blocked_transition", "\n"),
+            ("recovery", "\n"),
+        )
+        for field, separator in terminated:
+            with self.subTest(terminated=field, separator=repr(separator)):
+                multiline = dict(valid)
+                multiline[field] = f"{multiline[field]}{separator}continued"
+                findings = promise_machine_module.validate_refusal_payload(
+                    multiline, "fixture.json"
                 )
                 self.assertEqual(semantic_codes(findings), ["PM092"])
 

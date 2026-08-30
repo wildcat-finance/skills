@@ -278,6 +278,7 @@ POSITIVE_EVIDENCE_STATES = {
     "recorded",
 }
 NON_AUTHORISING_EVIDENCE_STATES = {"missing", "not-run", "stale", "unknown"}
+JSON_LINE_TERMINATORS = frozenset("\r\n\u2028\u2029")
 CONSEQUENCE_ROLES = {
     0: {"content"},
     1: {"content", "provenance", "structure"},
@@ -514,6 +515,15 @@ def relative(path: Path, root: Path) -> str:
         return path.relative_to(root).as_posix()
     except ValueError:
         return str(path)
+
+
+def closed_non_empty_scalar(value):
+    return (
+        isinstance(value, str)
+        and bool(value.strip())
+        and value == value.strip()
+        and not JSON_LINE_TERMINATORS.intersection(value)
+    )
 
 
 def confined(path: Path, root: Path) -> bool:
@@ -1350,7 +1360,7 @@ def semantic_finding(
     if type(candidate_consequence) is not int or candidate_consequence not in range(4):
         candidate_consequence = context["consequence"]
     candidate_transition = blocked_transition or record.get("transition")
-    if not isinstance(candidate_transition, str) or not candidate_transition.strip():
+    if not closed_non_empty_scalar(candidate_transition):
         candidate_transition = context["blocked_transition"]
     return Finding(
         context["code"],
@@ -1403,9 +1413,7 @@ def read_bound_reference(root: Path, reference, noun: str):
     raw_path = reference.get("path")
     digest = reference.get("sha256")
     if (
-        not isinstance(raw_path, str)
-        or not raw_path
-        or raw_path != raw_path.strip()
+        not closed_non_empty_scalar(raw_path)
         or "\\" in raw_path
         or any(ord(character) < 32 for character in raw_path)
         or not isinstance(digest, str)
@@ -1487,11 +1495,7 @@ def validate_authority_reference(root: Path, reference, expected: dict):
     keys = {"schema", "id", "promise_id", "gate", "subject", "scope"}
     if set(authority) != keys or authority.get("schema") != TRANSITION_AUTHORITY_SCHEMA:
         return None, "authority record has an unsupported or open shape"
-    if (
-        not isinstance(authority.get("id"), str)
-        or not authority["id"].strip()
-        or authority["id"] != authority["id"].strip()
-    ):
+    if not closed_non_empty_scalar(authority.get("id")):
         return None, "authority record has no identity"
     for key in ("promise_id", "gate", "subject", "scope"):
         if authority.get(key) != expected.get(key):
@@ -1542,12 +1546,7 @@ def validate_exception_record(
     scalars = ("id", "promise_id", "gate", "subject", "scope", "recovery")
     if (
         document.get("schema") != EXCEPTION_SCHEMA
-        or any(
-            not isinstance(document.get(key), str)
-            or not document[key].strip()
-            or document[key] != document[key].strip()
-            for key in scalars
-        )
+        or any(not closed_non_empty_scalar(document.get(key)) for key in scalars)
     ):
         return [
             semantic_finding(
@@ -1571,9 +1570,7 @@ def validate_exception_record(
     if (
         not isinstance(authority, dict)
         or set(authority) != {"id", "reference"}
-        or not isinstance(authority.get("id"), str)
-        or not authority["id"].strip()
-        or authority["id"] != authority["id"].strip()
+        or not closed_non_empty_scalar(authority.get("id"))
     ):
         return [
             semantic_finding(
@@ -1632,11 +1629,7 @@ def validate_exception_record(
             ]
     elif "not_applicable" in expiry:
         reason = expiry["not_applicable"]
-        if (
-            not isinstance(reason, str)
-            or not reason.strip()
-            or reason != reason.strip()
-        ):
+        if not closed_non_empty_scalar(reason):
             return [
                 semantic_finding(
                     "law-exception-resolution",
@@ -1710,12 +1703,7 @@ def evaluate_transition_record(
     )
     if (
         document.get("schema") != TRANSITION_SCHEMA
-        or any(
-            not isinstance(document.get(key), str)
-            or not document[key].strip()
-            or document[key] != document[key].strip()
-            for key in scalars
-        )
+        or any(not closed_non_empty_scalar(document.get(key)) for key in scalars)
         or PROMISE_ID.fullmatch(document["promise_id"]) is None
         or obligation_id not in SEMANTIC_OBLIGATIONS
         or (expected_obligation is not None and obligation_id != expected_obligation)
@@ -1744,8 +1732,10 @@ def evaluate_transition_record(
             )
         ]
     unknowns = document.get("unknowns")
-    if not isinstance(unknowns, list) or len(unknowns) > 64 or any(
-        not isinstance(item, str) or not item.strip() for item in unknowns
+    if (
+        not isinstance(unknowns, list)
+        or len(unknowns) > 64
+        or any(not closed_non_empty_scalar(item) for item in unknowns)
     ):
         return [
             semantic_finding(
@@ -1949,12 +1939,7 @@ def validate_refusal_payload(payload, shown: str):
     if (
         not isinstance(payload, dict)
         or set(payload) != keys
-        or any(
-            not isinstance(payload.get(key), str)
-            or not payload[key].strip()
-            or payload[key] != payload[key].strip()
-            for key in strings
-        )
+        or any(not closed_non_empty_scalar(payload.get(key)) for key in strings)
         or re.fullmatch(r"PM[0-9]{3}", payload["code"]) is None
         or PROMISE_ID.fullmatch(payload["promise_id"]) is None
         or (
@@ -2215,12 +2200,7 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
     if (
         set(exception) != keys
         or exception.get("schema") != EXCEPTION_SCHEMA
-        or any(
-            not isinstance(exception.get(key), str)
-            or not exception[key].strip()
-            or exception[key] != exception[key].strip()
-            for key in scalars
-        )
+        or any(not closed_non_empty_scalar(exception.get(key)) for key in scalars)
         or exception.get("promise_id") != promise_id
     ):
         return "exception record has an unsupported shape or promise identity"
@@ -2228,9 +2208,7 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
     if (
         not isinstance(authority, dict)
         or set(authority) != {"id", "reference"}
-        or not isinstance(authority.get("id"), str)
-        or not authority["id"].strip()
-        or authority["id"] != authority["id"].strip()
+        or not closed_non_empty_scalar(authority.get("id"))
     ):
         return "exception authority is not an identified resolvable reference"
     authority_document, error = validate_authority_reference(
@@ -2253,11 +2231,7 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
             return "exception expiry is not a real UTC timestamp"
     elif "not_applicable" in expiry:
         reason = expiry["not_applicable"]
-        if (
-            not isinstance(reason, str)
-            or not reason.strip()
-            or reason != reason.strip()
-        ):
+        if not closed_non_empty_scalar(reason):
             return "exception does not explain why expiry cannot apply"
     else:
         return "exception expiry field is unknown"
@@ -2328,9 +2302,7 @@ def validate_semantic_specimen(root: Path, relative_specimen: Path, document, ro
             not isinstance(expected.get("promise_id"), str)
             or PROMISE_ID.fullmatch(expected["promise_id"]) is None
             or any(
-                not isinstance(expected.get(key), str)
-                or not expected[key].strip()
-                or expected[key] != expected[key].strip()
+                not closed_non_empty_scalar(expected.get(key))
                 for key in ("gate", "subject", "scope", "transition")
             )
             or type(expected.get("consequence")) is not int
