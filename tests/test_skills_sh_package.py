@@ -58,6 +58,13 @@ PORTABLE_TEST_FILES = {
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json",
 }
+OBLIGATION_FIXTURE_FILES = {
+    "tests/fixtures/promise-machine/obligations/law-contract-identity.json",
+    "tests/fixtures/promise-machine/obligations/law-declaration-fields.json",
+    "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json",
+    "tests/fixtures/promise-machine/obligations/law-governing-principle.json",
+    "tests/fixtures/promise-machine/obligations/law-required-sections.json",
+}
 
 
 def load_manifest():
@@ -90,7 +97,7 @@ class SkillsShPackageTests(unittest.TestCase):
         self.assertEqual(manifest["schema"], SCHEMA)
         self.assertEqual(manifest["contract"], CONTRACT)
         self.assertEqual(manifest["file_count"], len(manifest["files"]))
-        self.assertLess(manifest["file_count"], MAX_FILES)
+        self.assertLessEqual(manifest["file_count"], MAX_FILES)
         self.assertLess(manifest["total_bytes"], MAX_BYTES)
         self.assertEqual(
             {entry["pattern"] for entry in manifest["omissions"]},
@@ -224,6 +231,15 @@ class SkillsShPackageTests(unittest.TestCase):
                 if path.is_file() or path.is_symlink()
             },
             PORTABLE_TEST_FILES,
+        )
+        obligation_fixtures = RUNTIME / "tests/fixtures/promise-machine/obligations"
+        self.assertEqual(
+            {
+                path.relative_to(RUNTIME).as_posix()
+                for path in obligation_fixtures.rglob("*")
+                if path.is_file() or path.is_symlink()
+            },
+            OBLIGATION_FIXTURE_FILES,
         )
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())

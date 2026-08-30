@@ -72,6 +72,31 @@ OVERLAY_HEADING = "# Hexaemeron Promise Machine overlays"
 OVERLAY_FIELDS = ("Path", "SHA-256", *REQUIRED_FIELDS)
 COVERAGE_PATH = Path("tests/promise_machine_coverage.json")
 COVERAGE_SCHEMA = "promise-machine-coverage/v1"
+OBLIGATION_PATH = Path("tests/promise_machine_obligations.json")
+OBLIGATION_SCHEMA = "promise-machine-obligations/v1"
+OBLIGATION_SPECIMEN_SCHEMA = "promise-machine-obligation-specimen/v1"
+OBLIGATION_FIXTURE_ROOT = Path("tests/fixtures/promise-machine/obligations")
+OBLIGATION_MARKER = re.compile(
+    r"<!-- promise-machine-obligation: id=([a-z][a-z0-9]*(?:-[a-z0-9]+)*) -->"
+)
+OBLIGATION_MARKER_PREFIX = "<!-- promise-machine-obligation:"
+OBLIGATION_CLAUSE_PREFIX = "> Obligation:"
+OBLIGATION_ROW_KEYS = {
+    "id",
+    "gate",
+    "specimen",
+    "finding",
+    "consequence",
+    "blocked_transition",
+    "recovery",
+}
+OBLIGATION_GATE_CODES = {
+    "law.generated-copy-marker": "PM005",
+    "law.required-sections": "PM006",
+    "law.contract-identity": "PM007",
+    "law.declaration-fields": "PM008",
+    "law.governing-principle": "PM009",
+}
 COVERAGE_CODES = ("P", "M", "S", "O", "R", "X")
 EVALUATION_KEYS = {"status", "model", "prompt", "corpus", "disposition"}
 RUNTIME_BINDING_KEYS = {
@@ -157,6 +182,10 @@ class Finding:
     message: str
     remedy: str
     promise_id: str | None = None
+    obligation_id: str | None = None
+    consequence: int | None = None
+    blocked_transition: str | None = None
+    recovery: str | None = None
 
 
 @dataclass(frozen=True)
@@ -215,6 +244,12 @@ def bounded_sha256(path: Path, limit: int):
     return digest.hexdigest(), None
 
 
+def bounded_read_bytes(path: Path, limit: int):
+    """Read at most one byte beyond a declared input boundary."""
+    with path.open("rb") as source:
+        return source.read(limit + 1)
+
+
 def read_markdown(path: Path, root: Path, *, missing_code: str, unsafe_code: str):
     findings: list[Finding] = []
     shown = relative(path, root)
@@ -241,7 +276,7 @@ def read_markdown(path: Path, root: Path, *, missing_code: str, unsafe_code: str
         )
         return None, findings
     try:
-        payload = path.read_bytes()
+        payload = bounded_read_bytes(path, MAX_MARKDOWN_BYTES)
     except OSError as exc:
         findings.append(
             Finding(
@@ -312,7 +347,7 @@ def read_json(
             )
         ]
     try:
-        payload = path.read_bytes()
+        payload = bounded_read_bytes(path, max_bytes)
     except OSError as exc:
         return None, [
             Finding(
@@ -385,13 +420,20 @@ def check_law(root: Path):
     if loaded is None:
         return None, findings
     payload, text = loaded
+    findings.extend(validate_law_document(payload, text, LAW_NAME))
+    return payload, findings
+
+
+def validate_law_document(payload: bytes, text: str, shown: str):
+    """Apply the production law gates to one already bounded Markdown payload."""
+    findings: list[Finding] = []
     lines = text.splitlines()
     if MARKER not in lines[:5]:
         findings.append(
             Finding(
                 "PM005",
                 "identity",
-                LAW_NAME,
+                shown,
                 "generated-copy marker is absent from the law header",
                 "restore the promise-machine/v1 canonical/copies marker",
             )
@@ -402,7 +444,7 @@ def check_law(root: Path):
                 Finding(
                     "PM006",
                     "structural",
-                    LAW_NAME,
+                    shown,
                     f"required heading must occur once: {heading}",
                     "restore the one normative section with that exact heading",
                 )
@@ -413,7 +455,7 @@ def check_law(root: Path):
             Finding(
                 "PM007",
                 "version",
-                LAW_NAME,
+                shown,
                 f"contract identities are {sorted(versions)!r}; expected only {CONTRACT_ID}",
                 "use the shared contract identity and remove competing identities",
             )
@@ -424,7 +466,7 @@ def check_law(root: Path):
                 Finding(
                     "PM008",
                     "structural",
-                    LAW_NAME,
+                    shown,
                     f"promise declaration field is absent: {field}",
                     "restore the field in the per-promise schema",
                 )
@@ -438,12 +480,400 @@ def check_law(root: Path):
             Finding(
                 "PM009",
                 "structural",
-                LAW_NAME,
+                shown,
                 "the governing principle is absent or changed",
                 "restore the settled suite-wide principle exactly",
             )
         )
-    return payload, findings
+    return findings
+
+
+def discover_obligations(text: str):
+    """Discover the closed explicit obligation grammar from the authored law."""
+    findings: list[Finding] = []
+    lines = text.splitlines()
+    markers: dict[str, int] = {}
+    marker_lines: dict[int, str] = {}
+    clause_markers: set[int] = set()
+
+    for index, line in enumerate(lines):
+        if OBLIGATION_MARKER_PREFIX not in line:
+            continue
+        matched = OBLIGATION_MARKER.fullmatch(line)
+        if matched is None:
+            findings.append(
+                Finding(
+                    "PM080",
+                    "structural",
+                    LAW_NAME,
+                    f"malformed obligation marker at line {index + 1}",
+                    "use the exact promise-machine-obligation id marker grammar",
+                )
+            )
+            continue
+        obligation_id = matched.group(1)
+        if obligation_id in markers:
+            findings.append(
+                Finding(
+                    "PM081",
+                    "identity",
+                    LAW_NAME,
+                    f"obligation id is marked more than once: {obligation_id}",
+                    "retain one marker on the one clause that owns this stable id",
+                    obligation_id=obligation_id,
+                )
+            )
+            continue
+        markers[obligation_id] = index
+        marker_lines[index] = obligation_id
+
+    for index, line in enumerate(lines):
+        if not line.startswith(OBLIGATION_CLAUSE_PREFIX):
+            continue
+        previous = index - 1
+        while previous >= 0 and not lines[previous].strip():
+            previous -= 1
+        obligation_id = marker_lines.get(previous)
+        if obligation_id is None:
+            findings.append(
+                Finding(
+                    "PM080",
+                    "structural",
+                    LAW_NAME,
+                    f"explicit obligation clause at line {index + 1} has no marker",
+                    "put one valid stable obligation marker immediately before the clause",
+                )
+            )
+            continue
+        clause_markers.add(previous)
+
+    for index, obligation_id in marker_lines.items():
+        if index in clause_markers:
+            continue
+        findings.append(
+            Finding(
+                "PM080",
+                "structural",
+                LAW_NAME,
+                f"obligation marker has no following explicit clause: {obligation_id}",
+                "place the marker immediately before one > Obligation: clause",
+                obligation_id=obligation_id,
+            )
+        )
+    return set(markers), findings
+
+
+def obligation_finding(code: str, path: str, message: str, remedy: str, row=None):
+    row = row if isinstance(row, dict) else {}
+    return Finding(
+        code,
+        "obligation",
+        path,
+        message,
+        remedy,
+        obligation_id=row.get("id"),
+        consequence=row.get("consequence"),
+        blocked_transition=row.get("blocked_transition"),
+        recovery=row.get("recovery"),
+    )
+
+
+def repository_relative_fixture(raw: str):
+    if not isinstance(raw, str) or not raw or raw != raw.strip():
+        return None
+    candidate = Path(raw)
+    if candidate.is_absolute() or ".." in candidate.parts or candidate.as_posix() != raw:
+        return None
+    try:
+        candidate.relative_to(OBLIGATION_FIXTURE_ROOT)
+    except ValueError:
+        return None
+    if candidate.suffix != ".json":
+        return None
+    return candidate
+
+
+def validate_obligation_specimen(root: Path, law_text: str, row: dict):
+    specimen_raw = row["specimen"]
+    relative_specimen = repository_relative_fixture(specimen_raw)
+    if relative_specimen is None:
+        return [
+            obligation_finding(
+                "PM087",
+                str(specimen_raw),
+                "negative specimen path is not a confined JSON path under the fixture root",
+                "use one repository-relative JSON fixture below tests/fixtures/promise-machine/obligations",
+                row,
+            )
+        ]
+    specimen_path = root / relative_specimen
+    document, findings = read_json(
+        specimen_path,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code="PM087",
+        unsafe_code="PM087",
+        malformed_code="PM088",
+        noun="Promise Machine obligation specimen",
+    )
+    if document is None:
+        return [
+            obligation_finding(
+                item.code,
+                item.path,
+                item.message,
+                item.remedy,
+                row,
+            )
+            for item in findings
+        ]
+    if set(document) != {"schema", "obligation_id", "mutation"}:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "specimen fields are not exactly schema, obligation_id, and mutation",
+                "restore the closed promise-machine-obligation-specimen/v1 shape",
+                row,
+            )
+        ]
+    if document["schema"] != OBLIGATION_SPECIMEN_SCHEMA:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                f"unsupported specimen schema: {document['schema']!r}",
+                f"declare {OBLIGATION_SPECIMEN_SCHEMA}",
+                row,
+            )
+        ]
+    if document["obligation_id"] != row["id"]:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "specimen obligation id does not match its registry row",
+                "bind the specimen to the row's exact stable obligation id",
+                row,
+            )
+        ]
+    mutation = document["mutation"]
+    if not isinstance(mutation, dict) or set(mutation) != {"operation", "old", "new"}:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "specimen mutation is not the closed operation, old, and new object",
+                "restore one bounded replace_once mutation",
+                row,
+            )
+        ]
+    old = mutation.get("old")
+    new = mutation.get("new")
+    if (
+        mutation.get("operation") != "replace_once"
+        or not isinstance(old, str)
+        or not old
+        or not isinstance(new, str)
+        or old == new
+        or law_text.count(old) != 1
+    ):
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                "replace_once mutation is invalid or its source text is not unique",
+                "name one exact unique law fragment and a different replacement",
+                row,
+            )
+        ]
+    mutated_text = law_text.replace(old, new, 1)
+    mutated_payload = mutated_text.encode("utf-8")
+    if len(mutated_payload) > MAX_MARKDOWN_BYTES:
+        return [
+            obligation_finding(
+                "PM088",
+                relative_specimen.as_posix(),
+                f"mutated law exceeds the {MAX_MARKDOWN_BYTES}-byte limit",
+                "keep the hostile specimen inside the bounded law surface",
+                row,
+            )
+        ]
+    produced = validate_law_document(
+        mutated_payload, mutated_text, relative_specimen.as_posix()
+    )
+    expected = row["finding"]
+    if len(produced) != 1 or produced[0].code != expected:
+        observed = [item.code for item in produced]
+        return [
+            obligation_finding(
+                "PM089",
+                relative_specimen.as_posix(),
+                f"negative specimen produced {observed!r}; expected only {expected}",
+                "restore the selected production gate or narrow the specimen to its one expected finding",
+                row,
+            )
+        ]
+    return []
+
+
+def check_obligations(root: Path, law: bytes | None):
+    findings: list[Finding] = []
+    if law is None:
+        return 0, findings
+    law_text = law.decode("utf-8")
+    marker_ids, marker_findings = discover_obligations(law_text)
+    findings.extend(marker_findings)
+    registry_path = root / OBLIGATION_PATH
+    document, registry_findings = read_json(
+        registry_path,
+        root,
+        max_bytes=MAX_JSON_BYTES,
+        missing_code="PM082",
+        unsafe_code="PM082",
+        malformed_code="PM082",
+        noun="Promise Machine obligation registry",
+    )
+    findings.extend(registry_findings)
+    if document is None:
+        return len(marker_ids), findings
+    if set(document) != {"contract", "schema", "obligations"}:
+        findings.append(
+            obligation_finding(
+                "PM083",
+                OBLIGATION_PATH.as_posix(),
+                "registry fields are not exactly contract, schema, and obligations",
+                "restore the closed promise-machine-obligations/v1 document",
+            )
+        )
+        return len(marker_ids), findings
+    if document["contract"] != CONTRACT_ID or document["schema"] != OBLIGATION_SCHEMA:
+        findings.append(
+            obligation_finding(
+                "PM083",
+                OBLIGATION_PATH.as_posix(),
+                "registry contract or schema identity is unsupported",
+                f"declare contract {CONTRACT_ID} and schema {OBLIGATION_SCHEMA}",
+            )
+        )
+    rows = document["obligations"]
+    if not isinstance(rows, list) or not rows:
+        findings.append(
+            obligation_finding(
+                "PM083",
+                OBLIGATION_PATH.as_posix(),
+                "registry obligations must be a non-empty list",
+                "register every discovered explicit obligation exactly once",
+            )
+        )
+        return len(marker_ids), findings
+
+    valid_rows: dict[str, dict] = {}
+    for index, row in enumerate(rows):
+        path = f"{OBLIGATION_PATH.as_posix()}#obligations[{index}]"
+        if not isinstance(row, dict) or set(row) != OBLIGATION_ROW_KEYS:
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry row does not have the exact required fields",
+                    "restore id, gate, specimen, finding, consequence, blocked_transition, and recovery",
+                    row,
+                )
+            )
+            continue
+        obligation_id = row["id"]
+        strings = ("id", "gate", "specimen", "finding", "blocked_transition", "recovery")
+        if any(
+            not isinstance(row[key], str)
+            or not row[key]
+            or row[key] != row[key].strip()
+            for key in strings
+        ) or PROMISE_ID.fullmatch(obligation_id) is None:
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry row has an invalid or empty scalar field",
+                    "use a stable kebab-case id and non-empty exact string fields",
+                    row,
+                )
+            )
+            continue
+        consequence = row["consequence"]
+        if type(consequence) is not int or consequence not in range(4):
+            findings.append(
+                obligation_finding(
+                    "PM084",
+                    path,
+                    "registry consequence is not an integer from 0 through 3",
+                    "record the root-law consequence level for the blocked transition",
+                    row,
+                )
+            )
+            continue
+        if obligation_id in valid_rows:
+            findings.append(
+                obligation_finding(
+                    "PM085",
+                    path,
+                    f"registry contains a duplicate obligation row: {obligation_id}",
+                    "retain exactly one row for the stable obligation id",
+                    row,
+                )
+            )
+            continue
+        valid_rows[obligation_id] = row
+
+    row_ids = set(valid_rows)
+    for obligation_id in sorted(marker_ids - row_ids):
+        findings.append(
+            obligation_finding(
+                "PM085",
+                OBLIGATION_PATH.as_posix(),
+                f"discovered obligation has no registry row: {obligation_id}",
+                "add its gate and hostile specimen in the same change",
+                {"id": obligation_id},
+            )
+        )
+    for obligation_id in sorted(row_ids - marker_ids):
+        findings.append(
+            obligation_finding(
+                "PM085",
+                OBLIGATION_PATH.as_posix(),
+                f"registry-only obligation has no authored law marker: {obligation_id}",
+                "restore the matching explicit law clause or retire the row with its owning change",
+                valid_rows[obligation_id],
+            )
+        )
+
+    for obligation_id in sorted(row_ids & marker_ids):
+        row = valid_rows[obligation_id]
+        expected_code = OBLIGATION_GATE_CODES.get(row["gate"])
+        if expected_code is None:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    OBLIGATION_PATH.as_posix(),
+                    f"obligation gate selector is unknown: {row['gate']}",
+                    "bind the row to a production Promise Machine gate",
+                    row,
+                )
+            )
+            continue
+        if row["finding"] != expected_code:
+            findings.append(
+                obligation_finding(
+                    "PM086",
+                    OBLIGATION_PATH.as_posix(),
+                    f"gate {row['gate']} emits {expected_code}, not {row['finding']}",
+                    "record the selected production gate's stable finding code",
+                    row,
+                )
+            )
+            continue
+        findings.extend(validate_obligation_specimen(root, law_text, row))
+    return len(marker_ids), findings
 
 
 def discover_plugins(root: Path):
@@ -2651,6 +3081,7 @@ def report(
     copies: int = 0,
     inventory: Inventory | None = None,
     promises: int = 0,
+    obligations: int = 0,
     stats: dict[str, int] | None = None,
 ):
     findings = sorted(findings, key=lambda item: (item.path, item.code, item.message))
@@ -2673,6 +3104,7 @@ def report(
         "routers": len(inventory.routers) if inventory else 0,
         "overlays": len(inventory.overlays) if inventory else 0,
         "promises": promises,
+        "obligations": obligations,
         "claude_plugins": 0,
         "codex_plugins": 0,
         "package_versions": 0,
@@ -2700,8 +3132,22 @@ def report(
     elif findings:
         for item in findings:
             promise = f" promise={item.promise_id}" if item.promise_id else ""
+            obligation = (
+                f" obligation={item.obligation_id}" if item.obligation_id else ""
+            )
+            consequence = (
+                f" consequence={item.consequence}"
+                if item.consequence is not None
+                else ""
+            )
+            blocked = (
+                f" blocked={item.blocked_transition!r}"
+                if item.blocked_transition
+                else ""
+            )
             print(
-                f"{item.code} fault={item.fault} path={item.path}{promise}: "
+                f"{item.code} fault={item.fault} path={item.path}{promise}"
+                f"{obligation}{consequence}{blocked}: "
                 f"{item.message}; repair: {item.remedy}"
             )
         print(f"refused: {len(findings)} finding(s)")
@@ -2750,6 +3196,7 @@ def parse_only(raw: str):
         "hosts",
         "coverage",
         "licences",
+        "obligations",
     }
     unknown = sorted(set(requested) - allowed)
     if unknown or not requested:
@@ -2771,7 +3218,7 @@ def main(argv=None):
         "--only",
         default=(
             "law,copies,inventory,structure,contracts,overlays,identity,routers,"
-            "versions,hosts,coverage,licences"
+            "versions,hosts,coverage,licences,obligations"
         ),
     )
     check_parser.add_argument("--root", help=argparse.SUPPRESS)
@@ -2857,7 +3304,7 @@ def main(argv=None):
         inventory = None
         promises = 0
         stats: dict[str, int] = {}
-        if "law" in only or "copies" in only:
+        if "law" in only or "copies" in only or "obligations" in only:
             law, law_findings = check_law(root)
             findings.extend(law_findings)
         if "copies" in only:
@@ -2919,6 +3366,10 @@ def main(argv=None):
             stats["coverage_rows"] = coverage_rows
             stats["coverage_selected"] = coverage_selected
             findings.extend(coverage_findings)
+        obligations = 0
+        if "obligations" in only:
+            obligations, obligation_findings = check_obligations(root, law)
+            findings.extend(obligation_findings)
         return report(
             "check",
             root,
@@ -2928,6 +3379,7 @@ def main(argv=None):
             copies=len(plugins) if "copies" in only else 0,
             inventory=inventory,
             promises=promises,
+            obligations=obligations,
             stats=stats,
         )
 

@@ -1,0 +1,9 @@
+{
+  "schema": "promise-machine-obligation-specimen/v1",
+  "obligation_id": "law-declaration-fields",
+  "mutation": {
+    "operation": "replace_once",
+    "old": "- `Recovery`",
+    "new": "- Recovery"
+  }
+}

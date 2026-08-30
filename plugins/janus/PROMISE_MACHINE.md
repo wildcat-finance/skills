@@ -6,19 +6,27 @@
 
 # Promise Machine contract
 
-This document is the normative contract for every skill distributed as part of
-Wildcat Labs Skills. Plugin-local files with this name are generated,
-byte-identical installation copies. They are not separate laws.
+<!-- promise-machine-obligation: id=law-generated-copy-identity -->
+> Obligation: This document is the normative contract for every skill
+> distributed as part of Wildcat Labs Skills. Plugin-local files with this name
+> are generated, byte-identical installation copies. They are not separate
+> laws.
 
 ## Contract identity
 
-The shared contract identity is `promise-machine/v1`. It identifies this law's
-format and semantics. It is neither a plugin package version nor a skill
-evolution version.
+<!-- promise-machine-obligation: id=law-contract-identity -->
+> Obligation: The shared contract identity is `promise-machine/v1`. It
+> identifies this law's format and semantics. It is neither a plugin package
+> version nor a skill evolution version.
+
+<!-- promise-machine-obligation: id=law-required-sections -->
+> Obligation: Every required normative section of this authored law appears
+> exactly once.
 
 ## Governing principle
 
-> No skill may claim more than its evidence establishes, or authorise a more
+<!-- promise-machine-obligation: id=law-governing-principle -->
+> Obligation: No skill may claim more than its evidence establishes, or authorise a more
 > consequential transition than that evidence warrants.
 
 This principle applies to every answer, artefact, repository change,
@@ -75,7 +83,9 @@ the evidence that supports it. Absence, ambiguity and `unknown` never pass.
 
 Every governed first-party canonical skill has exactly one `## Promise Machine
 contract` section. It contains one or more stable `### <promise-id>` blocks.
-Each block carries these fields exactly once:
+
+<!-- promise-machine-obligation: id=law-declaration-fields -->
+> Obligation: Each block carries these fields exactly once:
 
 - `Promise`
 - `Evidence`

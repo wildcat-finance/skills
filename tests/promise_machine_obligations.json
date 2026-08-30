@@ -1,0 +1,51 @@
+{
+  "contract": "promise-machine/v1",
+  "schema": "promise-machine-obligations/v1",
+  "obligations": [
+    {
+      "id": "law-contract-identity",
+      "gate": "law.contract-identity",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-contract-identity.json",
+      "finding": "PM007",
+      "consequence": 3,
+      "blocked_transition": "publish or consume a law under a competing contract identity",
+      "recovery": "restore the one promise-machine/v1 contract identity and rerun the obligation check"
+    },
+    {
+      "id": "law-declaration-fields",
+      "gate": "law.declaration-fields",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-declaration-fields.json",
+      "finding": "PM008",
+      "consequence": 2,
+      "blocked_transition": "accept a governed promise declaration with an incomplete field contract",
+      "recovery": "restore every required declaration field and rerun the obligation check"
+    },
+    {
+      "id": "law-generated-copy-identity",
+      "gate": "law.generated-copy-marker",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json",
+      "finding": "PM005",
+      "consequence": 3,
+      "blocked_transition": "publish generated installation copies without the canonical-source identity",
+      "recovery": "restore the canonical generated-copy marker, regenerate copies, and rerun the obligation check"
+    },
+    {
+      "id": "law-governing-principle",
+      "gate": "law.governing-principle",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-governing-principle.json",
+      "finding": "PM009",
+      "consequence": 3,
+      "blocked_transition": "authorise a transition under a weakened governing principle",
+      "recovery": "restore the settled governing principle and rerun the obligation check"
+    },
+    {
+      "id": "law-required-sections",
+      "gate": "law.required-sections",
+      "specimen": "tests/fixtures/promise-machine/obligations/law-required-sections.json",
+      "finding": "PM006",
+      "consequence": 2,
+      "blocked_transition": "accept a root law with a missing or duplicated normative section",
+      "recovery": "restore every required heading exactly once and rerun the obligation check"
+    }
+  ]
+}
