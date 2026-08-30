@@ -1493,67 +1493,149 @@ def _definition_order(
     return ordered
 
 
-def _expanded_term_size(
+def _capped_expansion_add(left: int, right: int) -> int:
+    if left > MAX_EXPANDED_NODES or right > MAX_EXPANDED_NODES - left:
+        return MAX_EXPANDED_NODES + 1
+    return left + right
+
+
+def _capped_expansion_multiply(left: int, right: int) -> int:
+    if not left or not right:
+        return 0
+    if left > MAX_EXPANDED_NODES or right > MAX_EXPANDED_NODES // left:
+        return MAX_EXPANDED_NODES + 1
+    return left * right
+
+
+def _add_expansion(
+    total: tuple[int, dict[str, int]],
+    item: tuple[int, dict[str, int]],
+    factor: int = 1,
+) -> tuple[int, dict[str, int]]:
+    constant, coefficients = total
+    item_constant, item_coefficients = item
+    constant = _capped_expansion_add(
+        constant,
+        _capped_expansion_multiply(item_constant, factor),
+    )
+    coefficients = dict(coefficients)
+    for name, coefficient in item_coefficients.items():
+        coefficients[name] = _capped_expansion_add(
+            coefficients.get(name, 0),
+            _capped_expansion_multiply(coefficient, factor),
+        )
+    return constant, coefficients
+
+
+def _term_expansion(
     value: object,
     definitions: dict[str, tuple[list[tuple[str, str]], object]],
-    memo: dict[str, int],
-) -> int:
-    total = 0
-    pending = [value]
-    while pending:
-        current = pending.pop()
-        total += 1
-        if total > MAX_EXPANDED_NODES:
-            refuse("NOE-E-BOUNDS.EXPANSION", "graph", "macro expansion exceeds its node limit")
-        if not isinstance(current, list) or not current:
-            continue
-        tag = current[0]
-        if isinstance(tag, str) and tag in definitions:
-            if tag not in memo:
-                refuse("NOE-E-REFERENCE.DEFINITION", tag, "definition expansion order is incomplete")
-            total += memo[tag]
-            if total > MAX_EXPANDED_NODES:
-                refuse("NOE-E-BOUNDS.EXPANSION", "graph", "macro expansion exceeds its node limit")
-        pending.extend(_term_children(current))
-    return total
+    summaries: dict[str, tuple[int, dict[str, int]]],
+    parameters: frozenset[str],
+    shadowed: frozenset[str] = frozenset(),
+) -> tuple[int, dict[str, int]]:
+    if not isinstance(value, list) or not value:
+        return 1, {}
+    tag = value[0]
+    if tag == "%" and len(value) == 2 and isinstance(value[1], str):
+        name = value[1]
+        if name in parameters and name not in shadowed:
+            return 0, {name: 1}
+        return 1, {}
+    if isinstance(tag, str) and tag in definitions:
+        if tag not in summaries:
+            refuse(
+                "NOE-E-REFERENCE.DEFINITION",
+                tag,
+                "definition expansion order is incomplete",
+            )
+        callee_parameters, _body = definitions[tag]
+        constant, coefficients = summaries[tag]
+        result = (constant, {})
+        for argument, (name, _type) in zip(
+            value[1:],
+            callee_parameters,
+            strict=True,
+        ):
+            factor = coefficients.get(name, 0)
+            if factor:
+                result = _add_expansion(
+                    result,
+                    _term_expansion(
+                        argument,
+                        definitions,
+                        summaries,
+                        parameters,
+                        shadowed,
+                    ),
+                    factor,
+                )
+        return result
+    result = (1, {})
+    if isinstance(tag, str) and tag in {"all", "any", "one"}:
+        binder = value[1]
+        assert isinstance(binder, list) and isinstance(binder[0], str)
+        result = _add_expansion(
+            result,
+            _term_expansion(value[2], definitions, summaries, parameters, shadowed),
+        )
+        return _add_expansion(
+            result,
+            _term_expansion(
+                value[3],
+                definitions,
+                summaries,
+                parameters,
+                shadowed | {binder[0]},
+            ),
+        )
+    for child in _term_children(value):
+        result = _add_expansion(
+            result,
+            _term_expansion(
+                child,
+                definitions,
+                summaries,
+                parameters,
+                shadowed,
+            ),
+        )
+    return result
+
+
+def _definition_expansions(
+    definitions: dict[str, tuple[list[tuple[str, str]], object]],
+) -> dict[str, tuple[int, dict[str, int]]]:
+    summaries: dict[str, tuple[int, dict[str, int]]] = {}
+    for name in _definition_order(definitions):
+        parameters, body = definitions[name]
+        summaries[name] = _term_expansion(
+            body,
+            definitions,
+            summaries,
+            frozenset(parameter for parameter, _type in parameters),
+        )
+    return summaries
 
 
 def _expanded_size(
     value: object,
     definitions: dict[str, tuple[list[tuple[str, str]], object]],
-    memo: dict[str, int],
+    summaries: dict[str, tuple[int, dict[str, int]]],
 ) -> int:
-    roots = _definition_dependencies(value, definitions)
-    active: set[str] = set()
-    for root in sorted(roots):
-        if root in memo:
-            continue
-        pending: list[tuple[str, bool]] = [(root, False)]
-        while pending:
-            name, leaving = pending.pop()
-            if name in memo:
-                continue
-            if leaving:
-                memo[name] = _expanded_term_size(definitions[name][1], definitions, memo)
-                active.remove(name)
-                continue
-            if name in active:
-                refuse("NOE-E-REFERENCE.DEFINITION_CYCLE", name, "definition graph contains a cycle")
-            active.add(name)
-            pending.append((name, True))
-            for dependency in sorted(
-                _definition_dependencies(definitions[name][1], definitions),
-                reverse=True,
-            ):
-                if dependency in active:
-                    refuse(
-                        "NOE-E-REFERENCE.DEFINITION_CYCLE",
-                        dependency,
-                        "definition graph contains a cycle",
-                    )
-                if dependency not in memo:
-                    pending.append((dependency, False))
-    return _expanded_term_size(value, definitions, memo)
+    constant, coefficients = _term_expansion(
+        value,
+        definitions,
+        summaries,
+        frozenset(),
+    )
+    if coefficients:
+        refuse(
+            "NOE-E-REFERENCE.VARIABLE",
+            "graph",
+            "expanded graph retains an unbound macro parameter",
+        )
+    return constant
 
 
 def _assert_term(
@@ -1794,9 +1876,12 @@ def _compile_records(
 
     _acyclic_edges(precedence_edges, "precedence")
     expansion = 0
-    memo: dict[str, int] = {}
+    summaries = _definition_expansions(context.definitions)
     for term in terms:
-        expansion += _expanded_size(term, context.definitions, memo)
+        expansion = _capped_expansion_add(
+            expansion,
+            _expanded_size(term, context.definitions, summaries),
+        )
         if expansion > MAX_EXPANDED_NODES:
             refuse("NOE-E-BOUNDS.EXPANSION", "graph", "macro expansion exceeds its node limit")
 

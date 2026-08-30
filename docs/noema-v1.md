@@ -320,6 +320,8 @@ and every module import, subtype, signature and definition declaration.
 Derived graph and build envelopes add at most three and four fixed container
 levels respectively; every embedded source record and module document remains
 subject to the 64-level limit.
+Expanded-macro accounting substitutes an argument at every occurrence of its
+formal parameter; the macro-call node itself is absent from the expanded graph.
 
 The seed archive verifier separately accepts at most 1,048,576 archive bytes,
 64 members, 1,048,576 uncompressed bytes in aggregate, 1,048,576 bytes for one

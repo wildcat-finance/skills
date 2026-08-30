@@ -968,6 +968,39 @@ class CanonicalSourceTests(unittest.TestCase):
 
 
 class GraphValidationTests(unittest.TestCase):
+    def test_macro_expansion_counts_repeated_parameter_substitution(self):
+        self.assertEqual(4 * (2**14), noema.MAX_EXPANDED_NODES)
+        definitions = [
+            [
+                "definition",
+                "local.dup",
+                [["x", "proposition"]],
+                ["&", ["%", "x"], ["%", "x"]],
+            ]
+        ]
+
+        def expanded(levels):
+            proposition = [
+                "=",
+                [":", "state", "ready"],
+                [":", "state", "ready"],
+            ]
+            for _index in range(levels):
+                proposition = ["local.dup", proposition]
+            return proposition
+
+        compile_records(
+            base_records(["+", expanded(14)], definitions=definitions)
+        )
+        with self.assertRaises(noema.Refusal) as raised:
+            compile_records(
+                base_records(
+                    ["+", ["~", expanded(14)]],
+                    definitions=definitions,
+                )
+            )
+        self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.EXPANSION")
+
     def test_maximum_depth_source_build_and_projection_round_trip(self):
         records = base_records(
             ["+", nested_proposition(noema.MAX_DEPTH - 5)]
