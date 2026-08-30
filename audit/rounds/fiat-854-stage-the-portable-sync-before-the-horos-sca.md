@@ -1,0 +1,15 @@
+## Step 1, round 1 -- 2026-08-30T05:51:15Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: index-write-scope=not-applicable; index-write-environment=not-applicable; non-repository-root=not-applicable; import-target-traversal=not-applicable; partial-write=not-applicable; boundary-counts-churn=reviewed; closure-check-cost=not-applicable
+
+Not checked: x-ray, solidity-auditor and fizz did not run; the `security_suite` receipt waives them because the run ships no Solidity and no Foundry or Hardhat project, and this step ships two Markdown documents and one regenerated JSON artefact. Six of the seven register concerns sit at boundaries steps 2 and 3 open and no code implementing them exists at this commit, so they were read as not-applicable rather than reviewed. The step's own content was not re-audited for correctness: both documents are byte-identical copies of artefacts already receipted and lint-checked in the study and runbook phases, established here by `cmp -s` against `.hexaemeron/study.md` and `.hexaemeron/runbook.md` rather than by re-reading them. The five failures in `plugins/hexaemeron/tests/run_tests.py` were confirmed to reproduce on pristine `origin/main` at `4fe374dd` and `7e97b519` and are filed as wildcat-finance/skills#932; that suite is omitted by `scripts/run_checks.py` for this diff and no claim is made here about whether those five are repaired.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: boundary-counts-churn was the one concern this step could actually move, and it moved exactly as issue #842 predicts and no further: `.horos/boundary.json` changed by the single line `files_walked` 2077 to 2079, with all 135 entries and every byte tally (`bytes_binary`, `bytes_content_addressed`, `bytes_generated`, `bytes_lockfile`, `bytes_vendored`) byte-identical before and after. The delta is the two added documents, and it confirms they classify as readable source earning no boundary entry rather than as a sink. Whether that counts field should move at all belongs to #842 and is a stated non-goal of this run. Not pursued: re-reading the two documents for content, since the receipted artefacts are the authority and a divergent reading here would contradict a gate that already passed; and the `plugins/horos/examples/fixture-sol/Market.sol` pair of source-level dangling imports, which the study records and step 3 is specified to leave failing in neither tree.
