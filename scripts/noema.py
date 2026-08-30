@@ -2922,17 +2922,30 @@ def _outer_directive_activity(
     directive: object,
     facts: dict[str, dict[str, object]],
     definitions: dict[str, tuple[list[list[object]], object]],
+    expansion_nodes: list[int],
 ) -> tuple[str, str | None, str | None]:
     if not isinstance(directive, list) or not directive:
         return "unknown", None, None
     tag = directive[0]
     if tag in {"@", "^"} and len(directive) == 3:
-        return _outer_directive_activity(directive[2], facts, definitions)
+        return _outer_directive_activity(
+            directive[2], facts, definitions, expansion_nodes
+        )
     if tag in {"?", "/"} and len(directive) == 3:
         guard = directive[1]
-        value, _used = _evaluate_truth(guard, facts, definitions)
+        value, _used = _evaluate_truth(
+            guard,
+            facts,
+            definitions,
+            expansion_nodes=expansion_nodes,
+        )
         active = value if tag == "?" else _truth_not(value)
-        expanded = _expand_runtime_term(guard, definitions)
+        expanded = _expand_runtime_term(
+            guard,
+            definitions,
+            nodes=expansion_nodes,
+            limit=MAX_TRUTH_EXPANSION_NODES,
+        )
         proof_ids = [fact_id(guard)]
         if expanded != guard:
             proof_ids.append(fact_id(expanded))
@@ -2949,7 +2962,9 @@ def _outer_directive_activity(
             return active, proof, reason
         if active != "true":
             return active, None, None
-        return _outer_directive_activity(directive[2], facts, definitions)
+        return _outer_directive_activity(
+            directive[2], facts, definitions, expansion_nodes
+        )
     return "true", None, None
 
 
@@ -3035,6 +3050,7 @@ def select_runtime(
         if record_value[0] in SELECTABLE_FORMS:
             identifier = _runtime_record_id(record_value, f"graph.records[{index}]")
             selectable[identifier] = record_value
+    selectable_ids = set(selectable)
     record_atoms = {
         identifier: _runtime_atoms(record, definitions)
         for identifier, record in selectable.items()
@@ -3050,14 +3066,16 @@ def select_runtime(
     assert isinstance(facts_list, list)
     fact_map = {str(item["id"]): item for item in facts_list if isinstance(item, dict)}
     inactive: dict[str, tuple[str, str]] = {}
+    selection_truth_nodes = [0]
     for identifier, record in selectable.items():
         if record[0] != "rule":
             continue
         activity, controlling_fact, reason = _outer_directive_activity(
-            record[2], fact_map, definitions
+            record[2], fact_map, definitions, selection_truth_nodes
         )
         if activity == "false" and controlling_fact is not None and reason is not None:
             inactive[identifier] = (controlling_fact, reason)
+    active_selectable_ids = selectable_ids - set(inactive)
 
     operation = str(selection["operation"])
     state_value = str(selection["state"])
@@ -3084,7 +3102,7 @@ def select_runtime(
             secondary.add(identifier)
     included = set(primary or secondary)
     if not included:
-        included = set(selectable) - set(inactive)
+        included = set(active_selectable_ids)
 
     rule_by_id = {
         str(record[1]): identifier
@@ -3115,7 +3133,7 @@ def select_runtime(
             references = _record_rule_references(record)
             if references:
                 endpoints = {rule_by_id[item] for item in references if item in rule_by_id}
-                if endpoints and endpoints <= (set(selectable) - set(inactive)) and endpoints & included:
+                if endpoints and endpoints <= active_selectable_ids and endpoints & included:
                     included.add(identifier)
                     included.update(endpoints)
                     changed = True
@@ -3166,7 +3184,7 @@ def select_runtime(
         tape,
     )
     omitted: list[dict[str, object]] = []
-    for identifier in sorted(set(selectable) - included):
+    for identifier in sorted(selectable_ids - included):
         if identifier in inactive:
             fact, reason = inactive[identifier]
             omitted.append(
@@ -3261,6 +3279,7 @@ def _validate_manifest_value(value: object) -> dict[str, object]:
     if _value_sha256(selection["facts"]) != manifest["facts_sha256"]:
         refuse("NOE-E-DIGEST.FACTS", "manifest", "manifest fact digest differs")
     included = _validate_node_id_set(manifest["included_ids"], "manifest.included_ids")
+    included_set = set(included)
     definitions = _validate_identifier_set(
         manifest["definitions"], "manifest.definitions", MAX_RECORDS
     )
@@ -3304,6 +3323,11 @@ def _validate_manifest_value(value: object) -> dict[str, object]:
         refuse("NOE-E-BOUNDS.RECORDS", "manifest.omitted", "omission list exceeds its limit")
     omitted_ids: list[str] = []
     prior = ""
+    fact_values = {
+        str(item["id"]): item
+        for item in selection["facts"]
+        if isinstance(item, dict)
+    }
     for index, item in enumerate(omitted):
         omission = _exact_keys(
             item,
@@ -3311,7 +3335,7 @@ def _validate_manifest_value(value: object) -> dict[str, object]:
             f"manifest.omitted[{index}]",
         )
         identifier = _node_id(omission["id"], f"manifest.omitted[{index}].id")
-        if identifier <= prior or identifier in included:
+        if identifier <= prior or identifier in included_set:
             refuse("NOE-E-SYNTAX.ORDER", "manifest.omitted", "omission ids must be sorted and disjoint")
         reason = omission["reason"]
         if reason == "not-reachable":
@@ -3323,11 +3347,6 @@ def _validate_manifest_value(value: object) -> dict[str, object]:
                 omission["evidence_sha256"],
                 f"manifest.omitted[{index}].evidence_sha256",
             )
-            fact_values = {
-                str(item["id"]): item
-                for item in selection["facts"]
-                if isinstance(item, dict)
-            }
             if fact not in fact_values or fact_values[fact]["evidence_sha256"] != evidence:
                 refuse("NOE-E-DIGEST.OMISSION", "manifest.omitted", "guard omission proof differs from selected facts")
             expected_truth = "false" if reason == "checked-false-guard" else "true"
@@ -3357,32 +3376,32 @@ def _seal_build(build: dict[str, object]) -> _VerifiedBuild:
 
 
 def _runtime_build(value: object) -> _VerifiedBuild:
-    build = _exact_keys(value, {"schema", "graph", "lock"}, "build")
-    if build["schema"] != BUILD_SCHEMA:
-        refuse("NOE-E-TYPE.VERSION", "build.schema", "unsupported build schema")
-    if (
-        not isinstance(build, _VerifiedBuild)
-        or build._verified_sha256 != _value_sha256(build)
-    ):
+    if not isinstance(value, _VerifiedBuild):
         refuse(
             "NOE-E-DIGEST.BUILD",
             "build",
             "runtime build was not compiled or artifact-verified in this process",
         )
+    if value._verified_sha256 != _value_sha256(value):
+        refuse("NOE-E-DIGEST.BUILD", "build", "verified runtime build was mutated")
+    build = _exact_keys(value, {"schema", "graph", "lock"}, "build")
+    if build["schema"] != BUILD_SCHEMA:
+        refuse("NOE-E-TYPE.VERSION", "build.schema", "unsupported build schema")
+    assert isinstance(build, _VerifiedBuild)
     return build
 
 
 def _runtime_manifest(value: object) -> _VerifiedManifest:
-    manifest = _validate_manifest_value(value)
-    if (
-        not isinstance(manifest, _VerifiedManifest)
-        or manifest._verified_sha256 != _value_sha256(manifest)
-    ):
+    if not isinstance(value, _VerifiedManifest):
         refuse(
             "NOE-E-DIGEST.MANIFEST",
             "manifest",
             "runtime manifest was not derived or artifact-verified in this process",
         )
+    if value._verified_sha256 != _value_sha256(value):
+        refuse("NOE-E-DIGEST.MANIFEST", "manifest", "verified runtime manifest was mutated")
+    manifest = _validate_manifest_value(value)
+    assert isinstance(manifest, _VerifiedManifest)
     return manifest
 
 
@@ -3459,11 +3478,14 @@ def _directive_intents(
     scope: tuple[str, ...] = (),
     order: list[int] | None = None,
     expansion_nodes: list[int] | None = None,
+    truth_expansion_nodes: list[int] | None = None,
 ) -> list[dict[str, object]]:
     if order is None:
         order = [0]
     if expansion_nodes is None:
         expansion_nodes = [0]
+    if truth_expansion_nodes is None:
+        truth_expansion_nodes = [0]
     expanded = _expand_runtime_term(
         directive,
         definitions,
@@ -3483,7 +3505,12 @@ def _directive_intents(
     )
     assert isinstance(source, list)
     if tag in {"?", "/"} and len(expanded) == 3:
-        guard, used = _evaluate_truth(source[1], facts, definitions)
+        guard, used = _evaluate_truth(
+            source[1],
+            facts,
+            definitions,
+            expansion_nodes=truth_expansion_nodes,
+        )
         gated = guard if tag == "?" else _truth_not(guard)
         return _directive_intents(
             source[2],
@@ -3494,6 +3521,7 @@ def _directive_intents(
             scope=scope,
             order=order,
             expansion_nodes=expansion_nodes,
+            truth_expansion_nodes=truth_expansion_nodes,
         )
     if tag == "@" and len(expanded) == 3:
         scope_value = _atom_value(expanded[1], "scope")
@@ -3507,6 +3535,7 @@ def _directive_intents(
             scope=(*scope, scope_value),
             order=order,
             expansion_nodes=expansion_nodes,
+            truth_expansion_nodes=truth_expansion_nodes,
         )
     if tag == "^" and len(expanded) == 3:
         authority_value = _atom_value(expanded[1], "actor")
@@ -3520,6 +3549,7 @@ def _directive_intents(
             scope=scope,
             order=order,
             expansion_nodes=expansion_nodes,
+            truth_expansion_nodes=truth_expansion_nodes,
         )
     if tag == ";" and len(expanded) >= 2:
         intents: list[dict[str, object]] = []
@@ -3534,6 +3564,7 @@ def _directive_intents(
                     scope=scope,
                     order=order,
                     expansion_nodes=expansion_nodes,
+                    truth_expansion_nodes=truth_expansion_nodes,
                 )
             )
         return intents
@@ -3548,6 +3579,7 @@ def _directive_intents(
             authored_subject,
             facts,
             definitions,
+            expansion_nodes=truth_expansion_nodes,
         )
     effects = sorted(value for kind, value in _typed_atoms(subject) if kind == "effect")
     position = order[0]
@@ -3611,16 +3643,30 @@ def check_runtime(
     relevant = [
         record
         for record in selectable.values()
-        if record[0] in {"rule", "exception"}
-        and ("effect", effect_id) in _runtime_atoms(record, definitions)
+        if (
+            record[0] == "rule"
+            and ("effect", effect_id) in _runtime_atoms(record, definitions)
+        )
+        or (
+            record[0] == "exception"
+            and _runtime_atom_value(record[4], "effect", definitions) == effect_id
+        )
     ]
     rule_records = [record for record in relevant if record[0] == "rule"]
     consequence = _effect_consequence(rule_records, effect_id, definitions)
     authority_values = set(str(item) for item in selection["authority"])
     target = str(selection["target"])
     candidates: list[dict[str, object]] = []
+    directive_expansion_nodes = [0]
+    truth_expansion_nodes = [0]
     for record in rule_records:
-        for intent in _directive_intents(record[2], fact_map, definitions):
+        for intent in _directive_intents(
+            record[2],
+            fact_map,
+            definitions,
+            expansion_nodes=directive_expansion_nodes,
+            truth_expansion_nodes=truth_expansion_nodes,
+        ):
             if effect_id not in intent["effects"]:
                 continue
             intent = dict(intent)
@@ -3666,7 +3712,10 @@ def check_runtime(
                 actor = _runtime_atom_value(override[2], "actor", definitions)
                 scope = _runtime_atom_value(override[5], "scope", definitions)
                 evidence_truth, _used = _evaluate_truth(
-                    ["core.checked", override[6]], fact_map, definitions
+                    ["core.checked", override[6]],
+                    fact_map,
+                    definitions,
+                    expansion_nodes=truth_expansion_nodes,
                 )
                 if (
                     actor in authority_values
@@ -3742,9 +3791,17 @@ def check_runtime(
     for record in relevant:
         if record[0] != "exception":
             continue
-        gate_truth, _gate_facts = _evaluate_truth(record[3], fact_map, definitions)
+        gate_truth, _gate_facts = _evaluate_truth(
+            record[3],
+            fact_map,
+            definitions,
+            expansion_nodes=truth_expansion_nodes,
+        )
         evidence_truth, _evidence_facts = _evaluate_truth(
-            ["core.checked", record[6]], fact_map, definitions
+            ["core.checked", record[6]],
+            fact_map,
+            definitions,
+            expansion_nodes=truth_expansion_nodes,
         )
         if not (
             _runtime_atom_value(record[2], "actor", definitions) in authority_values
@@ -3790,10 +3847,12 @@ def check_runtime(
             and item["truth"] == "true"
             and item["authority_applies"]
         ]
-        authorised = any(
-            bool(item["authority"]) and item["authority_applies"]
+        authorised_permits = [
+            item
             for item in permits
-        )
+            if bool(item["authority"]) and item["authority_applies"]
+        ]
+        authorised = bool(authorised_permits)
         if unknown:
             controlling = first(unknown)
             decision, reason = "unknown", "unestablished-guard"
@@ -3804,7 +3863,11 @@ def check_runtime(
             controlling = {"node": f"default.consequence-{consequence}", "order": 0}
             decision, reason = "refuse", "default-deny"
         elif permits or consequence < 2:
-            controlling = first(permits) if permits else {"node": f"default.consequence-{consequence}", "order": 0}
+            controlling = (
+                first(authorised_permits if consequence >= 2 else permits)
+                if permits
+                else {"node": f"default.consequence-{consequence}", "order": 0}
+            )
             decision, reason = "permit", "applicable-policy" if permits else "low-consequence-default"
         else:
             controlling = {"node": "default.no-policy", "order": 0}
@@ -3870,6 +3933,7 @@ def next_runtime(
     _literals, definitions, selectable = _manifest_registry(manifest)
     matched: list[tuple[list[object], str, set[str]]] = []
     unknown: list[list[object]] = []
+    truth_expansion_nodes = [0]
     for record in selectable.values():
         if record[0] != "transition":
             continue
@@ -3879,7 +3943,12 @@ def next_runtime(
             or _runtime_atom_value(record[4], "event", definitions) != event_id
         ):
             continue
-        truth, used = _evaluate_truth(record[5], combined, definitions)
+        truth, used = _evaluate_truth(
+            record[5],
+            combined,
+            definitions,
+            expansion_nodes=truth_expansion_nodes,
+        )
         if truth == "true":
             matched.append((record, truth, used))
         elif truth == "unknown":
