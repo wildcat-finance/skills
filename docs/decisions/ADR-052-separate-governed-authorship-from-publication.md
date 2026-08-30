@@ -1,10 +1,13 @@
-# ADR-051: Separate governed authorship from publication
+# ADR-052: Separate governed authorship from publication
 
 ## Status
 
 Accepted, 2026-08-30. Extends
 [ADR-016](ADR-016-attribute-governed-agent-work-to-shoggoth.md) and
 [ADR-018](ADR-018-bind-merged-authorship-to-the-integration-receipt.md).
+This record moved from 051 to 052 during live-base composition because
+[pull request #922](https://github.com/wildcat-finance/skills/pull/922) had
+already assigned 051 on `main`.
 
 ## Context
 

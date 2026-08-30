@@ -9320,7 +9320,7 @@ CAUSE_HOST_AUTHOR = (
     "Claude <noreply@anthropic.com>; set git user.name and user.email to the "
     "contributing actor and recreate the commit."
 )
-# verify_local_commit committer and commit_attribution (ADR-051).
+# verify_local_commit committer and commit_attribution (ADR-052).
 CAUSE_HOST_COMMITTER = (
     "The usual cause is the runtime host's default committer identity; use the "
     "explicitly authorised publisher's own name, address and signing key, then "

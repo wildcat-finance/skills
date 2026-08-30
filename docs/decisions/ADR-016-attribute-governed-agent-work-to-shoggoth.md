@@ -6,7 +6,7 @@ Accepted, 2026-08-23. Supersedes the communication-only authorship boundary in
 [ADR-011](ADR-011-load-one-shoggoth-identity-contract.md).
 
 The publication handoff paragraph is superseded by
-[ADR-051](ADR-051-separate-governed-authorship-from-publication.md). The
+[ADR-052](ADR-052-separate-governed-authorship-from-publication.md). The
 authorship decision remains in force.
 
 ## Context

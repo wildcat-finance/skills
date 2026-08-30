@@ -135,7 +135,7 @@ class EvolutionContractTests(unittest.TestCase):
         )
         self.assertIn("skills#906", latest["evidence"])
         self.assertIn("skills#903", latest["evidence"])
-        self.assertIn("ADR-051", latest["evidence"])
+        self.assertIn("ADR-052", latest["evidence"])
         bound = history_rows(ledger)[-2]
         self.assertEqual(bound["version"], "fiat-v5.37.1")
         self.assertIn("skills#556", bound["evidence"])

@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 992,
-  "total_bytes": 21497572,
+  "file_count": 994,
+  "total_bytes": 21513368,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -59,7 +59,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "a840a408f4160f05cae07b725d63046f7b9284c9ed4dda2f15760a83bc4f26ef",
+      "sha256": "b74c7efd3f4234a29572a7afe107f89499f9b58aea9ba89644d974bb5c5fb011",
       "source": null
     },
     {
@@ -1677,6 +1677,18 @@
       "source": "plugins/hexaemeron/docs/elenchus-structured-runner-reports/study.md"
     },
     {
+      "bytes": 3817,
+      "path": "plugins/hexaemeron/docs/fiat-author-publisher-separation/runbook.md",
+      "sha256": "25d9a1d1a28777563248a59a7509636c9ebd4cd089756bb779af731415807b3f",
+      "source": "plugins/hexaemeron/docs/fiat-author-publisher-separation/runbook.md"
+    },
+    {
+      "bytes": 11979,
+      "path": "plugins/hexaemeron/docs/fiat-author-publisher-separation/study.md",
+      "sha256": "7e30f7cbfb8e88653d3b8d95c4ad8ead3a488722beabd23db92b5c8a5efddd1a",
+      "source": "plugins/hexaemeron/docs/fiat-author-publisher-separation/study.md"
+    },
+    {
       "bytes": 4199,
       "path": "plugins/hexaemeron/docs/fiat-bound-step-merge/proof.md",
       "sha256": "7b9e609b3d7fd197ee3d6e70d862adddf4e09b80889d896053b2f2cf0a25a33a",
@@ -1901,7 +1913,7 @@
     {
       "bytes": 48823,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "be614de45964b9e74e6823cbd4a4688d8d660d1dca759717363d444a0140735c",
+      "sha256": "bf2f36c912c3e8a969bcc7bed3cbf0bc2588b34fb59be13c87189fe719d51cab",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
@@ -1973,7 +1985,7 @@
     {
       "bytes": 512907,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "28b5f2322ff4c0b85ef774e09e45e84d2b59ce191b1c83c9796d448414f4d621",
+      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
