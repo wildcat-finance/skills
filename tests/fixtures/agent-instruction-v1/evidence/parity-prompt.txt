@@ -1,4 +1,4 @@
-Answer one question from one public synthetic instruction document. This request is a fresh context: use no prior message, example, repository instruction, tool, or outside fact. The accepted answer ids label document-grounded conclusions. The refusal answer ids mean only that the supplied document is insufficient or unknown; never use them to express a prohibition that the document states. Treat each id as hyphenated English, then choose the one answer id that best matches the document. Return one JSON object with exactly one `answer_id` string and no other key.
+Answer one question from one public synthetic instruction document. This request is a fresh context: use no prior message, example, repository instruction, tool, or outside fact. The candidate ids contain every permitted document-grounded conclusion and evidence refusal without marking the required id. Read the document before selecting one. Read every word of each hyphenated id literally: `refuse-unknown` means refusal because the answer is unknown, not a generic refusal. Choose the one answer id that best matches the document. Return one JSON object with exactly one `answer_id` string and no other key.
 
 Mode: {mode}
 Decoder bootstrap:
@@ -6,5 +6,4 @@ Decoder bootstrap:
 Document:
 {document}
 Question: {question}
-Document-grounded answer ids: {accepted_answer_ids}
-Evidence-refusal ids: {refusal_answer_ids}
+Candidate answer ids: {answer_ids}

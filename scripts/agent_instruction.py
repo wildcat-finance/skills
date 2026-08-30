@@ -1582,7 +1582,10 @@ def _ollama_generate(
             "type": "object",
             "additionalProperties": False,
             "properties": {
-                "answer_id": {"type": "string", "enum": list(answer_ids)}
+                # Keep the transport schema open to an unlisted string so the
+                # local parser can preserve and refuse what the model actually
+                # returned instead of asking the runtime to coerce it.
+                "answer_id": {"type": "string"}
             },
             "required": ["answer_id"],
         }
@@ -2692,8 +2695,7 @@ def _load_evidence_artifacts(
         "{decoder_bootstrap}",
         "{document}",
         "{question}",
-        "{accepted_answer_ids}",
-        "{refusal_answer_ids}",
+        "{answer_ids}",
     ):
         if prompt_text.count(placeholder) != 1:
             refuse("WAI-E-PARITY.PROMPT", "$.evidence.parity_prompt")
@@ -2940,8 +2942,7 @@ def _render_parity_prompt(
         "{decoder_bootstrap}": bootstrap_text if mode == "compact" else "not-applicable\n",
         "{document}": document_text,
         "{question}": question["prompt"],
-        "{accepted_answer_ids}": ",".join(question["accepted_answers"]),
-        "{refusal_answer_ids}": ",".join(question["refusal_answers"]),
+        "{answer_ids}": ",".join(sorted([*question["accepted_answers"], *question["refusal_answers"]])),
     }
     for placeholder, value in replacements.items():
         if rendered.count(placeholder) != 1:

@@ -385,7 +385,7 @@ model manifest, blob, vocabulary, model name, non-integer count, or negative
 count refuses.
 
 The baseline is the three source spans under that profile. The comparison then
-counts the canonical models, compact documents, and the complete 894-byte
+counts the canonical models, compact documents, and the complete 893-byte
 decoder bootstrap under the same profile. The checked report records:
 
 | material | bytes | tokens |
@@ -393,14 +393,14 @@ decoder bootstrap under the same profile. The checked report records:
 | source corpus | 11,025 | 2,499 |
 | canonical-model corpus | 8,563 | 2,068 |
 | compact corpus | 6,150 | 2,228 |
-| decoder bootstrap | 894 | 248 |
-| compact corpus plus bootstrap | 7,044 | 2,476 |
-| compact-plus-bootstrap minus source | -3,981 | -23 |
+| decoder bootstrap | 893 | 270 |
+| compact corpus plus bootstrap | 7,043 | 2,498 |
+| compact-plus-bootstrap minus source | -3,982 | -1 |
 
-The strict three-document gate passes because `2,476 < 2,499`. The report also
+The strict three-document gate passes because `2,498 < 2,499`. The report also
 keeps each document and the bootstrap-amortised prefixes. A one-document run is
-not assumed to save tokens: the Fiat fixture reports `-66`, Horos reports
-`+718`, and Promise Machine reports `-179` after adding the entire bootstrap.
+not assumed to save tokens: the Fiat fixture reports `-44`, Horos reports
+`+740`, and Promise Machine reports `-157` after adding the entire bootstrap.
 The two-document prefix reports `+404`; only the declared three-document cohort
 is the acceptance cohort.
 
@@ -425,10 +425,11 @@ For each of the nine declared questions and each family, the runner launches a
 new curl process and sends one user message containing either the source span
 or the compact document with its bootstrap. The request carries no prior
 message, example, repository instruction, tool definition, stored context,
-credential, or remote URL. Accepted document-grounded answer ids and
-evidence-refusal ids are labelled separately in the bound prompt. The response
-schema is closed over the question's declared ids, and the local parser still
-refuses malformed or unlisted values. The report retains the bounded final JSON
+credential, or remote URL. The bound prompt presents one neutral candidate list
+without identifying the required id or separating document conclusions from
+evidence refusals. The transport schema admits any bounded answer-id string so
+the local parser can preserve and refuse malformed or unlisted values instead
+of letting the runtime coerce them. The report retains the bounded final JSON
 answer or refusal, input and prompt digests, prompt token count, job id, verdict,
 unknowns, and refusal codes. It does not retain model reasoning.
 

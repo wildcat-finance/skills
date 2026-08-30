@@ -2101,14 +2101,13 @@ if mode == "model-mismatch":
     model = "different:model"
 
 if "messages" in request:
-    answer_ids = request["format"]["properties"]["answer_id"]["enum"]
-    answer_id = answer_ids[0]
+    answer_id = "result-enabled"
     if mode == "unknown-answer":
         answer_id = "unlisted-answer"
     elif mode == "model-refusal":
-        answer_id = answer_ids[-1]
+        answer_id = "refuse-unknown"
     elif mode == "second-answer":
-        answer_id = answer_ids[1]
+        answer_id = "result-disabled"
     content = json.dumps({"answer_id": answer_id}, sort_keys=True)
     if mode == "malformed-answer":
         content = "{"
@@ -2434,6 +2433,24 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
                 manifest,
             )
 
+    def test_decoder_bootstrap_carries_record_field_signatures(self):
+        manifest = manifest_record()
+        bootstrap = (ROOT / manifest["evidence"]["decoder_bootstrap"]["path"]).read_text(
+            encoding="utf-8"
+        )
+        required = (
+            "D,0,id,title; S,1,id,path,sha256; H,1,id,title",
+            "M,3,id,claim; depth 4 order",
+            "I* id,authority,gate,subject,scope,record,expiry,recovery",
+            "B,1,source,node,start,end,reviewer",
+            "Order D,S*,H*(directives(expressions,M?)),relations*,B*",
+            "JSON=(schema document sources sections relations bindings)",
+            "literal=(kind value); directive=(id kind statement expressions promise)",
+        )
+        for signature in required:
+            with self.subTest(signature=signature):
+                self.assertIn(signature, bootstrap)
+
     def test_non_negative_compression_delta_refuses(self):
         with (
             mock.patch.object(AI, "_verify_profile_identity"),
@@ -2690,12 +2707,34 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
                 self.assertNotIn("visible-secret", answer["response"])
                 self.assertIn("[REDACTED]", answer["response"])
 
-    def test_prompt_separates_answer_and_refusal_vocabularies(self):
+    def test_prompt_does_not_label_answer_outcome_classes(self):
         template = (ROOT / manifest_record()["evidence"]["parity_prompt"]["path"]).read_bytes()
         prompt = AI._render_parity_prompt(template, "source", b"bootstrap\n", b"document\n", self.question())
         text = prompt.decode("utf-8")
-        self.assertIn("Document-grounded answer ids: result-enabled,result-disabled", text)
-        self.assertIn("Evidence-refusal ids: refuse-insufficient-context,refuse-unknown", text)
+        self.assertIn(
+            "Candidate answer ids: refuse-insufficient-context,refuse-unknown,result-disabled,result-enabled",
+            text,
+        )
+        self.assertIn(
+            "`refuse-unknown` means refusal because the answer is unknown, not a generic refusal",
+            text,
+        )
+        self.assertNotIn("Document-grounded answer ids", text)
+        self.assertNotIn("Evidence-refusal ids", text)
+
+    def test_chat_transport_does_not_enumerate_answer_ids(self):
+        capture = self.root / "request.ndjson"
+        profile = self.profile(family=True)
+        profile["fixed_environment"]["FAKE_CAPTURE"] = str(capture)
+        AI._ollama_generate(
+            profile,
+            b"prompt",
+            parity=True,
+            path="$.fake",
+            answer_ids=["result-enabled", "refuse-unknown"],
+        )
+        request = json.loads(capture.read_text(encoding="utf-8"))
+        self.assertEqual(request["format"]["properties"]["answer_id"], {"type": "string"})
 
     def test_source_prompt_omits_bootstrap_and_compact_prompt_includes_it(self):
         template = (ROOT / manifest_record()["evidence"]["parity_prompt"]["path"]).read_bytes()
@@ -2722,6 +2761,7 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
             self.assertEqual(request["messages"], [{"role": "user", "content": "prompt"}])
             self.assertNotIn("context", request)
             self.assertNotIn("tools", request)
+            self.assertNotIn("enum", request["format"]["properties"]["answer_id"])
 
     def test_validated_question_record_regression_runs_all_pairs(self):
         def answer(profile, prompt, **kwargs):
