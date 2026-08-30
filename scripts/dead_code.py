@@ -2213,6 +2213,13 @@ def _solidity_project_tool(
                 project,
                 temporary_root / "repository",
             )
+            for name in ("out", "cache", "broadcast"):
+                try:
+                    (snapshot_project_root / name).mkdir(mode=0o700, exist_ok=True)
+                except OSError as error:
+                    raise Refusal(
+                        f"Foundry project {project} disposable {name} directory failed: {error}"
+                    ) from error
         except Refusal as error:
             snapshot_duration = max(
                 0,

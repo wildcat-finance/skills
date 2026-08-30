@@ -1797,6 +1797,24 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
             dead_code.analyse_solidity(self.root, universe)
         self.assertEqual(source.read_bytes(), before)
 
+    def test_disposable_project_has_a_conventional_foundry_output_directory(self):
+        universe = self._universe()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] == ["forge", "coverage"]:
+                (kwargs["cwd"] / "out" / "findings.test.json").write_text(
+                    "disposable evidence" + NL,
+                    encoding="utf-8",
+                )
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, _findings = dead_code.analyse_solidity(self.root, universe)
+        forge = next(item for item in status.records if item.record_id.endswith(":forge"))
+        self.assertEqual(forge.state, "passed")
+        self.assertFalse((self.root / "out").exists())
+
     def test_slither_detector_maps_to_project_attributed_finding(self):
         universe = self._universe()
         detector = {
