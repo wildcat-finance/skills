@@ -523,12 +523,13 @@
         "seed": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["inventory", "reference", "mode", "archive_sha256", "reference_sha256"],
+          "required": ["inventory", "reference", "mode", "archive_sha256", "inventory_sha256", "reference_sha256"],
           "properties": {
             "inventory": { "$ref": "#/$defs/relativePath" },
             "reference": { "$ref": "#/$defs/artifactLeaf" },
             "mode": { "const": "non-executable-reference-evidence" },
             "archive_sha256": { "$ref": "#/$defs/sha256" },
+            "inventory_sha256": { "$ref": "#/$defs/sha256" },
             "reference_sha256": { "$ref": "#/$defs/sha256" }
           }
         },

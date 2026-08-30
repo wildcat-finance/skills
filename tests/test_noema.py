@@ -4388,6 +4388,37 @@ class SourceBindingTests(unittest.TestCase):
         corpus = read_json(CORPUS_MANIFEST)
         self.assertEqual(corpus["seed"]["reference_sha256"], noema._value_sha256(evidence))
 
+    def test_seed_inventory_exact_bytes_are_manifest_bound(self):
+        corpus = read_json(CORPUS_MANIFEST)
+        self.assertEqual(
+            corpus["seed"]["inventory_sha256"],
+            sha256(INVENTORY.read_bytes()).hexdigest(),
+        )
+
+    def test_seed_inventory_byte_tamper_refuses(self):
+        with copied_corpus() as root:
+            path = root / "seed-inventory.json"
+            path.write_bytes(path.read_bytes() + b"\n")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.INVENTORY")
+
+    def test_seed_inventory_metadata_uses_the_full_archive_validator(self):
+        with copied_corpus() as root:
+            inventory_path = root / "seed-inventory.json"
+            inventory = read_json(inventory_path)
+            inventory["archive"]["name"] = "substituted.zip"
+            write_canonical_json(inventory_path, inventory)
+            manifest_path = root / "manifest.json"
+            manifest = read_json(manifest_path)
+            manifest["seed"]["inventory_sha256"] = sha256(
+                inventory_path.read_bytes()
+            ).hexdigest()
+            write_canonical_json(manifest_path, manifest)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(manifest_path)
+        self.assertEqual(raised.exception.code, "NOE-E-TYPE.ARCHIVE_NAME")
+
     def test_reference_can_rebuild_a_verified_seed_archive(self):
         inventory = read_json(INVENTORY)
         files = [
