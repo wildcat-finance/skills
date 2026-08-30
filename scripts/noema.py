@@ -462,7 +462,7 @@ def _result(
 
 
 def emit(payload: dict[str, object]) -> None:
-    print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+    sys.stdout.write(_canonical_json(payload).decode("utf-8"))
 
 
 def _object_without_duplicates(pairs: list[tuple[str, object]]) -> dict[str, object]:
@@ -4339,16 +4339,13 @@ def explain_runtime(node_value: object, manifest_value: object) -> dict[str, obj
     node = _node_id(node_value, "node")
     manifest = _runtime_manifest(manifest_value)
     _literals, _definitions, selectable = _manifest_registry(manifest)
-    tape = manifest["tape"]
-    assert isinstance(tape, list)
-    by_id = {
-        _runtime_record_id(record): record
-        for record in tape
-        if isinstance(record, list)
-    }
-    if node not in by_id:
-        refuse("NOE-E-REFERENCE.NODE", "node", "node is not reachable in this manifest")
-    render = _canonical_json(by_id[node]).decode("utf-8").removesuffix("\n")
+    if node not in selectable:
+        refuse(
+            "NOE-E-REFERENCE.NODE",
+            "node",
+            "node is not a reachable explainable policy record",
+        )
+    render = _canonical_json(selectable[node]).decode("utf-8").removesuffix("\n")
     output = {
         "schema": EXPLANATION_SCHEMA,
         "authoritative": False,
@@ -6851,6 +6848,7 @@ def main(argv: list[str] | None = None) -> int:
             payload = runtime_self_test()
         else:
             payload = unimplemented(command)
+        emit(payload)
     except Refusal as error:
         payload = _result(
             command,
@@ -6862,7 +6860,6 @@ def main(argv: list[str] | None = None) -> int:
         )
         emit(payload)
         return 2
-    emit(payload)
     return 0
 
 
