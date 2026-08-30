@@ -43,6 +43,10 @@ EVIDENCE_ARTIFACTS = {
     "parity_record": "parity.json",
     "tokenizer_profile": "tokenizer-profile.json",
 }
+TRUSTED_PROFILE_SHA256 = {
+    "family_profiles": "58de5185a641d4f5dd3dfe61b9dff3e2a5928e978ce9dfac2bd93546f5d54703",
+    "tokenizer_profile": "99e4c3b013b9bcc9770e434143c84b671ad57124d59affc13caf809607c3a0bd",
+}
 TOKENIZER_PROFILE_SCHEMA = "wildcat-agent-instruction-tokenizer-profile/v1"
 FAMILY_PROFILES_SCHEMA = "wildcat-agent-instruction-family-profiles/v1"
 MEASUREMENT_SCHEMA = "wildcat-agent-instruction-measurement/v1"
@@ -1464,7 +1468,7 @@ def _ollama_response(data: bytes, expected_model: str, path: str) -> dict[str, A
         value = json.loads(text, object_pairs_hook=_duplicate_checked_external_object)
     except CodecError:
         raise
-    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError):
         refuse("WAI-E-ADAPTER.JSON", path)
     if not isinstance(value, dict):
         refuse("WAI-E-ADAPTER.JSON", path)
@@ -1487,7 +1491,10 @@ def _ollama_response(data: bytes, expected_model: str, path: str) -> dict[str, A
     if value.get("model") != expected_model or value.get("done") is not True:
         refuse("WAI-E-TOKENIZER.MISMATCH", path)
     response = value.get("response")
-    if not isinstance(response, str) or len(response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
+    if not isinstance(response, str):
+        refuse("WAI-E-ADAPTER.RESPONSE", path)
+    _scalar(response, f"{path}.response")
+    if len(response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
         refuse("WAI-E-ADAPTER.RESPONSE", path)
     count = value.get("prompt_eval_count")
     if not isinstance(count, int) or isinstance(count, bool):
@@ -1505,7 +1512,7 @@ def _ollama_chat_response(data: bytes, expected_model: str, path: str) -> dict[s
         value = json.loads(text, object_pairs_hook=_duplicate_checked_external_object)
     except CodecError:
         raise
-    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError):
         refuse("WAI-E-ADAPTER.JSON", path)
     if not isinstance(value, dict):
         refuse("WAI-E-ADAPTER.JSON", path)
@@ -1532,15 +1539,16 @@ def _ollama_chat_response(data: bytes, expected_model: str, path: str) -> dict[s
     }:
         refuse("WAI-E-ADAPTER.RESPONSE", path)
     response = message.get("content")
-    if (
-        message.get("role") != "assistant"
-        or not isinstance(response, str)
-        or len(response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES
-    ):
+    if message.get("role") != "assistant" or not isinstance(response, str):
+        refuse("WAI-E-ADAPTER.RESPONSE", path)
+    _scalar(response, f"{path}.message.content")
+    if len(response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
         refuse("WAI-E-ADAPTER.RESPONSE", path)
     thinking = message.get("thinking")
     if thinking is not None and not isinstance(thinking, str):
         refuse("WAI-E-ADAPTER.RESPONSE", path)
+    if thinking is not None:
+        _scalar(thinking, f"{path}.message.thinking")
     count = value.get("prompt_eval_count")
     if not isinstance(count, int) or isinstance(count, bool) or count < 0:
         refuse("WAI-E-TOKENIZER.COUNT", path)
@@ -3138,6 +3146,9 @@ def _load_evidence_artifacts(
     evidence: dict[str, bytes] = {}
     for name in EVIDENCE_ARTIFACTS:
         evidence[name] = _load_bound_artifact(root, manifest["evidence"][name], f"$.evidence.{name}")
+    for name, expected_sha256 in TRUSTED_PROFILE_SHA256.items():
+        if _digest(evidence[name]) != expected_sha256:
+            refuse("WAI-E-DIGEST.PROFILE", f"$.evidence.{name}")
     bootstrap = evidence["decoder_bootstrap"]
     if not bootstrap or len(bootstrap) > 4_096 or not bootstrap.endswith(b"\n"):
         refuse("WAI-E-MEASURE.BOOTSTRAP", "$.evidence.decoder_bootstrap")
@@ -3437,6 +3448,15 @@ def _answer_record(response: str, question: Mapping[str, Any]) -> dict[str, Any]
             "code": "WAI-E-PARITY.ANSWER",
         }
     answer_id = value["answer_id"]
+    try:
+        _scalar(answer_id, "$.adapter_output.answer_id")
+    except CodecError:
+        return {
+            "answer_id": None,
+            "response": safe_response,
+            "outcome": "refused",
+            "code": "WAI-E-PARITY.ANSWER",
+        }
     if answer_id in question["accepted_answers"]:
         outcome, code = "accepted", "WAI-OK"
     elif answer_id in question["refusal_answers"]:

@@ -449,6 +449,12 @@ validator alone decides whether a bound profile, count, response, and report
 fit this evidence contract. It never executes a source command or acts on a
 model answer.
 
+The validator also fixes the SHA-256 of both checked profile records in its
+source. A manifest can bind a report produced by those profiles, but rebinding
+the manifest cannot select a different executable, runtime, argv, or model
+identity. A newly reviewed local profile therefore requires an explicit source
+anchor update before any identity command or adapter process can run.
+
 Every adapter process receives an explicit argv list, a cleared allowlisted
 environment, bounded stdin, separate stdout and stderr caps, and a timeout;
 `shell=False` is fixed. Only the public synthetic corpus is sent to the local

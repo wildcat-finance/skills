@@ -2277,6 +2277,69 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
         profile["version_sha256"] = "0" * 64
         self.assertRefusal("WAI-E-ADAPTER.VERSION_CHANGED", AI._verify_profile_identity, profile)
 
+    def test_rebound_profile_cannot_select_a_shell_runtime(self):
+        manifest = manifest_record()
+        profile_path = manifest["evidence"]["tokenizer_profile"]["path"]
+        measurement_path = manifest["evidence"]["measurement_record"]["path"]
+        profile = AI.load_canonical_record((ROOT / profile_path).read_bytes())
+        profile["runtime_executable"] = "/bin/bash"
+        profile["runtime_executable_sha256"] = hashlib.sha256(
+            Path("/bin/bash").read_bytes()
+        ).hexdigest()
+        profile["version"] = "self-authorised-shell"
+        profile["version_argv"] = ["-c", "printf 'fake-runtime 1\\n'"]
+        profile["version_sha256"] = hashlib.sha256(b"fake-runtime 1\n").hexdigest()
+        profile["identity_argv"] = [
+            "-c",
+            f"printf 'FROM @sha256-{profile['model_blobs_sha256'][0]}\\n'",
+        ]
+        profile["acquisition_sha256"] = hashlib.sha256(
+            f"FROM @sha256-{profile['model_blobs_sha256'][0]}\n".encode("ascii")
+        ).hexdigest()
+        mutated_profile = AI.canonical_record_bytes(profile)
+        mutated_profile_sha256 = hashlib.sha256(mutated_profile).hexdigest()
+        manifest["evidence"]["tokenizer_profile"]["sha256"] = mutated_profile_sha256
+
+        measurement = AI.load_canonical_record(
+            (ROOT / measurement_path).read_bytes(), allow_integers=True
+        )
+        measurement["tokenizer_profile_sha256"] = mutated_profile_sha256
+        mutated_measurement = AI.canonical_record_bytes(measurement, allow_integers=True)
+        manifest["evidence"]["measurement_record"]["sha256"] = hashlib.sha256(
+            mutated_measurement
+        ).hexdigest()
+
+        def artifact_bytes(root, artifact, path):
+            if artifact["path"] == profile_path:
+                return mutated_profile
+            if artifact["path"] == measurement_path:
+                return mutated_measurement
+            return (ROOT / artifact["path"]).read_bytes()
+
+        with (
+            mock.patch.object(AI, "_load_bound_artifact", side_effect=artifact_bytes),
+            mock.patch.object(AI, "_validate_measurement_record"),
+            mock.patch.object(AI, "_validate_parity_record"),
+        ):
+            self.assertRefusal(
+                "WAI-E-DIGEST.PROFILE",
+                AI._load_evidence_artifacts,
+                ROOT,
+                manifest,
+            )
+
+    def test_both_runtime_profile_records_match_source_trust_anchors(self):
+        manifest = manifest_record()
+        self.assertEqual(
+            set(AI.TRUSTED_PROFILE_SHA256),
+            {"family_profiles", "tokenizer_profile"},
+        )
+        for name, expected_sha256 in AI.TRUSTED_PROFILE_SHA256.items():
+            with self.subTest(name=name):
+                artifact = manifest["evidence"][name]
+                self.assertEqual(artifact["sha256"], expected_sha256)
+                self.assertEqual(hashlib.sha256((ROOT / artifact["path"]).read_bytes()).hexdigest(), expected_sha256)
+
     def test_tokenizer_adapter_requires_argv_list(self):
         profile = self.profile()
         profile["argv"] = "adapter"
@@ -2351,6 +2414,35 @@ class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
             parity=False,
             path="$.fake",
         )
+
+    def test_oversized_adapter_integer_refuses_without_escaping(self):
+        response = (
+            b'{"done":true,"model":"fake-alpha:1","prompt_eval_count":'
+            + b"1" * 5_000
+            + b',"response":"{}"}'
+        )
+        try:
+            AI._ollama_response(response, "fake-alpha:1", "$.fake")
+        except AI.CodecError as error:
+            self.assertEqual(error.code, "WAI-E-ADAPTER.JSON")
+        except Exception as error:
+            self.fail(f"oversized adapter integer escaped as {type(error).__name__}")
+        else:
+            self.fail("oversized adapter integer was accepted")
+
+    def test_non_scalar_adapter_response_refuses_without_escaping(self):
+        response = (
+            b'{"done":true,"model":"fake-alpha:1","prompt_eval_count":1,'
+            b'"response":"\\ud800"}'
+        )
+        try:
+            AI._ollama_response(response, "fake-alpha:1", "$.fake")
+        except AI.CodecError as error:
+            self.assertEqual(error.code, "WAI-E-UTF8.SCALAR")
+        except Exception as error:
+            self.fail(f"non-scalar adapter response escaped as {type(error).__name__}")
+        else:
+            self.fail("non-scalar adapter response was accepted")
 
     def test_fake_tokenizer_model_mismatch_refuses(self):
         profile = self.profile(mode="model-mismatch")
@@ -2723,6 +2815,42 @@ class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
             path="$.fake",
             answer_ids=["result-enabled", "refuse-unknown"],
         )
+
+    def test_oversized_chat_integer_refuses_without_escaping(self):
+        response = (
+            b'{"done":true,"message":{"content":"{}","role":"assistant"},'
+            b'"model":"fake-alpha:1","prompt_eval_count":'
+            + b"1" * 5_000
+            + b"}"
+        )
+        try:
+            AI._ollama_chat_response(response, "fake-alpha:1", "$.fake")
+        except AI.CodecError as error:
+            self.assertEqual(error.code, "WAI-E-ADAPTER.JSON")
+        except Exception as error:
+            self.fail(f"oversized chat integer escaped as {type(error).__name__}")
+        else:
+            self.fail("oversized chat integer was accepted")
+
+    def test_non_scalar_chat_response_refuses_without_escaping(self):
+        response = (
+            b'{"done":true,"message":{"content":"\\ud800","role":"assistant"},'
+            b'"model":"fake-alpha:1","prompt_eval_count":1}'
+        )
+        try:
+            AI._ollama_chat_response(response, "fake-alpha:1", "$.fake")
+        except AI.CodecError as error:
+            self.assertEqual(error.code, "WAI-E-UTF8.SCALAR")
+        except Exception as error:
+            self.fail(f"non-scalar chat response escaped as {type(error).__name__}")
+        else:
+            self.fail("non-scalar chat response was accepted")
+
+    def test_non_scalar_answer_id_is_preserved_as_a_bounded_refusal(self):
+        answer = AI._answer_record('{"answer_id":"\\ud800"}', self.question())
+        self.assertIsNone(answer["answer_id"])
+        self.assertEqual(answer["code"], "WAI-E-PARITY.ANSWER")
+        self.assertEqual(answer["response"], '{"answer_id":"\\ud800"}')
 
     def test_fake_chat_extra_field_refuses(self):
         profile = self.profile(family=True, mode="extra-field")
