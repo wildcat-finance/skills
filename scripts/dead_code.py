@@ -2081,6 +2081,33 @@ def _solidity_project_tool(
         + len(run.stderr)
     )
     if run.state != "passed":
+        if tool == "slither" and run.state == "failed" and run.stdout:
+            try:
+                findings, evidence_count = _slither_findings(
+                    run.stdout,
+                    project=project,
+                    universe=universe,
+                )
+            except Refusal:
+                pass
+            else:
+                return (
+                    AnalyserRecord(
+                        f"{project}:{tool}",
+                        "project",
+                        "failed",
+                        (
+                            f"project={project}; non-zero exit supplied "
+                            f"{evidence_count} parseable positive evidence record(s)"
+                        ),
+                        total_bytes,
+                        version,
+                        total_duration,
+                        evidence_count,
+                        run.reason,
+                    ),
+                    findings,
+                )
         return (
             AnalyserRecord(
                 f"{project}:{tool}",

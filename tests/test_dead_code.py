@@ -1592,6 +1592,34 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
         record = next(item for item in status.records if item.record_id.endswith(":slither"))
         self.assertIn("compiler root cause", record.reason)
 
+    def test_non_zero_slither_success_keeps_positive_detector_evidence(self):
+        universe = self._universe()
+        detector = {
+            "check": "dead-code",
+            "confidence": "Medium",
+            "elements": [
+                {
+                    "type": "function",
+                    "name": "spare",
+                    "source_mapping": {"filename_relative": "src/Dead.sol", "lines": [1]},
+                }
+            ],
+        }
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] == ["slither", "."]:
+                return self._slither_document([detector]), b"warning", 255
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, findings = dead_code.analyse_solidity(self.root, universe)
+        record = next(item for item in status.records if item.record_id.endswith(":slither"))
+        self.assertEqual(status.state, "degraded")
+        self.assertEqual(record.state, "failed")
+        self.assertEqual(record.evidence_count, 1)
+        self.assertTrue(any("dead-code" in item.evidence for item in findings))
+
     def test_long_tool_stderr_preserves_the_terminal_failure_reason(self):
         universe = self._universe()
         successful = self._successful_runner([])
