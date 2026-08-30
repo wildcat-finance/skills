@@ -1808,10 +1808,17 @@ def _invoke_optional_tool(
         )
     duration_ms = max(0, (time.monotonic_ns() - started) // 1_000_000)
     if returncode != 0:
-        try:
-            detail = decode_output(stderr, f"{argv[0]} stderr").strip()
-        except Refusal:
-            detail = "non-UTF-8 stderr"
+        details: list[str] = []
+        for label, payload in (("stderr", stderr), ("stdout", stdout)):
+            if not payload:
+                continue
+            try:
+                text = decode_output(payload, f"{argv[0]} {label}").strip()
+            except Refusal:
+                text = f"non-UTF-8 {label}"
+            if text:
+                details.append(f"{label}: {text}")
+        detail = "; ".join(details)
         if len(detail) > 512:
             detail = detail[:96] + " ... " + detail[-411:]
         return ToolInvocation(

@@ -1578,6 +1578,20 @@ class SolidityAnalyserTests(TemporaryRepositoryTestCase):
         self.assertEqual(findings, ())
         self.assertIn("exit 1", next(item for item in status.records if item.record_id.endswith(":slither")).reason)
 
+    def test_non_zero_tool_stdout_preserves_json_failure_reason(self):
+        universe = self._universe()
+        successful = self._successful_runner([])
+
+        def run(argv, **kwargs):
+            if argv[:2] == ["slither", "."]:
+                return b'{"success":false,"error":"compiler root cause"}', b"warning", 255
+            return successful(argv, **kwargs)
+
+        with mock.patch.object(dead_code, "run_process", side_effect=run):
+            status, _findings = dead_code.analyse_solidity(self.root, universe)
+        record = next(item for item in status.records if item.record_id.endswith(":slither"))
+        self.assertIn("compiler root cause", record.reason)
+
     def test_long_tool_stderr_preserves_the_terminal_failure_reason(self):
         universe = self._universe()
         successful = self._successful_runner([])
