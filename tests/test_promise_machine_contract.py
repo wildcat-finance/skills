@@ -1007,6 +1007,43 @@ class PromiseObligationTests(unittest.TestCase):
         self.assertIn("PM080", codes)
         self.assertIn("PM085", codes)
 
+    def test_masked_lines_adjacent_to_an_obligation_clause_do_not_crash(self):
+        marker = "<!-- promise-machine-obligation: id=law-contract-identity -->"
+        clause_end = "> contract identity."
+        cases = {
+            "masked-before": (
+                marker,
+                "<!-- ordinary authored comment -->",
+                1,
+                {"PM080", "PM085", "PM086"},
+            ),
+            "masked-after": (
+                clause_end,
+                clause_end + "\n<!-- ordinary authored comment -->",
+                0,
+                set(),
+            ),
+        }
+        for name, (old, new, returncode, expected_codes) in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                write_obligation_fixture(target)
+                law = target / LAW.name
+                law.write_text(
+                    law.read_text(encoding="utf-8").replace(old, new, 1),
+                    encoding="utf-8",
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "obligations", "--json"
+                )
+            self.assertEqual(completed.returncode, returncode, completed.stderr)
+            self.assertNotIn("Traceback", completed.stderr)
+            report = json.loads(completed.stdout)
+            self.assertEqual(
+                expected_codes,
+                {item["code"] for item in report["findings"]},
+            )
+
     def test_missing_registry_row_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)
@@ -1225,6 +1262,44 @@ class PromiseObligationTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM082", [item["code"] for item in report["findings"]])
+
+    def test_non_unicode_scalar_json_strings_are_refused_before_use(self):
+        cases = {
+            "registry-path": ("registry", "PM082"),
+            "specimen-mutation": ("specimen", "PM088"),
+        }
+        for name, (subject, code) in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                registry = write_obligation_fixture(target)
+                if subject == "registry":
+                    rewrite_registry(
+                        registry,
+                        lambda doc: doc["obligations"][0].update(
+                            specimen=(
+                                "tests/fixtures/promise-machine/obligations/"
+                                "\ud800.json"
+                            )
+                        ),
+                    )
+                else:
+                    specimen = (
+                        target
+                        / "tests"
+                        / "fixtures"
+                        / "promise-machine"
+                        / "obligations"
+                        / "law-contract-identity.json"
+                    )
+                    document = json.loads(specimen.read_text(encoding="utf-8"))
+                    document["mutation"]["new"] = "\ud800"
+                    specimen.write_text(json.dumps(document) + "\n", encoding="utf-8")
+                completed = run_cli(
+                    "check", "--root", target, "--only", "obligations"
+                )
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn(code, completed.stdout)
+            self.assertNotIn("Traceback", completed.stderr)
 
     def test_registry_only_obligation_is_refused(self):
         with tempfile.TemporaryDirectory() as directory:
