@@ -761,13 +761,16 @@ class CanonicalSourceTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.IMPORTS")
 
     def test_finite_set_cap_accepts_exact_and_refuses_plus_one(self):
-        literal = ["literal", "n", "number", "1", "1"]
-        members = [["$", "n"]] * noema.MAX_SET_MEMBERS
-        quantified = ["all", ["x", "value"], ["{}", "value", *members], ["=", ["%", "x"], ["$", "n"]]]
-        compile_records(base_records(["+", quantified], literals=[literal]))
-        quantified[2].append(["$", "n"])
+        literals = [
+            ["literal", f"n{index:04d}", "number", "1", "1"]
+            for index in range(noema.MAX_SET_MEMBERS + 1)
+        ]
+        members = [["$", f"n{index:04d}"] for index in range(noema.MAX_SET_MEMBERS)]
+        quantified = ["all", ["x", "value"], ["{}", "value", *members], ["=", ["%", "x"], ["$", "n0000"]]]
+        compile_records(base_records(["+", quantified], literals=literals[:-1]))
+        quantified[2].append(["$", f"n{noema.MAX_SET_MEMBERS:04d}"])
         with self.assertRaises(noema.Refusal) as raised:
-            compile_records(base_records(["+", quantified], literals=[literal]))
+            compile_records(base_records(["+", quantified], literals=literals))
         self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.SET")
 
     def test_very_long_decimal_never_enters_integer_conversion(self):
@@ -776,6 +779,15 @@ class CanonicalSourceTests(unittest.TestCase):
 
 
 class GraphValidationTests(unittest.TestCase):
+    def test_finite_set_members_are_unique_and_canonically_ordered(self):
+        duplicate = ["+", ["in", [":", "actor", "a"], ["{}", "actor", [":", "actor", "a"], [":", "actor", "a"]]]]
+        reversed_members = ["+", ["in", [":", "actor", "a"], ["{}", "actor", [":", "actor", "b"], [":", "actor", "a"]]]]
+        for directive in (duplicate, reversed_members):
+            with self.subTest(directive=directive):
+                with self.assertRaises(noema.Refusal) as raised:
+                    compile_records(base_records(directive))
+                self.assertEqual(raised.exception.code, "NOE-E-SYNTAX.SET_ORDER")
+
     def test_unknown_operator_refuses(self):
         with self.assertRaises(noema.Refusal) as raised:
             compile_records(base_records(["wat", [":", "state", "ready"]]))

@@ -909,9 +909,14 @@ class _TypeContext:
             if len(value) - 2 > MAX_SET_MEMBERS:
                 refuse("NOE-E-BOUNDS.SET", field, "finite set exceeds its member limit")
             element_type = _validate_type(value[1], self.known_types, f"{field}.type")
+            previous_member: bytes | None = None
             for index, member in enumerate(value[2:]):
                 actual = self.term(member, variables, f"{field}[{index}]", pure=pure, depth=depth + 1)
                 self.require(actual, element_type, f"{field}[{index}]")
+                canonical_member = _canonical_json(member)
+                if previous_member is not None and canonical_member <= previous_member:
+                    refuse("NOE-E-SYNTAX.SET_ORDER", field, "finite set members must be unique and canonically sorted")
+                previous_member = canonical_member
             return f"set:{element_type}"
         if tag in OPERATORS:
             if pure and tag in DIRECTIVE_OPERATORS:

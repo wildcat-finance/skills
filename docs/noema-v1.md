@@ -110,12 +110,14 @@ predicate is the first item of every other term. Quantifiers use
 `[operator,[variable,type],finite-set,proposition]`. These examples use single
 quotes only for exposition; governing source uses canonical JSON double
 quotes. Numeric fields and values are unsigned decimal strings, never JSON
-numbers.
+numbers. Finite-set members are unique and sorted by their canonical term
+bytes; duplicate or descending members refuse.
 
 JSON is canonical with UTF-8 NFC scalar strings, no BOM, CR, blank line,
 insignificant whitespace, alternate escape, duplicate object key or non-finite
 number. Object keys in module, profile and derived records are lexicographically
-sorted. Arrays retain semantic order. Records are sorted by the form order
+sorted. Arrays retain semantic order except for finite sets. Records are sorted
+by the form order
 published above, then by id; precedence uses the `(higher,lower)` pair. These
 rules make the source byte string singular.
 
