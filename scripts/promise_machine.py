@@ -502,6 +502,49 @@ def frontmatter_lines(text: str):
     return lines[1:end]
 
 
+def markdown_unfenced_lines(text: str):
+    """Return source lines with fenced-code content masked."""
+    visible: list[str | None] = []
+    fence: tuple[str, int] | None = None
+    for line in text.splitlines():
+        if fence is not None:
+            character, width = fence
+            closing = re.fullmatch(
+                rf" {{0,3}}{re.escape(character)}{{{width},}}[ \t]*", line
+            )
+            visible.append(None)
+            if closing is not None:
+                fence = None
+            continue
+
+        stripped = line.lstrip(" ")
+        indentation = len(line) - len(stripped)
+        opening = re.match(r"(`{3,}|~{3,})(.*)$", stripped)
+        if indentation <= 3 and opening is not None:
+            run, info = opening.groups()
+            if run[0] == "~" or "`" not in info:
+                fence = (run[0], len(run))
+                visible.append(None)
+                continue
+        visible.append(line)
+    return visible
+
+
+def markdown_section(lines: list[str | None], heading: str):
+    """Return one level-two section from already fence-masked lines."""
+    indexes = [index for index, line in enumerate(lines) if line == heading]
+    if len(indexes) != 1:
+        return []
+    start = indexes[0] + 1
+    end = len(lines)
+    for index in range(start, len(lines)):
+        line = lines[index]
+        if line is not None and re.match(r"^#{1,2}(?:[ \t]|$)", line):
+            end = index
+            break
+    return [line for line in lines[start:end] if line is not None]
+
+
 def check_law(root: Path):
     law_path = root / LAW_NAME
     loaded, findings = read_markdown(
@@ -517,7 +560,7 @@ def check_law(root: Path):
 def validate_law_document(payload: bytes, text: str, shown: str):
     """Apply the production law gates to one already bounded Markdown payload."""
     findings: list[Finding] = []
-    lines = text.splitlines()
+    lines = markdown_unfenced_lines(text)
     if MARKER not in lines[:5]:
         findings.append(
             Finding(
@@ -540,18 +583,34 @@ def validate_law_document(payload: bytes, text: str, shown: str):
                 )
             )
     versions = set(re.findall(r"promise-machine/v[0-9]+", text))
-    if versions != {CONTRACT_ID}:
+    identity_heading_present = lines.count("## Contract identity") == 1
+    identity_section = markdown_section(lines, "## Contract identity")
+    identity_declaration = f"The shared contract identity is `{CONTRACT_ID}`."
+    identity_declaration_missing = (
+        identity_heading_present
+        and not any(
+            line.startswith(identity_declaration) for line in identity_section
+        )
+    )
+    if versions != {CONTRACT_ID} or identity_declaration_missing:
+        message = (
+            f"contract identities are {sorted(versions)!r}; expected only {CONTRACT_ID}"
+            if versions != {CONTRACT_ID}
+            else "the contract identity declaration is absent or changed"
+        )
         findings.append(
             Finding(
                 "PM007",
                 "version",
                 shown,
-                f"contract identities are {sorted(versions)!r}; expected only {CONTRACT_ID}",
+                message,
                 "use the shared contract identity and remove competing identities",
             )
         )
+    declarations_heading_present = lines.count("## Promise declarations") == 1
+    declarations_section = markdown_section(lines, "## Promise declarations")
     for field in REQUIRED_FIELDS:
-        if f"`{field}`" not in text:
+        if declarations_heading_present and f"- `{field}`" not in declarations_section:
             findings.append(
                 Finding(
                     "PM008",
@@ -565,7 +624,11 @@ def validate_law_document(payload: bytes, text: str, shown: str):
         "> No skill may claim more than its evidence establishes, or authorise a more\n"
         "> consequential transition than that evidence warrants."
     )
-    if principle not in text:
+    principle_heading_present = lines.count("## Governing principle") == 1
+    principle_section = "\n".join(
+        markdown_section(lines, "## Governing principle")
+    )
+    if principle_heading_present and principle not in principle_section:
         findings.append(
             Finding(
                 "PM009",
@@ -581,13 +644,15 @@ def validate_law_document(payload: bytes, text: str, shown: str):
 def discover_obligations(text: str):
     """Discover the closed explicit obligation grammar from the authored law."""
     findings: list[Finding] = []
-    lines = text.splitlines()
+    lines = markdown_unfenced_lines(text)
     markers: dict[str, int] = {}
     marker_lines: dict[int, str] = {}
     clause_markers: set[int] = set()
     clause_digests: dict[str, str] = {}
 
     for index, line in enumerate(lines):
+        if line is None:
+            continue
         if OBLIGATION_MARKER_PREFIX not in line:
             continue
         matched = OBLIGATION_MARKER.fullmatch(line)
@@ -619,10 +684,16 @@ def discover_obligations(text: str):
         marker_lines[index] = obligation_id
 
     for index, line in enumerate(lines):
+        if line is None:
+            continue
         if not line.startswith(OBLIGATION_CLAUSE_PREFIX):
             continue
         previous = index - 1
-        while previous >= 0 and not lines[previous].strip():
+        while (
+            previous >= 0
+            and lines[previous] is not None
+            and not lines[previous].strip()
+        ):
             previous -= 1
         obligation_id = marker_lines.get(previous)
         if obligation_id is None:
@@ -638,9 +709,15 @@ def discover_obligations(text: str):
             continue
         clause_markers.add(previous)
         end = index + 1
-        while end < len(lines) and lines[end].startswith(">"):
+        while (
+            end < len(lines)
+            and lines[end] is not None
+            and lines[end].startswith(">")
+        ):
             end += 1
-        clause = "\n".join(lines[index:end]).encode("utf-8")
+        clause = "\n".join(
+            line for line in lines[index:end] if line is not None
+        ).encode("utf-8")
         clause_digests[obligation_id] = hashlib.sha256(clause).hexdigest()
 
     for index, obligation_id in marker_lines.items():

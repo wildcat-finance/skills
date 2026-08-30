@@ -358,6 +358,78 @@ class PromiseObligationTests(unittest.TestCase):
                 )
                 self.assertIn(f"{marker}\n{clause}", text)
 
+    def test_contract_identity_gate_rejects_an_unrecognised_declaration(self):
+        declaration = "The shared contract identity is `promise-machine/v1`."
+        text = LAW.read_text(encoding="utf-8").replace(
+            declaration,
+            "The shared contract identity is `different-contract/v1`."
+            f"\n\n    {declaration}",
+            1,
+        )
+        findings = promise_machine_module.validate_law_document(
+            text.encode("utf-8"), text, "contract-identity-decoy.md"
+        )
+        self.assertIn("PM007", [finding.code for finding in findings])
+
+    def test_required_section_gate_ignores_a_fenced_heading_decoy(self):
+        text = LAW.read_text(encoding="utf-8").replace(
+            "## Scope", "## Scope changed", 1
+        )
+        text += "\n```markdown\n## Scope\n```\n"
+        findings = promise_machine_module.validate_law_document(
+            text.encode("utf-8"), text, "required-section-decoy.md"
+        )
+        self.assertIn("PM006", [finding.code for finding in findings])
+
+    def test_declaration_field_gate_ignores_an_indented_code_decoy(self):
+        field = "- `Recovery`"
+        text = LAW.read_text(encoding="utf-8").replace(field, "- Recovery", 1)
+        text += f"\n    {field}\n"
+        findings = promise_machine_module.validate_law_document(
+            text.encode("utf-8"), text, "declaration-field-decoy.md"
+        )
+        self.assertIn("PM008", [finding.code for finding in findings])
+
+    def test_governing_principle_gate_ignores_a_fenced_quote_decoy(self):
+        principle = (
+            "> No skill may claim more than its evidence establishes, or authorise a more\n"
+            "> consequential transition than that evidence warrants."
+        )
+        text = LAW.read_text(encoding="utf-8").replace(
+            principle,
+            "> No skill may claim more than its evidence records, or authorise a more\n"
+            "> consequential transition than that evidence warrants.",
+            1,
+        )
+        text += f"\n```markdown\n{principle}\n```\n"
+        findings = promise_machine_module.validate_law_document(
+            text.encode("utf-8"), text, "governing-principle-decoy.md"
+        )
+        self.assertIn("PM009", [finding.code for finding in findings])
+
+    def test_fenced_obligation_marker_cannot_replace_an_authored_clause(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            write_obligation_fixture(target)
+            law = target / LAW.name
+            marker = (
+                "<!-- promise-machine-obligation: id=law-contract-identity -->"
+            )
+            clause = (
+                "> Obligation: This authored law names only `promise-machine/v1` as its\n"
+                "> contract identity."
+            )
+            text = law.read_text(encoding="utf-8").replace(
+                f"{marker}\n{clause}", f"```markdown\n{marker}\n{clause}\n```", 1
+            )
+            law.write_text(text, encoding="utf-8")
+            completed = run_cli(
+                "check", "--root", target, "--only", "obligations", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM085", [item["code"] for item in report["findings"]])
+
     def test_each_normative_root_promise_section_is_required(self):
         headings = (
             "## First-party licence promise",
