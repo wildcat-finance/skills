@@ -214,6 +214,8 @@ def _relative_path(value: object, field: str) -> str:
     path = PurePosixPath(text)
     if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
         refuse("NOE-E-PATH.TRAVERSAL", field, "path must stay below the archive root")
+    if path.as_posix() != text:
+        refuse("NOE-E-PATH.RELATIVE", field, "archive member path must be canonical POSIX")
     return text
 
 
@@ -221,8 +223,13 @@ def _root_path(value: object, field: str) -> str:
     text = _bounded_string(value, field, 256)
     if "\\" in text or not text.endswith("/") or text.startswith("/"):
         refuse("NOE-E-PATH.ROOT", field, "archive root must be one relative directory")
-    path = PurePosixPath(text[:-1])
-    if len(path.parts) != 1 or path.parts[0] in {"", ".", ".."}:
+    root = text[:-1]
+    path = PurePosixPath(root)
+    if (
+        len(path.parts) != 1
+        or path.parts[0] in {"", ".", ".."}
+        or path.as_posix() != root
+    ):
         refuse("NOE-E-PATH.ROOT", field, "archive root must be one relative directory")
     return text
 

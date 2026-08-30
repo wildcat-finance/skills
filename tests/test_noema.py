@@ -7,6 +7,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import stat
 import subprocess
 import sys
@@ -159,6 +160,13 @@ class NoemaScaffoldTests(unittest.TestCase):
         )
         for name in ("seedInventory", "lock", "manifest", "result", "evidence"):
             self.assertFalse(schema["$defs"][name]["additionalProperties"])
+
+    def test_schema_rejects_noncanonical_archive_member_paths(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        pattern = schema["$defs"]["relativePath"]["pattern"]
+        for path in ("a/./b", "a//b", "a/"):
+            with self.subTest(path=path):
+                self.assertIsNone(re.fullmatch(pattern, path))
 
     def test_contract_magic_and_about_result_are_fixed(self):
         self.assertEqual((noema.CONTRACT, noema.SOURCE_MAGIC, noema.PROJECTION_MAGIC),
@@ -329,6 +337,23 @@ class NoemaScaffoldTests(unittest.TestCase):
             )
             error = refusal(archive_path, inventory_path)
             self.assertEqual(error.code, "NOE-E-PATH.RELATIVE")
+
+    def test_noncanonical_archive_member_path_refuses(self):
+        for name in ("a/./b", "a//b"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
+                files = [(name, b"alpha")]
+                archive_path, inventory_path = write_case(Path(temporary), files)
+                error = refusal(archive_path, inventory_path)
+                self.assertEqual(error.code, "NOE-E-PATH.RELATIVE")
+
+    def test_noncanonical_archive_root_refuses(self):
+        files = [("a.txt", b"alpha")]
+        with tempfile.TemporaryDirectory() as temporary:
+            archive_path, inventory_path = write_case(
+                Path(temporary), files, root="seed//"
+            )
+            error = refusal(archive_path, inventory_path)
+            self.assertEqual(error.code, "NOE-E-PATH.ROOT")
 
     def test_symbolic_link_archive_member_refuses(self):
         expected = [("link", b"target")]
