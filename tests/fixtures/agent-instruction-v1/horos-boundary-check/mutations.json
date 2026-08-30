@@ -1,0 +1,1 @@
+{"fixture":"horos-boundary-check","mutations":[{"expected":{"kind":"model-digest","value":"different"},"id":"horos-exact-literal-001","operation":{"kind":"replace","path":"/sections/0/directives/0/promise/recovery/0/value","value":"python3 plugins/horos/skills/horos/scripts/horos.py scan . --json"},"risk":"exact-literal"}],"schema":"wildcat-agent-instruction-mutations/v1"}

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
+import copy
 from datetime import date
 import hashlib
 import json
@@ -23,6 +24,37 @@ MAGIC = "WAI1"
 CONTRACT_PATH = "docs/agent-instruction-language-v1.md"
 SCHEMA_PATH = "schemas/agent-instruction-v1.schema.json"
 RESULT_SCHEMA = "wildcat-agent-instruction-result/v1"
+CHECK_RECORD_SCHEMA = "wildcat-agent-instruction-check-record/v1"
+MANIFEST_ID = "wildcat-agent-instruction-manifest/v1"
+MANIFEST_SCHEMA_ID = "https://wildcat.finance/schemas/agent-instruction-manifest-v1.schema.json"
+MANIFEST_SCHEMA_PATH = "tests/fixtures/agent-instruction-v1/manifest.schema.json"
+FIXTURE_ROOT = "tests/fixtures/agent-instruction-v1"
+FIXTURE_IDS = (
+    "fiat-study-runbook-phase",
+    "horos-boundary-check",
+    "promise-machine-router-selection",
+)
+FIXTURE_ARTIFACTS = {
+    "compact": "compact.wai",
+    "model": "model.json",
+    "mutations": "mutations.json",
+    "questions": "questions.json",
+    "source_spans": "source-spans.json",
+}
+RISK_CLASSES = (
+    "negation",
+    "precedence",
+    "scope",
+    "evidence-class",
+    "authorisation",
+    "recovery",
+    "exact-literal",
+)
+MAX_FIXTURE_FILES = 5
+MAX_QUESTIONS = 64
+MAX_MUTATIONS = 128
+MAX_RECORD_DEPTH = 24
+MAX_RECORD_ARRAY = 256
 
 MAX_FILE_BYTES = 1_048_576
 MAX_LINES = 16_384
@@ -1126,6 +1158,573 @@ def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _record_bounds(value: Any, path: str = "$", depth: int = 0, *, allow_integers: bool = False) -> None:
+    if depth > MAX_RECORD_DEPTH:
+        refuse("WAI-E-BOUNDS.DEPTH", path)
+    if isinstance(value, dict):
+        if len(value) > MAX_OBJECT_MEMBERS:
+            refuse("WAI-E-BOUNDS.MEMBERS", path)
+        for key, item in value.items():
+            _string(key, f"{path}.key")
+            _record_bounds(item, f"{path}.{key}", depth + 1, allow_integers=allow_integers)
+        return
+    if isinstance(value, list):
+        if len(value) > MAX_RECORD_ARRAY:
+            refuse("WAI-E-BOUNDS.COUNT", path)
+        for index, item in enumerate(value):
+            _record_bounds(item, f"{path}[{index}]", depth + 1, allow_integers=allow_integers)
+        return
+    if isinstance(value, str):
+        if len(value.encode("utf-8")) > MAX_LITERAL_BYTES:
+            refuse("WAI-E-BOUNDS.LITERAL", path)
+        _scalar(value, path)
+        return
+    if value is None or isinstance(value, bool):
+        return
+    if allow_integers and isinstance(value, int) and not isinstance(value, bool):
+        if value < 0 or value > MAX_FILE_BYTES:
+            refuse("WAI-E-BOUNDS.NUMBER", path)
+        return
+    refuse("WAI-E-JSON.NUMBER", path)
+
+
+def canonical_record_bytes(value: Any, *, allow_integers: bool = False) -> bytes:
+    _record_bounds(value, allow_integers=allow_integers)
+    output = (
+        json.dumps(value, ensure_ascii=False, allow_nan=False, sort_keys=True, separators=(",", ":")) + "\n"
+    ).encode("utf-8")
+    if len(output) > MAX_FILE_BYTES:
+        refuse("WAI-E-BOUNDS.FILE", "$")
+    return output
+
+
+def load_canonical_record(data: bytes, *, allow_integers: bool = False) -> dict[str, Any]:
+    if len(data) > MAX_FILE_BYTES:
+        refuse("WAI-E-BOUNDS.FILE", "$")
+    if data.startswith(b"\xef\xbb\xbf"):
+        refuse("WAI-E-UTF8.BOM", "$")
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError:
+        refuse("WAI-E-UTF8.DECODE", "$")
+    _scalar(text, "$")
+    parse_int = int if allow_integers else _forbidden_number
+    try:
+        record = json.loads(
+            text,
+            object_pairs_hook=_duplicate_checked_object,
+            parse_int=parse_int,
+            parse_float=_forbidden_number,
+            parse_constant=_forbidden_number,
+        )
+    except CodecError:
+        raise
+    except (json.JSONDecodeError, RecursionError):
+        refuse("WAI-E-JSON.SYNTAX", "$")
+    if not isinstance(record, dict):
+        refuse("WAI-E-SHAPE.OBJECT", "$")
+    if canonical_record_bytes(record, allow_integers=allow_integers) != data:
+        refuse("WAI-E-CANONICAL.JSON", "$")
+    return record
+
+
+def _sha256(value: Any, path: str) -> str:
+    digest = _string(value, path)
+    if SHA256_RE.fullmatch(digest) is None:
+        refuse("WAI-E-SHAPE.SHA256", path)
+    return digest
+
+
+def _small_decimal(value: Any, path: str, maximum: int) -> int:
+    text = _decimal(value, path)
+    if len(text) > 9:
+        refuse("WAI-E-BOUNDS.COUNT", path)
+    number = int(text)
+    if number > maximum:
+        refuse("WAI-E-BOUNDS.COUNT", path)
+    return number
+
+
+def _confined_directory_entries(root: str | os.PathLike[str], relative: str) -> set[str]:
+    parent, leaf = _open_parent(root, relative)
+    descriptor = -1
+    try:
+        try:
+            descriptor = os.open(leaf, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=parent)
+        except OSError:
+            refuse("WAI-E-PATH.COMPONENT", "$.fixture.root")
+        entries = os.listdir(descriptor)
+        if len(entries) > MAX_FIXTURE_FILES:
+            refuse("WAI-E-MANIFEST.CLOSURE", "$.fixture.root")
+        for entry in entries:
+            if entry in (".", "..") or "/" in entry or "\\" in entry:
+                refuse("WAI-E-PATH.UNSAFE", "$.fixture.root")
+            try:
+                metadata = os.stat(entry, dir_fd=descriptor, follow_symlinks=False)
+            except OSError:
+                refuse("WAI-E-IO.READ", "$.fixture.root")
+            if not stat.S_ISREG(metadata.st_mode):
+                refuse("WAI-E-PATH.SPECIAL", "$.fixture.root")
+        return set(entries)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        os.close(parent)
+
+
+def validate_manifest(manifest: Any) -> dict[str, Any]:
+    root = _object(
+        manifest,
+        ("schema", "schema_path", "schema_sha256", "risk_classes", "mutation_count", "fixtures"),
+        "$",
+    )
+    if _string(root["schema"], "$.schema") != MANIFEST_ID:
+        refuse("WAI-E-VERSION.MANIFEST", "$.schema")
+    if _safe_relative_path(root["schema_path"], "$.schema_path") != MANIFEST_SCHEMA_PATH:
+        refuse("WAI-E-MANIFEST.SCHEMA_PATH", "$.schema_path")
+    _sha256(root["schema_sha256"], "$.schema_sha256")
+    risks = _array(root["risk_classes"], "$.risk_classes", len(RISK_CLASSES), minimum=len(RISK_CLASSES))
+    if tuple(_string(item, f"$.risk_classes[{index}]") for index, item in enumerate(risks)) != RISK_CLASSES:
+        refuse("WAI-E-MANIFEST.RISKS", "$.risk_classes")
+    declared_mutations = _small_decimal(root["mutation_count"], "$.mutation_count", MAX_MUTATIONS)
+    fixtures = _array(root["fixtures"], "$.fixtures", len(FIXTURE_IDS), minimum=len(FIXTURE_IDS))
+    fixture_ids: list[str] = []
+    artifact_paths: set[str] = set()
+    fixture_mutations = 0
+    for index, raw_fixture in enumerate(fixtures):
+        path = f"$.fixtures[{index}]"
+        fixture = _object(
+            raw_fixture,
+            ("id", "root", "source", "artifacts", "review", "mutation_count"),
+            path,
+        )
+        fixture_id = _identifier(fixture["id"], f"{path}.id")
+        fixture_ids.append(fixture_id)
+        expected_root = f"{FIXTURE_ROOT}/{fixture_id}"
+        if _safe_relative_path(fixture["root"], f"{path}.root") != expected_root:
+            refuse("WAI-E-MANIFEST.FIXTURE_ROOT", f"{path}.root")
+        source = _object(
+            fixture["source"],
+            ("id", "path", "sha256", "start", "end", "span_sha256"),
+            f"{path}.source",
+        )
+        _identifier(source["id"], f"{path}.source.id")
+        _safe_relative_path(source["path"], f"{path}.source.path")
+        _sha256(source["sha256"], f"{path}.source.sha256")
+        start = _small_decimal(source["start"], f"{path}.source.start", MAX_FILE_BYTES)
+        end = _small_decimal(source["end"], f"{path}.source.end", MAX_FILE_BYTES)
+        if end <= start:
+            refuse("WAI-E-REFERENCE.SPAN", f"{path}.source")
+        _sha256(source["span_sha256"], f"{path}.source.span_sha256")
+        artifacts = _object(fixture["artifacts"], tuple(FIXTURE_ARTIFACTS), f"{path}.artifacts")
+        for name, filename in FIXTURE_ARTIFACTS.items():
+            artifact_path = f"{path}.artifacts.{name}"
+            artifact = _object(artifacts[name], ("path", "sha256"), artifact_path)
+            expected = f"{expected_root}/{filename}"
+            if _safe_relative_path(artifact["path"], f"{artifact_path}.path") != expected:
+                refuse("WAI-E-MANIFEST.ARTIFACT_PATH", f"{artifact_path}.path")
+            if expected in artifact_paths:
+                refuse("WAI-E-MANIFEST.DUPLICATE_PATH", f"{artifact_path}.path")
+            artifact_paths.add(expected)
+            _sha256(artifact["sha256"], f"{artifact_path}.sha256")
+        review = _object(fixture["review"], ("reviewer", "date", "source_ref", "statement"), f"{path}.review")
+        if _identifier(review["reviewer"], f"{path}.review.reviewer") != "shoggoth":
+            refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.reviewer")
+        if _string(review["date"], f"{path}.review.date") != "2026-08-30":
+            refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.date")
+        if _string(review["source_ref"], f"{path}.review.source_ref") != "d1ca7ba5af741d45d1da6492632661e688157bff":
+            refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.source_ref")
+        if _string(review["statement"], f"{path}.review.statement") != "reviewed-source-to-model-binding":
+            refuse("WAI-E-MANIFEST.REVIEW", f"{path}.review.statement")
+        fixture_mutations += _small_decimal(fixture["mutation_count"], f"{path}.mutation_count", MAX_MUTATIONS)
+    if tuple(fixture_ids) != FIXTURE_IDS:
+        refuse("WAI-E-MANIFEST.FIXTURES", "$.fixtures")
+    if fixture_mutations != declared_mutations:
+        refuse("WAI-E-MANIFEST.MUTATION_COUNT", "$.mutation_count")
+    return manifest
+
+
+def _load_bound_artifact(
+    root: str | os.PathLike[str], artifact: Mapping[str, Any], path: str
+) -> bytes:
+    data = read_confined(root, artifact["path"])
+    if _digest(data) != artifact["sha256"]:
+        refuse("WAI-E-DIGEST.ARTIFACT", path)
+    return data
+
+
+def _validate_source_spans(
+    record: Any,
+    fixture_id: str,
+    source_record: Mapping[str, Any],
+    source_bytes: bytes,
+    model: Mapping[str, Any],
+) -> int:
+    item = _object(record, ("schema", "fixture", "source", "spans"), "$.source_spans")
+    if _string(item["schema"], "$.source_spans.schema") != "wildcat-agent-instruction-source-spans/v1":
+        refuse("WAI-E-VERSION.SOURCE_SPANS", "$.source_spans.schema")
+    if _identifier(item["fixture"], "$.source_spans.fixture") != fixture_id:
+        refuse("WAI-E-MANIFEST.FIXTURE", "$.source_spans.fixture")
+    source = _object(item["source"], ("id", "path", "sha256"), "$.source_spans.source")
+    for field in ("id", "path", "sha256"):
+        if source[field] != source_record[field]:
+            refuse("WAI-E-MANIFEST.SOURCE", f"$.source_spans.source.{field}")
+    spans = _array(item["spans"], "$.source_spans.spans", MAX_BINDINGS, minimum=1)
+    expected = []
+    for binding in model["bindings"]:
+        expected.append((binding["node"], binding["start"], binding["end"], binding["reviewer"]["value"]))
+    observed = []
+    for index, raw_span in enumerate(spans):
+        path = f"$.source_spans.spans[{index}]"
+        span = _object(raw_span, ("node", "start", "end", "reviewer", "sha256"), path)
+        node = _identifier(span["node"], f"{path}.node")
+        start = _small_decimal(span["start"], f"{path}.start", MAX_FILE_BYTES)
+        end = _small_decimal(span["end"], f"{path}.end", MAX_FILE_BYTES)
+        reviewer = _identifier(span["reviewer"], f"{path}.reviewer")
+        digest = _sha256(span["sha256"], f"{path}.sha256")
+        if not start < end <= len(source_bytes):
+            refuse("WAI-E-REFERENCE.SPAN", path)
+        if _digest(source_bytes[start:end]) != digest:
+            refuse("WAI-E-DIGEST.SPAN", path)
+        observed.append((node, span["start"], span["end"], reviewer))
+    if observed != expected:
+        refuse("WAI-E-MANIFEST.BINDINGS", "$.source_spans.spans")
+    return len(spans)
+
+
+def _validate_questions(record: Any, fixture_id: str) -> dict[str, set[str]]:
+    item = _object(record, ("schema", "fixture", "questions"), "$.questions")
+    if _string(item["schema"], "$.questions.schema") != "wildcat-agent-instruction-questions/v1":
+        refuse("WAI-E-VERSION.QUESTIONS", "$.questions.schema")
+    if _identifier(item["fixture"], "$.questions.fixture") != fixture_id:
+        refuse("WAI-E-MANIFEST.FIXTURE", "$.questions.fixture")
+    questions = _array(item["questions"], "$.questions.questions", MAX_QUESTIONS, minimum=1)
+    answers: dict[str, set[str]] = {}
+    for index, raw_question in enumerate(questions):
+        path = f"$.questions.questions[{index}]"
+        question = _object(
+            raw_question,
+            ("id", "prompt", "accepted_answers", "refusal_answers", "required_answer", "context"),
+            path,
+        )
+        question_id = _identifier(question["id"], f"{path}.id")
+        if question_id in answers:
+            refuse("WAI-E-REFERENCE.DUPLICATE_ID", f"{path}.id")
+        prompt = _string(question["prompt"], f"{path}.prompt")
+        if not prompt.strip():
+            refuse("WAI-E-SHAPE.EMPTY", f"{path}.prompt")
+        accepted_raw = _array(question["accepted_answers"], f"{path}.accepted_answers", 16, minimum=1)
+        refused_raw = _array(question["refusal_answers"], f"{path}.refusal_answers", 16, minimum=1)
+        accepted = [_identifier(value, f"{path}.accepted_answers") for value in accepted_raw]
+        refused = [_identifier(value, f"{path}.refusal_answers") for value in refused_raw]
+        if len(set(accepted)) != len(accepted) or len(set(refused)) != len(refused):
+            refuse("WAI-E-REFERENCE.DUPLICATE_ANSWER", path)
+        if set(accepted) & set(refused):
+            refuse("WAI-E-REFERENCE.ANSWER_CLASS", path)
+        required = _identifier(question["required_answer"], f"{path}.required_answer")
+        if required not in accepted:
+            refuse("WAI-E-REFERENCE.REQUIRED_ANSWER", f"{path}.required_answer")
+        context = _object(
+            question["context"],
+            ("mode", "prior_messages", "examples", "repository_instruction_paths", "tool_definition_ids"),
+            f"{path}.context",
+        )
+        if _string(context["mode"], f"{path}.context.mode") != "fresh":
+            refuse("WAI-E-CONTEXT.NOT_FRESH", f"{path}.context.mode")
+        prior = _array(context["prior_messages"], f"{path}.context.prior_messages", 0)
+        examples = _array(context["examples"], f"{path}.context.examples", 0)
+        if prior or examples:
+            refuse("WAI-E-CONTEXT.CONTAMINATED", f"{path}.context")
+        instructions = _array(
+            context["repository_instruction_paths"], f"{path}.context.repository_instruction_paths", 32
+        )
+        tools = _array(context["tool_definition_ids"], f"{path}.context.tool_definition_ids", 64)
+        for value in instructions:
+            _safe_relative_path(value, f"{path}.context.repository_instruction_paths")
+        for value in tools:
+            _identifier(value, f"{path}.context.tool_definition_ids")
+        answers[question_id] = set(accepted) | set(refused)
+    return answers
+
+
+def _pointer_tokens(pointer: Any, path: str) -> list[str]:
+    text = _string(pointer, path)
+    if not text.startswith("/") or len(text.encode("utf-8")) > MAX_PATH_BYTES:
+        refuse("WAI-E-MUTATION.POINTER", path)
+    tokens = []
+    for raw in text[1:].split("/"):
+        if re.search(r"~(?![01])", raw):
+            refuse("WAI-E-MUTATION.POINTER", path)
+        tokens.append(raw.replace("~1", "/").replace("~0", "~"))
+    return tokens
+
+
+def apply_mutation(model: Mapping[str, Any], operation: Any) -> dict[str, Any]:
+    if not isinstance(operation, dict):
+        refuse("WAI-E-SHAPE.OBJECT", "$.mutation.operation")
+    kind = operation.get("kind")
+    required = ("kind", "path") if kind == "remove" else ("kind", "path", "value")
+    item = _object(operation, required, "$.mutation.operation")
+    if kind not in ("remove", "replace"):
+        refuse("WAI-E-MUTATION.OPERATION", "$.mutation.operation.kind")
+    tokens = _pointer_tokens(item["path"], "$.mutation.operation.path")
+    if not tokens:
+        refuse("WAI-E-MUTATION.POINTER", "$.mutation.operation.path")
+    changed = copy.deepcopy(model)
+    parent: Any = changed
+    for token in tokens[:-1]:
+        if isinstance(parent, list):
+            if DECIMAL_RE.fullmatch(token) is None or int(token) >= len(parent):
+                refuse("WAI-E-MUTATION.POINTER", "$.mutation.operation.path")
+            parent = parent[int(token)]
+        elif isinstance(parent, dict) and token in parent:
+            parent = parent[token]
+        else:
+            refuse("WAI-E-MUTATION.POINTER", "$.mutation.operation.path")
+    token = tokens[-1]
+    if isinstance(parent, list):
+        if DECIMAL_RE.fullmatch(token) is None or int(token) >= len(parent):
+            refuse("WAI-E-MUTATION.POINTER", "$.mutation.operation.path")
+        index = int(token)
+        if kind == "remove":
+            parent.pop(index)
+        else:
+            parent[index] = copy.deepcopy(item["value"])
+    elif isinstance(parent, dict) and token in parent:
+        if kind == "remove":
+            del parent[token]
+        else:
+            parent[token] = copy.deepcopy(item["value"])
+    else:
+        refuse("WAI-E-MUTATION.POINTER", "$.mutation.operation.path")
+    return changed
+
+
+def _validate_mutations(
+    record: Any,
+    fixture_id: str,
+    model: Mapping[str, Any],
+    model_bytes: bytes,
+    declared_count: int,
+) -> tuple[list[dict[str, Any]], set[str]]:
+    item = _object(record, ("schema", "fixture", "mutations"), "$.mutations")
+    if _string(item["schema"], "$.mutations.schema") != "wildcat-agent-instruction-mutations/v1":
+        refuse("WAI-E-VERSION.MUTATIONS", "$.mutations.schema")
+    if _identifier(item["fixture"], "$.mutations.fixture") != fixture_id:
+        refuse("WAI-E-MANIFEST.FIXTURE", "$.mutations.fixture")
+    mutations = _array(item["mutations"], "$.mutations.mutations", MAX_MUTATIONS, minimum=1)
+    if len(mutations) != declared_count:
+        refuse("WAI-E-MANIFEST.MUTATION_COUNT", "$.mutations.mutations")
+    records: list[dict[str, Any]] = []
+    risks: set[str] = set()
+    mutation_ids: set[str] = set()
+    for index, raw_mutation in enumerate(mutations):
+        path = f"$.mutations.mutations[{index}]"
+        mutation = _object(raw_mutation, ("id", "risk", "operation", "expected"), path)
+        mutation_id = _identifier(mutation["id"], f"{path}.id")
+        if mutation_id in mutation_ids:
+            refuse("WAI-E-REFERENCE.DUPLICATE_ID", f"{path}.id")
+        mutation_ids.add(mutation_id)
+        risk = _string(mutation["risk"], f"{path}.risk")
+        if risk not in RISK_CLASSES:
+            refuse("WAI-E-MUTATION.RISK", f"{path}.risk")
+        risks.add(risk)
+        expected = _object(mutation["expected"], ("kind", "value"), f"{path}.expected")
+        expected_kind = _string(expected["kind"], f"{path}.expected.kind")
+        expected_value = _string(expected["value"], f"{path}.expected.value")
+        mutated = apply_mutation(model, mutation["operation"])
+        observed = ""
+        if expected_kind == "model-digest":
+            if expected_value != "different":
+                refuse("WAI-E-MUTATION.EXPECTED", f"{path}.expected.value")
+            mutated_bytes = canonical_json_bytes(mutated)
+            if _digest(mutated_bytes) == _digest(model_bytes):
+                refuse("WAI-E-MUTATION.SILENT", path)
+            observed = "model-digest-changed"
+        elif expected_kind == "structural-refusal":
+            if not expected_value.startswith("WAI-E-"):
+                refuse("WAI-E-MUTATION.EXPECTED", f"{path}.expected.value")
+            try:
+                canonical_json_bytes(mutated)
+            except CodecError as error:
+                if not error.code.startswith(expected_value):
+                    refuse("WAI-E-MUTATION.WRONG_REFUSAL", path)
+                observed = error.code
+            else:
+                refuse("WAI-E-MUTATION.SILENT", path)
+        else:
+            refuse("WAI-E-MUTATION.EXPECTED", f"{path}.expected.kind")
+        records.append(
+            {
+                "mutation_id": mutation_id,
+                "risk": risk,
+                "expected": expected_kind,
+                "observed": observed,
+            }
+        )
+    return records, risks
+
+
+def _check_record(
+    event: str,
+    manifest_digest: str,
+    *,
+    outcome: str = "accepted",
+    code: str = "WAI-OK",
+    **fields: Any,
+) -> dict[str, Any]:
+    return {
+        "schema": CHECK_RECORD_SCHEMA,
+        "event": event,
+        "manifest_sha256": manifest_digest,
+        "outcome": outcome,
+        "code": code,
+        **fields,
+    }
+
+
+def _check_fixture(
+    root: str | os.PathLike[str], fixture: Mapping[str, Any], manifest_digest: str
+) -> tuple[list[dict[str, Any]], set[str], int, int]:
+    fixture_id = fixture["id"]
+    fixture_digest = _digest(canonical_record_bytes(fixture))
+    if _confined_directory_entries(root, fixture["root"]) != set(FIXTURE_ARTIFACTS.values()):
+        refuse("WAI-E-MANIFEST.CLOSURE", f"$.fixtures.{fixture_id}.root")
+    source_bytes = read_confined(root, fixture["source"]["path"])
+    if _digest(source_bytes) != fixture["source"]["sha256"]:
+        refuse("WAI-E-DIGEST.SOURCE", f"$.fixtures.{fixture_id}.source.sha256")
+    span_start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
+    span_end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
+    if span_end > len(source_bytes) or _digest(source_bytes[span_start:span_end]) != fixture["source"]["span_sha256"]:
+        refuse("WAI-E-DIGEST.SOURCE_SPAN", f"$.fixtures.{fixture_id}.source.span_sha256")
+    artifacts = {
+        name: _load_bound_artifact(root, fixture["artifacts"][name], f"$.fixtures.{fixture_id}.artifacts.{name}")
+        for name in FIXTURE_ARTIFACTS
+    }
+    model = load_canonical_json(artifacts["model"])
+    if model["document"]["id"] != fixture_id:
+        refuse("WAI-E-MANIFEST.FIXTURE", f"$.fixtures.{fixture_id}.model.document.id")
+    expected_source = fixture["source"]
+    if len(model["sources"]) != 1 or any(
+        model["sources"][0][field] != expected_source[field] for field in ("id", "path", "sha256")
+    ):
+        refuse("WAI-E-MANIFEST.SOURCE", f"$.fixtures.{fixture_id}.model.sources")
+    decoded_model, decoded_bytes = decode_compact(artifacts["compact"])
+    if decoded_model != model or decoded_bytes != artifacts["model"] or format_compact(model) != artifacts["compact"]:
+        refuse("WAI-E-CANONICAL.ROUNDTRIP", f"$.fixtures.{fixture_id}")
+    spans_record = load_canonical_record(artifacts["source_spans"])
+    binding_count = _validate_source_spans(spans_record, fixture_id, expected_source, source_bytes, model)
+    questions = load_canonical_record(artifacts["questions"])
+    answer_sets = _validate_questions(questions, fixture_id)
+    mutations = load_canonical_record(artifacts["mutations"])
+    declared_count = _small_decimal(fixture["mutation_count"], "$.fixture.mutation_count", MAX_MUTATIONS)
+    mutation_records, fixture_risks = _validate_mutations(
+        mutations, fixture_id, model, artifacts["model"], declared_count
+    )
+    records: list[dict[str, Any]] = []
+    records.append(
+        _check_record(
+            "binding.result",
+            manifest_digest,
+            fixture_id=fixture_id,
+            fixture_sha256=fixture_digest,
+            source_path=expected_source["path"],
+            source_sha256=expected_source["sha256"],
+            source_span_sha256=expected_source["span_sha256"],
+            binding_count=binding_count,
+            missing_count=0,
+            overlapping_count=0,
+        )
+    )
+    records.append(
+        _check_record(
+            "roundtrip.result",
+            manifest_digest,
+            fixture_id=fixture_id,
+            fixture_sha256=fixture_digest,
+            model_sha256=_digest(artifacts["model"]),
+            compact_sha256=_digest(artifacts["compact"]),
+            decoded_sha256=_digest(decoded_bytes),
+            idempotent=True,
+        )
+    )
+    for mutation in mutation_records:
+        records.append(
+            _check_record(
+                "mutation.result",
+                manifest_digest,
+                fixture_id=fixture_id,
+                fixture_sha256=fixture_digest,
+                **mutation,
+            )
+        )
+    return records, fixture_risks, len(mutation_records), len(answer_sets)
+
+
+def check_manifest(root: str | os.PathLike[str], manifest_path: str) -> list[dict[str, Any]]:
+    manifest_bytes = read_confined(root, manifest_path)
+    manifest_digest = _digest(manifest_bytes)
+    manifest = validate_manifest(load_canonical_record(manifest_bytes))
+    schema_bytes = read_confined(root, manifest["schema_path"])
+    if _digest(schema_bytes) != manifest["schema_sha256"]:
+        refuse("WAI-E-DIGEST.SCHEMA", "$.schema_sha256")
+    schema = load_canonical_record(schema_bytes, allow_integers=True)
+    if schema.get("$id") != MANIFEST_SCHEMA_ID or schema.get("additionalProperties") is not False:
+        refuse("WAI-E-MANIFEST.SCHEMA", "$.schema_path")
+    records: list[dict[str, Any]] = []
+    seen_risks: set[str] = set()
+    mutation_total = 0
+    question_total = 0
+    failures = 0
+    for fixture in manifest["fixtures"]:
+        fixture_id = fixture["id"]
+        try:
+            fixture_records, fixture_risks, fixture_mutations, fixture_questions = _check_fixture(
+                root, fixture, manifest_digest
+            )
+        except CodecError as error:
+            failures += 1
+            records.append(
+                _check_record(
+                    "fixture.result",
+                    manifest_digest,
+                    outcome="refused",
+                    code=error.code,
+                    fixture_id=fixture_id,
+                    fixture_sha256=_digest(canonical_record_bytes(fixture)),
+                    node_path=error.node_path,
+                )
+            )
+            continue
+        records.extend(fixture_records)
+        seen_risks.update(fixture_risks)
+        mutation_total += fixture_mutations
+        question_total += fixture_questions
+    if failures == 0:
+        if seen_risks != set(RISK_CLASSES):
+            refuse("WAI-E-MUTATION.COVERAGE", "$.risk_classes")
+        if mutation_total != _small_decimal(manifest["mutation_count"], "$.mutation_count", MAX_MUTATIONS):
+            refuse("WAI-E-MANIFEST.MUTATION_COUNT", "$.mutation_count")
+    records.append(
+        _check_record(
+            "run.summary",
+            manifest_digest,
+            outcome="accepted" if failures == 0 else "refused",
+            code="WAI-OK" if failures == 0 else "WAI-E-CHECK.FIXTURE",
+            fixture_count=len(manifest["fixtures"]),
+            binding_count=sum(record.get("binding_count", 0) for record in records),
+            roundtrip_count=sum(record["event"] == "roundtrip.result" for record in records),
+            mutation_count=mutation_total,
+            question_count=question_total,
+            passed=sum(record["outcome"] == "accepted" for record in records),
+            failed=failures,
+            refused=failures,
+            unknown=0,
+        )
+    )
+    return records
+
+
 def _result(
     outcome: str,
     code: str,
@@ -1199,6 +1798,9 @@ def build_parser() -> argparse.ArgumentParser:
         command_parser.add_argument("--input", required=True)
         if command != "validate":
             command_parser.add_argument("--output", required=command in ("format", "decode"))
+    check_parser = subparsers.add_parser("check")
+    check_parser.add_argument("--root", default=".")
+    check_parser.add_argument("--manifest", required=True)
     subparsers.add_parser("self-test")
     return parser
 
@@ -1220,6 +1822,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                 refuse("WAI-E-CANONICAL.ROUNDTRIP", "$")
             _emit(_result("accepted", "WAI-OK", "$", model_bytes, model_bytes, compact_bytes, event="roundtrip"))
             return 0
+        if arguments.command == "check":
+            records = check_manifest(arguments.root, arguments.manifest)
+            for record in records:
+                _emit(record)
+            return 0 if records[-1]["outcome"] == "accepted" else 2
         input_bytes = read_confined(arguments.root, arguments.input)
         if arguments.command == "validate":
             model = load_canonical_json(input_bytes)
@@ -1243,6 +1850,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         _emit(_result("accepted", "WAI-OK", "$", input_bytes, model_bytes, compact_bytes, event="roundtrip"))
         return 0
     except CodecError as error:
+        if arguments.command == "check":
+            _emit(
+                {
+                    "schema": CHECK_RECORD_SCHEMA,
+                    "event": "run.summary",
+                    "outcome": "refused",
+                    "code": error.code,
+                    "node_path": error.node_path,
+                    "passed": 0,
+                    "failed": 0,
+                    "refused": 1,
+                    "unknown": 0,
+                }
+            )
+            return 2
         event = "validation" if arguments.command == "validate" else "roundtrip"
         _emit(_result("refused", error.code, error.node_path, input_bytes, event=event))
         return 2

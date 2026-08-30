@@ -1,0 +1,19 @@
+WAI1
+D i24:fiat-study-runbook-phase t29:Fiat\sstudy\sand\srunbook\sphases
+  S i4:fiat p39:plugins/hexaemeron/skills/fiat/SKILL.md h64:49b8514b6259a074d44d40ad0417ac9d7aea3569bac87ef464a5abad94d8d548
+  H i9:fiat-loop t8:The\sloop
+    R i11:study-phase t87:Research\sthe\stopic\sand\swrite\sthe\sstudy\sunder\sProtasis,\sthen\sreceipt\sit\swith\sdone\sstudy.
+    R i13:runbook-phase t103:Derive\sdiscrete\ssteps\sfrom\sthe\sreceipted\sstudy\sunder\sProtasis,\sthen\sreceipt\sthe\srunbook\sand\ssteps\sfile.
+      C i19:runbook-phase-scope
+        W t24:the\sstudy\sreceipt\sexists
+    R i15:implement-phase t126:Build\sonly\sthe\ssimplest\sconstruction\sthat\ssatisfies\sthe\ssource-bound\srunbook\sstep,\sthen\sreceipt\sits\sbranch,\scommit,\sand\stests.
+    X i16:receipt-boundary t120:A\sphase\swhose\sreceipt\scommand\sexits\snon-zero\sis\snot\sdone;\srepair\sthe\snamed\sfailure\sbefore\sasking\sfor\sthe\snext\sdirective.
+  < i13:runbook-phase i15:implement-phase
+  < i11:study-phase i13:runbook-phase
+  B i4:fiat i9:fiat-loop n5:17381 n5:21564 i8:shoggoth
+  B i4:fiat i24:fiat-study-runbook-phase n5:17381 n5:21564 i8:shoggoth
+  B i4:fiat i11:study-phase n5:17635 n5:17767 i8:shoggoth
+  B i4:fiat i13:runbook-phase n5:17768 n5:17910 i8:shoggoth
+  B i4:fiat i19:runbook-phase-scope n5:17768 n5:17910 i8:shoggoth
+  B i4:fiat i15:implement-phase n5:17911 n5:18098 i8:shoggoth
+  B i4:fiat i16:receipt-boundary n5:20965 n5:21106 i8:shoggoth

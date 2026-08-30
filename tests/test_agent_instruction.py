@@ -9,6 +9,7 @@ import copy
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -24,6 +25,8 @@ SCHEMA = ROOT / "schemas/agent-instruction-v1.schema.json"
 SCRIPT = ROOT / "scripts/agent_instruction.py"
 FIXTURE_README = ROOT / "tests/fixtures/agent-instruction-v1/README.md"
 CODEC_FIXTURES = ROOT / "tests/fixtures/agent-instruction-v1/codec"
+MANIFEST = ROOT / "tests/fixtures/agent-instruction-v1/manifest.json"
+MANIFEST_SCHEMA = ROOT / "tests/fixtures/agent-instruction-v1/manifest.schema.json"
 
 STUDY_SHA256 = "28c3319301ea86e91bc872d1b803fc1b7e00b9b5a9826c2b0e990d2f7d7f64aa"
 RUNBOOK_SHA256 = "dd5c41a647f7119ae16db67b059ce4cf4e3fdebe5e7a27b7e9faa5019c88a93b"
@@ -128,6 +131,33 @@ class AgentInstructionScaffoldTests(unittest.TestCase):
 
 
 AI = load_script()
+
+
+def manifest_record() -> dict:
+    return AI.load_canonical_record(MANIFEST.read_bytes())
+
+
+def fixture_record(fixture_id: str) -> dict:
+    return next(item for item in manifest_record()["fixtures"] if item["id"] == fixture_id)
+
+
+def artifact_record(fixture_id: str, name: str) -> dict:
+    fixture = fixture_record(fixture_id)
+    return AI.load_canonical_record((ROOT / fixture["artifacts"][name]["path"]).read_bytes())
+
+
+def fixture_model(fixture_id: str) -> dict:
+    fixture = fixture_record(fixture_id)
+    return AI.load_canonical_json((ROOT / fixture["artifacts"]["model"]["path"]).read_bytes())
+
+
+def mutation_by_id(mutation_id: str) -> tuple[str, dict]:
+    for fixture in manifest_record()["fixtures"]:
+        record = artifact_record(fixture["id"], "mutations")
+        for mutation in record["mutations"]:
+            if mutation["id"] == mutation_id:
+                return fixture["id"], mutation
+    raise AssertionError(f"unknown mutation: {mutation_id}")
 
 
 def literal(kind: str, value: str) -> dict[str, str]:
@@ -1345,6 +1375,348 @@ class PathBoundaryTests(RefusalAssertions, unittest.TestCase):
         )
         self.assertEqual(decoded.returncode, 0, decoded.stderr)
         self.assertEqual((self.root / "decoded.json").read_bytes(), canonical)
+
+
+class FixtureBindingTests(RefusalAssertions, unittest.TestCase):
+    def copied_root(self, destination: Path) -> Path:
+        fixture_destination = destination / "tests/fixtures/agent-instruction-v1"
+        fixture_destination.parent.mkdir(parents=True)
+        shutil.copytree(ROOT / "tests/fixtures/agent-instruction-v1", fixture_destination)
+        for source in {item["source"]["path"] for item in manifest_record()["fixtures"]}:
+            target = destination / source
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / source, target)
+        return destination
+
+    def assertCheckRefusal(self, code: str, root: Path) -> None:
+        records = AI.check_manifest(root, str(MANIFEST.relative_to(ROOT)))
+        refusals = [item for item in records if item["outcome"] == "refused"]
+        self.assertTrue(any(item["code"].startswith(code) for item in refusals), refusals)
+        self.assertEqual(records[-1]["event"], "run.summary")
+        self.assertEqual(records[-1]["outcome"], "refused")
+
+    def test_manifest_schema_loads_as_closed_object(self):
+        schema = json.loads(MANIFEST_SCHEMA.read_text(encoding="utf-8"))
+        self.assertEqual(schema["type"], "object")
+        self.assertFalse(schema["additionalProperties"])
+        self.assertEqual(schema["properties"]["schema"]["const"], AI.MANIFEST_ID)
+
+    def test_manifest_is_canonical_json(self):
+        self.assertEqual(AI.canonical_record_bytes(manifest_record()), MANIFEST.read_bytes())
+
+    def test_manifest_names_exact_three_fixtures(self):
+        self.assertEqual(tuple(item["id"] for item in manifest_record()["fixtures"]), AI.FIXTURE_IDS)
+
+    def test_fixture_roots_are_id_derived(self):
+        for fixture in manifest_record()["fixtures"]:
+            self.assertEqual(fixture["root"], f"{AI.FIXTURE_ROOT}/{fixture['id']}")
+
+    def test_fixture_artifact_names_are_closed(self):
+        for fixture in manifest_record()["fixtures"]:
+            self.assertEqual(set(fixture["artifacts"]), set(AI.FIXTURE_ARTIFACTS))
+            self.assertEqual(
+                {Path(item["path"]).name for item in fixture["artifacts"].values()},
+                set(AI.FIXTURE_ARTIFACTS.values()),
+            )
+
+    def test_manifest_mutation_count_equals_fixture_sum(self):
+        manifest = manifest_record()
+        self.assertEqual(int(manifest["mutation_count"]), sum(int(item["mutation_count"]) for item in manifest["fixtures"]))
+
+    def test_source_blob_digests_match(self):
+        for fixture in manifest_record()["fixtures"]:
+            self.assertEqual(sha256(ROOT / fixture["source"]["path"]), fixture["source"]["sha256"])
+
+    def test_manifest_source_span_digests_match(self):
+        for fixture in manifest_record()["fixtures"]:
+            source = (ROOT / fixture["source"]["path"]).read_bytes()
+            start, end = int(fixture["source"]["start"]), int(fixture["source"]["end"])
+            self.assertEqual(hashlib.sha256(source[start:end]).hexdigest(), fixture["source"]["span_sha256"])
+
+    def test_fixture_models_validate(self):
+        for fixture_id in AI.FIXTURE_IDS:
+            model = fixture_model(fixture_id)
+            self.assertIs(AI.validate_model(model), model)
+
+    def test_model_source_metadata_matches_manifest(self):
+        for fixture in manifest_record()["fixtures"]:
+            model_source = fixture_model(fixture["id"])["sources"]
+            self.assertEqual(len(model_source), 1)
+            self.assertEqual(
+                model_source[0],
+                {field: fixture["source"][field] for field in ("id", "path", "sha256")},
+            )
+
+    def test_checked_compact_decodes_to_model(self):
+        for fixture in manifest_record()["fixtures"]:
+            model_bytes = (ROOT / fixture["artifacts"]["model"]["path"]).read_bytes()
+            compact_bytes = (ROOT / fixture["artifacts"]["compact"]["path"]).read_bytes()
+            _, decoded = AI.decode_compact(compact_bytes)
+            self.assertEqual(decoded, model_bytes)
+
+    def test_formatter_regenerates_checked_compact(self):
+        for fixture in manifest_record()["fixtures"]:
+            compact = (ROOT / fixture["artifacts"]["compact"]["path"]).read_bytes()
+            self.assertEqual(AI.format_compact(fixture_model(fixture["id"])), compact)
+
+    def test_source_span_records_mirror_model_bindings(self):
+        for fixture_id in AI.FIXTURE_IDS:
+            model = fixture_model(fixture_id)
+            record = artifact_record(fixture_id, "source_spans")
+            observed = [(item["node"], item["start"], item["end"], item["reviewer"]) for item in record["spans"]]
+            expected = [(item["node"], item["start"], item["end"], item["reviewer"]["value"]) for item in model["bindings"]]
+            self.assertEqual(observed, expected)
+
+    def test_each_reviewed_span_digest_matches_source_bytes(self):
+        for fixture in manifest_record()["fixtures"]:
+            source = (ROOT / fixture["source"]["path"]).read_bytes()
+            record = artifact_record(fixture["id"], "source_spans")
+            for span in record["spans"]:
+                data = source[int(span["start"]):int(span["end"])]
+                self.assertEqual(hashlib.sha256(data).hexdigest(), span["sha256"])
+
+    def test_question_accepted_answers_are_closed_and_nonempty(self):
+        for fixture_id in AI.FIXTURE_IDS:
+            for question in artifact_record(fixture_id, "questions")["questions"]:
+                self.assertTrue(question["accepted_answers"])
+                self.assertEqual(len(question["accepted_answers"]), len(set(question["accepted_answers"])))
+
+    def test_question_refusal_answers_are_closed_and_nonempty(self):
+        for fixture_id in AI.FIXTURE_IDS:
+            for question in artifact_record(fixture_id, "questions")["questions"]:
+                self.assertTrue(question["refusal_answers"])
+                self.assertFalse(set(question["accepted_answers"]) & set(question["refusal_answers"]))
+
+    def test_required_answer_is_predeclared_as_accepted(self):
+        for fixture_id in AI.FIXTURE_IDS:
+            for question in artifact_record(fixture_id, "questions")["questions"]:
+                self.assertIn(question["required_answer"], question["accepted_answers"])
+
+    def test_question_context_inventory_is_fresh_and_complete(self):
+        expected = {"mode", "prior_messages", "examples", "repository_instruction_paths", "tool_definition_ids"}
+        for fixture_id in AI.FIXTURE_IDS:
+            for question in artifact_record(fixture_id, "questions")["questions"]:
+                self.assertEqual(set(question["context"]), expected)
+                self.assertEqual(question["context"]["mode"], "fresh")
+                self.assertEqual(question["context"]["prior_messages"], [])
+                self.assertEqual(question["context"]["examples"], [])
+
+    def test_check_emits_bounded_binding_roundtrip_mutation_and_summary_records(self):
+        records = AI.check_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+        self.assertEqual(sum(item["event"] == "binding.result" for item in records), 3)
+        self.assertEqual(sum(item["event"] == "roundtrip.result" for item in records), 3)
+        self.assertEqual(sum(item["event"] == "mutation.result" for item in records), 7)
+        self.assertEqual(sum(item["event"] == "run.summary" for item in records), 1)
+        self.assertTrue(all("manifest_sha256" in item for item in records))
+
+    def test_cli_check_accepts_exact_manifest(self):
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT), "check", "--manifest", str(MANIFEST.relative_to(ROOT))],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        records = [json.loads(line) for line in result.stdout.splitlines()]
+        self.assertEqual(len(records), 14)
+        self.assertEqual(records[-1]["event"], "run.summary")
+        self.assertEqual(records[-1]["mutation_count"], 7)
+
+    def test_stale_source_blob_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            source = copied / "plugins/hexaemeron/skills/fiat/SKILL.md"
+            source.write_bytes(source.read_bytes() + b"\n")
+            self.assertCheckRefusal("WAI-E-DIGEST.SOURCE", copied)
+
+    def test_stale_model_artifact_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            model = copied / "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/model.json"
+            model.write_bytes(model.read_bytes() + b"\n")
+            self.assertCheckRefusal("WAI-E-DIGEST.ARTIFACT", copied)
+
+    def test_stale_compact_artifact_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            compact = copied / "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/compact.wai"
+            compact.write_bytes(compact.read_bytes() + b"\n")
+            self.assertCheckRefusal("WAI-E-DIGEST.ARTIFACT", copied)
+
+    def test_stale_question_artifact_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            questions = copied / "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json"
+            questions.write_bytes(questions.read_bytes() + b"\n")
+            self.assertCheckRefusal("WAI-E-DIGEST.ARTIFACT", copied)
+
+    def test_stale_source_span_artifact_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            spans = copied / "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/source-spans.json"
+            spans.write_bytes(spans.read_bytes() + b"\n")
+            self.assertCheckRefusal("WAI-E-DIGEST.ARTIFACT", copied)
+
+    def test_stale_manifest_schema_refuses(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            schema = copied / AI.MANIFEST_SCHEMA_PATH
+            schema.write_bytes(schema.read_bytes() + b"\n")
+            self.assertRefusal("WAI-E-DIGEST.SCHEMA", AI.check_manifest, copied, str(MANIFEST.relative_to(ROOT)))
+
+    def test_missing_fixture_artifact_refuses_closure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            (copied / "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/questions.json").unlink()
+            self.assertCheckRefusal("WAI-E-MANIFEST.CLOSURE", copied)
+
+    def test_extra_fixture_artifact_refuses_closure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            copied = self.copied_root(Path(temporary))
+            (copied / "tests/fixtures/agent-instruction-v1/fiat-study-runbook-phase/extra.json").write_bytes(b"{}\n")
+            self.assertCheckRefusal("WAI-E-MANIFEST.CLOSURE", copied)
+
+    def test_missing_governed_binding_refuses(self):
+        model = fixture_model("promise-machine-router-selection")
+        model["bindings"] = [item for item in model["bindings"] if item["node"] != "router-selection-check"]
+        self.assertRefusal("WAI-E-REFERENCE.UNCOVERED", AI.validate_model, model)
+
+    def test_overlapping_sibling_bindings_refuse(self):
+        model = fixture_model("fiat-study-runbook-phase")
+        binding = next(item for item in model["bindings"] if item["node"] == "runbook-phase")
+        binding["start"], binding["end"] = "17650", "17800"
+        self.assertRefusal("WAI-E-REFERENCE.OVERLAP", AI.validate_model, model)
+
+    def test_unsafe_source_path_in_manifest_refuses(self):
+        manifest = manifest_record()
+        manifest["fixtures"][0]["source"]["path"] = "../outside.md"
+        self.assertRefusal("WAI-E-PATH.UNSAFE", AI.validate_manifest, manifest)
+
+
+class MutationTests(RefusalAssertions, unittest.TestCase):
+    def mutation_records(self) -> list[tuple[str, dict]]:
+        records = []
+        for fixture in manifest_record()["fixtures"]:
+            records.extend((fixture["id"], item) for item in artifact_record(fixture["id"], "mutations")["mutations"])
+        return records
+
+    def assertDigestMutation(self, mutation_id: str) -> None:
+        fixture_id, mutation = mutation_by_id(mutation_id)
+        model = fixture_model(fixture_id)
+        original = AI.canonical_json_bytes(model)
+        changed = AI.canonical_json_bytes(AI.apply_mutation(model, mutation["operation"]))
+        self.assertNotEqual(hashlib.sha256(changed).digest(), hashlib.sha256(original).digest())
+
+    def test_manifest_declares_exact_mutation_count(self):
+        self.assertEqual(manifest_record()["mutation_count"], "7")
+        self.assertEqual(len(self.mutation_records()), 7)
+
+    def test_manifest_declares_exact_risk_inventory(self):
+        self.assertEqual(tuple(manifest_record()["risk_classes"]), AI.RISK_CLASSES)
+
+    def test_mutations_cover_every_required_risk_class(self):
+        self.assertEqual({item["risk"] for _, item in self.mutation_records()}, set(AI.RISK_CLASSES))
+
+    def test_mutation_ids_are_unique(self):
+        ids = [item["id"] for _, item in self.mutation_records()]
+        self.assertEqual(len(ids), len(set(ids)))
+
+    def test_mutation_operations_use_closed_vocabulary(self):
+        self.assertEqual({item["operation"]["kind"] for _, item in self.mutation_records()}, {"remove", "replace"})
+
+    def test_mutation_expectations_use_closed_vocabulary(self):
+        self.assertEqual(
+            {item["expected"]["kind"] for _, item in self.mutation_records()},
+            {"model-digest", "structural-refusal"},
+        )
+
+    def test_checker_emits_one_record_per_mutation(self):
+        records = AI.check_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+        observed = {item["mutation_id"] for item in records if item["event"] == "mutation.result"}
+        self.assertEqual(observed, {item["id"] for _, item in self.mutation_records()})
+
+    def test_precedence_mutation_changes_model_digest(self):
+        self.assertDigestMutation("fiat-precedence-001")
+
+    def test_scope_mutation_refuses_structurally(self):
+        fixture_id, mutation = mutation_by_id("fiat-scope-001")
+        changed = AI.apply_mutation(fixture_model(fixture_id), mutation["operation"])
+        self.assertRefusal("WAI-E-REFERENCE.BINDING", AI.canonical_json_bytes, changed)
+
+    def test_negation_mutation_changes_model_digest(self):
+        self.assertDigestMutation("pm-negation-001")
+
+    def test_evidence_class_mutation_changes_model_digest(self):
+        self.assertDigestMutation("pm-evidence-class-001")
+
+    def test_authorisation_mutation_changes_model_digest(self):
+        self.assertDigestMutation("pm-authorisation-001")
+
+    def test_recovery_mutation_changes_model_digest(self):
+        self.assertDigestMutation("pm-recovery-001")
+
+    def test_exact_literal_mutation_changes_model_digest(self):
+        self.assertDigestMutation("horos-exact-literal-001")
+
+    def test_noop_digest_mutation_refuses_silent_acceptance(self):
+        fixture_id = "promise-machine-router-selection"
+        model = fixture_model(fixture_id)
+        record = {
+            "schema": "wildcat-agent-instruction-mutations/v1",
+            "fixture": fixture_id,
+            "mutations": [{
+                "id": "noop-001",
+                "risk": "negation",
+                "operation": {"kind": "replace", "path": "/document/title/value", "value": model["document"]["title"]["value"]},
+                "expected": {"kind": "model-digest", "value": "different"},
+            }],
+        }
+        self.assertRefusal("WAI-E-MUTATION.SILENT", AI._validate_mutations, record, fixture_id, model, AI.canonical_json_bytes(model), 1)
+
+    def test_unknown_risk_class_refuses(self):
+        fixture_id = "promise-machine-router-selection"
+        model = fixture_model(fixture_id)
+        record = artifact_record(fixture_id, "mutations")
+        record["mutations"][0]["risk"] = "summary-loss"
+        self.assertRefusal("WAI-E-MUTATION.RISK", AI._validate_mutations, record, fixture_id, model, AI.canonical_json_bytes(model), 4)
+
+    def test_duplicate_mutation_id_refuses(self):
+        fixture_id = "promise-machine-router-selection"
+        model = fixture_model(fixture_id)
+        record = artifact_record(fixture_id, "mutations")
+        record["mutations"][1]["id"] = record["mutations"][0]["id"]
+        self.assertRefusal("WAI-E-REFERENCE.DUPLICATE_ID", AI._validate_mutations, record, fixture_id, model, AI.canonical_json_bytes(model), 4)
+
+    def test_mutation_count_mismatch_refuses(self):
+        fixture_id = "promise-machine-router-selection"
+        model = fixture_model(fixture_id)
+        record = artifact_record(fixture_id, "mutations")
+        self.assertRefusal("WAI-E-MANIFEST.MUTATION_COUNT", AI._validate_mutations, record, fixture_id, model, AI.canonical_json_bytes(model), 3)
+
+    def test_wrong_structural_refusal_code_refuses(self):
+        fixture_id, mutation = mutation_by_id("fiat-scope-001")
+        model = fixture_model(fixture_id)
+        record = {"schema": "wildcat-agent-instruction-mutations/v1", "fixture": fixture_id, "mutations": [copy.deepcopy(mutation)]}
+        record["mutations"][0]["expected"]["value"] = "WAI-E-CYCLE"
+        self.assertRefusal("WAI-E-MUTATION.WRONG_REFUSAL", AI._validate_mutations, record, fixture_id, model, AI.canonical_json_bytes(model), 1)
+
+    def test_missing_json_pointer_refuses(self):
+        model = fixture_model("horos-boundary-check")
+        operation = {"kind": "remove", "path": "/sections/0/absent"}
+        self.assertRefusal("WAI-E-MUTATION.POINTER", AI.apply_mutation, model, operation)
+
+    def test_noncanonical_json_pointer_refuses(self):
+        model = fixture_model("horos-boundary-check")
+        operation = {"kind": "remove", "path": "/sections/~2bad"}
+        self.assertRefusal("WAI-E-MUTATION.POINTER", AI.apply_mutation, model, operation)
+
+    def test_unsupported_expectation_kind_refuses(self):
+        fixture_id = "horos-boundary-check"
+        model = fixture_model(fixture_id)
+        record = artifact_record(fixture_id, "mutations")
+        record["mutations"][0]["expected"]["kind"] = "silent"
+        self.assertRefusal("WAI-E-MUTATION.EXPECTED", AI._validate_mutations, record, fixture_id, model, AI.canonical_json_bytes(model), 1)
 
 
 if __name__ == "__main__":
