@@ -17,6 +17,8 @@ Scope, and why each exclusion is here rather than a matter of taste:
 - `LICENSE` and `NOTICE` files are legal text nobody may reword.
 - A frozen eval corpus is measurement input. Rewriting it changes what the
   numbers beside it mean.
+- Noema's seed reference is a byte-verified, non-executable copy of external
+  evidence. Rewriting it would break the inventory it exists to preserve.
 
 Everything else is shipped prose and is held clean.
 """
@@ -31,6 +33,7 @@ LINT = ROOT / "plugins" / "hexaemeron" / "skills" / "imprimatur" / "scripts" / "
 
 VENDORED = ("x-ray", "solidity-auditor", "fizz", "fizz-convert", "fizz-sync")
 PORTABLE_RUNTIME = (".agents", "skills", "promise-machine", "runtime")
+NOEMA_SEED_REFERENCE = ("tests", "fixtures", "noema-v1", "seed-reference")
 
 
 def imprimatur():
@@ -62,6 +65,8 @@ def shipped_markdown():
             continue
         parts = Path(name).parts
         if parts[: len(PORTABLE_RUNTIME)] == PORTABLE_RUNTIME:
+            continue
+        if parts[: len(NOEMA_SEED_REFERENCE)] == NOEMA_SEED_REFERENCE:
             continue
         if parts[0] in ("audit", "docs"):
             continue
@@ -98,7 +103,8 @@ class ShippedProseLintTests(unittest.TestCase):
     def test_history_and_vendored_text_stay_out_of_scope(self):
         found = set(shipped_markdown())
         for excluded in ("audit/AUDIT.md",
-                         "docs/protasis-discipline-cores/study.md"):
+                         "docs/protasis-discipline-cores/study.md",
+                         "tests/fixtures/noema-v1/seed-reference/noema-v0.md"):
             self.assertNotIn(excluded, found)
         self.assertFalse([n for n in found if "x-ray" in Path(n).parts])
 

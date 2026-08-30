@@ -35,6 +35,30 @@
     },
     {
       "$ref": "#/$defs/evidence"
+    },
+    {
+      "$ref": "#/$defs/sourceIdentity"
+    },
+    {
+      "$ref": "#/$defs/sourceSpans"
+    },
+    {
+      "$ref": "#/$defs/literalSet"
+    },
+    {
+      "$ref": "#/$defs/questionSet"
+    },
+    {
+      "$ref": "#/$defs/answerSet"
+    },
+    {
+      "$ref": "#/$defs/mutationPlan"
+    },
+    {
+      "$ref": "#/$defs/mutationResults"
+    },
+    {
+      "$ref": "#/$defs/specimenCorpus"
     }
   ],
   "$defs": {
@@ -145,6 +169,482 @@
           "items": {
             "$ref": "#/$defs/seedFile"
           }
+        }
+      }
+    },
+    "sourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "id", "path", "bytes", "sha256", "governed"],
+      "oneOf": [
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "brevitas" },
+            "path": { "const": "plugins/brevitas/skills/brevitas/SKILL.md" }
+          }
+        },
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "fiat" },
+            "path": { "const": "plugins/hexaemeron/skills/fiat/SKILL.md" }
+          }
+        },
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "phylax" },
+            "path": { "const": "plugins/hexaemeron/skills/phylax/SKILL.md" }
+          }
+        },
+        {
+          "required": ["id", "path"],
+          "properties": {
+            "id": { "const": "sapheneia" },
+            "path": { "const": "plugins/sapheneia/skills/sapheneia/SKILL.md" }
+          }
+        }
+      ],
+      "properties": {
+        "schema": { "const": "noema-source-identity/v1" },
+        "id": { "$ref": "#/$defs/identifier" },
+        "path": { "$ref": "#/$defs/relativePath" },
+        "bytes": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "governed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end"],
+          "properties": {
+            "start": { "const": 0 },
+            "end": { "type": "integer", "minimum": 1, "maximum": 1048576 }
+          }
+        }
+      }
+    },
+    "sourceSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end", "kind", "node", "reason"],
+      "properties": {
+        "start": { "type": "integer", "minimum": 0, "maximum": 1048576 },
+        "end": { "type": "integer", "minimum": 1, "maximum": 1048576 },
+        "kind": { "enum": ["node", "unsupported-remainder"] },
+        "node": {
+          "oneOf": [
+            { "$ref": "#/$defs/identifier" },
+            { "type": "null" }
+          ]
+        },
+        "reason": {
+          "oneOf": [
+            { "const": "unsupported-by-noema-v1" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "sourceSpans": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "source", "source_sha256", "governed", "spans", "shadow"],
+      "properties": {
+        "schema": { "const": "noema-source-spans/v1" },
+        "source": { "$ref": "#/$defs/relativePath" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "governed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["start", "end"],
+          "properties": {
+            "start": { "const": 0 },
+            "end": { "type": "integer", "minimum": 1, "maximum": 1048576 }
+          }
+        },
+        "spans": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32768,
+          "items": { "$ref": "#/$defs/sourceSpan" }
+        },
+        "shadow": { "type": "boolean" }
+      }
+    },
+    "literalEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "bytes", "sha256", "value"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "kind": { "enum": ["id", "path", "sha256", "command", "number", "date", "url", "quote", "text", "bytes"] },
+        "bytes": { "type": "integer", "minimum": 0, "maximum": 65000 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "value": { "type": "string", "maxLength": 65000 }
+      }
+    },
+    "literalSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "literals"],
+      "properties": {
+        "schema": { "const": "noema-literal-set/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "literals": {
+          "type": "array",
+          "maxItems": 16384,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/literalEvidence" }
+        }
+      }
+    },
+    "question": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "effect", "expected"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "effect": { "$ref": "#/$defs/identifier" },
+        "expected": { "$ref": "#/$defs/checkOutput" }
+      }
+    },
+    "questionSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "questions"],
+      "properties": {
+        "schema": { "const": "noema-question-set/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "questions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/question" }
+        }
+      }
+    },
+    "answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "result"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "result": { "$ref": "#/$defs/result" }
+      }
+    },
+    "answerSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "answers"],
+      "properties": {
+        "schema": { "const": "noema-answer-set/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "answers": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/answer" }
+        }
+      }
+    },
+    "mutationCategory": {
+      "enum": [
+        "alias-collision",
+        "changed-exact-literal",
+        "consequence-3-bypass",
+        "dropped-negation",
+        "missing-authority",
+        "omitted-dependency",
+        "permission-for-prohibition",
+        "reordered-effects",
+        "stale-module",
+        "swapped-actor",
+        "unknown-guard-deletion",
+        "unknown-opcode",
+        "widened-scope"
+      ]
+    },
+    "mutationQuery": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "effect"],
+          "properties": {
+            "kind": { "const": "check" },
+            "effect": { "$ref": "#/$defs/identifier" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "machine", "state", "event"],
+          "properties": {
+            "kind": { "const": "next" },
+            "machine": { "$ref": "#/$defs/identifier" },
+            "state": { "$ref": "#/$defs/identifier" },
+            "event": { "$ref": "#/$defs/identifier" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "id"],
+          "properties": {
+            "kind": { "const": "literal" },
+            "id": { "$ref": "#/$defs/identifier" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "node"],
+          "properties": {
+            "kind": { "const": "explain" },
+            "node": { "$ref": "#/$defs/nodeId" }
+          }
+        }
+      ]
+    },
+    "mutationPlanEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "kind", "artifact", "query"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "category": { "$ref": "#/$defs/mutationCategory" },
+        "kind": { "enum": ["source", "profile"] },
+        "artifact": { "$ref": "#/$defs/relativePath" },
+        "query": { "$ref": "#/$defs/mutationQuery" }
+      }
+    },
+    "mutationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "mutations"],
+      "properties": {
+        "schema": { "const": "noema-mutation-plan/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "mutations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/mutationPlanEntry" }
+        }
+      },
+      "oneOf": [
+        {
+          "properties": {
+            "specimen": { "const": "brevitas" },
+            "mutations": {
+              "minItems": 2,
+              "maxItems": 2,
+              "prefixItems": [
+                { "properties": { "id": { "const": "brevitas.alias-collision" }, "category": { "const": "alias-collision" } } },
+                { "properties": { "id": { "const": "brevitas.changed-exact-literal" }, "category": { "const": "changed-exact-literal" } } }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "specimen": { "const": "fiat" },
+            "mutations": {
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                { "properties": { "id": { "const": "fiat.dropped-negation" }, "category": { "const": "dropped-negation" } } },
+                { "properties": { "id": { "const": "fiat.missing-authority" }, "category": { "const": "missing-authority" } } },
+                { "properties": { "id": { "const": "fiat.reordered-effects" }, "category": { "const": "reordered-effects" } } },
+                { "properties": { "id": { "const": "fiat.stale-module" }, "category": { "const": "stale-module" } } }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "specimen": { "const": "phylax" },
+            "mutations": {
+              "minItems": 4,
+              "maxItems": 4,
+              "prefixItems": [
+                { "properties": { "id": { "const": "phylax.consequence-3-bypass" }, "category": { "const": "consequence-3-bypass" } } },
+                { "properties": { "id": { "const": "phylax.omitted-dependency" }, "category": { "const": "omitted-dependency" } } },
+                { "properties": { "id": { "const": "phylax.permission-for-prohibition" }, "category": { "const": "permission-for-prohibition" } } },
+                { "properties": { "id": { "const": "phylax.widened-scope" }, "category": { "const": "widened-scope" } } }
+              ]
+            }
+          }
+        },
+        {
+          "properties": {
+            "specimen": { "const": "sapheneia" },
+            "mutations": {
+              "minItems": 3,
+              "maxItems": 3,
+              "prefixItems": [
+                { "properties": { "id": { "const": "sapheneia.swapped-actor" }, "category": { "const": "swapped-actor" } } },
+                { "properties": { "id": { "const": "sapheneia.unknown-guard-deletion" }, "category": { "const": "unknown-guard-deletion" } } },
+                { "properties": { "id": { "const": "sapheneia.unknown-opcode" }, "category": { "const": "unknown-opcode" } } }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "mutationRefusal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "status", "code", "field", "baseline_answer_sha256", "baseline_answer"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "category": { "$ref": "#/$defs/mutationCategory" },
+        "status": { "const": "refused" },
+        "code": { "type": "string", "pattern": "^NOE-E-[A-Z0-9_.-]+$" },
+        "field": { "type": "string", "minLength": 1, "maxLength": 640 },
+        "baseline_answer_sha256": { "$ref": "#/$defs/sha256" },
+        "baseline_answer": { "$ref": "#/$defs/result" }
+      }
+    },
+    "mutationChange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "status", "graph_sha256", "diff_sha256", "baseline_answer_sha256", "answer_sha256", "diff", "baseline_answer", "answer"],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "category": { "$ref": "#/$defs/mutationCategory" },
+        "status": { "const": "changed" },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "diff_sha256": { "$ref": "#/$defs/sha256" },
+        "baseline_answer_sha256": { "$ref": "#/$defs/sha256" },
+        "answer_sha256": { "$ref": "#/$defs/sha256" },
+        "diff": { "$ref": "#/$defs/semanticDiff" },
+        "baseline_answer": { "$ref": "#/$defs/result" },
+        "answer": { "$ref": "#/$defs/result" }
+      }
+    },
+    "mutationResults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "specimen", "results"],
+      "properties": {
+        "schema": { "const": "noema-mutation-results/v1" },
+        "specimen": { "$ref": "#/$defs/identifier" },
+        "results": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": {
+            "oneOf": [
+              { "$ref": "#/$defs/mutationRefusal" },
+              { "$ref": "#/$defs/mutationChange" }
+            ]
+          }
+        }
+      }
+    },
+    "specimenRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "directory", "source_identity_sha256", "source_sha256",
+        "canonical_sha256", "graph_sha256", "lock_sha256", "profile_sha256",
+        "kernel_sha256", "full_projection_sha256", "manifest_sha256",
+        "projection_sha256", "literals_sha256", "definitions_sha256",
+        "source_spans_sha256", "questions_sha256", "answers_sha256",
+        "mutation_plan_sha256", "mutations_sha256", "artifact_inventory_sha256", "mapped_spans",
+        "unsupported_remainders", "questions", "mutations", "shadow"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/identifier" },
+        "directory": { "$ref": "#/$defs/relativePath" },
+        "source_identity_sha256": { "$ref": "#/$defs/sha256" },
+        "source_sha256": { "$ref": "#/$defs/sha256" },
+        "canonical_sha256": { "$ref": "#/$defs/sha256" },
+        "graph_sha256": { "$ref": "#/$defs/sha256" },
+        "lock_sha256": { "$ref": "#/$defs/sha256" },
+        "profile_sha256": { "$ref": "#/$defs/sha256" },
+        "kernel_sha256": { "$ref": "#/$defs/sha256" },
+        "full_projection_sha256": { "$ref": "#/$defs/sha256" },
+        "manifest_sha256": { "$ref": "#/$defs/sha256" },
+        "projection_sha256": { "$ref": "#/$defs/sha256" },
+        "literals_sha256": { "$ref": "#/$defs/sha256" },
+        "definitions_sha256": { "$ref": "#/$defs/sha256" },
+        "source_spans_sha256": { "$ref": "#/$defs/sha256" },
+        "questions_sha256": { "$ref": "#/$defs/sha256" },
+        "answers_sha256": { "$ref": "#/$defs/sha256" },
+        "mutation_plan_sha256": { "$ref": "#/$defs/sha256" },
+        "mutations_sha256": { "$ref": "#/$defs/sha256" },
+        "artifact_inventory_sha256": { "$ref": "#/$defs/sha256" },
+        "mapped_spans": { "type": "integer", "minimum": 1, "maximum": 32768 },
+        "unsupported_remainders": { "type": "integer", "minimum": 1, "maximum": 32768 },
+        "questions": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "mutations": { "type": "integer", "minimum": 1, "maximum": 256 },
+        "shadow": { "const": true }
+      }
+    },
+    "criticalVector": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "mutations"],
+      "properties": {
+        "id": {
+          "enum": ["authority", "consequence-3", "exact-literal", "negation", "ordering", "permission-prohibition", "unknown-guard"]
+        },
+        "mutations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 256,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      },
+      "oneOf": [
+        { "properties": { "id": { "const": "authority" }, "mutations": { "const": ["fiat.missing-authority", "sapheneia.swapped-actor"] } } },
+        { "properties": { "id": { "const": "consequence-3" }, "mutations": { "const": ["phylax.consequence-3-bypass"] } } },
+        { "properties": { "id": { "const": "exact-literal" }, "mutations": { "const": ["brevitas.changed-exact-literal"] } } },
+        { "properties": { "id": { "const": "negation" }, "mutations": { "const": ["fiat.dropped-negation"] } } },
+        { "properties": { "id": { "const": "ordering" }, "mutations": { "const": ["fiat.reordered-effects"] } } },
+        { "properties": { "id": { "const": "permission-prohibition" }, "mutations": { "const": ["phylax.permission-for-prohibition"] } } },
+        { "properties": { "id": { "const": "unknown-guard" }, "mutations": { "const": ["sapheneia.unknown-guard-deletion"] } } }
+      ]
+    },
+    "specimenCorpus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema", "seed", "specimens", "critical_vectors"],
+      "properties": {
+        "schema": { "const": "noema-specimen-corpus/v1" },
+        "seed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["inventory", "reference", "mode", "archive_sha256", "inventory_sha256", "reference_sha256"],
+          "properties": {
+            "inventory": { "$ref": "#/$defs/relativePath" },
+            "reference": { "$ref": "#/$defs/artifactLeaf" },
+            "mode": { "const": "non-executable-reference-evidence" },
+            "archive_sha256": { "$ref": "#/$defs/sha256" },
+            "inventory_sha256": { "$ref": "#/$defs/sha256" },
+            "reference_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "specimens": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/specimenRecord" }
+        },
+        "critical_vectors": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/criticalVector" }
         }
       }
     },
@@ -569,6 +1069,26 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 4096
+        },
+        "specimens": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "mutations": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 256
+        },
+        "critical": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16
+        },
+        "remainders": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32768
         }
       }
     },

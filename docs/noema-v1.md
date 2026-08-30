@@ -237,11 +237,20 @@ unsupported remainder. Spans for one physical source cannot overlap. Gaps in a
 declared governed region, stale bytes, aliased source paths and a remainder that
 grants authority refuse.
 
+The fixed corpus identities are `brevitas` at
+`plugins/brevitas/skills/brevitas/SKILL.md`, `fiat` at
+`plugins/hexaemeron/skills/fiat/SKILL.md`, `phylax` at
+`plugins/hexaemeron/skills/phylax/SKILL.md` and `sapheneia` at
+`plugins/sapheneia/skills/sapheneia/SKILL.md`. A source digest may advance with
+reviewed repository bytes; an identity may not move to another path or alias.
+
 Source-span coverage is reviewed evidence. It establishes the recorded mapping
 for exact bytes and does not establish that the reviewer captured unexpressed
 intent. An unsupported remainder blocks authority migration and remains visible
-in every evidence record. Bound files must decode as UTF-8, and span endpoints
-must fall between complete scalar values.
+in every evidence record. Every v1 prototype specimen must retain at least one
+such remainder and remain shadow-only; widening node spans cannot promote a
+specimen. Bound files must decode as UTF-8, and span endpoints must fall between
+complete scalar values.
 
 A semantic diff has closed entries for added, removed or modified effects,
 gates, authority, scope, evidence classes, literals, transitions, precedence
@@ -295,6 +304,74 @@ and recovers the projection before accepting the manifest. The leaf-only rule
 is intentional: a portable fixture cannot smuggle path traversal or a linked
 dependency into verification.
 
+## Source-bound specimen corpus
+
+`noema-specimen-corpus/v1` binds exactly four sorted shadow specimens:
+Brevitas, Fiat, Phylax and Sapheneia. Each specimen owns canonical source,
+modules, profile, kernel, selection, questions and hostile mutation inputs.
+Deterministic regeneration produces its build and lock, full projection,
+operation slice and manifest, literal evidence, policy answers, source-span map
+and mutation results. The top manifest records a separate digest for every one
+of those objects; source, canonical graph, full projection, slice, literals,
+kernel and reachable definitions cannot alias one identity.
+It also binds the digest of a sorted path, byte-count and SHA-256 inventory for
+every specimen input and generated output. The specimen root and its `modules`
+and `mutations` directories are closed to that derived inventory: a changed
+mutation artifact, missing member, extra member, nested directory or link
+refuses even when the observed mutation result would otherwise be unchanged.
+Verification enumerates each closed directory through one retained descriptor,
+stops at the first unexpected member, reads every admitted leaf relative to
+that descriptor and enforces the aggregate byte cap while reading. It retains
+the seed and four specimen directory descriptors plus every observed file
+identity until the corpus verdict. The corpus manifest, exact seed-inventory
+bytes and all four canonical Markdown sources are also identity-rechecked at
+that boundary. Replacement, in-place mutation or mode drift during the
+aggregate verification therefore refuses instead of certifying mixed states.
+
+`noema-source-identity/v1` names one repository-relative Markdown path, exact
+byte count and SHA-256, and governs its complete byte range. Every rule source
+binding must name that same path and digest. `noema-source-spans/v1` forms one
+ordered, gapless and non-overlapping partition over the whole file. A mapped
+span names exactly one rule node. Every other byte is
+`unsupported-by-noema-v1`, names no node or authority, and forces `shadow:
+true`. Complete byte coverage is evidence about provenance, not evidence that
+the reviewed mapping understood the prose correctly.
+
+Each closed question records an effect and the complete expected
+`noema-check/v1` output. Regeneration executes the checked slice and refuses if
+decision, consequence, controlling node or reason differs. The committed
+answer retains the full result and digests. Every specimen must demonstrate
+permit, refuse and unknown.
+
+The mutation plan admits exactly the thirteen fixed hostile categories. Each
+category fixes its input kind, runtime query and one canonical structural
+change derived from the specimen baseline. Exact artifact comparison happens
+before execution, so a different change that happens to produce the same
+facet, decision or refusal code cannot satisfy the category. A changed mutation records
+the exact semantic diff, changed graph, baseline answer and changed answer;
+all four digests are rederived. A refusing mutation records its exact stable
+code plus the checked baseline. Category contracts additionally require the
+declared semantic facets and behavior transition: negation, authority,
+permission/prohibition, scope, unknown guard and consequence-3 mutations must
+change their named policy outcome; an exact literal preserves id and kind but
+changes bytes; ordering performs one exact two-effect swap; stale module,
+missing dependency, unknown opcode and alias collision refuse under their
+specific code. An unchanged graph or unchanged declared observation refuses.
+Mutation ids, categories and specimen ownership are one fixed sorted corpus
+assignment in both the runtime and public schema; categories cannot migrate
+between specimens while retaining a familiar id.
+
+The top manifest also binds the verified 17-file seed copy as
+`non-executable-reference-evidence`. Its exact inventory bytes, full inventory
+shape, archive digest, per-file size and digest, aggregate reference digest,
+flat closed member set and non-executable regular-file mode are checked. Seed
+Python is evidence bytes; the verifier never imports or executes it. Seven
+complete, sorted critical vectors cover permission/prohibition, authority,
+negation, unknown guard, ordering, exact literal and consequence-3. A vector
+passes only when its mutation ids exactly equal the complete fixed set and
+every member satisfies its category's outcome contract. A permitted subset is
+not 100% coverage.
+
 ## Local codec interface
 
 `scripts/noema.py parse` accepts named source, module-directory, profile,
@@ -303,17 +380,29 @@ kernel and output paths. It validates everything before atomically writing one
 canonical source; `project` writes one `noema-projection/v1` bundle;
 `semantic-diff` compares two builds; and `verify --build` rereads every
 dependency and lock identity. Those four commands take the same module,
-profile and kernel paths. `verify --manifest` instead checks the self-described
-runtime corpus above. `self-test` performs the checked-in complete-fixture
-round trip without writing a file.
+profile and kernel paths. `verify --manifest` checks either one self-described
+runtime manifest or the source-bound specimen corpus by its schema identity.
+`mutations --manifest` accepts only the specimen corpus and rechecks all fixed
+hostile and critical-vector outcomes. `self-test` performs the checked-in
+complete-fixture round trip without writing a file.
 
-All input leaves must be regular files; module resolution is confined to one
-real directory and never scans it. An output leaf must be Unicode-scalar UTF-8
-and at most 255 bytes. Output uses a random `.noema-write-` leaf independent of
-the target name, loops on partial writes, syncs file and parent, then replaces
-the target. A refusal before replacement leaves the prior target
-intact and removes the temporary. A post-replacement directory-sync failure is
-reported as uncertain durable state, never success.
+All input leaves must be regular files. Repository-bound reads open and recheck
+every ancestor relative to retained directory descriptors. Module resolution
+opens one real module directory, reads only digest-requested leaves relative to
+that descriptor, and never scans it; unmentioned files have no semantic role.
+File digest, byte count and mode evidence come from the same opened identity.
+Platforms without the required no-follow, descriptor-relative directory
+operations refuse. Runtime-manifest verification retains and rechecks the real
+manifest parent and anchored manifest leaf across every sibling-artifact check.
+An output leaf must be Unicode-scalar UTF-8 and at most 255 bytes. Output opens
+and retains the real parent directory, creates a random
+`.noema-write-` leaf independent of the target name within that descriptor,
+loops on partial writes, syncs file and parent, replaces the descriptor-relative
+target, rereads the exact payload and rechecks the requested parent path. A
+refusal before replacement leaves the prior target intact and removes the
+temporary. A post-replacement sync or parent-binding failure is reported as
+uncertain durable state, never success; a concurrently substituted path is
+never followed outside the retained parent.
 
 ## Policy runtime
 
@@ -324,12 +413,13 @@ select(operation,state,target,tools,authority,facts) -> manifest + projection
 check(effect,facts,manifest)                         -> permit | refuse | unknown
 next(machine,state,event,receipts,manifest)          -> transition | stop
 literal(id,manifest)                                 -> kind + exact bytes
-explain(node,manifest)                               -> non-authoritative render
+explain(policy-node,manifest)                        -> non-authoritative render
 ```
 
 `next` owns no external domain judgment; it evaluates declared state, event,
 guard and ordered effects. `literal` refuses an unreachable id. `explain`
-labels its output and no policy operation may consume that render as evidence.
+accepts only a reachable policy record, never a literal or definition, labels
+its output and no policy operation may consume that render as evidence.
 The runtime has no operation for subprocess, network, Git, GitHub, file
 mutation, publication or deployment.
 
@@ -398,7 +488,8 @@ exact ordered directive terms without applying them.
 `literal` returns the kind, byte count, digest and exact reachable value; even
 `command`, `path` and `url` values stay inert. `explain` returns canonical
 record JSON under
-`noema-explanation/v1` with `authoritative:false`.
+`noema-explanation/v1` with `authoritative:false`. Literal records use only the
+separate `literal` result channel.
 
 ## Resource limits
 
@@ -420,6 +511,8 @@ Version 1 applies every limit before returning a partial graph or result:
 | one selection, policy or transition truth pass | 65,536 expanded nodes |
 | policy requirement pairs | 65,536 |
 | one finite quantifier set | 4,096 members |
+| one specimen artifact inventory | 16,384 files |
+| one specimen artifact inventory | 1,048,576 bytes |
 | one derived output | 1,048,576 bytes |
 
 The graph-node count includes source records, term nodes, each embedded module
@@ -448,7 +541,10 @@ exact alphabets published in the seed-inventory schema.
 
 ## Result and refusal contract
 
-Each command writes at most one `noema-result/v1` JSON line to standard output.
+Each command writes at most one `noema-result/v1` canonical JSON line to
+standard output. The final emission boundary applies the 1,048,576-byte output
+limit; an oversized result becomes one bounded refusal instead of a partial or
+over-limit success.
 It names command, deterministic correlation id, verdict, stable code, input and
 output digests and bounded counts that exist for that command. It never carries
 source text, prompts, model output or credentials. The sole payload exception
@@ -480,6 +576,7 @@ Stable refusal families are:
 | `NOE-E-PATH` | unsafe, escaping, linked or special path | select a confined regular path |
 | `NOE-E-IO` | read, write, sync or atomic replacement uncertainty | inspect complete old/new state and rerun safely |
 | `NOE-E-POLICY` | contradictory facts, consequence declarations or transition state | repair the inconsistent policy input or graph and reselect |
+| `NOE-E-MUTATION` | a declared hostile input leaves its graph or checked observation unchanged | repair the counterexample so it exercises the named semantic boundary |
 | `NOE-E-SELF_TEST` | checked-in demonstration no longer satisfies its fixed outcome | repair or regenerate the fixture before relying on the prototype |
 | `NOE-E-EVALUATION` | packet, profile, family, case or answer mismatch | restore the exact isolated cohort and retally |
 | `NOE-E-UNIMPLEMENTED` | operation reserved for a later prototype step | finish and verify its declared step |

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 from datetime import date
 from hashlib import sha256
 import heapq
@@ -12,9 +13,9 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
+import secrets
 import stat
 import sys
-import tempfile
 import unicodedata
 import zipfile
 import zlib
@@ -60,7 +61,6 @@ SEED_RELATIVE_PATH_RE = re.compile(
 )
 SEED_ROOT_PATH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/$")
 UNIMPLEMENTED = (
-    "mutations",
     "measure",
     "emit-evaluation",
     "tally-evaluation",
@@ -78,6 +78,7 @@ IMPLEMENTED = (
     "literal",
     "explain",
     "verify",
+    "mutations",
     "self-test",
     "runtime-self-test",
 )
@@ -135,6 +136,227 @@ MANIFEST_SCHEMA = "noema-manifest/v1"
 SLICE_GRAPH_SCHEMA = "noema-slice-graph/v1"
 SLICE_PROJECTION_SCHEMA = "noema-slice-projection/v1"
 EXPLANATION_SCHEMA = "noema-explanation/v1"
+SPECIMEN_CORPUS_SCHEMA = "noema-specimen-corpus/v1"
+SOURCE_IDENTITY_SCHEMA = "noema-source-identity/v1"
+SOURCE_SPANS_SCHEMA = "noema-source-spans/v1"
+LITERAL_SET_SCHEMA = "noema-literal-set/v1"
+QUESTION_SET_SCHEMA = "noema-question-set/v1"
+ANSWER_SET_SCHEMA = "noema-answer-set/v1"
+MUTATION_PLAN_SCHEMA = "noema-mutation-plan/v1"
+MUTATION_RESULTS_SCHEMA = "noema-mutation-results/v1"
+MAX_SPECIMENS = 16
+MAX_SOURCE_SPANS = 32_768
+MAX_QUESTIONS = 256
+MAX_MUTATIONS = 256
+SPECIMEN_OUTPUTS = frozenset(
+    {
+        "answers.json",
+        "build.json",
+        "full-projection.json",
+        "literals.json",
+        "lock.json",
+        "manifest.json",
+        "mutation-results.json",
+        "projection.json",
+        "source-spans.json",
+    }
+)
+SPECIMEN_INPUT_LEAVES = frozenset(
+    {
+        "kernel.noe",
+        "mutation-plan.json",
+        "profile.json",
+        "questions.json",
+        "selection.json",
+        "source.json",
+        "source.noe",
+    }
+)
+SPECIMEN_SOURCE_PATHS = {
+    "brevitas": "plugins/brevitas/skills/brevitas/SKILL.md",
+    "fiat": "plugins/hexaemeron/skills/fiat/SKILL.md",
+    "phylax": "plugins/hexaemeron/skills/phylax/SKILL.md",
+    "sapheneia": "plugins/sapheneia/skills/sapheneia/SKILL.md",
+}
+MUTATION_CATEGORIES = frozenset(
+    {
+        "dropped-negation",
+        "permission-for-prohibition",
+        "swapped-actor",
+        "widened-scope",
+        "changed-exact-literal",
+        "stale-module",
+        "omitted-dependency",
+        "unknown-opcode",
+        "alias-collision",
+        "unknown-guard-deletion",
+        "reordered-effects",
+        "missing-authority",
+        "consequence-3-bypass",
+    }
+)
+SPECIMEN_MUTATION_CATEGORIES = {
+    "brevitas": ("alias-collision", "changed-exact-literal"),
+    "fiat": (
+        "dropped-negation",
+        "missing-authority",
+        "reordered-effects",
+        "stale-module",
+    ),
+    "phylax": (
+        "consequence-3-bypass",
+        "omitted-dependency",
+        "permission-for-prohibition",
+        "widened-scope",
+    ),
+    "sapheneia": (
+        "swapped-actor",
+        "unknown-guard-deletion",
+        "unknown-opcode",
+    ),
+}
+MUTATION_ASSIGNMENTS = {
+    f"{specimen}.{category}": (specimen, category)
+    for specimen, categories in SPECIMEN_MUTATION_CATEGORIES.items()
+    for category in categories
+}
+CRITICAL_VECTORS = {
+    "authority": frozenset({"swapped-actor", "missing-authority"}),
+    "consequence-3": frozenset({"consequence-3-bypass"}),
+    "exact-literal": frozenset({"changed-exact-literal"}),
+    "negation": frozenset({"dropped-negation"}),
+    "ordering": frozenset({"reordered-effects"}),
+    "permission-prohibition": frozenset({"permission-for-prohibition"}),
+    "unknown-guard": frozenset({"unknown-guard-deletion"}),
+}
+CRITICAL_MUTATION_IDS = {
+    vector: tuple(
+        sorted(
+            identifier
+            for identifier, (_specimen, category) in MUTATION_ASSIGNMENTS.items()
+            if category in categories
+        )
+    )
+    for vector, categories in CRITICAL_VECTORS.items()
+}
+CHECK_DECISIONS = frozenset({"permit", "refuse", "unknown"})
+CHECK_REASONS = frozenset(
+    {
+        "prohibition",
+        "failed-requirement",
+        "conflicting-requirements",
+        "authority-mismatch",
+        "invalid-exception",
+        "unestablished-guard",
+        "default-deny",
+        "applicable-policy",
+        "low-consequence-default",
+        "no-applicable-policy",
+    }
+)
+MUTATION_CONTRACTS = {
+    "alias-collision": {
+        "kind": "profile",
+        "query": {"kind": "literal", "id": "lit.command"},
+        "status": "refused",
+        "code": "NOE-E-ALIAS.COLLISION",
+    },
+    "changed-exact-literal": {
+        "kind": "source",
+        "query": {"kind": "literal", "id": "lit.command"},
+        "status": "changed",
+        "facets": frozenset({("literal:lit.command", "literal")}),
+    },
+    "consequence-3-bypass": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "defaultdeny"},
+        "status": "changed",
+        "facets": frozenset({("rule:rule.default", "effect")}),
+        "decisions": ("refuse", "permit"),
+    },
+    "dropped-negation": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "proceed"},
+        "status": "changed",
+        "facets": frozenset(
+            {("rule:rule.negated", "effect"), ("rule:rule.negated", "gate")}
+        ),
+        "decisions": ("permit", "refuse"),
+    },
+    "missing-authority": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "authorized"},
+        "status": "changed",
+        "facets": frozenset(
+            {
+                ("rule:rule.authorized", "authority"),
+                ("rule:rule.authorized", "effect"),
+            }
+        ),
+        "decisions": ("permit", "refuse"),
+    },
+    "omitted-dependency": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "defined"},
+        "status": "refused",
+        "code": "NOE-E-REFERENCE.PREDICATE",
+    },
+    "permission-for-prohibition": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "blocked"},
+        "status": "changed",
+        "facets": frozenset({("rule:rule.blocked", "effect")}),
+        "decisions": ("refuse", "permit"),
+    },
+    "reordered-effects": {
+        "kind": "source",
+        "query": {"kind": "explain", "node": "rule.ordered"},
+        "status": "changed",
+        "facets": frozenset({("rule:rule.ordered", "effect")}),
+    },
+    "stale-module": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "permit"},
+        "status": "refused",
+        "code": "NOE-E-DIGEST.MODULE",
+    },
+    "swapped-actor": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "authorized"},
+        "status": "changed",
+        "facets": frozenset(
+            {
+                ("rule:rule.authorized", "authority"),
+                ("rule:rule.authorized", "effect"),
+            }
+        ),
+        "decisions": ("permit", "refuse"),
+    },
+    "unknown-guard-deletion": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "uncertain"},
+        "status": "changed",
+        "facets": frozenset(
+            {("rule:rule.unknown", "effect"), ("rule:rule.unknown", "gate")}
+        ),
+        "decisions": ("unknown", "permit"),
+    },
+    "unknown-opcode": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "permit"},
+        "status": "refused",
+        "code": "NOE-E-TYPE.OPERATOR",
+    },
+    "widened-scope": {
+        "kind": "source",
+        "query": {"kind": "check", "effect": "scoped"},
+        "status": "changed",
+        "facets": frozenset(
+            {("rule:rule.scoped", "effect"), ("rule:rule.scoped", "scope")}
+        ),
+        "decisions": ("refuse", "permit"),
+    },
+}
 RUNTIME_ARTIFACT_LEAVES = frozenset(
     {"build", "modules", "profile", "kernel", "selection", "projection"}
 )
@@ -160,6 +382,15 @@ RUNTIME_LINK_TYPES = frozenset(
     }
 )
 TRUTH_VALUES = frozenset({"true", "false", "unknown"})
+SUPPORTS_CONFINED_DIRECTORIES = (
+    hasattr(os, "O_NOFOLLOW")
+    and hasattr(os, "O_DIRECTORY")
+    and os.open in os.supports_dir_fd
+    and os.rename in os.supports_dir_fd
+    and os.stat in os.supports_dir_fd
+    and os.unlink in os.supports_dir_fd
+    and os.scandir in os.supports_fd
+)
 
 
 class Refusal(ValueError):
@@ -240,7 +471,7 @@ def _result(
 
 
 def emit(payload: dict[str, object]) -> None:
-    print(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+    sys.stdout.write(_canonical_json(payload).decode("utf-8"))
 
 
 def _object_without_duplicates(pairs: list[tuple[str, object]]) -> dict[str, object]:
@@ -252,18 +483,29 @@ def _object_without_duplicates(pairs: list[tuple[str, object]]) -> dict[str, obj
     return result
 
 
+def _stat_identity(value: os.stat_result) -> tuple[int, int, int, int, int, int]:
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_mode,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
 def _read_open_regular(
     descriptor: int,
     field: str,
     limit: int,
-    expected_identity: tuple[int, int] | None = None,
-) -> tuple[bytes, tuple[int, int]]:
+    expected_identity: tuple[int, int, int, int, int, int] | None = None,
+) -> tuple[bytes, tuple[int, int, int, int, int, int]]:
     close_failed = False
     try:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             refuse("NOE-E-PATH.REGULAR", field, "opened input is not a regular file")
-        if expected_identity is not None and (before.st_dev, before.st_ino) != expected_identity:
+        if expected_identity is not None and _stat_identity(before) != expected_identity:
             refuse("NOE-E-PATH.IDENTITY", field, "input identity changed before read")
         if before.st_size > limit:
             refuse("NOE-E-BOUNDS.FILE", field, "input exceeds its byte limit")
@@ -292,26 +534,18 @@ def _read_open_regular(
     if close_failed:
         refuse("NOE-E-IO.READ", field, "regular input descriptor could not be closed")
 
-    before_identity = (
-        before.st_dev,
-        before.st_ino,
-        before.st_size,
-        before.st_mtime_ns,
-        before.st_ctime_ns,
-    )
-    after_identity = (
-        after.st_dev,
-        after.st_ino,
-        after.st_size,
-        after.st_mtime_ns,
-        after.st_ctime_ns,
-    )
+    before_identity = _stat_identity(before)
+    after_identity = _stat_identity(after)
     if before_identity != after_identity or total != after.st_size:
         refuse("NOE-E-IO.CHANGED", field, "input changed during read")
-    return b"".join(chunks), (before.st_dev, before.st_ino)
+    return b"".join(chunks), after_identity
 
 
-def _read_regular(path: Path, field: str, limit: int) -> bytes:
+def _read_regular_identity(
+    path: Path,
+    field: str,
+    limit: int,
+) -> tuple[bytes, tuple[int, int, int, int, int, int]]:
     if not hasattr(os, "O_NOFOLLOW"):
         refuse("NOE-E-PATH.PLATFORM", field, "no-follow file reads are unavailable")
     try:
@@ -330,13 +564,384 @@ def _read_regular(path: Path, field: str, limit: int) -> bytes:
         descriptor = os.open(path, flags)
     except OSError:
         refuse("NOE-E-IO.READ", field, "regular input cannot be opened")
-    payload, _identity = _read_open_regular(
+    return _read_open_regular(
         descriptor,
         field,
         limit,
-        (before_path.st_dev, before_path.st_ino),
+        _stat_identity(before_path),
     )
+
+
+def _read_regular(path: Path, field: str, limit: int) -> bytes:
+    payload, _identity = _read_regular_identity(path, field, limit)
     return payload
+
+
+def _assert_path_file_identity(
+    path: Path,
+    identity: tuple[int, int, int, int, int, int],
+    field: str,
+) -> None:
+    try:
+        current = path.lstat()
+    except OSError:
+        refuse("NOE-E-IO.CHANGED", field, "input identity cannot be rechecked")
+    if _stat_identity(current) != identity:
+        refuse("NOE-E-IO.CHANGED", field, "input changed during aggregate verification")
+
+
+def _directory_flags() -> int:
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    return flags
+
+
+def _file_flags() -> int:
+    flags = os.O_RDONLY | os.O_NOFOLLOW
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    return flags
+
+
+def _open_real_directory(
+    path: Path,
+    field: str,
+) -> tuple[int, tuple[int, int, int, int, int, int]]:
+    if not SUPPORTS_CONFINED_DIRECTORIES:
+        refuse(
+            "NOE-E-PATH.PLATFORM",
+            field,
+            "confined no-follow directory operations are unavailable",
+        )
+    try:
+        before = path.lstat()
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "directory cannot be inspected")
+    if not stat.S_ISDIR(before.st_mode) or stat.S_ISLNK(before.st_mode):
+        refuse("NOE-E-PATH.DIRECTORY", field, "path must be one real directory")
+    descriptor = -1
+    try:
+        descriptor = os.open(path, _directory_flags())
+        opened = os.fstat(descriptor)
+    except OSError:
+        if descriptor >= 0:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+        refuse("NOE-E-PATH.CONFINEMENT", field, "directory changed or cannot be opened")
+    identity = _stat_identity(opened)
+    if identity != _stat_identity(before):
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        refuse("NOE-E-PATH.IDENTITY", field, "directory identity changed before open")
+    return descriptor, identity
+
+
+def _open_child_directory(
+    parent_descriptor: int,
+    leaf: str,
+    field: str,
+) -> tuple[int, tuple[int, int, int, int, int, int]]:
+    descriptor = -1
+    try:
+        before = os.stat(
+            leaf,
+            dir_fd=parent_descriptor,
+            follow_symlinks=False,
+        )
+        if stat.S_ISLNK(before.st_mode):
+            refuse(
+                "NOE-E-PATH.CONFINEMENT",
+                field,
+                "child directory must not be a symbolic link",
+            )
+        if not stat.S_ISDIR(before.st_mode):
+            refuse("NOE-E-PATH.DIRECTORY", field, "child must be one real directory")
+        descriptor = os.open(
+            leaf,
+            _directory_flags(),
+            dir_fd=parent_descriptor,
+        )
+        opened = os.fstat(descriptor)
+    except Refusal:
+        raise
+    except OSError:
+        if descriptor >= 0:
+            try:
+                os.close(descriptor)
+            except OSError:
+                pass
+        refuse("NOE-E-PATH.CONFINEMENT", field, "child directory changed or cannot be opened")
+    identity = _stat_identity(opened)
+    if identity != _stat_identity(before):
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+        refuse("NOE-E-PATH.IDENTITY", field, "child directory identity changed before open")
+    return descriptor, identity
+
+
+def _read_directory_regular(
+    directory_descriptor: int,
+    leaf: str,
+    field: str,
+    limit: int,
+) -> tuple[bytes, tuple[int, int, int, int, int, int]]:
+    try:
+        before = os.stat(
+            leaf,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        if not stat.S_ISREG(before.st_mode):
+            refuse("NOE-E-PATH.REGULAR", field, "input must be a regular file")
+        descriptor = os.open(
+            leaf,
+            _file_flags(),
+            dir_fd=directory_descriptor,
+        )
+    except Refusal:
+        raise
+    except FileNotFoundError:
+        refuse("NOE-E-IO.READ", field, "regular input cannot be opened")
+    except OSError:
+        refuse("NOE-E-PATH.CONFINEMENT", field, "input is absent, linked or escaping")
+    return _read_open_regular(
+        descriptor,
+        field,
+        limit,
+        _stat_identity(before),
+    )
+
+
+def _exact_directory_names(
+    descriptor: int,
+    expected: set[str],
+    field: str,
+) -> None:
+    if len(expected) > MAX_RECORDS:
+        refuse(
+            "NOE-E-BOUNDS.ARTIFACTS",
+            field,
+            "closed directory inventory exceeds its member limit",
+        )
+    seen: set[str] = set()
+    try:
+        with os.scandir(descriptor) as entries:
+            for entry in entries:
+                name = entry.name
+                if name not in expected or name in seen:
+                    refuse(
+                        "NOE-E-REFERENCE.EXTRA_MEMBER",
+                        field,
+                        "directory differs from its closed inventory",
+                    )
+                seen.add(name)
+    except Refusal:
+        raise
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "closed directory cannot be listed")
+    if seen != expected:
+        refuse(
+            "NOE-E-REFERENCE.EXTRA_MEMBER",
+            field,
+            "directory differs from its closed inventory",
+        )
+
+
+def _assert_directory_identity(
+    descriptor: int,
+    identity: tuple[int, int, int, int, int, int],
+    field: str,
+    *,
+    path: Path | None = None,
+    parent_descriptor: int | None = None,
+    leaf: str | None = None,
+) -> None:
+    try:
+        if _stat_identity(os.fstat(descriptor)) != identity:
+            refuse("NOE-E-IO.CHANGED", field, "directory changed during verification")
+        if path is not None:
+            current = path.lstat()
+        else:
+            assert parent_descriptor is not None and leaf is not None
+            current = os.stat(
+                leaf,
+                dir_fd=parent_descriptor,
+                follow_symlinks=False,
+            )
+    except Refusal:
+        raise
+    except OSError:
+        refuse("NOE-E-IO.CHANGED", field, "directory identity cannot be rechecked")
+    if _stat_identity(current) != identity:
+        refuse("NOE-E-PATH.IDENTITY", field, "directory path changed during verification")
+
+
+def _assert_directory_file_identity(
+    descriptor: int,
+    leaf: str,
+    identity: tuple[int, int, int, int, int, int],
+    field: str,
+) -> None:
+    try:
+        current = os.stat(
+            leaf,
+            dir_fd=descriptor,
+            follow_symlinks=False,
+        )
+    except OSError:
+        refuse("NOE-E-IO.CHANGED", field, "input identity cannot be rechecked")
+    if _stat_identity(current) != identity:
+        refuse("NOE-E-IO.CHANGED", field, "input changed during aggregate verification")
+
+
+class _DirectorySnapshot:
+    """Open directory identities retained until aggregate verification ends."""
+
+    __slots__ = (
+        "path",
+        "field",
+        "root_descriptor",
+        "root_identity",
+        "children",
+        "files",
+    )
+
+    def __init__(
+        self,
+        path: Path,
+        field: str,
+        root_descriptor: int,
+        root_identity: tuple[int, int, int, int, int, int],
+    ) -> None:
+        self.path = path
+        self.field = field
+        self.root_descriptor = root_descriptor
+        self.root_identity = root_identity
+        self.children: dict[
+            str,
+            tuple[int, tuple[int, int, int, int, int, int]],
+        ] = {}
+        self.files: dict[
+            str,
+            tuple[int, int, int, int, int, int],
+        ] = {}
+
+    def verify(self) -> None:
+        root_names = set(self.children)
+        child_names = {leaf: set() for leaf in self.children}
+        for path, identity in sorted(self.files.items()):
+            parts = PurePosixPath(path).parts
+            if len(parts) == 1:
+                descriptor = self.root_descriptor
+                leaf = parts[0]
+                root_names.add(leaf)
+            else:
+                descriptor = self.children[parts[0]][0]
+                leaf = parts[1]
+                child_names[parts[0]].add(leaf)
+            _assert_directory_file_identity(
+                descriptor,
+                leaf,
+                identity,
+                f"{self.field}.{path}",
+            )
+        for leaf, (descriptor, identity) in sorted(self.children.items()):
+            _exact_directory_names(
+                descriptor,
+                child_names[leaf],
+                f"{self.field}.{leaf}",
+            )
+            _assert_directory_identity(
+                descriptor,
+                identity,
+                f"{self.field}.{leaf}",
+                parent_descriptor=self.root_descriptor,
+                leaf=leaf,
+            )
+        _exact_directory_names(
+            self.root_descriptor,
+            root_names,
+            self.field,
+        )
+        _assert_directory_identity(
+            self.root_descriptor,
+            self.root_identity,
+            self.field,
+            path=self.path,
+        )
+
+    def close(self, *, refuse_on_error: bool = True) -> bool:
+        failed = False
+        for descriptor, _identity in reversed(list(self.children.values())):
+            try:
+                os.close(descriptor)
+            except OSError:
+                failed = True
+        self.children.clear()
+        if self.root_descriptor >= 0:
+            try:
+                os.close(self.root_descriptor)
+            except OSError:
+                failed = True
+            self.root_descriptor = -1
+        if failed and refuse_on_error:
+            refuse(
+                "NOE-E-IO.READ",
+                self.field,
+                "snapshot directory descriptor could not be closed",
+            )
+        return failed
+
+
+class _SnapshotSet:
+    """Close every retained aggregate snapshot on success or refusal."""
+
+    def __init__(self) -> None:
+        self.snapshots: list[_DirectorySnapshot] = []
+        self.files: list[
+            tuple[Path, tuple[int, int, int, int, int, int], str]
+        ] = []
+
+    def __enter__(self) -> _SnapshotSet:
+        return self
+
+    def add(self, snapshot: _DirectorySnapshot) -> None:
+        self.snapshots.append(snapshot)
+
+    def add_file(
+        self,
+        path: Path,
+        identity: tuple[int, int, int, int, int, int],
+        field: str,
+    ) -> None:
+        self.files.append((path, identity, field))
+
+    def verify(self) -> None:
+        for snapshot in self.snapshots:
+            snapshot.verify()
+        for path, identity, field in self.files:
+            _assert_path_file_identity(path, identity, field)
+
+    def __exit__(self, exception_type, _exception, _traceback) -> bool:
+        close_failed = False
+        for snapshot in reversed(self.snapshots):
+            close_failed = snapshot.close(refuse_on_error=False) or close_failed
+        self.snapshots.clear()
+        self.files.clear()
+        if close_failed and exception_type is None:
+            refuse(
+                "NOE-E-IO.READ",
+                "corpus",
+                "aggregate snapshot descriptor could not be closed",
+            )
+        return False
 
 
 def _read_repository_regular(
@@ -344,43 +949,60 @@ def _read_repository_regular(
     relative: str,
     field: str,
     limit: int,
-) -> tuple[bytes, tuple[int, int]]:
-    if (
-        not hasattr(os, "O_NOFOLLOW")
-        or not hasattr(os, "O_DIRECTORY")
-        or os.open not in os.supports_dir_fd
-    ):
-        refuse("NOE-E-PATH.PLATFORM", field, "confined no-follow reads are unavailable")
+) -> tuple[bytes, tuple[int, int, int, int, int, int]]:
     relative = _relative_path(relative, field)
     components = PurePosixPath(relative).parts
-    directory_flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY
-    file_flags = os.O_RDONLY | os.O_NOFOLLOW
-    if hasattr(os, "O_CLOEXEC"):
-        directory_flags |= os.O_CLOEXEC
-        file_flags |= os.O_CLOEXEC
-
-    directories: list[int] = []
+    root_descriptor = -1
+    root_identity: tuple[int, int, int, int, int, int] | None = None
+    directories: list[tuple[str, int, tuple[int, int, int, int, int, int], int]] = []
     close_failed = False
     try:
-        current = os.open(root, directory_flags)
-        directories.append(current)
-        if not stat.S_ISDIR(os.fstat(current).st_mode):
-            refuse("NOE-E-PATH.DIRECTORY", field, "repository root is not one real directory")
+        root_descriptor, root_identity = _open_real_directory(root, field)
+        current = root_descriptor
         for component in components[:-1]:
-            current = os.open(component, directory_flags, dir_fd=current)
-            directories.append(current)
-            if not stat.S_ISDIR(os.fstat(current).st_mode):
-                refuse("NOE-E-PATH.DIRECTORY", field, "source ancestor is not one real directory")
-        descriptor = os.open(components[-1], file_flags, dir_fd=current)
-        payload, identity = _read_open_regular(descriptor, field, limit)
-    except Refusal:
-        raise
-    except OSError:
-        refuse("NOE-E-PATH.CONFINEMENT", field, "source path is absent, linked or escaping")
+            descriptor, identity = _open_child_directory(
+                current,
+                component,
+                field,
+            )
+            directories.append((component, descriptor, identity, current))
+            current = descriptor
+        payload, identity = _read_directory_regular(
+            current,
+            components[-1],
+            field,
+            limit,
+        )
+        _assert_directory_file_identity(
+            current,
+            components[-1],
+            identity,
+            field,
+        )
+        for component, descriptor, directory_identity, parent in reversed(directories):
+            _assert_directory_identity(
+                descriptor,
+                directory_identity,
+                field,
+                parent_descriptor=parent,
+                leaf=component,
+            )
+        assert root_identity is not None
+        _assert_directory_identity(
+            root_descriptor,
+            root_identity,
+            field,
+            path=root,
+        )
     finally:
-        for descriptor in reversed(directories):
+        for _component, descriptor, _identity, _parent in reversed(directories):
             try:
                 os.close(descriptor)
+            except OSError:
+                close_failed = True
+        if root_descriptor >= 0:
+            try:
+                os.close(root_descriptor)
             except OSError:
                 close_failed = True
     if close_failed:
@@ -455,6 +1077,49 @@ def _root_path(value: object, field: str) -> str:
     return text
 
 
+def _validate_inventory_value(
+    value: object,
+    field: str = "inventory",
+) -> dict[str, object]:
+    inventory = _exact_keys(value, {"schema", "archive", "files"}, field)
+    if inventory["schema"] != INVENTORY_SCHEMA:
+        refuse("NOE-E-TYPE.VERSION", f"{field}.schema", "unsupported inventory schema")
+
+    archive = _exact_keys(
+        inventory["archive"],
+        {"name", "url", "bytes", "sha256", "root"},
+        f"{field}.archive",
+    )
+    if _bounded_string(archive["name"], f"{field}.archive.name", 256) != "noema-v0-evidence.zip":
+        refuse("NOE-E-TYPE.ARCHIVE_NAME", f"{field}.archive.name", "unexpected archive name")
+    url = _bounded_string(archive["url"], f"{field}.archive.url", 2048)
+    if not url.startswith("https://"):
+        refuse("NOE-E-TYPE.URL", f"{field}.archive.url", "archive URL must use HTTPS")
+    _bounded_integer(archive["bytes"], f"{field}.archive.bytes", MAX_ARCHIVE_BYTES, minimum=1)
+    _digest(archive["sha256"], f"{field}.archive.sha256")
+    _root_path(archive["root"], f"{field}.archive.root")
+
+    files = inventory["files"]
+    if not isinstance(files, list) or not files or len(files) > MAX_MEMBERS:
+        refuse("NOE-E-BOUNDS.MEMBERS", f"{field}.files", "file inventory count is outside its limit")
+    paths: list[str] = []
+    total = 0
+    for index, item in enumerate(files):
+        entry = _exact_keys(item, {"path", "bytes", "sha256"}, f"{field}.files[{index}]")
+        paths.append(_relative_path(entry["path"], f"{field}.files[{index}].path"))
+        total += _bounded_integer(
+            entry["bytes"],
+            f"{field}.files[{index}].bytes",
+            MAX_MEMBER_BYTES,
+        )
+        _digest(entry["sha256"], f"{field}.files[{index}].sha256")
+    if paths != sorted(paths) or len(paths) != len(set(paths)):
+        refuse("NOE-E-REFERENCE.FILE_ORDER", f"{field}.files", "file paths must be unique and sorted")
+    if total > MAX_TOTAL_MEMBER_BYTES:
+        refuse("NOE-E-BOUNDS.TOTAL", f"{field}.files", "inventoried bytes exceed the aggregate limit")
+    return inventory
+
+
 def load_inventory(path: Path) -> tuple[dict[str, object], bytes]:
     raw = _read_regular(path, "inventory", MAX_JSON_BYTES)
     try:
@@ -470,42 +1135,7 @@ def load_inventory(path: Path) -> tuple[dict[str, object], bytes]:
     except (ValueError, RecursionError):
         refuse("NOE-E-SYNTAX.JSON", "inventory", "inventory is not bounded JSON")
 
-    inventory = _exact_keys(value, {"schema", "archive", "files"}, "inventory")
-    if inventory["schema"] != INVENTORY_SCHEMA:
-        refuse("NOE-E-TYPE.VERSION", "inventory.schema", "unsupported inventory schema")
-
-    archive = _exact_keys(
-        inventory["archive"],
-        {"name", "url", "bytes", "sha256", "root"},
-        "inventory.archive",
-    )
-    if _bounded_string(archive["name"], "inventory.archive.name", 256) != "noema-v0-evidence.zip":
-        refuse("NOE-E-TYPE.ARCHIVE_NAME", "inventory.archive.name", "unexpected archive name")
-    url = _bounded_string(archive["url"], "inventory.archive.url", 2048)
-    if not url.startswith("https://"):
-        refuse("NOE-E-TYPE.URL", "inventory.archive.url", "archive URL must use HTTPS")
-    _bounded_integer(archive["bytes"], "inventory.archive.bytes", MAX_ARCHIVE_BYTES, minimum=1)
-    _digest(archive["sha256"], "inventory.archive.sha256")
-    _root_path(archive["root"], "inventory.archive.root")
-
-    files = inventory["files"]
-    if not isinstance(files, list) or not files or len(files) > MAX_MEMBERS:
-        refuse("NOE-E-BOUNDS.MEMBERS", "inventory.files", "file inventory count is outside its limit")
-    paths: list[str] = []
-    total = 0
-    for index, item in enumerate(files):
-        entry = _exact_keys(item, {"path", "bytes", "sha256"}, f"inventory.files[{index}]")
-        paths.append(_relative_path(entry["path"], f"inventory.files[{index}].path"))
-        total += _bounded_integer(
-            entry["bytes"],
-            f"inventory.files[{index}].bytes",
-            MAX_MEMBER_BYTES,
-        )
-        _digest(entry["sha256"], f"inventory.files[{index}].sha256")
-    if paths != sorted(paths) or len(paths) != len(set(paths)):
-        refuse("NOE-E-REFERENCE.FILE_ORDER", "inventory.files", "file paths must be unique and sorted")
-    if total > MAX_TOTAL_MEMBER_BYTES:
-        refuse("NOE-E-BOUNDS.TOTAL", "inventory.files", "inventoried bytes exceed the aggregate limit")
+    inventory = _validate_inventory_value(value)
     return inventory, raw
 
 
@@ -825,19 +1455,6 @@ def _read_canonical_json(
     ), raw
 
 
-def _module_path(directory: Path, module_id: str) -> Path:
-    try:
-        status = directory.lstat()
-    except OSError:
-        refuse("NOE-E-IO.READ", "modules", "module directory cannot be inspected")
-    if not stat.S_ISDIR(status.st_mode) or stat.S_ISLNK(status.st_mode):
-        refuse("NOE-E-PATH.DIRECTORY", "modules", "modules must be one real directory")
-    leaf = f"{module_id}.json"
-    if len(leaf.encode("utf-8")) > 255:
-        refuse("NOE-E-PATH.LEAF", "modules", "module filename exceeds the leaf-name limit")
-    return directory / leaf
-
-
 def _validate_type(value: object, known_types: dict[str, str], field: str) -> str:
     name = _identifier(value, field, qualified=isinstance(value, str) and "." in value)
     if name not in known_types:
@@ -872,6 +1489,14 @@ def _load_module_value(raw: bytes, expected_id: str, field: str) -> dict[str, ob
 def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str, dict[str, object]]:
     loaded: dict[str, dict[str, object]] = {}
     visiting: set[str] = set()
+    directory_descriptor, directory_identity = _open_real_directory(
+        directory,
+        "modules",
+    )
+    file_identities: dict[
+        str,
+        tuple[int, int, int, int, int, int],
+    ] = {}
 
     def visit(module_id: str, expected_digest: str) -> None:
         if module_id in visiting:
@@ -883,8 +1508,20 @@ def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str
         if len(loaded) + len(visiting) >= MAX_IMPORTS:
             refuse("NOE-E-BOUNDS.IMPORTS", "modules", "transitive module count exceeds its limit")
         visiting.add(module_id)
-        path = _module_path(directory, module_id)
-        raw = _read_regular(path, f"module.{module_id}", MAX_INPUT_BYTES)
+        leaf = f"{module_id}.json"
+        if len(leaf.encode("utf-8")) > 255:
+            refuse(
+                "NOE-E-PATH.LEAF",
+                "modules",
+                "module filename exceeds the leaf-name limit",
+            )
+        raw, file_identity = _read_directory_regular(
+            directory_descriptor,
+            leaf,
+            f"module.{module_id}",
+            MAX_INPUT_BYTES,
+        )
+        file_identities[leaf] = file_identity
         actual_digest = sha256(raw).hexdigest()
         if actual_digest != expected_digest:
             refuse("NOE-E-DIGEST.MODULE", module_id, "module digest does not match its import")
@@ -904,8 +1541,32 @@ def _load_modules(directory: Path, requested: list[tuple[str, str]]) -> dict[str
         loaded[module_id] = {"id": module_id, "sha256": actual_digest, "value": module}
         visiting.remove(module_id)
 
-    for module_id, digest in requested:
-        visit(module_id, digest)
+    try:
+        for module_id, digest in requested:
+            visit(module_id, digest)
+        for leaf, identity in sorted(file_identities.items()):
+            _assert_directory_file_identity(
+                directory_descriptor,
+                leaf,
+                identity,
+                f"module.{leaf.removesuffix('.json')}",
+            )
+        _assert_directory_identity(
+            directory_descriptor,
+            directory_identity,
+            "modules",
+            path=directory,
+        )
+    except BaseException:
+        try:
+            os.close(directory_descriptor)
+        except OSError:
+            pass
+        raise
+    try:
+        os.close(directory_descriptor)
+    except OSError:
+        refuse("NOE-E-IO.READ", "modules", "module directory descriptor could not be closed")
     return loaded
 
 
@@ -1861,9 +2522,10 @@ def _compile_records(
                     f"{field}.source",
                     MAX_INPUT_BYTES,
                 )
-                if identity in source_identities and source_identities[identity] != path:
+                file_key = identity[:2]
+                if file_key in source_identities and source_identities[file_key] != path:
                     refuse("NOE-E-REFERENCE.SOURCE_ALIAS", field, "one source file is named by multiple paths")
-                source_identities[identity] = path
+                source_identities[file_key] = path
                 if sha256(payload).hexdigest() != digest:
                     refuse("NOE-E-DIGEST.SOURCE", field, "bound source digest differs from repository bytes")
                 try:
@@ -2027,28 +2689,50 @@ def _atomic_write(path: Path, payload: bytes) -> None:
     if leaf in {"", ".", ".."} or len(encoded_leaf) > 255:
         refuse("NOE-E-PATH.LEAF", "output", "output leaf name is invalid")
     parent = path.parent
+    parent_descriptor, parent_identity = _open_real_directory(parent, "output")
     try:
-        parent_status = parent.lstat()
-    except OSError:
-        refuse("NOE-E-IO.WRITE", "output", "output directory cannot be inspected")
-    if not stat.S_ISDIR(parent_status.st_mode) or stat.S_ISLNK(parent_status.st_mode):
-        refuse("NOE-E-PATH.DIRECTORY", "output", "output parent must be one real directory")
-    try:
-        target_status = path.lstat()
+        target_status = os.stat(
+            leaf,
+            dir_fd=parent_descriptor,
+            follow_symlinks=False,
+        )
     except FileNotFoundError:
         target_status = None
     except OSError:
+        try:
+            os.close(parent_descriptor)
+        except OSError:
+            pass
         refuse("NOE-E-IO.WRITE", "output", "output target cannot be inspected")
     if target_status is not None and not stat.S_ISREG(target_status.st_mode):
+        try:
+            os.close(parent_descriptor)
+        except OSError:
+            pass
         refuse("NOE-E-PATH.REGULAR", "output", "existing output must be a regular file")
 
     descriptor = -1
-    directory_descriptor = -1
     temporary_name: str | None = None
     replaced = False
     try:
-        descriptor, temporary_name = tempfile.mkstemp(prefix=".noema-write-", dir=parent)
-        os.fchmod(descriptor, 0o600)
+        temporary_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+        if hasattr(os, "O_CLOEXEC"):
+            temporary_flags |= os.O_CLOEXEC
+        for _attempt in range(128):
+            candidate = f".noema-write-{secrets.token_hex(16)}"
+            try:
+                descriptor = os.open(
+                    candidate,
+                    temporary_flags,
+                    0o600,
+                    dir_fd=parent_descriptor,
+                )
+            except FileExistsError:
+                continue
+            temporary_name = candidate
+            break
+        if descriptor < 0 or temporary_name is None:
+            raise OSError("temporary output namespace is exhausted")
         offset = 0
         while offset < len(payload):
             written = os.write(descriptor, payload[offset:])
@@ -2058,19 +2742,41 @@ def _atomic_write(path: Path, payload: bytes) -> None:
         os.fsync(descriptor)
         os.close(descriptor)
         descriptor = -1
-        os.replace(temporary_name, path)
+        os.replace(
+            temporary_name,
+            leaf,
+            src_dir_fd=parent_descriptor,
+            dst_dir_fd=parent_descriptor,
+        )
         replaced = True
         temporary_name = None
-        flags = os.O_RDONLY
-        if hasattr(os, "O_DIRECTORY"):
-            flags |= os.O_DIRECTORY
-        if hasattr(os, "O_CLOEXEC"):
-            flags |= os.O_CLOEXEC
-        directory_descriptor = os.open(parent, flags)
-        os.fsync(directory_descriptor)
-        os.close(directory_descriptor)
-        directory_descriptor = -1
-    except OSError:
+        os.fsync(parent_descriptor)
+        written_payload, written_identity = _read_directory_regular(
+            parent_descriptor,
+            leaf,
+            "output",
+            MAX_OUTPUT_BYTES,
+        )
+        if written_payload != payload:
+            raise OSError("atomic output differs after replacement")
+        _assert_directory_file_identity(
+            parent_descriptor,
+            leaf,
+            written_identity,
+            "output",
+        )
+        current_parent = parent.lstat()
+        if (
+            current_parent.st_dev,
+            current_parent.st_ino,
+            current_parent.st_mode,
+        ) != (
+            parent_identity[0],
+            parent_identity[1],
+            parent_identity[2],
+        ):
+            raise OSError("output parent path changed during replacement")
+    except (OSError, Refusal, TypeError):
         refuse(
             "NOE-E-IO.SYNC" if replaced else "NOE-E-IO.WRITE",
             "output",
@@ -2082,16 +2788,25 @@ def _atomic_write(path: Path, payload: bytes) -> None:
                 os.close(descriptor)
             except OSError:
                 pass
-        if directory_descriptor >= 0:
-            try:
-                os.close(directory_descriptor)
-            except OSError:
-                pass
         if temporary_name is not None:
             try:
-                os.unlink(temporary_name)
+                os.unlink(temporary_name, dir_fd=parent_descriptor)
             except OSError:
                 pass
+        try:
+            os.close(parent_descriptor)
+        except OSError:
+            if not replaced:
+                refuse(
+                    "NOE-E-IO.WRITE",
+                    "output",
+                    "output directory descriptor could not be closed",
+                )
+            refuse(
+                "NOE-E-IO.SYNC",
+                "output",
+                "atomic output durable state is uncertain",
+            )
 
 
 def _strings(value: object) -> set[str]:
@@ -4109,16 +4824,13 @@ def explain_runtime(node_value: object, manifest_value: object) -> dict[str, obj
     node = _node_id(node_value, "node")
     manifest = _runtime_manifest(manifest_value)
     _literals, _definitions, selectable = _manifest_registry(manifest)
-    tape = manifest["tape"]
-    assert isinstance(tape, list)
-    by_id = {
-        _runtime_record_id(record): record
-        for record in tape
-        if isinstance(record, list)
-    }
-    if node not in by_id:
-        refuse("NOE-E-REFERENCE.NODE", "node", "node is not reachable in this manifest")
-    render = _canonical_json(by_id[node]).decode("utf-8").removesuffix("\n")
+    if node not in selectable:
+        refuse(
+            "NOE-E-REFERENCE.NODE",
+            "node",
+            "node is not a reachable explainable policy record",
+        )
+    render = _canonical_json(selectable[node]).decode("utf-8").removesuffix("\n")
     output = {
         "schema": EXPLANATION_SCHEMA,
         "authoritative": False,
@@ -4214,7 +4926,9 @@ def _validate_slice_projection(
     return projection
 
 
-def _verify_manifest_path(path: Path) -> tuple[dict[str, object], dict[str, object]]:
+def _verify_manifest_path_contents(
+    path: Path,
+) -> tuple[dict[str, object], dict[str, object]]:
     value, _raw = _read_canonical_json(path, "manifest", maximum_depth=MAX_DEPTH + 5)
     manifest = _validate_manifest_value(value)
     artifacts = manifest["artifacts"]
@@ -4260,6 +4974,50 @@ def _verify_manifest_path(path: Path) -> tuple[dict[str, object], dict[str, obje
     if projection != expected_projection:
         refuse("NOE-E-DIGEST.PROJECTION", "projection", "runtime projection is stale")
     return expected_manifest, projection
+
+
+def _verify_manifest_path(path: Path) -> tuple[dict[str, object], dict[str, object]]:
+    root = path.parent
+    root_descriptor, root_identity = _open_real_directory(root, "manifest")
+    close_failed = False
+    try:
+        anchored_raw, manifest_identity = _read_directory_regular(
+            root_descriptor,
+            path.name,
+            "manifest",
+            MAX_INPUT_BYTES,
+        )
+        manifest, projection = _verify_manifest_path_contents(path)
+        if _canonical_json(manifest) != anchored_raw:
+            refuse(
+                "NOE-E-DIGEST.MANIFEST",
+                "manifest",
+                "verified manifest differs from the anchored manifest leaf",
+            )
+        _assert_directory_file_identity(
+            root_descriptor,
+            path.name,
+            manifest_identity,
+            "manifest",
+        )
+        _assert_directory_identity(
+            root_descriptor,
+            root_identity,
+            "manifest",
+            path=root,
+        )
+    finally:
+        try:
+            os.close(root_descriptor)
+        except OSError:
+            close_failed = True
+    if close_failed:
+        refuse(
+            "NOE-E-IO.READ",
+            "manifest",
+            "manifest directory descriptor could not be closed",
+        )
+    return manifest, projection
 
 
 def _read_fact_array(path: Path, field: str) -> list[dict[str, object]]:
@@ -4446,6 +5204,2006 @@ def runtime_self_test() -> dict[str, object]:
     )
 
 
+def _read_confined(
+    root: Path,
+    relative: object,
+    field: str,
+    limit: int = MAX_JSON_BYTES,
+) -> bytes:
+    path = _relative_path(relative, field)
+    raw, _identity = _read_repository_regular(root, path, field, limit)
+    return raw
+
+
+def _read_confined_json(
+    root: Path,
+    relative: object,
+    field: str,
+) -> tuple[dict[str, object], bytes]:
+    raw = _read_confined(root, relative, field)
+    value = _decode_json(raw, field, canonical=True)
+    if not isinstance(value, dict):
+        refuse("NOE-E-TYPE.OBJECT", field, "expected one canonical JSON object")
+    return value, raw
+
+
+def _utf8_boundaries(raw: bytes, field: str) -> set[int]:
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        refuse("NOE-E-SYNTAX.UTF8", field, "bound source must be UTF-8")
+    if text.startswith("\ufeff"):
+        refuse("NOE-E-SYNTAX.BOM", field, "bound source must not carry a BOM")
+    boundaries = {0}
+    offset = 0
+    for character in text:
+        offset += len(character.encode("utf-8"))
+        boundaries.add(offset)
+    return boundaries
+
+
+def _source_identity(
+    value: object,
+    repository_root: Path,
+    field: str = "source_identity",
+    snapshots: _SnapshotSet | None = None,
+) -> tuple[dict[str, object], bytes]:
+    identity = _exact_keys(
+        value,
+        {"schema", "id", "path", "bytes", "sha256", "governed"},
+        field,
+    )
+    if identity["schema"] != SOURCE_IDENTITY_SCHEMA:
+        refuse("NOE-E-TYPE.VERSION", f"{field}.schema", "unsupported source identity")
+    specimen = _identifier(identity["id"], f"{field}.id")
+    source_path = _relative_path(identity["path"], f"{field}.path")
+    if (
+        specimen not in SPECIMEN_SOURCE_PATHS
+        or source_path != SPECIMEN_SOURCE_PATHS[specimen]
+    ):
+        refuse(
+            "NOE-E-REFERENCE.SOURCE",
+            f"{field}.path",
+            "specimen identity must name its fixed canonical skill source",
+        )
+    byte_count = _bounded_integer(
+        identity["bytes"], f"{field}.bytes", MAX_INPUT_BYTES, minimum=1
+    )
+    source_digest = _digest(identity["sha256"], f"{field}.sha256")
+    governed = _exact_keys(
+        identity["governed"], {"start", "end"}, f"{field}.governed"
+    )
+    start = _bounded_integer(
+        governed["start"], f"{field}.governed.start", MAX_INPUT_BYTES
+    )
+    end = _bounded_integer(
+        governed["end"], f"{field}.governed.end", MAX_INPUT_BYTES
+    )
+    if start != 0 or end != byte_count:
+        refuse(
+            "NOE-E-REFERENCE.GOVERNED",
+            f"{field}.governed",
+            "the specimen must partition the complete source byte range",
+        )
+    raw, file_identity = _read_repository_regular(
+        repository_root,
+        source_path,
+        f"{field}.path",
+        MAX_INPUT_BYTES,
+    )
+    if snapshots is not None:
+        snapshots.add_file(
+            repository_root / source_path,
+            file_identity,
+            f"{field}.path",
+        )
+    if len(raw) != byte_count or sha256(raw).hexdigest() != source_digest:
+        refuse(
+            "NOE-E-DIGEST.SOURCE",
+            field,
+            "bound source bytes differ from their exact identity",
+        )
+    _utf8_boundaries(raw, field)
+    return identity, raw
+
+
+def _source_span_document(
+    identity: dict[str, object],
+    source_raw: bytes,
+    graph: dict[str, object],
+) -> dict[str, object]:
+    boundaries = _utf8_boundaries(source_raw, "source_spans")
+    source_path = str(identity["path"])
+    source_digest = str(identity["sha256"])
+    mapped: list[dict[str, object]] = []
+    records = graph["records"]
+    assert isinstance(records, list)
+    for index, record_value in enumerate(records):
+        assert isinstance(record_value, list)
+        if record_value[0] != "rule":
+            continue
+        binding = _source_binding(
+            record_value[3], f"graph.records[{index}].source"
+        )
+        if binding[1] != source_path or binding[2] != source_digest:
+            refuse(
+                "NOE-E-DIGEST.SOURCE",
+                f"graph.records[{index}].source",
+                "rule source binding differs from the specimen identity",
+            )
+        start = _bounded_decimal(
+            binding[3], f"graph.records[{index}].source.start", len(source_raw)
+        )
+        end = _bounded_decimal(
+            binding[4], f"graph.records[{index}].source.end", len(source_raw)
+        )
+        if start >= end or start not in boundaries or end not in boundaries:
+            refuse(
+                "NOE-E-REFERENCE.SPAN",
+                f"graph.records[{index}].source",
+                "source span must be non-empty and end at UTF-8 scalar boundaries",
+            )
+        mapped.append(
+            {
+                "start": start,
+                "end": end,
+                "kind": "node",
+                "node": str(record_value[1]),
+                "reason": None,
+            }
+        )
+    if not mapped:
+        refuse(
+            "NOE-E-REFERENCE.SPAN",
+            "source_spans",
+            "a specimen must bind at least one reviewed source span",
+        )
+    mapped.sort(key=lambda item: (int(item["start"]), int(item["end"])))
+    spans: list[dict[str, object]] = []
+    cursor = 0
+    seen_nodes: set[str] = set()
+    for index, item in enumerate(mapped):
+        start = int(item["start"])
+        end = int(item["end"])
+        node = str(item["node"])
+        if node in seen_nodes:
+            refuse(
+                "NOE-E-REFERENCE.DUPLICATE_ID",
+                f"source_spans[{index}].node",
+                "one graph node cannot claim two source spans",
+            )
+        if start < cursor:
+            refuse(
+                "NOE-E-REFERENCE.SPAN_OVERLAP",
+                f"source_spans[{index}]",
+                "reviewed source spans overlap",
+            )
+        if start > cursor:
+            spans.append(
+                {
+                    "start": cursor,
+                    "end": start,
+                    "kind": "unsupported-remainder",
+                    "node": None,
+                    "reason": "unsupported-by-noema-v1",
+                }
+            )
+        spans.append(item)
+        cursor = end
+        seen_nodes.add(node)
+    if cursor < len(source_raw):
+        spans.append(
+            {
+                "start": cursor,
+                "end": len(source_raw),
+                "kind": "unsupported-remainder",
+                "node": None,
+                "reason": "unsupported-by-noema-v1",
+            }
+        )
+    shadow = any(item["kind"] == "unsupported-remainder" for item in spans)
+    return {
+        "schema": SOURCE_SPANS_SCHEMA,
+        "source": source_path,
+        "source_sha256": source_digest,
+        "governed": {"start": 0, "end": len(source_raw)},
+        "spans": spans,
+        "shadow": shadow,
+    }
+
+
+def _validate_source_spans(
+    value: object,
+    identity: dict[str, object],
+    source_raw: bytes,
+    graph: dict[str, object],
+    field: str = "source_spans",
+) -> dict[str, object]:
+    document = _exact_keys(
+        value,
+        {"schema", "source", "source_sha256", "governed", "spans", "shadow"},
+        field,
+    )
+    if document["schema"] != SOURCE_SPANS_SCHEMA:
+        refuse("NOE-E-TYPE.VERSION", f"{field}.schema", "unsupported source-span map")
+    if document["source"] != identity["path"]:
+        refuse("NOE-E-REFERENCE.SOURCE", f"{field}.source", "source path differs")
+    if _digest(document["source_sha256"], f"{field}.source_sha256") != identity["sha256"]:
+        refuse("NOE-E-DIGEST.SOURCE", field, "source-span digest differs")
+    governed = _exact_keys(document["governed"], {"start", "end"}, f"{field}.governed")
+    if governed != {"start": 0, "end": len(source_raw)}:
+        refuse(
+            "NOE-E-REFERENCE.GOVERNED",
+            f"{field}.governed",
+            "source-span map does not govern the complete source",
+        )
+    spans = document["spans"]
+    if not isinstance(spans, list) or not spans or len(spans) > MAX_SOURCE_SPANS:
+        refuse("NOE-E-BOUNDS.SPANS", f"{field}.spans", "span count is outside its limit")
+    boundaries = _utf8_boundaries(source_raw, field)
+    cursor = 0
+    nodes: set[str] = set()
+    remainders = 0
+    for index, item_value in enumerate(spans):
+        item = _exact_keys(
+            item_value,
+            {"start", "end", "kind", "node", "reason"},
+            f"{field}.spans[{index}]",
+        )
+        start = _bounded_integer(
+            item["start"], f"{field}.spans[{index}].start", len(source_raw)
+        )
+        end = _bounded_integer(
+            item["end"], f"{field}.spans[{index}].end", len(source_raw)
+        )
+        if start != cursor:
+            code = (
+                "NOE-E-REFERENCE.SPAN_OVERLAP"
+                if start < cursor
+                else "NOE-E-REFERENCE.SPAN_GAP"
+            )
+            refuse(code, f"{field}.spans[{index}]", "source spans must form one exact partition")
+        if start >= end or start not in boundaries or end not in boundaries:
+            refuse(
+                "NOE-E-REFERENCE.SPAN",
+                f"{field}.spans[{index}]",
+                "source span must be non-empty and scalar-aligned",
+            )
+        if item["kind"] == "node":
+            node = _identifier(item["node"], f"{field}.spans[{index}].node")
+            if item["reason"] is not None or node in nodes:
+                refuse(
+                    "NOE-E-REFERENCE.SPAN",
+                    f"{field}.spans[{index}]",
+                    "node span must name one unique node and no remainder reason",
+                )
+            nodes.add(node)
+        elif item["kind"] == "unsupported-remainder":
+            if item["node"] is not None or item["reason"] != "unsupported-by-noema-v1":
+                refuse(
+                    "NOE-E-AUTHORITY.REMAINDER",
+                    f"{field}.spans[{index}]",
+                    "unsupported remainder cannot name a node or grant authority",
+                )
+            remainders += 1
+        else:
+            refuse("NOE-E-TYPE.SPAN", f"{field}.spans[{index}].kind", "unknown span kind")
+        cursor = end
+    if cursor != len(source_raw):
+        refuse("NOE-E-REFERENCE.SPAN_GAP", field, "source-span map ends before the source")
+    if document["shadow"] is not (remainders > 0):
+        refuse("NOE-E-AUTHORITY.SHADOW", field, "shadow status differs from remainder evidence")
+    expected = _source_span_document(identity, source_raw, graph)
+    if document != expected:
+        refuse(
+            "NOE-E-DIGEST.SOURCE_SPANS",
+            field,
+            "source-span map differs from canonical graph bindings",
+        )
+    return document
+
+
+def _literal_set(specimen: str, graph: dict[str, object]) -> dict[str, object]:
+    literals: list[dict[str, object]] = []
+    records = graph["records"]
+    assert isinstance(records, list)
+    for record_value in records:
+        assert isinstance(record_value, list)
+        if record_value[0] != "literal":
+            continue
+        value = str(record_value[4])
+        literals.append(
+            {
+                "id": str(record_value[1]),
+                "kind": str(record_value[2]),
+                "bytes": len(value.encode("utf-8")),
+                "sha256": sha256(value.encode("utf-8")).hexdigest(),
+                "value": value,
+            }
+        )
+    literals.sort(key=lambda item: str(item["id"]))
+    return {"schema": LITERAL_SET_SCHEMA, "specimen": specimen, "literals": literals}
+
+
+def _question_set(value: object, specimen: str, field: str = "questions") -> dict[str, object]:
+    document = _exact_keys(value, {"schema", "specimen", "questions"}, field)
+    if document["schema"] != QUESTION_SET_SCHEMA or document["specimen"] != specimen:
+        refuse("NOE-E-TYPE.VERSION", field, "question set identity differs")
+    questions = document["questions"]
+    if not isinstance(questions, list) or not questions or len(questions) > MAX_QUESTIONS:
+        refuse("NOE-E-BOUNDS.QUESTIONS", field, "question count is outside its limit")
+    prior = ""
+    for index, item_value in enumerate(questions):
+        item = _exact_keys(
+            item_value,
+            {"id", "effect", "expected"},
+            f"{field}.questions[{index}]",
+        )
+        identifier = _identifier(item["id"], f"{field}.questions[{index}].id")
+        effect = _identifier(item["effect"], f"{field}.questions[{index}].effect")
+        if identifier <= prior:
+            refuse("NOE-E-SYNTAX.ORDER", field, "question ids must be unique and sorted")
+        prior = identifier
+        _check_expectation(
+            item["expected"],
+            effect,
+            f"{field}.questions[{index}].expected",
+        )
+    return document
+
+
+def _check_expectation(
+    value: object,
+    effect: str,
+    field: str,
+) -> dict[str, object]:
+    expected = _exact_keys(
+        value,
+        {
+            "schema",
+            "decision",
+            "effect",
+            "consequence",
+            "controlling_node",
+            "reason",
+        },
+        field,
+    )
+    if expected["schema"] != "noema-check/v1" or expected["effect"] != effect:
+        refuse("NOE-E-TYPE.RESULT", field, "expected check identity differs")
+    if expected["decision"] not in CHECK_DECISIONS:
+        refuse("NOE-E-TYPE.RESULT", f"{field}.decision", "unknown expected decision")
+    _bounded_integer(expected["consequence"], f"{field}.consequence", 3)
+    _node_id(expected["controlling_node"], f"{field}.controlling_node")
+    if expected["reason"] not in CHECK_REASONS:
+        refuse("NOE-E-TYPE.RESULT", f"{field}.reason", "unknown expected reason")
+    return expected
+
+
+def _answer_set(
+    specimen: str,
+    questions: dict[str, object],
+    manifest: dict[str, object],
+) -> dict[str, object]:
+    selection = manifest["selection"]
+    assert isinstance(selection, dict)
+    answers: list[dict[str, object]] = []
+    question_values = questions["questions"]
+    assert isinstance(question_values, list)
+    for question in question_values:
+        assert isinstance(question, dict)
+        result = check_runtime(str(question["effect"]), selection["facts"], manifest)
+        if result["output"] != question["expected"]:
+            refuse(
+                "NOE-E-REFERENCE.ANSWER",
+                f"questions.{question['id']}.expected",
+                "checked policy answer differs from the declared expectation",
+            )
+        answers.append({"id": str(question["id"]), "result": result})
+    decisions = {
+        str(item["result"]["output"]["decision"])
+        for item in answers
+        if isinstance(item["result"], dict)
+        and isinstance(item["result"].get("output"), dict)
+    }
+    if decisions != {"permit", "refuse", "unknown"}:
+        refuse(
+            "NOE-E-REFERENCE.ANSWERS",
+            "answers",
+            "each specimen must demonstrate permit, refuse and unknown decisions",
+        )
+    return {"schema": ANSWER_SET_SCHEMA, "specimen": specimen, "answers": answers}
+
+
+def _mutation_query(value: object, field: str) -> dict[str, object]:
+    if not isinstance(value, dict):
+        refuse("NOE-E-TYPE.OBJECT", field, "mutation query must be one object")
+    kind = value.get("kind")
+    expected = {
+        "check": {"kind", "effect"},
+        "next": {"kind", "machine", "state", "event"},
+        "literal": {"kind", "id"},
+        "explain": {"kind", "node"},
+    }.get(kind)
+    if expected is None:
+        refuse("NOE-E-TYPE.QUERY", f"{field}.kind", "unknown mutation query")
+    query = _exact_keys(value, expected, field)
+    for key in sorted(expected - {"kind"}):
+        _identifier(query[key], f"{field}.{key}")
+    return query
+
+
+def _mutation_plan(
+    value: object,
+    specimen: str,
+    field: str = "mutation_plan",
+) -> dict[str, object]:
+    document = _exact_keys(value, {"schema", "specimen", "mutations"}, field)
+    if document["schema"] != MUTATION_PLAN_SCHEMA or document["specimen"] != specimen:
+        refuse("NOE-E-TYPE.VERSION", field, "mutation plan identity differs")
+    mutations = document["mutations"]
+    if not isinstance(mutations, list) or not mutations or len(mutations) > MAX_MUTATIONS:
+        refuse("NOE-E-BOUNDS.MUTATIONS", field, "mutation count is outside its limit")
+    prior = ""
+    identifiers: list[str] = []
+    for index, item_value in enumerate(mutations):
+        item = _exact_keys(
+            item_value,
+            {"id", "category", "kind", "artifact", "query"},
+            f"{field}.mutations[{index}]",
+        )
+        identifier = _identifier(item["id"], f"{field}.mutations[{index}].id")
+        if identifier <= prior:
+            refuse("NOE-E-SYNTAX.ORDER", field, "mutation ids must be unique and sorted")
+        prior = identifier
+        identifiers.append(identifier)
+        if item["category"] not in MUTATION_CATEGORIES:
+            refuse(
+                "NOE-E-TYPE.MUTATION",
+                f"{field}.mutations[{index}].category",
+                "unknown mutation category",
+            )
+        if MUTATION_ASSIGNMENTS.get(identifier) != (specimen, item["category"]):
+            refuse(
+                "NOE-E-REFERENCE.MUTATION_ASSIGNMENT",
+                f"{field}.mutations[{index}]",
+                "mutation id, specimen and category differ from the fixed corpus assignment",
+            )
+        if item["kind"] not in {"source", "profile"}:
+            refuse(
+                "NOE-E-TYPE.MUTATION",
+                f"{field}.mutations[{index}].kind",
+                "mutation artifact kind must be source or profile",
+            )
+        artifact = _relative_path(
+            item["artifact"], f"{field}.mutations[{index}].artifact"
+        )
+        suffix = ".noe" if item["kind"] == "source" else ".json"
+        if artifact != f"mutations/{identifier}{suffix}":
+            refuse(
+                "NOE-E-PATH.MUTATION",
+                f"{field}.mutations[{index}].artifact",
+                "mutation artifact must use its exact specimen-owned id and suffix",
+            )
+        query = _mutation_query(
+            item["query"], f"{field}.mutations[{index}].query"
+        )
+        contract = MUTATION_CONTRACTS[item["category"]]
+        if item["kind"] != contract["kind"] or query != contract["query"]:
+            refuse(
+                "NOE-E-REFERENCE.MUTATION_CONTRACT",
+                f"{field}.mutations[{index}]",
+                "mutation kind or query differs from its fixed category contract",
+            )
+    expected_identifiers = sorted(
+        identifier
+        for identifier, (owner, _category) in MUTATION_ASSIGNMENTS.items()
+        if owner == specimen
+    )
+    if identifiers != expected_identifiers:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ASSIGNMENT",
+            field,
+            "specimen mutation inventory differs from its fixed corpus assignment",
+        )
+    return document
+
+
+def _execute_mutation_query(
+    query: dict[str, object],
+    manifest: dict[str, object],
+) -> dict[str, object]:
+    selection = manifest["selection"]
+    assert isinstance(selection, dict)
+    if query["kind"] == "check":
+        return check_runtime(str(query["effect"]), selection["facts"], manifest)
+    if query["kind"] == "next":
+        return next_runtime(
+            str(query["machine"]),
+            str(query["state"]),
+            str(query["event"]),
+            selection["facts"],
+            manifest,
+        )
+    if query["kind"] == "literal":
+        return literal_runtime(str(query["id"]), manifest)
+    return explain_runtime(str(query["node"]), manifest)
+
+
+def _mutation_answer_output(answer: object, field: str) -> dict[str, object]:
+    if not isinstance(answer, dict) or answer.get("schema") != RESULT_SCHEMA:
+        refuse("NOE-E-TYPE.RESULT", field, "mutation answer must be one Noema result")
+    output = answer.get("output")
+    if not isinstance(output, dict):
+        refuse("NOE-E-TYPE.RESULT", field, "mutation answer must carry one output")
+    return output
+
+
+def _validate_mutation_semantics(
+    outcome: dict[str, object],
+    planned: dict[str, object],
+    field: str,
+) -> None:
+    category = str(planned["category"])
+    contract = MUTATION_CONTRACTS[category]
+    if outcome["status"] != contract["status"]:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_OUTCOME",
+            field,
+            "mutation status differs from its fixed category contract",
+        )
+    baseline = _mutation_answer_output(
+        outcome["baseline_answer"], f"{field}.baseline_answer"
+    )
+    query = contract["query"]
+    assert isinstance(query, dict)
+    expected_command = str(query["kind"])
+    baseline_answer = outcome["baseline_answer"]
+    assert isinstance(baseline_answer, dict)
+    if baseline_answer.get("command") != expected_command:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_OUTCOME",
+            f"{field}.baseline_answer",
+            "baseline answer command differs from the mutation query",
+        )
+    if outcome["status"] == "refused":
+        if outcome["code"] != contract["code"]:
+            refuse(
+                "NOE-E-REFERENCE.MUTATION_OUTCOME",
+                f"{field}.code",
+                "mutation refusal code differs from its fixed category contract",
+            )
+        if category == "alias-collision":
+            if baseline.get("value") != "$(touch /tmp/noema-owned)":
+                refuse(
+                    "NOE-E-REFERENCE.MUTATION_OUTCOME",
+                    f"{field}.baseline_answer",
+                    "alias-collision baseline literal differs",
+                )
+        elif baseline.get("decision") != "permit":
+            refuse(
+                "NOE-E-REFERENCE.MUTATION_OUTCOME",
+                f"{field}.baseline_answer",
+                "refused mutation lacks its permitting baseline",
+            )
+        return
+
+    answer = _mutation_answer_output(outcome["answer"], f"{field}.answer")
+    changed_answer = outcome["answer"]
+    assert isinstance(changed_answer, dict)
+    if changed_answer.get("command") != expected_command:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_OUTCOME",
+            f"{field}.answer",
+            "changed answer command differs from the mutation query",
+        )
+    difference = outcome["diff"]
+    assert isinstance(difference, dict)
+    entries = difference.get("entries")
+    if not isinstance(entries, list):
+        refuse("NOE-E-TYPE.RESULT", f"{field}.diff", "mutation diff entries are absent")
+    facets = {
+        (str(item.get("node")), str(item.get("kind")))
+        for item in entries
+        if isinstance(item, dict)
+    }
+    if facets != contract["facets"]:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_FACETS",
+            f"{field}.diff",
+            "changed semantic facets differ from the fixed category contract",
+        )
+    if outcome["graph_sha256"] != difference.get("after_graph_sha256"):
+        refuse(
+            "NOE-E-DIGEST.GRAPH",
+            f"{field}.graph_sha256",
+            "mutation graph digest differs from its semantic diff",
+        )
+    if "decisions" in contract:
+        before, after = contract["decisions"]
+        if baseline.get("decision") != before or answer.get("decision") != after:
+            refuse(
+                "NOE-E-REFERENCE.MUTATION_OUTCOME",
+                field,
+                "policy decision transition differs from the fixed category contract",
+            )
+    elif category == "changed-exact-literal":
+        if (
+            baseline.get("id") != "lit.command"
+            or answer.get("id") != "lit.command"
+            or baseline.get("kind") != "command"
+            or answer.get("kind") != "command"
+            or baseline.get("value") != "$(touch /tmp/noema-owned)"
+            or answer.get("value") != "$(touch /tmp/noema-mutated)"
+        ):
+            refuse(
+                "NOE-E-REFERENCE.MUTATION_OUTCOME",
+                field,
+                "exact-literal mutation did not preserve identity and change exact bytes",
+            )
+    elif category == "reordered-effects":
+        if (
+            baseline.get("schema") != EXPLANATION_SCHEMA
+            or answer.get("schema") != EXPLANATION_SCHEMA
+            or baseline.get("authoritative") is not False
+            or answer.get("authoritative") is not False
+            or baseline.get("node") != "rule.ordered"
+            or answer.get("node") != "rule.ordered"
+        ):
+            refuse(
+                "NOE-E-REFERENCE.MUTATION_OUTCOME",
+                field,
+                "ordering mutation did not return two non-authoritative rule renders",
+            )
+        try:
+            before_record = json.loads(str(baseline["render"]))
+            after_record = json.loads(str(answer["render"]))
+        except (KeyError, TypeError, ValueError):
+            refuse(
+                "NOE-E-SYNTAX.JSON",
+                field,
+                "ordering mutation render is not one JSON record",
+            )
+        if (
+            not isinstance(before_record, list)
+            or not isinstance(after_record, list)
+            or len(before_record) != 4
+            or len(after_record) != 4
+            or before_record[:2] != after_record[:2]
+            or before_record[3] != after_record[3]
+            or not isinstance(before_record[2], list)
+            or not isinstance(after_record[2], list)
+            or len(before_record[2]) != 4
+            or after_record[2]
+            != [
+                before_record[2][0],
+                before_record[2][1],
+                before_record[2][3],
+                before_record[2][2],
+            ]
+        ):
+            refuse(
+                "NOE-E-REFERENCE.MUTATION_OUTCOME",
+                field,
+                "ordering mutation did not perform the exact declared effect swap",
+            )
+    if outcome["baseline_answer_sha256"] == outcome["answer_sha256"]:
+        refuse(
+            "NOE-E-MUTATION.UNCHANGED",
+            field,
+            "changed mutation did not change its declared query answer",
+        )
+
+
+def _mutation_record(
+    records: list[list[object]],
+    form: str,
+    identifier: str,
+    field: str,
+) -> list[object]:
+    matches = [
+        record
+        for record in records
+        if len(record) >= 2 and record[0] == form and record[1] == identifier
+    ]
+    if len(matches) != 1:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "mutation recipe requires one exact baseline record",
+        )
+    return matches[0]
+
+
+def _expected_source_mutation(
+    category: str,
+    baseline_raw: bytes,
+    field: str,
+) -> bytes:
+    baseline = _parse_source_lines(baseline_raw)
+    changed = copy.deepcopy(baseline)
+
+    def malformed() -> None:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "baseline does not admit the fixed mutation recipe",
+        )
+
+    try:
+        if category == "changed-exact-literal":
+            record = _mutation_record(changed, "literal", "lit.command", field)
+            if record[2:] != ["command", "25", "$(touch /tmp/noema-owned)"]:
+                malformed()
+            record[3:] = ["27", "$(touch /tmp/noema-mutated)"]
+        elif category == "consequence-3-bypass":
+            directive = _mutation_record(
+                changed, "rule", "rule.default", field
+            )[2]
+            marker = [
+                "!",
+                [
+                    "=",
+                    [":", "core.consequence", "3"],
+                    [":", "core.consequence", "3"],
+                ],
+            ]
+            if not isinstance(directive, list) or directive[:2] != [";", marker]:
+                malformed()
+            directive[1][1][1][2] = "0"
+            directive[1][1][2][2] = "0"
+        elif category == "dropped-negation":
+            directive = _mutation_record(
+                changed, "rule", "rule.negated", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "?"
+                or not isinstance(directive[1], list)
+                or len(directive[1]) != 2
+                or directive[1][0] != "~"
+            ):
+                malformed()
+            directive[1] = directive[1][1]
+        elif category == "missing-authority":
+            record = _mutation_record(changed, "rule", "rule.authorized", field)
+            directive = record[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "^"
+                or directive[1] != [":", "actor", "reviewer"]
+            ):
+                malformed()
+            record[2] = directive[2]
+        elif category == "omitted-dependency":
+            definitions = [record for record in changed if record[0] == "definition"]
+            if len(definitions) != 1:
+                malformed()
+            changed.remove(definitions[0])
+        elif category == "permission-for-prohibition":
+            directive = _mutation_record(
+                changed, "rule", "rule.blocked", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or not isinstance(directive[2], list)
+                or directive[2][0] != "-"
+            ):
+                malformed()
+            directive[2][0] = "+"
+        elif category == "reordered-effects":
+            directive = _mutation_record(
+                changed, "rule", "rule.ordered", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 4
+                or directive[0] != ";"
+            ):
+                malformed()
+            directive[2], directive[3] = directive[3], directive[2]
+        elif category == "stale-module":
+            record = _mutation_record(changed, "import", "core", field)
+            if len(record) != 3 or _digest(record[2], field) == "0" * 64:
+                malformed()
+            record[2] = "0" * 64
+        elif category == "swapped-actor":
+            directive = _mutation_record(
+                changed, "rule", "rule.authorized", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "^"
+                or directive[1] != [":", "actor", "reviewer"]
+            ):
+                malformed()
+            directive[1][2] = "intruder"
+        elif category == "unknown-guard-deletion":
+            record = _mutation_record(changed, "rule", "rule.unknown", field)
+            directive = record[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "?"
+            ):
+                malformed()
+            record[2] = directive[2]
+        elif category == "unknown-opcode":
+            directive = _mutation_record(
+                changed, "rule", "rule.permit", field
+            )[2]
+            if not isinstance(directive, list) or not directive or directive[0] != ";":
+                malformed()
+            directive[0] = "zap"
+        elif category == "widened-scope":
+            directive = _mutation_record(
+                changed, "rule", "rule.scoped", field
+            )[2]
+            if (
+                not isinstance(directive, list)
+                or len(directive) != 3
+                or directive[0] != "@"
+                or directive[1] != [":", "scope", "restricted"]
+            ):
+                malformed()
+            directive[1][2] = "global"
+        else:
+            malformed()
+    except (IndexError, KeyError, TypeError):
+        malformed()
+    return _canonical_source(changed)
+
+
+def _expected_profile_mutation(
+    category: str,
+    baseline_raw: bytes,
+    field: str,
+) -> bytes:
+    if category != "alias-collision":
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "category has no profile mutation recipe",
+        )
+    value = _decode_json(baseline_raw, field, canonical=True)
+    if not isinstance(value, dict) or not isinstance(value.get("aliases"), list):
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "baseline profile cannot admit the fixed alias-collision recipe",
+        )
+    changed = copy.deepcopy(value)
+    aliases = changed["aliases"]
+    assert isinstance(aliases, list)
+    collision = ["transition", "P"]
+    if collision in aliases:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "baseline already contains the fixed collision alias",
+        )
+    aliases.append(collision)
+    aliases.sort(key=lambda item: str(item[0]) if isinstance(item, list) and item else "")
+    return _canonical_json(changed)
+
+
+def _validate_mutation_artifact(
+    planned: dict[str, object],
+    artifact_raw: bytes,
+    baseline_source_raw: bytes,
+    baseline_profile_raw: bytes,
+    field: str,
+) -> None:
+    category = str(planned["category"])
+    expected = (
+        _expected_profile_mutation(category, baseline_profile_raw, field)
+        if planned["kind"] == "profile"
+        else _expected_source_mutation(category, baseline_source_raw, field)
+    )
+    if artifact_raw != expected:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ARTIFACT",
+            field,
+            "mutation bytes differ from the fixed one-change baseline recipe",
+        )
+
+
+def _mutation_results(
+    specimen: str,
+    directory: Path,
+    modules: Path,
+    profile_path: Path,
+    kernel_path: Path,
+    selection: dict[str, object],
+    baseline_build: dict[str, object],
+    baseline_manifest: dict[str, object],
+    plan: dict[str, object],
+) -> dict[str, object]:
+    results: list[dict[str, object]] = []
+    baseline_graph = baseline_build["graph"]
+    assert isinstance(baseline_graph, dict)
+    baseline_records = baseline_graph["records"]
+    assert isinstance(baseline_records, list)
+    baseline_source_raw = _canonical_source(baseline_records)
+    baseline_profile_raw = _read_regular(
+        profile_path, "mutation.baseline_profile", MAX_INPUT_BYTES
+    )
+    mutations = plan["mutations"]
+    assert isinstance(mutations, list)
+    for index, item_value in enumerate(mutations):
+        assert isinstance(item_value, dict)
+        query = _mutation_query(
+            item_value["query"], f"mutation_plan.mutations[{index}].query"
+        )
+        baseline_answer = _execute_mutation_query(query, baseline_manifest)
+        baseline_answer_sha256 = _value_sha256(baseline_answer)
+        artifact = _relative_path(
+            item_value["artifact"], f"mutation_plan.mutations[{index}].artifact"
+        )
+        artifact_raw = _read_confined(
+            directory,
+            artifact,
+            f"mutation_plan.mutations[{index}].artifact",
+            MAX_INPUT_BYTES,
+        )
+        _validate_mutation_artifact(
+            item_value,
+            artifact_raw,
+            baseline_source_raw,
+            baseline_profile_raw,
+            f"mutation.{item_value['id']}.artifact",
+        )
+        try:
+            if item_value["kind"] == "profile":
+                profile_value = _decode_json(
+                    artifact_raw,
+                    f"mutation.{item_value['id']}.profile",
+                    canonical=True,
+                )
+                kernel_raw = _read_regular(kernel_path, "kernel", MAX_INPUT_BYTES)
+                _validate_profile_value(
+                    profile_value,
+                    sha256(kernel_raw).hexdigest(),
+                )
+                refuse(
+                    "NOE-E-MUTATION.UNCHANGED",
+                    f"mutation.{item_value['id']}",
+                    "profile-only mutation did not change the semantic graph",
+                )
+            mutated_build, artifacts = compile_source(
+                artifact_raw,
+                modules,
+                profile_path,
+                kernel_path,
+            )
+            profile = _decode_json(artifacts["profile"], "profile", canonical=True)
+            assert isinstance(profile, dict)
+            mutated_manifest, _projection = select_runtime(
+                mutated_build,
+                profile,
+                sha256(artifacts["profile"]).hexdigest(),
+                selection,
+            )
+            mutated_graph = mutated_build["graph"]
+            assert isinstance(mutated_graph, dict)
+            before_digest = _value_sha256(baseline_graph)
+            after_digest = _value_sha256(mutated_graph)
+            difference = semantic_diff(baseline_build, mutated_build)
+            if before_digest == after_digest or not difference["entries"]:
+                refuse(
+                    "NOE-E-MUTATION.UNCHANGED",
+                    f"mutation.{item_value['id']}",
+                    "mutation did not change a declared semantic facet",
+                )
+            answer = _execute_mutation_query(query, mutated_manifest)
+            outcome: dict[str, object] = {
+                "id": str(item_value["id"]),
+                "category": str(item_value["category"]),
+                "status": "changed",
+                "graph_sha256": after_digest,
+                "diff_sha256": _value_sha256(difference),
+                "baseline_answer_sha256": baseline_answer_sha256,
+                "answer_sha256": _value_sha256(answer),
+                "diff": difference,
+                "baseline_answer": baseline_answer,
+                "answer": answer,
+            }
+        except Refusal as error:
+            if error.code == "NOE-E-MUTATION.UNCHANGED":
+                raise
+            outcome = {
+                "id": str(item_value["id"]),
+                "category": str(item_value["category"]),
+                "status": "refused",
+                "code": error.code,
+                "field": error.field,
+                "baseline_answer_sha256": baseline_answer_sha256,
+                "baseline_answer": baseline_answer,
+            }
+        _validate_mutation_semantics(
+            outcome,
+            item_value,
+            f"mutation_results.results[{index}]",
+        )
+        results.append(outcome)
+    return {
+        "schema": MUTATION_RESULTS_SCHEMA,
+        "specimen": specimen,
+        "results": results,
+    }
+
+
+def _validate_mutation_results(
+    value: object,
+    specimen: str,
+    plan: dict[str, object],
+    field: str = "mutation_results",
+) -> dict[str, object]:
+    document = _exact_keys(value, {"schema", "specimen", "results"}, field)
+    if document["schema"] != MUTATION_RESULTS_SCHEMA or document["specimen"] != specimen:
+        refuse("NOE-E-TYPE.VERSION", field, "mutation-result identity differs")
+    results = document["results"]
+    planned = plan["mutations"]
+    if not isinstance(results, list) or not isinstance(planned, list) or len(results) != len(planned):
+        refuse("NOE-E-REFERENCE.MUTATIONS", field, "mutation-result count differs from plan")
+    for index, (outcome_value, planned_value) in enumerate(zip(results, planned, strict=True)):
+        assert isinstance(planned_value, dict)
+        if not isinstance(outcome_value, dict):
+            refuse("NOE-E-TYPE.OBJECT", f"{field}.results[{index}]", "mutation result must be one object")
+        status = outcome_value.get("status")
+        expected = (
+            {
+                "id",
+                "category",
+                "status",
+                "code",
+                "field",
+                "baseline_answer_sha256",
+                "baseline_answer",
+            }
+            if status == "refused"
+            else {
+                "id",
+                "category",
+                "status",
+                "graph_sha256",
+                "diff_sha256",
+                "baseline_answer_sha256",
+                "answer_sha256",
+                "diff",
+                "baseline_answer",
+                "answer",
+            }
+            if status == "changed"
+            else None
+        )
+        if expected is None:
+            refuse("NOE-E-TYPE.MUTATION", f"{field}.results[{index}].status", "unknown mutation status")
+        outcome = _exact_keys(outcome_value, expected, f"{field}.results[{index}]")
+        if outcome["id"] != planned_value["id"] or outcome["category"] != planned_value["category"]:
+            refuse("NOE-E-REFERENCE.MUTATIONS", f"{field}.results[{index}]", "mutation result identity differs")
+        _digest(
+            outcome["baseline_answer_sha256"],
+            f"{field}.results[{index}].baseline_answer_sha256",
+        )
+        if _value_sha256(outcome["baseline_answer"]) != outcome["baseline_answer_sha256"]:
+            refuse(
+                "NOE-E-DIGEST.ANSWER",
+                f"{field}.results[{index}]",
+                "baseline mutation answer digest differs",
+            )
+        if status == "refused":
+            if not isinstance(outcome["code"], str) or not outcome["code"].startswith("NOE-E-"):
+                refuse("NOE-E-TYPE.RESULT", f"{field}.results[{index}].code", "mutation refusal code is invalid")
+            _safe_text(outcome["field"], f"{field}.results[{index}].field", 640)
+        else:
+            for key in ("graph_sha256", "diff_sha256", "answer_sha256"):
+                _digest(outcome[key], f"{field}.results[{index}].{key}")
+            if _value_sha256(outcome["diff"]) != outcome["diff_sha256"]:
+                refuse("NOE-E-DIGEST.DIFF", f"{field}.results[{index}]", "mutation diff digest differs")
+            if _value_sha256(outcome["answer"]) != outcome["answer_sha256"]:
+                refuse("NOE-E-DIGEST.ANSWER", f"{field}.results[{index}]", "mutation answer digest differs")
+            if not isinstance(outcome["diff"], dict) or outcome["diff"].get("schema") != DIFF_SCHEMA:
+                refuse("NOE-E-TYPE.RESULT", f"{field}.results[{index}].diff", "mutation diff shape differs")
+            if not isinstance(outcome["answer"], dict) or outcome["answer"].get("schema") != RESULT_SCHEMA:
+                refuse("NOE-E-TYPE.RESULT", f"{field}.results[{index}].answer", "mutation answer shape differs")
+        _validate_mutation_semantics(
+            outcome,
+            planned_value,
+            f"{field}.results[{index}]",
+        )
+    return document
+
+
+def _validate_literal_set(
+    value: object,
+    specimen: str,
+    graph: dict[str, object],
+    field: str = "literals",
+) -> dict[str, object]:
+    document = _exact_keys(value, {"schema", "specimen", "literals"}, field)
+    if document["schema"] != LITERAL_SET_SCHEMA or document["specimen"] != specimen:
+        refuse("NOE-E-TYPE.VERSION", field, "literal-set identity differs")
+    literals = document["literals"]
+    if not isinstance(literals, list) or len(literals) > MAX_RECORDS:
+        refuse("NOE-E-BOUNDS.LITERALS", field, "literal evidence count exceeds its limit")
+    prior = ""
+    for index, item_value in enumerate(literals):
+        item = _exact_keys(
+            item_value,
+            {"id", "kind", "bytes", "sha256", "value"},
+            f"{field}.literals[{index}]",
+        )
+        identifier = _identifier(item["id"], f"{field}.literals[{index}].id")
+        if identifier <= prior:
+            refuse("NOE-E-SYNTAX.ORDER", field, "literal evidence ids must be sorted")
+        prior = identifier
+        if item["kind"] not in LITERAL_KINDS:
+            refuse("NOE-E-TYPE.LITERAL_KIND", f"{field}.literals[{index}].kind", "unknown literal kind")
+        text = _literal_value(
+            str(item["kind"]), item["value"], f"{field}.literals[{index}].value"
+        )
+        if item["bytes"] != len(text.encode("utf-8")):
+            refuse("NOE-E-DIGEST.LITERAL_SIZE", f"{field}.literals[{index}]", "literal byte count differs")
+        if _digest(item["sha256"], f"{field}.literals[{index}].sha256") != sha256(text.encode("utf-8")).hexdigest():
+            refuse("NOE-E-DIGEST.LITERAL", f"{field}.literals[{index}]", "literal digest differs")
+    expected = _literal_set(specimen, graph)
+    if document != expected:
+        refuse("NOE-E-DIGEST.LITERAL", field, "literal evidence differs from the graph")
+    return document
+
+
+def _validate_answer_set(
+    value: object,
+    specimen: str,
+    questions: dict[str, object],
+    field: str = "answers",
+) -> dict[str, object]:
+    document = _exact_keys(value, {"schema", "specimen", "answers"}, field)
+    if document["schema"] != ANSWER_SET_SCHEMA or document["specimen"] != specimen:
+        refuse("NOE-E-TYPE.VERSION", field, "answer-set identity differs")
+    answers = document["answers"]
+    question_values = questions["questions"]
+    if not isinstance(answers, list) or not isinstance(question_values, list):
+        refuse("NOE-E-TYPE.ARRAY", field, "answer set must be one array")
+    expected_ids = [str(item["id"]) for item in question_values if isinstance(item, dict)]
+    actual_ids: list[str] = []
+    for index, item_value in enumerate(answers):
+        item = _exact_keys(item_value, {"id", "result"}, f"{field}.answers[{index}]")
+        actual_ids.append(_identifier(item["id"], f"{field}.answers[{index}].id"))
+        result = item["result"]
+        if not isinstance(result, dict) or result.get("schema") != RESULT_SCHEMA:
+            refuse("NOE-E-TYPE.RESULT", f"{field}.answers[{index}].result", "answer must be one Noema result")
+        _canonical_json(result)
+        question = question_values[index]
+        assert isinstance(question, dict)
+        if result.get("output") != question["expected"]:
+            refuse(
+                "NOE-E-REFERENCE.ANSWER",
+                f"{field}.answers[{index}].result",
+                "stored policy answer differs from the declared expectation",
+            )
+    if actual_ids != expected_ids:
+        refuse("NOE-E-REFERENCE.ANSWERS", field, "answer ids differ from the closed question set")
+    return document
+
+
+def _specimen_artifact_paths(
+    build: dict[str, object],
+    plan: dict[str, object],
+) -> set[str]:
+    paths = set(SPECIMEN_INPUT_LEAVES | SPECIMEN_OUTPUTS)
+    lock = build["lock"]
+    assert isinstance(lock, dict)
+    modules = lock["modules"]
+    assert isinstance(modules, list)
+    for module in modules:
+        assert isinstance(module, dict)
+        module_id = _identifier(module["id"], "specimen.inventory.module")
+        paths.add(f"modules/{module_id}.json")
+    mutations = plan["mutations"]
+    assert isinstance(mutations, list)
+    for index, mutation in enumerate(mutations):
+        assert isinstance(mutation, dict)
+        paths.add(
+            _relative_path(
+                mutation["artifact"],
+                f"specimen.inventory.mutations[{index}]",
+            )
+        )
+    return paths
+
+
+def _specimen_inventory(
+    payloads: dict[str, bytes],
+    field: str,
+) -> list[dict[str, object]]:
+    if not payloads or len(payloads) > MAX_RECORDS:
+        refuse(
+            "NOE-E-BOUNDS.ARTIFACTS",
+            field,
+            "specimen artifact count is outside its limit",
+        )
+    inventory: list[dict[str, object]] = []
+    total = 0
+    for path in sorted(payloads):
+        _relative_path(path, f"{field}.path")
+        raw = payloads[path]
+        total += len(raw)
+        if len(raw) > MAX_INPUT_BYTES or total > MAX_TOTAL_MEMBER_BYTES:
+            refuse(
+                "NOE-E-BOUNDS.ARTIFACTS",
+                field,
+                "specimen artifacts exceed their byte limits",
+            )
+        inventory.append(
+            {
+                "path": path,
+                "bytes": len(raw),
+                "sha256": sha256(raw).hexdigest(),
+            }
+        )
+    return inventory
+
+
+def _closed_specimen_inventory(
+    directory: Path,
+    specimen: str,
+    paths: set[str],
+    *,
+    hold_snapshot: bool = False,
+) -> (
+    list[dict[str, object]]
+    | tuple[list[dict[str, object]], _DirectorySnapshot]
+):
+    field = f"specimen.{specimen}.artifact_inventory"
+    root_files: set[str] = set()
+    children: dict[str, set[str]] = {}
+    for path in paths:
+        parts = PurePosixPath(path).parts
+        if len(parts) == 1:
+            root_files.add(parts[0])
+        elif len(parts) == 2 and parts[0] in {"modules", "mutations"}:
+            children.setdefault(parts[0], set()).add(parts[1])
+        else:
+            refuse(
+                "NOE-E-PATH.SPECIMEN",
+                field,
+                "specimen artifacts must be root leaves or one-level module and mutation leaves",
+            )
+    root_descriptor, root_identity = _open_real_directory(directory, field)
+    snapshot = _DirectorySnapshot(
+        directory,
+        field,
+        root_descriptor,
+        root_identity,
+    )
+    try:
+        _exact_directory_names(
+            root_descriptor,
+            root_files | set(children),
+            field,
+        )
+        for child, expected_names in sorted(children.items()):
+            descriptor, identity = _open_child_directory(
+                root_descriptor,
+                child,
+                f"{field}.{child}",
+            )
+            snapshot.children[child] = (descriptor, identity)
+            _exact_directory_names(
+                descriptor,
+                expected_names,
+                f"{field}.{child}",
+            )
+        payloads: dict[str, bytes] = {}
+        total = 0
+        for path in sorted(paths):
+            parts = PurePosixPath(path).parts
+            if len(parts) == 1:
+                descriptor = root_descriptor
+                leaf = parts[0]
+            else:
+                descriptor = snapshot.children[parts[0]][0]
+                leaf = parts[1]
+            remaining = MAX_TOTAL_MEMBER_BYTES - total
+            try:
+                raw, identity = _read_directory_regular(
+                    descriptor,
+                    leaf,
+                    f"{field}.{path}",
+                    min(MAX_INPUT_BYTES, remaining),
+                )
+            except Refusal as error:
+                if error.code == "NOE-E-BOUNDS.FILE":
+                    refuse(
+                        "NOE-E-BOUNDS.ARTIFACTS",
+                        field,
+                        "specimen artifacts exceed their byte limits",
+                    )
+                raise
+            total += len(raw)
+            payloads[path] = raw
+            snapshot.files[path] = identity
+        inventory = _specimen_inventory(payloads, field)
+        snapshot.verify()
+    except BaseException:
+        snapshot.close(refuse_on_error=False)
+        raise
+    if hold_snapshot:
+        return inventory, snapshot
+    snapshot.close()
+    return inventory
+
+
+def _derive_specimen(
+    directory: Path,
+    repository_root: Path,
+    snapshots: _SnapshotSet | None = None,
+) -> tuple[
+    dict[str, bytes],
+    dict[str, object],
+    dict[str, object],
+    dict[str, object],
+]:
+    identity_value, identity_raw = _read_confined_json(
+        directory, "source.json", "specimen.source_identity"
+    )
+    identity, bound_source = _source_identity(
+        identity_value,
+        repository_root,
+        snapshots=snapshots,
+    )
+    specimen = str(identity["id"])
+    source_raw = _read_confined(
+        directory, "source.noe", "specimen.canonical", MAX_INPUT_BYTES
+    )
+    modules = directory / "modules"
+    profile_path = directory / "profile.json"
+    kernel_path = directory / "kernel.noe"
+    build, artifacts = compile_source(
+        source_raw,
+        modules,
+        profile_path,
+        kernel_path,
+    )
+    if artifacts["source"] != source_raw:
+        refuse("NOE-E-DIGEST.RECOVERY", "specimen.canonical", "canonical source did not round trip")
+    graph = build["graph"]
+    lock = build["lock"]
+    assert isinstance(graph, dict) and isinstance(lock, dict)
+    profile = _decode_json(artifacts["profile"], "profile", canonical=True)
+    assert isinstance(profile, dict)
+    profile_digest = sha256(artifacts["profile"]).hexdigest()
+    full_projection = project_build(build, profile, profile_digest)
+    if recover_projection(full_projection, profile) != graph:
+        refuse("NOE-E-DIGEST.RECOVERY", "specimen.full_projection", "full projection did not recover the graph")
+    selection_value, selection_raw = _read_confined_json(
+        directory, "selection.json", "specimen.selection"
+    )
+    selection = _validate_selection(selection_value, "specimen.selection")
+    manifest, projection = select_runtime(
+        build,
+        profile,
+        profile_digest,
+        selection,
+    )
+    _validate_slice_projection(projection, manifest, profile)
+    spans = _source_span_document(identity, bound_source, graph)
+    literals = _literal_set(specimen, graph)
+    question_value, question_raw = _read_confined_json(
+        directory, "questions.json", "specimen.questions"
+    )
+    questions = _question_set(question_value, specimen)
+    answers = _answer_set(specimen, questions, manifest)
+    plan_value, plan_raw = _read_confined_json(
+        directory, "mutation-plan.json", "specimen.mutation_plan"
+    )
+    plan = _mutation_plan(plan_value, specimen)
+    mutation_results = _mutation_results(
+        specimen,
+        directory,
+        modules,
+        profile_path,
+        kernel_path,
+        selection,
+        build,
+        manifest,
+        plan,
+    )
+    outputs = {
+        "answers.json": _canonical_json(answers),
+        "build.json": artifacts["build"],
+        "full-projection.json": _canonical_json(full_projection),
+        "literals.json": _canonical_json(literals),
+        "lock.json": _canonical_json(lock),
+        "manifest.json": _canonical_json(manifest),
+        "mutation-results.json": _canonical_json(mutation_results),
+        "projection.json": _canonical_json(projection),
+        "source-spans.json": _canonical_json(spans),
+    }
+    artifact_paths = _specimen_artifact_paths(build, plan)
+    artifact_payloads = {
+        "kernel.noe": artifacts["kernel"],
+        "mutation-plan.json": plan_raw,
+        "profile.json": artifacts["profile"],
+        "questions.json": question_raw,
+        "selection.json": selection_raw,
+        "source.json": identity_raw,
+        "source.noe": source_raw,
+        **outputs,
+    }
+    for path in sorted(artifact_paths - set(artifact_payloads)):
+        artifact_payloads[path] = _read_confined(
+            directory,
+            path,
+            f"specimen.{specimen}.artifact_inventory.{path}",
+            MAX_INPUT_BYTES,
+        )
+    if set(artifact_payloads) != artifact_paths:
+        refuse(
+            "NOE-E-REFERENCE.ARTIFACT_INVENTORY",
+            f"specimen.{specimen}",
+            "derived specimen artifact inventory is incomplete",
+        )
+    artifact_inventory = _specimen_inventory(
+        artifact_payloads,
+        f"specimen.{specimen}.artifact_inventory",
+    )
+    mapped = sum(1 for item in spans["spans"] if item["kind"] == "node")
+    remainders = sum(
+        1 for item in spans["spans"] if item["kind"] == "unsupported-remainder"
+    )
+    record = {
+        "id": specimen,
+        "directory": f"specimens/{specimen}",
+        "source_identity_sha256": sha256(identity_raw).hexdigest(),
+        "source_sha256": str(identity["sha256"]),
+        "canonical_sha256": sha256(source_raw).hexdigest(),
+        "graph_sha256": str(lock["graph_sha256"]),
+        "lock_sha256": _value_sha256(lock),
+        "profile_sha256": str(lock["profile_sha256"]),
+        "kernel_sha256": str(lock["kernel_sha256"]),
+        "full_projection_sha256": sha256(outputs["full-projection.json"]).hexdigest(),
+        "manifest_sha256": sha256(outputs["manifest.json"]).hexdigest(),
+        "projection_sha256": sha256(outputs["projection.json"]).hexdigest(),
+        "literals_sha256": sha256(outputs["literals.json"]).hexdigest(),
+        "definitions_sha256": _value_sha256(manifest["definitions"]),
+        "source_spans_sha256": sha256(outputs["source-spans.json"]).hexdigest(),
+        "questions_sha256": sha256(_canonical_json(questions)).hexdigest(),
+        "answers_sha256": sha256(outputs["answers.json"]).hexdigest(),
+        "mutation_plan_sha256": sha256(plan_raw).hexdigest(),
+        "mutations_sha256": sha256(outputs["mutation-results.json"]).hexdigest(),
+        "artifact_inventory_sha256": _value_sha256(artifact_inventory),
+        "mapped_spans": mapped,
+        "unsupported_remainders": remainders,
+        "questions": len(questions["questions"]),
+        "mutations": len(plan["mutations"]),
+        "shadow": bool(spans["shadow"]),
+    }
+    distinct_objects = (
+        record["source_sha256"],
+        record["canonical_sha256"],
+        record["graph_sha256"],
+        record["full_projection_sha256"],
+        record["manifest_sha256"],
+        record["projection_sha256"],
+        record["literals_sha256"],
+        record["kernel_sha256"],
+        record["definitions_sha256"],
+    )
+    if len(set(distinct_objects)) != len(distinct_objects):
+        refuse(
+            "NOE-E-DIGEST.ARTIFACT_IDENTITY",
+            f"specimen.{specimen}",
+            "source, graph and derived specimen objects must have distinct identities",
+        )
+    return outputs, record, plan, mutation_results
+
+
+def _verify_specimen(
+    directory: Path,
+    repository_root: Path,
+    snapshots: _SnapshotSet | None = None,
+) -> tuple[
+    dict[str, object],
+    dict[str, object],
+    dict[str, object],
+    _DirectorySnapshot,
+]:
+    outputs, record, plan, mutation_results = _derive_specimen(
+        directory,
+        repository_root,
+        snapshots,
+    )
+    specimen = str(record["id"])
+    identity_value, _identity_raw = _read_confined_json(
+        directory, "source.json", f"specimen.{specimen}.source_identity"
+    )
+    identity, source_raw = _source_identity(
+        identity_value,
+        repository_root,
+        f"specimen.{specimen}.source_identity",
+        snapshots,
+    )
+    stored_build, _stored_raw, stored_artifacts = load_build(
+        directory / "build.json",
+        directory / "modules",
+        directory / "profile.json",
+        directory / "kernel.noe",
+    )
+    profile = _decode_json(stored_artifacts["profile"], "profile", canonical=True)
+    assert isinstance(profile, dict)
+    full_value, _full_raw = _read_confined_json(
+        directory, "full-projection.json", f"specimen.{specimen}.full_projection"
+    )
+    if recover_projection(full_value, profile) != stored_build["graph"]:
+        refuse("NOE-E-DIGEST.RECOVERY", f"specimen.{specimen}.full_projection", "full projection recovers another graph")
+    stored_manifest, _stored_projection = _verify_manifest_path(
+        directory / "manifest.json"
+    )
+    spans_value, _spans_raw = _read_confined_json(
+        directory, "source-spans.json", f"specimen.{specimen}.source_spans"
+    )
+    _validate_source_spans(
+        spans_value,
+        identity,
+        source_raw,
+        stored_build["graph"],
+        f"specimen.{specimen}.source_spans",
+    )
+    literal_value, _literal_raw = _read_confined_json(
+        directory, "literals.json", f"specimen.{specimen}.literals"
+    )
+    _validate_literal_set(
+        literal_value,
+        specimen,
+        stored_build["graph"],
+        f"specimen.{specimen}.literals",
+    )
+    question_value, _question_raw = _read_confined_json(
+        directory, "questions.json", f"specimen.{specimen}.questions"
+    )
+    questions = _question_set(
+        question_value, specimen, f"specimen.{specimen}.questions"
+    )
+    answer_value, _answer_raw = _read_confined_json(
+        directory, "answers.json", f"specimen.{specimen}.answers"
+    )
+    _validate_answer_set(
+        answer_value, specimen, questions, f"specimen.{specimen}.answers"
+    )
+    mutation_value, _mutation_raw = _read_confined_json(
+        directory,
+        "mutation-results.json",
+        f"specimen.{specimen}.mutation_results",
+    )
+    _validate_mutation_results(
+        mutation_value,
+        specimen,
+        plan,
+        f"specimen.{specimen}.mutation_results",
+    )
+    if _value_sha256(stored_manifest) != _value_sha256(
+        _decode_json(outputs["manifest.json"], "manifest", canonical=True)
+    ):
+        refuse("NOE-E-DIGEST.SPECIMEN", f"specimen.{specimen}.manifest", "stored manifest differs from regeneration")
+    for name in sorted(SPECIMEN_OUTPUTS):
+        raw = _read_confined(
+            directory,
+            name,
+            f"specimen.{specimen}.{name.removesuffix('.json')}",
+        )
+        if raw != outputs[name]:
+            refuse(
+                "NOE-E-DIGEST.SPECIMEN",
+                f"specimen.{specimen}.{name.removesuffix('.json')}",
+                "stored specimen artifact differs from deterministic regeneration",
+            )
+    artifact_paths = _specimen_artifact_paths(stored_build, plan)
+    closed = _closed_specimen_inventory(
+        directory,
+        specimen,
+        artifact_paths,
+        hold_snapshot=True,
+    )
+    assert isinstance(closed, tuple)
+    artifact_inventory, snapshot = closed
+    try:
+        if _value_sha256(artifact_inventory) != record["artifact_inventory_sha256"]:
+            refuse(
+                "NOE-E-DIGEST.ARTIFACT_INVENTORY",
+                f"specimen.{specimen}.artifact_inventory",
+                "stored specimen artifact inventory differs from regeneration",
+            )
+    except BaseException:
+        snapshot.close(refuse_on_error=False)
+        raise
+    return record, plan, mutation_results, snapshot
+
+
+def _verify_seed_reference(
+    root: Path,
+    seed_value: object,
+    *,
+    hold_snapshot: bool = False,
+    snapshots: _SnapshotSet | None = None,
+) -> (
+    tuple[dict[str, object], int]
+    | tuple[dict[str, object], int, _DirectorySnapshot]
+):
+    seed = _exact_keys(
+        seed_value,
+        {
+            "inventory",
+            "reference",
+            "mode",
+            "archive_sha256",
+            "inventory_sha256",
+            "reference_sha256",
+        },
+        "corpus.seed",
+    )
+    inventory_path = _relative_path(seed["inventory"], "corpus.seed.inventory")
+    reference = _artifact_leaf(seed["reference"], "corpus.seed.reference")
+    if seed["mode"] != "non-executable-reference-evidence":
+        refuse(
+            "NOE-E-AUTHORITY.SEED",
+            "corpus.seed.mode",
+            "seed reference must be labelled non-executable evidence",
+        )
+    archive_digest = _digest(
+        seed["archive_sha256"], "corpus.seed.archive_sha256"
+    )
+    expected_inventory_digest = _digest(
+        seed["inventory_sha256"], "corpus.seed.inventory_sha256"
+    )
+    expected_reference_digest = _digest(
+        seed["reference_sha256"], "corpus.seed.reference_sha256"
+    )
+    inventory_raw, inventory_identity = _read_repository_regular(
+        root,
+        inventory_path,
+        "corpus.seed.inventory",
+        MAX_INPUT_BYTES,
+    )
+    if snapshots is not None:
+        snapshots.add_file(
+            root / inventory_path,
+            inventory_identity,
+            "corpus.seed.inventory",
+        )
+    if sha256(inventory_raw).hexdigest() != expected_inventory_digest:
+        refuse(
+            "NOE-E-DIGEST.INVENTORY",
+            "corpus.seed.inventory",
+            "seed inventory bytes differ from the corpus manifest",
+        )
+    inventory_value = _decode_json(
+        inventory_raw,
+        "corpus.seed.inventory",
+        canonical=False,
+    )
+    inventory = _validate_inventory_value(inventory_value, "corpus.seed.inventory")
+    archive = inventory["archive"]
+    assert isinstance(archive, dict)
+    if _digest(archive["sha256"], "corpus.seed.inventory.archive.sha256") != archive_digest:
+        refuse("NOE-E-DIGEST.ARCHIVE", "corpus.seed", "seed archive digest differs")
+    files = inventory["files"]
+    if not isinstance(files, list) or len(files) != 17:
+        refuse(
+            "NOE-E-REFERENCE.MEMBERS",
+            "corpus.seed.inventory.files",
+            "the admitted seed reference must contain exactly 17 files",
+        )
+    expected_names: list[str] = []
+    expected_files: list[tuple[str, int, str]] = []
+    prior = ""
+    for index, item_value in enumerate(files):
+        item = _exact_keys(
+            item_value,
+            {"path", "bytes", "sha256"},
+            f"corpus.seed.inventory.files[{index}]",
+        )
+        relative = _relative_path(
+            item["path"], f"corpus.seed.inventory.files[{index}].path"
+        )
+        if "/" in relative or relative <= prior:
+            refuse(
+                "NOE-E-SYNTAX.ORDER",
+                "corpus.seed.inventory.files",
+                "reference file names must be flat, unique and sorted",
+            )
+        prior = relative
+        expected_names.append(relative)
+        byte_count = _bounded_integer(
+            item["bytes"],
+            f"corpus.seed.inventory.files[{index}].bytes",
+            MAX_MEMBER_BYTES,
+        )
+        digest = _digest(
+            item["sha256"], f"corpus.seed.inventory.files[{index}].sha256"
+        )
+        expected_files.append((relative, byte_count, digest))
+    reference_directory = root / reference
+    reference_descriptor, reference_identity = _open_real_directory(
+        reference_directory,
+        "corpus.seed.reference",
+    )
+    snapshot = _DirectorySnapshot(
+        reference_directory,
+        "corpus.seed.reference",
+        reference_descriptor,
+        reference_identity,
+    )
+    evidence: list[dict[str, object]] = []
+    try:
+        _exact_directory_names(
+            reference_descriptor,
+            set(expected_names),
+            "corpus.seed.reference",
+        )
+        for relative, byte_count, digest in expected_files:
+            field = f"corpus.seed.reference.{relative}"
+            raw, identity = _read_directory_regular(
+                reference_descriptor,
+                relative,
+                field,
+                MAX_MEMBER_BYTES,
+            )
+            snapshot.files[relative] = identity
+            if identity[2] & 0o111:
+                refuse(
+                    "NOE-E-AUTHORITY.SEED",
+                    field,
+                    "seed evidence must be regular and non-executable",
+                )
+            if len(raw) != byte_count or sha256(raw).hexdigest() != digest:
+                refuse(
+                    "NOE-E-DIGEST.MEMBER",
+                    field,
+                    "seed reference bytes differ from the verified inventory",
+                )
+            evidence.append(
+                {"path": relative, "bytes": byte_count, "sha256": digest}
+            )
+        if _value_sha256(evidence) != expected_reference_digest:
+            refuse(
+                "NOE-E-DIGEST.MEMBER",
+                "corpus.seed.reference",
+                "seed reference aggregate digest differs",
+            )
+        snapshot.verify()
+    except BaseException:
+        snapshot.close(refuse_on_error=False)
+        raise
+    if hold_snapshot:
+        return seed, len(files), snapshot
+    snapshot.close()
+    return seed, len(files)
+
+
+def _specimen_record(value: object, field: str) -> dict[str, object]:
+    keys = {
+        "id",
+        "directory",
+        "source_identity_sha256",
+        "source_sha256",
+        "canonical_sha256",
+        "graph_sha256",
+        "lock_sha256",
+        "profile_sha256",
+        "kernel_sha256",
+        "full_projection_sha256",
+        "manifest_sha256",
+        "projection_sha256",
+        "literals_sha256",
+        "definitions_sha256",
+        "source_spans_sha256",
+        "questions_sha256",
+        "answers_sha256",
+        "mutation_plan_sha256",
+        "mutations_sha256",
+        "artifact_inventory_sha256",
+        "mapped_spans",
+        "unsupported_remainders",
+        "questions",
+        "mutations",
+        "shadow",
+    }
+    record = _exact_keys(value, keys, field)
+    specimen = _identifier(record["id"], f"{field}.id")
+    directory = _relative_path(record["directory"], f"{field}.directory")
+    if directory != f"specimens/{specimen}":
+        refuse("NOE-E-PATH.SPECIMEN", f"{field}.directory", "specimen directory differs from its identity")
+    for key in sorted(item for item in keys if item.endswith("_sha256")):
+        _digest(record[key], f"{field}.{key}")
+    for key, maximum in (
+        ("mapped_spans", MAX_SOURCE_SPANS),
+        ("unsupported_remainders", MAX_SOURCE_SPANS),
+        ("questions", MAX_QUESTIONS),
+        ("mutations", MAX_MUTATIONS),
+    ):
+        _bounded_integer(record[key], f"{field}.{key}", maximum)
+    if not isinstance(record["shadow"], bool):
+        refuse("NOE-E-TYPE.BOOLEAN", f"{field}.shadow", "shadow must be Boolean")
+    if record["shadow"] is not True or record["unsupported_remainders"] < 1:
+        refuse(
+            "NOE-E-AUTHORITY.SHADOW",
+            field,
+            "every prototype specimen must retain an unsupported remainder and stay shadow-only",
+        )
+    return record
+
+
+def _verify_specimen_corpus_impl(
+    path: Path,
+    snapshots: _SnapshotSet,
+    repository_root: Path | None = None,
+) -> dict[str, object]:
+    raw, corpus_identity = _read_regular_identity(path, "corpus", MAX_INPUT_BYTES)
+    snapshots.add_file(path, corpus_identity, "corpus")
+    value = _decode_json(raw, "corpus", canonical=True)
+    corpus = _exact_keys(
+        value,
+        {"schema", "seed", "specimens", "critical_vectors"},
+        "corpus",
+    )
+    if corpus["schema"] != SPECIMEN_CORPUS_SCHEMA:
+        refuse("NOE-E-TYPE.VERSION", "corpus.schema", "unsupported specimen corpus")
+    root = path.parent
+    if repository_root is None:
+        repository_root = Path(__file__).resolve().parents[1]
+    seed_result = _verify_seed_reference(
+        root,
+        corpus["seed"],
+        hold_snapshot=True,
+        snapshots=snapshots,
+    )
+    assert len(seed_result) == 3
+    _seed, seed_files, seed_snapshot = seed_result
+    snapshots.add(seed_snapshot)
+    specimen_values = corpus["specimens"]
+    if not isinstance(specimen_values, list) or len(specimen_values) != 4:
+        refuse("NOE-E-BOUNDS.SPECIMENS", "corpus.specimens", "corpus must bind exactly four specimens")
+    expected_ids = ["brevitas", "fiat", "phylax", "sapheneia"]
+    records: list[dict[str, object]] = []
+    mutation_index: dict[str, tuple[str, dict[str, object]]] = {}
+    categories: list[str] = []
+    answer_digests: list[str] = []
+    graph_digests: list[str] = []
+    source_digests: list[str] = []
+    total_remainders = 0
+    for index, value_record in enumerate(specimen_values):
+        committed = _specimen_record(value_record, f"corpus.specimens[{index}]")
+        if committed["id"] != expected_ids[index]:
+            refuse("NOE-E-SYNTAX.ORDER", "corpus.specimens", "specimen ids must be the four sorted names")
+        directory = root / str(committed["directory"])
+        actual, plan, outcomes, specimen_snapshot = _verify_specimen(
+            directory,
+            repository_root,
+            snapshots,
+        )
+        snapshots.add(specimen_snapshot)
+        if committed != actual:
+            refuse(
+                "NOE-E-DIGEST.SPECIMEN",
+                f"corpus.specimens[{index}]",
+                "specimen manifest entry differs from regenerated artifacts",
+            )
+        records.append(actual)
+        source_digests.append(str(actual["source_sha256"]))
+        graph_digests.append(str(actual["graph_sha256"]))
+        answer_digests.append(str(actual["answers_sha256"]))
+        total_remainders += int(actual["unsupported_remainders"])
+        planned = plan["mutations"]
+        result_values = outcomes["results"]
+        assert isinstance(planned, list) and isinstance(result_values, list)
+        for planned_value, result_value in zip(planned, result_values, strict=True):
+            assert isinstance(planned_value, dict) and isinstance(result_value, dict)
+            identifier = str(planned_value["id"])
+            if identifier in mutation_index:
+                refuse("NOE-E-REFERENCE.DUPLICATE_ID", "corpus.mutations", "mutation id is duplicated")
+            mutation_index[identifier] = (str(planned_value["category"]), result_value)
+            categories.append(str(planned_value["category"]))
+    if sorted(categories) != sorted(MUTATION_CATEGORIES):
+        refuse(
+            "NOE-E-REFERENCE.MUTATIONS",
+            "corpus.mutations",
+            "corpus must contain each declared hostile mutation exactly once",
+        )
+    critical_values = corpus["critical_vectors"]
+    if not isinstance(critical_values, list) or len(critical_values) != len(CRITICAL_VECTORS):
+        refuse("NOE-E-BOUNDS.CRITICAL", "corpus.critical_vectors", "critical-vector set is incomplete")
+    prior = ""
+    for index, vector_value in enumerate(critical_values):
+        vector = _exact_keys(
+            vector_value,
+            {"id", "mutations"},
+            f"corpus.critical_vectors[{index}]",
+        )
+        identifier = _identifier(vector["id"], f"corpus.critical_vectors[{index}].id")
+        if identifier <= prior or identifier not in CRITICAL_VECTORS:
+            refuse("NOE-E-SYNTAX.ORDER", "corpus.critical_vectors", "critical vectors must be complete and sorted")
+        prior = identifier
+        mutation_ids = vector["mutations"]
+        if not isinstance(mutation_ids, list) or not mutation_ids:
+            refuse("NOE-E-REFERENCE.CRITICAL", f"corpus.critical_vectors[{index}]", "critical vector has no mutation")
+        normalized = [
+            _identifier(item, f"corpus.critical_vectors[{index}].mutations")
+            for item in mutation_ids
+        ]
+        if normalized != sorted(set(normalized)):
+            refuse("NOE-E-SYNTAX.ORDER", f"corpus.critical_vectors[{index}].mutations", "critical mutation ids must be sorted")
+        expected_mutations = list(CRITICAL_MUTATION_IDS[identifier])
+        if normalized != expected_mutations:
+            refuse(
+                "NOE-E-REFERENCE.CRITICAL",
+                f"corpus.critical_vectors[{index}]",
+                "critical vector differs from its complete fixed mutation set",
+            )
+        represented: set[str] = set()
+        for mutation_id in normalized:
+            if mutation_id not in mutation_index:
+                refuse("NOE-E-REFERENCE.CRITICAL", f"corpus.critical_vectors[{index}]", "critical mutation is absent")
+            category, outcome = mutation_index[mutation_id]
+            represented.add(category)
+            if outcome.get("status") not in {"changed", "refused"}:
+                refuse("NOE-E-REFERENCE.CRITICAL", f"corpus.critical_vectors[{index}]", "critical mutation did not produce a checked outcome")
+        allowed = set(CRITICAL_VECTORS[identifier])
+        if represented != allowed:
+            refuse("NOE-E-REFERENCE.CRITICAL", f"corpus.critical_vectors[{index}]", "critical vector names the wrong mutation category")
+    if [str(item["id"]) for item in critical_values] != sorted(CRITICAL_VECTORS):
+        refuse("NOE-E-REFERENCE.CRITICAL", "corpus.critical_vectors", "critical-vector identities differ")
+    result = {
+        "manifest": corpus,
+        "raw": raw,
+        "counts": {
+            "specimens": len(records),
+            "mutations": len(mutation_index),
+            "critical": len(critical_values),
+            "remainders": total_remainders,
+            "members": seed_files,
+        },
+        "digests": {
+            "manifest": sha256(raw).hexdigest(),
+            "source": _value_sha256(source_digests),
+            "graph": _value_sha256(graph_digests),
+            "cases": _value_sha256(answer_digests),
+            "diff": _value_sha256(
+                [mutation_index[key][1] for key in sorted(mutation_index)]
+            ),
+        },
+    }
+    snapshots.verify()
+    return result
+
+
+def verify_specimen_corpus(path: Path) -> dict[str, object]:
+    with _SnapshotSet() as snapshots:
+        return _verify_specimen_corpus_impl(path, snapshots)
+
+
+def mutations_command(path: Path) -> dict[str, object]:
+    verified = verify_specimen_corpus(path)
+    counts = verified["counts"]
+    digests = verified["digests"]
+    assert isinstance(counts, dict) and isinstance(digests, dict)
+    return _result(
+        "mutations",
+        "ok",
+        "NOE-OK",
+        correlation_values=(str(digests["manifest"]), str(digests["diff"])),
+        message="all declared hostile mutations and critical vectors matched",
+        digests={key: str(value) for key, value in digests.items()},
+        counts={key: int(value) for key, value in counts.items()},
+    )
+
+
 def _common_paths(command: argparse.ArgumentParser, *, build: str = "--build") -> None:
     command.add_argument(build, required=True, type=Path)
     command.add_argument("--modules", required=True, type=Path)
@@ -4520,6 +7278,26 @@ def _diff_command(arguments: argparse.Namespace) -> dict[str, object]:
 
 def _verify_command(arguments: argparse.Namespace) -> dict[str, object]:
     if arguments.manifest is not None:
+        manifest_value, _manifest_raw = _read_canonical_json(
+            arguments.manifest, "manifest"
+        )
+        if manifest_value.get("schema") == SPECIMEN_CORPUS_SCHEMA:
+            verified = verify_specimen_corpus(arguments.manifest)
+            counts = verified["counts"]
+            digests = verified["digests"]
+            assert isinstance(counts, dict) and isinstance(digests, dict)
+            return _result(
+                "verify",
+                "ok",
+                "NOE-OK",
+                correlation_values=(
+                    str(digests["manifest"]),
+                    str(digests["diff"]),
+                ),
+                message="four source-bound shadow specimens regenerated exactly",
+                digests={key: str(value) for key, value in digests.items()},
+                counts={key: int(value) for key, value in counts.items()},
+            )
         manifest, projection = _verify_manifest_path(arguments.manifest)
         manifest_digest = _value_sha256(manifest)
         return _result(
@@ -4659,6 +7437,10 @@ def parser() -> argparse.ArgumentParser:
     verify_parser.add_argument("--modules", type=Path)
     verify_parser.add_argument("--profile", type=Path)
     verify_parser.add_argument("--kernel", type=Path)
+    mutations_parser = subparsers.add_parser(
+        "mutations", help="execute the source-bound hostile mutation corpus"
+    )
+    mutations_parser.add_argument("--manifest", required=True, type=Path)
     subparsers.add_parser("self-test", help="run the bounded codec/module/profile round trip")
     subparsers.add_parser("runtime-self-test", help="run the checked-in non-executing runtime demonstration")
     for command in UNIMPLEMENTED:
@@ -4700,12 +7482,15 @@ def main(argv: list[str] | None = None) -> int:
             payload = _explain_command(arguments)
         elif command == "verify":
             payload = _verify_command(arguments)
+        elif command == "mutations":
+            payload = mutations_command(arguments.manifest)
         elif command == "self-test":
             payload = self_test()
         elif command == "runtime-self-test":
             payload = runtime_self_test()
         else:
             payload = unimplemented(command)
+        emit(payload)
     except Refusal as error:
         payload = _result(
             command,
@@ -4717,7 +7502,6 @@ def main(argv: list[str] | None = None) -> int:
         )
         emit(payload)
         return 2
-    emit(payload)
     return 0
 
 

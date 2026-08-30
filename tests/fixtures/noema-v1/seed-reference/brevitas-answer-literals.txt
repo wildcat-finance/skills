@@ -1,0 +1,5 @@
+$evidence_exception quote:<!-- brevitas: evidence-exception reason="counterexample requires ordered steps" -->
+$finding_shape text:[High] Claim.\nLocation: `src/Contract.sol:42`\nMechanism: Concrete causal path.\nImpact: Concrete consequence.\nFix: Smallest correction.
+$cmd.stdin cmd:python3 scripts/brevitas.py - < draft.md
+$forbidden_phrases text:importantly\nnotably\nit's worth noting
+$mode_answer id:answer
