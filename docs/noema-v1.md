@@ -392,6 +392,8 @@ Version 1 applies every limit before returning a partial graph or result:
 | one literal | 65,000 decoded UTF-8 bytes |
 | all decoded literal occurrences | 786,432 bytes |
 | expanded macro graph | 65,536 nodes |
+| slice fixed-point scans | 65,536 records |
+| one recursive directive walk | 65,536 expanded nodes |
 | one recursive truth evaluation | 65,536 expanded nodes |
 | policy requirement pairs | 65,536 |
 | one finite quantifier set | 4,096 members |
@@ -404,6 +406,10 @@ levels respectively; every embedded source record and module document remains
 subject to the 64-level limit.
 Expanded-macro accounting substitutes an argument at every occurrence of its
 formal parameter; the macro-call node itself is absent from the expanded graph.
+Slice closure refuses before repeated fixed-point passes inspect more than
+65,536 record entries in aggregate.
+One shared directive counter covers the initial directive and every nested
+guard, authority, scope or sequence child visited while deriving intents.
 One shared counter covers the initial proposition and every recursively
 evaluated Boolean or quantified child, so quantifier substitution cannot reset
 the expansion budget per member.
