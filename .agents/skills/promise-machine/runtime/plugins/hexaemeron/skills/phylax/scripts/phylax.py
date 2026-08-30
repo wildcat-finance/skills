@@ -143,6 +143,14 @@ def _position(node: ast.AST) -> tuple[int, int]:
     return (getattr(node, "lineno", 0), getattr(node, "col_offset", 0))
 
 
+def _binding_position(node: ast.AST) -> tuple[int, int]:
+    """Return the point after an assignment's RHS has been evaluated."""
+    return (
+        getattr(node, "end_lineno", getattr(node, "lineno", 0)),
+        getattr(node, "end_col_offset", getattr(node, "col_offset", 0)),
+    )
+
+
 class _FunctionBindings:
     """Eligible direct assignments in one exact function body."""
 
@@ -190,7 +198,7 @@ class _FunctionBindingCollector(ast.NodeVisitor):
                 and isinstance(statement.targets[0], ast.Name)
             ):
                 self.candidates[statement.targets[0].id] = (
-                    _position(statement),
+                    _binding_position(statement),
                     statement.value,
                 )
             elif (
@@ -199,7 +207,7 @@ class _FunctionBindingCollector(ast.NodeVisitor):
                 and statement.value is not None
             ):
                 self.candidates[statement.target.id] = (
-                    _position(statement),
+                    _binding_position(statement),
                     statement.value,
                 )
             self.visit(statement)

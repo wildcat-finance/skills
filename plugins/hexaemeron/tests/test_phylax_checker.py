@@ -295,6 +295,29 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
             "    subprocess.run(command)\n"
         ))
 
+    def test_assignment_is_not_visible_inside_its_own_rhs(self):
+        self.assertEqual(["P002"], codes(
+            "import subprocess\n"
+            "def invoke():\n"
+            "    command = 'git status'; subprocess.run(command)\n"
+        ))
+        self.assert_codes(["P008"], {
+            "bare-dynamic-call": (
+                "def decode(payload):\n"
+                "    eval = eval(payload)\n"
+            ),
+            "direct-boundary-call": (
+                "from pickle import loads as decode\n"
+                "def invoke(payload):\n"
+                "    decode = decode(payload)\n"
+            ),
+        })
+        self.assertEqual([], codes(
+            "import subprocess\n"
+            "def invoke(secret):\n"
+            "    argv = subprocess.run(argv, env={'X': secret})\n"
+        ))
+
     def test_reassignments_and_nonassignment_writes_refuse_resolution(self):
         self.assert_codes([], {
             "reassignment": (
