@@ -1,12 +1,12 @@
 {
   "counts": {
-    "bytes_binary": 54685567,
+    "bytes_binary": 43883426,
     "bytes_content_addressed": 7844971,
     "bytes_generated": 21868014,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 2132
+    "files_walked": 2120
   },
   "entries": [
     {
@@ -44,41 +44,6 @@
       "evidence": "file signature png",
       "grade": "hard",
       "path": "assets/characters/shoggoth.png"
-    },
-    {
-      "bytes": 1166639,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-cover.png"
-    },
-    {
-      "bytes": 980185,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-fiat-flow.png"
-    },
-    {
-      "bytes": 1682633,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-mascot-fiat.png"
-    },
-    {
-      "bytes": 2171579,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-mascot-roles.png"
-    },
-    {
-      "bytes": 1068085,
-      "category": "binary",
-      "evidence": "file signature png",
-      "grade": "hard",
-      "path": "docs/assets/a-child-or-a-golden-retriever-whos-who.png"
     },
     {
       "bytes": 2168354,
@@ -128,20 +93,6 @@
       "evidence": "file signature png",
       "grade": "hard",
       "path": "docs/assets/shoggoth-help-queues.png"
-    },
-    {
-      "bytes": 43767,
-      "category": "binary",
-      "evidence": "file signature pdf",
-      "grade": "hard",
-      "path": "docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf"
-    },
-    {
-      "bytes": 3689253,
-      "category": "binary",
-      "evidence": "file signature pdf",
-      "grade": "hard",
-      "path": "docs/pdf/a-child-or-a-golden-retriever.pdf"
     },
     {
       "bytes": 2702044,

@@ -26,11 +26,6 @@ The [Shoggoth Interceptor](https://github.com/laurenceday/shoggoth-interceptor)
 is the same collective operating through an external problem-solving harness.
 It is an operating form, not another member, and it remains experimental.
 
-New here? Start with [A child or a golden retriever](./docs/a-child-or-a-golden-retriever.md),
-a five-minute primer for the Shoggoth, the Interceptor, Hex, and Fiat. It
-includes two infographics, a [short printable PDF](./docs/pdf/a-child-or-a-golden-retriever.pdf),
-and a [one-page quick-start](./docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf).
-
 To install the whole collective through the Agent Skills convention, select
 the one dependency-closed router:
 
