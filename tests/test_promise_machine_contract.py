@@ -527,6 +527,59 @@ class PromiseObligationTests(unittest.TestCase):
         )
         self.assertIn("PM006", [finding.code for finding in findings])
 
+    def test_required_section_gate_counts_commonmark_heading_forms(self):
+        law = LAW.read_text(encoding="utf-8")
+        cases = {
+            "indented-atx": "   ## Scope",
+            "closing-hashes": "## Scope ##",
+            "setext": "Scope\n-----",
+        }
+        for name, duplicate in cases.items():
+            with self.subTest(name=name):
+                text = f"{law}\n{duplicate}\n"
+                findings = promise_machine_module.validate_law_document(
+                    text.encode("utf-8"), text, f"{name}-section-decoy.md"
+                )
+                self.assertIn("PM006", [finding.code for finding in findings])
+
+    def test_section_gates_stop_at_commonmark_h1_and_h2_boundaries(self):
+        law = LAW.read_text(encoding="utf-8")
+        declaration = "The shared contract identity is `promise-machine/v1`."
+        cases = {
+            "indented-atx": f"   # Moved identity\n{declaration}",
+            "setext": f"Moved identity\n==============\n{declaration}",
+            "setext-after-non-one-list-marker": (
+                f"Moved identity\n2. continuation\n---\n{declaration}"
+            ),
+        }
+        for name, replacement in cases.items():
+            with self.subTest(name=name):
+                text = law.replace(declaration, replacement, 1)
+                findings = promise_machine_module.validate_law_document(
+                    text.encode("utf-8"), text, f"{name}-section-boundary.md"
+                )
+                self.assertIn("PM007", [finding.code for finding in findings])
+
+    def test_law_gates_honour_remaining_html_block_boundaries(self):
+        law = LAW.read_text(encoding="utf-8")
+        cases = {
+            "lowercase-declaration-is-visible": (
+                f"{law}\n<!doctype\n## Scope\n>\n",
+                "PM006",
+            ),
+            "hgroup-type-six-is-hidden": (
+                law.replace("## Scope", "## Scope changed", 1)
+                + "\n<hgroup\n## Scope\n\n",
+                "PM006",
+            ),
+        }
+        for name, (text, expected) in cases.items():
+            with self.subTest(name=name):
+                findings = promise_machine_module.validate_law_document(
+                    text.encode("utf-8"), text, f"{name}.md"
+                )
+                self.assertIn(expected, [finding.code for finding in findings])
+
     def test_fenced_obligation_marker_cannot_replace_an_authored_clause(self):
         with tempfile.TemporaryDirectory() as directory:
             target = Path(directory)

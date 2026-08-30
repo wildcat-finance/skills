@@ -96,7 +96,7 @@ HTML_COMMENT_OPEN = re.compile(r"^ {0,3}<!--")
 HTML_COMMENT_CLOSE = re.compile(r"-->")
 HTML_PROCESSING_OPEN = re.compile(r"^ {0,3}<\?")
 HTML_PROCESSING_CLOSE = re.compile(r"\?>")
-HTML_DECLARATION_OPEN = re.compile(r"^ {0,3}<![A-Za-z]")
+HTML_DECLARATION_OPEN = re.compile(r"^ {0,3}<![A-Z]")
 HTML_DECLARATION_CLOSE = re.compile(r">")
 HTML_CDATA_OPEN = re.compile(r"^ {0,3}<!\[CDATA\[")
 HTML_CDATA_CLOSE = re.compile(r"\]\]>")
@@ -108,7 +108,7 @@ HTML_BLOCK_TYPE_6_TAGS = {
     "body", "caption", "center", "col", "colgroup", "dd", "details",
     "dialog", "dir", "div", "dl", "dt", "fieldset", "figcaption",
     "figure", "footer", "form", "frame", "frameset", "h1", "h2", "h3",
-    "h4", "h5", "h6", "head", "header", "hr", "html", "iframe",
+    "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "iframe",
     "legend", "li", "link", "main", "menu", "menuitem", "nav",
     "noframes", "ol", "optgroup", "option", "p", "param", "search",
     "section", "summary", "table", "tbody", "td", "tfoot", "th",
@@ -127,7 +127,11 @@ HTML_BLOCK_TYPE_7_LINE = re.compile(
 MARKDOWN_THEMATIC_BREAK = re.compile(
     r"^ {0,3}(?:(?:\*[ \t]*){3,}|(?:_[ \t]*){3,}|(?:-[ \t]*){3,})$"
 )
-MARKDOWN_SETEXT_UNDERLINE = re.compile(r"^ {0,3}(?:=+[ \t]*|-+[ \t]*)$")
+MARKDOWN_SETEXT_UNDERLINE = re.compile(r"^ {0,3}(=+|-+)[ \t]*$")
+MARKDOWN_ATX_HEADING = re.compile(
+    r"^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$"
+)
+MARKDOWN_ATX_CLOSING_HASHES = re.compile(r"[ \t]+#+[ \t]*$")
 MARKDOWN_LINK_REFERENCE = re.compile(
     r"^ {0,3}\[(?:\\.|[^\[\]])+\]:"
 )
@@ -704,18 +708,99 @@ def markdown_unfenced_lines(text: str):
 
 
 def markdown_section(lines: list[str | None], heading: str):
-    """Return one level-two section from already fence-masked lines."""
-    indexes = [index for index, line in enumerate(lines) if line == heading]
-    if len(indexes) != 1:
+    """Return one section from already fence- and raw-HTML-masked lines."""
+    expected = markdown_atx_heading(heading)
+    if expected is None:
         return []
-    start = indexes[0] + 1
+    headings = markdown_heading_events(lines)
+    matches = [item for item in headings if item[2:] == expected]
+    if len(matches) != 1:
+        return []
+    selected = matches[0]
+    start = selected[1] + 1
     end = len(lines)
-    for index in range(start, len(lines)):
-        line = lines[index]
-        if line is not None and re.match(r"^#{1,2}(?:[ \t]|$)", line):
-            end = index
+    for candidate in headings:
+        if candidate[0] >= start and candidate[2] <= expected[0]:
+            end = candidate[0]
             break
     return [line for line in lines[start:end] if line is not None]
+
+
+def markdown_atx_heading(line: str):
+    """Return a CommonMark ATX heading's level and literal source title."""
+    matched = MARKDOWN_ATX_HEADING.fullmatch(line)
+    if matched is None:
+        return None
+    title = matched.group(2) or ""
+    title = MARKDOWN_ATX_CLOSING_HASHES.sub("", title).strip(" \t")
+    return len(matched.group(1)), title
+
+
+def markdown_heading_events(lines: list[str | None]):
+    """Return top-level CommonMark ATX and setext heading source spans."""
+    headings: list[tuple[int, int, int, str]] = []
+    paragraph: list[tuple[int, str]] = []
+    container_open = False
+    container_blank = False
+    for index, line in enumerate(lines):
+        if line is None:
+            paragraph = []
+            container_open = False
+            container_blank = False
+            continue
+        if not line.strip():
+            paragraph = []
+            if container_open:
+                container_blank = True
+            continue
+
+        atx = markdown_atx_heading(line)
+        if atx is not None:
+            headings.append((index, index, *atx))
+            paragraph = []
+            container_open = False
+            continue
+
+        setext = MARKDOWN_SETEXT_UNDERLINE.fullmatch(line)
+        if setext is not None and paragraph:
+            level = 1 if setext.group(1).startswith("=") else 2
+            title = " ".join(item.strip() for _, item in paragraph)
+            headings.append((paragraph[0][0], index, level, title))
+            paragraph = []
+            continue
+
+        if MARKDOWN_THEMATIC_BREAK.fullmatch(line):
+            paragraph = []
+            container_open = False
+            continue
+
+        block_start = MARKDOWN_BLOCK_START.match(line)
+        ordered_list = MARKDOWN_ORDERED_LIST.match(line)
+        ordered_list_start = ordered_list is not None and (
+            not paragraph or int(ordered_list.group(1)) == 1
+        )
+        if block_start is not None or ordered_list_start:
+            paragraph = []
+            container_open = True
+            container_blank = False
+            continue
+        if MARKDOWN_LINK_REFERENCE.match(line):
+            paragraph = []
+            container_open = False
+            continue
+        if line.startswith("    ") or line.startswith("\t"):
+            if container_open or not paragraph:
+                continue
+        if line == MARKER or OBLIGATION_MARKER.fullmatch(line) is not None:
+            paragraph = []
+            container_open = False
+            continue
+        if container_open:
+            if not container_blank:
+                continue
+            container_open = False
+        paragraph.append((index, line))
+    return headings
 
 
 def check_law(root: Path):
@@ -734,6 +819,12 @@ def validate_law_document(payload: bytes, text: str, shown: str):
     """Apply the production law gates to one already bounded Markdown payload."""
     findings: list[Finding] = []
     lines = markdown_unfenced_lines(text)
+    headings = markdown_heading_events(lines)
+
+    def heading_count(heading: str):
+        expected = markdown_atx_heading(heading)
+        return sum(item[2:] == expected for item in headings)
+
     if MARKER not in lines[:5]:
         findings.append(
             Finding(
@@ -745,7 +836,7 @@ def validate_law_document(payload: bytes, text: str, shown: str):
             )
         )
     for heading in REQUIRED_HEADINGS:
-        if lines.count(heading) != 1:
+        if heading_count(heading) != 1:
             findings.append(
                 Finding(
                     "PM006",
@@ -756,7 +847,7 @@ def validate_law_document(payload: bytes, text: str, shown: str):
                 )
             )
     versions = set(re.findall(r"promise-machine/v[0-9]+", text))
-    identity_heading_present = lines.count("## Contract identity") == 1
+    identity_heading_present = heading_count("## Contract identity") == 1
     identity_section = markdown_section(lines, "## Contract identity")
     identity_declaration = f"The shared contract identity is `{CONTRACT_ID}`."
     identity_declaration_missing = (
@@ -780,7 +871,7 @@ def validate_law_document(payload: bytes, text: str, shown: str):
                 "use the shared contract identity and remove competing identities",
             )
         )
-    declarations_heading_present = lines.count("## Promise declarations") == 1
+    declarations_heading_present = heading_count("## Promise declarations") == 1
     declarations_section = markdown_section(lines, "## Promise declarations")
     for field in REQUIRED_FIELDS:
         if declarations_heading_present and f"- `{field}`" not in declarations_section:
@@ -797,7 +888,7 @@ def validate_law_document(payload: bytes, text: str, shown: str):
         "> No skill may claim more than its evidence establishes, or authorise a more\n"
         "> consequential transition than that evidence warrants."
     )
-    principle_heading_present = lines.count("## Governing principle") == 1
+    principle_heading_present = heading_count("## Governing principle") == 1
     principle_section = "\n".join(
         markdown_section(lines, "## Governing principle")
     )
