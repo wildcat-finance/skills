@@ -380,6 +380,7 @@ if candidate and candidate[0] in (
     "show",
     "diff",
     "merge-base",
+    "ls-tree",
     "ls-remote",
 ):
     args = candidate

@@ -47,6 +47,13 @@ FIXTURE_COMMIT_MATRIX = (
              "test_a_v2_artifact_with_more_than_500_outside_paths_is_accepted"),
         ),
         (
+            "hexctl-sync-resolution-guard",
+            (sys.executable,
+             "plugins/hexaemeron/tests/test_hexctl_sync_resolution_guard.py",
+             "SyncResolutionGuardTests."
+             "test_first_sync_accepts_a_semantic_union_without_acknowledgement"),
+        ),
+        (
             "horos-demonstration",
             (sys.executable, "plugins/horos/tests/test_demonstration.py",
              "DemonstrationTests.test_entering_the_repository_matches_the_documented_wording"),

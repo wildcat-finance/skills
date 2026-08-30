@@ -231,6 +231,17 @@ INTEGRATION_COMMAND_BYTES_MAX = 2048
 INTEGRATION_CHECK_ID_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 INTEGRATION_SYNC_SUPERSESSIONS_MAX = 8
 INTEGRATION_SYNC_REASON_BYTES_MAX = 1024
+SYNC_RESOLUTION_GUARD_SCHEMA = "fiat-sync-resolution-guard/v1"
+SYNC_RESOLUTION_GUARD_KEYS = frozenset(
+    {
+        "schema",
+        "side_selected_paths",
+        "superseded_intersection_paths",
+        "acknowledged_paths",
+    }
+)
+SYNC_TREE_PATH_BATCH_MAX = 64
+SYNC_TREE_ARG_BYTES_MAX = 64 * 1024
 GENERATOR_AGGREGATE_FILE_DIGEST_DOMAIN = b"fiat-generator-file/v1\0"
 GENERATOR_AGGREGATE_TREE_DIGEST_DOMAIN = b"fiat-generator-tree/v1\0"
 GENERATOR_AGGREGATE_REGISTRY = {
@@ -255,6 +266,7 @@ RESOLUTION_SYNC_KEYS = frozenset(
         "github_verified",
         "product_evidence",
         "revalidation",
+        "resolution_guard",
     }
 )
 RESOLUTION_REVALIDATION_KEYS = frozenset(
@@ -3737,6 +3749,15 @@ def _require_resolution_sync(
         die("version resolution sync checks do not cover every affected path")
     if not needed.issubset(covered):
         die("version resolution sync checks do not cover each changed target path")
+    previous_sync = _active_sync_predecessor(
+        as_dict(state.get("integrate")), head_commit
+    )
+    _require_sync_resolution_guard(
+        base_dir,
+        sync,
+        product_head,
+        previous_sync=previous_sync,
+    )
 
 
 def _resolution_without_timestamp(receipt: dict) -> dict:
@@ -5863,7 +5884,8 @@ def _integrate_directive(
     sync_then = (
         "hexctl done sync-run --commit <signed-merge-sha> "
         "--base-commit <remote-base-sha> "
-        f"--revalidation {INTEGRATION_REVALIDATION_FILE}"
+        f"--revalidation {INTEGRATION_REVALIDATION_FILE} "
+        "[--acknowledge-sync-path <exact-risk-path> ...]"
     )
     sync_recovery = "sync-run-and-revalidate"
     if sync:
@@ -5908,9 +5930,19 @@ def _integrate_directive(
             "recovery": sync_recovery,
             "artifact": INTEGRATION_REVALIDATION_FILE,
             "then": sync_then,
+            "resolution_guard": {
+                "schema": SYNC_RESOLUTION_GUARD_SCHEMA,
+                "flag": "--acknowledge-sync-path",
+                "rule": (
+                    "repeat the flag for the exact sorted paths named by the "
+                    "controller; acknowledgement records inspection and does "
+                    "not replace revalidation"
+                ),
+            },
             "boundary": (
-                "base advancement alone does not authorise a carryover or "
-                "invalidate the exact-tree product evidence"
+                "base advancement alone does not authorise a carryover, "
+                "invalidate the exact-tree product evidence, or permit a "
+                "whole-side or unreviewed rebuilt resolution"
             ),
         },
         "attribution": {
@@ -6054,6 +6086,199 @@ def _manifest_paths(value, label: str, allowed: set[str] | None = None) -> list[
         if allowed is not None and path not in allowed:
             die(f"{label} names a path outside the computed integration delta")
     return value
+
+
+def _sync_tree_path_batches(paths: list[str]) -> list[list[str]]:
+    """Keep literal ls-tree argv below one explicit path and byte envelope."""
+    batches = []
+    current = []
+    current_bytes = 0
+    for path in paths:
+        token_bytes = len(f":(literal){path}".encode("utf-8")) + 1
+        if current and (
+            len(current) >= SYNC_TREE_PATH_BATCH_MAX
+            or current_bytes + token_bytes > SYNC_TREE_ARG_BYTES_MAX
+        ):
+            batches.append(current)
+            current = []
+            current_bytes = 0
+        current.append(path)
+        current_bytes += token_bytes
+    if current:
+        batches.append(current)
+    return batches
+
+
+def _sync_tree_entries(
+    base_dir: str, commit_sha: str, paths: list[str], label: str
+) -> dict[str, str | None]:
+    """Read exact tree-entry identities for literal paths at one native commit."""
+    commit_sha = require_full_sha(commit_sha, f"{label} commit")
+    paths = _manifest_paths(paths, f"{label} paths")
+    identities = {path: None for path in paths}
+    for batch in _sync_tree_path_batches(paths):
+        literal_pathspecs = [f":(literal){path}" for path in batch]
+        raw = _native_relation_git(
+            base_dir,
+            ["ls-tree", "-z", "--full-tree", commit_sha, "--", *literal_pathspecs],
+            f"{label} tree entries cannot be read",
+        )
+        batch_set = set(batch)
+        seen = set()
+        for record in raw.split(b"\0"):
+            if not record:
+                continue
+            metadata, separator, path_bytes = record.partition(b"\t")
+            fields = metadata.split()
+            try:
+                path = path_bytes.decode("utf-8")
+                mode, kind, object_id = [field.decode("ascii") for field in fields]
+            except (UnicodeDecodeError, ValueError):
+                die(f"{label} tree entries are malformed")
+            if (
+                separator != b"\t"
+                or path not in batch_set
+                or path in seen
+                or re.fullmatch(r"[0-7]{6}", mode) is None
+                or kind not in {"blob", "tree", "commit"}
+                or COMMIT_RE.fullmatch(object_id) is None
+            ):
+                die(f"{label} tree entries are malformed")
+            seen.add(path)
+            identities[path] = f"{mode} {kind} {object_id}"
+    return identities
+
+
+def _active_sync_predecessor(integrate: dict, active_commit: str) -> dict | None:
+    """Return the sync immediately superseded by the active receipt."""
+    history = integrate.get("superseded_syncs") or []
+    if not isinstance(history, list):
+        die("recorded superseded integration syncs are malformed")
+    if not history:
+        return None
+    tail = history[-1]
+    previous = tail.get("sync") if isinstance(tail, dict) else None
+    if (
+        not isinstance(previous, dict)
+        or tail.get("superseded_by") != active_commit
+    ):
+        die("active integration sync is not joined to its supersession history")
+    return previous
+
+
+def sync_resolution_guard_record(
+    base_dir: str,
+    product_head: str,
+    base_head: str,
+    sync_head: str,
+    *,
+    current_sync: dict | None,
+    acknowledgements: list[str],
+) -> dict:
+    """Expose whole-side and rebuild-loss paths before a sync is receipted."""
+    product_head = require_full_sha(product_head, "sync resolution product head")
+    base_head = require_full_sha(base_head, "sync resolution base head")
+    sync_head = require_full_sha(sync_head, "sync resolution sync head")
+    acknowledgements = _manifest_paths(
+        acknowledgements, "--acknowledge-sync-path values"
+    )
+
+    base_before = merge_base_commit(base_dir, product_head, base_head)
+    product_paths = git_diff_paths(base_dir, base_before, product_head)
+    base_paths = git_diff_paths(base_dir, base_before, base_head)
+    overlap_paths = sorted(set(product_paths) & set(base_paths))
+    product_entries = _sync_tree_entries(
+        base_dir, product_head, overlap_paths, "sync resolution product"
+    )
+    base_entries = _sync_tree_entries(
+        base_dir, base_head, overlap_paths, "sync resolution base"
+    )
+    sync_entries = _sync_tree_entries(
+        base_dir, sync_head, overlap_paths, "sync resolution result"
+    )
+    side_selected_paths = [
+        path
+        for path in overlap_paths
+        if product_entries[path] != base_entries[path]
+        and sync_entries[path] in {product_entries[path], base_entries[path]}
+    ]
+
+    superseded_intersection_paths = []
+    if current_sync is not None:
+        if not isinstance(current_sync, dict):
+            die("active integration sync is malformed")
+        old_sync = require_full_sha(
+            current_sync.get("commit"), "active recorded sync commit"
+        )
+        old_base = require_full_sha(
+            current_sync.get(SYNC_BASE_HEAD_KEY), "active recorded sync base"
+        )
+        if _native_relation_parents(
+            base_dir, old_sync, "active recorded sync commit"
+        ) != [product_head, old_base]:
+            die("active recorded sync parents do not match product and old base")
+        old_composition_paths = git_diff_paths(base_dir, product_head, old_sync)
+        base_advance_paths = git_diff_paths(base_dir, old_base, base_head)
+        superseded_intersection_paths = sorted(
+            set(old_composition_paths) & set(base_advance_paths)
+        )
+
+    required = sorted(
+        set(side_selected_paths) | set(superseded_intersection_paths)
+    )
+    if acknowledgements != required:
+        missing = sorted(set(required) - set(acknowledgements))
+        extra = sorted(set(acknowledgements) - set(required))
+        die(
+            "integration sync resolution acknowledgements do not match; "
+            f"missing {json.dumps(missing, ensure_ascii=False)}; "
+            f"extra {json.dumps(extra, ensure_ascii=False)}; repeat "
+            "--acknowledge-sync-path once for each required path in this "
+            f"exact order: {json.dumps(required, ensure_ascii=False)}"
+        )
+    return {
+        "schema": SYNC_RESOLUTION_GUARD_SCHEMA,
+        "side_selected_paths": side_selected_paths,
+        "superseded_intersection_paths": superseded_intersection_paths,
+        "acknowledged_paths": acknowledgements,
+    }
+
+
+def _require_sync_resolution_guard(
+    base_dir: str,
+    sync: dict,
+    product_head: str,
+    *,
+    previous_sync: dict | None,
+) -> dict:
+    """Recompute one stored guard from its immutable Git objects."""
+    guard = sync.get("resolution_guard")
+    if (
+        not isinstance(guard, dict)
+        or set(guard) != SYNC_RESOLUTION_GUARD_KEYS
+        or guard.get("schema") != SYNC_RESOLUTION_GUARD_SCHEMA
+    ):
+        die(
+            "active integration sync has no current resolution guard; "
+            "supersede it with a fresh signed and revalidated sync"
+        )
+    for field in (
+        "side_selected_paths",
+        "superseded_intersection_paths",
+        "acknowledged_paths",
+    ):
+        _manifest_paths(guard.get(field), f"sync resolution guard {field}")
+    expected = sync_resolution_guard_record(
+        base_dir,
+        product_head,
+        sync.get(SYNC_BASE_HEAD_KEY),
+        sync.get("commit"),
+        current_sync=previous_sync,
+        acknowledgements=guard["acknowledged_paths"],
+    )
+    if guard != expected:
+        die("active integration sync resolution guard does not replay")
+    return expected
 
 
 def _sha256_value(value, label: str) -> str:
@@ -7209,6 +7434,16 @@ def done_sync_run(args, state: dict) -> None:
     revalidation = integration_revalidation_record(
         args.dir, args.revalidation, recorded_tip, base_tip, sync_tip
     )
+    resolution_guard = sync_resolution_guard_record(
+        args.dir,
+        recorded_tip,
+        base_tip,
+        sync_tip,
+        current_sync=(current_sync if current_sync else None),
+        acknowledgements=list(
+            getattr(args, "acknowledge_sync_paths", None) or []
+        ),
+    )
     verify_local_commit(args.dir, sync_tip, "run branch integration sync")
     github_verified = verify_github_commits(args.dir, [sync_tip])
     _require_native_relation_history(args.dir)
@@ -7223,6 +7458,7 @@ def done_sync_run(args, state: dict) -> None:
         "github_verified": github_verified,
         "product_evidence": product_evidence,
         "revalidation": revalidation,
+        "resolution_guard": resolution_guard,
     }
     if current_sync:
         superseded_sync = {
@@ -7246,8 +7482,9 @@ def done_sync_run(args, state: dict) -> None:
             f"{run_branch_of(state)} superseded integration sync "
             f"{superseded_sync['sync']['commit']} with {sync_tip}; "
             f"product evidence preserved; {len(revalidation['checks'])} "
-            "integration revalidation check(s) recorded; integration may "
-            "continue"
+            "integration revalidation check(s) recorded; "
+            f"{len(resolution_guard['acknowledged_paths'])} sync resolution "
+            "path(s) acknowledged; integration may continue"
         )
     else:
         commit(args.dir, state, "done:sync-run", new_sync)
@@ -7255,7 +7492,8 @@ def done_sync_run(args, state: dict) -> None:
             f"{run_branch_of(state)} synced with {integration_base} at "
             f"{base_tip}; product evidence preserved; "
             f"{len(revalidation['checks'])} integration revalidation check(s) "
-            "recorded; integration may continue"
+            f"recorded; {len(resolution_guard['acknowledged_paths'])} sync "
+            "resolution path(s) acknowledged; integration may continue"
         )
 
 
@@ -7597,6 +7835,15 @@ def done_integrate(args, state: dict) -> None:
             state, recorded_tip
         ):
             die("recorded product evidence changed after the integration sync")
+        previous_sync = _active_sync_predecessor(
+            integrate, sync.get("commit")
+        )
+        _require_sync_resolution_guard(
+            args.dir,
+            sync,
+            recorded_tip,
+            previous_sync=previous_sync,
+        )
         expected_tip = require_full_sha(sync.get("commit"), "recorded run sync commit")
     if remote_tip != expected_tip:
         if sync:
@@ -12629,6 +12876,7 @@ def cmd_status(args) -> None:
         sync = as_dict(as_dict(state.get("integrate")).get("sync"))
         product = as_dict(sync.get("product_evidence"))
         revalidation = as_dict(sync.get("revalidation"))
+        resolution_guard = as_dict(sync.get("resolution_guard"))
         if product:
             print(
                 "evidence: product "
@@ -12636,6 +12884,21 @@ def cmd_status(args) -> None:
                 f"{len(revalidation.get('checks') or [])} integration "
                 "revalidation check(s) recorded"
             )
+            if resolution_guard:
+                print(
+                    "evidence: sync resolution "
+                    f"{len(resolution_guard.get('side_selected_paths') or [])} "
+                    "whole-side path(s), "
+                    f"{len(resolution_guard.get('superseded_intersection_paths') or [])} "
+                    "superseded-intersection path(s), "
+                    f"{len(resolution_guard.get('acknowledged_paths') or [])} "
+                    "acknowledged"
+                )
+            else:
+                print(
+                    "evidence: sync resolution guard missing; supersede with "
+                    "a fresh signed and revalidated sync"
+                )
             superseded = as_dict(state.get("integrate")).get(
                 "superseded_syncs"
             ) or []
@@ -12965,6 +13228,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--base-commit", dest="base_commit")
     sp.add_argument("--revalidation")
     sp.add_argument("--supersede-sync", dest="supersede_sync")
+    sp.add_argument(
+        "--acknowledge-sync-path",
+        dest="acknowledge_sync_paths",
+        action="append",
+        default=[],
+    )
     sp.add_argument("--tests")
     sp.add_argument("--no-further-leads", dest="no_further_leads", action="store_true")
     sp.add_argument("--reason")
