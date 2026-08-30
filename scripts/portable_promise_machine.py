@@ -282,7 +282,7 @@ def check(root: Path) -> None:
         )
 
 
-def sync(root: Path) -> None:
+def sync(root: Path) -> str:
     payload, manifest = expected_files(root)
     target = root / TARGET
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -302,6 +302,50 @@ def sync(root: Path) -> None:
             shutil.rmtree(target)
         candidate.replace(target)
     check(root)
+    return stage_runtime(root)
+
+
+def _git_work_tree(root: Path) -> bool:
+    """True when git can answer for `root` and calls it a work tree."""
+    try:
+        result = subprocess.run(  # phylax: allow subprocess: fixed argv git, no shell
+            ["git", "-C", str(root), "rev-parse", "--is-inside-work-tree"],
+            check=False,
+            capture_output=True,
+            env=_git_environment(),
+        )
+    except OSError:
+        return False
+    return result.returncode == 0 and result.stdout.strip() == b"true"
+
+
+def stage_runtime(root: Path) -> str:
+    """Stage the mirror so the scan that runs next can see it.
+
+    Horos builds its universe from `git ls-files`, which reads the index. A
+    mirror written and left unstaged is therefore invisible to a scan that
+    follows, and the boundary that scan writes describes the previous tree
+    while `horos check` agrees with it. Staging here is what makes the
+    documented sync-then-scan order correct rather than an alternation the
+    caller has to know about.
+
+    The pathspec is the mirror and nothing else, so regenerating a generated
+    directory never stages an unrelated edit sitting in the working tree.
+    `_git_environment()` strips the inherited git variables, so a
+    GIT_INDEX_FILE belonging to another repository cannot redirect the write.
+    """
+    if not _git_work_tree(root):
+        return "not a git work tree; mirror written but not staged"
+    result = subprocess.run(  # phylax: allow subprocess: fixed argv git, no shell
+        ["git", "-C", str(root), "add", "--all", "--", TARGET.as_posix()],
+        check=False,
+        capture_output=True,
+        env=_git_environment(),
+    )
+    if result.returncode != 0:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise PackageError(f"git could not stage the portable runtime: {detail}")
+    return "staged"
 
 
 def repository_root(raw: str | None) -> Path:
@@ -320,8 +364,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         root = repository_root(args.root)
         if args.action == "sync":
-            sync(root)
-            print(f"synchronised {TARGET.as_posix()}")
+            status = sync(root)
+            print(f"synchronised {TARGET.as_posix()} ({status})")
         else:
             check(root)
             print(f"checked {TARGET.as_posix()}")
