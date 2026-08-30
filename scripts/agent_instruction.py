@@ -14,8 +14,12 @@ import os
 from pathlib import Path
 import re
 import secrets
+import selectors
+import signal
 import stat
+import subprocess
 import sys
+import time
 from typing import Any, NoReturn
 
 
@@ -28,8 +32,27 @@ CHECK_RECORD_SCHEMA = "wildcat-agent-instruction-check-record/v1"
 MANIFEST_ID = "wildcat-agent-instruction-manifest/v1"
 MANIFEST_SCHEMA_ID = "https://wildcat.finance/schemas/agent-instruction-manifest-v1.schema.json"
 MANIFEST_SCHEMA_PATH = "tests/fixtures/agent-instruction-v1/manifest.schema.json"
-MANIFEST_SCHEMA_SHA256 = "1bedb95cc1a7b1a179371b2ceee528f5930ef1861346059b6a178ee86efc15d2"
+MANIFEST_SCHEMA_SHA256 = "d2359338c20b8dc69b11c3fb654d6b028af04f5d2fdf6da50b0dc0c04176c00d"
 FIXTURE_ROOT = "tests/fixtures/agent-instruction-v1"
+EVIDENCE_ROOT = f"{FIXTURE_ROOT}/evidence"
+EVIDENCE_ARTIFACTS = {
+    "decoder_bootstrap": "decoder-bootstrap.txt",
+    "family_profiles": "family-profiles.json",
+    "measurement_record": "measurement.json",
+    "parity_prompt": "parity-prompt.txt",
+    "parity_record": "parity.json",
+    "tokenizer_profile": "tokenizer-profile.json",
+}
+TRUSTED_PROFILE_SHA256 = {
+    "family_profiles": "58de5185a641d4f5dd3dfe61b9dff3e2a5928e978ce9dfac2bd93546f5d54703",
+    "tokenizer_profile": "99e4c3b013b9bcc9770e434143c84b671ad57124d59affc13caf809607c3a0bd",
+}
+TOKENIZER_PROFILE_SCHEMA = "wildcat-agent-instruction-tokenizer-profile/v1"
+FAMILY_PROFILES_SCHEMA = "wildcat-agent-instruction-family-profiles/v1"
+MEASUREMENT_SCHEMA = "wildcat-agent-instruction-measurement/v1"
+PARITY_SCHEMA = "wildcat-agent-instruction-parity/v1"
+TOKENIZER_ADAPTER_SCHEMA = "ollama-loopback-generate/v1"
+FAMILY_ADAPTER_SCHEMA = "ollama-loopback-chat/v1"
 FIXTURE_IDS = (
     "fiat-study-runbook-phase",
     "horos-boundary-check",
@@ -91,6 +114,12 @@ MAX_QUESTIONS = 64
 MAX_MUTATIONS = 128
 MAX_RECORD_DEPTH = 24
 MAX_RECORD_ARRAY = 256
+MAX_ADAPTER_ARGV = 32
+MAX_ADAPTER_ENV = 16
+MAX_ADAPTER_INPUT_BYTES = 262_144
+MAX_ADAPTER_OUTPUT_BYTES = 65_536
+MAX_EXECUTABLE_BYTES = 268_435_456
+MAX_PARITY_RESPONSE_BYTES = 512
 
 MAX_FILE_BYTES = 1_048_576
 MAX_LINES = 16_384
@@ -112,6 +141,22 @@ MAX_PROMISE_EXCEPTIONS = 1_024
 ID_RE = re.compile(r"[a-z][a-z0-9.-]*\Z", re.ASCII)
 SHA256_RE = re.compile(r"[0-9a-f]{64}\Z", re.ASCII)
 DECIMAL_RE = re.compile(r"(?:0|[1-9][0-9]*)\Z", re.ASCII)
+ENV_NAME_RE = re.compile(r"[A-Z][A-Z0-9_]*\Z", re.ASCII)
+MODEL_BLOB_RE = re.compile(rb"sha256-([0-9a-f]{64})(?:\s|\Z)")
+SECRET_NAME_RE = re.compile(r"(?:AUTH|BEARER|CREDENTIAL|KEY|PASSWORD|SECRET|TOKEN)", re.ASCII)
+SECRET_ARG_RE = re.compile(
+    r"(?i)(?:authorization|bearer|credential|api[_-]?key|password|secret|token)(?:[\s:=]|\Z)"
+)
+AUTHORIZATION_TEXT_RE = re.compile(
+    r"(?i)(authorization\s*:\s*)(?:bearer\s+)?[^\s,;\"'}]+"
+)
+BEARER_TEXT_RE = re.compile(r"(?i)(bearer\s+)[^\s,;\"'}]+")
+SECRET_ASSIGNMENT_RE = re.compile(
+    r"""(?ix)
+    (["']?(?:credential|api[_-]?key|password|secret|token)["']?\s*[:=]\s*)
+    (?:"[^"\r\n]*"|'[^'\r\n]*'|[^\s,;}]+)
+    """
+)
 LITERAL_KINDS = (
     "identifier",
     "path",
@@ -1199,6 +1244,403 @@ def write_confined_atomic(root: str | os.PathLike[str], relative: str, data: byt
         os.close(parent)
 
 
+def _hash_executable(path: str, node_path: str) -> str:
+    descriptor = -1
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > MAX_EXECUTABLE_BYTES:
+            refuse("WAI-E-ADAPTER.EXECUTABLE", node_path)
+        if metadata.st_mode & 0o111 == 0:
+            refuse("WAI-E-ADAPTER.EXECUTABLE", node_path)
+        digest = hashlib.sha256()
+        total = 0
+        while True:
+            chunk = os.read(descriptor, min(1_048_576, MAX_EXECUTABLE_BYTES + 1 - total))
+            if not chunk:
+                break
+            total += len(chunk)
+            if total > MAX_EXECUTABLE_BYTES:
+                refuse("WAI-E-ADAPTER.EXECUTABLE", node_path)
+            digest.update(chunk)
+        after = os.fstat(descriptor)
+        if (metadata.st_dev, metadata.st_ino, metadata.st_size, metadata.st_mtime_ns) != (
+            after.st_dev,
+            after.st_ino,
+            after.st_size,
+            after.st_mtime_ns,
+        ):
+            refuse("WAI-E-ADAPTER.EXECUTABLE_CHANGED", node_path)
+        return digest.hexdigest()
+    except CodecError:
+        raise
+    except OSError:
+        refuse("WAI-E-ADAPTER.EXECUTABLE", node_path)
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+
+
+def _adapter_environment(profile: Mapping[str, Any], path: str) -> dict[str, str]:
+    environment: dict[str, str] = {}
+    for name in _environment_allowlist(profile["environment_allowlist"], f"{path}.environment_allowlist"):
+        if name not in os.environ:
+            refuse("WAI-E-ADAPTER.ENVIRONMENT_MISSING", f"{path}.environment_allowlist")
+        environment[name] = os.environ[name]
+    for name, value in _fixed_environment(profile["fixed_environment"], f"{path}.fixed_environment").items():
+        if name in environment and environment[name] != value:
+            refuse("WAI-E-ADAPTER.ENVIRONMENT", f"{path}.fixed_environment.{name}")
+        environment[name] = value
+    return environment
+
+
+def _kill_process(process: subprocess.Popen[bytes]) -> None:
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except OSError:
+        if process.poll() is None:
+            try:
+                process.kill()
+            except OSError:
+                pass
+    try:
+        process.wait(timeout=5)
+    except (subprocess.TimeoutExpired, OSError):
+        pass
+
+
+def _run_bounded(
+    executable: str,
+    argv: Sequence[str],
+    input_bytes: bytes,
+    environment: Mapping[str, str],
+    timeout_seconds: int,
+    stdout_cap: int,
+    stderr_cap: int,
+    path: str,
+) -> tuple[bytes, bytes]:
+    if len(input_bytes) > MAX_ADAPTER_INPUT_BYTES:
+        refuse("WAI-E-ADAPTER.INPUT_CAP", path)
+    if timeout_seconds <= 0 or stdout_cap <= 0 or stderr_cap <= 0:
+        refuse("WAI-E-ADAPTER.BOUNDS", path)
+    try:
+        process = subprocess.Popen(
+            [executable, *argv],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=dict(environment),
+            shell=False,
+            start_new_session=True,
+        )
+    except (OSError, ValueError):
+        refuse("WAI-E-ADAPTER.UNAVAILABLE", path)
+    assert process.stdin is not None and process.stdout is not None and process.stderr is not None
+    selector = selectors.DefaultSelector()
+    buffers = {"stdout": bytearray(), "stderr": bytearray()}
+    streams = {process.stdout.fileno(): ("stdout", stdout_cap), process.stderr.fileno(): ("stderr", stderr_cap)}
+    for descriptor in streams:
+        os.set_blocking(descriptor, False)
+        selector.register(descriptor, selectors.EVENT_READ)
+    stdin_descriptor = process.stdin.fileno()
+    os.set_blocking(stdin_descriptor, False)
+    input_offset = 0
+    if input_bytes:
+        selector.register(stdin_descriptor, selectors.EVENT_WRITE)
+    else:
+        process.stdin.close()
+    deadline = time.monotonic() + timeout_seconds
+    try:
+        while selector.get_map():
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                _kill_process(process)
+                refuse("WAI-E-ADAPTER.TIMEOUT", path)
+            events = selector.select(min(remaining, 0.25))
+            if not events and process.poll() is not None:
+                events = [(key, selectors.EVENT_READ) for key in selector.get_map().values() if key.fd != stdin_descriptor]
+            for key, mask in events:
+                descriptor = key.fd
+                if descriptor == stdin_descriptor and mask & selectors.EVENT_WRITE:
+                    try:
+                        written = os.write(descriptor, input_bytes[input_offset : input_offset + 65_536])
+                    except BrokenPipeError:
+                        written = 0
+                    input_offset += written
+                    if written == 0 or input_offset == len(input_bytes):
+                        selector.unregister(descriptor)
+                        process.stdin.close()
+                    continue
+                if mask & selectors.EVENT_READ:
+                    name, cap = streams[descriptor]
+                    try:
+                        chunk = os.read(descriptor, min(65_536, cap + 1 - len(buffers[name])))
+                    except BlockingIOError:
+                        continue
+                    if not chunk:
+                        selector.unregister(descriptor)
+                        continue
+                    buffers[name].extend(chunk)
+                    if len(buffers[name]) > cap:
+                        _kill_process(process)
+                        refuse("WAI-E-ADAPTER.OUTPUT_CAP", f"{path}.{name}")
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            _kill_process(process)
+            refuse("WAI-E-ADAPTER.TIMEOUT", path)
+        try:
+            returncode = process.wait(timeout=remaining)
+        except subprocess.TimeoutExpired:
+            _kill_process(process)
+            refuse("WAI-E-ADAPTER.TIMEOUT", path)
+        if returncode != 0:
+            refuse("WAI-E-ADAPTER.UNAVAILABLE", path)
+        return bytes(buffers["stdout"]), bytes(buffers["stderr"])
+    except CodecError:
+        _kill_process(process)
+        raise
+    except (OSError, ValueError):
+        _kill_process(process)
+        refuse("WAI-E-ADAPTER.IO", path)
+    finally:
+        selector.close()
+        for stream in (process.stdin, process.stdout, process.stderr):
+            if stream is not None and not stream.closed:
+                stream.close()
+
+
+def _verify_profile_identity(profile: Mapping[str, Any], path: str = "$.profile") -> None:
+    executable = _absolute_executable(profile["executable"], f"{path}.executable")
+    if _hash_executable(executable, f"{path}.executable") != profile["executable_sha256"]:
+        refuse("WAI-E-ADAPTER.EXECUTABLE_CHANGED", f"{path}.executable_sha256")
+    runtime = _absolute_executable(profile["runtime_executable"], f"{path}.runtime_executable")
+    if _hash_executable(runtime, f"{path}.runtime_executable") != profile["runtime_executable_sha256"]:
+        refuse("WAI-E-ADAPTER.EXECUTABLE_CHANGED", f"{path}.runtime_executable_sha256")
+    environment = _adapter_environment(profile, path)
+    timeout = _small_decimal(profile["timeout_seconds"], f"{path}.timeout_seconds", 600)
+    stdout_cap = _small_decimal(profile["max_stdout_bytes"], f"{path}.max_stdout_bytes", MAX_ADAPTER_OUTPUT_BYTES)
+    stderr_cap = _small_decimal(profile["max_stderr_bytes"], f"{path}.max_stderr_bytes", MAX_ADAPTER_OUTPUT_BYTES)
+    version_bytes, _ = _run_bounded(
+        runtime,
+        _argv(profile["version_argv"], f"{path}.version_argv"),
+        b"",
+        environment,
+        timeout,
+        stdout_cap,
+        stderr_cap,
+        f"{path}.version",
+    )
+    if _digest(version_bytes) != profile["version_sha256"]:
+        refuse("WAI-E-ADAPTER.VERSION_CHANGED", f"{path}.version_sha256")
+    identity_bytes, _ = _run_bounded(
+        runtime,
+        _argv(profile["identity_argv"], f"{path}.identity_argv"),
+        b"",
+        environment,
+        timeout,
+        stdout_cap,
+        stderr_cap,
+        f"{path}.identity",
+    )
+    if _digest(identity_bytes) != profile["acquisition_sha256"]:
+        refuse("WAI-E-ADAPTER.IDENTITY_CHANGED", f"{path}.acquisition_sha256")
+    observed_blobs = tuple(item.decode("ascii") for item in MODEL_BLOB_RE.findall(identity_bytes))
+    if observed_blobs != tuple(profile["model_blobs_sha256"]):
+        refuse("WAI-E-TOKENIZER.MISMATCH", f"{path}.model_blobs_sha256")
+    if profile["vocabulary_sha256"] not in observed_blobs:
+        refuse("WAI-E-TOKENIZER.MISMATCH", f"{path}.vocabulary_sha256")
+
+
+def _duplicate_checked_external_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            refuse("WAI-E-ADAPTER.JSON", "$.adapter_output")
+        result[key] = value
+    return result
+
+
+def _ollama_response(data: bytes, expected_model: str, path: str) -> dict[str, Any]:
+    if len(data) > MAX_ADAPTER_OUTPUT_BYTES:
+        refuse("WAI-E-ADAPTER.OUTPUT_CAP", path)
+    try:
+        text = data.decode("utf-8")
+        value = json.loads(text, object_pairs_hook=_duplicate_checked_external_object)
+    except CodecError:
+        raise
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError):
+        refuse("WAI-E-ADAPTER.JSON", path)
+    if not isinstance(value, dict):
+        refuse("WAI-E-ADAPTER.JSON", path)
+    allowed = {
+        "model",
+        "created_at",
+        "response",
+        "done",
+        "done_reason",
+        "context",
+        "total_duration",
+        "load_duration",
+        "prompt_eval_count",
+        "prompt_eval_duration",
+        "eval_count",
+        "eval_duration",
+    }
+    if not set(value) <= allowed:
+        refuse("WAI-E-ADAPTER.JSON", path)
+    if value.get("model") != expected_model or value.get("done") is not True:
+        refuse("WAI-E-TOKENIZER.MISMATCH", path)
+    response = value.get("response")
+    if not isinstance(response, str):
+        refuse("WAI-E-ADAPTER.RESPONSE", path)
+    _scalar(response, f"{path}.response")
+    if len(response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
+        refuse("WAI-E-ADAPTER.RESPONSE", path)
+    count = value.get("prompt_eval_count")
+    if not isinstance(count, int) or isinstance(count, bool):
+        refuse("WAI-E-TOKENIZER.COUNT", path)
+    if count < 0:
+        refuse("WAI-E-TOKENIZER.COUNT", path)
+    return value
+
+
+def _ollama_chat_response(data: bytes, expected_model: str, path: str) -> dict[str, Any]:
+    if len(data) > MAX_ADAPTER_OUTPUT_BYTES:
+        refuse("WAI-E-ADAPTER.OUTPUT_CAP", path)
+    try:
+        text = data.decode("utf-8")
+        value = json.loads(text, object_pairs_hook=_duplicate_checked_external_object)
+    except CodecError:
+        raise
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError, ValueError):
+        refuse("WAI-E-ADAPTER.JSON", path)
+    if not isinstance(value, dict):
+        refuse("WAI-E-ADAPTER.JSON", path)
+    allowed = {
+        "model",
+        "created_at",
+        "message",
+        "done",
+        "done_reason",
+        "total_duration",
+        "load_duration",
+        "prompt_eval_count",
+        "prompt_eval_duration",
+        "eval_count",
+        "eval_duration",
+    }
+    if not set(value) <= allowed or value.get("model") != expected_model or value.get("done") is not True:
+        refuse("WAI-E-ADAPTER.RESPONSE", path)
+    message = value.get("message")
+    if not isinstance(message, dict) or not {"role", "content"} <= set(message) <= {
+        "role",
+        "content",
+        "thinking",
+    }:
+        refuse("WAI-E-ADAPTER.RESPONSE", path)
+    response = message.get("content")
+    if message.get("role") != "assistant" or not isinstance(response, str):
+        refuse("WAI-E-ADAPTER.RESPONSE", path)
+    _scalar(response, f"{path}.message.content")
+    if len(response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
+        refuse("WAI-E-ADAPTER.RESPONSE", path)
+    thinking = message.get("thinking")
+    if thinking is not None and not isinstance(thinking, str):
+        refuse("WAI-E-ADAPTER.RESPONSE", path)
+    if thinking is not None:
+        _scalar(thinking, f"{path}.message.thinking")
+    count = value.get("prompt_eval_count")
+    if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+        refuse("WAI-E-TOKENIZER.COUNT", path)
+    return {"prompt_eval_count": count, "response": response}
+
+
+def _ollama_generate(
+    profile: Mapping[str, Any],
+    prompt: bytes,
+    *,
+    parity: bool,
+    path: str,
+    answer_ids: Sequence[str] = (),
+) -> tuple[int, str]:
+    if len(prompt) > MAX_ADAPTER_INPUT_BYTES:
+        refuse("WAI-E-ADAPTER.INPUT_CAP", path)
+    try:
+        prompt_text = prompt.decode("utf-8")
+    except UnicodeDecodeError:
+        refuse("WAI-E-UTF8.DECODE", path)
+    output_tokens = _small_decimal(profile["output_tokens"], f"{path}.output_tokens", 512)
+    options = {
+        "num_ctx": _small_decimal(profile["context_window"], f"{path}.context_window", 1_048_576),
+        "num_predict": output_tokens,
+        "seed": _small_decimal(profile["seed"], f"{path}.seed", 2_147_483_647),
+        "temperature": 0,
+    }
+    if parity:
+        if profile["adapter"] != FAMILY_ADAPTER_SCHEMA or not answer_ids:
+            refuse("WAI-E-ADAPTER.SCHEMA", path)
+        request: dict[str, Any] = {
+            "model": profile["model"],
+            "messages": [{"role": "user", "content": prompt_text}],
+            "stream": False,
+            "think": False if profile["thinking"] == "disabled" else profile["thinking"],
+            "options": options,
+        }
+        request["format"] = {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                # Keep the transport schema open to an unlisted string so the
+                # local parser can preserve and refuse what the model actually
+                # returned instead of asking the runtime to coerce it.
+                "answer_id": {"type": "string"}
+            },
+            "required": ["answer_id"],
+        }
+    else:
+        if profile["adapter"] != TOKENIZER_ADAPTER_SCHEMA:
+            refuse("WAI-E-ADAPTER.SCHEMA", path)
+        request = {
+            "model": profile["model"],
+            "prompt": prompt_text,
+            "raw": True,
+            "stream": False,
+            "options": options,
+        }
+        request["format"] = {"type": "object", "additionalProperties": False}
+    body = json.dumps(request, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    executable = _absolute_executable(profile["executable"], f"{path}.executable")
+    if _hash_executable(executable, f"{path}.executable") != profile["executable_sha256"]:
+        refuse("WAI-E-ADAPTER.EXECUTABLE_CHANGED", f"{path}.executable_sha256")
+    stdout, _ = _run_bounded(
+        executable,
+        _adapter_argv(
+            profile["argv"],
+            f"{path}.argv",
+            profile["adapter"],
+            profile["executable"],
+        ),
+        body,
+        _adapter_environment(profile, path),
+        _small_decimal(profile["timeout_seconds"], f"{path}.timeout_seconds", 600),
+        _small_decimal(profile["max_stdout_bytes"], f"{path}.max_stdout_bytes", MAX_ADAPTER_OUTPUT_BYTES),
+        _small_decimal(profile["max_stderr_bytes"], f"{path}.max_stderr_bytes", MAX_ADAPTER_OUTPUT_BYTES),
+        path,
+    )
+    response = (
+        _ollama_chat_response(stdout, profile["model"], path)
+        if parity
+        else _ollama_response(stdout, profile["model"], path)
+    )
+    return response["prompt_eval_count"], response["response"]
+
+
+def _redact_text(value: str) -> str:
+    redacted = AUTHORIZATION_TEXT_RE.sub(lambda match: f"{match.group(1)}[REDACTED]", value)
+    redacted = BEARER_TEXT_RE.sub(lambda match: f"{match.group(1)}[REDACTED]", redacted)
+    return SECRET_ASSIGNMENT_RE.sub(lambda match: f"{match.group(1)}[REDACTED]", redacted)
+
+
 def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
@@ -1220,9 +1662,9 @@ def _record_bounds(value: Any, path: str = "$", depth: int = 0, *, allow_integer
             _record_bounds(item, f"{path}[{index}]", depth + 1, allow_integers=allow_integers)
         return
     if isinstance(value, str):
+        _scalar(value, path)
         if len(value.encode("utf-8")) > MAX_LITERAL_BYTES:
             refuse("WAI-E-BOUNDS.LITERAL", path)
-        _scalar(value, path)
         return
     if value is None or isinstance(value, bool):
         return
@@ -1290,7 +1732,252 @@ def _small_decimal(value: Any, path: str, maximum: int) -> int:
     return number
 
 
-def _confined_directory_entries(root: str | os.PathLike[str], relative: str) -> set[str]:
+def _absolute_executable(value: Any, path: str) -> str:
+    text = _string(value, path)
+    try:
+        raw = text.encode("ascii")
+    except UnicodeEncodeError:
+        refuse("WAI-E-ADAPTER.EXECUTABLE", path)
+    if not raw or len(raw) > 1_024 or not text.startswith("/"):
+        refuse("WAI-E-ADAPTER.EXECUTABLE", path)
+    if any(part in ("", ".", "..") for part in text.split("/")[1:]):
+        refuse("WAI-E-ADAPTER.EXECUTABLE", path)
+    if any(byte <= 0x20 or byte == 0x7F for byte in raw):
+        refuse("WAI-E-ADAPTER.EXECUTABLE", path)
+    return text
+
+
+def _argv(value: Any, path: str) -> list[str]:
+    raw = _array(value, path, MAX_ADAPTER_ARGV, minimum=1)
+    result: list[str] = []
+    for index, item in enumerate(raw):
+        argument = _string(item, f"{path}[{index}]")
+        encoded = argument.encode("utf-8")
+        if not encoded or len(encoded) > 2_048 or b"\x00" in encoded:
+            refuse("WAI-E-ADAPTER.ARGV", f"{path}[{index}]")
+        if SECRET_ARG_RE.search(argument):
+            refuse("WAI-E-ADAPTER.SECRET", f"{path}[{index}]")
+        result.append(argument)
+    return result
+
+
+def _adapter_argv(value: Any, path: str, adapter: str, executable: str) -> list[str]:
+    arguments = _argv(value, path)
+    endpoint = (
+        "http://127.0.0.1:11434/api/chat"
+        if adapter == FAMILY_ADAPTER_SCHEMA
+        else "http://127.0.0.1:11434/api/generate"
+    )
+    urls = [argument for argument in arguments if "://" in argument]
+    if urls != [endpoint] or arguments[-1] != endpoint:
+        refuse("WAI-E-ADAPTER.ENDPOINT", path)
+    if os.path.basename(executable) == "curl":
+        expected = [
+            "--disable",
+            "--fail",
+            "--silent",
+            "--show-error",
+            "--max-time",
+            arguments[5] if len(arguments) > 5 else "",
+            "--header",
+            "Content-Type: application/json",
+            "--data-binary",
+            "@-",
+            endpoint,
+        ]
+        if (
+            arguments != expected
+            or len(arguments[5]) > 9
+            or DECIMAL_RE.fullmatch(arguments[5]) is None
+            or int(arguments[5]) == 0
+        ):
+            refuse("WAI-E-ADAPTER.ARGV", path)
+    return arguments
+
+
+def _environment_allowlist(value: Any, path: str) -> list[str]:
+    raw = _array(value, path, MAX_ADAPTER_ENV)
+    result: list[str] = []
+    for index, item in enumerate(raw):
+        name = _string(item, f"{path}[{index}]")
+        if ENV_NAME_RE.fullmatch(name) is None or SECRET_NAME_RE.search(name):
+            refuse("WAI-E-ADAPTER.ENVIRONMENT", f"{path}[{index}]")
+        if name in result:
+            refuse("WAI-E-ADAPTER.ENVIRONMENT", f"{path}[{index}]")
+        result.append(name)
+    if result != sorted(result):
+        refuse("WAI-E-ADAPTER.ENVIRONMENT", path)
+    return result
+
+
+def _fixed_environment(value: Any, path: str) -> dict[str, str]:
+    if not isinstance(value, dict) or len(value) > MAX_ADAPTER_ENV:
+        refuse("WAI-E-ADAPTER.ENVIRONMENT", path)
+    result: dict[str, str] = {}
+    for name, raw_value in value.items():
+        if not isinstance(name, str) or ENV_NAME_RE.fullmatch(name) is None or SECRET_NAME_RE.search(name):
+            refuse("WAI-E-ADAPTER.ENVIRONMENT", path)
+        item = _string(raw_value, f"{path}.{name}")
+        if not item or len(item.encode("utf-8")) > 512 or "\x00" in item:
+            refuse("WAI-E-ADAPTER.ENVIRONMENT", f"{path}.{name}")
+        result[name] = item
+    return result
+
+
+def _profile_context(value: Any, path: str, expected_mode: str) -> dict[str, Any]:
+    context = _object(
+        value,
+        (
+            "mode",
+            "prior_messages",
+            "examples",
+            "repository_instruction_paths",
+            "tool_definition_ids",
+        ),
+        path,
+    )
+    if _string(context["mode"], f"{path}.mode") != expected_mode:
+        refuse("WAI-E-PARITY.CONTEXT", f"{path}.mode")
+    for name in ("prior_messages", "examples", "repository_instruction_paths", "tool_definition_ids"):
+        if _array(context[name], f"{path}.{name}", MAX_RECORD_ARRAY):
+            refuse("WAI-E-PARITY.CONTEXT", f"{path}.{name}")
+    return context
+
+
+def _validate_adapter_profile(
+    raw_profile: Any, path: str, *, schema: str, context_mode: str, family: bool
+) -> dict[str, Any]:
+    common = (
+        "schema",
+        "id",
+        "adapter",
+        "model",
+        "model_blobs_sha256",
+        "vocabulary_sha256",
+        "version",
+        "executable",
+        "executable_sha256",
+        "runtime_executable",
+        "runtime_executable_sha256",
+        "version_argv",
+        "version_sha256",
+        "identity_argv",
+        "acquisition_sha256",
+        "argv",
+        "environment_allowlist",
+        "fixed_environment",
+        "input_encoding",
+        "context",
+        "timeout_seconds",
+        "max_stdout_bytes",
+        "max_stderr_bytes",
+        "context_window",
+        "output_tokens",
+        "seed",
+        "observed_on",
+    )
+    extra = ("family", "thinking") if family else ("tokenizer",)
+    profile = _object(raw_profile, common + extra, path)
+    if _string(profile["schema"], f"{path}.schema") != schema:
+        refuse("WAI-E-VERSION.PROFILE", f"{path}.schema")
+    _identifier(profile["id"], f"{path}.id")
+    expected_adapter = FAMILY_ADAPTER_SCHEMA if family else TOKENIZER_ADAPTER_SCHEMA
+    if _string(profile["adapter"], f"{path}.adapter") != expected_adapter:
+        refuse("WAI-E-ADAPTER.SCHEMA", f"{path}.adapter")
+    model = _string(profile["model"], f"{path}.model")
+    if not model or len(model.encode("utf-8")) > 256 or any(ord(char) < 0x20 for char in model):
+        refuse("WAI-E-ADAPTER.MODEL", f"{path}.model")
+    blobs_raw = _array(profile["model_blobs_sha256"], f"{path}.model_blobs_sha256", 4, minimum=1)
+    blobs = [_sha256(item, f"{path}.model_blobs_sha256[{index}]") for index, item in enumerate(blobs_raw)]
+    if len(set(blobs)) != len(blobs):
+        refuse("WAI-E-ADAPTER.IDENTITY", f"{path}.model_blobs_sha256")
+    if _sha256(profile["vocabulary_sha256"], f"{path}.vocabulary_sha256") not in blobs:
+        refuse("WAI-E-TOKENIZER.MISMATCH", f"{path}.vocabulary_sha256")
+    version = _string(profile["version"], f"{path}.version")
+    if not version or len(version.encode("utf-8")) > 128:
+        refuse("WAI-E-ADAPTER.VERSION", f"{path}.version")
+    _absolute_executable(profile["executable"], f"{path}.executable")
+    _sha256(profile["executable_sha256"], f"{path}.executable_sha256")
+    _absolute_executable(profile["runtime_executable"], f"{path}.runtime_executable")
+    _sha256(profile["runtime_executable_sha256"], f"{path}.runtime_executable_sha256")
+    _argv(profile["version_argv"], f"{path}.version_argv")
+    _sha256(profile["version_sha256"], f"{path}.version_sha256")
+    _argv(profile["identity_argv"], f"{path}.identity_argv")
+    _sha256(profile["acquisition_sha256"], f"{path}.acquisition_sha256")
+    _adapter_argv(
+        profile["argv"],
+        f"{path}.argv",
+        expected_adapter,
+        profile["executable"],
+    )
+    _environment_allowlist(profile["environment_allowlist"], f"{path}.environment_allowlist")
+    _fixed_environment(profile["fixed_environment"], f"{path}.fixed_environment")
+    if _string(profile["input_encoding"], f"{path}.input_encoding") != "utf-8":
+        refuse("WAI-E-ADAPTER.ENCODING", f"{path}.input_encoding")
+    _profile_context(profile["context"], f"{path}.context", context_mode)
+    _small_decimal(profile["timeout_seconds"], f"{path}.timeout_seconds", 600)
+    stdout_cap = _small_decimal(profile["max_stdout_bytes"], f"{path}.max_stdout_bytes", MAX_ADAPTER_OUTPUT_BYTES)
+    stderr_cap = _small_decimal(profile["max_stderr_bytes"], f"{path}.max_stderr_bytes", MAX_ADAPTER_OUTPUT_BYTES)
+    if stdout_cap == 0 or stderr_cap == 0:
+        refuse("WAI-E-ADAPTER.OUTPUT_CAP", path)
+    if _small_decimal(profile["context_window"], f"{path}.context_window", 1_048_576) == 0:
+        refuse("WAI-E-ADAPTER.CONTEXT_WINDOW", f"{path}.context_window")
+    if _small_decimal(profile["output_tokens"], f"{path}.output_tokens", 512) == 0:
+        refuse("WAI-E-ADAPTER.OUTPUT_TOKENS", f"{path}.output_tokens")
+    _small_decimal(profile["seed"], f"{path}.seed", 2_147_483_647)
+    observed_on = _string(profile["observed_on"], f"{path}.observed_on")
+    try:
+        date.fromisoformat(observed_on)
+    except ValueError:
+        refuse("WAI-E-ADAPTER.DATE", f"{path}.observed_on")
+    if family:
+        _identifier(profile["family"], f"{path}.family")
+        if _string(profile["thinking"], f"{path}.thinking") not in ("disabled", "low"):
+            refuse("WAI-E-ADAPTER.THINKING", f"{path}.thinking")
+    else:
+        _identifier(profile["tokenizer"], f"{path}.tokenizer")
+    return profile
+
+
+def validate_tokenizer_profile(value: Any) -> dict[str, Any]:
+    return _validate_adapter_profile(
+        value,
+        "$",
+        schema=TOKENIZER_PROFILE_SCHEMA,
+        context_mode="raw-prompt-count",
+        family=False,
+    )
+
+
+def validate_family_profiles(value: Any) -> dict[str, Any]:
+    root = _object(value, ("schema", "profiles"), "$")
+    if _string(root["schema"], "$.schema") != FAMILY_PROFILES_SCHEMA:
+        refuse("WAI-E-VERSION.PROFILE", "$.schema")
+    raw_profiles = _array(root["profiles"], "$.profiles", 2, minimum=2)
+    profiles = [
+        _validate_adapter_profile(
+            item,
+            f"$.profiles[{index}]",
+            schema="wildcat-agent-instruction-family-profile/v1",
+            context_mode="fresh-process",
+            family=True,
+        )
+        for index, item in enumerate(raw_profiles)
+    ]
+    if len({profile["id"] for profile in profiles}) != 2:
+        refuse("WAI-E-PARITY.IDENTITY", "$.profiles")
+    if len({profile["family"] for profile in profiles}) != 2:
+        refuse("WAI-E-PARITY.ALIAS", "$.profiles")
+    if len({tuple(profile["model_blobs_sha256"]) for profile in profiles}) != 2:
+        refuse("WAI-E-PARITY.ALIAS", "$.profiles")
+    if len({profile["acquisition_sha256"] for profile in profiles}) != 2:
+        refuse("WAI-E-PARITY.ALIAS", "$.profiles")
+    return root
+
+
+def _confined_directory_entries(
+    root: str | os.PathLike[str], relative: str, maximum: int = MAX_FIXTURE_FILES
+) -> set[str]:
     parent, leaf = _open_parent(root, relative)
     descriptor = -1
     try:
@@ -1302,7 +1989,7 @@ def _confined_directory_entries(root: str | os.PathLike[str], relative: str) -> 
         try:
             with os.scandir(descriptor) as iterator:
                 for entry in iterator:
-                    if len(entries) >= MAX_FIXTURE_FILES:
+                    if len(entries) >= maximum:
                         refuse("WAI-E-MANIFEST.CLOSURE", "$.fixture.root")
                     name = entry.name
                     if name in (".", "..") or "/" in name or "\\" in name:
@@ -1337,6 +2024,7 @@ def validate_manifest(manifest: Any) -> dict[str, Any]:
             "question_count",
             "mutation_count",
             "fixtures",
+            "evidence",
         ),
         "$",
     )
@@ -1435,6 +2123,14 @@ def validate_manifest(manifest: Any) -> dict[str, Any]:
         refuse("WAI-E-MANIFEST.FIXTURES", "$.fixtures")
     if fixture_mutations != declared_mutations:
         refuse("WAI-E-MANIFEST.MUTATION_COUNT", "$.mutation_count")
+    evidence = _object(root["evidence"], tuple(EVIDENCE_ARTIFACTS), "$.evidence")
+    for name, filename in EVIDENCE_ARTIFACTS.items():
+        path = f"$.evidence.{name}"
+        artifact = _object(evidence[name], ("path", "sha256"), path)
+        expected = f"{EVIDENCE_ROOT}/{filename}"
+        if _safe_relative_path(artifact["path"], f"{path}.path") != expected:
+            refuse("WAI-E-MANIFEST.EVIDENCE_PATH", f"{path}.path")
+        _sha256(artifact["sha256"], f"{path}.sha256")
     return manifest
 
 
@@ -1955,6 +2651,7 @@ def _check_manifest_bytes(root: str | os.PathLike[str], manifest_bytes: bytes) -
             refuse("WAI-E-MUTATION.LITERAL_COVERAGE", "$.fixtures")
         if mutation_total != _small_decimal(manifest["mutation_count"], "$.mutation_count", MAX_MUTATIONS):
             refuse("WAI-E-MANIFEST.MUTATION_COUNT", "$.mutation_count")
+        _load_evidence_artifacts(root, manifest)
     records.append(
         _check_record(
             "run.summary",
@@ -1977,6 +2674,925 @@ def _check_manifest_bytes(root: str | os.PathLike[str], manifest_bytes: bytes) -
 
 def check_manifest(root: str | os.PathLike[str], manifest_path: str) -> list[dict[str, Any]]:
     return _check_manifest_bytes(root, read_confined(root, manifest_path))
+
+
+def _record_nonnegative_integer(value: Any, path: str) -> int:
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or value < 0
+        or value > MAX_FILE_BYTES
+    ):
+        refuse("WAI-E-BOUNDS.NUMBER", path)
+    return value
+
+
+def _measurement_material(
+    value: Any,
+    expected_bytes: bytes,
+    path: str,
+) -> tuple[dict[str, Any], int]:
+    material = _object(value, ("sha256", "bytes", "tokens"), path)
+    token_count = _record_nonnegative_integer(material["tokens"], f"{path}.tokens")
+    _record_nonnegative_integer(material["bytes"], f"{path}.bytes")
+    _sha256(material["sha256"], f"{path}.sha256")
+    expected = {
+        "sha256": _digest(expected_bytes),
+        "bytes": len(expected_bytes),
+        "tokens": token_count,
+    }
+    if canonical_record_bytes(material, allow_integers=True) != canonical_record_bytes(
+        expected, allow_integers=True
+    ):
+        refuse("WAI-E-MEASURE.RECORD", path)
+    return expected, token_count
+
+
+def _validate_measurement_record(
+    root: str | os.PathLike[str],
+    value: Any,
+    manifest: Mapping[str, Any],
+    evidence: Mapping[str, bytes],
+    profile: Mapping[str, Any],
+) -> None:
+    path = "$.evidence.measurement_record"
+    record = _object(
+        value,
+        (
+            "schema",
+            "correlation_id",
+            "corpus_sha256",
+            "tokenizer_profile_sha256",
+            "tokenizer_id",
+            "model",
+            "vocabulary_sha256",
+            "observed_on",
+            "bootstrap_sha256",
+            "bootstrap",
+            "documents",
+            "amortised",
+            "totals",
+            "events",
+            "summary",
+        ),
+        path,
+    )
+    bootstrap = evidence["decoder_bootstrap"]
+    bootstrap_record = _object(record["bootstrap"], ("bytes", "tokens"), f"{path}.bootstrap")
+    bootstrap_tokens = _record_nonnegative_integer(
+        bootstrap_record["tokens"], f"{path}.bootstrap.tokens"
+    )
+    _record_nonnegative_integer(bootstrap_record["bytes"], f"{path}.bootstrap.bytes")
+    expected_bootstrap = {"bytes": len(bootstrap), "tokens": bootstrap_tokens}
+    if canonical_record_bytes(bootstrap_record, allow_integers=True) != canonical_record_bytes(
+        expected_bootstrap, allow_integers=True
+    ):
+        refuse("WAI-E-MEASURE.RECORD", f"{path}.bootstrap")
+
+    raw_documents = _array(
+        record["documents"],
+        f"{path}.documents",
+        len(manifest["fixtures"]),
+        minimum=len(manifest["fixtures"]),
+    )
+    documents: list[dict[str, Any]] = []
+    for index, fixture in enumerate(manifest["fixtures"]):
+        fixture_id = fixture["id"]
+        document_path = f"{path}.documents[{index}]"
+        supplied = _object(
+            raw_documents[index],
+            ("fixture_id", "source", "canonical_model", "compact", "one_document"),
+            document_path,
+        )
+        source_file = read_confined(root, fixture["source"]["path"])
+        start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
+        end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
+        source_bytes = source_file[start:end]
+        model_bytes = _load_bound_artifact(
+            root,
+            fixture["artifacts"]["model"],
+            f"$.fixtures.{fixture_id}.model",
+        )
+        compact_bytes = _load_bound_artifact(
+            root,
+            fixture["artifacts"]["compact"],
+            f"$.fixtures.{fixture_id}.compact",
+        )
+        source, source_tokens = _measurement_material(
+            supplied["source"], source_bytes, f"{document_path}.source"
+        )
+        model, model_tokens = _measurement_material(
+            supplied["canonical_model"], model_bytes, f"{document_path}.canonical_model"
+        )
+        compact, compact_tokens = _measurement_material(
+            supplied["compact"], compact_bytes, f"{document_path}.compact"
+        )
+        one_document = _object(
+            supplied["one_document"],
+            ("bytes", "tokens", "delta_bytes", "delta_tokens"),
+            f"{document_path}.one_document",
+        )
+        _record_nonnegative_integer(one_document["bytes"], f"{document_path}.one_document.bytes")
+        _record_nonnegative_integer(one_document["tokens"], f"{document_path}.one_document.tokens")
+        expected_document = {
+            "fixture_id": fixture_id,
+            "source": source,
+            "canonical_model": model,
+            "compact": compact,
+            "one_document": {
+                "bytes": len(compact_bytes) + len(bootstrap),
+                "tokens": compact_tokens + bootstrap_tokens,
+                "delta_bytes": _signed_decimal(len(compact_bytes) + len(bootstrap) - len(source_bytes)),
+                "delta_tokens": _signed_decimal(compact_tokens + bootstrap_tokens - source_tokens),
+            },
+        }
+        if canonical_record_bytes(supplied, allow_integers=True) != canonical_record_bytes(
+            expected_document, allow_integers=True
+        ):
+            refuse("WAI-E-MEASURE.RECORD", document_path)
+        documents.append(expected_document)
+
+    amortised: list[dict[str, Any]] = []
+    for count in range(1, len(documents) + 1):
+        selected = documents[:count]
+        source_bytes = sum(item["source"]["bytes"] for item in selected)
+        source_tokens = sum(item["source"]["tokens"] for item in selected)
+        compact_bytes = sum(item["compact"]["bytes"] for item in selected)
+        compact_tokens = sum(item["compact"]["tokens"] for item in selected)
+        amortised.append(
+            {
+                "document_count": count,
+                "source_bytes": source_bytes,
+                "source_tokens": source_tokens,
+                "compact_plus_bootstrap_bytes": compact_bytes + len(bootstrap),
+                "compact_plus_bootstrap_tokens": compact_tokens + bootstrap_tokens,
+                "bootstrap_bytes_per_document": {"numerator": len(bootstrap), "denominator": count},
+                "bootstrap_tokens_per_document": {"numerator": bootstrap_tokens, "denominator": count},
+                "delta_bytes": _signed_decimal(compact_bytes + len(bootstrap) - source_bytes),
+                "delta_tokens": _signed_decimal(compact_tokens + bootstrap_tokens - source_tokens),
+            }
+        )
+    source_bytes_total = sum(item["source"]["bytes"] for item in documents)
+    source_tokens_total = sum(item["source"]["tokens"] for item in documents)
+    model_bytes_total = sum(item["canonical_model"]["bytes"] for item in documents)
+    model_tokens_total = sum(item["canonical_model"]["tokens"] for item in documents)
+    compact_bytes_total = sum(item["compact"]["bytes"] for item in documents)
+    compact_tokens_total = sum(item["compact"]["tokens"] for item in documents)
+    delta_tokens = compact_tokens_total + bootstrap_tokens - source_tokens_total
+    correlation_id = _digest(
+        (
+            _corpus_sha256(manifest)
+            + _digest(evidence["tokenizer_profile"])
+            + _digest(bootstrap)
+        ).encode("ascii")
+    )
+    events: list[dict[str, Any]] = [
+        {
+            "event": "measurement.baseline",
+            "correlation_id": correlation_id,
+            "fixture_id": item["fixture_id"],
+            "bytes": item["source"]["bytes"],
+            "tokens": item["source"]["tokens"],
+            "verdict": "recorded",
+            "unknowns": [],
+            "refusal_codes": [],
+        }
+        for item in documents
+    ]
+    events.extend(
+        {
+            "event": "measurement.result",
+            "correlation_id": correlation_id,
+            "fixture_id": item["fixture_id"],
+            "bytes": item["compact"]["bytes"],
+            "tokens": item["compact"]["tokens"],
+            "bootstrap_bytes": len(bootstrap),
+            "bootstrap_tokens": bootstrap_tokens,
+            "verdict": "recorded",
+            "unknowns": [],
+            "refusal_codes": [],
+        }
+        for item in documents
+    )
+    success = delta_tokens < 0
+    refusal_codes = [] if success else ["WAI-E-MEASURE.NON_NEGATIVE_DELTA"]
+    summary = {
+        "event": "run.summary",
+        "correlation_id": correlation_id,
+        "case_count": 1 + 3 * len(documents),
+        "passed": 1 if success else 0,
+        "failed": 0 if success else 1,
+        "refused": 0 if success else 1,
+        "unknown": 0,
+        "verdict": "accepted" if success else "refused",
+        "unknowns": [],
+        "refusal_codes": refusal_codes,
+    }
+    events.append(summary)
+    expected = {
+        "schema": MEASUREMENT_SCHEMA,
+        "correlation_id": correlation_id,
+        "corpus_sha256": _corpus_sha256(manifest),
+        "tokenizer_profile_sha256": _digest(evidence["tokenizer_profile"]),
+        "tokenizer_id": profile["id"],
+        "model": profile["model"],
+        "vocabulary_sha256": profile["vocabulary_sha256"],
+        "observed_on": profile["observed_on"],
+        "bootstrap_sha256": _digest(bootstrap),
+        "bootstrap": expected_bootstrap,
+        "documents": documents,
+        "amortised": amortised,
+        "totals": {
+            "source_bytes": source_bytes_total,
+            "source_tokens": source_tokens_total,
+            "canonical_model_bytes": model_bytes_total,
+            "canonical_model_tokens": model_tokens_total,
+            "compact_bytes": compact_bytes_total,
+            "compact_tokens": compact_tokens_total,
+            "compact_plus_bootstrap_bytes": compact_bytes_total + len(bootstrap),
+            "compact_plus_bootstrap_tokens": compact_tokens_total + bootstrap_tokens,
+            "delta_bytes": _signed_decimal(compact_bytes_total + len(bootstrap) - source_bytes_total),
+            "delta_tokens": _signed_decimal(delta_tokens),
+        },
+        "events": events,
+        "summary": summary,
+    }
+    if canonical_record_bytes(record, allow_integers=True) != canonical_record_bytes(
+        expected, allow_integers=True
+    ):
+        refuse("WAI-E-MEASURE.RECORD", path)
+    if not success:
+        refuse("WAI-E-MEASURE.NON_NEGATIVE_DELTA", f"{path}.totals.delta_tokens")
+
+
+def _validate_parity_mode_record(
+    value: Any,
+    *,
+    profile: Mapping[str, Any],
+    fixture_id: str,
+    question: Mapping[str, Any],
+    mode: str,
+    document: bytes,
+    prompt: bytes,
+    correlation_id: str,
+    path: str,
+) -> dict[str, Any]:
+    supplied = _object(
+        value,
+        (
+            "job_id",
+            "input_sha256",
+            "prompt_sha256",
+            "prompt_tokens",
+            "answer_id",
+            "response",
+            "outcome",
+            "code",
+        ),
+        path,
+    )
+    prompt_tokens = _record_nonnegative_integer(supplied["prompt_tokens"], f"{path}.prompt_tokens")
+    response = _string(supplied["response"], f"{path}.response")
+    if len(response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
+        refuse("WAI-E-PARITY.RECORD", f"{path}.response")
+    answer = _answer_record(response, question)
+    if answer["answer_id"] != question["required_answer"] or answer["outcome"] != "accepted":
+        refuse("WAI-E-PARITY.RECORD", f"{path}.answer_id")
+    expected = {
+        "job_id": _digest(
+            (correlation_id + profile["id"] + fixture_id + question["id"] + mode).encode("utf-8")
+        ),
+        "input_sha256": _digest(document),
+        "prompt_sha256": _digest(prompt),
+        "prompt_tokens": prompt_tokens,
+        **answer,
+    }
+    if canonical_record_bytes(supplied, allow_integers=True) != canonical_record_bytes(
+        expected, allow_integers=True
+    ):
+        refuse("WAI-E-PARITY.RECORD", path)
+    return expected
+
+
+def _validate_parity_record(
+    root: str | os.PathLike[str],
+    value: Any,
+    manifest: Mapping[str, Any],
+    evidence: Mapping[str, bytes],
+    families: Mapping[str, Any],
+) -> None:
+    path = "$.evidence.parity_record"
+    record = _object(
+        value,
+        (
+            "schema",
+            "correlation_id",
+            "corpus_sha256",
+            "family_profiles_sha256",
+            "family_ids",
+            "prompt_template_sha256",
+            "bootstrap_sha256",
+            "observed_on",
+            "results",
+            "summary",
+        ),
+        path,
+    )
+    profiles = families["profiles"]
+    bootstrap = evidence["decoder_bootstrap"]
+    template = evidence["parity_prompt"]
+    corpus_digest = _corpus_sha256(manifest)
+    correlation_id = _digest(
+        (
+            corpus_digest
+            + _digest(evidence["family_profiles"])
+            + _digest(template)
+            + _digest(bootstrap)
+        ).encode("ascii")
+    )
+    expected_result_count = len(profiles) * FIXTURE_QUESTION_COUNT
+    raw_results = _array(
+        record["results"],
+        f"{path}.results",
+        expected_result_count,
+        minimum=expected_result_count,
+    )
+    results: list[dict[str, Any]] = []
+    result_index = 0
+    for profile in profiles:
+        for fixture in manifest["fixtures"]:
+            fixture_id = fixture["id"]
+            source_file = read_confined(root, fixture["source"]["path"])
+            start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
+            end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
+            source = source_file[start:end]
+            compact = _load_bound_artifact(
+                root,
+                fixture["artifacts"]["compact"],
+                f"$.fixtures.{fixture_id}.compact",
+            )
+            questions_record = load_canonical_record(
+                _load_bound_artifact(
+                    root,
+                    fixture["artifacts"]["questions"],
+                    f"$.fixtures.{fixture_id}.questions",
+                )
+            )
+            _validate_questions(questions_record, fixture_id)
+            for question in questions_record["questions"]:
+                result_path = f"{path}.results[{result_index}]"
+                supplied = _object(
+                    raw_results[result_index],
+                    (
+                        "event",
+                        "correlation_id",
+                        "family_id",
+                        "family",
+                        "model",
+                        "fixture_id",
+                        "question_id",
+                        "required_answer",
+                        "context_sha256",
+                        "source",
+                        "compact",
+                        "verdict",
+                        "unknowns",
+                        "refusal_codes",
+                    ),
+                    result_path,
+                )
+                source_prompt = _render_parity_prompt(template, "source", bootstrap, source, question)
+                compact_prompt = _render_parity_prompt(template, "compact", bootstrap, compact, question)
+                source_record = _validate_parity_mode_record(
+                    supplied["source"],
+                    profile=profile,
+                    fixture_id=fixture_id,
+                    question=question,
+                    mode="source",
+                    document=source,
+                    prompt=source_prompt,
+                    correlation_id=correlation_id,
+                    path=f"{result_path}.source",
+                )
+                compact_record = _validate_parity_mode_record(
+                    supplied["compact"],
+                    profile=profile,
+                    fixture_id=fixture_id,
+                    question=question,
+                    mode="compact",
+                    document=compact,
+                    prompt=compact_prompt,
+                    correlation_id=correlation_id,
+                    path=f"{result_path}.compact",
+                )
+                expected_result = {
+                    "event": "parity.result",
+                    "correlation_id": correlation_id,
+                    "family_id": profile["id"],
+                    "family": profile["family"],
+                    "model": profile["model"],
+                    "fixture_id": fixture_id,
+                    "question_id": question["id"],
+                    "required_answer": question["required_answer"],
+                    "context_sha256": _digest(canonical_record_bytes(question["context"])),
+                    "source": source_record,
+                    "compact": compact_record,
+                    "verdict": "accepted",
+                    "unknowns": [],
+                    "refusal_codes": [],
+                }
+                if canonical_record_bytes(supplied, allow_integers=True) != canonical_record_bytes(
+                    expected_result, allow_integers=True
+                ):
+                    refuse("WAI-E-PARITY.RECORD", result_path)
+                results.append(expected_result)
+                result_index += 1
+    summary = {
+        "event": "run.summary",
+        "correlation_id": correlation_id,
+        "case_count": len(results) * 2,
+        "question_pair_count": len(results),
+        "passed": len(results),
+        "failed": 0,
+        "refused": 0,
+        "unknown": 0,
+        "verdict": "accepted",
+        "unknowns": [],
+        "refusal_codes": [],
+    }
+    expected = {
+        "schema": PARITY_SCHEMA,
+        "correlation_id": correlation_id,
+        "corpus_sha256": corpus_digest,
+        "family_profiles_sha256": _digest(evidence["family_profiles"]),
+        "family_ids": [profile["id"] for profile in profiles],
+        "prompt_template_sha256": _digest(template),
+        "bootstrap_sha256": _digest(bootstrap),
+        "observed_on": profiles[0]["observed_on"],
+        "results": results,
+        "summary": summary,
+    }
+    if canonical_record_bytes(record, allow_integers=True) != canonical_record_bytes(
+        expected, allow_integers=True
+    ):
+        refuse("WAI-E-PARITY.RECORD", path)
+
+
+def _load_evidence_artifacts(
+    root: str | os.PathLike[str], manifest: Mapping[str, Any]
+) -> dict[str, bytes]:
+    if _confined_directory_entries(root, EVIDENCE_ROOT, len(EVIDENCE_ARTIFACTS)) != set(EVIDENCE_ARTIFACTS.values()):
+        refuse("WAI-E-MANIFEST.CLOSURE", "$.evidence")
+    evidence: dict[str, bytes] = {}
+    for name in EVIDENCE_ARTIFACTS:
+        evidence[name] = _load_bound_artifact(root, manifest["evidence"][name], f"$.evidence.{name}")
+    for name, expected_sha256 in TRUSTED_PROFILE_SHA256.items():
+        if _digest(evidence[name]) != expected_sha256:
+            refuse("WAI-E-DIGEST.PROFILE", f"$.evidence.{name}")
+    bootstrap = evidence["decoder_bootstrap"]
+    if not bootstrap or len(bootstrap) > 4_096 or not bootstrap.endswith(b"\n"):
+        refuse("WAI-E-MEASURE.BOOTSTRAP", "$.evidence.decoder_bootstrap")
+    try:
+        bootstrap.decode("utf-8")
+    except UnicodeDecodeError:
+        refuse("WAI-E-UTF8.DECODE", "$.evidence.decoder_bootstrap")
+    prompt = evidence["parity_prompt"]
+    if not prompt or len(prompt) > 16_384 or not prompt.endswith(b"\n"):
+        refuse("WAI-E-PARITY.PROMPT", "$.evidence.parity_prompt")
+    try:
+        prompt_text = prompt.decode("utf-8")
+    except UnicodeDecodeError:
+        refuse("WAI-E-UTF8.DECODE", "$.evidence.parity_prompt")
+    for placeholder in (
+        "{mode}",
+        "{decoder_bootstrap}",
+        "{document}",
+        "{question}",
+        "{answer_ids}",
+    ):
+        if prompt_text.count(placeholder) != 1:
+            refuse("WAI-E-PARITY.PROMPT", "$.evidence.parity_prompt")
+    tokenizer = validate_tokenizer_profile(load_canonical_record(evidence["tokenizer_profile"]))
+    families = validate_family_profiles(load_canonical_record(evidence["family_profiles"]))
+    measurement = load_canonical_record(evidence["measurement_record"], allow_integers=True)
+    parity = load_canonical_record(evidence["parity_record"], allow_integers=True)
+    if measurement.get("schema") != MEASUREMENT_SCHEMA:
+        refuse("WAI-E-VERSION.MEASUREMENT", "$.evidence.measurement_record")
+    if parity.get("schema") != PARITY_SCHEMA:
+        refuse("WAI-E-VERSION.PARITY", "$.evidence.parity_record")
+    if measurement.get("tokenizer_profile_sha256") != _digest(evidence["tokenizer_profile"]):
+        refuse("WAI-E-DIGEST.PROFILE", "$.evidence.measurement_record")
+    if parity.get("family_profiles_sha256") != _digest(evidence["family_profiles"]):
+        refuse("WAI-E-DIGEST.PROFILE", "$.evidence.parity_record")
+    if parity.get("prompt_template_sha256") != _digest(prompt):
+        refuse("WAI-E-DIGEST.PROMPT", "$.evidence.parity_record")
+    if measurement.get("bootstrap_sha256") != _digest(bootstrap) or parity.get("bootstrap_sha256") != _digest(bootstrap):
+        refuse("WAI-E-DIGEST.BOOTSTRAP", "$.evidence")
+    if measurement.get("tokenizer_id") != tokenizer["id"]:
+        refuse("WAI-E-TOKENIZER.MISMATCH", "$.evidence.measurement_record")
+    corpus_digest = _corpus_sha256(manifest)
+    if measurement.get("corpus_sha256") != corpus_digest:
+        refuse("WAI-E-DIGEST.CORPUS", "$.evidence.measurement_record")
+    if parity.get("corpus_sha256") != corpus_digest:
+        refuse("WAI-E-DIGEST.CORPUS", "$.evidence.parity_record")
+    if (
+        measurement.get("model") != tokenizer["model"]
+        or measurement.get("vocabulary_sha256") != tokenizer["vocabulary_sha256"]
+        or measurement.get("observed_on") != tokenizer["observed_on"]
+    ):
+        refuse("WAI-E-TOKENIZER.MISMATCH", "$.evidence.measurement_record")
+    family_ids = [profile["id"] for profile in families["profiles"]]
+    if parity.get("family_ids") != family_ids:
+        refuse("WAI-E-PARITY.IDENTITY", "$.evidence.parity_record")
+    _validate_measurement_record(root, measurement, manifest, evidence, tokenizer)
+    _validate_parity_record(root, parity, manifest, evidence, families)
+    return evidence
+
+
+def _corpus_sha256(manifest: Mapping[str, Any]) -> str:
+    subject = {
+        "schema": manifest["schema"],
+        "risk_classes": manifest["risk_classes"],
+        "binding_count": manifest["binding_count"],
+        "question_count": manifest["question_count"],
+        "mutation_count": manifest["mutation_count"],
+        "fixtures": manifest["fixtures"],
+    }
+    return _digest(canonical_record_bytes(subject))
+
+
+def _signed_decimal(value: int) -> str:
+    return str(value)
+
+
+def measure_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[dict[str, Any], bool]:
+    manifest_bytes = read_confined(root, manifest_path)
+    manifest = validate_manifest(load_canonical_record(manifest_bytes))
+    checked = _check_manifest_bytes(root, manifest_bytes)
+    if checked[-1]["outcome"] != "accepted":
+        refuse("WAI-E-MEASURE.MUTATIONS", "$.manifest")
+    evidence = _load_evidence_artifacts(root, manifest)
+    profile = validate_tokenizer_profile(load_canonical_record(evidence["tokenizer_profile"]))
+    _verify_profile_identity(profile)
+    bootstrap = evidence["decoder_bootstrap"]
+    corpus_digest = _corpus_sha256(manifest)
+    correlation_id = _digest(
+        (corpus_digest + _digest(evidence["tokenizer_profile"]) + _digest(bootstrap)).encode("ascii")
+    )
+    raw_documents: list[dict[str, Any]] = []
+    for fixture in manifest["fixtures"]:
+        fixture_id = fixture["id"]
+        source_file = read_confined(root, fixture["source"]["path"])
+        start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
+        end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
+        source = source_file[start:end]
+        model = _load_bound_artifact(root, fixture["artifacts"]["model"], f"$.fixtures.{fixture_id}.model")
+        compact = _load_bound_artifact(root, fixture["artifacts"]["compact"], f"$.fixtures.{fixture_id}.compact")
+        raw_documents.append(
+            {"fixture_id": fixture_id, "source": source, "model": model, "compact": compact}
+        )
+
+    events: list[dict[str, Any]] = []
+    for document in raw_documents:
+        fixture_id = document["fixture_id"]
+        source_tokens, _ = _ollama_generate(
+            profile,
+            document["source"],
+            parity=False,
+            path=f"$.documents.{fixture_id}.source",
+        )
+        document["source_tokens"] = source_tokens
+        events.append(
+            {
+                "event": "measurement.baseline",
+                "correlation_id": correlation_id,
+                "fixture_id": fixture_id,
+                "bytes": len(document["source"]),
+                "tokens": source_tokens,
+                "verdict": "recorded",
+                "unknowns": [],
+                "refusal_codes": [],
+            }
+        )
+
+    bootstrap_tokens, _ = _ollama_generate(profile, bootstrap, parity=False, path="$.bootstrap")
+    documents: list[dict[str, Any]] = []
+    for document in raw_documents:
+        fixture_id = document["fixture_id"]
+        source = document["source"]
+        model = document["model"]
+        compact = document["compact"]
+        source_tokens = document["source_tokens"]
+        model_tokens, _ = _ollama_generate(
+            profile,
+            model,
+            parity=False,
+            path=f"$.documents.{fixture_id}.model",
+        )
+        compact_tokens, _ = _ollama_generate(
+            profile,
+            compact,
+            parity=False,
+            path=f"$.documents.{fixture_id}.compact",
+        )
+        documents.append(
+            {
+                "fixture_id": fixture_id,
+                "source": {"sha256": _digest(source), "bytes": len(source), "tokens": source_tokens},
+                "canonical_model": {"sha256": _digest(model), "bytes": len(model), "tokens": model_tokens},
+                "compact": {"sha256": _digest(compact), "bytes": len(compact), "tokens": compact_tokens},
+                "one_document": {
+                    "bytes": len(compact) + len(bootstrap),
+                    "tokens": compact_tokens + bootstrap_tokens,
+                    "delta_bytes": _signed_decimal(len(compact) + len(bootstrap) - len(source)),
+                    "delta_tokens": _signed_decimal(compact_tokens + bootstrap_tokens - source_tokens),
+                },
+            }
+        )
+        events.append(
+            {
+                "event": "measurement.result",
+                "correlation_id": correlation_id,
+                "fixture_id": fixture_id,
+                "bytes": len(compact),
+                "tokens": compact_tokens,
+                "bootstrap_bytes": len(bootstrap),
+                "bootstrap_tokens": bootstrap_tokens,
+                "verdict": "recorded",
+                "unknowns": [],
+                "refusal_codes": [],
+            }
+        )
+    _verify_profile_identity(profile)
+    amortised: list[dict[str, Any]] = []
+    for count in range(1, len(documents) + 1):
+        selected = documents[:count]
+        source_bytes = sum(item["source"]["bytes"] for item in selected)
+        source_tokens = sum(item["source"]["tokens"] for item in selected)
+        compact_bytes = sum(item["compact"]["bytes"] for item in selected)
+        compact_tokens = sum(item["compact"]["tokens"] for item in selected)
+        amortised.append(
+            {
+                "document_count": count,
+                "source_bytes": source_bytes,
+                "source_tokens": source_tokens,
+                "compact_plus_bootstrap_bytes": compact_bytes + len(bootstrap),
+                "compact_plus_bootstrap_tokens": compact_tokens + bootstrap_tokens,
+                "bootstrap_bytes_per_document": {"numerator": len(bootstrap), "denominator": count},
+                "bootstrap_tokens_per_document": {"numerator": bootstrap_tokens, "denominator": count},
+                "delta_bytes": _signed_decimal(compact_bytes + len(bootstrap) - source_bytes),
+                "delta_tokens": _signed_decimal(compact_tokens + bootstrap_tokens - source_tokens),
+            }
+        )
+    source_bytes_total = sum(item["source"]["bytes"] for item in documents)
+    source_tokens_total = sum(item["source"]["tokens"] for item in documents)
+    model_bytes_total = sum(item["canonical_model"]["bytes"] for item in documents)
+    model_tokens_total = sum(item["canonical_model"]["tokens"] for item in documents)
+    compact_bytes_total = sum(item["compact"]["bytes"] for item in documents)
+    compact_tokens_total = sum(item["compact"]["tokens"] for item in documents)
+    delta_tokens = compact_tokens_total + bootstrap_tokens - source_tokens_total
+    success = delta_tokens < 0
+    refusal_codes = [] if success else ["WAI-E-MEASURE.NON_NEGATIVE_DELTA"]
+    events.append(
+        {
+            "event": "run.summary",
+            "correlation_id": correlation_id,
+            "case_count": 1 + 3 * len(documents),
+            "passed": 1 if success else 0,
+            "failed": 0 if success else 1,
+            "refused": 0 if success else 1,
+            "unknown": 0,
+            "verdict": "accepted" if success else "refused",
+            "unknowns": [],
+            "refusal_codes": refusal_codes,
+        }
+    )
+    report = {
+        "schema": MEASUREMENT_SCHEMA,
+        "correlation_id": correlation_id,
+        "corpus_sha256": corpus_digest,
+        "tokenizer_profile_sha256": _digest(evidence["tokenizer_profile"]),
+        "tokenizer_id": profile["id"],
+        "model": profile["model"],
+        "vocabulary_sha256": profile["vocabulary_sha256"],
+        "observed_on": profile["observed_on"],
+        "bootstrap_sha256": _digest(bootstrap),
+        "bootstrap": {"bytes": len(bootstrap), "tokens": bootstrap_tokens},
+        "documents": documents,
+        "amortised": amortised,
+        "totals": {
+            "source_bytes": source_bytes_total,
+            "source_tokens": source_tokens_total,
+            "canonical_model_bytes": model_bytes_total,
+            "canonical_model_tokens": model_tokens_total,
+            "compact_bytes": compact_bytes_total,
+            "compact_tokens": compact_tokens_total,
+            "compact_plus_bootstrap_bytes": compact_bytes_total + len(bootstrap),
+            "compact_plus_bootstrap_tokens": compact_tokens_total + bootstrap_tokens,
+            "delta_bytes": _signed_decimal(compact_bytes_total + len(bootstrap) - source_bytes_total),
+            "delta_tokens": _signed_decimal(delta_tokens),
+        },
+        "events": events,
+        "summary": events[-1],
+    }
+    return report, success
+
+
+def _render_parity_prompt(
+    template: bytes,
+    mode: str,
+    bootstrap: bytes,
+    document: bytes,
+    question: Mapping[str, Any],
+) -> bytes:
+    try:
+        template_text = template.decode("utf-8")
+        bootstrap_text = bootstrap.decode("utf-8")
+        document_text = document.decode("utf-8")
+    except UnicodeDecodeError:
+        refuse("WAI-E-UTF8.DECODE", "$.parity.prompt")
+    rendered = template_text
+    replacements = {
+        "{mode}": mode,
+        "{decoder_bootstrap}": bootstrap_text if mode == "compact" else "not-applicable\n",
+        "{document}": document_text,
+        "{question}": question["prompt"],
+        "{answer_ids}": ",".join(sorted([*question["accepted_answers"], *question["refusal_answers"]])),
+    }
+    for placeholder, value in replacements.items():
+        if rendered.count(placeholder) != 1:
+            refuse("WAI-E-PARITY.PROMPT", "$.parity.prompt")
+        rendered = rendered.replace(placeholder, value)
+    output = rendered.encode("utf-8")
+    if len(output) > MAX_ADAPTER_INPUT_BYTES:
+        refuse("WAI-E-ADAPTER.INPUT_CAP", "$.parity.prompt")
+    return output
+
+
+def _answer_record(response: str, question: Mapping[str, Any]) -> dict[str, Any]:
+    safe_response = _redact_text(response)
+    _scalar(safe_response, "$.adapter_output.response")
+    if len(safe_response.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
+        safe_response = "[REDACTED: response exceeded stored bound]"
+    try:
+        value = json.loads(response, object_pairs_hook=_duplicate_checked_external_object)
+    except (CodecError, json.JSONDecodeError, RecursionError):
+        return {
+            "answer_id": None,
+            "response": safe_response,
+            "outcome": "refused",
+            "code": "WAI-E-PARITY.ANSWER",
+        }
+    if not isinstance(value, dict) or set(value) != {"answer_id"} or not isinstance(value["answer_id"], str):
+        return {
+            "answer_id": None,
+            "response": safe_response,
+            "outcome": "refused",
+            "code": "WAI-E-PARITY.ANSWER",
+        }
+    answer_id = value["answer_id"]
+    try:
+        _scalar(answer_id, "$.adapter_output.answer_id")
+    except CodecError:
+        return {
+            "answer_id": None,
+            "response": safe_response,
+            "outcome": "refused",
+            "code": "WAI-E-PARITY.ANSWER",
+        }
+    safe_answer_id = _redact_text(answer_id)
+    if len(safe_answer_id.encode("utf-8")) > MAX_PARITY_RESPONSE_BYTES:
+        safe_answer_id = "[REDACTED: answer id exceeded stored bound]"
+    if answer_id in question["accepted_answers"]:
+        outcome, code = "accepted", "WAI-OK"
+    elif answer_id in question["refusal_answers"]:
+        outcome, code = "refused", "WAI-E-PARITY.MODEL_REFUSAL"
+    else:
+        outcome, code = "refused", "WAI-E-PARITY.UNLISTED"
+    return {"answer_id": safe_answer_id, "response": safe_response, "outcome": outcome, "code": code}
+
+
+def parity_manifest(root: str | os.PathLike[str], manifest_path: str) -> tuple[dict[str, Any], bool]:
+    manifest_bytes = read_confined(root, manifest_path)
+    manifest = validate_manifest(load_canonical_record(manifest_bytes))
+    checked = _check_manifest_bytes(root, manifest_bytes)
+    if checked[-1]["outcome"] != "accepted":
+        refuse("WAI-E-PARITY.MUTATIONS", "$.manifest")
+    evidence = _load_evidence_artifacts(root, manifest)
+    families_record = validate_family_profiles(load_canonical_record(evidence["family_profiles"]))
+    profiles = families_record["profiles"]
+    for index, profile in enumerate(profiles):
+        _verify_profile_identity(profile, f"$.profiles[{index}]")
+    bootstrap = evidence["decoder_bootstrap"]
+    template = evidence["parity_prompt"]
+    corpus_digest = _corpus_sha256(manifest)
+    correlation_id = _digest(
+        (corpus_digest + _digest(evidence["family_profiles"]) + _digest(template) + _digest(bootstrap)).encode("ascii")
+    )
+    results: list[dict[str, Any]] = []
+    refusal_codes: set[str] = set()
+    passed_pairs = 0
+    for profile_index, profile in enumerate(profiles):
+        for fixture in manifest["fixtures"]:
+            fixture_id = fixture["id"]
+            source_file = read_confined(root, fixture["source"]["path"])
+            start = _small_decimal(fixture["source"]["start"], "$.source.start", MAX_FILE_BYTES)
+            end = _small_decimal(fixture["source"]["end"], "$.source.end", MAX_FILE_BYTES)
+            source = source_file[start:end]
+            compact = _load_bound_artifact(root, fixture["artifacts"]["compact"], f"$.fixtures.{fixture_id}.compact")
+            questions_record = load_canonical_record(
+                _load_bound_artifact(root, fixture["artifacts"]["questions"], f"$.fixtures.{fixture_id}.questions")
+            )
+            _validate_questions(questions_record, fixture_id)
+            questions = questions_record["questions"]
+            for question in questions:
+                mode_records: dict[str, dict[str, Any]] = {}
+                for mode, document in (("source", source), ("compact", compact)):
+                    prompt = _render_parity_prompt(template, mode, bootstrap, document, question)
+                    job_id = _digest(
+                        (correlation_id + profile["id"] + fixture_id + question["id"] + mode).encode("utf-8")
+                    )
+                    try:
+                        prompt_tokens, response = _ollama_generate(
+                            profile,
+                            prompt,
+                            parity=True,
+                            path=f"$.profiles[{profile_index}].{fixture_id}.{question['id']}.{mode}",
+                            answer_ids=[*question["accepted_answers"], *question["refusal_answers"]],
+                        )
+                        answer = _answer_record(response, question)
+                    except CodecError as error:
+                        answer = {"answer_id": None, "response": "", "outcome": "refused", "code": error.code}
+                        prompt_tokens = 0
+                    mode_records[mode] = {
+                        "job_id": job_id,
+                        "input_sha256": _digest(document),
+                        "prompt_sha256": _digest(prompt),
+                        "prompt_tokens": prompt_tokens,
+                        **answer,
+                    }
+                source_answer = mode_records["source"]["answer_id"]
+                compact_answer = mode_records["compact"]["answer_id"]
+                required = question["required_answer"]
+                pair_codes = {
+                    item["code"] for item in mode_records.values() if item["code"] != "WAI-OK"
+                }
+                if source_answer != required or compact_answer != required:
+                    pair_codes.add("WAI-E-PARITY.REQUIRED")
+                if source_answer != compact_answer:
+                    pair_codes.add("WAI-E-PARITY.MISMATCH")
+                verdict = "accepted" if not pair_codes else "refused"
+                if verdict == "accepted":
+                    passed_pairs += 1
+                refusal_codes.update(pair_codes)
+                results.append(
+                    {
+                        "event": "parity.result",
+                        "correlation_id": correlation_id,
+                        "family_id": profile["id"],
+                        "family": profile["family"],
+                        "model": profile["model"],
+                        "fixture_id": fixture_id,
+                        "question_id": question["id"],
+                        "required_answer": required,
+                        "context_sha256": _digest(canonical_record_bytes(question["context"])),
+                        "source": mode_records["source"],
+                        "compact": mode_records["compact"],
+                        "verdict": verdict,
+                        "unknowns": [],
+                        "refusal_codes": sorted(pair_codes),
+                    }
+                )
+    for index, profile in enumerate(profiles):
+        _verify_profile_identity(profile, f"$.profiles[{index}]")
+    question_pairs = len(profiles) * FIXTURE_QUESTION_COUNT
+    success = passed_pairs == question_pairs and not refusal_codes
+    summary = {
+        "event": "run.summary",
+        "correlation_id": correlation_id,
+        "case_count": len(results) * 2,
+        "question_pair_count": len(results),
+        "passed": passed_pairs,
+        "failed": len(results) - passed_pairs,
+        "refused": len(results) - passed_pairs,
+        "unknown": 0,
+        "verdict": "accepted" if success else "refused",
+        "unknowns": [],
+        "refusal_codes": sorted(refusal_codes),
+    }
+    report = {
+        "schema": PARITY_SCHEMA,
+        "correlation_id": correlation_id,
+        "corpus_sha256": corpus_digest,
+        "family_profiles_sha256": _digest(evidence["family_profiles"]),
+        "family_ids": [profile["id"] for profile in profiles],
+        "prompt_template_sha256": _digest(template),
+        "bootstrap_sha256": _digest(bootstrap),
+        "observed_on": profiles[0]["observed_on"],
+        "results": results,
+        "summary": summary,
+    }
+    return report, success
 
 
 def _result(
@@ -2055,6 +3671,11 @@ def build_parser() -> argparse.ArgumentParser:
     check_parser = subparsers.add_parser("check")
     check_parser.add_argument("--root", default=".")
     check_parser.add_argument("--manifest", required=True)
+    for command in ("measure", "parity"):
+        evidence_parser = subparsers.add_parser(command)
+        evidence_parser.add_argument("--root", default=".")
+        evidence_parser.add_argument("--manifest", required=True)
+        evidence_parser.add_argument("--output", required=True)
     subparsers.add_parser("self-test")
     return parser
 
@@ -2084,6 +3705,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             for record in records:
                 _emit(record)
             return 0 if records[-1]["outcome"] == "accepted" else 2
+        if arguments.command in ("measure", "parity"):
+            input_bytes = read_confined(arguments.root, arguments.manifest)
+            manifest_digest = _digest(input_bytes)
+            if arguments.command == "measure":
+                report, accepted = measure_manifest(arguments.root, arguments.manifest)
+            else:
+                report, accepted = parity_manifest(arguments.root, arguments.manifest)
+            write_confined_atomic(
+                arguments.root,
+                arguments.output,
+                canonical_record_bytes(report, allow_integers=True),
+            )
+            _emit(report["summary"])
+            return 0 if accepted else 2
         input_bytes = read_confined(arguments.root, arguments.input)
         if arguments.command == "validate":
             model = load_canonical_json(input_bytes)
@@ -2107,7 +3742,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         _emit(_result("accepted", "WAI-OK", "$", input_bytes, model_bytes, compact_bytes, event="roundtrip"))
         return 0
     except CodecError as error:
-        if arguments.command == "check":
+        if arguments.command in ("check", "measure", "parity"):
             record = {
                 "schema": CHECK_RECORD_SCHEMA,
                 "event": "run.summary",

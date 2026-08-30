@@ -46,14 +46,14 @@ The machine-readable shape is
 The root object has exactly these fields, in semantic rather than serialized
 order:
 
-| field | meaning |
-| --- | --- |
-| `schema` | exactly `wildcat-agent-instruction/v1` |
-| `document` | stable document id and exact title literal |
-| `sources` | closed source records in canonical id order |
-| `sections` | authored section and directive order |
-| `relations` | explicit precedence edges in canonical tuple order |
-| `bindings` | reviewed source spans in canonical tuple order |
+| field | shape | meaning |
+| --- | --- | --- |
+| `schema` | string | exactly `wildcat-agent-instruction/v1` |
+| `document` | object | stable document id and exact title literal |
+| `sources` | array | closed source records in canonical id order |
+| `sections` | array | authored section and directive order |
+| `relations` | array | explicit precedence edges in canonical tuple order |
+| `bindings` | array | reviewed source spans in canonical tuple order |
 
 Every object rejects unknown fields. Every array is present, including an
 empty `relations` array. A directive always carries `expressions`; its
@@ -128,17 +128,17 @@ This length rule is semantic and is not expressible by ABNF alone.
 
 A literal begins with one kind tag:
 
-| tag | model kind |
-| --- | --- |
-| `i` | `identifier` |
-| `p` | `path` |
-| `h` | `sha256` |
-| `c` | `command` |
-| `n` | `number` |
-| `d` | `date` |
-| `u` | `link` |
-| `q` | `quotation` |
-| `t` | `text` |
+| tag | model kind | field form |
+| --- | --- | --- |
+| `i` | `identifier` | length-prefixed literal |
+| `p` | `path` | length-prefixed literal |
+| `h` | `sha256` | length-prefixed literal |
+| `c` | `command` | length-prefixed literal |
+| `n` | `number` | length-prefixed literal |
+| `d` | `date` | length-prefixed literal |
+| `u` | `link` | length-prefixed literal |
+| `q` | `quotation` | length-prefixed literal |
+| `t` | `text` | length-prefixed literal |
 
 Literal length counts decoded UTF-8 bytes, not code points or encoded source
 characters. The canonical escapes are `\\` for backslash, `\s` for ASCII
@@ -196,24 +196,30 @@ model bytes or one refusal; it never returns a partial model.
 The decoder and canonical-model loader apply these limits before allocating or
 descending further:
 
-| item | version-1 maximum |
-| --- | ---: |
-| input or output file | 1,048,576 bytes |
-| physical lines | 16,384 |
-| one physical line | 65,536 bytes before LF |
-| nesting depth | 32 levels |
-| object members | 32 |
-| identifier | 128 UTF-8 bytes |
-| repository-relative path | 512 UTF-8 bytes |
-| one decoded literal | 65,000 UTF-8 bytes |
-| all decoded literals | 786,432 UTF-8 bytes |
-| sources | 64 |
-| sections | 128 |
-| directives | 4,096 |
-| expressions | 8,192 |
-| relations | 8,192 |
-| bindings | 8,192 |
-| promise exceptions | 1,024 |
+| item | version-1 maximum | measured as |
+| --- | ---: | --- |
+| input or output file | 1,048,576 | bytes |
+| physical lines | 16,384 | lines |
+| one physical line | 65,536 | bytes before LF |
+| nesting depth | 32 | levels |
+| object members | 32 | members |
+| identifier | 128 | UTF-8 bytes |
+| repository-relative path | 512 | UTF-8 bytes |
+| one decoded literal | 65,000 | UTF-8 bytes |
+| all decoded literals | 786,432 | UTF-8 bytes |
+| sources | 64 | records |
+| sections | 128 | records |
+| directives | 4,096 | records |
+| expressions | 8,192 | records |
+| relations | 8,192 | records |
+| bindings | 8,192 | records |
+| promise exceptions | 1,024 | records |
+| adapter argv entries | 32 | entries |
+| adapter environment names | 16 | names |
+| adapter stdin | 262,144 | bytes |
+| adapter stdout or stderr | 65,536 | bytes each |
+| recorded parity response | 512 | UTF-8 bytes |
+| adapter executable | 268,435,456 | bytes |
 
 Schema `maxLength` values count code points and are an early shape check. The
 byte limits in this table still apply. The literal limit leaves room for record
@@ -240,19 +246,25 @@ take a selected root plus relative input and output paths.
 
 Version 1 reserves these stable refusal families:
 
-| code | subject |
-| --- | --- |
-| `WAI-E-VERSION` | schema id, magic, or unsupported version |
-| `WAI-E-UTF8` | BOM, malformed UTF-8, or invalid scalar |
-| `WAI-E-JSON` | JSON syntax, duplicate key, or forbidden numeric form |
-| `WAI-E-SHAPE` | unknown, missing, or mistyped model field |
-| `WAI-E-BOUNDS` | any fixed resource limit |
-| `WAI-E-REFERENCE` | id, relation, binding, scope, or exception closure |
-| `WAI-E-CYCLE` | cyclic precedence |
-| `WAI-E-PATH` | unsafe, escaping, linked, or special path |
-| `WAI-E-COMPACT` | indentation, line, opcode, field, literal, or escape syntax |
-| `WAI-E-CANONICAL` | non-canonical order, bytes, or formatter mismatch |
-| `WAI-E-IO` | bounded read, flush, sync, or atomic-write failure |
+| code | subject | effect |
+| --- | --- | --- |
+| `WAI-E-VERSION` | schema id, magic, or unsupported version | refuse |
+| `WAI-E-UTF8` | BOM, malformed UTF-8, or invalid scalar | refuse |
+| `WAI-E-JSON` | JSON syntax, duplicate key, or forbidden numeric form | refuse |
+| `WAI-E-SHAPE` | unknown, missing, or mistyped model field | refuse |
+| `WAI-E-BOUNDS` | any fixed resource limit | refuse |
+| `WAI-E-REFERENCE` | id, relation, binding, scope, or exception closure | refuse |
+| `WAI-E-CYCLE` | cyclic precedence | refuse |
+| `WAI-E-PATH` | unsafe, escaping, linked, or special path | refuse |
+| `WAI-E-COMPACT` | indentation, line, opcode, field, literal, or escape syntax | refuse |
+| `WAI-E-CANONICAL` | non-canonical order, bytes, or formatter mismatch | refuse |
+| `WAI-E-IO` | bounded read, flush, sync, or atomic-write failure | refuse |
+| `WAI-E-MANIFEST` | fixture or evidence closure | refuse |
+| `WAI-E-DIGEST` | stale profile, prompt, bootstrap, or report binding | refuse |
+| `WAI-E-ADAPTER` | executable, identity, argv, environment, runtime, timeout, cap, or response | refuse |
+| `WAI-E-TOKENIZER` | vocabulary identity or real-model token count | refuse |
+| `WAI-E-MEASURE` | bootstrap accounting, cohort comparison, or compression gate | refuse |
+| `WAI-E-PARITY` | family identity, fresh context, answer, or required equality | refuse |
 
 Implementations may append a stable dot-separated detail, such as
 `WAI-E-COMPACT.OPCODE`, without changing the family. A new family or changed
@@ -332,6 +344,135 @@ readable, every record carries their digest; fixture records also carry a
 digest of the exact fixture row.
 They contain ids, digests, counts, verdicts, and stable refusal codes, not
 source fragments, prompts, model responses, credentials, or hidden reasoning.
+
+## Measurement and parity evidence
+
+The manifest also binds exactly six regular files in
+[`evidence/`](../tests/fixtures/agent-instruction-v1/evidence/): the complete
+decoder bootstrap, tokenizer profile, two-family profile record, parity prompt,
+measurement report, and parity report. Missing, additional, linked, stale, or
+internally inconsistent evidence refuses before a runtime is launched. The two
+commands are:
+
+```bash
+python3 scripts/agent_instruction.py measure --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tmp/agent-instruction-v1-measurement.json
+python3 scripts/agent_instruction.py parity --manifest tests/fixtures/agent-instruction-v1/manifest.json --output tmp/agent-instruction-v1-parity.json
+```
+
+Both commands re-run the fixture and mutation checks, verify every selected
+profile, write one canonical report by atomic replacement, and emit its bounded
+`run.summary`. A refusal still writes the complete bounded report when the
+failure occurs after report construction. Counts and answers are observations;
+they do not change source, canonical-model, or compact instruction authority.
+
+### Token measurement
+
+The checked tokenizer profile is `gptoss-120b-ollama-0.32.15`, model
+`gpt-oss:120b`, vocabulary and model-blob SHA-256
+`6be6d66a3f546d8c19b130dc41dc24b2fc159f84ffbc76a0ee0676205083cf5a`.
+It binds Ollama `0.32.15`, the Ollama executable digest
+`eee609f0a6da58b978d453e0385fd0e3496e6cf319c639875669b51cb4277d2d`,
+the `/usr/bin/curl` digest
+`5ab042572ea0e068644e3b8f9e8dd1ad197bfcf33d199316615b46ddc4390a41`,
+the exact model-manifest output digest, argv, raw-prompt context, limits, seed,
+and acquisition date. The adapter posts only to the declared loopback Ollama
+generate endpoint. It clears the environment, admits `HOME`, fixes
+`OLLAMA_HOST=http://127.0.0.1:11434` and `OLLAMA_NOHISTORY=1`, and starts
+curl with `--disable` so user configuration is not loaded. It passes no shell
+text and treats Ollama's
+integer `prompt_eval_count` as the count. A different executable, runtime version,
+model manifest, blob, vocabulary, model name, non-integer count, or negative
+count refuses.
+
+The baseline is the three source spans under that profile. The comparison then
+counts the canonical models, compact documents, and the complete 893-byte
+decoder bootstrap under the same profile. The checked report records:
+
+| material | bytes | tokens |
+| --- | ---: | ---: |
+| source corpus | 11,025 | 2,499 |
+| canonical-model corpus | 8,563 | 2,068 |
+| compact corpus | 6,150 | 2,228 |
+| decoder bootstrap | 893 | 270 |
+| compact corpus plus bootstrap | 7,043 | 2,498 |
+| compact-plus-bootstrap minus source | -3,982 | -1 |
+
+The strict three-document gate passes because `2,498 < 2,499`. The report also
+keeps each document and the bootstrap-amortised prefixes. A one-document run is
+not assumed to save tokens: the Fiat fixture reports `-44`, Horos reports
+`+740`, and Promise Machine reports `-157` after adding the entire bootstrap.
+The two-document prefix reports `+426`; only the declared three-document cohort
+is the acceptance cohort.
+
+### Isolated family parity
+
+The family record names two distinct local identities:
+
+- `qwen35-aeon-27b-q4-k-m`: family `qwen35`, model
+  `qwen3.8-27b-aeon:q4_k_m`, model blobs
+  `5caf67d19e598ac71ba02c3df7785f86247ec77ca4d54cba2e2d342453c87f27`
+  and
+  `d466586099626aa3572522d8b6138a3c5b7793e699959da200a69169428d7b5a`.
+- `gptoss-120b-mxfp4`: family `gptoss`, model `gpt-oss:120b`, model blob
+  `6be6d66a3f546d8c19b130dc41dc24b2fc159f84ffbc76a0ee0676205083cf5a`.
+
+Each profile binds its family name, model name, model-manifest acquisition
+digest, vocabulary, executable digests, loopback chat argv, context window,
+thinking mode, seed, time limit, and byte limits. Two profile rows with the
+same family, model-blob tuple, or acquisition digest are aliases and refuse.
+
+For each of the nine declared questions and each family, the runner launches a
+new curl process and sends one user message containing either the source span
+or the compact document with its bootstrap. The request carries no prior
+message, example, repository instruction, tool definition, stored context,
+credential, or remote URL. The bound prompt presents one neutral candidate list
+without identifying the required id or separating document conclusions from
+evidence refusals. The transport schema admits any bounded answer-id string so
+the local parser can preserve and refuse malformed or unlisted values instead
+of letting the runtime coerce them. The report retains the bounded final JSON
+answer or refusal, input and prompt digests, prompt token count, job id, verdict,
+unknowns, and refusal codes. It does not retain model reasoning.
+Secret-shaped response text and unlisted answer ids are redacted; if those
+replacements would exceed the 512-byte record limit, the report stores one
+fixed bounded redaction marker.
+
+The checked run contains 18 source-versus-compact pairs and 36 isolated model
+calls. All 18 pairs returned the declared required answer from both forms; the
+summary reports 18 passed, zero failed, zero refused, and zero unknown. This is
+evidence for these fixture bytes, profiles, and local runtime only. It does not
+show parity for another model build, another prompt, arbitrary English, tools,
+conversation history, or a deployed agent.
+
+### Adapter trust boundary and recovery
+
+Ollama, curl, their outputs, and model responses are untrusted external
+adapters. The checked profiles make their identity and launch contract
+reproducible, but neither adapter interprets instruction authority. The Python
+validator alone decides whether a bound profile, count, response, and report
+fit this evidence contract. It never executes a source command or acts on a
+model answer.
+
+The validator also fixes the SHA-256 of both checked profile records in its
+source. A manifest can bind a report produced by those profiles, but rebinding
+the manifest cannot select a different executable, runtime, argv, or model
+identity. A newly reviewed local profile therefore requires an explicit source
+anchor update before any identity command or adapter process can run.
+
+Every adapter process receives an explicit argv list, a cleared allowlisted
+environment, bounded stdin, separate stdout and stderr caps, and a timeout;
+`shell=False` is fixed. Only the public synthetic corpus is sent to the local
+loopback runtime. Credentials and provider SDKs are absent. A timeout,
+unavailable runtime, cap breach, changed identity, reused context, model
+refusal, required-answer mismatch, or unknown answer remains visible and
+refuses the run.
+
+Recovery is to restore the recorded local identity or create a newly reviewed
+profile and rerun the complete cohort. Do not edit a digest, hide a bounded
+response, collapse two model aliases into two families, substitute bytes or a
+heuristic for tokenizer output, or widen an answer set after seeing a result.
+Adding a dependency, downloading a model, contacting a credentialed or paid
+endpoint, sending non-public source, or choosing a new licence remains an
+operator decision.
 
 ## Compatibility and recovery
 
