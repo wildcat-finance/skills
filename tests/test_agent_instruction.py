@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import contextlib
+import io
 import json
 import copy
 import os
@@ -573,9 +575,9 @@ def decimal_span_literal_limit_model(extra: int = 0) -> dict:
 
 
 class RefusalAssertions:
-    def assertRefusal(self, code: str, function, *arguments):
+    def assertRefusal(self, code: str, function, *arguments, **keywords):
         with self.assertRaises(AI.CodecError) as raised:
-            function(*arguments)
+            function(*arguments, **keywords)
         self.assertTrue(raised.exception.code.startswith(code), raised.exception.code)
         self.assertLessEqual(len(raised.exception.node_path), 512)
 
@@ -2053,6 +2055,742 @@ class MutationTests(RefusalAssertions, unittest.TestCase):
         record["mutations"] = [record["mutations"][0]]
         record["mutations"][0]["expected"]["kind"] = "silent"
         self.assertRefusal("WAI-E-MUTATION.EXPECTED", AI._validate_mutations, record, fixture_id, model, AI.canonical_json_bytes(model), 1)
+
+
+FAKE_ADAPTER_SOURCE = r'''import json
+import os
+import sys
+import time
+
+command = sys.argv[1]
+if command == "version":
+    sys.stdout.write("fake-runtime 1\n")
+    raise SystemExit(0)
+if command == "identity":
+    sys.stdout.write("FROM @sha256-" + sys.argv[2] + "\n")
+    raise SystemExit(0)
+if command == "environment":
+    sys.stdout.write(json.dumps(sorted(os.environ)))
+    raise SystemExit(0)
+
+mode = sys.argv[2]
+if mode == "sleep":
+    time.sleep(2)
+if mode == "stdout-cap":
+    sys.stdout.write("x" * 128)
+    raise SystemExit(0)
+if mode == "stderr-cap":
+    sys.stderr.write("x" * 128)
+    raise SystemExit(0)
+if mode == "exit":
+    raise SystemExit(7)
+
+request = json.load(sys.stdin)
+capture = os.environ.get("FAKE_CAPTURE")
+if capture:
+    with open(capture, "a", encoding="utf-8") as handle:
+        handle.write(json.dumps(request, sort_keys=True, separators=(",", ":")) + "\n")
+
+count = 7
+if mode == "negative-count":
+    count = -1
+elif mode == "non-integer-count":
+    count = 1.5
+model = request["model"]
+if mode == "model-mismatch":
+    model = "different:model"
+
+if "messages" in request:
+    answer_ids = request["format"]["properties"]["answer_id"]["enum"]
+    answer_id = answer_ids[0]
+    if mode == "unknown-answer":
+        answer_id = "unlisted-answer"
+    elif mode == "model-refusal":
+        answer_id = answer_ids[-1]
+    elif mode == "second-answer":
+        answer_id = answer_ids[1]
+    content = json.dumps({"answer_id": answer_id}, sort_keys=True)
+    if mode == "malformed-answer":
+        content = "{"
+    elif mode == "secret-answer":
+        content = "token=visible-secret"
+    elif mode == "large-answer":
+        content = "x" * 513
+    payload = {
+        "model": model,
+        "message": {"role": "assistant", "content": content},
+        "done": True,
+        "prompt_eval_count": count,
+    }
+else:
+    payload = {
+        "model": model,
+        "response": "{}",
+        "done": True,
+        "prompt_eval_count": count,
+    }
+if mode == "extra-field":
+    payload["extra"] = "unlisted"
+sys.stdout.write(json.dumps(payload, sort_keys=True, separators=(",", ":")))
+'''
+
+
+class AdapterFixtureTests(RefusalAssertions):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name)
+        self.fake = self.root / "fake-runtime.py"
+        self.fake.write_text(f"#!{sys.executable}\n" + FAKE_ADAPTER_SOURCE, encoding="utf-8")
+        self.fake.chmod(0o700)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def profile(
+        self,
+        *,
+        family: bool = False,
+        mode: str = "normal",
+        identity: str = "a" * 64,
+        profile_id: str = "fake-tokenizer",
+        family_id: str = "alpha",
+        model: str = "fake-alpha:1",
+    ) -> dict:
+        executable_digest = sha256(self.fake)
+        version = b"fake-runtime 1\n"
+        acquisition = f"FROM @sha256-{identity}\n".encode("ascii")
+        context_mode = "fresh-process" if family else "raw-prompt-count"
+        result = {
+            "schema": (
+                "wildcat-agent-instruction-family-profile/v1"
+                if family
+                else AI.TOKENIZER_PROFILE_SCHEMA
+            ),
+            "id": profile_id,
+            "adapter": AI.FAMILY_ADAPTER_SCHEMA if family else AI.TOKENIZER_ADAPTER_SCHEMA,
+            "model": model,
+            "model_blobs_sha256": [identity],
+            "vocabulary_sha256": identity,
+            "version": "fake-runtime-1",
+            "executable": str(self.fake),
+            "executable_sha256": executable_digest,
+            "runtime_executable": str(self.fake),
+            "runtime_executable_sha256": executable_digest,
+            "version_argv": ["version"],
+            "version_sha256": hashlib.sha256(version).hexdigest(),
+            "identity_argv": ["identity", identity],
+            "acquisition_sha256": hashlib.sha256(acquisition).hexdigest(),
+            "argv": [
+                "adapter",
+                mode,
+                (
+                    "http://127.0.0.1:11434/api/chat"
+                    if family
+                    else "http://127.0.0.1:11434/api/generate"
+                ),
+            ],
+            "environment_allowlist": [],
+            "fixed_environment": {"FAKE_SAFE": "1"},
+            "input_encoding": "utf-8",
+            "context": {
+                "mode": context_mode,
+                "prior_messages": [],
+                "examples": [],
+                "repository_instruction_paths": [],
+                "tool_definition_ids": [],
+            },
+            "timeout_seconds": "2",
+            "max_stdout_bytes": "4096",
+            "max_stderr_bytes": "4096",
+            "context_window": "1024",
+            "output_tokens": "32",
+            "seed": "909",
+            "observed_on": "2026-08-30",
+        }
+        if family:
+            result["family"] = family_id
+            result["thinking"] = "disabled"
+        else:
+            result["tokenizer"] = "fake"
+        return result
+
+    def family_profiles(self) -> dict:
+        return {
+            "schema": AI.FAMILY_PROFILES_SCHEMA,
+            "profiles": [
+                self.profile(
+                    family=True,
+                    identity="a" * 64,
+                    profile_id="fake-alpha",
+                    family_id="alpha",
+                    model="fake-alpha:1",
+                ),
+                self.profile(
+                    family=True,
+                    identity="b" * 64,
+                    profile_id="fake-beta",
+                    family_id="beta",
+                    model="fake-beta:1",
+                ),
+            ],
+        }
+
+    def question(self) -> dict:
+        return {
+            "id": "fake-question",
+            "prompt": "Is the declared result enabled?",
+            "accepted_answers": ["result-enabled", "result-disabled"],
+            "refusal_answers": ["refuse-insufficient-context", "refuse-unknown"],
+            "required_answer": "result-enabled",
+            "context": {
+                "mode": "fresh",
+                "prior_messages": [],
+                "examples": [],
+                "repository_instruction_paths": [],
+                "tool_definition_ids": [],
+            },
+        }
+
+
+class MeasurementTests(AdapterFixtureTests, unittest.TestCase):
+    def test_fake_tokenizer_profile_verifies_exact_identity(self):
+        profile = AI.validate_tokenizer_profile(self.profile())
+        AI._verify_profile_identity(profile)
+
+    def test_changed_executable_digest_refuses(self):
+        profile = self.profile()
+        profile["executable_sha256"] = "0" * 64
+        self.assertRefusal("WAI-E-ADAPTER.EXECUTABLE_CHANGED", AI._verify_profile_identity, profile)
+
+    def test_changed_vocabulary_digest_refuses(self):
+        profile = self.profile()
+        profile["model_blobs_sha256"] = ["b" * 64]
+        profile["vocabulary_sha256"] = "b" * 64
+        self.assertRefusal("WAI-E-TOKENIZER.MISMATCH", AI._verify_profile_identity, profile)
+
+    def test_changed_acquisition_digest_refuses(self):
+        profile = self.profile()
+        profile["acquisition_sha256"] = "0" * 64
+        self.assertRefusal("WAI-E-ADAPTER.IDENTITY_CHANGED", AI._verify_profile_identity, profile)
+
+    def test_changed_version_digest_refuses(self):
+        profile = self.profile()
+        profile["version_sha256"] = "0" * 64
+        self.assertRefusal("WAI-E-ADAPTER.VERSION_CHANGED", AI._verify_profile_identity, profile)
+
+    def test_tokenizer_adapter_requires_argv_list(self):
+        profile = self.profile()
+        profile["argv"] = "adapter"
+        self.assertRefusal("WAI-E-SHAPE.ARRAY", AI.validate_tokenizer_profile, profile)
+
+    def test_tokenizer_adapter_refuses_remote_endpoint(self):
+        profile = self.profile()
+        profile["argv"][-1] = "https://example.invalid/api/generate"
+        self.assertRefusal("WAI-E-ADAPTER.ENDPOINT", AI.validate_tokenizer_profile, profile)
+
+    def test_tokenizer_adapter_refuses_credential_argv(self):
+        profile = self.profile()
+        profile["argv"].insert(-1, "Authorization: Bearer visible-secret")
+        self.assertRefusal("WAI-E-ADAPTER.SECRET", AI.validate_tokenizer_profile, profile)
+
+    def test_curl_adapter_must_disable_user_configuration(self):
+        manifest = manifest_record()
+        profile_path = manifest["evidence"]["tokenizer_profile"]["path"]
+        profile = AI.load_canonical_record((ROOT / profile_path).read_bytes())
+        profile["argv"] = profile["argv"][1:]
+        self.assertRefusal("WAI-E-ADAPTER.ARGV", AI.validate_tokenizer_profile, profile)
+
+    def test_identity_command_refuses_credential_argv(self):
+        profile = self.profile()
+        profile["identity_argv"].append("api_key=visible-secret")
+        self.assertRefusal("WAI-E-ADAPTER.SECRET", AI.validate_tokenizer_profile, profile)
+
+    def test_environment_allowlist_rejects_secret_name(self):
+        profile = self.profile()
+        profile["environment_allowlist"] = ["API_TOKEN"]
+        self.assertRefusal("WAI-E-ADAPTER.ENVIRONMENT", AI.validate_tokenizer_profile, profile)
+
+    def test_environment_allowlist_requires_sorted_names(self):
+        profile = self.profile()
+        profile["environment_allowlist"] = ["SAFE_Z", "SAFE_A"]
+        self.assertRefusal("WAI-E-ADAPTER.ENVIRONMENT", AI.validate_tokenizer_profile, profile)
+
+    def test_cleared_environment_contains_only_declared_values(self):
+        stdout, _ = AI._run_bounded(
+            str(self.fake),
+            ["environment"],
+            b"",
+            {"FAKE_SAFE": "1"},
+            2,
+            4096,
+            4096,
+            "$.fake",
+        )
+        names = json.loads(stdout)
+        self.assertIn("FAKE_SAFE", names)
+        self.assertNotIn("HOME", names)
+        self.assertFalse(any("TOKEN" in name or "SECRET" in name for name in names))
+
+    def test_fake_negative_token_count_refuses(self):
+        profile = self.profile(mode="negative-count")
+        self.assertRefusal(
+            "WAI-E-TOKENIZER.COUNT",
+            AI._ollama_generate,
+            profile,
+            b"input",
+            parity=False,
+            path="$.fake",
+        )
+
+    def test_fake_non_integer_token_count_refuses(self):
+        profile = self.profile(mode="non-integer-count")
+        self.assertRefusal(
+            "WAI-E-TOKENIZER.COUNT",
+            AI._ollama_generate,
+            profile,
+            b"input",
+            parity=False,
+            path="$.fake",
+        )
+
+    def test_fake_tokenizer_model_mismatch_refuses(self):
+        profile = self.profile(mode="model-mismatch")
+        self.assertRefusal(
+            "WAI-E-TOKENIZER.MISMATCH",
+            AI._ollama_generate,
+            profile,
+            b"input",
+            parity=False,
+            path="$.fake",
+        )
+
+    def test_fake_timeout_refuses(self):
+        profile = self.profile(mode="sleep")
+        profile["timeout_seconds"] = "1"
+        self.assertRefusal(
+            "WAI-E-ADAPTER.TIMEOUT",
+            AI._ollama_generate,
+            profile,
+            b"input",
+            parity=False,
+            path="$.fake",
+        )
+
+    def test_fake_stdout_cap_refuses(self):
+        self.assertRefusal(
+            "WAI-E-ADAPTER.OUTPUT_CAP",
+            AI._run_bounded,
+            str(self.fake),
+            ["adapter", "stdout-cap"],
+            b"",
+            {},
+            2,
+            32,
+            32,
+            "$.fake",
+        )
+
+    def test_fake_stderr_cap_refuses(self):
+        self.assertRefusal(
+            "WAI-E-ADAPTER.OUTPUT_CAP",
+            AI._run_bounded,
+            str(self.fake),
+            ["adapter", "stderr-cap"],
+            b"",
+            {},
+            2,
+            32,
+            32,
+            "$.fake",
+        )
+
+    def test_unavailable_executable_refuses(self):
+        self.assertRefusal(
+            "WAI-E-ADAPTER.UNAVAILABLE",
+            AI._run_bounded,
+            "/definitely/not/a/runtime",
+            ["adapter"],
+            b"",
+            {},
+            1,
+            32,
+            32,
+            "$.fake",
+        )
+
+    def test_bootstrap_omission_refuses(self):
+        manifest = manifest_record()
+
+        def artifact_bytes(root, artifact, path):
+            if path == "$.evidence.decoder_bootstrap":
+                return b""
+            return (ROOT / artifact["path"]).read_bytes()
+
+        with mock.patch.object(AI, "_load_bound_artifact", side_effect=artifact_bytes):
+            self.assertRefusal(
+                "WAI-E-MEASURE.BOOTSTRAP",
+                AI._load_evidence_artifacts,
+                ROOT,
+                manifest,
+            )
+
+    def test_non_negative_compression_delta_refuses(self):
+        with (
+            mock.patch.object(AI, "_verify_profile_identity"),
+            mock.patch.object(AI, "_ollama_generate", return_value=(1, "{}")),
+        ):
+            report, accepted = AI.measure_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+        self.assertFalse(accepted)
+        self.assertEqual(report["totals"]["delta_tokens"], "1")
+        self.assertEqual(report["summary"]["refusal_codes"], ["WAI-E-MEASURE.NON_NEGATIVE_DELTA"])
+
+    def test_source_baseline_precedes_each_compact_count(self):
+        observed = []
+
+        def count(profile, prompt, **kwargs):
+            observed.append(prompt)
+            return 1, "{}"
+
+        with (
+            mock.patch.object(AI, "_verify_profile_identity"),
+            mock.patch.object(AI, "_ollama_generate", side_effect=count),
+        ):
+            AI.measure_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+        manifest = manifest_record()
+        expected = []
+        for fixture in manifest["fixtures"]:
+            source = (ROOT / fixture["source"]["path"]).read_bytes()
+            expected.append(
+                source[int(fixture["source"]["start"]):int(fixture["source"]["end"])]
+            )
+        expected.append((ROOT / manifest["evidence"]["decoder_bootstrap"]["path"]).read_bytes())
+        for fixture in manifest["fixtures"]:
+            expected.extend(
+                [
+                    (ROOT / fixture["artifacts"]["model"]["path"]).read_bytes(),
+                    (ROOT / fixture["artifacts"]["compact"]["path"]).read_bytes(),
+                ]
+            )
+        self.assertEqual([hashlib.sha256(item).hexdigest() for item in observed], [hashlib.sha256(item).hexdigest() for item in expected])
+
+    def test_measurement_report_has_exact_ten_integer_cases(self):
+        counts = iter([*((10, "{}") for _ in range(3)), (1, "{}"), *((value, "{}") for value in (5, 1) * 3)])
+        with (
+            mock.patch.object(AI, "_verify_profile_identity"),
+            mock.patch.object(AI, "_ollama_generate", side_effect=lambda *args, **kwargs: next(counts)),
+        ):
+            report, accepted = AI.measure_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+        self.assertTrue(accepted)
+        self.assertEqual(report["summary"]["case_count"], 10)
+        self.assertIsInstance(report["totals"]["source_tokens"], int)
+        self.assertIsInstance(report["bootstrap"]["tokens"], int)
+
+    def test_measure_cli_atomically_replaces_report(self):
+        (self.root / "manifest.json").write_bytes(b"{}\n")
+        (self.root / "report.json").write_bytes(b"old")
+        summary = {
+            "event": "run.summary",
+            "correlation_id": "c" * 64,
+            "case_count": 1,
+            "passed": 1,
+            "failed": 0,
+            "refused": 0,
+            "unknown": 0,
+            "verdict": "accepted",
+            "unknowns": [],
+            "refusal_codes": [],
+        }
+        report = {"schema": AI.MEASUREMENT_SCHEMA, "summary": summary}
+        output = io.StringIO()
+        with (
+            mock.patch.object(AI, "measure_manifest", return_value=(report, True)),
+            contextlib.redirect_stdout(output),
+        ):
+            result = AI.main(
+                [
+                    "measure",
+                    "--root",
+                    str(self.root),
+                    "--manifest",
+                    "manifest.json",
+                    "--output",
+                    "report.json",
+                ]
+            )
+        self.assertEqual(result, 0)
+        self.assertEqual(
+            (self.root / "report.json").read_bytes(),
+            AI.canonical_record_bytes(report, allow_integers=True),
+        )
+        self.assertEqual(sorted(path.name for path in self.root.iterdir()), ["fake-runtime.py", "manifest.json", "report.json"])
+
+
+class ParityAdapterTests(AdapterFixtureTests, unittest.TestCase):
+    def test_two_genuinely_distinct_fake_families_validate(self):
+        profiles = self.family_profiles()
+        self.assertIs(AI.validate_family_profiles(profiles), profiles)
+
+    def test_alias_only_family_names_refuse(self):
+        profiles = self.family_profiles()
+        profiles["profiles"][1]["family"] = profiles["profiles"][0]["family"]
+        self.assertRefusal("WAI-E-PARITY.ALIAS", AI.validate_family_profiles, profiles)
+
+    def test_alias_only_model_blobs_refuse(self):
+        profiles = self.family_profiles()
+        profiles["profiles"][1]["model_blobs_sha256"] = profiles["profiles"][0]["model_blobs_sha256"]
+        profiles["profiles"][1]["vocabulary_sha256"] = profiles["profiles"][0]["vocabulary_sha256"]
+        self.assertRefusal("WAI-E-PARITY.ALIAS", AI.validate_family_profiles, profiles)
+
+    def test_alias_only_acquisition_records_refuse(self):
+        profiles = self.family_profiles()
+        profiles["profiles"][1]["acquisition_sha256"] = profiles["profiles"][0]["acquisition_sha256"]
+        self.assertRefusal("WAI-E-PARITY.ALIAS", AI.validate_family_profiles, profiles)
+
+    def test_missing_second_family_refuses(self):
+        profiles = self.family_profiles()
+        profiles["profiles"].pop()
+        self.assertRefusal("WAI-E-BOUNDS.COUNT", AI.validate_family_profiles, profiles)
+
+    def test_prior_message_context_reuse_refuses(self):
+        profiles = self.family_profiles()
+        profiles["profiles"][0]["context"]["prior_messages"] = ["old"]
+        self.assertRefusal("WAI-E-PARITY.CONTEXT", AI.validate_family_profiles, profiles)
+
+    def test_example_context_reuse_refuses(self):
+        profiles = self.family_profiles()
+        profiles["profiles"][0]["context"]["examples"] = ["old"]
+        self.assertRefusal("WAI-E-PARITY.CONTEXT", AI.validate_family_profiles, profiles)
+
+    def test_repository_instruction_contamination_refuses(self):
+        profiles = self.family_profiles()
+        profiles["profiles"][0]["context"]["repository_instruction_paths"] = ["AGENTS.md"]
+        self.assertRefusal("WAI-E-PARITY.CONTEXT", AI.validate_family_profiles, profiles)
+
+    def test_tool_definition_contamination_refuses(self):
+        profiles = self.family_profiles()
+        profiles["profiles"][0]["context"]["tool_definition_ids"] = ["shell"]
+        self.assertRefusal("WAI-E-PARITY.CONTEXT", AI.validate_family_profiles, profiles)
+
+    def test_unknown_thinking_mode_refuses(self):
+        profiles = self.family_profiles()
+        profiles["profiles"][0]["thinking"] = "ambient"
+        self.assertRefusal("WAI-E-ADAPTER.THINKING", AI.validate_family_profiles, profiles)
+
+    def test_fake_unavailable_model_refuses(self):
+        profile = self.profile(family=True, mode="exit")
+        self.assertRefusal(
+            "WAI-E-ADAPTER.UNAVAILABLE",
+            AI._ollama_generate,
+            profile,
+            b"prompt",
+            parity=True,
+            path="$.fake",
+            answer_ids=["result-enabled", "refuse-unknown"],
+        )
+
+    def test_fake_chat_preserves_accepted_answer(self):
+        profile = self.profile(family=True)
+        count, response = AI._ollama_generate(
+            profile,
+            b"prompt",
+            parity=True,
+            path="$.fake",
+            answer_ids=["result-enabled", "refuse-unknown"],
+        )
+        answer = AI._answer_record(response, self.question())
+        self.assertEqual(count, 7)
+        self.assertEqual(answer["answer_id"], "result-enabled")
+        self.assertEqual(answer["outcome"], "accepted")
+
+    def test_fake_unknown_answer_refuses_without_coercion(self):
+        profile = self.profile(family=True, mode="unknown-answer")
+        _, response = AI._ollama_generate(
+            profile,
+            b"prompt",
+            parity=True,
+            path="$.fake",
+            answer_ids=["result-enabled", "refuse-unknown"],
+        )
+        answer = AI._answer_record(response, self.question())
+        self.assertEqual(answer["answer_id"], "unlisted-answer")
+        self.assertEqual(answer["code"], "WAI-E-PARITY.UNLISTED")
+
+    def test_fake_malformed_answer_refuses(self):
+        profile = self.profile(family=True, mode="malformed-answer")
+        _, response = AI._ollama_generate(
+            profile,
+            b"prompt",
+            parity=True,
+            path="$.fake",
+            answer_ids=["result-enabled", "refuse-unknown"],
+        )
+        answer = AI._answer_record(response, self.question())
+        self.assertIsNone(answer["answer_id"])
+        self.assertEqual(answer["code"], "WAI-E-PARITY.ANSWER")
+
+    def test_fake_model_refusal_is_preserved(self):
+        profile = self.profile(family=True, mode="model-refusal")
+        _, response = AI._ollama_generate(
+            profile,
+            b"prompt",
+            parity=True,
+            path="$.fake",
+            answer_ids=["result-enabled", "refuse-unknown"],
+        )
+        answer = AI._answer_record(response, self.question())
+        self.assertEqual(answer["answer_id"], "refuse-unknown")
+        self.assertEqual(answer["code"], "WAI-E-PARITY.MODEL_REFUSAL")
+        self.assertEqual(answer["response"], response)
+
+    def test_fake_chat_response_cap_refuses(self):
+        profile = self.profile(family=True, mode="large-answer")
+        self.assertRefusal(
+            "WAI-E-ADAPTER.RESPONSE",
+            AI._ollama_generate,
+            profile,
+            b"prompt",
+            parity=True,
+            path="$.fake",
+            answer_ids=["result-enabled", "refuse-unknown"],
+        )
+
+    def test_fake_chat_non_integer_count_refuses(self):
+        profile = self.profile(family=True, mode="non-integer-count")
+        self.assertRefusal(
+            "WAI-E-TOKENIZER.COUNT",
+            AI._ollama_generate,
+            profile,
+            b"prompt",
+            parity=True,
+            path="$.fake",
+            answer_ids=["result-enabled", "refuse-unknown"],
+        )
+
+    def test_fake_chat_extra_field_refuses(self):
+        profile = self.profile(family=True, mode="extra-field")
+        self.assertRefusal(
+            "WAI-E-ADAPTER.RESPONSE",
+            AI._ollama_generate,
+            profile,
+            b"prompt",
+            parity=True,
+            path="$.fake",
+            answer_ids=["result-enabled", "refuse-unknown"],
+        )
+
+    def test_secret_text_is_redacted_from_refusal_record(self):
+        responses = (
+            "token=visible-secret",
+            '{"api_key":"visible-secret"}',
+            "Authorization: Bearer visible-secret",
+        )
+        for response in responses:
+            with self.subTest(response=response):
+                answer = AI._answer_record(response, self.question())
+                self.assertNotIn("visible-secret", answer["response"])
+                self.assertIn("[REDACTED]", answer["response"])
+
+    def test_prompt_separates_answer_and_refusal_vocabularies(self):
+        template = (ROOT / manifest_record()["evidence"]["parity_prompt"]["path"]).read_bytes()
+        prompt = AI._render_parity_prompt(template, "source", b"bootstrap\n", b"document\n", self.question())
+        text = prompt.decode("utf-8")
+        self.assertIn("Document-grounded answer ids: result-enabled,result-disabled", text)
+        self.assertIn("Evidence-refusal ids: refuse-insufficient-context,refuse-unknown", text)
+
+    def test_source_prompt_omits_bootstrap_and_compact_prompt_includes_it(self):
+        template = (ROOT / manifest_record()["evidence"]["parity_prompt"]["path"]).read_bytes()
+        source = AI._render_parity_prompt(template, "source", b"unique-bootstrap\n", b"document\n", self.question())
+        compact = AI._render_parity_prompt(template, "compact", b"unique-bootstrap\n", b"document\n", self.question())
+        self.assertNotIn(b"unique-bootstrap", source)
+        self.assertIn(b"unique-bootstrap", compact)
+
+    def test_fake_requests_are_isolated_one_message_jobs(self):
+        capture = self.root / "requests.ndjson"
+        profile = self.profile(family=True)
+        profile["fixed_environment"]["FAKE_CAPTURE"] = str(capture)
+        for _ in range(2):
+            AI._ollama_generate(
+                profile,
+                b"prompt",
+                parity=True,
+                path="$.fake",
+                answer_ids=["result-enabled", "refuse-unknown"],
+            )
+        requests = [json.loads(line) for line in capture.read_text(encoding="utf-8").splitlines()]
+        self.assertEqual(len(requests), 2)
+        for request in requests:
+            self.assertEqual(request["messages"], [{"role": "user", "content": "prompt"}])
+            self.assertNotIn("context", request)
+            self.assertNotIn("tools", request)
+
+    def test_validated_question_record_regression_runs_all_pairs(self):
+        def answer(profile, prompt, **kwargs):
+            return 1, json.dumps({"answer_id": kwargs["answer_ids"][0]})
+
+        with (
+            mock.patch.object(AI, "_verify_profile_identity"),
+            mock.patch.object(AI, "_ollama_generate", side_effect=answer),
+        ):
+            report, accepted = AI.parity_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+        self.assertTrue(accepted)
+        self.assertEqual(len(report["results"]), 18)
+        self.assertEqual(report["summary"]["case_count"], 36)
+        self.assertEqual(report["summary"]["passed"], 18)
+
+    def test_mismatch_and_required_failures_are_reported(self):
+        def answer(profile, prompt, **kwargs):
+            selected = kwargs["answer_ids"][1] if kwargs["path"].endswith("horos-security-review.compact") else kwargs["answer_ids"][0]
+            return 1, json.dumps({"answer_id": selected})
+
+        with (
+            mock.patch.object(AI, "_verify_profile_identity"),
+            mock.patch.object(AI, "_ollama_generate", side_effect=answer),
+        ):
+            report, accepted = AI.parity_manifest(ROOT, str(MANIFEST.relative_to(ROOT)))
+        self.assertFalse(accepted)
+        failures = [item for item in report["results"] if item["verdict"] == "refused"]
+        self.assertEqual(len(failures), 2)
+        self.assertIn("WAI-E-PARITY.MISMATCH", failures[0]["refusal_codes"])
+        self.assertIn("WAI-E-PARITY.REQUIRED", failures[0]["refusal_codes"])
+
+    def test_parity_cli_atomically_creates_report(self):
+        (self.root / "manifest.json").write_bytes(b"{}\n")
+        summary = {
+            "event": "run.summary",
+            "correlation_id": "c" * 64,
+            "case_count": 2,
+            "question_pair_count": 1,
+            "passed": 1,
+            "failed": 0,
+            "refused": 0,
+            "unknown": 0,
+            "verdict": "accepted",
+            "unknowns": [],
+            "refusal_codes": [],
+        }
+        report = {"schema": AI.PARITY_SCHEMA, "summary": summary}
+        output = io.StringIO()
+        with (
+            mock.patch.object(AI, "parity_manifest", return_value=(report, True)),
+            contextlib.redirect_stdout(output),
+        ):
+            result = AI.main(
+                [
+                    "parity",
+                    "--root",
+                    str(self.root),
+                    "--manifest",
+                    "manifest.json",
+                    "--output",
+                    "parity.json",
+                ]
+            )
+        self.assertEqual(result, 0)
+        self.assertEqual(
+            (self.root / "parity.json").read_bytes(),
+            AI.canonical_record_bytes(report, allow_integers=True),
+        )
+        self.assertEqual(sorted(path.name for path in self.root.iterdir()), ["fake-runtime.py", "manifest.json", "parity.json"])
 
 
 if __name__ == "__main__":
