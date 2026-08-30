@@ -296,6 +296,36 @@ class NoemaScaffoldTests(unittest.TestCase):
             <= count_dimensions
         )
 
+    def test_maximum_definition_refusal_field_fits_the_result_schema(self):
+        name = "local." + "x" * 122
+        records = base_records(
+            definitions=[
+                [
+                    "definition",
+                    name,
+                    [],
+                    ["=", [":", "actor", "x"], [":", "scope", "x"]],
+                ]
+            ]
+        )
+        try:
+            compile_records(records)
+        except noema.Refusal as raised:
+            result = noema._result(
+                "parse",
+                "refuse",
+                raised.code,
+                field=raised.field,
+                message=raised.message,
+            )
+        else:
+            self.fail("unlike definition operands compiled")
+        maximum = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"][
+            "result"
+        ]["properties"]["field"]["maxLength"]
+        self.assertEqual(len(result["field"]), 144)
+        self.assertLessEqual(len(result["field"]), maximum)
+
     def test_contract_magic_and_about_result_are_fixed(self):
         self.assertEqual((noema.CONTRACT, noema.SOURCE_MAGIC, noema.PROJECTION_MAGIC),
                          ("noema/v1", "NOE1", "NT1"))

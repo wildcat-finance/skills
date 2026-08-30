@@ -517,7 +517,7 @@
         "field": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 128,
+          "maxLength": 640,
           "pattern": "^[A-Za-z0-9_.\u005b\u005d-]+$"
         },
         "message": {
