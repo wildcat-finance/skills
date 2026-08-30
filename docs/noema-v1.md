@@ -188,6 +188,11 @@ ids and values visible in the same slice. Arity does not disambiguate an alias.
 A collision refuses. The manifest plus projection must recover the same NIR;
 shorter bytes or tokens never excuse a changed graph.
 
+A profile may carry an alias whose source is absent from one graph or slice;
+that entry is inert there and still counts in profile/bootstrap bytes. Its
+target must remain disjoint from every visible string so inverse substitution
+cannot capture unrelated data.
+
 Prompt-only mode includes the complete kernel, every reachable definition,
 the slice and its reachable literals. All of those bytes and tokens count.
 Runtime mode may keep checked policy evaluation outside model context, but its

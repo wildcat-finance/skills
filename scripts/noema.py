@@ -1564,8 +1564,6 @@ def _projection_aliases(profile: dict[str, object], graph: dict[str, object]) ->
         assert isinstance(item, list)
         source, target = item
         assert isinstance(source, str) and isinstance(target, str)
-        if source not in visible:
-            refuse("NOE-E-ALIAS.UNUSED", f"profile.aliases[{index}]", "alias source is absent from this graph")
         if target in visible or target in RESERVED_SYMBOLS or target in targets:
             refuse("NOE-E-ALIAS.COLLISION", f"profile.aliases[{index}]", "alias collides with visible graph text")
         aliases[source] = target

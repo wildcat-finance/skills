@@ -967,12 +967,14 @@ class ProjectionTests(unittest.TestCase):
             noema.project_build(self.build, profile, self.profile_digest)
         self.assertEqual(raised.exception.code, "NOE-E-ALIAS.COLLISION")
 
-    def test_unused_alias_refuses(self):
+    def test_unused_alias_is_inert(self):
         profile = json.loads(json.dumps(self.profile))
         profile["aliases"].append(["zz.absent", "Z"])
-        with self.assertRaises(noema.Refusal) as raised:
-            noema.project_build(self.build, profile, self.profile_digest)
-        self.assertEqual(raised.exception.code, "NOE-E-ALIAS.UNUSED")
+        profile_digest = sha256(noema._canonical_json(profile)).hexdigest()
+        build = json.loads(json.dumps(self.build))
+        build["lock"]["profile_sha256"] = profile_digest
+        bundle = noema.project_build(build, profile, profile_digest)
+        self.assertEqual(noema.recover_projection(bundle, profile), build["graph"])
 
     def test_tampered_projection_refuses(self):
         bundle = noema.project_build(self.build, self.profile, self.profile_digest)
