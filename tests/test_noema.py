@@ -406,6 +406,34 @@ class NoemaScaffoldTests(unittest.TestCase):
         self.assertEqual(record["unsupported_remainders"]["minimum"], 1)
         self.assertEqual(record["artifact_inventory_sha256"], {"$ref": "#/$defs/sha256"})
 
+    def test_schema_binds_mutation_assignments_and_critical_vectors(self):
+        definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
+        published_assignments = {}
+        for branch in definitions["mutationPlan"]["oneOf"]:
+            properties = branch["properties"]
+            specimen = properties["specimen"]["const"]
+            published_assignments[specimen] = tuple(
+                (
+                    entry["properties"]["id"]["const"],
+                    entry["properties"]["category"]["const"],
+                )
+                for entry in properties["mutations"]["prefixItems"]
+            )
+        expected_assignments = {
+            specimen: tuple(
+                (f"{specimen}.{category}", category) for category in categories
+            )
+            for specimen, categories in noema.SPECIMEN_MUTATION_CATEGORIES.items()
+        }
+        self.assertEqual(published_assignments, expected_assignments)
+        published_vectors = {
+            branch["properties"]["id"]["const"]: tuple(
+                branch["properties"]["mutations"]["const"]
+            )
+            for branch in definitions["criticalVector"]["oneOf"]
+        }
+        self.assertEqual(published_vectors, noema.CRITICAL_MUTATION_IDS)
+
     def test_schema_closes_graph_tuple_shapes(self):
         definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
         self.assertEqual(set(definitions["term"]), {"oneOf"})
@@ -4885,6 +4913,29 @@ class MutationTests(unittest.TestCase):
             noema._mutation_plan(plan, "fiat")
         self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.MUTATION_CONTRACT")
 
+    def test_mutation_category_cannot_move_between_specimen_ids(self):
+        plan = read_json(specimen_directory("fiat") / "mutation-plan.json")
+        target = next(
+            item for item in plan["mutations"] if item["id"] == "fiat.missing-authority"
+        )
+        target["category"] = "swapped-actor"
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._mutation_plan(plan, "fiat")
+        self.assertEqual(
+            raised.exception.code,
+            "NOE-E-REFERENCE.MUTATION_ASSIGNMENT",
+        )
+
+    def test_specimen_cannot_omit_an_assigned_mutation(self):
+        plan = read_json(specimen_directory("fiat") / "mutation-plan.json")
+        plan["mutations"].pop()
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._mutation_plan(plan, "fiat")
+        self.assertEqual(
+            raised.exception.code,
+            "NOE-E-REFERENCE.MUTATION_ASSIGNMENT",
+        )
+
     def test_wrong_mutation_artifact_name_refuses(self):
         plan = read_json(specimen_directory("fiat") / "mutation-plan.json")
         plan["mutations"][0]["artifact"] = "mutations/other.noe"
@@ -4930,6 +4981,10 @@ class CriticalVectorTests(unittest.TestCase):
     def test_critical_vector_inventory_is_complete_and_sorted(self):
         vectors = read_json(CORPUS_MANIFEST)["critical_vectors"]
         self.assertEqual([item["id"] for item in vectors], sorted(noema.CRITICAL_VECTORS))
+        self.assertEqual(
+            {item["id"]: tuple(item["mutations"]) for item in vectors},
+            noema.CRITICAL_MUTATION_IDS,
+        )
 
     def test_every_critical_mutation_has_a_checked_outcome(self):
         outcomes = {planned["id"]: outcome for planned, outcome in mutation_index().values()}
@@ -4958,6 +5013,19 @@ class CriticalVectorTests(unittest.TestCase):
             with self.assertRaises(noema.Refusal) as raised:
                 noema.verify_specimen_corpus(path)
         self.assertEqual(raised.exception.code, "NOE-E-BOUNDS.CRITICAL")
+
+    def test_critical_vector_subset_is_not_complete_coverage(self):
+        with copied_corpus() as root:
+            path = root / "manifest.json"
+            value = read_json(path)
+            authority = next(
+                item for item in value["critical_vectors"] if item["id"] == "authority"
+            )
+            authority["mutations"] = ["fiat.missing-authority"]
+            write_canonical_json(path, value)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(path)
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.CRITICAL")
 
     def test_duplicate_critical_mutation_refuses(self):
         with copied_corpus() as root:

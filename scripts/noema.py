@@ -195,6 +195,31 @@ MUTATION_CATEGORIES = frozenset(
         "consequence-3-bypass",
     }
 )
+SPECIMEN_MUTATION_CATEGORIES = {
+    "brevitas": ("alias-collision", "changed-exact-literal"),
+    "fiat": (
+        "dropped-negation",
+        "missing-authority",
+        "reordered-effects",
+        "stale-module",
+    ),
+    "phylax": (
+        "consequence-3-bypass",
+        "omitted-dependency",
+        "permission-for-prohibition",
+        "widened-scope",
+    ),
+    "sapheneia": (
+        "swapped-actor",
+        "unknown-guard-deletion",
+        "unknown-opcode",
+    ),
+}
+MUTATION_ASSIGNMENTS = {
+    f"{specimen}.{category}": (specimen, category)
+    for specimen, categories in SPECIMEN_MUTATION_CATEGORIES.items()
+    for category in categories
+}
 CRITICAL_VECTORS = {
     "authority": frozenset({"swapped-actor", "missing-authority"}),
     "consequence-3": frozenset({"consequence-3-bypass"}),
@@ -203,6 +228,16 @@ CRITICAL_VECTORS = {
     "ordering": frozenset({"reordered-effects"}),
     "permission-prohibition": frozenset({"permission-for-prohibition"}),
     "unknown-guard": frozenset({"unknown-guard-deletion"}),
+}
+CRITICAL_MUTATION_IDS = {
+    vector: tuple(
+        sorted(
+            identifier
+            for identifier, (_specimen, category) in MUTATION_ASSIGNMENTS.items()
+            if category in categories
+        )
+    )
+    for vector, categories in CRITICAL_VECTORS.items()
 }
 CHECK_DECISIONS = frozenset({"permit", "refuse", "unknown"})
 CHECK_REASONS = frozenset(
@@ -5075,6 +5110,7 @@ def _mutation_plan(
     if not isinstance(mutations, list) or not mutations or len(mutations) > MAX_MUTATIONS:
         refuse("NOE-E-BOUNDS.MUTATIONS", field, "mutation count is outside its limit")
     prior = ""
+    identifiers: list[str] = []
     for index, item_value in enumerate(mutations):
         item = _exact_keys(
             item_value,
@@ -5085,11 +5121,18 @@ def _mutation_plan(
         if identifier <= prior:
             refuse("NOE-E-SYNTAX.ORDER", field, "mutation ids must be unique and sorted")
         prior = identifier
+        identifiers.append(identifier)
         if item["category"] not in MUTATION_CATEGORIES:
             refuse(
                 "NOE-E-TYPE.MUTATION",
                 f"{field}.mutations[{index}].category",
                 "unknown mutation category",
+            )
+        if MUTATION_ASSIGNMENTS.get(identifier) != (specimen, item["category"]):
+            refuse(
+                "NOE-E-REFERENCE.MUTATION_ASSIGNMENT",
+                f"{field}.mutations[{index}]",
+                "mutation id, specimen and category differ from the fixed corpus assignment",
             )
         if item["kind"] not in {"source", "profile"}:
             refuse(
@@ -5117,6 +5160,17 @@ def _mutation_plan(
                 f"{field}.mutations[{index}]",
                 "mutation kind or query differs from its fixed category contract",
             )
+    expected_identifiers = sorted(
+        identifier
+        for identifier, (owner, _category) in MUTATION_ASSIGNMENTS.items()
+        if owner == specimen
+    )
+    if identifiers != expected_identifiers:
+        refuse(
+            "NOE-E-REFERENCE.MUTATION_ASSIGNMENT",
+            field,
+            "specimen mutation inventory differs from its fixed corpus assignment",
+        )
     return document
 
 
@@ -6453,6 +6507,13 @@ def verify_specimen_corpus(path: Path) -> dict[str, object]:
         ]
         if normalized != sorted(set(normalized)):
             refuse("NOE-E-SYNTAX.ORDER", f"corpus.critical_vectors[{index}].mutations", "critical mutation ids must be sorted")
+        expected_mutations = list(CRITICAL_MUTATION_IDS[identifier])
+        if normalized != expected_mutations:
+            refuse(
+                "NOE-E-REFERENCE.CRITICAL",
+                f"corpus.critical_vectors[{index}]",
+                "critical vector differs from its complete fixed mutation set",
+            )
         represented: set[str] = set()
         for mutation_id in normalized:
             if mutation_id not in mutation_index:
@@ -6462,7 +6523,7 @@ def verify_specimen_corpus(path: Path) -> dict[str, object]:
             if outcome.get("status") not in {"changed", "refused"}:
                 refuse("NOE-E-REFERENCE.CRITICAL", f"corpus.critical_vectors[{index}]", "critical mutation did not produce a checked outcome")
         allowed = set(CRITICAL_VECTORS[identifier])
-        if not represented or not represented <= allowed:
+        if represented != allowed:
             refuse("NOE-E-REFERENCE.CRITICAL", f"corpus.critical_vectors[{index}]", "critical vector names the wrong mutation category")
     if [str(item["id"]) for item in critical_values] != sorted(CRITICAL_VECTORS):
         refuse("NOE-E-REFERENCE.CRITICAL", "corpus.critical_vectors", "critical-vector identities differ")

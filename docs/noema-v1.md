@@ -349,6 +349,9 @@ change their named policy outcome; an exact literal preserves id and kind but
 changes bytes; ordering performs one exact two-effect swap; stale module,
 missing dependency, unknown opcode and alias collision refuse under their
 specific code. An unchanged graph or unchanged declared observation refuses.
+Mutation ids, categories and specimen ownership are one fixed sorted corpus
+assignment in both the runtime and public schema; categories cannot migrate
+between specimens while retaining a familiar id.
 
 The top manifest also binds the verified 17-file seed copy as
 `non-executable-reference-evidence`. Its exact inventory bytes, full inventory
@@ -357,8 +360,9 @@ flat closed member set and non-executable regular-file mode are checked. Seed
 Python is evidence bytes; the verifier never imports or executes it. Seven
 complete, sorted critical vectors cover permission/prohibition, authority,
 negation, unknown guard, ordering, exact literal and consequence-3. A vector
-passes only when every named mutation belongs to its fixed category and
-satisfies that category's outcome contract.
+passes only when its mutation ids exactly equal the complete fixed set and
+every member satisfies its category's outcome contract. A permitted subset is
+not 100% coverage.
 
 ## Local codec interface
 
