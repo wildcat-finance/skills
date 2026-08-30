@@ -5153,15 +5153,11 @@ class GitHubSignerDiagnosis(unittest.TestCase):
 
 
 class RewrittenStackRefusal(unittest.TestCase):
-    """The stack rewrite is caught at the first merge-step after it happens.
+    """A waiting non-ancestor is refused before another merge is receipted.
 
-    GitHub's native stacked-pull-request flow rebases every downstream branch on
-    each merge and re-signs the rewritten commits with its own key. Before this
-    check, the first symptom was an invalid local signature at a later
-    merge-step, which reads as a broken signing setup, and by then several steps
-    had already merged. The check compares each waiting step's remote tip with
-    the head its push receipt names, so the rewrite is named before any further
-    merge is receipted.
+    This synthetic fixture supplies native ancestry status 1 for unequal tips.
+    The controller can therefore name the observed branch and relation without
+    asserting which external operation caused the history to move.
     """
 
     def setUp(self):
@@ -5194,6 +5190,7 @@ class RewrittenStackRefusal(unittest.TestCase):
         with mock.patch.object(module, "step_branch_name",
                                side_effect=lambda _s, step: f"branch-{step['n']}"), \
              mock.patch.object(module, "remote_branch_tip", side_effect=tip), \
+             mock.patch.object(module, "_native_ancestry_status", return_value=1), \
              redirect_stderr(captured):
             try:
                 module.refuse_rewritten_stack(".", state, current_step)
@@ -5207,19 +5204,23 @@ class RewrittenStackRefusal(unittest.TestCase):
         )
         self.assertIsNone(message)
 
-    def test_a_rewritten_waiting_branch_is_refused_and_the_rewrite_named(self):
+    def test_a_nonancestor_waiting_branch_is_refused_without_a_cause_claim(self):
         message = self._refusal(
             self._state(), 2, {"branch-3": "d" * 40}
         )
-        self.assertIsNotNone(message, "a rewritten waiting branch was not refused")
-        self.assertIn("has been rewritten since it was pushed", message)
+        self.assertIsNotNone(message, "a non-ancestor waiting branch was not refused")
+        self.assertIn("no longer contains its receipted head", message)
+        self.assertIn("is not an ancestor", message)
         self.assertIn("branch-3", message)
-        self.assertIn("stacked-pull-request", message)
+        self.assertIn("c" * 40, message)
+        self.assertIn("d" * 40, message)
         self.assertIn(
             "do not import GitHub's public key",
             message,
             "the wrong repair is the obvious one and must be ruled out in the message",
         )
+        self.assertNotIn("GitHub's stacked-pull-request flow", message)
+        self.assertNotIn("re-signs", message)
 
     def test_the_step_being_merged_is_never_queried(self):
         """The current step's branch may legitimately differ from its receipt

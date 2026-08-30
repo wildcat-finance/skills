@@ -2631,10 +2631,8 @@ def parse_version_relation_source(text: str) -> dict | None:
     }
 
 
-def _native_relation_git(
-    base_dir: str, argv: list[str], refusal: str
-) -> bytes:
-    """Read native local objects without inherited Git substitution state."""
+def _native_relation_environment() -> dict[str, str]:
+    """A Git environment that cannot substitute for the repository relation."""
     environment = {
         name: value
         for name, value in os.environ.items()
@@ -2649,13 +2647,50 @@ def _native_relation_git(
             "GIT_TERMINAL_PROMPT": "0",
         }
     )
+    return environment
+
+
+def _native_relation_git(
+    base_dir: str, argv: list[str], refusal: str
+) -> bytes:
+    """Read native local objects without inherited Git substitution state."""
     return bounded_tool(
         base_dir,
         "git",
         ["--no-replace-objects", *argv],
         refusal,
-        environment=environment,
+        environment=_native_relation_environment(),
     )
+
+
+def _native_ancestry_status(
+    base_dir: str, candidate: str, descendant: str
+) -> int | None:
+    """Return Git's native ancestry answer, or ``None`` when it gave none.
+
+    This is topology admission only. It deliberately reads no signature,
+    attribution, or GitHub evidence; ``done merge-step`` owns those checks over
+    the exact current range. ``bounded_probe`` keeps startup, time, and output
+    failures inside the same unknown result instead of exposing child output or
+    turning an unavailable answer into a non-ancestor claim.
+    """
+    candidate = require_full_sha(candidate, "waiting step recorded head")
+    descendant = require_full_sha(descendant, "waiting step observed tip")
+    status, _output, failure = bounded_probe(
+        base_dir,
+        "git",
+        [
+            "--no-replace-objects",
+            "merge-base",
+            "--is-ancestor",
+            candidate,
+            descendant,
+        ],
+        environment=_native_relation_environment(),
+    )
+    if failure is not None or status not in (0, 1):
+        return None
+    return status
 
 
 def _native_relation_commit(base_dir: str, ref: str, label: str) -> str:
@@ -6926,23 +6961,19 @@ def refuse_unreceipted_run_branch_movement(
 
 
 def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> None:
-    """Refuse when a step branch that is still waiting has moved since its push.
+    """Refuse when a waiting branch no longer contains its receipted head.
 
-    GitHub's native stacked-pull-request flow rebases every downstream branch on
-    each merge and re-signs the rewritten commits with its own key. Author and
-    the provenance trailers survive; the local signature does not.
-
-    Without this check the first symptom is an invalid local signature at a later
-    merge-step, which reads as a broken signing setup rather than as a branch
-    rewrite, and by then several steps have already merged. Comparing each
-    waiting step's remote tip against the head its push receipt names finds the
-    rewrite at the first merge-step after it happened, and says what happened.
+    Equality is the zero-query path. A moved tip receives one bounded native
+    ancestry query: status 0 admits topology only, status 1 establishes that the
+    receipted head is absent, and every other outcome is unknown. Signatures,
+    provenance, GitHub verification, and attribution remain mandatory over the
+    exact live range at ``done merge-step``.
 
     A step whose branch cannot be read is reported rather than skipped: an absent
     downstream branch during integration is not a normal state.
     """
     merged = as_dict(state.get("integrate")).get("merged") or []
-    moved, unreadable = [], []
+    nonancestors, unknown, unreadable = [], [], []
     for step in state["steps"]:
         number = step["n"]
         if number == current_step or number in merged:
@@ -6957,7 +6988,9 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
         except SystemExit:
             unreadable.append(f"step {number} ('{branch}')")
             continue
-        if tip != recorded and len(recorded) < 40:
+        if tip == recorded:
+            continue
+        if len(recorded) < 40:
             # An abbreviated receipt is an older receipt format, not a moved
             # branch: `--head-commit` accepts any ref git resolves, and receipts
             # written before that value was stored resolved hold whatever was
@@ -6966,33 +6999,50 @@ def refuse_rewritten_stack(base_dir: str, state: dict, current_step: int) -> Non
             # match. Only reached when they differ, so a full-length receipt
             # never shells out.
             try:
-                recorded = resolved_commit(
+                recorded = _native_relation_commit(
                     base_dir, recorded, f"step {number} recorded push head"
                 )
             except SystemExit:
                 unreadable.append(f"step {number} ('{branch}', recorded {recorded})")
                 continue
-        if tip != recorded:
-            moved.append(
-                f"step {number} ('{branch}') is at {tip} and its push receipt "
-                f"names {recorded}"
-            )
+            if tip == recorded:
+                continue
+        relation = _native_ancestry_status(base_dir, recorded, tip)
+        observation = (
+            f"step {number} ('{branch}') recorded head {recorded} and observed "
+            f"tip {tip}"
+        )
+        if relation == 0:
+            continue
+        if relation == 1:
+            nonancestors.append(observation)
+        else:
+            unknown.append(observation)
     if unreadable:
         die(
             "a step branch still waiting to merge could not be read: "
             + "; ".join(unreadable)
             + ". Integration cannot proceed while a downstream branch is missing."
         )
-    if moved:
+    if unknown:
         die(
-            "a step branch still waiting to merge has been rewritten since it was "
-            "pushed: " + "; ".join(moved) + ". GitHub's stacked-pull-request flow "
-            "rebases downstream branches on each merge and re-signs them with its "
-            "own key, which keeps the author and the provenance trailers and "
-            "discards the local signature. The range these receipts describe is no "
-            "longer the range on the remote. Land the run from a branch holding the "
-            "original commits rather than merging the rewritten stack, and do not "
-            "import GitHub's public key to make the signature check pass."
+            "a step branch still waiting to merge has unknown ancestry: "
+            + "; ".join(unknown)
+            + ". Its ancestry could not be determined from bounded native local "
+            "objects. Restore readable native objects and repository history, then "
+            "retry; integration cannot proceed on an unanswered relation."
+        )
+    if nonancestors:
+        die(
+            "a step branch still waiting to merge no longer contains its receipted "
+            "head: "
+            + "; ".join(nonancestors)
+            + ". Each recorded head is not an ancestor of its observed tip. The "
+            "controller has not established why the history moved, and the push "
+            "receipt no longer describes the current remote range. Land the run "
+            "from a branch holding the original commits rather than merging this "
+            "stack, and do not import GitHub's public key to make the signature "
+            "check pass."
         )
 
 
