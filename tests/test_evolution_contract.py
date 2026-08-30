@@ -114,13 +114,13 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.41.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.42.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
         self.assertEqual(field(ledger, "Next Fiat job"), FIAT_NEXT_JOB)
         latest = history_rows(ledger)[-1]
-        self.assertEqual(latest["version"], "fiat-v5.41.1")
+        self.assertEqual(latest["version"], "fiat-v5.42.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
@@ -129,38 +129,44 @@ class EvolutionContractTests(unittest.TestCase):
         )
         self.assertIn("skills#497", latest["evidence"])
         self.assertIn("next-generation-after-integration-base", latest["change"])
-        sync_guard = history_rows(ledger)[-2]
+        step_extensions = history_rows(ledger)[-2]
+        self.assertEqual(step_extensions["version"], "fiat-v5.41.1")
+        self.assertIn("skills#923", step_extensions["evidence"])
+        self.assertIn(
+            "fiat-step-branch-extensions-study.md", step_extensions["evidence"]
+        )
+        self.assertIn(
+            "fiat-step-branch-extensions-runbook.md", step_extensions["evidence"]
+        )
+        self.assertIn("ADR-021", step_extensions["evidence"])
+        sync_guard = history_rows(ledger)[-3]
         self.assertEqual(sync_guard["version"], "fiat-v5.40.1")
         self.assertIn("skills#891", sync_guard["evidence"])
         self.assertIn("ADR-057", sync_guard["evidence"])
-        complete_graph = history_rows(ledger)[-3]
+        complete_graph = history_rows(ledger)[-4]
         self.assertEqual(complete_graph["version"], "fiat-v5.39.1")
         self.assertIn("skills#889", complete_graph["evidence"])
         self.assertIn("ADR-056", complete_graph["evidence"])
-        publisher = history_rows(ledger)[-4]
-        self.assertEqual(publisher["version"], "fiat-v5.38.1")
-        self.assertIn("skills#906", publisher["evidence"])
-        self.assertIn("skills#903", publisher["evidence"])
-        self.assertIn("ADR-052", publisher["evidence"])
-        relation_bound = history_rows(ledger)[-5]
+        authorship_bound = history_rows(ledger)[-5]
+        self.assertEqual(authorship_bound["version"], "fiat-v5.38.1")
+        self.assertIn("skills#906", authorship_bound["evidence"])
+        self.assertIn("skills#903", authorship_bound["evidence"])
+        self.assertIn("ADR-052", authorship_bound["evidence"])
+        relation_bound = history_rows(ledger)[-6]
         self.assertEqual(relation_bound["version"], "fiat-v5.37.1")
         self.assertIn("skills#556", relation_bound["evidence"])
         self.assertIn("ADR-006", relation_bound["evidence"])
         self.assertIn("fiat-version-relations", relation_bound["evidence"])
-        path_bound = history_rows(ledger)[-6]
+        path_bound = history_rows(ledger)[-7]
         self.assertEqual(path_bound["version"], "fiat-v5.36.1")
         self.assertIn("skills/issues/774", path_bound["evidence"])
         self.assertIn("ADR-049", path_bound["evidence"])
-        self.assertIn(
-            "fiat-integration-path-bound-study.md", path_bound["evidence"]
-        )
-        self.assertIn(
-            "fiat-integration-path-bound-runbook.md", path_bound["evidence"]
-        )
+        self.assertIn("fiat-integration-path-bound-study.md", path_bound["evidence"])
+        self.assertIn("fiat-integration-path-bound-runbook.md", path_bound["evidence"])
         self.assertIn("INTEGRATION_PATHS_MAX", path_bound["change"])
         self.assertIn("GIT_PATHS_MAX", path_bound["change"])
         self.assertIn("held issue 363 job is untouched", path_bound["change"])
-        capsule = history_rows(ledger)[-7]
+        capsule = history_rows(ledger)[-8]
         self.assertEqual(capsule["version"], "fiat-v5.35.1")
         self.assertIn("skills/issues/557", capsule["evidence"])
         self.assertIn("ADR-028", capsule["evidence"])
@@ -169,31 +175,31 @@ class EvolutionContractTests(unittest.TestCase):
         self.assertIn("checkpoint export", capsule["change"])
         self.assertIn("checkpoint restore", capsule["change"])
         self.assertIn("same ledger", capsule["change"])
-        predecessor = history_rows(ledger)[-8]
-        self.assertEqual(predecessor["version"], "fiat-v5.34.1")
-        self.assertIn("Creator direction, 2026-08-29", predecessor["evidence"])
-        self.assertIn("audit.max_rounds", predecessor["evidence"])
-        earlier = history_rows(ledger)[-9]
+        config_guard = history_rows(ledger)[-9]
+        self.assertEqual(config_guard["version"], "fiat-v5.34.1")
+        self.assertIn("Creator direction, 2026-08-29", config_guard["evidence"])
+        self.assertIn("audit.max_rounds", config_guard["evidence"])
+        earlier = history_rows(ledger)[-10]
         self.assertEqual(earlier["version"], "fiat-v5.33.1")
         self.assertIn("Creator direction, 2026-08-28", earlier["evidence"])
         self.assertIn("completed run", earlier["evidence"])
-        integrated = history_rows(ledger)[-10]
+        integrated = history_rows(ledger)[-11]
         self.assertEqual(integrated["version"], "fiat-v5.32.1")
         self.assertIn("skills/issues/710", integrated["evidence"])
         self.assertIn("issuecomment-5451995033", integrated["evidence"])
-        base_fix = history_rows(ledger)[-11]
+        base_fix = history_rows(ledger)[-12]
         self.assertEqual(base_fix["version"], "fiat-v5.31.1")
         self.assertIn("skills/issues/710", base_fix["evidence"])
         self.assertIn("ADR-044", base_fix["evidence"])
-        published = history_rows(ledger)[-12]
+        published = history_rows(ledger)[-13]
         self.assertEqual(published["version"], "fiat-v5.30.1")
         self.assertIn("skills/issues/622", published["evidence"])
         self.assertIn("Creator direction, 2026-08-27", published["evidence"])
-        checkpoint = history_rows(ledger)[-13]
+        checkpoint = history_rows(ledger)[-14]
         self.assertEqual(checkpoint["version"], "fiat-v5.29.1")
         self.assertIn("issuecomment-5435028801", checkpoint["evidence"])
         self.assertIn("issuecomment-5435304048", checkpoint["evidence"])
-        base_head = history_rows(ledger)[-14]
+        base_head = history_rows(ledger)[-15]
         self.assertEqual(base_head["version"], "fiat-v5.28.1")
         self.assertIn("skills/issues/608", base_head["evidence"])
         self.assertIn("fiat-integrate-base-head-study.md", base_head["evidence"])
