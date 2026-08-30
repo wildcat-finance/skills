@@ -139,6 +139,11 @@ MARKDOWN_BLOCK_START = re.compile(
     r"^ {0,3}(?:#{1,6}(?:[ \t]|$)|>|[-+*](?:[ \t]|$))"
 )
 MARKDOWN_ORDERED_LIST = re.compile(r"^ {0,3}(\d{1,9})[.)](?:[ \t]|$)")
+MARKDOWN_LIST_ITEM = re.compile(
+    r"^(?P<indent> {0,3})(?:(?P<bullet>[-+*])|"
+    r"(?P<number>\d{1,9})(?P<delimiter>[.)]))"
+    r"(?P<whitespace>[ \t]*)(?P<body>.*)$"
+)
 OBLIGATION_ROW_KEYS = {
     "id",
     "clause_sha256",
@@ -291,6 +296,11 @@ class PromiseRecord:
     group: str
     evidence_classes: frozenset[str]
     consequence: int
+
+
+@dataclass(frozen=True)
+class MaskedMarkdownLine:
+    indentation: int
 
 
 def relative(path: Path, root: Path) -> str:
@@ -610,7 +620,7 @@ def markdown_unfenced_lines(text: str):
             run, info = opening.groups()
             if run[0] == "~" or "`" not in info:
                 fence = (run[0], len(run))
-                visible.append(None)
+                visible.append(MaskedMarkdownLine(indentation))
                 paragraph_open = False
                 continue
 
@@ -636,7 +646,7 @@ def markdown_unfenced_lines(text: str):
 
         html_type_1 = HTML_BLOCK_TYPE_1_OPEN.match(line)
         if html_type_1 is not None:
-            visible.append(None)
+            visible.append(MaskedMarkdownLine(indentation))
             if HTML_BLOCK_TYPE_1_CLOSE.search(line, html_type_1.end()) is None:
                 html_end = HTML_BLOCK_TYPE_1_CLOSE
             paragraph_open = False
@@ -652,7 +662,7 @@ def markdown_unfenced_lines(text: str):
             matched = opening.match(line)
             if matched is None:
                 continue
-            visible.append(None)
+            visible.append(MaskedMarkdownLine(indentation))
             if closing.search(line, matched.end()) is None:
                 html_end = closing
             paragraph_open = False
@@ -666,7 +676,7 @@ def markdown_unfenced_lines(text: str):
             html_type_6 is not None
             and html_type_6.group(1).lower() in HTML_BLOCK_TYPE_6_TAGS
         ):
-            visible.append(None)
+            visible.append(MaskedMarkdownLine(indentation))
             html_until_blank = True
             paragraph_open = False
             continue
@@ -674,7 +684,7 @@ def markdown_unfenced_lines(text: str):
         if html_type_7 is not None and not paragraph_open:
             opening_tag = (html_type_7.group(1) or "").lower()
             if opening_tag not in HTML_BLOCK_TYPE_1_TAGS:
-                visible.append(None)
+                visible.append(MaskedMarkdownLine(indentation))
                 html_until_blank = True
                 paragraph_open = False
                 continue
@@ -707,7 +717,7 @@ def markdown_unfenced_lines(text: str):
     return visible
 
 
-def markdown_section(lines: list[str | None], heading: str):
+def markdown_section(lines: list[str | MaskedMarkdownLine | None], heading: str):
     """Return one section from already fence- and raw-HTML-masked lines."""
     expected = markdown_atx_heading(heading)
     if expected is None:
@@ -723,7 +733,7 @@ def markdown_section(lines: list[str | None], heading: str):
         if candidate[0] >= start and candidate[2] <= expected[0]:
             end = candidate[0]
             break
-    return [line for line in lines[start:end] if line is not None]
+    return [line for line in lines[start:end] if isinstance(line, str)]
 
 
 def markdown_atx_heading(line: str):
@@ -736,17 +746,60 @@ def markdown_atx_heading(line: str):
     return len(matched.group(1)), title
 
 
-def markdown_heading_events(lines: list[str | None]):
+def markdown_list_item(line: str):
+    """Return one CommonMark list marker and its content indentation."""
+    matched = MARKDOWN_LIST_ITEM.fullmatch(line)
+    if matched is None:
+        return None
+    whitespace = matched.group("whitespace")
+    body = matched.group("body")
+    if not whitespace and body:
+        return None
+
+    marker = matched.group("bullet") or (
+        matched.group("number") + matched.group("delimiter")
+    )
+    marker_end = len(matched.group("indent")) + len(marker)
+    column = marker_end
+    for character in whitespace:
+        if character == "\t":
+            column += 4 - (column % 4)
+        else:
+            column += 1
+    padding = column - marker_end
+    content_indent = column if 1 <= padding <= 4 else marker_end + 1
+    number = matched.group("number")
+    return (
+        len(matched.group("indent")),
+        content_indent,
+        int(number) if number is not None else None,
+        bool(body),
+    )
+
+
+def markdown_heading_events(lines: list[str | MaskedMarkdownLine | None]):
     """Return top-level CommonMark ATX and setext heading source spans."""
     headings: list[tuple[int, int, int, str]] = []
     paragraph: list[tuple[int, str]] = []
     container_open = False
     container_blank = False
+    list_floor: int | None = None
     for index, line in enumerate(lines):
+        if isinstance(line, MaskedMarkdownLine):
+            paragraph = []
+            if list_floor is not None and line.indentation >= list_floor:
+                container_open = True
+                container_blank = False
+            else:
+                container_open = False
+                container_blank = False
+                list_floor = None
+            continue
         if line is None:
             paragraph = []
-            container_open = False
-            container_blank = False
+            if list_floor is None:
+                container_open = False
+                container_blank = False
             continue
         if not line.strip():
             paragraph = []
@@ -754,11 +807,20 @@ def markdown_heading_events(lines: list[str | None]):
                 container_blank = True
             continue
 
+        indentation = len(line) - len(line.lstrip(" "))
+        if list_floor is not None and indentation >= list_floor:
+            paragraph = []
+            container_open = True
+            container_blank = False
+            continue
+
         atx = markdown_atx_heading(line)
         if atx is not None:
             headings.append((index, index, *atx))
             paragraph = []
             container_open = False
+            container_blank = False
+            list_floor = None
             continue
 
         setext = MARKDOWN_SETEXT_UNDERLINE.fullmatch(line)
@@ -772,6 +834,26 @@ def markdown_heading_events(lines: list[str | None]):
         if MARKDOWN_THEMATIC_BREAK.fullmatch(line):
             paragraph = []
             container_open = False
+            container_blank = False
+            list_floor = None
+            continue
+
+        list_item = markdown_list_item(line)
+        list_item_start = list_item is not None and (
+            list_floor is not None
+            or not paragraph
+            or (
+                list_item[3]
+                and (list_item[2] is None or list_item[2] == 1)
+            )
+        )
+        if list_item_start:
+            marker_indent, content_indent, _number, _has_body = list_item
+            if list_floor is None or marker_indent < list_floor:
+                list_floor = content_indent
+            paragraph = []
+            container_open = True
+            container_blank = False
             continue
 
         block_start = MARKDOWN_BLOCK_START.match(line)
@@ -783,10 +865,13 @@ def markdown_heading_events(lines: list[str | None]):
             paragraph = []
             container_open = True
             container_blank = False
+            list_floor = None
             continue
         if MARKDOWN_LINK_REFERENCE.match(line):
             paragraph = []
             container_open = False
+            container_blank = False
+            list_floor = None
             continue
         if line.startswith("    ") or line.startswith("\t"):
             if container_open or not paragraph:
@@ -794,11 +879,14 @@ def markdown_heading_events(lines: list[str | None]):
         if line == MARKER or OBLIGATION_MARKER.fullmatch(line) is not None:
             paragraph = []
             container_open = False
+            container_blank = False
+            list_floor = None
             continue
         if container_open:
             if not container_blank:
                 continue
             container_open = False
+            list_floor = None
         paragraph.append((index, line))
     return headings
 
@@ -915,7 +1003,7 @@ def discover_obligations(text: str):
     clause_digests: dict[str, str] = {}
 
     for index, line in enumerate(lines):
-        if line is None:
+        if not isinstance(line, str):
             continue
         if OBLIGATION_MARKER_PREFIX not in line:
             continue
@@ -948,7 +1036,7 @@ def discover_obligations(text: str):
         marker_lines[index] = obligation_id
 
     for index, line in enumerate(lines):
-        if line is None:
+        if not isinstance(line, str):
             continue
         if not line.startswith(OBLIGATION_CLAUSE_PREFIX):
             continue
