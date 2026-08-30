@@ -30,11 +30,25 @@ RUNTIME = PACKAGE / "runtime"
 MANIFEST = RUNTIME / "MANIFEST.json"
 GENERATOR = ROOT / "scripts" / "portable_promise_machine.py"
 CONFIG = ROOT / "skills.sh.json"
+AGENTS = ROOT / ".agents"
 
 SCHEMA = "promise-machine-portable-runtime/v1"
 CONTRACT = "promise-machine/v1"
+# The skills CLI's SKILLS_EXTRACT_MAX_FILES and SKILLS_EXTRACT_MAX_BYTES
+# defaults.  They gate its `well-known` and `download` source types, which are
+# direct SKILL.md and archive URLs; the `github` type this repository installs
+# through never consults them.  Held anyway so the package stays installable by
+# every route the CLI offers.  See ADR-054.
 MAX_FILES = 1_000
 MAX_BYTES = 25 * 1024 * 1024
+
+# The per-clone cost ADR-054 accepted and recorded, plus deliberate headroom.
+# This binds before MAX_BYTES does, so payload growth is refused against the
+# recorded figure rather than against a CLI limit that does not apply here.
+RECORDED_TRACKED_FILES = 999
+RECORDED_TRACKED_BYTES = 21_789_732
+TRACKED_FILES_CEILING = 1_010
+TRACKED_BYTES_CEILING = 22_500_000
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
     "plugins/*/.codex-plugin/**",
@@ -296,6 +310,32 @@ class SkillsShPackageTests(unittest.TestCase):
                 json.loads(conformance.stdout)["outcome"],
                 "conformance_checked",
             )
+
+
+    def test_payload_footprint_stays_within_the_recorded_ceiling(self):
+        """The payload's per-clone cost is the one ADR-054 accepted.
+
+        Growth is not wrong, but it is not free and it is not silent: this
+        fails with the new figure so the record can be updated deliberately.
+        """
+        files = sorted(path for path in AGENTS.rglob("*") if path.is_file())
+        total = sum(path.stat().st_size for path in files)
+        self.assertLessEqual(
+            len(files),
+            TRACKED_FILES_CEILING,
+            f"payload holds {len(files)} files, ceiling is "
+            f"{TRACKED_FILES_CEILING}; ADR-054 recorded "
+            f"{RECORDED_TRACKED_FILES}. Update ADR-054 and this ceiling "
+            f"together, or reduce what the generator copies.",
+        )
+        self.assertLessEqual(
+            total,
+            TRACKED_BYTES_CEILING,
+            f"payload holds {total} bytes, ceiling is "
+            f"{TRACKED_BYTES_CEILING}; ADR-054 recorded "
+            f"{RECORDED_TRACKED_BYTES}. Update ADR-054 and this ceiling "
+            f"together, or reduce what the generator copies.",
+        )
 
 
 if __name__ == "__main__":
