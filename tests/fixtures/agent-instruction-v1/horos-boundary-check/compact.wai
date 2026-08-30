@@ -1,0 +1,20 @@
+WAI1
+D i20:horos-boundary-check t20:Horos\sboundary\scheck
+  S i5:horos p35:plugins/horos/skills/horos/SKILL.md h64:9624ace530aaf71ab5e8245253baabf7091c5a59cf3800325437b637f9911bd9
+  H i22:boundary-check-promise t20:horos-boundary-check
+    R i14:boundary-check t133:Trust\sa\shard\sreading\sboundary\sonly\safter\scheck\sproves\sit\sequals\sthe\scurrent\sre-derived\sclassification\sfor\sthe\sstated\sroot\sor\ssubtree.
+      E i14:boundary-check t49:the\swork\sis\sa\ssecurity\sreview,\saudit,\sor\sincident
+      M i23:horos-boundary-check.v1 t135:A\ssuccessful\scheck\sestablishes\sequality\sbetween\sthe\scommitted\shard\sboundary\sand\scurrent\sre-derived\sclassification\sfor\sthe\sstated\sscope.
+        V t119:nearest\sconfined\sboundary,\stracked-file\swalk,\sapplicable\sattributes,\srecomputed\sentries,\sscope\scounters,\sand\szero\sdrift
+        K checked
+        K recomputed
+        G t162:A\sscoped\spass\ssays\snothing\soutside\sits\sscope;\sroot\scandidate\sor\scontent\sdrift\scan\sremain\sadvisory;\sclean\sboundary\smetadata\sdoes\snot\sprove\somitted\sfiles\sare\scheap.
+        A t88:leave\slisted\shard-boundary\spaths\sunread\sby\sdefault\sinside\sthe\schecked\snon-security\sscope
+        Q 0
+        J t107:Refuse\sa\sstale,\sforged,\smissing,\sor\sout-of-scope\sboundary\sand\srefuse\severy\sboundary\sduring\ssecurity\sreview.
+        Z c66:python3\splugins/horos/skills/horos/scripts/horos.py\sscan\s.\s--write
+        Z t96:Read\sdrifted\spaths\snormally,\smake\sonly\san\sauthorised\supdate,\sthen\scheck\sthe\sintended\sroot\sagain.
+  B i5:horos i22:boundary-check-promise n5:11206 n5:12224 i8:shoggoth
+  B i5:horos i20:horos-boundary-check n5:11206 n5:12224 i8:shoggoth
+  B i5:horos i14:boundary-check n5:11232 n5:12222 i8:shoggoth
+  B i5:horos i23:horos-boundary-check.v1 n5:11232 n5:12222 i8:shoggoth

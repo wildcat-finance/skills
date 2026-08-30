@@ -270,6 +270,69 @@ meaning requires a contract revision.
 Failure at any stage blocks that document. A majority of valid nodes, a
 matching model answer, or a byte-only saving cannot replace a failed check.
 
+## Fixture manifest and source review
+
+The version-1 demonstration manifest is
+[`tests/fixtures/agent-instruction-v1/manifest.json`](../tests/fixtures/agent-instruction-v1/manifest.json).
+Its closed machine-readable shape is declared by the digest-bound
+[`manifest.schema.json`](../tests/fixtures/agent-instruction-v1/manifest.schema.json).
+The manifest names exactly `fiat-study-runbook-phase`, `horos-boundary-check`,
+and `promise-machine-router-selection`, in that canonical order. It fixes the
+source identity and path for each row, `15` reviewed bindings, `9` closed
+questions, and `14` hostile mutations; each row carries its own fixed counts.
+A fixture
+directory contains exactly `model.json`, `compact.wai`, `questions.json`,
+`mutations.json`, and `source-spans.json`; an absent, additional, linked, or
+special entry refuses.
+
+Each fixture binds the full authored source blob by repository-relative path
+and SHA-256, then binds one half-open source envelope and every reviewed model
+node span within it. Bytes in the envelope that have no node span remain
+authored source context rather than model authority. `source-spans.json`
+repeats each canonical model binding with
+the reviewer id and SHA-256 of the exact source slice. The checker verifies the
+whole source first, so changing source bytes outside a reviewed span still
+refuses. It then verifies every artifact digest, validates the model, decodes
+and re-formats the compact bytes, compares the source-span inventory with the
+model bindings, and checks the question and mutation records. These fixture
+records are evidence about the named source bytes; they do not replace those
+bytes or establish a general English-to-model translation.
+
+A question has one stable id, an exact prompt, a non-empty closed accepted
+answer set, a non-empty disjoint refusal set, one required accepted answer,
+and a fresh-context inventory. Version 1 requires empty prior-message and
+example inventories. Repository-instruction paths and tool-definition ids are
+always present, even when none are available. An answer outside both declared
+sets is not coerced into a nearby value.
+
+A mutation applies one `remove` or `replace` operation through a bounded JSON
+pointer to a copy of the canonical model. The manifest freezes the seven risk
+classes `negation`, `precedence`, `scope`, `evidence-class`, `authorisation`,
+`recovery`, and `exact-literal`. A mutation must produce its declared exact
+structural refusal, a different valid canonical-model digest, or a declared
+answer change linked to one closed question. The changed answer must already
+belong to that question's accepted or refusal set and must differ from its
+required answer. Risk labels are checked against their targets: precedence
+changes a relation; scope changes a scope or exception expression; evidence
+class, authorisation, and recovery change their matching Promise fields;
+negation changes directive content and declares an answer change; and an
+exact-literal target must match its declared literal class. Each fixture has
+exactly one negation mutation with an answer-change expectation. The complete
+corpus has one checked exact-literal mutation for every literal class it uses:
+`identifier`, `path`, `sha256`, `command`, `number`, and `text`. A no-op,
+missing pointer, unexpected refusal, unknown class, incomplete literal-class
+inventory, or stale mutation record refuses as silent acceptance rather than
+weakening the expected result after observation.
+
+`check --manifest` reads every path through the same confined regular-file
+boundary as the codec and executes no fixture content. A successful run emits
+one bounded `binding.result` and `roundtrip.result` per fixture, one
+`mutation.result` per mutation, and one `run.summary`. Once manifest bytes are
+readable, every record carries their digest; fixture records also carry a
+digest of the exact fixture row.
+They contain ids, digests, counts, verdicts, and stable refusal codes, not
+source fragments, prompts, model responses, credentials, or hidden reasoning.
+
 ## Compatibility and recovery
 
 Version 1 readers accept only `wildcat-agent-instruction/v1` and `WAI1`.

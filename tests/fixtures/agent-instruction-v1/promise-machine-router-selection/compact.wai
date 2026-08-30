@@ -1,0 +1,24 @@
+WAI1
+D i32:promise-machine-router-selection t32:Promise\sMachine\srouter\sselection
+  S i15:promise-machine p18:PROMISE_MACHINE.md h64:be382949a5c41722e8bb96cda04068043bc2ad8118f5006c21da5b3c2ca608ca
+  H i24:router-selection-promise t24:Router\sselection\spromise
+    R i22:router-selection-check t174:Accept\srouter-selection\sevidence\sonly\safter\sthe\sclosed\scorpus,\ssource\squotations,\scanonical\sskill\snames,\scoverage,\spairs,\sand\sany\srecorded\srun\sall\spass\stheir\sdeclared\schecks.
+      N t112:the\sevidence\sis\sabsent,\sstale,\smalformed,\smismatched,\sempty,\sunresolved,\sor\soutside\sthe\sclosed\sanswer\svocabulary
+      M i35:promise-machine-router-selection.v1 t150:The\srouter-selection\stest\sestablishes\sthe\sclosed\scorpus,\ssource\squotations,\sskill\snames,\stable\scoverage,\sdeclared\spairs,\sand\sdigest-bound\srun\srecords.
+        V c47:python3\s-m\sunittest\stests.test_router_selection
+        V p42:tests/fixtures/router-selection/cases.json
+        V t133:closed\ssource\spaths,\scanonical\splugin\sskill\snames,\srecomputed\scorpus\sand\sprompt\sdigests,\shostile\scorpus\sguards,\sand\szero\scommand\sexit
+        K checked
+        K recomputed
+        K measured
+        K recorded
+        G t164:The\scheck\sproves\sneither\sagent\srouting\snor\scorpus\srepresentativeness;\sa\srecorded\sscore\sis\snever\sa\sgate\sand\sits\sprompt\sdigest\sdoes\snot\scover\sthe\swhole\sagent\scontext.
+        A c45:python3\stests/emit_router_selection_report.py
+        A t97:cite\sa\srecorded\srun\sonly\swith\sits\smodel,\sdate,\sprompt-template\sdigest,\sand\scorpus\sdigest\sattached
+        Q 0
+        J t123:Refuse\smalformed,\sincomplete,\sstale,\sunresolved,\suncovered,\sunquoted,\sdigest-mismatched,\sor\sunlisted\scorpus\sand\srun\svalues.
+        Z t178:Read\sthe\snamed\sfailure,\srequote\sor\sretire\sthe\scase\srather\sthan\srewording\sthe\sgraded\ssource,\srepair\sunresolved\snames,\sand\sregrade\sstale\sruns\swithout\sediting\stheir\sdigest\sto\sagree.
+  B i15:promise-machine i32:promise-machine-router-selection n5:17227 n5:23051 i8:shoggoth
+  B i15:promise-machine i24:router-selection-promise n5:17227 n5:23051 i8:shoggoth
+  B i15:promise-machine i35:promise-machine-router-selection.v1 n5:17294 n5:23049 i8:shoggoth
+  B i15:promise-machine i22:router-selection-check n5:17294 n5:23049 i8:shoggoth
