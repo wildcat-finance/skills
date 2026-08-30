@@ -63,12 +63,14 @@ change.
 
 **Exit.** `.github/workflows/plugins.yml` runs on every pull request and every
 push to `main`, uses read-only permissions, fetches the history required by
-historical release proofs, installs declared dependencies, runs
-`scripts/run_checks.py --full`, and uploads its bounded report even when a check
-fails. Repository tests prove the job is named `plugins`, has no path filter,
-uses a full checkout, and invokes the full graph rather than a copied command
-list. The signed branch is pushed as `laurenceday`; its pull request produces
-successful `invariants` and `plugins` checks.
+historical release proofs, installs the locked Python dependencies, pins Node
+26.6.0 and Forge 1.7.1, checks and imports the repository-pinned primary public
+key for the issue-429 composition, runs `scripts/run_checks.py --full`, and
+uploads its bounded report even when a check fails. Repository tests prove the
+job is named `plugins`, has no path filter, uses a full checkout, fixes those
+toolchain and trust inputs, and invokes the full graph rather than a copied
+command list. The signed branch is pushed as `laurenceday`; its pull request
+produces successful `invariants` and `plugins` checks.
 
 ### Files and tests
 
@@ -84,8 +86,9 @@ first push.
 
 ### Discipline routing
 
-**Disciplines.** phylax: fixed argv, locked dependencies, read-only token and no
-event interpolation. ephoros: the job and uploaded report answer commit, plan,
+**Disciplines.** phylax: fixed argv, locked dependencies, exact toolchain
+versions, a fingerprint-checked public key, read-only token and no event
+interpolation. ephoros: the job and uploaded report answer commit, plan,
 terminal result and failure-class questions. metron: no optimisation claim.
 elenchus: a workflow contract mutation must turn its test red. hypomnema:
 ADR-054 and the workflow are the decision and operational homes.

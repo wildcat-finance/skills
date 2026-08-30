@@ -28,6 +28,11 @@ complete repository checks. The job runs for every pull request and every push
 to `main`, has read-only repository permissions, checks out full history for
 the graph's historical signed-release proofs, installs the dependencies the
 graph needs, and uploads the executor's bounded JSON report even on failure.
+The job pins Node 26.6.0 and Forge 1.7.1 because Elenchus fixtures bind those
+producers. It imports the minimal primary public key for the pinned issue-429
+composition only after its full fingerprint matches
+`636EC19DE45DF10F3CE6206F57742DA1ABED6F46`; the key is verification material,
+not signing authority.
 
 Keep the existing `invariants` context during this migration. Once the exact
 pull-request head has produced both contexts successfully, require both
@@ -66,6 +71,11 @@ can be green only after the complete declared graph reaches terminal success.
 New plugin directories fail the root suite until their ownership and suite are
 declared. Maintainers can inspect the uploaded report to distinguish assertion,
 setup, timeout and scheduler failures.
+
+The aggregate workflow owns the exact toolchain and historical verification
+inputs required by its fixtures. A hosted image update cannot silently change
+the Node or Forge evidence, and loss of an external account or key server does
+not make the pinned historical signature unverifiable.
 
 The root suite runs once in `invariants` and again within `plugins`. Existing
 path-specific workflows may also duplicate some work. This is accepted for a

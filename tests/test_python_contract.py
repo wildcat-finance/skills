@@ -319,10 +319,32 @@ class PythonRuntimeContractTests(unittest.TestCase):
         self.assertEqual(text.count("  plugins:\n"), 1)
         self.assertIn("permissions:\n  contents: read\n", text)
         self.assertEqual(text.count("fetch-depth: 0"), 1)
+        self.assertIn("uses: actions/setup-node@v7", text)
+        self.assertIn('node-version: "26.6.0"', text)
         self.assertIn("uses: foundry-rs/foundry-toolchain@v1", text)
+        self.assertIn("version: v1.7.1", text)
         self.assertIn(
             "run: python3 -m pip install --requirement "
             "plugins/lazarus/requirements.lock",
+            text,
+        )
+        historical_key = (
+            ROOT
+            / "plugins"
+            / "hexaemeron"
+            / "tests"
+            / "fixtures"
+            / "signing-keys"
+            / "shoggoth-636ec19d.asc"
+        )
+        self.assertTrue(historical_key.is_file())
+        self.assertIn(
+            "EXPECTED_GPG_FINGERPRINT: "
+            "636EC19DE45DF10F3CE6206F57742DA1ABED6F46",
+            text,
+        )
+        self.assertIn(
+            "gpg --batch --import \"$key_path\"",
             text,
         )
         self.assertEqual(

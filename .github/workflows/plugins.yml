@@ -27,11 +27,25 @@ jobs:
           python-version-file: ".python-version"
           cache: pip
           cache-dependency-path: plugins/lazarus/requirements.lock
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26.6.0"
       - uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: stable
+          version: v1.7.1
       - name: Install locked Lazarus dependencies
         run: python3 -m pip install --requirement plugins/lazarus/requirements.lock
+      - name: Import pinned historical verification key
+        env:
+          EXPECTED_GPG_FINGERPRINT: 636EC19DE45DF10F3CE6206F57742DA1ABED6F46
+        run: |
+          key_path=plugins/hexaemeron/tests/fixtures/signing-keys/shoggoth-636ec19d.asc
+          actual_fingerprint="$(
+            gpg --batch --with-colons --import-options show-only --import "$key_path" |
+              awk -F: '$1 == "fpr" {print $10; exit}'
+          )"
+          test "$actual_fingerprint" = "$EXPECTED_GPG_FINGERPRINT"
+          gpg --batch --import "$key_path"
       - name: Complete declared check graph
         run: python3 scripts/run_checks.py --full --report tmp/checks/plugins.json
       - name: Preserve the bounded check report

@@ -72,8 +72,11 @@ a second list of plugin commands. It runs on every pull request and every push
 to `main`, without a path filter, so the required status is always produced.
 The job has read-only repository permissions. It checks out full Git history
 because the Hexaemeron suite verifies historical signed release objects, then
-uses the pinned Python version, the Lazarus lock file and Foundry because those
-are dependencies already named by the complete graph.
+uses the pinned Python version, Node 26.6.0, Forge 1.7.1 and the Lazarus lock
+file because those are dependencies already named by the complete graph. The
+primary public key that verifies the pinned issue-429 composition is a
+repository fixture; setup checks its full fingerprint before import. CI does
+not fetch that key from a mutable account or key server.
 
 The graph must account for every current plugin directory, including Homologia.
 Historical regressions remain meaningful in a fresh clone: a fixture may retain
@@ -135,7 +138,8 @@ missing-plugin | a new plugin is not entered in the check graph | root contract 
 absent-required-context | a path filter suppresses the required job | plugins workflow has no path filter and runs on every pull request
 stale-command-list | workflow commands diverge from local commands | workflow invokes the one declarative full graph rather than listing suites
 incomplete-green | a worker or suite disappears before a verdict | run_checks requires one terminal result for every selected check
-dependency-drift | hosted Python or Foundry differs from the declared project | workflow reads .python-version installs the Lazarus lock and records Foundry setup
+dependency-drift | hosted Python Node or Forge differs from the declared project | workflow reads .python-version installs the Lazarus lock and pins Node 26.6.0 and Forge 1.7.1
+missing-verification-key | a fresh runner cannot verify a pinned historical commit | repository carries the minimal primary public key and setup checks fingerprint 636EC19DE45DF10F3CE6206F57742DA1ABED6F46 before import
 missing-history | a shallow Actions checkout omits signed objects required by release proofs | aggregate checkout uses fetch-depth zero and its workflow contract pins that setting
 fixture-host-dependence | a regression passes only in one old checkout or filesystem | fixtures use controller-relative limits append-only prefixes and self-contained topology
 decoder-exhaustion | bounded bytes still create unbounded nesting | checkpoint JSON refuses depth above a fixed ceiling before decoding
@@ -186,12 +190,18 @@ Phylax applies. The workflow consumes repository bytes and GitHub event state,
 but passes no event text to a command. Actions are pinned by major version in
 the repository's existing style, permissions are `contents: read`, dependency
 installation uses the committed Lazarus lock, and Foundry installation uses the
-same supported installer already used by the Solidity workflows. The local
-executor retains fixed argv, bounded output and process-budget rules.
+same supported installer already used by the Solidity workflows. Node and
+Forge are exact fixture-proven versions. The historical signing fixture is a
+minimal public key, not signing material, and its full fingerprint is checked
+before import. The local executor retains fixed argv, bounded output and
+process-budget rules.
 
 ## 10. The budget, or its absence
 
 The complete Hexaemeron baseline took roughly 144 seconds on the local machine.
+The first hosted aggregate executed all 1,991 tests in 1,431.9 seconds and
+exposed three setup mismatches: Forge 1.8.1 rather than 1.7.1, Node 22.23.2
+rather than 26.6.0, and an absent public key for the issue-429 composition.
 No performance improvement is claimed. ADR-045's executor derives a bounded
 CPU budget and runs independent checks concurrently; the workflow delegates to
 that measured mechanism. Actions timeouts bound setup and execution. Any later
