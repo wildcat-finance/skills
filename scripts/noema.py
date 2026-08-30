@@ -181,31 +181,18 @@ def _object_without_duplicates(pairs: list[tuple[str, object]]) -> dict[str, obj
     return result
 
 
-def _read_regular(path: Path, field: str, limit: int) -> bytes:
-    if not hasattr(os, "O_NOFOLLOW"):
-        refuse("NOE-E-PATH.PLATFORM", field, "no-follow file reads are unavailable")
-    try:
-        before_path = path.lstat()
-    except OSError:
-        refuse("NOE-E-IO.READ", field, "regular input cannot be inspected")
-    if not stat.S_ISREG(before_path.st_mode):
-        refuse("NOE-E-PATH.REGULAR", field, "input must be a regular file")
-    if before_path.st_size > limit:
-        refuse("NOE-E-BOUNDS.FILE", field, "input exceeds its byte limit")
-
-    flags = os.O_RDONLY | os.O_NOFOLLOW
-    if hasattr(os, "O_CLOEXEC"):
-        flags |= os.O_CLOEXEC
-    try:
-        descriptor = os.open(path, flags)
-    except OSError:
-        refuse("NOE-E-IO.READ", field, "regular input cannot be opened")
+def _read_open_regular(
+    descriptor: int,
+    field: str,
+    limit: int,
+    expected_identity: tuple[int, int] | None = None,
+) -> tuple[bytes, tuple[int, int]]:
     close_failed = False
     try:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             refuse("NOE-E-PATH.REGULAR", field, "opened input is not a regular file")
-        if (before.st_dev, before.st_ino) != (before_path.st_dev, before_path.st_ino):
+        if expected_identity is not None and (before.st_dev, before.st_ino) != expected_identity:
             refuse("NOE-E-PATH.IDENTITY", field, "input identity changed before read")
         if before.st_size > limit:
             refuse("NOE-E-BOUNDS.FILE", field, "input exceeds its byte limit")
@@ -250,7 +237,84 @@ def _read_regular(path: Path, field: str, limit: int) -> bytes:
     )
     if before_identity != after_identity or total != after.st_size:
         refuse("NOE-E-IO.CHANGED", field, "input changed during read")
-    return b"".join(chunks)
+    return b"".join(chunks), (before.st_dev, before.st_ino)
+
+
+def _read_regular(path: Path, field: str, limit: int) -> bytes:
+    if not hasattr(os, "O_NOFOLLOW"):
+        refuse("NOE-E-PATH.PLATFORM", field, "no-follow file reads are unavailable")
+    try:
+        before_path = path.lstat()
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "regular input cannot be inspected")
+    if not stat.S_ISREG(before_path.st_mode):
+        refuse("NOE-E-PATH.REGULAR", field, "input must be a regular file")
+    if before_path.st_size > limit:
+        refuse("NOE-E-BOUNDS.FILE", field, "input exceeds its byte limit")
+
+    flags = os.O_RDONLY | os.O_NOFOLLOW
+    if hasattr(os, "O_CLOEXEC"):
+        flags |= os.O_CLOEXEC
+    try:
+        descriptor = os.open(path, flags)
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "regular input cannot be opened")
+    payload, _identity = _read_open_regular(
+        descriptor,
+        field,
+        limit,
+        (before_path.st_dev, before_path.st_ino),
+    )
+    return payload
+
+
+def _read_repository_regular(
+    root: Path,
+    relative: str,
+    field: str,
+    limit: int,
+) -> tuple[bytes, tuple[int, int]]:
+    if (
+        not hasattr(os, "O_NOFOLLOW")
+        or not hasattr(os, "O_DIRECTORY")
+        or os.open not in os.supports_dir_fd
+    ):
+        refuse("NOE-E-PATH.PLATFORM", field, "confined no-follow reads are unavailable")
+    relative = _relative_path(relative, field)
+    components = PurePosixPath(relative).parts
+    directory_flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_DIRECTORY
+    file_flags = os.O_RDONLY | os.O_NOFOLLOW
+    if hasattr(os, "O_CLOEXEC"):
+        directory_flags |= os.O_CLOEXEC
+        file_flags |= os.O_CLOEXEC
+
+    directories: list[int] = []
+    close_failed = False
+    try:
+        current = os.open(root, directory_flags)
+        directories.append(current)
+        if not stat.S_ISDIR(os.fstat(current).st_mode):
+            refuse("NOE-E-PATH.DIRECTORY", field, "repository root is not one real directory")
+        for component in components[:-1]:
+            current = os.open(component, directory_flags, dir_fd=current)
+            directories.append(current)
+            if not stat.S_ISDIR(os.fstat(current).st_mode):
+                refuse("NOE-E-PATH.DIRECTORY", field, "source ancestor is not one real directory")
+        descriptor = os.open(components[-1], file_flags, dir_fd=current)
+        payload, identity = _read_open_regular(descriptor, field, limit)
+    except Refusal:
+        raise
+    except OSError:
+        refuse("NOE-E-PATH.CONFINEMENT", field, "source path is absent, linked or escaping")
+    finally:
+        for descriptor in reversed(directories):
+            try:
+                os.close(descriptor)
+            except OSError:
+                close_failed = True
+    if close_failed:
+        refuse("NOE-E-IO.READ", field, "source directory descriptor could not be closed")
+    return payload, identity
 
 
 def _exact_keys(value: object, expected: set[str], field: str) -> dict[str, object]:
@@ -1457,13 +1521,12 @@ def _compile_records(
             if prior_digest != digest:
                 refuse("NOE-E-REFERENCE.SOURCE_ID", field, "one source path binds multiple blob identities")
             if path not in source_payloads:
-                source_path = repository_root / path
-                payload = _read_regular(source_path, f"{field}.source", MAX_INPUT_BYTES)
-                try:
-                    source_status = source_path.lstat()
-                except OSError:
-                    refuse("NOE-E-IO.READ", field, "bound source cannot be inspected")
-                identity = (source_status.st_dev, source_status.st_ino)
+                payload, identity = _read_repository_regular(
+                    repository_root,
+                    path,
+                    f"{field}.source",
+                    MAX_INPUT_BYTES,
+                )
                 if identity in source_identities and source_identities[identity] != path:
                     refuse("NOE-E-REFERENCE.SOURCE_ALIAS", field, "one source file is named by multiple paths")
                 source_identities[identity] = path

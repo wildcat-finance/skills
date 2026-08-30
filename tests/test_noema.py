@@ -46,6 +46,13 @@ def load_noema():
 noema = load_noema()
 
 
+def scratch_directory(prefix="noema-"):
+    """Return transient in-repository space below the ignored scratch root."""
+    scratch = ROOT / "tmp"
+    scratch.mkdir(exist_ok=True)
+    return tempfile.TemporaryDirectory(dir=scratch, prefix=prefix)
+
+
 def source_binding(start: int = 0, end: int = 1):
     return [
         "src",
@@ -857,9 +864,45 @@ class GraphValidationTests(unittest.TestCase):
             records[-1][3][4] = str(end)
             source = noema._canonical_source(records)
             with self.subTest(payload=payload):
-                with mock.patch.object(noema, "_read_regular", return_value=payload), self.assertRaises(noema.Refusal) as raised:
+                with mock.patch.object(
+                    noema, "_read_regular", return_value=payload
+                ), mock.patch.object(
+                    noema,
+                    "_read_repository_regular",
+                    return_value=(payload, (1, 1)),
+                    create=True,
+                ), self.assertRaises(noema.Refusal) as raised:
                     noema._compile_records(records, modules, source)
                 self.assertEqual(raised.exception.code, code)
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
+    def test_source_binding_refuses_a_linked_ancestor(self):
+        with scratch_directory(
+            prefix="noema-source-"
+        ) as inside, tempfile.TemporaryDirectory(prefix="noema-outside-") as outside:
+            inside_path = Path(inside)
+            payload = b"x"
+            (Path(outside) / "payload.txt").write_bytes(payload)
+            (inside_path / "escape").symlink_to(outside, target_is_directory=True)
+            relative = (
+                inside_path.relative_to(ROOT) / "escape" / "payload.txt"
+            ).as_posix()
+            records = base_records()
+            records[-1][3] = [
+                "src",
+                relative,
+                sha256(payload).hexdigest(),
+                "0",
+                "1",
+            ]
+            modules = noema._load_modules(MODULES_FIXTURE, [("core", CORE_DIGEST)])
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._compile_records(
+                    records,
+                    modules,
+                    noema._canonical_source(records),
+                )
+            self.assertEqual(raised.exception.code, "NOE-E-PATH.CONFINEMENT")
 
     def test_finite_set_members_are_unique_and_canonically_ordered(self):
         duplicate = ["+", ["in", [":", "actor", "a"], ["{}", "actor", [":", "actor", "a"], [":", "actor", "a"]]]]
