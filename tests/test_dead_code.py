@@ -17,10 +17,15 @@ ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "dead_code.py"
 MONITOR_SCRIPT = ROOT / "scripts" / "dead_code_monitoring" / "sitecustomize.py"
 SCHEMA_PATH = ROOT / "schemas" / "dead-code-report-v1.schema.json"
+SUPPRESSION_SCHEMA_PATH = ROOT / "schemas" / "dead-code-suppressions-v1.schema.json"
 WORKFLOW_PATH = ROOT / ".github" / "workflows" / "dead-code.yml"
 CHECK_MAP_PATH = ROOT / "tests" / "check-map-v1.json"
 STUDY_PATH = ROOT / "docs" / "dead-code" / "study.md"
 RUNBOOK_PATH = ROOT / "docs" / "dead-code" / "runbook.md"
+MEASUREMENT_PATH = ROOT / "docs" / "dead-code" / "measurement.md"
+OPERATOR_PATH = ROOT / "docs" / "promise-machine" / "dead-code-v1.md"
+BASELINE_PATH = ROOT / ".dead-code" / "baseline.json"
+SUPPRESSIONS_PATH = ROOT / ".dead-code" / "suppressions.json"
 ADR_PATH = (
     ROOT
     / "docs"
@@ -2458,6 +2463,327 @@ class CoverageAnalyserTests(TemporaryRepositoryTestCase):
             )
 
 
+class BaselineContractTests(TemporaryRepositoryTestCase):
+    def _report(self, *, second=False):
+        findings = [
+            dead_code.Finding(
+                "python",
+                "src/a.py",
+                "unused",
+                "fixture candidate",
+                "medium",
+                "dynamic references can retain the symbol",
+            )
+        ]
+        analysed = ["src/a.py"]
+        if second:
+            findings.append(
+                dead_code.Finding(
+                    "repository",
+                    "src/b.py",
+                    None,
+                    "fixture repository candidate",
+                    "low",
+                    "computed paths can retain the file",
+                )
+            )
+            analysed.append("src/b.py")
+        findings.sort(
+            key=lambda item: (
+                item.analyser_id,
+                item.path,
+                item.symbol or "",
+                item.evidence,
+            )
+        )
+        return dead_code.Report(
+            dead_code.Universe(
+                "a" * 40,
+                "b" * 40,
+                "sha256:" + "c" * 64,
+                len(analysed),
+                tuple(analysed),
+                (),
+            ),
+            (
+                dead_code.AnalyserStatus("python", "ran", "1", "done"),
+                dead_code.AnalyserStatus(
+                    "repository", "degraded", "repository-graph/1", "bounded"
+                ),
+            ),
+            tuple(findings),
+        )
+
+    def _suppression(self, report=None, *, index=0):
+        report = self._report() if report is None else report
+        finding = report.findings[index]
+        return {
+            "finding_id": finding.identity,
+            "owner": "maintainers",
+            "path": finding.path,
+            "reason": "retained for dynamic registration",
+            "symbol": finding.symbol,
+        }
+
+    def _raw(self, entries, **extra):
+        return dead_code._render_json_document(
+            {
+                "entries": entries,
+                "schema": dead_code.SUPPRESSIONS_SCHEMA_ID,
+                **extra,
+            }
+        )
+
+    def _baseline(self, report=None, entries=()):
+        report = self._report() if report is None else report
+        raw = self._raw(list(entries))
+        document, suppressions = dead_code.parse_suppressions(raw, report)
+        return dead_code.build_baseline_document(report, document, suppressions)
+
+    def _baseline_repository(self):
+        suppressions = dead_code._render_json_document(
+            {"entries": [], "schema": dead_code.SUPPRESSIONS_SCHEMA_ID}
+        )
+        build_repository(
+            self.root,
+            files={
+                ".dead-code/baseline.json": "{}" + NL,
+                ".dead-code/suppressions.json": suppressions,
+                "src/a.py": "unused = 1" + NL,
+            },
+        )
+
+    def test_empty_suppressions_are_canonical(self):
+        document, entries = dead_code.parse_suppressions(self._raw([]), self._report())
+        self.assertEqual(document["entries"], [])
+        self.assertEqual(entries, ())
+
+    def test_one_exact_suppression_is_accepted(self):
+        report = self._report()
+        _document, entries = dead_code.parse_suppressions(
+            self._raw([self._suppression(report)]), report
+        )
+        self.assertEqual(entries[0].finding_id, report.findings[0].identity)
+
+    def test_broad_suppression_identity_refuses(self):
+        entry = self._suppression()
+        entry["finding_id"] = "sha256:*"
+        with self.assertRaisesRegex(dead_code.Refusal, "sha256 identity"):
+            dead_code.parse_suppressions(self._raw([entry]), self._report())
+
+    def test_duplicate_root_key_refuses(self):
+        raw = '{"entries":[],"entries":[],"schema":"dead-code-suppressions/v1"}' + NL
+        with self.assertRaisesRegex(dead_code.Refusal, "repeats JSON key entries"):
+            dead_code.parse_suppressions(raw, self._report())
+
+    def test_unknown_root_field_refuses(self):
+        with self.assertRaisesRegex(dead_code.Refusal, "unknown field"):
+            dead_code.parse_suppressions(self._raw([], extra=True), self._report())
+
+    def test_wrong_suppression_schema_refuses(self):
+        raw = dead_code._render_json_document({"entries": [], "schema": "wrong"})
+        with self.assertRaisesRegex(dead_code.Refusal, "dead-code-suppressions/v1"):
+            dead_code.parse_suppressions(raw, self._report())
+
+    def test_non_list_entries_refuse(self):
+        raw = dead_code._render_json_document(
+            {"entries": {}, "schema": dead_code.SUPPRESSIONS_SCHEMA_ID}
+        )
+        with self.assertRaisesRegex(dead_code.Refusal, "not a list"):
+            dead_code.parse_suppressions(raw, self._report())
+
+    def test_suppression_limit_refuses(self):
+        with mock.patch.object(dead_code, "MAX_SUPPRESSIONS", 0):
+            with self.assertRaisesRegex(dead_code.Refusal, "exceeds 0 entries"):
+                dead_code.parse_suppressions(
+                    self._raw([self._suppression()]), self._report()
+                )
+
+    def test_unknown_entry_field_refuses(self):
+        entry = {**self._suppression(), "expires": "never"}
+        with self.assertRaisesRegex(dead_code.Refusal, "unknown field"):
+            dead_code.parse_suppressions(self._raw([entry]), self._report())
+
+    def test_duplicate_suppression_refuses(self):
+        entry = self._suppression()
+        with self.assertRaisesRegex(dead_code.Refusal, "repeats suppression"):
+            dead_code.parse_suppressions(self._raw([entry, entry]), self._report())
+
+    def test_empty_reason_refuses(self):
+        entry = self._suppression()
+        entry["reason"] = " "
+        with self.assertRaisesRegex(dead_code.Refusal, "reason is not"):
+            dead_code.parse_suppressions(self._raw([entry]), self._report())
+
+    def test_empty_owner_refuses(self):
+        entry = self._suppression()
+        entry["owner"] = ""
+        with self.assertRaisesRegex(dead_code.Refusal, "owner is not"):
+            dead_code.parse_suppressions(self._raw([entry]), self._report())
+
+    def test_control_character_refuses(self):
+        entry = self._suppression()
+        entry["reason"] = "line one" + NL + "line two"
+        with self.assertRaisesRegex(dead_code.Refusal, "control character"):
+            dead_code.parse_suppressions(self._raw([entry]), self._report())
+
+    def test_stale_target_refuses(self):
+        entry = self._suppression()
+        entry["path"] = "src/absent.py"
+        with self.assertRaisesRegex(dead_code.Refusal, "stale target"):
+            dead_code.parse_suppressions(self._raw([entry]), self._report())
+
+    def test_unused_suppression_refuses(self):
+        entry = self._suppression()
+        entry["finding_id"] = "sha256:" + "d" * 64
+        with self.assertRaisesRegex(dead_code.Refusal, "is unused"):
+            dead_code.parse_suppressions(self._raw([entry]), self._report())
+
+    def test_mismatched_target_refuses(self):
+        report = self._report(second=True)
+        entry = self._suppression(report)
+        entry["path"] = "src/b.py"
+        with self.assertRaisesRegex(dead_code.Refusal, "target does not match"):
+            dead_code.parse_suppressions(self._raw([entry]), report)
+
+    def test_mismatched_symbol_refuses(self):
+        entry = self._suppression()
+        entry["symbol"] = "different"
+        with self.assertRaisesRegex(dead_code.Refusal, "target does not match"):
+            dead_code.parse_suppressions(self._raw([entry]), self._report())
+
+    def test_unsorted_suppressions_refuse(self):
+        report = self._report(second=True)
+        entries = [self._suppression(report, index=index) for index in range(2)]
+        entries.sort(key=lambda item: item["finding_id"], reverse=True)
+        with self.assertRaisesRegex(dead_code.Refusal, "not sorted"):
+            dead_code.parse_suppressions(self._raw(entries), report)
+
+    def test_noncanonical_json_refuses(self):
+        raw = json.dumps(
+            {"entries": [], "schema": dead_code.SUPPRESSIONS_SCHEMA_ID}
+        )
+        with self.assertRaisesRegex(dead_code.Refusal, "not canonical JSON"):
+            dead_code.parse_suppressions(raw, self._report())
+
+    def test_baseline_records_suppressed_flag_and_digest(self):
+        report = self._report()
+        baseline = self._baseline(report, [self._suppression(report)])
+        dead_code.validate_baseline_document(baseline)
+        self.assertTrue(baseline["findings"][0]["suppressed"])
+        self.assertTrue(baseline["suppressions"]["digest"].startswith("sha256:"))
+
+    def test_unknown_baseline_field_refuses(self):
+        baseline = {**self._baseline(), "extra": True}
+        with self.assertRaisesRegex(dead_code.Refusal, "unknown field"):
+            dead_code.validate_baseline_document(baseline)
+
+    def test_duplicate_baseline_finding_refuses(self):
+        baseline = self._baseline()
+        baseline["findings"].append(dict(baseline["findings"][0]))
+        with self.assertRaisesRegex(dead_code.Refusal, "repeats finding"):
+            dead_code.validate_baseline_document(baseline)
+
+    def test_baseline_analyser_order_refuses(self):
+        baseline = self._baseline()
+        baseline["analysers"].reverse()
+        with self.assertRaisesRegex(dead_code.Refusal, "not sorted and unique"):
+            dead_code.validate_baseline_document(baseline)
+
+    def test_commit_tree_and_universe_drift_refuse_by_name(self):
+        for field, expected in (
+            (("tree", "commit"), "commit drift"),
+            (("tree", "git_tree"), "Git tree drift"),
+            (("universe", "id"), "universe drift"),
+        ):
+            with self.subTest(field=field):
+                recorded = self._baseline()
+                wanted = self._baseline()
+                wanted[field[0]][field[1]] = (
+                    "d" * 40 if field[0] == "tree" else "sha256:" + "d" * 64
+                )
+                with self.assertRaisesRegex(dead_code.Refusal, expected):
+                    dead_code.compare_baseline_documents(recorded, wanted)
+
+    def test_analyser_version_and_status_drift_refuse_by_name(self):
+        for field, value, expected in (
+            ("version", "2", "version drift"),
+            ("state", "failed", "status drift"),
+        ):
+            with self.subTest(field=field):
+                recorded = self._baseline()
+                wanted = self._baseline()
+                wanted["analysers"][0][field] = value
+                with self.assertRaisesRegex(dead_code.Refusal, expected):
+                    dead_code.compare_baseline_documents(recorded, wanted)
+
+    def test_suppression_and_finding_drift_refuse_by_name(self):
+        recorded = self._baseline()
+        wanted = self._baseline()
+        wanted["suppressions"]["digest"] = "sha256:" + "d" * 64
+        with self.assertRaisesRegex(dead_code.Refusal, "suppression drift"):
+            dead_code.compare_baseline_documents(recorded, wanted)
+        wanted = self._baseline()
+        wanted["findings"][0]["suppressed"] = True
+        with self.assertRaisesRegex(dead_code.Refusal, "finding identity drift"):
+            dead_code.compare_baseline_documents(recorded, wanted)
+
+    def test_candidate_count_is_non_gating(self):
+        summary = dead_code._baseline_summary(self._baseline())
+        self.assertIn("1 candidate(s)", summary)
+        self.assertIn("candidate count did not gate", summary)
+        self.assertIn("added=0 resolved=0 stale_suppressions=0", summary)
+
+    def test_write_then_check_uses_two_commit_publication(self):
+        self._baseline_repository()
+        write = dead_code.argparse.Namespace(directory=str(self.root), mode="write")
+        self.assertEqual(dead_code.command_baseline(write), 0)
+        source = json.loads(
+            (self.root / ".dead-code" / "baseline.json").read_text(encoding="utf-8")
+        )["tree"]["commit"]
+        git(self.root, "add", ".dead-code/baseline.json")
+        git(self.root, "commit", "--quiet", "-m", "publish baseline")
+        check = dead_code.argparse.Namespace(directory=str(self.root), mode="check")
+        self.assertEqual(dead_code.command_baseline(check), 0)
+        self.assertEqual(source, git(self.root, "rev-parse", "HEAD^").strip())
+
+    def test_dirty_tree_refuses_baseline_write(self):
+        self._baseline_repository()
+        (self.root / "src" / "a.py").write_text("changed = 1" + NL, encoding="utf-8")
+        arguments = dead_code.argparse.Namespace(directory=str(self.root), mode="write")
+        with self.assertRaisesRegex(dead_code.Refusal, "modified tracked"):
+            dead_code.command_baseline(arguments)
+
+    def test_check_is_read_only_and_does_not_sweep_temporary_files(self):
+        self._baseline_repository()
+        write = dead_code.argparse.Namespace(directory=str(self.root), mode="write")
+        dead_code.command_baseline(write)
+        git(self.root, "add", ".dead-code/baseline.json")
+        git(self.root, "commit", "--quiet", "-m", "publish baseline")
+        bystander = self.root / ".dead-code" / (dead_code.TEMP_PREFIX + "bystander")
+        bystander.write_text("keep", encoding="utf-8")
+        before = git(self.root, "status", "--porcelain", "--untracked-files=no")
+        check = dead_code.argparse.Namespace(directory=str(self.root), mode="check")
+        dead_code.command_baseline(check)
+        self.assertEqual(git(self.root, "status", "--porcelain", "--untracked-files=no"), before)
+        self.assertEqual(bystander.read_text(encoding="utf-8"), "keep")
+
+    def test_source_change_after_publication_is_stale(self):
+        self._baseline_repository()
+        dead_code.command_baseline(
+            dead_code.argparse.Namespace(directory=str(self.root), mode="write")
+        )
+        git(self.root, "add", ".dead-code/baseline.json")
+        git(self.root, "commit", "--quiet", "-m", "publish baseline")
+        (self.root / "src" / "a.py").write_text("changed = 1" + NL, encoding="utf-8")
+        git(self.root, "add", "src/a.py")
+        git(self.root, "commit", "--quiet", "-m", "change source")
+        with self.assertRaisesRegex(dead_code.Refusal, "baseline is stale"):
+            dead_code.command_baseline(
+                dead_code.argparse.Namespace(directory=str(self.root), mode="check")
+            )
+
+
 class ShippedSurfaceTests(unittest.TestCase):
     def test_receipted_study_and_runbook_digests_are_preserved(self):
         self.assertEqual(
@@ -2494,6 +2820,11 @@ class ShippedSurfaceTests(unittest.TestCase):
             "analysisStatus",
             "analyserStatus",
             "analyserRecord",
+            "baseline",
+            "baselineUniverse",
+            "baselineAnalyser",
+            "baselineFinding",
+            "baselineSuppressions",
             "finding",
         ):
             self.assertFalse(schema["$defs"][name]["additionalProperties"])
@@ -2531,10 +2862,13 @@ class ShippedSurfaceTests(unittest.TestCase):
             for entry in check_map["owners"]
         }
         expected = (
+            ".dead-code",
             ".github/workflows/dead-code.yml",
             "docs/dead-code",
             "docs/decisions/ADR-051-keep-dead-code-discovery-report-only.md",
+            "docs/promise-machine/dead-code-v1.md",
             "schemas/dead-code-report-v1.schema.json",
+            "schemas/dead-code-suppressions-v1.schema.json",
             "scripts/dead_code.py",
             "scripts/dead_code_monitoring",
             "tests/emit_dead_code_report.py",
@@ -2549,6 +2883,31 @@ class ShippedSurfaceTests(unittest.TestCase):
         self.assertNotIn("contents: write", text)
         self.assertIn("scripts/run_checks.py --scope dead-code", text)
         self.assertIn('python-version-file: ".python-version"', text)
+
+    def test_workflow_and_operator_guide_carry_the_exact_four_command_demo(self):
+        commands = (
+            "python3 scripts/dead_code.py report",
+            "python3 scripts/dead_code.py report --json",
+            "python3 scripts/dead_code.py baseline --check",
+            "python3 scripts/run_checks.py --scope dead-code",
+        )
+        for path in (WORKFLOW_PATH, OPERATOR_PATH):
+            text = path.read_text(encoding="utf-8")
+            positions = [text.index(command) for command in commands]
+            self.assertEqual(positions, sorted(positions), path)
+
+    def test_suppression_schema_and_shipped_records_are_closed_and_canonical(self):
+        schema = json.loads(SUPPRESSION_SCHEMA_PATH.read_text(encoding="utf-8"))
+        self.assertFalse(schema["additionalProperties"])
+        self.assertFalse(schema["$defs"]["suppression"]["additionalProperties"])
+        suppressions = SUPPRESSIONS_PATH.read_text(encoding="utf-8")
+        self.assertEqual(
+            suppressions,
+            dead_code._render_json_document(json.loads(suppressions)),
+        )
+        self.assertEqual(json.loads(suppressions)["entries"], [])
+        self.assertTrue(BASELINE_PATH.is_file())
+        self.assertTrue(MEASUREMENT_PATH.is_file())
 
     def test_workflow_summary_names_tree_universe_analyser_and_non_gating_state(self):
         text = WORKFLOW_PATH.read_text(encoding="utf-8")

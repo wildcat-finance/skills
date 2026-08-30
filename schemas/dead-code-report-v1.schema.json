@@ -256,6 +256,129 @@
         }
       }
     },
+    "baseline": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema",
+        "tool",
+        "command",
+        "tree",
+        "universe",
+        "analysers",
+        "findings",
+        "suppressions"
+      ],
+      "properties": {
+        "schema": {
+          "const": "dead-code-baseline/v1"
+        },
+        "tool": {
+          "$ref": "#/$defs/toolIdentity"
+        },
+        "command": {
+          "type": "array",
+          "prefixItems": [
+            {"const": "python3"},
+            {"const": "scripts/dead_code.py"},
+            {"const": "report"},
+            {"const": "--json"},
+            {"const": "--analyser"},
+            {"const": "python,repository"}
+          ],
+          "items": false,
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "tree": {
+          "$ref": "#/$defs/treeIdentity"
+        },
+        "universe": {
+          "$ref": "#/$defs/baselineUniverse"
+        },
+        "analysers": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/baselineAnalyser"
+          }
+        },
+        "findings": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/baselineFinding"
+          }
+        },
+        "suppressions": {
+          "$ref": "#/$defs/baselineSuppressions"
+        }
+      }
+    },
+    "baselineUniverse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/sha256Identity"
+        }
+      }
+    },
+    "baselineAnalyser": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version", "state"],
+      "properties": {
+        "id": {
+          "enum": ["python", "repository"]
+        },
+        "version": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "state": {
+          "enum": ["ran", "not-available", "degraded", "failed"]
+        }
+      }
+    },
+    "baselineFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "analyser_id", "path", "symbol", "suppressed"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/sha256Identity"
+        },
+        "analyser_id": {
+          "enum": ["python", "repository"]
+        },
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "symbol": {
+          "type": ["string", "null"]
+        },
+        "suppressed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "baselineSuppressions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "digest"],
+      "properties": {
+        "path": {
+          "const": ".dead-code/suppressions.json"
+        },
+        "digest": {
+          "$ref": "#/$defs/sha256Identity"
+        }
+      }
+    },
     "finding": {
       "type": "object",
       "additionalProperties": false,
