@@ -318,6 +318,19 @@ CHECKPOINT_MANIFEST_BYTES_MAX = 1024 * 1024
 CHECKPOINT_PATH_BYTES_MAX = 1024
 CHECKPOINT_JSON_DEPTH_MAX = 128
 CHECKPOINT_IO_CHUNK = 64 * 1024
+CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS = frozenset(
+    {
+        "fiat-v5.35.1",
+        "fiat-v5.36.1",
+        "fiat-v5.37.1",
+        "fiat-v5.38.1",
+        "fiat-v5.39.1",
+        "fiat-v5.40.1",
+        "fiat-v5.41.1",
+        "fiat-v5.42.1",
+        "fiat-v5.43.1",
+    }
+)
 VERSION_RELATIONS_SCHEMA = "fiat-version-relations/v1"
 VERSION_RELATIONS_INFO = "version-relations"
 VERSION_RELATION = "next-generation-after-integration-base"
@@ -5060,10 +5073,23 @@ def _require_file(path: str, label: str) -> str:
     return path
 
 
+def _portable_receipt_artifact(base_dir: str, path: str) -> str:
+    """Store a verified source as one portable target-relative path."""
+    try:
+        relative = os.path.relpath(path, os.path.realpath(base_dir))
+    except (OSError, TypeError, ValueError):
+        die("source artefact path is not portable")
+    portable = relative.replace(os.sep, "/")
+    return _checkpoint_safe_relative(tuple(portable.split("/")))
+
+
 def done_study(args, state: dict) -> None:
     require_global_phase(state, "study")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "study artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "study artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
     skills = [s for s in (args.skills or "").split(",") if s]
     digest = hashlib.sha256(artifact_bytes).hexdigest()
     state["receipts"]["study"] = {
@@ -5084,7 +5110,10 @@ def done_study(args, state: dict) -> None:
 def done_runbook(args, state: dict) -> None:
     require_global_phase(state, "runbook")
     artifact = _require_file(args.artifact, "artifact")
-    _, artifact_bytes = read_bounded_source(args.dir, artifact, "runbook artefact")
+    artifact_path, artifact_bytes = read_bounded_source(
+        args.dir, artifact, "runbook artefact"
+    )
+    artifact = _portable_receipt_artifact(args.dir, artifact_path)
     artifact_text = decoded_source(artifact_bytes, "runbook artefact")
     relation_source = parse_version_relation_source(artifact_text)
     version_relations = None
@@ -11567,8 +11596,43 @@ def _checkpoint_restore_source_receipt(
     if not isinstance(expected, str) or not re.fullmatch(r"[0-9a-f]{64}", expected):
         die(f"checkpoint {name} receipt has an invalid sha256")
     artifact = receipt.get("artifact")
-    if not isinstance(artifact, str) or not artifact or os.path.isabs(artifact):
+    if not isinstance(artifact, str) or not artifact:
         die(f"checkpoint {name} artefact path is not relocatable")
+    if os.path.isabs(artifact):
+        old_origin = configured_git_path(state, "origin")
+        old_worktree = configured_git_path(state, "worktree")
+        run_branch = run_branch_of(state)
+        paths = (old_origin, old_worktree, artifact)
+        for path in paths:
+            try:
+                encoded = path.encode("utf-8") if isinstance(path, str) else b""
+            except UnicodeEncodeError:
+                encoded = b""
+            if (
+                not encoded
+                or not os.path.isabs(path)
+                or path.replace("\\", "/") != path
+                or os.path.normpath(path) != path
+                or any(
+                    ord(character) < 32 or ord(character) == 127
+                    for character in path
+                )
+            ):
+                die(f"checkpoint {name} artefact path is not relocatable")
+        if not isinstance(run_branch, str) or not branch_name_ok(run_branch):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        expected_worktree = os.path.join(
+            old_origin, *WORKTREE_HOME, run_branch.replace("/", "-")
+        )
+        if old_worktree != expected_worktree:
+            die(f"checkpoint {name} artefact path is not relocatable")
+        try:
+            relative = os.path.relpath(artifact, old_worktree).replace(os.sep, "/")
+        except (OSError, TypeError, ValueError):
+            die(f"checkpoint {name} artefact path is not relocatable")
+        artifact = _checkpoint_safe_relative(tuple(relative.split("/")))
+        if os.path.join(old_worktree, *artifact.split("/")) != receipt["artifact"]:
+            die(f"checkpoint {name} artefact path is not relocatable")
     if artifact.replace("\\", "/") != artifact:
         die(f"checkpoint {name} artefact path is unsafe")
     if _checkpoint_safe_relative(tuple(artifact.split("/"))) != artifact:
@@ -11744,12 +11808,19 @@ def _checkpoint_restore_capsule(
     current_version = ledger_version(
         os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, "EVOLUTION.md")
     )
-    if canonical(controller) != canonical(
-        {
-            "name": state.get("controller"),
-            "state_version": state.get("version"),
-            "version": current_version,
-        }
+    controller_identity = {
+        "name": controller["name"],
+        "state_version": controller["state_version"],
+    }
+    state_identity = {
+        "name": state.get("controller"),
+        "state_version": state.get("version"),
+    }
+    if (
+        canonical(controller_identity) != canonical(state_identity)
+        or not isinstance(controller["version"], str)
+        or controller["version"] not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
+        or current_version not in CHECKPOINT_COMPATIBLE_CONTROLLER_VERSIONS
     ):
         die("checkpoint controller identity does not match this controller")
     last_entry = None
@@ -12178,10 +12249,17 @@ def _checkpoint_restore_state(
     manifest: dict,
     manifest_digest: str,
 ) -> tuple[dict, dict]:
-    """Relocate only the controller's two path fields and shape its receipt."""
+    """Relocate controller paths and shape the same-ledger receipt."""
     state = json.loads(json.dumps(imported))
     old_origin = configured_git_path(state, "origin")
     old_worktree = configured_git_path(state, "worktree")
+    for name in ("study", "runbook"):
+        source_receipt = _checkpoint_restore_source_receipt(state, name)
+        if source_receipt is None:
+            continue
+        artifact, _ = source_receipt
+        receipt = as_dict(as_dict(state.get("receipts")).get(name))
+        receipt["artifact"] = artifact
     state.pop("origin", None)
     state.pop("worktree", None)
     state["config"]["git"]["origin"] = origin

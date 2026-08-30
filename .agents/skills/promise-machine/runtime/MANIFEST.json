@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 994,
-  "total_bytes": 21555872,
+  "total_bytes": 21562934,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1119,9 +1119,9 @@
       "source": "plugins/berean/skills/berean/agents/openai.yaml"
     },
     {
-      "bytes": 2231,
+      "bytes": 2305,
       "path": "plugins/brevitas/AGENTS.md",
-      "sha256": "4f93d4a26a277f85407341c5a89dca84d8ca03cd8ee2e597ccda9bf06570e613",
+      "sha256": "f161cdc1491b4b4d3d123ec54175e0bd72bf7d9812d9fff97b94949fdec77c6b",
       "source": "plugins/brevitas/AGENTS.md"
     },
     {
@@ -1137,9 +1137,9 @@
       "source": "plugins/brevitas/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 4586,
+      "bytes": 4921,
       "path": "plugins/brevitas/README.md",
-      "sha256": "0f2b9b3bd972c62bfe4ba9577e96b54e3c6aeebece8cc2cc802375b9b6406803",
+      "sha256": "514b80dace6625d3286c6593dcf75e7f8166d6ba62be4d05042d0ef626117eac",
       "source": "plugins/brevitas/README.md"
     },
     {
@@ -1149,9 +1149,9 @@
       "source": "plugins/brevitas/assets/characters/brevitas.png"
     },
     {
-      "bytes": 2947,
+      "bytes": 3654,
       "path": "plugins/brevitas/skills/brevitas/EVOLUTION.md",
-      "sha256": "fd3101e081161dd160d04764dbf7c455f91b9015b80f9296847fd1fad660f445",
+      "sha256": "512b1c012b30a762b3f69a3a11b488f9a490d2967f8a918c9206f026de8b3c11",
       "source": "plugins/brevitas/skills/brevitas/EVOLUTION.md"
     },
     {
@@ -1161,9 +1161,9 @@
       "source": "plugins/brevitas/skills/brevitas/Makefile"
     },
     {
-      "bytes": 7425,
+      "bytes": 7855,
       "path": "plugins/brevitas/skills/brevitas/SKILL.md",
-      "sha256": "e651ef3027cb76f40c0de5d89f9ffdef2925d86f3a9508c275ea87df38483120",
+      "sha256": "da70dbf3585dbcbb9d169e09ec6549464dc77d33a9b5aff4d9b82114eb7d73fa",
       "source": "plugins/brevitas/skills/brevitas/SKILL.md"
     },
     {
@@ -1359,9 +1359,9 @@
       "source": "plugins/brevitas/skills/brevitas/evals/corpus.json"
     },
     {
-      "bytes": 16709,
+      "bytes": 17904,
       "path": "plugins/brevitas/skills/brevitas/scripts/brevitas.py",
-      "sha256": "f3e7bff6570a379b0c06e19de00eaef7a359ec8a9caf18d69132baf382cc7249",
+      "sha256": "fb179d677084f6d5423697cfbe85affa76aff6f515742cbcef91e35255e547d3",
       "source": "plugins/brevitas/skills/brevitas/scripts/brevitas.py"
     },
     {
@@ -1911,15 +1911,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 54453,
+      "bytes": 55162,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "3c9a61a77bba422af1ca17a70adff67b0f43db0856da932a675df1fe0ca43529",
+      "sha256": "6980d0339aa4c6c6d172599428f784acdab83794fe1cbb8d13fc8d102dc6ed00",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 64331,
+      "bytes": 64405,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "9bd94e7977d1df73dad27b59f9b179b9dc835bd0b866f435094dd4f297a89cc2",
+      "sha256": "0edddef2732be86831f560762808e6bb298574b300580a08a852b16dd6404ddc",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1935,9 +1935,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
     },
     {
-      "bytes": 10583,
+      "bytes": 10919,
       "path": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md",
-      "sha256": "31911c2f6939e036c83c4dc05c7e10915fd173e4c03bbc170d0265d02f18ba35",
+      "sha256": "323b71ad156f5e3159ca1aeaeb85e6f60c30196c52580ff2a0781031cbd6f16b",
       "source": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md"
     },
     {
@@ -1983,9 +1983,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 527139,
+      "bytes": 530341,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "6f6901851f7ebb5e1f027075d4cac90b75b9ea2016a9b5faf581a0e6a57364aa",
+      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
