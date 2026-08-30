@@ -193,8 +193,23 @@ def read_answers(path: Path) -> dict:
     raw = _read(path, str(path))
     if len(raw) > MAX_ANSWERS_BYTES:
         raise DriverError(f"{path} is larger than {MAX_ANSWERS_BYTES} bytes")
+    def no_duplicate_keys(pairs):
+        """Refuse a sheet naming one case twice.
+
+        `json.loads` keeps the last value for a repeated key and drops the
+        first without a word, so two answers for one case would silently
+        become whichever the operator happened to write second. A grading
+        sheet assembled from several contexts is exactly where that happens.
+        """
+        seen = {}
+        for key, value in pairs:
+            if key in seen:
+                raise DriverError(f"{path}: {key} is answered more than once")
+            seen[key] = value
+        return seen
+
     try:
-        answers = json.loads(raw.decode("utf-8"))
+        answers = json.loads(raw.decode("utf-8"), object_pairs_hook=no_duplicate_keys)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise DriverError(f"{path} is not readable JSON: {error}") from error
     if not isinstance(answers, dict) or not answers:

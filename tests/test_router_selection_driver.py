@@ -388,3 +388,18 @@ class TallyTests(unittest.TestCase):
             self.corpus_path.read_bytes(), self.original,
             "a refused tally wrote to the corpus",
         )
+
+    def test_a_sheet_answering_one_case_twice_refuses(self):
+        """`json.loads` keeps the last value for a repeated key and drops the first.
+
+        A sheet assembled from several contexts is where that happens, and the
+        answer silently dropped would be invisible in the recorded score.
+        """
+        path = self.packet.parent / "duplicated.json"
+        first = sorted(self.correct_answers())[0]
+        body = json.dumps(self.correct_answers(), indent=1).rstrip().rstrip("}")
+        path.write_text(body + f',\n "{first}": "refuse:uncovered"\n}}', encoding="utf-8")
+        with self.assertRaises(driver.DriverError) as caught:
+            driver.tally(self.packet, path, "claude-opus-5", "2026-08-30")
+        self.assertIn(first, str(caught.exception))
+        self.assertIn("more than once", str(caught.exception))
