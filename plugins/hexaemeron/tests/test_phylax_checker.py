@@ -13,6 +13,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "skills" / "phylax" / "scripts" / "phylax.py"
@@ -155,6 +156,157 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
         self.assertNotIn(sentinel, str(result[0]))
         self.assertNotIn(sentinel, json.dumps(result[0].as_dict()))
 
+    def test_p004_preserves_inline_breadth_first_diagnostic_order(self):
+        result = findings(
+            "import subprocess\n"
+            "subprocess.run([[secret], auth_token])\n",
+            "sample.py",
+        )
+        self.assertEqual(
+            [
+                "credential-named value `auth_token` passed in command arguments",
+                "credential-named value `secret` passed in command arguments",
+            ],
+            [finding.message for finding in result],
+        )
+
+    def test_p004_preserves_breadth_first_order_across_local_expansion(self):
+        result = findings(
+            "import subprocess\n"
+            "def invoke(secret, auth_token):\n"
+            "    alias = [auth_token]\n"
+            "    subprocess.run([[secret], alias])\n",
+            "sample.py",
+        )
+        self.assertEqual(
+            [
+                "credential-named value `secret` passed in command arguments",
+                "credential-named value `auth_token` passed in command arguments",
+            ],
+            [finding.message for finding in result],
+        )
+
+    def test_p004_alias_fanout_does_not_multiply_findings(self):
+        result = findings(
+            "import subprocess\n"
+            "def invoke(secret):\n"
+            "    value_0 = [secret]\n"
+            "    value_1 = [value_0, value_0]\n"
+            "    value_2 = [value_1, value_1]\n"
+            "    subprocess.run(value_2)\n",
+            "sample.py",
+        )
+        self.assertEqual(
+            ["credential-named value `secret` passed in command arguments"],
+            [finding.message for finding in result],
+        )
+
+    def test_p004_does_not_resolve_through_nested_expression_scopes(self):
+        prefix = (
+            "import subprocess\n"
+            "def invoke(items):\n"
+            "    secret = load()\n"
+            "    value = secret\n"
+        )
+        suffix = "    subprocess.run(argv)\n"
+        self.assert_codes([], {
+            "lambda": prefix + "    argv = ['tool', lambda: value]\n" + suffix,
+            "list-comprehension": (
+                prefix
+                + "    argv = ['tool', *[value for _ in items]]\n"
+                + suffix
+            ),
+            "set-comprehension": (
+                prefix
+                + "    argv = ['tool', {value for _ in items}]\n"
+                + suffix
+            ),
+            "dict-comprehension": (
+                prefix
+                + "    argv = ['tool', {item: value for item in items}]\n"
+                + suffix
+            ),
+            "generator-expression": (
+                prefix
+                + "    argv = ['tool', *(value for _ in items)]\n"
+                + suffix
+            ),
+        })
+        self.assertEqual(["P004"], codes(
+            "import subprocess\n"
+            "def invoke(items, auth_token):\n"
+            "    argv = ['tool', *[auth_token for _ in items]]\n"
+            "    subprocess.run(argv)\n"
+        ))
+
+    def test_p004_does_not_resolve_through_excluded_expression_shapes(self):
+        prefix = (
+            "import subprocess\n"
+            "def invoke():\n"
+            "    secret = load()\n"
+            "    value = secret\n"
+        )
+        self.assert_codes([], {
+            "starred-command": prefix + "    subprocess.run(*value)\n",
+            "assigned-starred-element": (
+                prefix
+                + "    argv = ['tool', *value]\n"
+                + "    subprocess.run(argv)\n"
+            ),
+            "attribute-command": prefix + "    subprocess.run(value.argv)\n",
+            "subscript-command": prefix + "    subprocess.run(value[0])\n",
+        })
+        self.assert_codes(["P004"], {
+            "direct-starred-name": (
+                "import subprocess\n"
+                "def invoke(auth_token):\n"
+                "    subprocess.run(*auth_token)\n"
+            ),
+            "direct-attribute-base": (
+                "import subprocess\n"
+                "def invoke(auth_token):\n"
+                "    subprocess.run(auth_token.argv)\n"
+            ),
+            "direct-subscript-base": (
+                "import subprocess\n"
+                "def invoke(auth_token):\n"
+                "    subprocess.run(auth_token[0])\n"
+            ),
+        })
+
+    def test_reused_assigned_argv_is_scanned_once(self):
+        source = (
+            "import subprocess\n"
+            "def invoke():\n"
+            "    value = ordinary()\n"
+            "    argv = ['tool', value]\n"
+            + "    subprocess.run(argv)\n" * 20
+        )
+        tree = phylax.ast.parse(source)
+        argv = next(
+            node.value
+            for node in phylax.ast.walk(tree)
+            if isinstance(node, phylax.ast.Assign)
+            and len(node.targets) == 1
+            and isinstance(node.targets[0], phylax.ast.Name)
+            and node.targets[0].id == "argv"
+        )
+        visitor = phylax.Visitor(Path("sample.py"), tree)
+        original = phylax.ast.iter_child_nodes
+        argv_visits = 0
+
+        def counted(node):
+            nonlocal argv_visits
+            if node is argv:
+                argv_visits += 1
+            return original(node)
+
+        with mock.patch.object(phylax.ast, "iter_child_nodes", side_effect=counted):
+            visitor.visit(tree)
+
+        self.assertEqual([], visitor.findings)
+        self.assertEqual(1, argv_visits)
+
     def test_p008_callable_and_safe_neighbour_resolution(self):
         self.assert_codes(["P008"], {
             "module-callable": (
@@ -245,6 +397,30 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
             result[0].message,
         )
 
+    def test_p008_resolution_does_not_erase_original_boundary_evidence(self):
+        self.assert_codes(["P008"], {
+            "bare-dynamic-shadow": (
+                "def decode(payload):\n"
+                "    eval = harmless\n"
+                "    return eval(payload)\n"
+            ),
+            "module-imported-direct-shadow": (
+                "from pickle import loads\n"
+                "def decode(payload):\n"
+                "    loads = harmless\n"
+                "    return loads(payload)\n"
+            ),
+        })
+        result = findings(
+            "import pickle\n"
+            "def decode(payload):\n"
+            "    eval = pickle.loads\n"
+            "    return eval(payload)\n",
+            "sample.py",
+        )
+        self.assertEqual(["P008"], [finding.code for finding in result])
+        self.assertEqual(phylax.P008_AMBIGUOUS_MESSAGE, result[0].message)
+
     def test_each_chain_definition_must_precede_its_rhs_use(self):
         self.assertEqual(["P002"], codes(
             "import subprocess\n"
@@ -259,6 +435,29 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
             "    command = later\n"
             "    later = 'git status'\n"
             "    subprocess.run(command)\n"
+        ))
+
+    def test_assignment_is_not_visible_inside_its_own_rhs(self):
+        self.assertEqual(["P002"], codes(
+            "import subprocess\n"
+            "def invoke():\n"
+            "    command = 'git status'; subprocess.run(command)\n"
+        ))
+        self.assert_codes(["P008"], {
+            "bare-dynamic-call": (
+                "def decode(payload):\n"
+                "    eval = eval(payload)\n"
+            ),
+            "direct-boundary-call": (
+                "from pickle import loads as decode\n"
+                "def invoke(payload):\n"
+                "    decode = decode(payload)\n"
+            ),
+        })
+        self.assertEqual([], codes(
+            "import subprocess\n"
+            "def invoke(secret):\n"
+            "    argv = subprocess.run(argv, env={'X': secret})\n"
         ))
 
     def test_reassignments_and_nonassignment_writes_refuse_resolution(self):
@@ -463,6 +662,28 @@ class SingleAssignmentLocalProbes(unittest.TestCase):
                 "import subprocess\n"
                 "def invoke(values):\n"
                 "    [command for command in values]\n"
+                "    subprocess.run(command)\n"
+            ),
+        })
+
+    def test_comprehension_targets_do_not_disqualify_outer_assignments(self):
+        self.assert_codes(["P002"], {
+            "same-name-target": (
+                "import subprocess\n"
+                "def invoke(values):\n"
+                "    command = 'git status'\n"
+                "    [command for command in values]\n"
+                "    subprocess.run(command)\n"
+            ),
+        })
+
+    def test_comprehension_named_expression_disqualifies_outer_assignment(self):
+        self.assert_codes([], {
+            "containing-function-write": (
+                "import subprocess\n"
+                "def invoke(values):\n"
+                "    command = 'git status'\n"
+                "    [value for value in values if (command := value)]\n"
                 "    subprocess.run(command)\n"
             ),
         })

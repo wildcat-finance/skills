@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from collections import deque
 import json
 import re
 import sys
@@ -143,6 +144,14 @@ def _position(node: ast.AST) -> tuple[int, int]:
     return (getattr(node, "lineno", 0), getattr(node, "col_offset", 0))
 
 
+def _binding_position(node: ast.AST) -> tuple[int, int]:
+    """Return the point after an assignment's RHS has been evaluated."""
+    return (
+        getattr(node, "end_lineno", getattr(node, "lineno", 0)),
+        getattr(node, "end_col_offset", getattr(node, "col_offset", 0)),
+    )
+
+
 class _FunctionBindings:
     """Eligible direct assignments in one exact function body."""
 
@@ -190,7 +199,7 @@ class _FunctionBindingCollector(ast.NodeVisitor):
                 and isinstance(statement.targets[0], ast.Name)
             ):
                 self.candidates[statement.targets[0].id] = (
-                    _position(statement),
+                    _binding_position(statement),
                     statement.value,
                 )
             elif (
@@ -199,7 +208,7 @@ class _FunctionBindingCollector(ast.NodeVisitor):
                 and statement.value is not None
             ):
                 self.candidates[statement.target.id] = (
-                    _position(statement),
+                    _binding_position(statement),
                     statement.value,
                 )
             self.visit(statement)
@@ -297,6 +306,28 @@ class _FunctionBindingCollector(ast.NodeVisitor):
 
     def visit_Lambda(self, node: ast.Lambda) -> None:
         self._visit_function_header(node)
+
+    def _visit_comprehension_scope(
+        self,
+        node: ast.ListComp | ast.SetComp | ast.DictComp | ast.GeneratorExp,
+    ) -> None:
+        # Comprehension targets belong to the implicit comprehension scope.
+        # The other expressions can still contain a NamedExpr, whose target
+        # Python binds in this containing function and must count as a write.
+        if isinstance(node, ast.DictComp):
+            self.visit(node.key)
+            self.visit(node.value)
+        else:
+            self.visit(node.elt)
+        for generator in node.generators:
+            self.visit(generator.iter)
+            for condition in generator.ifs:
+                self.visit(condition)
+
+    visit_ListComp = _visit_comprehension_scope
+    visit_SetComp = _visit_comprehension_scope
+    visit_DictComp = _visit_comprehension_scope
+    visit_GeneratorExp = _visit_comprehension_scope
 
 
 def _function_bindings(tree: ast.AST) -> dict[ast.AST, _FunctionBindings]:
@@ -410,6 +441,9 @@ class Visitor(ast.NodeVisitor):
         self.direct: set[str] = set()
         self.function_bindings = _function_bindings(tree)
         self.local_bindings: _FunctionBindings | None = None
+        self.credential_names_cache: dict[
+            tuple[_FunctionBindings, str, int], tuple[str, ...]
+        ] = {}
         (
             self.boundary_modules,
             self.boundary_direct,
@@ -548,38 +582,99 @@ class Visitor(ast.NodeVisitor):
         before: tuple[int, int] | None = None,
         seen: frozenset[str] = frozenset(),
         depth: int = 0,
+        resolution_enabled: bool = True,
     ):
-        if isinstance(node, ast.Name):
-            if CREDENTIAL.search(node.id):
-                yield node.id
-                return
-            if (
-                self.local_bindings is None
-                or depth >= LOCAL_RESOLUTION_MAX_DEPTH
-                or node.id in seen
-            ):
-                return
-            assignment = self.local_bindings.preceding(
+        cache_key = None
+        if (
+            resolution_enabled
+            and self.local_bindings is not None
+            and isinstance(node, ast.Name)
+            and not CREDENTIAL.search(node.id)
+            and not seen
+            and depth < LOCAL_RESOLUTION_MAX_DEPTH
+            and node.id not in seen
+            and self.local_bindings.preceding(
                 node.id,
                 before if before is not None else _position(node),
             )
-            if assignment is None:
+            is not None
+        ):
+            cache_key = (self.local_bindings, node.id, depth)
+            cached = self.credential_names_cache.get(cache_key)
+            if cached is not None:
+                yield from cached
                 return
-            position, value = assignment
-            yield from self._credential_names(
-                value,
-                before=position,
-                seen=seen | {node.id},
-                depth=depth + 1,
+
+        found = []
+        expanded: set[tuple[str, int]] = set()
+        worklist = deque([(node, resolution_enabled, before, seen, depth)])
+        while worklist:
+            current, can_resolve, current_before, current_seen, current_depth = (
+                worklist.popleft()
             )
-            return
-        for child in ast.iter_child_nodes(node):
-            yield from self._credential_names(
-                child,
-                before=before,
-                seen=seen,
-                depth=depth,
+            if isinstance(current, ast.Name):
+                if CREDENTIAL.search(current.id):
+                    found.append(current.id)
+                    continue
+                if (
+                    not can_resolve
+                    or self.local_bindings is None
+                    or current_depth >= LOCAL_RESOLUTION_MAX_DEPTH
+                    or current.id in current_seen
+                ):
+                    continue
+                assignment = self.local_bindings.preceding(
+                    current.id,
+                    current_before
+                    if current_before is not None
+                    else _position(current),
+                )
+                if assignment is None:
+                    continue
+                expansion = (current.id, current_depth)
+                if expansion in expanded:
+                    continue
+                expanded.add(expansion)
+                position, value = assignment
+                worklist.append(
+                    (
+                        value,
+                        True,
+                        position,
+                        current_seen | {current.id},
+                        current_depth + 1,
+                    )
+                )
+                continue
+
+            child_resolution = can_resolve and not isinstance(
+                current,
+                (
+                    ast.Lambda,
+                    ast.ListComp,
+                    ast.SetComp,
+                    ast.DictComp,
+                    ast.GeneratorExp,
+                    ast.Attribute,
+                    ast.Subscript,
+                    ast.Starred,
+                ),
             )
+            worklist.extend(
+                (
+                    child,
+                    child_resolution,
+                    current_before,
+                    current_seen,
+                    current_depth,
+                )
+                for child in ast.iter_child_nodes(current)
+            )
+
+        result = tuple(found)
+        if cache_key is not None:
+            self.credential_names_cache[cache_key] = result
+        yield from result
 
     def _add(self, node: ast.AST, code: str, message: str) -> None:
         self.findings.append(Finding(self.path, node.lineno, code, message))
@@ -608,6 +703,12 @@ class Visitor(ast.NodeVisitor):
 
     def _check_p008(self, node: ast.Call) -> None:
         function = self._resolve_local(node.func)
+        original_binding = (
+            node.func.value.id
+            if isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            else node.func.id if isinstance(node.func, ast.Name) else None
+        )
         binding = (
             function.value.id
             if isinstance(function, ast.Attribute)
@@ -621,7 +722,13 @@ class Visitor(ast.NodeVisitor):
         if loader is not None:
             loader = self._resolve_local(loader)
         dynamic_source = self._resolve_local(node.args[0]) if node.args else None
-        for module in sorted(self._boundary_modules(function)):
+        modules = self._boundary_modules(node.func) | self._boundary_modules(function)
+        ambiguous = (
+            len(modules) > 1
+            or original_binding in self.ambiguous_boundary_calls
+            or binding in self.ambiguous_boundary_calls
+        )
+        for module in sorted(modules):
             if module == "yaml":
                 if loader is not None and self._safe_yaml_loader(loader):
                     continue
@@ -630,7 +737,7 @@ class Visitor(ast.NodeVisitor):
                     continue
             message = (
                 P008_AMBIGUOUS_MESSAGE
-                if binding in self.ambiguous_boundary_calls
+                if ambiguous
                 else P008_MESSAGES[module]
             )
             self._add(node, "P008", message)
