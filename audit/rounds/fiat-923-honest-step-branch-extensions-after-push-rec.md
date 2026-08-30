@@ -14,7 +14,7 @@ Elenchus verdict: null
 
 Leads not pursued: none
 
-## Step 2, round 1 -- 2026-08-30T06:06:25Z
+## Step 2, round 1 -- 2026-08-30T07:01:10Z
 
 Audit schema: fiat-audit-round/v2
 
@@ -28,4 +28,4 @@ Elenchus verdict: passed
 | --- | --- | --- | --- | --- |
 | S2-R1-01 | medium | plugins/hexaemeron/tests/test_step_branch_extensions.py | The receipted audit command passed the focused test filename as a second report path to `run_tests.py`; both reproductions exited 2 before discovery and wrote no report. The scoped direct mode now runs this module's 10 tests and delegates secure target binding, exact payload construction, and exclusive creation to the existing reporter. | fixed in this round |
 
-Leads not pursued: none
+Leads not pursued: Four amended-entry census events remain outside issue #923 and were neither repaired nor suppressed: `test_hexctl_checkpoint.HexctlCheckpointTests.test_resource_limits_refuse_before_publish` (macOS `Errno 63`); `test_issue_429_recovery.Issue429RecoveryTests.test_root_audit_is_the_exact_pinned_base_blob` (observed `d0be89aa23e8db7979ac29ff1613e31d59a1ee78d07131147d50eb6268e01d9d`, stale pin `c271237691dc76a95059651f08710411e9d095b12d92b3d5f960182e357bb9fa`); `test_hexctl_checkpoint.HexctlCheckpointTests.test_duplicate_state_and_ledger_keys_refuse` (Python 3.14.6 deep-nesting assertion); and `test_check_runner.CheckMapContractTests.test_every_tracked_path_has_exactly_one_owner` (14 Homologia paths, list SHA-256 `24546ae5296e36960544549c6f43c570dfb09782e30bb9dc9388181b6e139c1b`).

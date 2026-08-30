@@ -672,3 +672,79 @@ contract unchanged.
 **Steps touched.** Step 2
 
 **Still holding.** Step 2: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Tests: Preserve the raw-equality
+failure against Step 2's entry, the passing implementation result, and the
+focused audit-fix report required by the prior amendment. Run every focused,
+generated-runtime, coverage, lint, prose, Horos, dead-code and diff command
+already named for Step 2, with the same zero-exit requirements.
+
+Before the complete Hexaemeron census in this recovery clone, require Git
+object `f0a84ca343b8d9ed477bc1cb4d0dd6a49bbe3897` to resolve as a commit with
+parents `6f9f800c79efed5642f73ca3e2a80786b12ce276` and
+`bec742ac17a5fdd95f0242d2b7ba894828cebf22`, require its connectivity to the
+already present parents, and require all nine
+`test_hexctl_generator_aggregates.IncidentAggregateTests` cases to pass. The
+object was absent from the fresh recovery clone even though the governed
+fixture calls it reachable. Elenchus restored its minimal thin pack from
+another local clone of the same repository without changing a ref, commit,
+tracked byte, controller state or ledger. The imported pack is
+`84ef8ffc1ba056901fe4dcc2712b8a75eee16edf`, 228,031 bytes. An absent or
+disconnected object, a fixture failure, or any source or ref change refuses
+the census.
+
+The exact unfiltered `python3 plugins/hexaemeron/tests/run_tests.py` census
+must discover, assign, start, complete and report exactly 2,000 tests, with all
+twelve shards present, `exact_accounting: true`, `executed_once: true`,
+`fixture_blocked: 0`, zero skips, zero expected failures, zero unexpected
+successes and an empty `scheduler_errors` array. Its manifest digest is
+`76efa451d0b7fb12f32d9cc88cbbf786002fee0cd1e03bb6e681fc04bb1fa41e`;
+its runner SHA-256 is
+`3c83bfaa7f067f00f304eeac64867f4710846caa913d6ce14e6eca7024b5d63f`.
+It may exit 1 with final outer status `test-failure` only when it records
+exactly three failure events and one error event, all four matching this entry
+evidence:
+
+- `test_hexctl_checkpoint.HexctlCheckpointTests.test_resource_limits_refuse_before_publish`
+  errors with macOS `Errno 63` while its unchanged fixture constructs the
+  fifth 200-byte path component below the already-long worktree;
+- `test_issue_429_recovery.Issue429RecoveryTests.test_root_audit_is_the_exact_pinned_base_blob`
+  fails with observed root-audit SHA-256
+  `d0be89aa23e8db7979ac29ff1613e31d59a1ee78d07131147d50eb6268e01d9d`
+  against stale pin
+  `c271237691dc76a95059651f08710411e9d095b12d92b3d5f960182e357bb9fa`;
+- `test_hexctl_checkpoint.HexctlCheckpointTests.test_duplicate_state_and_ledger_keys_refuse`
+  fails only at its final 50,000-level nested-array assertion because the
+  pinned Python 3.14.6 decoder returns the nested list instead of raising the
+  `RecursionError` the unchanged test expects; its duplicate-key and
+  non-finite-number assertions still pass; and
+- `test_check_runner.CheckMapContractTests.test_every_tracked_path_has_exactly_one_owner`
+  fails on the same 14 pre-existing `plugins/homologia/**` paths whose sorted,
+  newline-terminated list has SHA-256
+  `24546ae5296e36960544549c6f43c570dfb09782e30bb9dc9388181b6e139c1b`.
+
+The complete base-scoped checked runner must execute and may return nonzero
+only where it propagates this exact four-event Hexaemeron census; every other
+selected check must succeed. Any additional or changed failure, error, skip,
+missing test, missing shard, incomplete or duplicate execution, scheduler
+fault, fixture block, manifest or runner drift refuses completion. Do not
+repair, suppress or skip any of these four unrelated paths inside issue #923.
+
+**Why.** The sixth amendment mistook the outer runner's incomplete human
+totals for a complete census. The preserved outer machine record actually
+showed `scheduler-error`, 2,000 discovered and assigned tests but only 1,834
+started and completed, with zero-based shard 8 refused. Elenchus reproduced
+the shard failures separately: the aggregate fixture could not read its
+absent historical merge object, while the checkpoint test's deep-nesting
+assumption no longer holds under the repository's unchanged Python 3.14.6
+pin. Restoring only the missing Git evidence made the aggregate fixture pass
+and produced one exact outer run over all 2,000 tests with no scheduler error:
+three failures, one error and zero skips. This replacement records that honest
+entry boundary without broadening Step 2 into unrelated fixture, Python
+compatibility, Homologia ownership, root-audit or macOS path-limit work.
+
+**Steps touched.** Step 2
+
+**Still holding.** Step 2: entry holds; exit holds.
