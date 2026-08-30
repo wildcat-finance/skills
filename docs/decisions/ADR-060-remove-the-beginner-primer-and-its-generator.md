@@ -42,9 +42,12 @@ exists. Drop the three `README.md` links and write nothing in their place.
 Publish no replacement here, and say nothing about one. The beginner entry
 point is left unspoken until the Creator decides what stands in it.
 
-Leave every historical reference alone. Nine studies and runbooks and four
+Leave every historical reference alone. Ten studies and runbooks and four
 audit records from other runs cite the primer as evidence for decisions taken
-at the time; they keep saying what they said.
+at the time; they keep saying what they said. Nine of the ten sit under
+`docs/`. The tenth is
+`plugins/hexaemeron/docs/fiat-author-publisher-separation/runbook.md`, whose
+`.agents/` mirror is byte-identical and so needs no edit of its own.
 
 ## Alternatives
 
