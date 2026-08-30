@@ -1,8 +1,10 @@
 """Focused tests for the report-only dead-code scaffold."""
 
+import contextlib
 import gc
 import hashlib
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -2586,6 +2588,44 @@ class BaselineContractTests(TemporaryRepositoryTestCase):
             },
         )
 
+    def _publish_record(self, mutate=None):
+        """Write the baseline, optionally alter it, then commit it alone."""
+        dead_code.command_baseline(
+            dead_code.argparse.Namespace(directory=str(self.root), mode="write")
+        )
+        target = self.root / ".dead-code" / "baseline.json"
+        document = json.loads(target.read_text(encoding="utf-8"))
+        if mutate is not None:
+            mutate(document)
+            target.write_text(
+                dead_code._render_json_document(document), encoding="utf-8"
+            )
+        git(self.root, "add", ".dead-code/baseline.json")
+        git(self.root, "commit", "--quiet", "-m", "publish baseline")
+        return document
+
+    def _check(self):
+        return dead_code.command_baseline(
+            dead_code.argparse.Namespace(directory=str(self.root), mode="check")
+        )
+
+    def _checked_summary(self):
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            code = self._check()
+        return code, buffer.getvalue()
+
+    def _rev_list_answer(self, answer):
+        """Replace only the publication-commit discovery with a fixed answer."""
+        original = dead_code.run_git
+
+        def fake(root, *arguments, root_fd=None):
+            if arguments[:2] == ("rev-list", "-1"):
+                return answer
+            return original(root, *arguments, root_fd=root_fd)
+
+        return mock.patch.object(dead_code, "run_git", fake)
+
     def test_empty_suppressions_are_canonical(self):
         document, entries = dead_code.parse_suppressions(self._raw([]), self._report())
         self.assertEqual(document["entries"], [])
@@ -2782,7 +2822,7 @@ class BaselineContractTests(TemporaryRepositoryTestCase):
             dead_code.compare_baseline_documents(recorded, wanted)
 
     def test_candidate_count_is_non_gating(self):
-        summary = dead_code._baseline_summary(self._baseline())
+        summary = dead_code._baseline_summary(self._baseline(), "0" * 40, ())
         self.assertIn("1 candidate(s)", summary)
         self.assertIn("candidate count did not gate", summary)
         self.assertIn("added=0 resolved=0 stale_suppressions=0", summary)
@@ -2823,18 +2863,89 @@ class BaselineContractTests(TemporaryRepositoryTestCase):
 
     def test_source_change_after_publication_is_stale(self):
         self._baseline_repository()
-        dead_code.command_baseline(
-            dead_code.argparse.Namespace(directory=str(self.root), mode="write")
-        )
-        git(self.root, "add", ".dead-code/baseline.json")
-        git(self.root, "commit", "--quiet", "-m", "publish baseline")
+        self._publish_record()
+        published = git(self.root, "rev-parse", "HEAD").strip()
         (self.root / "src" / "a.py").write_text("changed = 1" + NL, encoding="utf-8")
         git(self.root, "add", "src/a.py")
         git(self.root, "commit", "--quiet", "-m", "change source")
-        with self.assertRaisesRegex(dead_code.Refusal, "baseline is stale"):
-            dead_code.command_baseline(
-                dead_code.argparse.Namespace(directory=str(self.root), mode="check")
-            )
+        code, summary = self._checked_summary()
+        self.assertEqual(code, 0)
+        self.assertIn(f"published {published}", summary)
+        self.assertIn(
+            "currency  stale; 1 path(s) changed after publication: src/a.py",
+            summary,
+        )
+        self.assertIn("status    matched", summary)
+
+    def test_unmoved_checkout_reports_a_current_baseline(self):
+        self._baseline_repository()
+        self._publish_record()
+        code, summary = self._checked_summary()
+        self.assertEqual(code, 0)
+        self.assertIn(
+            "currency  current; no tracked path changed after publication",
+            summary,
+        )
+
+    def test_currency_line_names_at_most_five_changed_paths(self):
+        self.assertEqual(
+            dead_code._baseline_currency(("a", "b", "c", "d", "e", "f", "g")),
+            "stale; 7 path(s) changed after publication: a, b, c, d, e and 2 more",
+        )
+
+    def test_non_ancestor_source_commit_refuses(self):
+        self._baseline_repository()
+        git(self.root, "checkout", "--quiet", "-b", "side")
+        (self.root / "src" / "b.py").write_text("other = 1" + NL, encoding="utf-8")
+        git(self.root, "add", "src/b.py")
+        git(self.root, "commit", "--quiet", "-m", "side")
+        side = git(self.root, "rev-parse", "HEAD").strip()
+        git(self.root, "checkout", "--quiet", "main")
+        self._publish_record(lambda document: document["tree"].update({"commit": side}))
+        with self.assertRaisesRegex(
+            dead_code.Refusal, "not an ancestor of the checkout"
+        ):
+            self._check()
+
+    def test_recorded_document_drift_refuses(self):
+        self._baseline_repository()
+        self._publish_record(
+            lambda document: document["analysers"][0].update({"version": "0"})
+        )
+        with self.assertRaisesRegex(dead_code.Refusal, "analyser version drift"):
+            self._check()
+
+    def test_publication_commit_changing_another_path_refuses(self):
+        self._baseline_repository()
+        dead_code.command_baseline(
+            dead_code.argparse.Namespace(directory=str(self.root), mode="write")
+        )
+        (self.root / "src" / "a.py").write_text("changed = 1" + NL, encoding="utf-8")
+        git(self.root, "add", ".dead-code/baseline.json", "src/a.py")
+        git(self.root, "commit", "--quiet", "-m", "publish baseline beside source")
+        with self.assertRaisesRegex(
+            dead_code.Refusal, "does not change exactly its owned record"
+        ):
+            self._check()
+
+    def test_record_changed_after_its_publication_commit_refuses(self):
+        self._baseline_repository()
+        fixture = git(self.root, "rev-parse", "HEAD").strip()
+        self._publish_record()
+        with self._rev_list_answer(fixture + NL):
+            with self.assertRaisesRegex(
+                dead_code.Refusal, "differs from the record published by"
+            ):
+                self._check()
+
+    def test_undiscoverable_publication_commit_refuses(self):
+        self._baseline_repository()
+        self._publish_record()
+        with self._rev_list_answer(""):
+            with self.assertRaisesRegex(
+                dead_code.Refusal, "no commit reachable from the checkout published"
+            ):
+                self._check()
 
 
 class ShippedSurfaceTests(unittest.TestCase):

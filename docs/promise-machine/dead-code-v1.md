@@ -37,8 +37,9 @@ not gate any command.
 This two-commit publication is required because a commit cannot contain its
 own object identity. The baseline records the first commit; the second commit
 may change only the baseline record. A later source, schema, suppression or
-documentation change makes the check stale until the same sequence is
-repeated.
+documentation change leaves the record valid but behind the checkout. The
+check names that on its `currency` line and still exits 0; repeat the sequence
+above when the record should describe the current tree.
 
 The writer is confined to `.dead-code/baseline.json`, refuses a dirty tracked
 tree, rejects symlinked output directories and replaces the record atomically.
@@ -71,8 +72,10 @@ source change.
 
 - `modified tracked file(s)`: commit or deliberately discard the named change,
   then rerun. Ignored Fiat state is outside the analysed universe.
-- `baseline ... drift` or `baseline is stale`: review the live report and
-  repeat the two-commit refresh. Do not edit recorded identities by hand.
+- `baseline ... drift`: review the live report and repeat the two-commit
+  refresh. Do not edit recorded identities by hand. A behind-but-valid record
+  is not a refusal: read the `currency` line, which names the publication
+  commit and the paths that changed after it.
 - `unused`, `stale target` or `target does not match`: remove or correct the
   exact suppression, review the resulting candidate, then refresh.
 - analyser `degraded` or version drift: repair or accept the tool environment

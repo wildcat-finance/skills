@@ -78,7 +78,7 @@
     "contract": "dead-code-baseline/v1",
     "documentation": {
       "path": "docs/promise-machine/dead-code-v1.md",
-      "sha256": "ff65defb8d95a04264601865ed2c31cd22501db6aceea672fa7c7fa40960a82c"
+      "sha256": "f2c580c4bbf01d0b08d40cd0ed58b9bfbf5ac6eb598f869d894e88d4a697d732"
     },
     "fixtures": [
       {
@@ -89,7 +89,7 @@
     "promise_id": "promise-machine-dead-code-baseline",
     "runtime": {
       "path": "scripts/dead_code.py",
-      "sha256": "143d45838048ab2f5219f584d2ee00809894af140aa2226a19e14f953edc32c3"
+      "sha256": "3b3b9d9d960a19c1a0795a7b8dba3cf1c5aca1104000955c521d77e34b745052"
     },
     "schema_source": {
       "path": "schemas/dead-code-report-v1.schema.json",
@@ -107,10 +107,17 @@
         "test_baseline_record_cannot_retain_a_repository_candidate",
         "test_failed_analyser_cannot_be_written_to_a_baseline",
         "test_source_change_after_publication_is_stale",
+        "test_unmoved_checkout_reports_a_current_baseline",
+        "test_currency_line_names_at_most_five_changed_paths",
+        "test_non_ancestor_source_commit_refuses",
+        "test_recorded_document_drift_refuses",
+        "test_publication_commit_changing_another_path_refuses",
+        "test_record_changed_after_its_publication_commit_refuses",
+        "test_undiscoverable_publication_commit_refuses",
         "test_write_then_check_uses_two_commit_publication",
         "test_workflow_and_operator_guide_carry_the_exact_four_command_demo"
       ],
-      "sha256": "311d100ae93b013e72cd0af1c6409783507970793b2da863c64a42efe29396db"
+      "sha256": "d91e01982b7dd379560a15692207e9c39494cdc948c945e808c6af9eb7bb4233"
     },
     "transition": "record and verify one report-only static candidate baseline over an exact clean source commit, with only exact current suppressions accepted and no finding count treated as deletion or merge authority"
   },

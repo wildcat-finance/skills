@@ -60,7 +60,8 @@ jobs:
         run: |
           python3 scripts/dead_code.py report
           python3 scripts/dead_code.py report --json
-          python3 scripts/dead_code.py baseline --check
+          python3 scripts/dead_code.py baseline --check > "$RUNNER_TEMP/baseline-check.txt"
+          cat "$RUNNER_TEMP/baseline-check.txt"
           python3 scripts/run_checks.py --scope dead-code
 
       - name: Summarise the report
@@ -68,6 +69,7 @@ jobs:
         run: |
           python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
           import json
+          import os
           from pathlib import Path
 
           baseline = json.loads(
@@ -89,7 +91,13 @@ jobs:
           suppressed = sum(item["suppressed"] for item in baseline["findings"])
           print(f"- suppressed: {suppressed}")
           print("- changes: added=0 resolved=0 stale_suppressions=0")
-          print("- status: matched")
+          captured = Path(
+              os.environ["RUNNER_TEMP"], "baseline-check.txt"
+          ).read_text(encoding="utf-8")
+          for line in captured.splitlines():
+              name, _separator, detail = line.partition(" ")
+              if name in {"currency", "status"}:
+                  print(f"- {name}: {detail.strip()}")
           PY
 
       - name: Record an inconclusive failure
