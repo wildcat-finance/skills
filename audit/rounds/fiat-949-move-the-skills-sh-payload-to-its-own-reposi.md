@@ -14,3 +14,19 @@ Elenchus verdict: guarded
 | S1-R1-02 | low | `scripts/portable_promise_machine.py` | `_checked_output` carried `parent.resolve() != parent`, comparing an already-resolved path against its own resolution. The branch could never be taken, and it read as a symlink guard that was not one. | removed in the same commit |
 
 Leads not pursued: the marker test treats any directory carrying `.agents/skills/promise-machine/runtime/MANIFEST.json` as one this generator wrote, so a directory a person assembled with that path inside it would still be cleared; the manifest is a generated artefact nobody writes by hand, and the alternative is a sentinel file that adds a path with no other purpose. `_package_bytes` reads every source into memory before writing, holding about 21 MB at once; that is bounded by the payload the generator already builds the same way in `expected_files`, and no caller streams it. The generated `README.md` names the source commit but nothing signs it, so a package cannot prove which commit it came from against a hostile publisher; the destination is written only by its own job, and proving publisher authenticity is outside this run and outside ADR-040's boundary. The three lints exit 0 and the runner contract reports 741 of 741, up from the 740 on the step branch by the guard this round adds.
+
+## Step 1, round 2 -- 2026-08-30T06:38:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: generator-output-escape=reviewed; suite-coverage-loss=reviewed; authored-file-loss=reviewed; publish-unverified=not-applicable; stale-destination=not-applicable; workflow-drift=not-applicable; token-scope=not-applicable; broken-install-window=not-applicable
+
+Not checked: the same boundaries as round 1. The five destination concerns remain step 2's, and no `npx skills add` was run against a published repository in this round either, so what the skills CLI does with a generated package is still unestablished here.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: round 1's three leads stand unchanged and for the same reasons. Round 1's fix was re-driven rather than reread, and so were the two guards beside it. Three mutations were driven against the fixed tree and each failed, naming its case: disabling the manifest-marker test failed one case, disabling the symlink test failed two, and disabling the non-directory test failed one. The module was restored byte-for-byte after each and `git status` reports it unmodified. `generator-output-escape` is therefore reviewed against driven failures rather than against a reading. The three lints exit 0 and the runner contract reports 741 of 741.
