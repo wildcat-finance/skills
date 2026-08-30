@@ -36,6 +36,504 @@ def findings(source, name="sample.ts"):
         return phylax.check(path)
 
 
+class SingleAssignmentLocalProbes(unittest.TestCase):
+    def assert_codes(self, expected, specimens):
+        for label, source in specimens.items():
+            with self.subTest(label=label):
+                self.assertEqual(expected, codes(source))
+
+    def test_the_five_observed_misclassifications_are_corrected(self):
+        specimens = {
+            "assigned-p002-command": (
+                "import subprocess\n"
+                "def run():\n"
+                "    command = 'git status'\n"
+                "    subprocess.run(command)\n",
+                ["P002"],
+            ),
+            "assigned-p004-argv": (
+                "import subprocess\n"
+                "def run():\n"
+                "    secret = load()\n"
+                "    argv = ['tool', secret]\n"
+                "    subprocess.run(argv)\n",
+                ["P004"],
+            ),
+            "assigned-literal-eval": (
+                "def run():\n"
+                "    source = '1 + 1'\n"
+                "    return eval(source)\n",
+                [],
+            ),
+            "assigned-safe-loader": (
+                "import yaml\n"
+                "def run(payload):\n"
+                "    loader = yaml.SafeLoader\n"
+                "    return yaml.load(payload, Loader=loader)\n",
+                [],
+            ),
+            "assigned-pickle-callable": (
+                "import pickle\n"
+                "def run(payload):\n"
+                "    decode = pickle.loads\n"
+                "    return decode(payload)\n",
+                ["P008"],
+            ),
+        }
+        for label, (source, expected) in specimens.items():
+            with self.subTest(label=label):
+                self.assertEqual(expected, codes(source))
+
+    def test_subprocess_slots_and_runner_aliases_resolve(self):
+        self.assert_codes(["P002"], {
+            "module-positional": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    subprocess.run(command)\n"
+            ),
+            "module-alias-keyword": (
+                "import subprocess as sp\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    sp.check_call(args=command)\n"
+            ),
+            "direct-positional": (
+                "from subprocess import check_output\n"
+                "def invoke():\n"
+                "    command: str = 'git status'\n"
+                "    check_output(command)\n"
+            ),
+            "direct-alias-keyword-async": (
+                "from subprocess import Popen as spawn\n"
+                "async def invoke():\n"
+                "    command = 'git status'\n"
+                "    spawn(args=command)\n"
+            ),
+        })
+        self.assert_codes(["P004"], {
+            "module-positional": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    secret = load()\n"
+                "    argv = ['tool', secret]\n"
+                "    subprocess.run(argv)\n"
+            ),
+            "module-alias-keyword": (
+                "import subprocess as sp\n"
+                "def invoke():\n"
+                "    auth_token = load()\n"
+                "    argv = ['tool', auth_token]\n"
+                "    sp.call(args=argv)\n"
+            ),
+            "direct-alias-keyword": (
+                "from subprocess import check_output as invoke\n"
+                "def run():\n"
+                "    private_key = load()\n"
+                "    argv = ('tool', private_key)\n"
+                "    invoke(args=argv)\n"
+            ),
+        })
+
+    def test_p004_checks_names_before_substitution(self):
+        sentinel = "assigned-argv-sentinel"
+        result = findings(
+            "import subprocess\n"
+            "def invoke():\n"
+            f"    secret = load('{sentinel}')\n"
+            "    value = secret\n"
+            "    argv = ['tool', value]\n"
+            "    subprocess.run(argv)\n",
+            "sample.py",
+        )
+        self.assertEqual(["P004"], [finding.code for finding in result])
+        self.assertEqual(6, result[0].line)
+        self.assertEqual(
+            "credential-named value `secret` passed in command arguments",
+            result[0].message,
+        )
+        self.assertNotIn(sentinel, str(result[0]))
+        self.assertNotIn(sentinel, json.dumps(result[0].as_dict()))
+
+    def test_p008_callable_and_safe_neighbour_resolution(self):
+        self.assert_codes(["P008"], {
+            "module-callable": (
+                "import pickle\n"
+                "def decode(payload):\n"
+                "    dangerous = pickle.loads\n"
+                "    return dangerous(payload)\n"
+            ),
+            "module-alias-callable": (
+                "import marshal as codec\n"
+                "def decode(stream):\n"
+                "    dangerous = codec.load\n"
+                "    return dangerous(stream)\n"
+            ),
+            "direct-callable": (
+                "from pickle import load as deserialize\n"
+                "def decode(stream):\n"
+                "    dangerous = deserialize\n"
+                "    return dangerous(stream)\n"
+            ),
+            "bare-dynamic-callable": (
+                "def decode(payload):\n"
+                "    dangerous = eval\n"
+                "    return dangerous(payload)\n"
+            ),
+            "unsafe-loader": (
+                "import yaml\n"
+                "def decode(payload):\n"
+                "    loader = yaml.FullLoader\n"
+                "    return yaml.load(payload, Loader=loader)\n"
+            ),
+            "assigned-nonliteral-dynamic-input": (
+                "def decode(payload):\n"
+                "    source = payload\n"
+                "    return eval(source)\n"
+            ),
+        })
+        self.assert_codes([], {
+            "literal-eval": (
+                "def decode():\n"
+                "    source = '1 + 1'\n"
+                "    return eval(source)\n"
+            ),
+            "literal-bytes-direct-alias": (
+                "from builtins import exec as execute\n"
+                "def decode():\n"
+                "    source = b'pass'\n"
+                "    return execute(source)\n"
+            ),
+            "module-safe-loader-keyword": (
+                "import yaml\n"
+                "def decode(payload):\n"
+                "    loader = yaml.SafeLoader\n"
+                "    return yaml.load(payload, Loader=loader)\n"
+            ),
+            "module-csafe-loader-positional": (
+                "import yaml as parser\n"
+                "def decode(payload):\n"
+                "    loader = parser.CSafeLoader\n"
+                "    return parser.load(payload, loader)\n"
+            ),
+            "direct-safe-loader-keyword": (
+                "from yaml import load, SafeLoader as Safe\n"
+                "def decode(payload):\n"
+                "    loader = Safe\n"
+                "    return load(payload, Loader=loader)\n"
+            ),
+            "assigned-argv-list": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    argv = ['git', 'status']\n"
+                "    subprocess.run(argv)\n"
+            ),
+        })
+
+    def test_ambiguous_import_guards_survive_callable_resolution(self):
+        result = findings(
+            "import pickle as codec\n"
+            "import yaml as codec\n"
+            "def decode(payload):\n"
+            "    dangerous = codec.load\n"
+            "    return dangerous(payload)\n",
+            "sample.py",
+        )
+        self.assertEqual(["P008"], [finding.code for finding in result])
+        self.assertEqual(
+            "source-local bindings leave the boundary call family unresolved",
+            result[0].message,
+        )
+
+    def test_each_chain_definition_must_precede_its_rhs_use(self):
+        self.assertEqual(["P002"], codes(
+            "import subprocess\n"
+            "def invoke():\n"
+            "    literal = 'git status'\n"
+            "    command = literal\n"
+            "    subprocess.run(command)\n"
+        ))
+        self.assertEqual([], codes(
+            "import subprocess\n"
+            "def invoke():\n"
+            "    command = later\n"
+            "    later = 'git status'\n"
+            "    subprocess.run(command)\n"
+        ))
+
+    def test_reassignments_and_nonassignment_writes_refuse_resolution(self):
+        self.assert_codes([], {
+            "reassignment": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    command = 'git diff'\n"
+                "    subprocess.run(command)\n"
+            ),
+            "augmented-assignment": (
+                "import subprocess\n"
+                "def invoke(suffix):\n"
+                "    command = 'git'\n"
+                "    command += suffix\n"
+                "    subprocess.run(command)\n"
+            ),
+            "deletion": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    del command\n"
+                "    subprocess.run(command)\n"
+            ),
+            "named-expression": (
+                "import subprocess\n"
+                "def invoke(other):\n"
+                "    command = 'git status'\n"
+                "    consume(command := other)\n"
+                "    subprocess.run(command)\n"
+            ),
+            "unvalued-annotation": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    command: str\n"
+                "    subprocess.run(command)\n"
+            ),
+        })
+
+    def test_compound_statement_bindings_refuse_resolution(self):
+        self.assert_codes([], {
+            "branch-local-assignment": (
+                "import subprocess\n"
+                "def invoke(flag):\n"
+                "    if flag:\n"
+                "        command = 'git status'\n"
+                "    subprocess.run(command)\n"
+            ),
+            "branch-reassignment": (
+                "import subprocess\n"
+                "def invoke(flag):\n"
+                "    command = 'git status'\n"
+                "    if flag:\n"
+                "        command = 'git diff'\n"
+                "    subprocess.run(command)\n"
+            ),
+            "loop-target": (
+                "import subprocess\n"
+                "def invoke(values):\n"
+                "    command = 'git status'\n"
+                "    for command in values:\n"
+                "        pass\n"
+                "    subprocess.run(command)\n"
+            ),
+            "with-target": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    with opened() as command:\n"
+                "        pass\n"
+                "    subprocess.run(command)\n"
+            ),
+            "exception-name": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    try:\n"
+                "        work()\n"
+                "    except Exception as command:\n"
+                "        pass\n"
+                "    subprocess.run(command)\n"
+            ),
+            "match-capture": (
+                "import subprocess\n"
+                "def invoke(value):\n"
+                "    command = 'git status'\n"
+                "    match value:\n"
+                "        case {'command': command}:\n"
+                "            pass\n"
+                "    subprocess.run(command)\n"
+            ),
+        })
+
+    def test_unsupported_targets_definitions_imports_and_declarations_refuse(self):
+        self.assert_codes([], {
+            "chained-targets": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = alias = 'git status'\n"
+                "    subprocess.run(command)\n"
+            ),
+            "destructuring": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command, other = pair()\n"
+                "    subprocess.run(command)\n"
+            ),
+            "attribute": (
+                "import subprocess\n"
+                "def invoke(holder):\n"
+                "    holder.command = 'git status'\n"
+                "    subprocess.run(holder.command)\n"
+            ),
+            "subscript": (
+                "import subprocess\n"
+                "def invoke(values):\n"
+                "    values[0] = 'git status'\n"
+                "    subprocess.run(values[0])\n"
+            ),
+            "parameter": (
+                "import subprocess\n"
+                "def invoke(command):\n"
+                "    subprocess.run(command)\n"
+            ),
+            "import-binding": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    import package as command\n"
+                "    subprocess.run(command)\n"
+            ),
+            "nested-function-name": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    def command():\n"
+                "        pass\n"
+                "    subprocess.run(command)\n"
+            ),
+            "nested-class-name": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = 'git status'\n"
+                "    class command:\n"
+                "        pass\n"
+                "    subprocess.run(command)\n"
+            ),
+            "global-declaration": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    global command\n"
+                "    command = 'git status'\n"
+                "    subprocess.run(command)\n"
+            ),
+            "nonlocal-declaration": (
+                "import subprocess\n"
+                "def outer():\n"
+                "    command = 'git status'\n"
+                "    def invoke():\n"
+                "        nonlocal command\n"
+                "        subprocess.run(command)\n"
+            ),
+        })
+
+    def test_scope_boundaries_refuse_resolution(self):
+        self.assert_codes([], {
+            "module-scope": (
+                "import subprocess\n"
+                "command = 'git status'\n"
+                "def invoke():\n"
+                "    subprocess.run(command)\n"
+            ),
+            "closure": (
+                "import subprocess\n"
+                "def outer():\n"
+                "    command = 'git status'\n"
+                "    def invoke():\n"
+                "        subprocess.run(command)\n"
+            ),
+            "sibling-function": (
+                "import subprocess\n"
+                "def first():\n"
+                "    command = 'git status'\n"
+                "def invoke():\n"
+                "    subprocess.run(command)\n"
+            ),
+            "lambda-closure": (
+                "import subprocess\n"
+                "def outer():\n"
+                "    command = 'git status'\n"
+                "    return lambda: subprocess.run(command)\n"
+            ),
+            "comprehension-closure": (
+                "import subprocess\n"
+                "def outer(values):\n"
+                "    command = 'git status'\n"
+                "    return [subprocess.run(command) for _ in values]\n"
+            ),
+            "comprehension-target": (
+                "import subprocess\n"
+                "def invoke(values):\n"
+                "    [command for command in values]\n"
+                "    subprocess.run(command)\n"
+            ),
+        })
+
+    def test_forward_cycles_and_depth_exhaustion_refuse_resolution(self):
+        self.assert_codes([], {
+            "forward-assignment": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    subprocess.run(command)\n"
+                "    command = 'git status'\n"
+            ),
+            "self-cycle": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    command = command\n"
+                "    subprocess.run(command)\n"
+            ),
+            "two-name-cycle": (
+                "import subprocess\n"
+                "def invoke():\n"
+                "    first = second\n"
+                "    second = first\n"
+                "    subprocess.run(first)\n"
+            ),
+        })
+        limit = phylax.LOCAL_RESOLUTION_MAX_DEPTH
+
+        def chained(alias_count):
+            lines = ["import subprocess", "def invoke():"]
+            lines.append(f"    value_{alias_count} = 'git status'")
+            for index in range(alias_count - 1, -1, -1):
+                lines.append(f"    value_{index} = value_{index + 1}")
+            lines.append("    subprocess.run(value_0)")
+            return "\n".join(lines) + "\n"
+
+        self.assertEqual(["P002"], codes(chained(limit - 1)))
+        self.assertEqual([], codes(chained(limit)))
+
+    def test_sink_line_suppressions_and_fixed_diagnostics_survive_resolution(self):
+        self.assertEqual([], codes(
+            "import subprocess\n"
+            "def invoke():\n"
+            "    command = 'git status'\n"
+            "    subprocess.run(command)  # phylax: allow reviewed wrapper\n"
+        ))
+        self.assertEqual(["P002"], codes(
+            "import subprocess\n"
+            "def invoke():\n"
+            "    command = 'git status'\n"
+            "    subprocess.run(command)  # phylax: allow\n"
+        ))
+        sentinel = "assigned-diagnostic-sentinel"
+        result = findings(
+            "import pickle\n"
+            "def decode():\n"
+            "    dangerous = pickle.loads\n"
+            f"    payload = receive('{sentinel}')\n"
+            "    dangerous(payload)\n",
+            "sample.py",
+        )
+        self.assertEqual(["P008"], [finding.code for finding in result])
+        self.assertEqual(5, result[0].line)
+        self.assertEqual(
+            "pickle deserialization may execute untrusted code",
+            result[0].message,
+        )
+        self.assertNotIn(sentinel, str(result[0]))
+        self.assertNotIn(sentinel, json.dumps(result[0].as_dict()))
+
+
 class UnsafeDeserialization(unittest.TestCase):
     def assert_p008(self, specimens):
         for label, source in specimens.items():

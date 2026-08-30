@@ -40,6 +40,7 @@ BOUNDARY_CALLS = {
     "builtins": frozenset({"eval", "exec"}),
 }
 SAFE_YAML_LOADERS = frozenset({"SafeLoader", "CSafeLoader"})
+LOCAL_RESOLUTION_MAX_DEPTH = 8
 P008_MESSAGES = {
     "pickle": "pickle deserialization may execute untrusted code",
     "marshal": "marshal deserialization accepts untrusted data",
@@ -136,6 +137,174 @@ def _is_dynamic_literal(node: ast.AST) -> bool:
         isinstance(node, ast.Constant)
         and isinstance(node.value, (str, bytes))
     )
+
+
+def _position(node: ast.AST) -> tuple[int, int]:
+    return (getattr(node, "lineno", 0), getattr(node, "col_offset", 0))
+
+
+class _FunctionBindings:
+    """Eligible direct assignments in one exact function body."""
+
+    def __init__(
+        self,
+        assignments: dict[str, tuple[tuple[int, int], ast.AST]],
+    ) -> None:
+        self.assignments = assignments
+
+    def preceding(
+        self,
+        name: str,
+        before: tuple[int, int],
+    ) -> tuple[tuple[int, int], ast.AST] | None:
+        assignment = self.assignments.get(name)
+        if assignment is None or assignment[0] >= before:
+            return None
+        return assignment
+
+
+class _FunctionBindingCollector(ast.NodeVisitor):
+    """Collect one exact function without borrowing bindings from nested scopes."""
+
+    def __init__(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        self.candidates: dict[str, tuple[tuple[int, int], ast.AST]] = {}
+        self.binding_counts: dict[str, int] = {}
+        arguments = node.args
+        for argument in (
+            *arguments.posonlyargs,
+            *arguments.args,
+            *arguments.kwonlyargs,
+        ):
+            self._bind(argument.arg)
+        if arguments.vararg is not None:
+            self._bind(arguments.vararg.arg)
+        if arguments.kwarg is not None:
+            self._bind(arguments.kwarg.arg)
+        for parameter in getattr(node, "type_params", ()):
+            self._bind(parameter.name)
+
+        for statement in node.body:
+            if (
+                isinstance(statement, ast.Assign)
+                and len(statement.targets) == 1
+                and isinstance(statement.targets[0], ast.Name)
+            ):
+                self.candidates[statement.targets[0].id] = (
+                    _position(statement),
+                    statement.value,
+                )
+            elif (
+                isinstance(statement, ast.AnnAssign)
+                and isinstance(statement.target, ast.Name)
+                and statement.value is not None
+            ):
+                self.candidates[statement.target.id] = (
+                    _position(statement),
+                    statement.value,
+                )
+            self.visit(statement)
+        self.bindings = _FunctionBindings({
+            name: candidate
+            for name, candidate in self.candidates.items()
+            if self.binding_counts.get(name) == 1
+        })
+
+    def _bind(self, name: str) -> None:
+        self.binding_counts[name] = self.binding_counts.get(name, 0) + 1
+
+    def visit_Name(self, node: ast.Name) -> None:
+        if isinstance(node.ctx, (ast.Store, ast.Del)):
+            self._bind(node.id)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        for alias in node.names:
+            self._bind(alias.asname or alias.name.split(".", 1)[0])
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        for alias in node.names:
+            if alias.name != "*":
+                self._bind(alias.asname or alias.name)
+
+    def visit_Global(self, node: ast.Global) -> None:
+        for name in node.names:
+            self._bind(name)
+
+    def visit_Nonlocal(self, node: ast.Nonlocal) -> None:
+        for name in node.names:
+            self._bind(name)
+
+    def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+        if node.name:
+            self._bind(node.name)
+        self.generic_visit(node)
+
+    def visit_MatchAs(self, node: ast.MatchAs) -> None:
+        if node.name:
+            self._bind(node.name)
+        if node.pattern is not None:
+            self.visit(node.pattern)
+
+    def visit_MatchStar(self, node: ast.MatchStar) -> None:
+        if node.name:
+            self._bind(node.name)
+
+    def visit_MatchMapping(self, node: ast.MatchMapping) -> None:
+        if node.rest:
+            self._bind(node.rest)
+        self.generic_visit(node)
+
+    def _visit_function_header(
+        self,
+        node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda,
+    ) -> None:
+        arguments = node.args
+        for argument in (
+            *arguments.posonlyargs,
+            *arguments.args,
+            *arguments.kwonlyargs,
+        ):
+            if argument.annotation is not None:
+                self.visit(argument.annotation)
+        if arguments.vararg is not None and arguments.vararg.annotation is not None:
+            self.visit(arguments.vararg.annotation)
+        if arguments.kwarg is not None and arguments.kwarg.annotation is not None:
+            self.visit(arguments.kwarg.annotation)
+        for default in (*arguments.defaults, *arguments.kw_defaults):
+            if default is not None:
+                self.visit(default)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        self._bind(node.name)
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        self._visit_function_header(node)
+        if node.returns is not None:
+            self.visit(node.returns)
+        for parameter in getattr(node, "type_params", ()):
+            self.visit(parameter)
+
+    visit_AsyncFunctionDef = visit_FunctionDef
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        self._bind(node.name)
+        for expression in (
+            *node.decorator_list,
+            *node.bases,
+            *(keyword.value for keyword in node.keywords),
+            *getattr(node, "type_params", ()),
+        ):
+            self.visit(expression)
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        self._visit_function_header(node)
+
+
+def _function_bindings(tree: ast.AST) -> dict[ast.AST, _FunctionBindings]:
+    return {
+        node: _FunctionBindingCollector(node).bindings
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
 
 
 def _boundary_bindings(
@@ -239,6 +408,8 @@ class Visitor(ast.NodeVisitor):
         self.findings: list[Finding] = []
         self.modules: set[str] = set()
         self.direct: set[str] = set()
+        self.function_bindings = _function_bindings(tree)
+        self.local_bindings: _FunctionBindings | None = None
         (
             self.boundary_modules,
             self.boundary_direct,
@@ -246,6 +417,83 @@ class Visitor(ast.NodeVisitor):
             self.safe_yaml_loaders,
             self.ambiguous_boundary_calls,
         ) = _boundary_bindings(tree)
+
+    def _visit_function_header(
+        self,
+        node: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda,
+    ) -> None:
+        arguments = node.args
+        for argument in (
+            *arguments.posonlyargs,
+            *arguments.args,
+            *arguments.kwonlyargs,
+        ):
+            if argument.annotation is not None:
+                self.visit(argument.annotation)
+        if arguments.vararg is not None and arguments.vararg.annotation is not None:
+            self.visit(arguments.vararg.annotation)
+        if arguments.kwarg is not None and arguments.kwarg.annotation is not None:
+            self.visit(arguments.kwarg.annotation)
+        for default in (*arguments.defaults, *arguments.kw_defaults):
+            if default is not None:
+                self.visit(default)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        self._visit_function_header(node)
+        if node.returns is not None:
+            self.visit(node.returns)
+        for parameter in getattr(node, "type_params", ()):
+            self.visit(parameter)
+
+        previous = self.local_bindings
+        self.local_bindings = self.function_bindings[node]
+        try:
+            for statement in node.body:
+                self.visit(statement)
+        finally:
+            self.local_bindings = previous
+
+    visit_AsyncFunctionDef = visit_FunctionDef
+
+    def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        for expression in (
+            *node.decorator_list,
+            *node.bases,
+            *(keyword.value for keyword in node.keywords),
+            *getattr(node, "type_params", ()),
+        ):
+            self.visit(expression)
+        previous = self.local_bindings
+        self.local_bindings = None
+        try:
+            for statement in node.body:
+                self.visit(statement)
+        finally:
+            self.local_bindings = previous
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        self._visit_function_header(node)
+        previous = self.local_bindings
+        self.local_bindings = None
+        try:
+            self.visit(node.body)
+        finally:
+            self.local_bindings = previous
+
+    def _visit_comprehension_scope(self, node: ast.AST) -> None:
+        previous = self.local_bindings
+        self.local_bindings = None
+        try:
+            self.generic_visit(node)
+        finally:
+            self.local_bindings = previous
+
+    visit_ListComp = _visit_comprehension_scope
+    visit_SetComp = _visit_comprehension_scope
+    visit_DictComp = _visit_comprehension_scope
+    visit_GeneratorExp = _visit_comprehension_scope
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -266,6 +514,72 @@ class Visitor(ast.NodeVisitor):
             return (isinstance(base, ast.Name) and base.id in self.modules
                     and func.attr in RUNNERS)
         return isinstance(func, ast.Name) and func.id in self.direct
+
+    def _resolve_local(
+        self,
+        node: ast.AST,
+        *,
+        before: tuple[int, int] | None = None,
+        seen: frozenset[str] = frozenset(),
+        depth: int = 0,
+    ) -> ast.AST:
+        if self.local_bindings is None or not isinstance(node, ast.Name):
+            return node
+        if depth >= LOCAL_RESOLUTION_MAX_DEPTH or node.id in seen:
+            return node
+        assignment = self.local_bindings.preceding(
+            node.id,
+            before if before is not None else _position(node),
+        )
+        if assignment is None:
+            return node
+        position, value = assignment
+        return self._resolve_local(
+            value,
+            before=position,
+            seen=seen | {node.id},
+            depth=depth + 1,
+        )
+
+    def _credential_names(
+        self,
+        node: ast.AST,
+        *,
+        before: tuple[int, int] | None = None,
+        seen: frozenset[str] = frozenset(),
+        depth: int = 0,
+    ):
+        if isinstance(node, ast.Name):
+            if CREDENTIAL.search(node.id):
+                yield node.id
+                return
+            if (
+                self.local_bindings is None
+                or depth >= LOCAL_RESOLUTION_MAX_DEPTH
+                or node.id in seen
+            ):
+                return
+            assignment = self.local_bindings.preceding(
+                node.id,
+                before if before is not None else _position(node),
+            )
+            if assignment is None:
+                return
+            position, value = assignment
+            yield from self._credential_names(
+                value,
+                before=position,
+                seen=seen | {node.id},
+                depth=depth + 1,
+            )
+            return
+        for child in ast.iter_child_nodes(node):
+            yield from self._credential_names(
+                child,
+                before=before,
+                seen=seen,
+                depth=depth,
+            )
 
     def _add(self, node: ast.AST, code: str, message: str) -> None:
         self.findings.append(Finding(self.path, node.lineno, code, message))
@@ -293,22 +607,26 @@ class Visitor(ast.NodeVisitor):
         return isinstance(loader, ast.Name) and loader.id in self.safe_yaml_loaders
 
     def _check_p008(self, node: ast.Call) -> None:
+        function = self._resolve_local(node.func)
         binding = (
-            node.func.value.id
-            if isinstance(node.func, ast.Attribute)
-            and isinstance(node.func.value, ast.Name)
-            else node.func.id if isinstance(node.func, ast.Name) else None
+            function.value.id
+            if isinstance(function, ast.Attribute)
+            and isinstance(function.value, ast.Name)
+            else function.id if isinstance(function, ast.Name) else None
         )
         loader = next(
             (keyword.value for keyword in node.keywords if keyword.arg == "Loader"),
             node.args[1] if len(node.args) > 1 else None,
         )
-        for module in sorted(self._boundary_modules(node.func)):
+        if loader is not None:
+            loader = self._resolve_local(loader)
+        dynamic_source = self._resolve_local(node.args[0]) if node.args else None
+        for module in sorted(self._boundary_modules(function)):
             if module == "yaml":
                 if loader is not None and self._safe_yaml_loader(loader):
                     continue
             elif module == "builtins":
-                if not node.args or _is_dynamic_literal(node.args[0]):
+                if dynamic_source is None or _is_dynamic_literal(dynamic_source):
                     continue
             message = (
                 P008_AMBIGUOUS_MESSAGE
@@ -324,20 +642,24 @@ class Visitor(ast.NodeVisitor):
             for kw in node.keywords:
                 if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
                     self._add(node, "P001", "shell invocation; pass an argument list instead")
-            if node.args and _is_string(node.args[0]):
-                built = " built by formatting" if _is_formatted(node.args[0]) else ""
-                self._add(node, "P002", f"command passed as a string{built}; pass a list")
-            argv = node.args[0] if node.args else next(
+            command = node.args[0] if node.args else next(
                 (kw.value for kw in node.keywords if kw.arg == "args"), None
             )
-            if argv is not None:
-                for value in ast.walk(argv):
-                    if isinstance(value, ast.Name) and CREDENTIAL.search(value.id):
-                        self._add(
-                            node,
-                            "P004",
-                            f"credential-named value `{value.id}` passed in command arguments",
-                        )
+            resolved_command = (
+                self._resolve_local(command) if command is not None else None
+            )
+            if resolved_command is not None and _is_string(resolved_command):
+                built = (
+                    " built by formatting" if _is_formatted(resolved_command) else ""
+                )
+                self._add(node, "P002", f"command passed as a string{built}; pass a list")
+            if command is not None:
+                for name in self._credential_names(command):
+                    self._add(
+                        node,
+                        "P004",
+                        f"credential-named value `{name}` passed in command arguments",
+                    )
 
         if _attr_name(node.func) in WRITERS:
             for arg in node.args + [kw.value for kw in node.keywords]:
