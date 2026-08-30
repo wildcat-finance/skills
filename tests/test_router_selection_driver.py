@@ -227,3 +227,164 @@ class CorpusReadingTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TallyTests(unittest.TestCase):
+    """Binding a packet's answers to a run block, and every way that refuses.
+
+    Every test here restores the corpus, because `tally` writes it in place and
+    a leaked write would leave the repository holding a score no run produced.
+    """
+
+    def setUp(self):
+        self.corpus_path = driver.REPOSITORY_ROOT / driver.CORPUS_PATH
+        self.original = self.corpus_path.read_bytes()
+        self.addCleanup(self.corpus_path.write_bytes, self.original)
+        self.packet = Path(tempfile.mkdtemp(prefix="rs-tally-")) / "packet"
+        self.addCleanup(shutil.rmtree, self.packet.parent, ignore_errors=True)
+        self.manifest = driver.emit(self.packet)
+
+    def answers_from(self, mapping) -> Path:
+        path = self.packet.parent / "answers.json"
+        path.write_text(json.dumps(mapping, indent=1), encoding="utf-8")
+        return path
+
+    def correct_answers(self) -> dict:
+        given = {}
+        for case in corpus()["cases"]:
+            expect = case["expect"]
+            given[case["id"]] = (
+                expect["canonical"]
+                if expect.get("outcome") == "select"
+                else "refuse:ambiguous"
+            )
+        return given
+
+    def test_a_correct_sheet_scores_every_case_and_writes_a_block(self):
+        block = driver.tally(
+            self.packet, self.answers_from(self.correct_answers()), "claude-opus-5", "2026-08-30"
+        )
+        self.assertEqual(block["cases"], len(corpus()["cases"]))
+        self.assertEqual(block["passed"], block["cases"])
+        self.assertEqual(block["failed"], 0)
+        self.assertEqual(block["failures"], [])
+        self.assertEqual(block["corpus_sha256"], self.manifest["corpus_sha256"])
+        self.assertEqual(
+            block["prompt_template_sha256"], self.manifest["prompt_template_sha256"]
+        )
+
+    def test_the_written_block_is_the_one_the_corpus_checker_accepts(self):
+        driver.tally(
+            self.packet, self.answers_from(self.correct_answers()), "claude-opus-5", "2026-08-30"
+        )
+        from tests import test_router_selection as checker
+
+        document = checker.load_corpus()
+        self.assertEqual(
+            checker.run_faults(document["runs"], checker.corpus_digest(document["cases"])),
+            [],
+            "the driver wrote a run block the corpus checker refuses",
+        )
+
+    def test_a_wrong_answer_is_recorded_as_a_named_failure(self):
+        given = self.correct_answers()
+        target = sorted(given)[0]
+        given[target] = "refuse:uncovered"
+        block = driver.tally(
+            self.packet, self.answers_from(given), "claude-opus-5", "2026-08-30"
+        )
+        self.assertEqual(block["failed"], 1)
+        self.assertEqual(block["failures"], [{"case": target, "selected": "refuse:uncovered"}])
+        self.assertEqual(block["passed"] + block["failed"], block["cases"])
+
+    def test_every_byte_but_the_runs_key_survives_the_rewrite(self):
+        before = driver.corpus_without_runs(self.original)
+        driver.tally(
+            self.packet, self.answers_from(self.correct_answers()), "claude-opus-5", "2026-08-30"
+        )
+        after = driver.corpus_without_runs(self.corpus_path.read_bytes())
+        self.assertEqual(before, after, "the tally changed something other than runs")
+
+    def test_a_corpus_edited_after_emit_refuses(self):
+        document = json.loads(self.original.decode("utf-8"))
+        document["cases"][0]["request"] = document["cases"][0]["request"] + " and one more thing"
+        self.corpus_path.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+        with self.assertRaises(driver.DriverError) as caught:
+            driver.tally(
+                self.packet, self.answers_from(self.correct_answers()), "claude-opus-5", "2026-08-30"
+            )
+        self.assertIn("emit a fresh packet", str(caught.exception))
+
+    def test_a_missing_answer_refuses_rather_than_scoring_it(self):
+        given = self.correct_answers()
+        dropped = sorted(given)[0]
+        del given[dropped]
+        with self.assertRaises(driver.DriverError) as caught:
+            driver.tally(
+                self.packet, self.answers_from(given), "claude-opus-5", "2026-08-30"
+            )
+        self.assertIn(dropped, str(caught.exception))
+        self.assertIn("no field", str(caught.exception))
+
+    def test_an_answer_the_packet_did_not_ask_refuses(self):
+        given = self.correct_answers()
+        given["RS-99"] = "horos"
+        with self.assertRaises(driver.DriverError) as caught:
+            driver.tally(
+                self.packet, self.answers_from(given), "claude-opus-5", "2026-08-30"
+            )
+        self.assertIn("RS-99", str(caught.exception))
+
+    def test_an_answer_outside_the_closed_vocabulary_refuses(self):
+        given = self.correct_answers()
+        target = sorted(given)[0]
+        given[target] = "probably horos, but it might be janus"
+        with self.assertRaises(driver.DriverError) as caught:
+            driver.tally(
+                self.packet, self.answers_from(given), "claude-opus-5", "2026-08-30"
+            )
+        self.assertIn(target, str(caught.exception))
+        self.assertIn("canonical skill name", str(caught.exception))
+
+    def test_a_packet_with_no_manifest_refuses(self):
+        (self.packet / driver.MANIFEST_NAME).unlink()
+        with self.assertRaises(driver.DriverError) as caught:
+            driver.tally(
+                self.packet, self.answers_from(self.correct_answers()), "claude-opus-5", "2026-08-30"
+            )
+        self.assertIn(driver.MANIFEST_NAME, str(caught.exception))
+
+    def test_a_manifest_declaring_another_contract_refuses(self):
+        path = self.packet / driver.MANIFEST_NAME
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+        manifest["contract"] = "something-else/v1"
+        path.write_text(json.dumps(manifest, indent=1), encoding="utf-8")
+        with self.assertRaises(driver.DriverError) as caught:
+            driver.tally(
+                self.packet, self.answers_from(self.correct_answers()), "claude-opus-5", "2026-08-30"
+            )
+        self.assertIn(driver.CONTRACT, str(caught.exception))
+
+    def test_a_malformed_date_or_empty_model_refuses(self):
+        sheet = self.answers_from(self.correct_answers())
+        with self.assertRaises(driver.DriverError):
+            driver.tally(self.packet, sheet, "claude-opus-5", "30-08-2026")
+        with self.assertRaises(driver.DriverError):
+            driver.tally(self.packet, sheet, "   ", "2026-08-30")
+
+    def test_an_oversized_answers_file_refuses(self):
+        path = self.packet.parent / "big.json"
+        path.write_text(" " * (driver.MAX_ANSWERS_BYTES + 1), encoding="utf-8")
+        with self.assertRaises(driver.DriverError) as caught:
+            driver.read_answers(path)
+        self.assertIn("larger than", str(caught.exception))
+
+    def test_a_refused_tally_leaves_the_corpus_untouched(self):
+        given = self.correct_answers()
+        del given[sorted(given)[0]]
+        with self.assertRaises(driver.DriverError):
+            driver.tally(self.packet, self.answers_from(given), "claude-opus-5", "2026-08-30")
+        self.assertEqual(
+            self.corpus_path.read_bytes(), self.original,
+            "a refused tally wrote to the corpus",
+        )

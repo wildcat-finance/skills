@@ -47,6 +47,7 @@ CASE_ID = re.compile(r"^RS-\d{2,}$")
 EMITTABLE_CASE_FIELDS = frozenset({"id", "request"})
 
 MAX_ANSWERS_BYTES = 1 << 20
+ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
 class DriverError(Exception):
@@ -152,11 +153,170 @@ def emit(out: Path) -> dict:
     return manifest
 
 
+def load_manifest(packet: Path) -> dict:
+    """The packet's manifest, or a refusal naming the packet.
+
+    Read first, because everything else in a tally is checked against it. A
+    packet with no manifest is a packet `emit` did not finish, and grading
+    against one would score a run over a corpus nobody can name.
+    """
+    raw = _read(packet / MANIFEST_NAME, f"{packet / MANIFEST_NAME}")
+    try:
+        manifest = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise DriverError(f"{packet / MANIFEST_NAME} is not readable JSON: {error}") from error
+    if not isinstance(manifest, dict):
+        raise DriverError(f"{packet / MANIFEST_NAME} is not an object")
+    if manifest.get("contract") != CONTRACT:
+        raise DriverError(
+            f"{packet / MANIFEST_NAME} declares {manifest.get('contract')!r}, not {CONTRACT}"
+        )
+    ids = manifest.get("cases")
+    if not isinstance(ids, list) or not ids or not all(isinstance(i, str) for i in ids):
+        raise DriverError(f"{packet / MANIFEST_NAME} carries no case id list")
+    if len(set(ids)) != len(ids):
+        raise DriverError(f"{packet / MANIFEST_NAME} repeats a case id")
+    for field in ("corpus_sha256", "prompt_template_sha256"):
+        value = manifest.get(field)
+        if not isinstance(value, str) or len(value) != 64:
+            raise DriverError(f"{packet / MANIFEST_NAME} carries no {field}")
+    return manifest
+
+
+def read_answers(path: Path) -> dict:
+    """One answer per case id, bounded and closed.
+
+    The answers file is the only untrusted input the driver takes: it comes
+    back from wherever the contexts ran. Every shape it can be wrong in is a
+    refusal, because a tally that guesses records a score about nothing.
+    """
+    raw = _read(path, str(path))
+    if len(raw) > MAX_ANSWERS_BYTES:
+        raise DriverError(f"{path} is larger than {MAX_ANSWERS_BYTES} bytes")
+    try:
+        answers = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise DriverError(f"{path} is not readable JSON: {error}") from error
+    if not isinstance(answers, dict) or not answers:
+        raise DriverError(f"{path} is not a non-empty object of case id to answer")
+    for cid, answer in answers.items():
+        if not isinstance(cid, str) or not CASE_ID.match(cid):
+            raise DriverError(f"{path}: {cid!r} is not a case id")
+        if not isinstance(answer, str) or not answer.strip():
+            raise DriverError(f"{path}: {cid} carries no answer")
+    return {cid: answer.strip() for cid, answer in answers.items()}
+
+
+def check_answer_vocabulary(answers: dict, path: Path) -> None:
+    """Every answer is a declared canonical name or one of the two refusals.
+
+    Open text here would let a graded context's prose become a recorded score,
+    which is the closed-set rule the corpus checker already holds run blocks to.
+    """
+    allowed = canonical_skill_names() | set(REFUSAL_ANSWERS)
+    for cid in sorted(answers):
+        if answers[cid] not in allowed:
+            raise DriverError(
+                f"{path}: {cid} answered {answers[cid]!r}, which is neither a "
+                f"canonical skill name nor one of {sorted(REFUSAL_ANSWERS)}"
+            )
+
+
+def score(cases: list, answers: dict) -> dict:
+    """Compare each answer with what the corpus expects, and name every miss."""
+    passed, failures = 0, []
+    for case in cases:
+        cid = case["id"]
+        given = answers[cid]
+        expect = case.get("expect") or {}
+        if expect.get("outcome") == "select":
+            ok = given == expect.get("canonical")
+        else:
+            ok = given in REFUSAL_ANSWERS
+        if ok:
+            passed += 1
+        else:
+            failures.append({"case": cid, "selected": given})
+    return {"passed": passed, "failed": len(failures), "failures": failures}
+
+
+def corpus_without_runs(raw: bytes) -> bytes:
+    """The corpus canonicalised with `runs` removed.
+
+    A tally rewrites one key. Comparing this before and after is how a test
+    says every other byte survived, without asserting on a formatter.
+    """
+    document = json.loads(raw.decode("utf-8"))
+    document.pop("runs", None)
+    return json.dumps(document, indent=2, sort_keys=True).encode("utf-8")
+
+
+def tally(packet: Path, answers_path: Path, model: str, date: str) -> dict:
+    """Score a packet's answers and write the run block, or refuse."""
+    if not ISO_DATE.match(date):
+        raise DriverError(f"{date!r} is not a YYYY-MM-DD date")
+    if not model.strip():
+        raise DriverError("the grading model must be named")
+
+    manifest = load_manifest(packet)
+    document = load_corpus()
+    cases = document["cases"]
+
+    current = corpus_digest(cases)
+    if current != manifest["corpus_sha256"]:
+        raise DriverError(
+            f"{CORPUS_PATH} now digests {current}, but the packet was emitted "
+            f"from {manifest['corpus_sha256']}; emit a fresh packet"
+        )
+    template_now = prompt_template_digest()
+    if template_now != manifest["prompt_template_sha256"]:
+        raise DriverError(
+            f"{PROMPT_TEMPLATE_PATH} now digests {template_now}, but the packet "
+            f"was emitted under {manifest['prompt_template_sha256']}"
+        )
+
+    answers = read_answers(answers_path)
+    expected_ids = set(manifest["cases"])
+    given_ids = set(answers)
+    missing = sorted(expected_ids - given_ids)
+    extra = sorted(given_ids - expected_ids)
+    if missing:
+        raise DriverError(
+            f"{answers_path} answers no case {missing}; the schema has no field "
+            f"for an unanswered case, so a tally cannot record one"
+        )
+    if extra:
+        raise DriverError(f"{answers_path} answers {extra}, which the packet did not ask")
+    check_answer_vocabulary(answers, answers_path)
+
+    result = score(cases, answers)
+    block = {
+        "model": model,
+        "date": date,
+        "prompt_template_sha256": manifest["prompt_template_sha256"],
+        "corpus_sha256": manifest["corpus_sha256"],
+        "cases": len(cases),
+        "passed": result["passed"],
+        "failed": result["failed"],
+        "failures": result["failures"],
+    }
+    document["runs"] = [block]
+    (REPOSITORY_ROOT / CORPUS_PATH).write_text(
+        json.dumps(document, indent=2) + "\n", encoding="utf-8"
+    )
+    return block
+
+
 def main(argv: list) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = parser.add_subparsers(dest="command", required=True)
     emitter = sub.add_parser("emit", help="write a grading packet")
     emitter.add_argument("--out", required=True)
+    scorer = sub.add_parser("tally", help="score a packet's answers into a run block")
+    scorer.add_argument("--packet", required=True)
+    scorer.add_argument("--answers", required=True)
+    scorer.add_argument("--model", required=True)
+    scorer.add_argument("--date", required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "emit":
@@ -170,6 +330,12 @@ def main(argv: list) -> int:
                     manifest["corpus_sha256"],
                     manifest["prompt_template_sha256"],
                 )
+            )
+        elif args.command == "tally":
+            block = tally(Path(args.packet), Path(args.answers), args.model, args.date)
+            print(
+                "router-selection run model=%s date=%s cases=%d passed=%d failed=%d"
+                % (block["model"], block["date"], block["cases"], block["passed"], block["failed"])
             )
     except DriverError as error:
         print(f"router_selection_driver: error: {error}", file=sys.stderr)
