@@ -1451,6 +1451,32 @@ class SemanticDiffTests(unittest.TestCase):
                 if digest is not None:
                     self.assertRegex(digest, r"^[0-9a-f]{64}$")
 
+    def test_maximum_precedence_node_fits_the_public_schema(self):
+        high = "a" + "x" * 127
+        low = "b" + "x" * 127
+        records = [
+            ["import", "core", CORE_DIGEST],
+            ["rule", high, ["+", [":", "effect", "x"]], source_binding(0, 1)],
+            ["rule", low, ["+", [":", "effect", "y"]], source_binding(1, 2)],
+            [
+                "precedence",
+                high,
+                low,
+                [":", "actor", "x"],
+                [":", "scope", "x"],
+                [":", "evidence", "x"],
+            ],
+        ]
+        before, _artifacts = compile_records(records)
+        records[-1][3] = [":", "actor", "y"]
+        after, _artifacts = compile_records(records)
+        node = noema.semantic_diff(before, after)["entries"][0]["node"]
+        maximum = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"][
+            "diffEntry"
+        ]["properties"]["node"]["maxLength"]
+        self.assertEqual(len(node), 268)
+        self.assertLessEqual(len(node), maximum)
+
 
 class PathBoundaryTests(unittest.TestCase):
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")

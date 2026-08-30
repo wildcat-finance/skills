@@ -972,7 +972,7 @@
       "additionalProperties": false,
       "required": ["node", "kind", "change", "before", "after"],
       "properties": {
-        "node": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "node": { "type": "string", "minLength": 1, "maxLength": 268 },
         "kind": { "enum": ["effect", "gate", "authority", "scope", "evidence_class", "literal", "transition", "precedence", "source_binding", "definition", "module", "promise", "handoff", "exception"] },
         "change": { "enum": ["added", "removed", "modified"] },
         "before": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
