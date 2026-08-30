@@ -7857,7 +7857,11 @@ def markdown_lines(text: str):
 
 
 def _study_amendment_boundary(
-    text: str, expected: str, subject: str = "study"
+    text: str,
+    expected: str,
+    subject: str = "study",
+    *,
+    shape_already_accepted: bool = False,
 ) -> tuple[int, int, str]:
     """Find the one real final amendment whose byte prefix has the receipt hash."""
     headings = []
@@ -7891,10 +7895,11 @@ def _study_amendment_boundary(
     later = [start for start, _ in headings if start > heading_start]
     if later:
         die("amendment candidate appends more than one final amendment block")
-    try:
-        datetime.date.fromisoformat(date_text)
-    except ValueError:
-        die(f"amendment heading has an invalid calendar date: {date_text}")
+    if not shape_already_accepted:
+        try:
+            datetime.date.fromisoformat(date_text)
+        except ValueError:
+            die(f"amendment heading has an invalid calendar date: {date_text}")
     return boundary, heading_start, date_text
 
 
@@ -7938,6 +7943,37 @@ def _study_amendment_fields(
         if not value:
             die(f"amendment field '{name}' must not be empty")
         values[name] = value
+    return values
+
+
+def _accepted_study_amendment_fields(
+    text: str, heading_start: int
+) -> dict[str, str]:
+    """Extract controller-owned values after Protasis accepted the shape.
+
+    Protasis owns the dated four-field grammar. Fiat needs only the two fields
+    that join the accepted suffix to controller state, so this extractor makes
+    no second cardinality, ordering, name, or non-empty-value verdict.
+    """
+    fields = []
+    for start, end, line, in_fence, _ in markdown_lines(text):
+        if start <= heading_start or in_fence:
+            continue
+        match = ANY_AMENDMENT_FIELD_RE.fullmatch(line)
+        if match:
+            name, _, first_line = line[2:].partition(".**")
+            fields.append((start, end, name, first_line.strip()))
+
+    values = {}
+    for index, (_, end, name, first_line) in enumerate(fields):
+        stop = fields[index + 1][0] if index + 1 < len(fields) else len(text)
+        value = " ".join((first_line + "\n" + text[end:stop]).split())
+        if name in ("Steps touched", "Still holding"):
+            values[name] = value
+
+    missing = [name for name in ("Steps touched", "Still holding") if name not in values]
+    if missing:
+        die("Protasis accepted a study amendment Fiat could not consume", 1)
     return values
 
 
@@ -8171,10 +8207,12 @@ def _replace_runbook_bytes(path: str, data: bytes) -> None:
 def _study_amendment_record(
     state: dict, expected: str, candidate: bytes
 ) -> dict:
-    """Validate captured candidate bytes and return only bounded receipt data."""
+    """Join Protasis-accepted bytes to bounded controller receipt data."""
     text = decoded_source(candidate, "study amendment candidate")
-    boundary, heading_start, date_text = _study_amendment_boundary(text, expected)
-    fields = _study_amendment_fields(text, heading_start)
+    boundary, heading_start, date_text = _study_amendment_boundary(
+        text, expected, shape_already_accepted=True
+    )
+    fields = _accepted_study_amendment_fields(text, heading_start)
     touched, verdicts = _study_step_verdicts(fields, state)
     prefix_bytes = text[:boundary].encode("utf-8")
     amendment_bytes = candidate[len(prefix_bytes):]
@@ -8339,8 +8377,8 @@ def _recover_study_amendment(
             1,
         )
 
-    recovered = _study_amendment_record(state, prior, canonical)
     _check_amended_study(base_dir, canonical)
+    recovered = _study_amendment_record(state, prior, canonical)
     if recovered != amendment:
         die("pending study amendment metadata does not match the candidate bytes", 1)
     existing_history = receipt.get("amendments")
@@ -8397,8 +8435,8 @@ def cmd_amend_study(args) -> None:
                 "restore the receipted bytes or halt the run"
             )
 
-    amendment = _study_amendment_record(state, expected, candidate)
     _check_amended_study(args.dir, candidate)
+    amendment = _study_amendment_record(state, expected, candidate)
     existing_history = receipt.get("amendments")
     if existing_history is not None and not isinstance(existing_history, list):
         die("study receipt amendments history must be an array", 1)

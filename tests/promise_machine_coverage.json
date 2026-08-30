@@ -2926,7 +2926,7 @@
     "contract": "fiat-run-observation-binding/v1",
     "controller": {
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "c6542ed717a31ddfc187417a540c7160c08be1fb60877497c6a706393cf23f14"
+      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21"
     },
     "decision": {
       "path": "docs/decisions/ADR-024-bind-run-observation-prefixes-to-fiat-receipts.md",
@@ -3164,7 +3164,7 @@
         "transition": "deterministic export and single same-ledger restore joined to the canonical Authorises field",
         "unknowns": "outer transport, keys, remote publication, semantic truth of recorded claims and execution of the emitted directive"
       },
-      "sha256": "c6542ed717a31ddfc187417a540c7160c08be1fb60877497c6a706393cf23f14",
+      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-final-integration": {
@@ -3178,7 +3178,7 @@
         "transition": "integration receipt and explicit user authority joined to the canonical Authorises field",
         "unknowns": "carried-forward work and any unrun external check"
       },
-      "sha256": "c6542ed717a31ddfc187417a540c7160c08be1fb60877497c6a706393cf23f14",
+      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-local-retirement": {
@@ -3192,7 +3192,7 @@
         "transition": "local archive, active-state clearing and non-forced clean-worktree retirement joined to the canonical Authorises field",
         "unknowns": "underlying receipt truth, external copies and explicit forced Git adds"
       },
-      "sha256": "c6542ed717a31ddfc187417a540c7160c08be1fb60877497c6a706393cf23f14",
+      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-receipted-delivery": {
@@ -3206,7 +3206,7 @@
         "transition": "single next controller directive joined to the canonical Authorises field",
         "unknowns": "heterogeneous leaf values, unrun checks and receipt assertions not independently proved"
       },
-      "sha256": "c6542ed717a31ddfc187417a540c7160c08be1fb60877497c6a706393cf23f14",
+      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-run-observation-binding": {
@@ -3220,7 +3220,7 @@
         "transition": "non-authorising binding and explicit dependent verification joined to the canonical Authorises field",
         "unknowns": "event truth, completeness, unbound tail and unavailable observer states"
       },
-      "sha256": "c6542ed717a31ddfc187417a540c7160c08be1fb60877497c6a706393cf23f14",
+      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-runbook-amendment": {
@@ -3234,13 +3234,13 @@
         "transition": "canonical runbook replacement, receipt re-pin, exact source carriage and causally bound holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "semantic completeness, replacement correctness, future command success and truth of operator verdicts"
       },
-      "sha256": "c6542ed717a31ddfc187417a540c7160c08be1fb60877497c6a706393cf23f14",
+      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-study-amendment": {
       "bindings": {
         "evidence_classes": "checked structure and recorded operator verdicts joined to the canonical Evidence classes field",
-        "evidence_references": "prefix digest, amendment fields, Protasis exit, write-ahead record, state receipt and ledger event",
+        "evidence_references": "Protasis exit before record construction, prefix digest, accepted controller fields, write-ahead record, state receipt and ledger event",
         "exception": "canonical Exceptions field",
         "promise_id": "coverage key joined to the canonical promise heading and amend:study event",
         "scope": "one append-only final amendment and every unbuilt-step verdict",
@@ -3248,7 +3248,7 @@
         "transition": "canonical study replacement, receipt re-pin and holding-or-blocked result joined to the canonical Authorises field",
         "unknowns": "truth of the correction, correctness of holding verdicts and any unperformed runbook repair"
       },
-      "sha256": "c6542ed717a31ddfc187417a540c7160c08be1fb60877497c6a706393cf23f14",
+      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "fiat-version-resolution": {
@@ -3262,7 +3262,7 @@
         "transition": "newest current receipt carriage into the integration directive and the checked base-candidate merge request joined to the canonical Authorises field",
         "unknowns": "source-level compatibility, check sufficiency, label reservation and later GitHub base movement"
       },
-      "sha256": "c6542ed717a31ddfc187417a540c7160c08be1fb60877497c6a706393cf23f14",
+      "sha256": "e9d1f591914c3da8a11a023639c41ffd218053423ccd446dd5ff6411983a0e21",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     "hermes-baseline-promotion": {

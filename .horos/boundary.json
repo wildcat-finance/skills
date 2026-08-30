@@ -1,8 +1,8 @@
 {
   "counts": {
-    "bytes_binary": 54682880,
+    "bytes_binary": 54685535,
     "bytes_content_addressed": 7844971,
-    "bytes_generated": 21703710,
+    "bytes_generated": 21707076,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
@@ -10,7 +10,7 @@
   },
   "entries": [
     {
-      "bytes": 21636640,
+      "bytes": 21640006,
       "category": "generated",
       "evidence": "linguist-generated for '.agents/skills/promise-machine/runtime/**' in .gitattributes",
       "files": 977,
@@ -53,7 +53,7 @@
       "path": "docs/assets/a-child-or-a-golden-retriever-cover.png"
     },
     {
-      "bytes": 978953,
+      "bytes": 980185,
       "category": "binary",
       "evidence": "file signature png",
       "grade": "hard",
@@ -74,7 +74,7 @@
       "path": "docs/assets/a-child-or-a-golden-retriever-mascot-roles.png"
     },
     {
-      "bytes": 1067330,
+      "bytes": 1068085,
       "category": "binary",
       "evidence": "file signature png",
       "grade": "hard",
@@ -137,7 +137,7 @@
       "path": "docs/pdf/a-child-or-a-golden-retriever-quick-start.pdf"
     },
     {
-      "bytes": 3688570,
+      "bytes": 3689238,
       "category": "binary",
       "evidence": "file signature pdf",
       "grade": "hard",

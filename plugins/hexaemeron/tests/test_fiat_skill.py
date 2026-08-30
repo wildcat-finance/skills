@@ -433,18 +433,17 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("All targets pass or none are recorded", push)
         self.assertIn("performs none of these version reads", push)
 
-    def test_issue_556_generation_records_use_the_declared_relation(self):
+    def test_issue_556_generation_records_retain_the_declared_relation(self):
         ledgers = {
             "fiat-v5.37.1": FIAT_LEDGER.read_text(encoding="utf-8"),
             "protasis-v4.9.0": PROTASIS_LEDGER.read_text(encoding="utf-8"),
         }
         for version, ledger in ledgers.items():
             with self.subTest(version=version):
-                self.assertIn(f"- Current version: `{version}`", ledger)
                 latest = next(
                     line
-                    for line in reversed(ledger.splitlines())
-                    if line.startswith("| `")
+                    for line in ledger.splitlines()
+                    if line.startswith(f"| `{version}`")
                 )
                 self.assertIn(f"| `{version}` | generation |", latest)
                 self.assertIn("skills#556", latest)

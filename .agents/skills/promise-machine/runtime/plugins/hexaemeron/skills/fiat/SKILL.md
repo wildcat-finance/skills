@@ -7,7 +7,7 @@ description: >
   or report a Hexaemeron or Fiat delivery, including /hexaemeron:fiat forms.
   Do not infer activation from a similar task.
 metadata:
-  version: "5.37.1"
+  version: "5.38.1"
 ---
 
 <p align="center">
@@ -425,8 +425,11 @@ The candidate keeps the currently receipted study bytes as its exact prefix.
 Its suffix is one `### Amendment -- YYYY-MM-DD` block with `What changed`,
 `Why`, `Steps touched`, and `Still holding` fields, in that order. The last
 field contains one exact verdict for every current or pending step:
-`Step N: entry holds|broken; exit holds|broken.` The command checks the whole
-candidate with the bundled Protasis checker, copies captured candidate bytes
+`Step N: entry holds|broken; exit holds|broken.` The command first checks the
+exact captured candidate with the bundled Protasis checker. Only after that
+result exits clean does Fiat discover the exact receipted prefix and consume
+the touched-step and holding-verdict values that join the accepted suffix to
+controller state. It then copies the captured candidate bytes
 to the canonical study path through a recoverable write-ahead transaction,
 records the prior, new, and amendment digests with bounded step verdicts in
 state and the ledger, and re-pins the study receipt. A pending transaction
@@ -704,7 +707,7 @@ retire this one, and no `.hexaemeron/` byte belongs in a product commit or push.
 ### fiat-study-amendment
 
 - Promise: A successful `hexctl amend study` establishes that the captured candidate preserved the currently receipted study bytes as its exact prefix, carried one structurally accepted final amendment, passed the bundled Protasis check, and recorded bounded digest and unbuilt-step verdict evidence.
-- Evidence: Scoped bounded reads of the receipted study and candidate, exact prefix SHA-256, deterministic amendment and field parsing, complete unbuilt-step verdict coverage, the bundled checker exit, the write-ahead transaction, canonical artefact digest, state receipt and `amend:study` ledger event.
+- Evidence: Scoped bounded reads of the receipted study and candidate, the bundled checker exit before controller record construction, exact prefix SHA-256, accepted-value extraction, complete unbuilt-step verdict coverage, the write-ahead transaction, canonical artefact digest, state receipt and `amend:study` ledger event.
 - Evidence classes: checked, recorded
 - Boundary: The receipt establishes candidate structure, byte continuity, checker acceptance and recorded operator verdicts; it does not establish that the correction is true, that a holding verdict is correct, or that a broken runbook has been repaired.
 - Authorises: Recoverably replacing the canonical study with the exact checked candidate, re-pinning its receipt, and either continuing to the existing next directive when the current step holds or emitting a durable blocked directive when it does not.
