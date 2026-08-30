@@ -1289,6 +1289,41 @@ class ModuleLockTests(unittest.TestCase):
             else:
                 self.fail("module bound a source-local definition")
 
+    def test_module_cannot_capture_the_source_local_namespace(self):
+        for module_id in ("local", "local.vendor"):
+            with self.subTest(module_id=module_id), tempfile.TemporaryDirectory() as temporary:
+                directory = Path(temporary)
+                module = self.module_bytes(
+                    module_id,
+                    definitions=[
+                        [f"{module_id}.ready", [], [":", "proposition", "yes"]]
+                    ],
+                )
+                write_bytes(directory / f"{module_id}.json", module)
+                records = [
+                    ["import", module_id, sha256(module).hexdigest()],
+                    [
+                        "rule",
+                        "rule.test",
+                        ["+", [f"{module_id}.ready"]],
+                        source_binding(),
+                    ],
+                ]
+                try:
+                    noema.compile_source(
+                        noema._canonical_source(records),
+                        directory,
+                        PROFILE_FIXTURE,
+                        KERNEL_FIXTURE,
+                    )
+                except noema.Refusal as raised:
+                    self.assertEqual(
+                        raised.code,
+                        "NOE-E-REFERENCE.MODULE_NAMESPACE",
+                    )
+                else:
+                    self.fail("module captured the source-local namespace")
+
     @unittest.skipUnless(hasattr(os, "symlink"), "symbolic links are unavailable")
     def test_linked_module_refuses(self):
         with tempfile.TemporaryDirectory() as temporary:

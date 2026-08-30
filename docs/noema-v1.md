@@ -148,7 +148,9 @@ operators and signatures. Imports bind complete module SHA-256 values. Import
 cycles, definition cycles, absent modules, multiple bytes for one identity and
 ambient lookup refuse. A module may use only core forms and symbols/types owned
 by itself or its transitive declared imports; source co-imports and
-source-local definitions or literals do not widen that closure.
+source-local definitions or literals do not widen that closure. Module ids
+`local` and `local.*` refuse because the complete `local.*` namespace belongs
+only to source definitions.
 
 `noema-module/v1` has exactly `schema`, `id`, `imports`, `types`, `signatures`
 and `definitions`. Import entries are `[id,sha256]`; nominal subtype entries are

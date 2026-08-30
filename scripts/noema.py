@@ -787,6 +787,12 @@ def _load_module_value(raw: bytes, expected_id: str, field: str) -> dict[str, ob
     module_id = _identifier(module["id"], f"{field}.id")
     if module_id != expected_id:
         refuse("NOE-E-REFERENCE.MODULE_ID", f"{field}.id", "module bytes carry a different identity")
+    if module_id == "local" or module_id.startswith("local."):
+        refuse(
+            "NOE-E-REFERENCE.MODULE_NAMESPACE",
+            f"{field}.id",
+            "the local namespace is reserved for source definitions",
+        )
     for key, limit in (("imports", MAX_IMPORTS), ("types", MAX_RECORDS), ("signatures", MAX_RECORDS), ("definitions", MAX_RECORDS)):
         if not isinstance(module[key], list) or len(module[key]) > limit:
             refuse("NOE-E-BOUNDS.MODULE", f"{field}.{key}", "module collection exceeds its limit")
