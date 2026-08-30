@@ -12,7 +12,7 @@ description: >-
   and do not use it to record a decision after the fact, which belongs to
   hypomnema.
 metadata:
-  version: "4.9.0"
+  version: "5.9.0"
 ---
 
 <p align="center">
@@ -45,7 +45,9 @@ framework change.
 Its version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md).
 
-**Current state.** The amendment contract fixes a dated block with four fields for a mid-run change, and no study exercises it yet: nothing enumerates whether an appended amendment carries its date or its fields, so the first live use is checked only by the person who writes it.
+**Current state.** Protasis checks the fixed mechanical shape of study items,
+risk registers, study amendments, runbook steps, runbook amendments, and
+optional version relations through one bounded scanner.
 
 ## Refuse these four
 
@@ -326,14 +328,18 @@ The study mode reads items as `## N. Title` headings, 1 to 12, refuses
 silence and a bare none on items 8 through 12, and reads item 5's
 risk-register block against the shape above: S005 when no block names a
 concern, S006 when a line does not split into the three pipe-separated
-fields, S007 when a field is malformed. The runbook mode reads the step
+fields, S007 when a field is malformed. S008 reports a real study amendment
+whose heading is not a calendar date, whose four fields are missing,
+duplicated, reordered, unknown, or empty, or which is not final. A study with
+no amendment and amendment examples inside fences remain unchanged. The
+runbook mode reads the step
 schema above, ends the last baseline step before a real amendment heading and
 reports P005 when a runbook amendment does not carry the dated four-field
 shape and complete replacement clauses below. It reports P006 when a present
 version-relations block is open, misplaced, duplicated, oversized or malformed,
 or when a declared target is also pinned to a concrete token outside that
 block. Codes P000 to P006 and S000 to
-S007 are stable interfaces other
+S008 are stable interfaces other
 tools cite. Deliberate exceptions state a reason:
 `<!-- protasis: allow <why> -->` on the heading line or the line above it.
 Presence and shape are all the parser settles; whether an answer is any good
@@ -383,11 +389,13 @@ clause. The other three amendment fields remain `Why`, `Steps touched` and
 the mechanical check establishes its shape and source bytes, not that the new
 criterion is correct or its command will pass.
 
-The runbook checker treats the first real `### Amendment -- YYYY-MM-DD`
+The shared amendment scanner checks every real study or runbook amendment's
+calendar date, four ordered non-empty fields, and final-section placement.
+Fenced examples are not amendments. Runbook mode additionally checks the
+complete-replacement syntax described above. The runbook checker treats the
+first real `### Amendment -- YYYY-MM-DD`
 heading as the end of the last baseline step, so amendment fields cannot answer
-for a missing step field. It checks each real amendment's calendar date, four
-ordered non-empty fields, final-section placement and complete-replacement
-syntax. Fenced examples are not amendments. Fiat owns exact-prefix continuity,
+for a missing step field. Fiat owns exact-prefix continuity,
 step topology, touched-step verdicts, receipts, recovery and the current-study
 binding; Protasis does not duplicate those controller gates.
 
