@@ -1,8 +1,11 @@
 name: plugins
 
-# This is the required aggregate plugin gate. It has no path filter because a
-# required context must exist on every pull request, and the declared full graph
-# itself decides what complete coverage means.
+# This is the required aggregate plugin gate. The shard matrix has no path
+# filter because a required context must exist on every pull request, and the
+# declared full graph itself decides what complete coverage means. One shard per
+# declared scope runs the committed graph for that scope, so the graph remains
+# the only definition of a check and no command is copied into this file. The
+# `plugins` job below aggregates every shard and is the stable required context.
 
 on:
   push:
@@ -15,9 +18,37 @@ permissions:
   contents: read
 
 jobs:
-  plugins:
+  scope:
+    strategy:
+      fail-fast: false
+      matrix:
+        scope:
+          - alexandria
+          - ariadne
+          - berean
+          - brevitas
+          - ci
+          - dead-code
+          - docs
+          - hermes
+          - hexaemeron
+          - homologia
+          - horos
+          - janus
+          - lazarus
+          - lemma
+          - marketplace
+          - pandects
+          - probitas
+          - promise-machine
+          - repo-lints
+          - root
+          - sapheneia
+          - schemas
+          - synkrisis
+          - tabularium
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -46,13 +77,29 @@ jobs:
           )"
           test "$actual_fingerprint" = "$EXPECTED_GPG_FINGERPRINT"
           gpg --batch --import "$key_path"
-      - name: Complete declared check graph
-        run: python3 scripts/run_checks.py --full --report tmp/checks/plugins.json
+      - name: Declared checks for this scope
+        run: >-
+          python3 scripts/run_checks.py
+          --scope ${{ matrix.scope }}
+          --report tmp/checks/${{ matrix.scope }}.json
       - name: Preserve the bounded check report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: plugin-check-report
-          path: tmp/checks/plugins.json
+          name: plugin-check-report-${{ matrix.scope }}
+          path: tmp/checks/${{ matrix.scope }}.json
           if-no-files-found: error
           retention-days: 14
+
+  plugins:
+    needs: scope
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Every declared scope reached terminal success
+        env:
+          SHARDS: ${{ needs.scope.result }}
+        run: |
+          echo "shard result: $SHARDS"
+          test "$SHARDS" = success
