@@ -366,5 +366,32 @@ class DescendantMergeReceiptCase(HexctlCase):
         self.assertNotIn("@", json.dumps(effective["attribution"]))
 
 
+def run_elenchus_report(argv):
+    """Run this focused module and write through the suite's secure reporter."""
+    if len(argv) != 2 or argv[0] != "--elenchus-report":
+        raise SystemExit(
+            "test_step_branch_extensions.py accepts exactly one "
+            "--elenchus-report PATH"
+        )
+
+    from run_tests import parse_arguments, result_payload, write_report
+
+    _arguments, target = parse_arguments(argv)
+    suite = unittest.defaultTestLoader.loadTestsFromModule(sys.modules[__name__])
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    try:
+        write_report(target, result_payload(result))
+    except OSError:
+        print(
+            "test_step_branch_extensions.py: report write failed",
+            file=sys.stderr,
+        )
+        return 2
+    return 0 if result.wasSuccessful() else 1
+
+
 if __name__ == "__main__":
+    arguments = sys.argv[1:]
+    if "--elenchus-report" in arguments:
+        raise SystemExit(run_elenchus_report(arguments))
     unittest.main()
