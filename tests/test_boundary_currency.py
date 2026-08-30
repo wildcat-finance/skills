@@ -191,6 +191,16 @@ class GuardMutationTests(unittest.TestCase):
             [".horos/boundary.json#counts", "src/schema.py"],
         )
 
+    def test_new_ordinary_records_without_a_refresh_are_count_drift(self):
+        write(self.root, "audit/rounds/run.md", "audit round\n")
+        write(self.root, "audit/rounds/run.synopsis.md", "audit synopsis\n")
+        git(self.root, "add", ".")
+        git(self.root, "commit", "-qm", "audit records")
+        self.assertEqual(
+            drifted_paths(self.root),
+            [".horos/boundary.json#counts"],
+        )
+
     def test_an_entry_the_tree_no_longer_earns_is_named(self):
         path = os.path.join(self.root, horos.BOUNDARY_RELPATH)
         document = json.loads(Path(path).read_text(encoding="utf-8"))
