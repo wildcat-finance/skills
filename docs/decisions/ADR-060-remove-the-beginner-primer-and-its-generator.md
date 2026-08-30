@@ -14,7 +14,7 @@ copies.
 
 That comparison cannot pass anywhere. The test finds its interpreter by
 probing the filesystem, and the repository's workflow installs no image
-libraries, so in CI `find_builder_python()` returns `None`, `setUpClass`
+libraries. So in CI `find_builder_python()` returns `None`, `setUpClass`
 returns early, and every assertion inside it is skipped without running. On a
 developer machine carrying Pillow the rebuild does run and differs: 24,581
 pixels in `a-child-or-a-golden-retriever-whos-who.png` and 28,661 in
@@ -27,10 +27,10 @@ and called the result structurally invisible to the gate meant to catch it.
 The binaries also cost other work. Five PNGs and two PDFs total 10,802,141
 bytes of the Horos boundary. Fiat's `done sync-run` requires every path an
 integration touches to be covered by a check recording exit 0, at
-`plugins/hexaemeron/skills/fiat/scripts/hexctl.py:6820` and `:6855`, so a run
-whose base advance touches `docs/assets/` or `docs/pdf/` cannot receipt its
-integration while the only check over those paths is one that cannot pass. The
-`#936` run halted on exactly those three paths.
+`plugins/hexaemeron/skills/fiat/scripts/hexctl.py:6820` and `:6855`. A run
+whose base advance touches `docs/assets/` or `docs/pdf/` therefore cannot
+receipt its integration while the only check over those paths is one that
+cannot pass. The `#936` run halted on exactly those three paths.
 
 ## Decision
 
