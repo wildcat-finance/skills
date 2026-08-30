@@ -16,6 +16,7 @@ import json
 import os
 import re
 import selectors
+import signal
 import stat
 import subprocess
 import sys
@@ -49,6 +50,7 @@ MAX_COVERAGE_PROCESS_BYTES = 16 * 1024 * 1024
 MAX_COVERAGE_PROCESSES = 4096
 MAX_RUNNER_OUTPUT_BYTES = 32 * 1024 * 1024
 RUNNER_TIMEOUT_SECONDS = 3600
+COVERAGE_DRAIN_SECONDS = 5.0
 CHECK_RUNNER = Path("scripts") / "run_checks.py"
 MONITOR_DIRECTORY = Path("scripts") / "dead_code_monitoring"
 COVERAGE_SCHEMA_ID = "dead-code-coverage/v1"
@@ -1064,6 +1066,29 @@ def _candidate(
     return Finding(analyser_id, path, symbol, evidence, confidence, boundary)
 
 
+def _function_scope_nodes(
+    function: ast.FunctionDef | ast.AsyncFunctionDef,
+) -> Iterable[ast.AST]:
+    """Walk stores in one function scope without entering child scopes."""
+    boundaries = (
+        ast.FunctionDef,
+        ast.AsyncFunctionDef,
+        ast.Lambda,
+        ast.ClassDef,
+        ast.ListComp,
+        ast.SetComp,
+        ast.DictComp,
+        ast.GeneratorExp,
+    )
+    pending = list(reversed(function.body))
+    while pending:
+        node = pending.pop()
+        yield node
+        if isinstance(node, boundaries):
+            continue
+        pending.extend(reversed(list(ast.iter_child_nodes(node))))
+
+
 def _unused_bindings(item: ParsedPython) -> Iterable[Finding]:
     loads = {
         node.id
@@ -1110,12 +1135,19 @@ def _unused_bindings(item: ParsedPython) -> Iterable[Finding]:
             for node in ast.walk(function)
             if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
         }
+        scope_nodes = tuple(_function_scope_nodes(function))
         assignments: dict[str, int] = {}
-        for node in ast.walk(function):
+        external_bindings = {
+            name
+            for declaration in scope_nodes
+            if isinstance(declaration, (ast.Global, ast.Nonlocal))
+            for name in declaration.names
+        }
+        for node in scope_nodes:
             if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
                 assignments.setdefault(node.id, node.lineno)
         for name, line in sorted(assignments.items()):
-            if name in function_loads or name.startswith("_"):
+            if name in function_loads or name in external_bindings or name.startswith("_"):
                 continue
             yield _candidate(
                 item.path,
@@ -1366,7 +1398,13 @@ def _normalise_coverage_events(
         path = item.get("path")
         function = item.get("function")
         line = item.get("line")
-        if not isinstance(path, str) or not isinstance(function, str) or not isinstance(line, int) or line < 1:
+        if (
+            not isinstance(path, str)
+            or not isinstance(function, str)
+            or not isinstance(line, int)
+            or isinstance(line, bool)
+            or line < 1
+        ):
             raise Refusal("coverage line event has an invalid identity")
         validate_repository_path(path, "coverage line path")
         if path in analysed:
@@ -1383,9 +1421,12 @@ def _normalise_coverage_events(
             not isinstance(path, str)
             or not isinstance(function, str)
             or not isinstance(source, int)
+            or isinstance(source, bool)
             or source < 1
             or not isinstance(target, int)
+            or isinstance(target, bool)
             or target < 1
+            or not isinstance(direction, str)
             or direction not in {"left", "right"}
         ):
             raise Refusal("coverage branch event has an invalid identity")
@@ -1410,12 +1451,34 @@ def _normalise_coverage_events(
     )
 
 
+def _coverage_process_complete(status: object) -> bool:
+    if not isinstance(status, dict):
+        raise Refusal("coverage process status is not an object")
+    state = status.get("state")
+    truncated = status.get("truncated")
+    errors = status.get("errors")
+    if (
+        not isinstance(state, str)
+        or state not in {"ran", "degraded"}
+        or not isinstance(truncated, bool)
+        or not isinstance(errors, list)
+        or not all(isinstance(error, str) and error for error in errors)
+    ):
+        raise Refusal("coverage process status is malformed")
+    return state == "ran" and not truncated and not errors
+
+
 def aggregate_coverage(
     plan: dict[str, object],
     run: dict[str, object],
     process_documents: list[tuple[dict[str, object], int]],
     universe: Universe,
 ) -> dict[str, object]:
+    for field in ("map_digest", "requested_scopes", "selected_checks"):
+        if run.get(field) != plan.get(field):
+            raise Refusal(
+                f"checked runner result does not match the preflight plan field {field}"
+            )
     selected = plan.get("selected_checks")
     results = run.get("checks")
     if not isinstance(selected, list) or not isinstance(results, list):
@@ -1424,12 +1487,18 @@ def aggregate_coverage(
     for item in selected:
         if not isinstance(item, dict) or not isinstance(item.get("id"), str):
             raise Refusal("checked runner selected-check record is malformed")
-        planned[item["id"]] = item
+        identifier = item["id"]
+        if not identifier or identifier in planned:
+            raise Refusal("checked runner plan has an empty or repeated check identity")
+        planned[identifier] = item
     terminal: dict[str, dict[str, object]] = {}
     for item in results:
         if not isinstance(item, dict) or not isinstance(item.get("check"), str):
             raise Refusal("checked runner terminal record is malformed")
-        terminal[item["check"]] = item
+        identifier = item["check"]
+        if not identifier or identifier in terminal:
+            raise Refusal("checked runner terminal record has an empty or repeated check identity")
+        terminal[identifier] = item
     if set(terminal) != set(planned):
         raise Refusal("checked runner terminal records do not match its plan")
 
@@ -1476,7 +1545,7 @@ def aggregate_coverage(
             branches,
             set(universe.analysed),
         )
-        if status.get("state") != "ran":
+        if not _coverage_process_complete(status):
             degraded_reasons.add(f"check {check_id} emitted a degraded process record")
         bytes_by_check[check_id] += size
         process_count_by_check[check_id] += 1
@@ -1486,7 +1555,6 @@ def aggregate_coverage(
                 "group": group_id,
                 "pid": process.get("pid"),
                 "parent_pid": process.get("parent_pid"),
-                "argv": process.get("argv"),
                 "lines": lines,
                 "branches": branches,
             }
@@ -1498,7 +1566,6 @@ def aggregate_coverage(
                 "check": check_id,
                 "pid": process.get("pid"),
                 "parent_pid": process.get("parent_pid"),
-                "argv": process.get("argv"),
                 "status": status,
                 "bytes": size,
                 "lines": lines,
@@ -1567,6 +1634,55 @@ def _coverage_environment(root: Path, process_directory: Path, run_id: str) -> d
     return environment
 
 
+def _coverage_survivor_pids(run_id: str) -> list[int]:
+    if len(run_id) != 32 or any(character not in "0123456789abcdef" for character in run_id):
+        raise Refusal("coverage run identity is malformed")
+    try:
+        listing = subprocess.run(
+            ["ps", "axeww", "-o", "pid=,command="],
+            capture_output=True,
+            shell=False,
+            timeout=30,
+        )
+    except (OSError, subprocess.TimeoutExpired) as error:
+        raise Refusal(f"coverage process sweep is unavailable: {error}") from error
+    if listing.returncode != 0 or len(listing.stdout) > MAX_GIT_OUTPUT_BYTES:
+        raise Refusal("coverage process sweep failed or exceeded its output bound")
+    token = f"{COVERAGE_ACTIVE_ENV}={run_id}"
+    pids: list[int] = []
+    for line in listing.stdout.decode("utf-8", "replace").splitlines():
+        stripped = line.strip()
+        if token not in stripped:
+            continue
+        pid_text = stripped.split(None, 1)[0]
+        if pid_text.isdigit() and int(pid_text) != os.getpid():
+            pids.append(int(pid_text))
+    return sorted(set(pids))
+
+
+def _terminate_coverage_processes(run_id: str) -> None:
+    survivors = _coverage_survivor_pids(run_id)
+    for requested_signal in (signal.SIGTERM, signal.SIGKILL):
+        if not survivors:
+            return
+        for pid in survivors:
+            try:
+                os.kill(pid, requested_signal)
+            except OSError:
+                continue
+        deadline = time.monotonic() + COVERAGE_DRAIN_SECONDS
+        while time.monotonic() < deadline:
+            survivors = _coverage_survivor_pids(run_id)
+            if not survivors:
+                return
+            time.sleep(0.05)
+    if survivors:
+        raise Refusal(
+            "coverage process recovery could not drain pid(s): "
+            + ", ".join(str(pid) for pid in survivors)
+        )
+
+
 def command_coverage(arguments: argparse.Namespace) -> int:
     if os.environ.get(COVERAGE_ACTIVE_ENV):
         raise Refusal("coverage wrapper recursion is active in this process")
@@ -1592,19 +1708,37 @@ def command_coverage(arguments: argparse.Namespace) -> int:
         for scope in scopes:
             argv.extend(["--scope", scope])
         argv.extend(["--report", runner_report])
-        _stdout, _stderr, _returncode = run_process(
-            argv,
-            cwd=root,
-            timeout_seconds=RUNNER_TIMEOUT_SECONDS,
-            output_limit=MAX_RUNNER_OUTPUT_BYTES,
-            env=environment,
-        )
+        try:
+            _stdout, _stderr, _returncode = run_process(
+                argv,
+                cwd=root,
+                timeout_seconds=RUNNER_TIMEOUT_SECONDS,
+                output_limit=MAX_RUNNER_OUTPUT_BYTES,
+                env=environment,
+            )
+        except BaseException as error:
+            try:
+                _terminate_coverage_processes(run_id)
+            except Refusal as cleanup_error:
+                if isinstance(error, Refusal):
+                    raise Refusal(f"{error}; {cleanup_error}") from error
+            raise
+        unexpected_survivors = _coverage_survivor_pids(run_id)
+        if unexpected_survivors:
+            _terminate_coverage_processes(run_id)
+            raise Refusal("checked runner returned with monitored processes still active")
         run_raw = read_bounded_regular(
             root / runner_report,
             limit=MAX_COVERAGE_BYTES,
             label=runner_report,
         )
         run = _json_document(run_raw, runner_report)
+        outcome = run.get("outcome")
+        expected_returncode = 0 if outcome == "green" else 1 if outcome == "red" else None
+        if expected_returncode is None or _returncode != expected_returncode:
+            raise Refusal(
+                f"checked runner exit {_returncode} does not match {outcome} outcome"
+            )
         documents = _read_process_documents(process_directory, process_fd, run_id)
         coverage = aggregate_coverage(plan, run, documents, universe)
         atomic_write(root, target, json.dumps(coverage, indent=2, sort_keys=True) + chr(10), root_fd=root_fd)
@@ -1627,6 +1761,28 @@ def _coverage_file(
     document = _json_document(raw, coverage_path)
     if document.get("schema") != COVERAGE_SCHEMA_ID:
         raise Refusal(f"{coverage_path} does not declare {COVERAGE_SCHEMA_ID}")
+    tool = document.get("tool")
+    if (
+        not isinstance(tool, dict)
+        or tool.get("id") != "sys.monitoring"
+        or not isinstance(tool.get("python"), str)
+        or re.fullmatch(r"3\.14\.\d+", tool["python"]) is None
+    ):
+        raise Refusal(f"{coverage_path} does not declare Python 3.14 sys.monitoring")
+    plan = document.get("plan")
+    if not isinstance(plan, dict) or plan.get("schema") != "wildcat.check-plan.v1":
+        raise Refusal(f"{coverage_path} does not declare wildcat.check-plan.v1")
+    map_digest = plan.get("map_digest")
+    requested_scopes = plan.get("requested_scopes")
+    if (
+        not isinstance(map_digest, str)
+        or re.fullmatch(r"[0-9a-f]{64}", map_digest) is None
+        or not isinstance(requested_scopes, list)
+        or not requested_scopes
+        or not all(isinstance(scope, str) and scope for scope in requested_scopes)
+        or len(requested_scopes) != len(set(requested_scopes))
+    ):
+        raise Refusal(f"{coverage_path} carries malformed checked-runner plan identity")
     tree = document.get("tree")
     if not isinstance(tree, dict):
         raise Refusal(f"{coverage_path} omits tree identity")
@@ -1651,7 +1807,15 @@ def _function_targets(item: ParsedPython) -> Iterable[tuple[str, int]]:
             continue
         if node.name in item.retained_names:
             continue
-        yield node.name, node.body[0].lineno
+        body = node.body
+        if (
+            isinstance(body[0], ast.Expr)
+            and isinstance(body[0].value, ast.Constant)
+            and isinstance(body[0].value.value, str)
+        ):
+            body = body[1:]
+        if body:
+            yield node.name, body[0].lineno
 
 
 def _branch_targets(item: ParsedPython) -> Iterable[tuple[int, int, str]]:
@@ -1676,22 +1840,100 @@ def analyse_coverage(
     if not isinstance(status, dict) or not isinstance(checks, list) or not isinstance(processes, list):
         raise Refusal("coverage record omits status, checks or processes")
     records: list[AnalyserRecord] = []
+    check_claims: dict[str, tuple[int, int]] = {}
     for item in checks:
         if not isinstance(item, dict) or not isinstance(item.get("id"), str):
             raise Refusal("coverage check record is malformed")
+        identifier = item["id"]
+        process_count = item.get("processes")
+        byte_count = item.get("bytes")
+        if (
+            not identifier
+            or identifier in check_claims
+            or not isinstance(process_count, int)
+            or isinstance(process_count, bool)
+            or process_count < 0
+            or not isinstance(byte_count, int)
+            or isinstance(byte_count, bool)
+            or byte_count < 0
+        ):
+            raise Refusal("coverage check record has an invalid identity or count")
+        check_claims[identifier] = (process_count, byte_count)
         state = item.get("state")
         mapped = "passed" if state == "passed" else "unavailable" if state == "unavailable" else "failed"
-        size = item.get("bytes")
         records.append(
             AnalyserRecord(
-                item["id"],
+                identifier,
                 "check",
                 mapped,
-                f"runner state {state}; {item.get('processes')} process record(s)",
-                size if isinstance(size, int) and size >= 0 else 0,
+                f"runner state {state}; {process_count} process record(s)",
+                byte_count,
             )
         )
     records.sort(key=lambda item: item.record_id)
+    plan = document.get("plan")
+    selected_checks = plan.get("selected_checks") if isinstance(plan, dict) else None
+    if (
+        not isinstance(selected_checks, list)
+        or not all(isinstance(item, str) and item for item in selected_checks)
+        or len(selected_checks) != len(set(selected_checks))
+        or set(selected_checks) != set(check_claims)
+    ):
+        raise Refusal("coverage plan and check records do not name the same checks")
+
+    observed_lines: set[tuple[str, int]] = set()
+    observed_branches: set[tuple[str, int, int]] = set()
+    actual_counts = {identifier: [0, 0] for identifier in check_claims}
+    incomplete: set[str] = set()
+    analysed_paths = set(universe.analysed)
+    for process in processes:
+        if not isinstance(process, dict):
+            raise Refusal("coverage process aggregate is malformed")
+        check_id = process.get("check")
+        size = process.get("bytes")
+        lines = process.get("lines")
+        branches = process.get("branches")
+        process_status = process.get("status")
+        if (
+            not isinstance(check_id, str)
+            or check_id not in check_claims
+            or not isinstance(size, int)
+            or isinstance(size, bool)
+            or size < 0
+            or not isinstance(lines, list)
+            or not isinstance(branches, list)
+            or not isinstance(process_status, dict)
+        ):
+            raise Refusal("coverage process aggregate omits a valid check, size, status or event list")
+        normal_lines, normal_branches = _normalise_coverage_events(
+            lines,
+            branches,
+            analysed_paths,
+        )
+        if normal_lines != lines or normal_branches != branches:
+            raise Refusal("coverage process events are not canonical for the report universe")
+        actual_counts[check_id][0] += 1
+        actual_counts[check_id][1] += size
+        if not _coverage_process_complete(process_status):
+            incomplete.add(f"process for {check_id} was degraded")
+        observed_lines.update(
+            (line["path"], line["line"])
+            for line in normal_lines
+        )
+        observed_branches.update(
+            (branch["path"], branch["from_line"], branch["to_line"])
+            for branch in normal_branches
+        )
+    for check_id, claimed in check_claims.items():
+        actual = tuple(actual_counts[check_id])
+        if actual != claimed:
+            incomplete.add(
+                f"check {check_id} claimed {claimed[0]} process record(s) and {claimed[1]} bytes; "
+                f"the aggregate carries {actual[0]} and {actual[1]}"
+            )
+        if claimed[0] == 0:
+            incomplete.add(f"check {check_id} carries no process record")
+
     if status.get("state") != "ran":
         return (
             AnalyserStatus(
@@ -1699,6 +1941,17 @@ def analyse_coverage(
                 "degraded",
                 COVERAGE_ANALYSER_VERSION,
                 str(status.get("detail") or "coverage did not complete"),
+                tuple(records),
+            ),
+            (),
+        )
+    if incomplete:
+        return (
+            AnalyserStatus(
+                "coverage",
+                "degraded",
+                COVERAGE_ANALYSER_VERSION,
+                "; ".join(sorted(incomplete)),
                 tuple(records),
             ),
             (),
@@ -1714,39 +1967,6 @@ def analyse_coverage(
             ),
             (),
         )
-
-    observed_lines: set[tuple[str, int]] = set()
-    observed_branches: set[tuple[str, int, int]] = set()
-    for process in processes:
-        if not isinstance(process, dict):
-            raise Refusal("coverage process aggregate is malformed")
-        lines = process.get("lines")
-        branches = process.get("branches")
-        if not isinstance(lines, list) or not isinstance(branches, list):
-            raise Refusal("coverage process aggregate omits lines or branches")
-        process_status = process.get("status")
-        if not isinstance(process_status, dict) or process_status.get("state") != "ran":
-            return (
-                AnalyserStatus(
-                    "coverage",
-                    "degraded",
-                    COVERAGE_ANALYSER_VERSION,
-                    "coverage claimed completion but one process record was degraded",
-                    tuple(records),
-                ),
-                (),
-            )
-        for line in lines:
-            if isinstance(line, dict) and isinstance(line.get("path"), str) and isinstance(line.get("line"), int):
-                observed_lines.add((line["path"], line["line"]))
-        for branch in branches:
-            if (
-                isinstance(branch, dict)
-                and isinstance(branch.get("path"), str)
-                and isinstance(branch.get("from_line"), int)
-                and isinstance(branch.get("to_line"), int)
-            ):
-                observed_branches.add((branch["path"], branch["from_line"], branch["to_line"]))
 
     snapshot = parse_python_snapshot(root, universe)
     if snapshot.degraded:

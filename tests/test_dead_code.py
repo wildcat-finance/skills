@@ -1168,6 +1168,42 @@ class PythonAnalyserTests(TemporaryRepositoryTestCase):
         self.assertTrue(snapshot.degraded)
         self.assertTrue(any(item.state == "skipped" for item in snapshot.records))
 
+    def test_global_assignment_is_not_reported_as_an_unused_local(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "def configure():" + NL
+                    + "    global setting" + NL
+                    + "    setting = 1" + NL
+                )
+            }
+        )
+        self.assertFalse(any(item.symbol == "configure.setting@3" for item in findings))
+
+    def test_nested_assignment_is_not_attributed_to_the_enclosing_function(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "def outer():" + NL
+                    + "    def inner():" + NL
+                    + "        nested = 1" + NL
+                    + "    return inner" + NL
+                )
+            }
+        )
+        self.assertFalse(any(item.symbol == "outer.nested@3" for item in findings))
+
+    def test_comprehension_target_is_not_reported_as_a_function_local(self):
+        _universe, (_status, findings) = self._analyse(
+            {
+                "main.py": (
+                    "def values(items):" + NL
+                    + "    return [1 for item in items]" + NL
+                )
+            }
+        )
+        self.assertFalse(any(item.symbol == "values.item@2" for item in findings))
+
 
 class CoverageAggregationTests(unittest.TestCase):
     def setUp(self):
@@ -1181,6 +1217,7 @@ class CoverageAggregationTests(unittest.TestCase):
             ],
         }
         self.run = {
+            **self.plan,
             "schema": "wildcat.check-run.v1",
             "outcome": "green",
             "checks": [
@@ -1250,6 +1287,30 @@ class CoverageAggregationTests(unittest.TestCase):
             self._aggregate([second, first]),
         )
 
+    def test_public_coverage_does_not_retain_process_argv(self):
+        root_process = self._process(pid=10)
+        first_child = self._process(
+            pid=11,
+            argv=["python3", "child.py", "--token=first-secret"],
+        )
+        second_child = self._process(
+            pid=11,
+            argv=["python3", "child.py", "--token=second-secret"],
+        )
+
+        first = self._aggregate([root_process, first_child])
+        second = self._aggregate([root_process, second_child])
+
+        self.assertTrue(all("argv" not in process for process in first["processes"]))
+        first_child_id = next(
+            process["id"] for process in first["processes"] if process["pid"] == 11
+        )
+        second_child_id = next(
+            process["id"] for process in second["processes"] if process["pid"] == 11
+        )
+        self.assertEqual(first_child_id, second_child_id)
+        self.assertNotIn("first-secret", json.dumps(first))
+
     def test_failed_check_degrades_coverage(self):
         run = {
             **self.run,
@@ -1283,6 +1344,23 @@ class CoverageAggregationTests(unittest.TestCase):
         run = {**self.run, "checks": []}
         with self.assertRaisesRegex(dead_code.Refusal, "do not match"):
             self._aggregate([self._process()], run)
+
+    def test_duplicate_terminal_check_refuses_instead_of_overwriting(self):
+        run = {**self.run, "checks": [*self.run["checks"], *self.run["checks"]]}
+        with self.assertRaisesRegex(dead_code.Refusal, "repeated"):
+            self._aggregate([self._process()], run)
+
+    def test_contradictory_complete_process_status_degrades(self):
+        process = self._process()
+        process["status"]["truncated"] = True
+        report = self._aggregate([process])
+        self.assertEqual(report["status"]["state"], "degraded")
+
+    def test_non_string_process_state_refuses_instead_of_crashing(self):
+        process = self._process()
+        process["status"]["state"] = []
+        with self.assertRaisesRegex(dead_code.Refusal, "process status"):
+            self._aggregate([process])
 
     def test_wrapper_recursion_is_detected_in_declared_argv(self):
         self.assertTrue(
@@ -1320,10 +1398,28 @@ class CoverageAggregationTests(unittest.TestCase):
             str(ROOT / dead_code.MONITOR_DIRECTORY),
         )
 
+    def test_run_map_digest_must_match_the_preflight_plan(self):
+        run = {**self.run, "map_digest": "c" * 64}
+        with self.assertRaisesRegex(dead_code.Refusal, "preflight plan"):
+            self._aggregate([self._process()], run)
+
 
 class MonitoringProbeTests(TemporaryRepositoryTestCase):
     def _free_tool_id(self):
         return next(identifier for identifier in range(6) if sys.monitoring.get_tool(identifier) is None)
+
+    @staticmethod
+    def _release_tool_id(identifier):
+        if sys.monitoring.get_tool(identifier) is None:
+            return
+        sys.monitoring.set_events(identifier, 0)
+        for event in (
+            sys.monitoring.events.LINE,
+            sys.monitoring.events.BRANCH_LEFT,
+            sys.monitoring.events.BRANCH_RIGHT,
+        ):
+            sys.monitoring.register_callback(identifier, event, None)
+        sys.monitoring.free_tool_id(identifier)
 
     def test_probe_restores_its_tool_id_and_event_mask(self):
         output = self.root / "records"
@@ -1347,6 +1443,23 @@ class MonitoringProbeTests(TemporaryRepositoryTestCase):
         self.assertFalse(probe.start())
         probe.close()
         self.assertEqual(sys.monitoring.get_tool(identifier), "fixture-owner")
+
+    def test_probe_does_not_clobber_a_reassigned_tool_id(self):
+        identifier = self._free_tool_id()
+        output = self.root / "records"
+        output.mkdir()
+        probe = dead_code_monitor.MonitoringProbe(output, ROOT, "a" * 32)
+        probe.tool_id = identifier
+        self.assertTrue(probe.start())
+        self._release_tool_id(identifier)
+        sys.monitoring.use_tool_id(identifier, "replacement-owner")
+        self.addCleanup(self._release_tool_id, identifier)
+
+        probe.close()
+
+        self.assertEqual(sys.monitoring.get_tool(identifier), "replacement-owner")
+        document = json.loads(next(output.iterdir()).read_text(encoding="utf-8"))
+        self.assertIn("restore:ownership-changed", document["status"]["errors"])
 
     def test_probe_writes_named_lines_and_branches(self):
         output = self.root / "records"
@@ -1387,6 +1500,71 @@ class MonitoringProbeTests(TemporaryRepositoryTestCase):
         self.assertIs(result, sys.monitoring.DISABLE)
 
 
+class CoverageContainmentTests(unittest.TestCase):
+    @staticmethod
+    def _stop(process):
+        if process.poll() is None:
+            process.kill()
+        process.wait(timeout=5)
+
+    def test_recovery_terminates_a_process_carrying_the_run_identity(self):
+        run_id = "d" * 32
+        environment = dict(os.environ)
+        environment[dead_code.COVERAGE_ACTIVE_ENV] = run_id
+        process = subprocess.Popen(
+            [sys.executable, "-c", "import time; time.sleep(30)"],
+            env=environment,
+            start_new_session=True,
+        )
+        self.addCleanup(self._stop, process)
+        dead_code._terminate_coverage_processes(run_id)
+        process.wait(timeout=5)
+        self.assertIsNotNone(process.returncode)
+
+
+class CoverageCommandTests(TemporaryRepositoryTestCase):
+    def test_green_report_cannot_disagree_with_the_runner_exit(self):
+        build_repository(self.root)
+        universe = dead_code.discover(self.root)
+        plan = {
+            "schema": "wildcat.check-plan.v1",
+            "map_digest": "a" * 64,
+            "requested_scopes": ["dead-code"],
+            "selected_checks": [
+                {"id": "alpha", "argv": [sys.executable, "a.py"], "cwd": "."}
+            ],
+        }
+        run = {
+            **plan,
+            "schema": "wildcat.check-run.v1",
+            "outcome": "green",
+            "checks": [
+                {"check": "alpha", "status": "passed", "duration_seconds": 0.1}
+            ],
+        }
+
+        def failed_runner(*_args, **_kwargs):
+            target = self.root / ".dead-code" / "checks.json"
+            target.write_text(json.dumps(run), encoding="utf-8")
+            return b"", b"runner failed", 1
+
+        arguments = dead_code.argparse.Namespace(
+            directory=str(self.root),
+            scope=["dead-code"],
+            output=".dead-code/coverage.json",
+        )
+        with (
+            mock.patch.object(dead_code, "repository_root", return_value=self.root),
+            mock.patch.object(dead_code, "discover", return_value=universe),
+            mock.patch.object(dead_code, "_runner_plan", return_value=plan),
+            mock.patch.object(dead_code, "run_process", side_effect=failed_runner),
+            mock.patch.object(dead_code, "_coverage_survivor_pids", return_value=[]),
+            mock.patch.dict(os.environ, {dead_code.COVERAGE_ACTIVE_ENV: ""}),
+        ):
+            with self.assertRaisesRegex(dead_code.Refusal, "exit 1.*green"):
+                dead_code.command_coverage(arguments)
+
+
 class CoverageAnalyserTests(TemporaryRepositoryTestCase):
     SOURCE = (
         "def plain(flag):" + NL
@@ -1396,8 +1574,11 @@ class CoverageAnalyserTests(TemporaryRepositoryTestCase):
         + "        return 2" + NL
     )
 
-    def _fixture(self, *, state="ran", branches=None, lines=None):
-        build_repository(self.root, files={"app.py": self.SOURCE})
+    def _fixture(self, *, state="ran", branches=None, lines=None, source=None):
+        build_repository(
+            self.root,
+            files={"app.py": self.SOURCE if source is None else source},
+        )
         universe = dead_code.discover(self.root)
         target = self.root / ".dead-code" / "coverage.json"
         target.parent.mkdir()
@@ -1427,6 +1608,8 @@ class CoverageAnalyserTests(TemporaryRepositoryTestCase):
             ],
             "processes": [
                 {
+                    "check": "alpha",
+                    "bytes": 100,
                     "status": {"state": "ran", "truncated": False, "errors": []},
                     "lines": [] if lines is None else lines,
                     "branches": [] if branches is None else branches,
@@ -1463,6 +1646,44 @@ class CoverageAnalyserTests(TemporaryRepositoryTestCase):
         self.assertNotIn("branch:2->3:body", symbols)
         self.assertIn("branch:2->5:else", symbols)
 
+    def test_observed_function_skips_its_optimised_away_docstring(self):
+        source = (
+            "def documented():" + NL
+            + "    \"\"\"metadata, not an executable body line\"\"\"" + NL
+            + "    return 1" + NL
+        )
+        universe, _target, _document = self._fixture(
+            source=source,
+            lines=[{"path": "app.py", "function": "documented", "line": 3}],
+        )
+
+        status, findings = dead_code.analyse_coverage(
+            self.root, universe, ".dead-code/coverage.json"
+        )
+
+        self.assertEqual(status.state, "ran")
+        self.assertFalse(any(item.symbol.startswith("documented@") for item in findings))
+
+    def test_coverage_tool_identity_is_required(self):
+        universe, target, document = self._fixture()
+        document["tool"]["id"] = "not-sys-monitoring"
+        target.write_text(json.dumps(document), encoding="utf-8")
+
+        with self.assertRaisesRegex(dead_code.Refusal, "sys.monitoring"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
+    def test_coverage_plan_schema_is_required(self):
+        universe, target, document = self._fixture()
+        document["plan"]["schema"] = "unknown-plan"
+        target.write_text(json.dumps(document), encoding="utf-8")
+
+        with self.assertRaisesRegex(dead_code.Refusal, "check-plan"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
     def test_stale_coverage_identity_degrades_without_findings(self):
         universe, target, document = self._fixture()
         document["tree"]["commit"] = "f" * 40
@@ -1477,6 +1698,55 @@ class CoverageAnalyserTests(TemporaryRepositoryTestCase):
         build_repository(self.root, files={"app.py": self.SOURCE})
         with self.assertRaisesRegex(dead_code.Refusal, "requires --coverage"):
             dead_code.analyse_coverage(self.root, dead_code.discover(self.root), None)
+
+    def test_claimed_complete_without_process_aggregate_degrades(self):
+        universe, target, document = self._fixture()
+        document["checks"][0]["processes"] = 1
+        document["processes"] = []
+        target.write_text(json.dumps(document), encoding="utf-8")
+        status, findings = dead_code.analyse_coverage(
+            self.root, universe, ".dead-code/coverage.json"
+        )
+        self.assertEqual(status.state, "degraded")
+        self.assertEqual(findings, ())
+
+    def test_malformed_line_event_refuses_instead_of_implying_absence(self):
+        universe, target, document = self._fixture(
+            lines=[{"path": "app.py", "function": "plain", "line": "two"}]
+        )
+        target.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(dead_code.Refusal, "line event"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
+    def test_boolean_line_identity_refuses_instead_of_aliasing_line_one(self):
+        universe, target, document = self._fixture(
+            lines=[{"path": "app.py", "function": "plain", "line": True}]
+        )
+        target.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(dead_code.Refusal, "line event"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
+
+    def test_non_string_branch_direction_refuses_instead_of_crashing(self):
+        universe, target, document = self._fixture(
+            branches=[
+                {
+                    "path": "app.py",
+                    "function": "plain",
+                    "from_line": 2,
+                    "to_line": 3,
+                    "direction": [],
+                }
+            ]
+        )
+        target.write_text(json.dumps(document), encoding="utf-8")
+        with self.assertRaisesRegex(dead_code.Refusal, "branch event"):
+            dead_code.analyse_coverage(
+                self.root, universe, ".dead-code/coverage.json"
+            )
 
 
 class ShippedSurfaceTests(unittest.TestCase):
