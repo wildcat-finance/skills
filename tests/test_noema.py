@@ -404,6 +404,7 @@ class NoemaScaffoldTests(unittest.TestCase):
         ]["properties"]
         self.assertEqual(record["shadow"], {"const": True})
         self.assertEqual(record["unsupported_remainders"]["minimum"], 1)
+        self.assertEqual(record["artifact_inventory_sha256"], {"$ref": "#/$defs/sha256"})
 
     def test_schema_closes_graph_tuple_shapes(self):
         definitions = json.loads(SCHEMA.read_text(encoding="utf-8"))["$defs"]
@@ -4654,6 +4655,46 @@ class SpecimenRoundTripTests(unittest.TestCase):
             actual = {path.name for path in specimen_directory(name).iterdir()}
             self.assertEqual(actual, inputs | set(noema.SPECIMEN_OUTPUTS))
 
+    def test_specimen_artifact_inventory_digest_matches_the_closed_tree(self):
+        corpus = read_json(CORPUS_MANIFEST)
+        for committed in corpus["specimens"]:
+            directory = specimen_directory(committed["id"])
+            build = read_json(directory / "build.json")
+            plan = noema._mutation_plan(
+                read_json(directory / "mutation-plan.json"),
+                committed["id"],
+            )
+            paths = noema._specimen_artifact_paths(build, plan)
+            inventory = noema._closed_specimen_inventory(
+                directory,
+                committed["id"],
+                paths,
+            )
+            self.assertEqual(
+                noema._value_sha256(inventory),
+                committed["artifact_inventory_sha256"],
+            )
+
+    def test_extra_specimen_root_member_refuses(self):
+        with copied_corpus() as root:
+            (specimen_directory("brevitas", root) / "undeclared.txt").write_bytes(
+                b"unbound payload"
+            )
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-REFERENCE.EXTRA_MEMBER")
+
+    def test_extra_module_or_mutation_member_refuses(self):
+        for relative in ("modules/extra.json", "mutations/extra.noe"):
+            with self.subTest(relative=relative), copied_corpus() as root:
+                (specimen_directory("brevitas", root) / relative).write_bytes(b"extra")
+                with self.assertRaises(noema.Refusal) as raised:
+                    noema.verify_specimen_corpus(root / "manifest.json")
+                self.assertEqual(
+                    raised.exception.code,
+                    "NOE-E-REFERENCE.EXTRA_MEMBER",
+                )
+
     def test_unreachable_hostile_literals_remain_out_of_the_operation_slice(self):
         directory = specimen_directory("brevitas")
         manifest = read_json(directory / "manifest.json")
@@ -4692,6 +4733,19 @@ class MutationTests(unittest.TestCase):
         for planned, _outcome in mutation_index().values():
             suffix = ".json" if planned["kind"] == "profile" else ".noe"
             self.assertEqual(planned["artifact"], f"mutations/{planned['id']}{suffix}")
+
+    def test_refused_mutation_bytes_are_bound_even_when_the_outcome_is_unchanged(self):
+        with copied_corpus() as root:
+            path = specimen_directory("sapheneia", root) / (
+                "mutations/sapheneia.unknown-opcode.noe"
+            )
+            original = path.read_bytes()
+            changed = original.replace(b'"zap"', b'"zip"')
+            self.assertNotEqual(changed, original)
+            path.write_bytes(changed)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.SPECIMEN")
 
     def test_changed_mutations_change_both_graph_and_observation(self):
         for _planned, outcome in mutation_index().values():

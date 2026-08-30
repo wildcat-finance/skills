@@ -497,7 +497,7 @@
         "kernel_sha256", "full_projection_sha256", "manifest_sha256",
         "projection_sha256", "literals_sha256", "definitions_sha256",
         "source_spans_sha256", "questions_sha256", "answers_sha256",
-        "mutation_plan_sha256", "mutations_sha256", "mapped_spans",
+        "mutation_plan_sha256", "mutations_sha256", "artifact_inventory_sha256", "mapped_spans",
         "unsupported_remainders", "questions", "mutations", "shadow"
       ],
       "properties": {
@@ -520,6 +520,7 @@
         "answers_sha256": { "$ref": "#/$defs/sha256" },
         "mutation_plan_sha256": { "$ref": "#/$defs/sha256" },
         "mutations_sha256": { "$ref": "#/$defs/sha256" },
+        "artifact_inventory_sha256": { "$ref": "#/$defs/sha256" },
         "mapped_spans": { "type": "integer", "minimum": 1, "maximum": 32768 },
         "unsupported_remainders": { "type": "integer", "minimum": 1, "maximum": 32768 },
         "questions": { "type": "integer", "minimum": 1, "maximum": 256 },

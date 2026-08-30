@@ -314,6 +314,11 @@ operation slice and manifest, literal evidence, policy answers, source-span map
 and mutation results. The top manifest records a separate digest for every one
 of those objects; source, canonical graph, full projection, slice, literals,
 kernel and reachable definitions cannot alias one identity.
+It also binds the digest of a sorted path, byte-count and SHA-256 inventory for
+every specimen input and generated output. The specimen root and its `modules`
+and `mutations` directories are closed to that derived inventory: a changed
+mutation artifact, missing member, extra member, nested directory or link
+refuses even when the observed mutation result would otherwise be unchanged.
 
 `noema-source-identity/v1` names one repository-relative Markdown path, exact
 byte count and SHA-256, and governs its complete byte range. Every rule source
@@ -479,6 +484,8 @@ Version 1 applies every limit before returning a partial graph or result:
 | one selection, policy or transition truth pass | 65,536 expanded nodes |
 | policy requirement pairs | 65,536 |
 | one finite quantifier set | 4,096 members |
+| one specimen artifact inventory | 16,384 files |
+| one specimen artifact inventory | 1,048,576 bytes |
 | one derived output | 1,048,576 bytes |
 
 The graph-node count includes source records, term nodes, each embedded module

@@ -160,6 +160,17 @@ SPECIMEN_OUTPUTS = frozenset(
         "source-spans.json",
     }
 )
+SPECIMEN_INPUT_LEAVES = frozenset(
+    {
+        "kernel.noe",
+        "mutation-plan.json",
+        "profile.json",
+        "questions.json",
+        "selection.json",
+        "source.json",
+        "source.noe",
+    }
+)
 SPECIMEN_SOURCE_PATHS = {
     "brevitas": "plugins/brevitas/skills/brevitas/SKILL.md",
     "fiat": "plugins/hexaemeron/skills/fiat/SKILL.md",
@@ -5560,6 +5571,124 @@ def _validate_answer_set(
     return document
 
 
+def _specimen_artifact_paths(
+    build: dict[str, object],
+    plan: dict[str, object],
+) -> set[str]:
+    paths = set(SPECIMEN_INPUT_LEAVES | SPECIMEN_OUTPUTS)
+    lock = build["lock"]
+    assert isinstance(lock, dict)
+    modules = lock["modules"]
+    assert isinstance(modules, list)
+    for module in modules:
+        assert isinstance(module, dict)
+        module_id = _identifier(module["id"], "specimen.inventory.module")
+        paths.add(f"modules/{module_id}.json")
+    mutations = plan["mutations"]
+    assert isinstance(mutations, list)
+    for index, mutation in enumerate(mutations):
+        assert isinstance(mutation, dict)
+        paths.add(
+            _relative_path(
+                mutation["artifact"],
+                f"specimen.inventory.mutations[{index}]",
+            )
+        )
+    return paths
+
+
+def _specimen_inventory(
+    payloads: dict[str, bytes],
+    field: str,
+) -> list[dict[str, object]]:
+    if not payloads or len(payloads) > MAX_RECORDS:
+        refuse(
+            "NOE-E-BOUNDS.ARTIFACTS",
+            field,
+            "specimen artifact count is outside its limit",
+        )
+    inventory: list[dict[str, object]] = []
+    total = 0
+    for path in sorted(payloads):
+        _relative_path(path, f"{field}.path")
+        raw = payloads[path]
+        total += len(raw)
+        if len(raw) > MAX_INPUT_BYTES or total > MAX_TOTAL_MEMBER_BYTES:
+            refuse(
+                "NOE-E-BOUNDS.ARTIFACTS",
+                field,
+                "specimen artifacts exceed their byte limits",
+            )
+        inventory.append(
+            {
+                "path": path,
+                "bytes": len(raw),
+                "sha256": sha256(raw).hexdigest(),
+            }
+        )
+    return inventory
+
+
+def _closed_specimen_inventory(
+    directory: Path,
+    specimen: str,
+    paths: set[str],
+) -> list[dict[str, object]]:
+    field = f"specimen.{specimen}.artifact_inventory"
+    root_files: set[str] = set()
+    children: dict[str, set[str]] = {}
+    for path in paths:
+        parts = PurePosixPath(path).parts
+        if len(parts) == 1:
+            root_files.add(parts[0])
+        elif len(parts) == 2 and parts[0] in {"modules", "mutations"}:
+            children.setdefault(parts[0], set()).add(parts[1])
+        else:
+            refuse(
+                "NOE-E-PATH.SPECIMEN",
+                field,
+                "specimen artifacts must be root leaves or one-level module and mutation leaves",
+            )
+    try:
+        root_status = directory.lstat()
+        root_names = sorted(entry.name for entry in os.scandir(directory))
+    except OSError:
+        refuse("NOE-E-IO.READ", field, "specimen directory cannot be inspected")
+    if not stat.S_ISDIR(root_status.st_mode) or stat.S_ISLNK(root_status.st_mode):
+        refuse("NOE-E-PATH.DIRECTORY", field, "specimen root must be one real directory")
+    expected_root = sorted(root_files | set(children))
+    if root_names != expected_root:
+        refuse(
+            "NOE-E-REFERENCE.EXTRA_MEMBER",
+            field,
+            "specimen root differs from its closed artifact inventory",
+        )
+    for child, expected_names in sorted(children.items()):
+        child_path = directory / child
+        try:
+            child_status = child_path.lstat()
+            actual_names = sorted(entry.name for entry in os.scandir(child_path))
+        except OSError:
+            refuse("NOE-E-IO.READ", f"{field}.{child}", "artifact directory cannot be inspected")
+        if not stat.S_ISDIR(child_status.st_mode) or stat.S_ISLNK(child_status.st_mode):
+            refuse(
+                "NOE-E-PATH.DIRECTORY",
+                f"{field}.{child}",
+                "artifact collection must be one real directory",
+            )
+        if actual_names != sorted(expected_names):
+            refuse(
+                "NOE-E-REFERENCE.EXTRA_MEMBER",
+                f"{field}.{child}",
+                "artifact collection differs from its closed inventory",
+            )
+    payloads = {
+        path: _read_confined(directory, path, f"{field}.{path}", MAX_INPUT_BYTES)
+        for path in paths
+    }
+    return _specimen_inventory(payloads, field)
+
+
 def _derive_specimen(
     directory: Path,
     repository_root: Path,
@@ -5597,7 +5726,7 @@ def _derive_specimen(
     full_projection = project_build(build, profile, profile_digest)
     if recover_projection(full_projection, profile) != graph:
         refuse("NOE-E-DIGEST.RECOVERY", "specimen.full_projection", "full projection did not recover the graph")
-    selection_value, _selection_raw = _read_confined_json(
+    selection_value, selection_raw = _read_confined_json(
         directory, "selection.json", "specimen.selection"
     )
     selection = _validate_selection(selection_value, "specimen.selection")
@@ -5610,7 +5739,7 @@ def _derive_specimen(
     _validate_slice_projection(projection, manifest, profile)
     spans = _source_span_document(identity, bound_source, graph)
     literals = _literal_set(specimen, graph)
-    question_value, _question_raw = _read_confined_json(
+    question_value, question_raw = _read_confined_json(
         directory, "questions.json", "specimen.questions"
     )
     questions = _question_set(question_value, specimen)
@@ -5641,6 +5770,34 @@ def _derive_specimen(
         "projection.json": _canonical_json(projection),
         "source-spans.json": _canonical_json(spans),
     }
+    artifact_paths = _specimen_artifact_paths(build, plan)
+    artifact_payloads = {
+        "kernel.noe": artifacts["kernel"],
+        "mutation-plan.json": plan_raw,
+        "profile.json": artifacts["profile"],
+        "questions.json": question_raw,
+        "selection.json": selection_raw,
+        "source.json": identity_raw,
+        "source.noe": source_raw,
+        **outputs,
+    }
+    for path in sorted(artifact_paths - set(artifact_payloads)):
+        artifact_payloads[path] = _read_confined(
+            directory,
+            path,
+            f"specimen.{specimen}.artifact_inventory.{path}",
+            MAX_INPUT_BYTES,
+        )
+    if set(artifact_payloads) != artifact_paths:
+        refuse(
+            "NOE-E-REFERENCE.ARTIFACT_INVENTORY",
+            f"specimen.{specimen}",
+            "derived specimen artifact inventory is incomplete",
+        )
+    artifact_inventory = _specimen_inventory(
+        artifact_payloads,
+        f"specimen.{specimen}.artifact_inventory",
+    )
     mapped = sum(1 for item in spans["spans"] if item["kind"] == "node")
     remainders = sum(
         1 for item in spans["spans"] if item["kind"] == "unsupported-remainder"
@@ -5665,6 +5822,7 @@ def _derive_specimen(
         "answers_sha256": sha256(outputs["answers.json"]).hexdigest(),
         "mutation_plan_sha256": sha256(plan_raw).hexdigest(),
         "mutations_sha256": sha256(outputs["mutation-results.json"]).hexdigest(),
+        "artifact_inventory_sha256": _value_sha256(artifact_inventory),
         "mapped_spans": mapped,
         "unsupported_remainders": remainders,
         "questions": len(questions["questions"]),
@@ -5781,6 +5939,18 @@ def _verify_specimen(
                 f"specimen.{specimen}.{name.removesuffix('.json')}",
                 "stored specimen artifact differs from deterministic regeneration",
             )
+    artifact_paths = _specimen_artifact_paths(stored_build, plan)
+    artifact_inventory = _closed_specimen_inventory(
+        directory,
+        specimen,
+        artifact_paths,
+    )
+    if _value_sha256(artifact_inventory) != record["artifact_inventory_sha256"]:
+        refuse(
+            "NOE-E-DIGEST.ARTIFACT_INVENTORY",
+            f"specimen.{specimen}.artifact_inventory",
+            "stored specimen artifact inventory differs from regeneration",
+        )
     return record, plan, mutation_results
 
 
@@ -5940,6 +6110,7 @@ def _specimen_record(value: object, field: str) -> dict[str, object]:
         "answers_sha256",
         "mutation_plan_sha256",
         "mutations_sha256",
+        "artifact_inventory_sha256",
         "mapped_spans",
         "unsupported_remainders",
         "questions",
