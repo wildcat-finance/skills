@@ -64,6 +64,9 @@ class FiatCheckpointDecisionRecord(unittest.TestCase):
             "issue note",
             "manual outer transport",
             "semantic checkpoint identity",
+            "### Compatibility repair (2026-08-30)",
+            "explicit controller generations",
+            "portable paths relative to the run",
         )
         missing = [item for item in required if item not in text]
         self.assertEqual([], missing, "ADR-028 omits accepted recovery design terms")

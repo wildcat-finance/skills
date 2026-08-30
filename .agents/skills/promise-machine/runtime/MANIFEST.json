@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 994,
-  "total_bytes": 21555872,
+  "total_bytes": 21560193,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -1911,15 +1911,15 @@
       "source": "plugins/hexaemeron/skills/ephoros/scripts/ephoros.py"
     },
     {
-      "bytes": 54453,
+      "bytes": 55162,
       "path": "plugins/hexaemeron/skills/fiat/EVOLUTION.md",
-      "sha256": "3c9a61a77bba422af1ca17a70adff67b0f43db0856da932a675df1fe0ca43529",
+      "sha256": "6980d0339aa4c6c6d172599428f784acdab83794fe1cbb8d13fc8d102dc6ed00",
       "source": "plugins/hexaemeron/skills/fiat/EVOLUTION.md"
     },
     {
-      "bytes": 64331,
+      "bytes": 64405,
       "path": "plugins/hexaemeron/skills/fiat/SKILL.md",
-      "sha256": "9bd94e7977d1df73dad27b59f9b179b9dc835bd0b866f435094dd4f297a89cc2",
+      "sha256": "0edddef2732be86831f560762808e6bb298574b300580a08a852b16dd6404ddc",
       "source": "plugins/hexaemeron/skills/fiat/SKILL.md"
     },
     {
@@ -1935,9 +1935,9 @@
       "source": "plugins/hexaemeron/skills/fiat/references/audit-loop.md"
     },
     {
-      "bytes": 10583,
+      "bytes": 10919,
       "path": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md",
-      "sha256": "31911c2f6939e036c83c4dc05c7e10915fd173e4c03bbc170d0265d02f18ba35",
+      "sha256": "323b71ad156f5e3159ca1aeaeb85e6f60c30196c52580ff2a0781031cbd6f16b",
       "source": "plugins/hexaemeron/skills/fiat/references/controller-checkpoint.md"
     },
     {
@@ -1983,9 +1983,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 527139,
+      "bytes": 530341,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "6f6901851f7ebb5e1f027075d4cac90b75b9ea2016a9b5faf581a0e6a57364aa",
+      "sha256": "a4613ee1eece725490686082194cbffbfa4a39e991146b87cab1e2dc510240dc",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
