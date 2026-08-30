@@ -329,7 +329,10 @@ when supplied, the result states whether the exact manifest identity changed.
 In-process policy operations accept only a freshly selected manifest or the
 fully rederived result of artifact verification. Deserialized manifest data
 must cross that verifier; structural validity alone does not establish its
-provenance, and mutation after verification invalidates the manifest.
+provenance, and mutation after verification invalidates the manifest. Slice
+selection likewise accepts only a locally compiled or fully artifact-verified
+build, and hashes the complete validated profile value against its locked
+digest before deriving a manifest.
 
 Policy evaluation first expands only locked pure definitions. A checked fact
 can settle any exact proposition whose closed evaluation is unknown; a fact
@@ -341,20 +344,29 @@ closed term is true without external evidence. Unknown guards retain their
 dependent directive and yield unknown rather than permission.
 
 `check` evaluates applicable `+`, `-` and `!` intents in authored `;` order
-under their `?`, `/`, `@` and `^` wrappers. A prohibition or failed requirement
-refuses before any permission is considered; a satisfied `!` is a gate, never
-a permission. Opposed requirements refuse unless one included `override` names
-the higher and lower rules and its typed authority, scope and
+under their `?`, `/`, `@` and `^` wrappers. Nested authority and scope wrappers
+accumulate; an inner wrapper cannot discard an outer constraint. A prohibition
+or failed requirement refuses before any permission is considered; a satisfied
+`!` is a gate, never a permission. Opposed requirements refuse unless one
+included `override` names the higher and lower rules and its typed authority,
+scope and
 `core.checked(evidence)` fact all hold. Precedence alone does not resolve that
 conflict, and an inactive or inapplicable higher rule cannot resolve it. A rule
 carries at most one `core.consequence` atom with value `0` through `3`; each
 relevant rule without a marker defaults independently to consequence 3, and
-any resulting disagreement refuses. Consequence 2 and 3 default deny
-without an applicable `^` authority and satisfied gates. An exception is
+any invalid value or resulting disagreement refuses. Consequence 0 and 1 can
+default permit only when at least one directive is active and applicable;
+otherwise no policy applies. Consequence 2 and 3 default deny without an
+applicable `^` authority and satisfied gates. An exception is
 retained as policy and recovery context but cannot by itself cancel a
 prohibition or mint authority in this shadow runtime. Any relevant exception
 without applicable authority and scope, established gate and record evidence,
 and an active expiry refuses before permission can be granted.
+
+Pure definitions are expanded before runtime code reads typed fields as well
+as directive bodies. Defined actors and scopes therefore govern overrides and
+exceptions exactly like direct atoms, and defined machine, state and event
+values govern transition matching and returned next state.
 
 `next` matches one machine, from-state and event. Zero established matches
 stop, an unknown guard stops unknown even beside one established competitor,
@@ -380,6 +392,8 @@ Version 1 applies every limit before returning a partial graph or result:
 | one literal | 65,000 decoded UTF-8 bytes |
 | all decoded literal occurrences | 786,432 bytes |
 | expanded macro graph | 65,536 nodes |
+| one recursive truth evaluation | 65,536 expanded nodes |
+| policy requirement pairs | 65,536 |
 | one finite quantifier set | 4,096 members |
 | one derived output | 1,048,576 bytes |
 
@@ -390,6 +404,11 @@ levels respectively; every embedded source record and module document remains
 subject to the 64-level limit.
 Expanded-macro accounting substitutes an argument at every occurrence of its
 formal parameter; the macro-call node itself is absent from the expanded graph.
+One shared counter covers the initial proposition and every recursively
+evaluated Boolean or quantified child, so quantifier substitution cannot reset
+the expansion budget per member.
+Policy evaluation expands each requirement once, indexes override edges and
+refuses before comparing more than 65,536 requirement pairs.
 
 The seed archive verifier separately accepts at most 1,048,576 archive bytes,
 64 members, 1,048,576 uncompressed bytes in aggregate, 1,048,576 bytes for one
