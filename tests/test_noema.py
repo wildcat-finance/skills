@@ -168,6 +168,18 @@ class NoemaScaffoldTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertIsNone(re.fullmatch(pattern, path))
 
+    def test_runtime_path_alphabets_match_the_published_schema(self):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        self.assertEqual(
+            noema.SEED_RELATIVE_PATH_RE.pattern,
+            schema["$defs"]["relativePath"]["pattern"],
+        )
+        self.assertEqual(
+            noema.SEED_ROOT_PATH_RE.pattern,
+            schema["$defs"]["seedInventory"]["properties"]["archive"]
+            ["properties"]["root"]["pattern"],
+        )
+
     def test_contract_magic_and_about_result_are_fixed(self):
         self.assertEqual((noema.CONTRACT, noema.SOURCE_MAGIC, noema.PROJECTION_MAGIC),
                          ("noema/v1", "NOE1", "NT1"))
@@ -354,6 +366,24 @@ class NoemaScaffoldTests(unittest.TestCase):
             )
             error = refusal(archive_path, inventory_path)
             self.assertEqual(error.code, "NOE-E-PATH.ROOT")
+
+    def test_schema_invalid_archive_member_path_refuses(self):
+        for name in ("a b", "C:policy"):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as temporary:
+                files = [(name, b"alpha")]
+                archive_path, inventory_path = write_case(Path(temporary), files)
+                error = refusal(archive_path, inventory_path)
+                self.assertEqual(error.code, "NOE-E-PATH.RELATIVE")
+
+    def test_schema_invalid_archive_root_refuses(self):
+        files = [("a.txt", b"alpha")]
+        for root in ("seed space/", "C:seed/"):
+            with self.subTest(root=root), tempfile.TemporaryDirectory() as temporary:
+                archive_path, inventory_path = write_case(
+                    Path(temporary), files, root=root
+                )
+                error = refusal(archive_path, inventory_path)
+                self.assertEqual(error.code, "NOE-E-PATH.ROOT")
 
     def test_symbolic_link_archive_member_refuses(self):
         expected = [("link", b"target")]

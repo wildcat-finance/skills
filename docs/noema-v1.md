@@ -234,7 +234,8 @@ The seed archive verifier separately accepts at most 1,048,576 archive bytes,
 64 members, 1,048,576 uncompressed bytes in aggregate, 1,048,576 bytes for one
 member and 512 UTF-8 bytes for one member path. It rejects encryption,
 non-canonical or unsafe paths, links, special files, unsupported compression,
-duplicate names and any inventory mismatch.
+duplicate names and any inventory mismatch. Root and member spellings use the
+exact alphabets published in the seed-inventory schema.
 
 ## Result and refusal contract
 

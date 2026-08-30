@@ -30,6 +30,11 @@ MAX_PATH_BYTES = 512
 MAX_JSON_BYTES = 1_048_576
 
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+SEED_RELATIVE_PATH_RE = re.compile(
+    r"^(?!.*//)(?!.*(?:^|/)\.{1,2}(?:/|$))[A-Za-z0-9]"
+    r"(?:[A-Za-z0-9._/-]*[A-Za-z0-9._-])?$"
+)
+SEED_ROOT_PATH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/$")
 UNIMPLEMENTED = (
     "parse",
     "format",
@@ -216,6 +221,8 @@ def _relative_path(value: object, field: str) -> str:
         refuse("NOE-E-PATH.TRAVERSAL", field, "path must stay below the archive root")
     if path.as_posix() != text:
         refuse("NOE-E-PATH.RELATIVE", field, "archive member path must be canonical POSIX")
+    if SEED_RELATIVE_PATH_RE.fullmatch(text) is None:
+        refuse("NOE-E-PATH.RELATIVE", field, "archive member path is outside the seed alphabet")
     return text
 
 
@@ -229,6 +236,7 @@ def _root_path(value: object, field: str) -> str:
         len(path.parts) != 1
         or path.parts[0] in {"", ".", ".."}
         or path.as_posix() != root
+        or SEED_ROOT_PATH_RE.fullmatch(text) is None
     ):
         refuse("NOE-E-PATH.ROOT", field, "archive root must be one relative directory")
     return text
