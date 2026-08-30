@@ -542,6 +542,71 @@ class PromiseObligationTests(unittest.TestCase):
                 )
                 self.assertIn("PM006", [finding.code for finding in findings])
 
+    def test_required_section_gate_rejects_container_nested_heading_decoys(self):
+        law = LAW.read_text(encoding="utf-8")
+        hidden = {
+            "blockquote": "> ## Scope",
+            "continued-blockquote": "> paragraph\n> ## Scope",
+            "blockquote-list": "> - item\n>   ## Scope",
+            "unordered-dash": "- item\n  ## Scope",
+            "unordered-plus": "+ item\n  ## Scope",
+            "unordered-star": "* item\n  ## Scope",
+            "empty-unordered": "-\n  ## Scope",
+            "unordered-leading-indent": " - item\n   ## Scope",
+            "unordered-two-space-padding": "-  item\n   ## Scope",
+            "unordered-five-space-padding": "-     item\n  ## Scope",
+            "ordered-dot": "1. item\n   ## Scope",
+            "ordered-parenthesis": "9) item\n   ## Scope",
+            "empty-ordered": "1.\n   ## Scope",
+            "mixed-unordered-ordered": "- outer\n  1. inner\n   ## Scope",
+            "mixed-ordered-unordered": "1. outer\n   - inner\n   ## Scope",
+            "lazy-continuation": "- item\nlazy continuation\n  ## Scope",
+            "blank-continuation": "- item\n\n  ## Scope",
+            "nested-setext": "- item\n\n  Scope\n  -----",
+            "nested-blockquote": "- item\n  > quote\n  ## Scope",
+            "nested-fence": "- item\n  ```\n  body\n  ```\n  ## Scope",
+            "nested-html": "- item\n  <div>\n  body\n\n  ## Scope",
+            "nested-indented-code": "- item\n      code\n  ## Scope",
+            "nested-link-reference": "- item\n  [label]: /target\n  ## Scope",
+            "nested-thematic-break": "- item\n  ***\n  ## Scope",
+            "tab-padded-inline-heading": "-\t## Scope",
+            "tab-indented-heading": "- item\n\t## Scope",
+            "space-tab-indented-heading": "- item\n  \t## Scope",
+        }
+        for digits in range(1, 10):
+            number = "1" * digits
+            hidden[f"ordered-{digits}-digit-dot"] = f"{number}. ## Scope"
+            hidden[f"ordered-{digits}-digit-parenthesis"] = f"{number}) ## Scope"
+        for name, replacement in hidden.items():
+            with self.subTest(name=name):
+                text = law.replace("## Scope", replacement, 1)
+                findings = promise_machine_module.validate_law_document(
+                    text.encode("utf-8"), text, f"{name}-container-decoy.md"
+                )
+                self.assertIn("PM006", [finding.code for finding in findings])
+
+        visible = {
+            "after-bullet-indent-one": "- item\n ## Scope",
+            "after-ordered-indent-two": "1. item\n  ## Scope",
+            "after-two-digit-ordered": "10. item\n   ## Scope",
+            "after-nine-digit-ordered": "123456789) item\n   ## Scope",
+            "after-tab-padded-marker": "-\titem\n   ## Scope",
+            "after-top-level-fence": "- item\n```\nbody\n```\n  ## Scope",
+            "after-top-level-html": "- item\n<div>\nbody\n\n  ## Scope",
+            "after-ended-list-paragraph": "- item\n\noutside\n  ## Scope",
+            "after-blockquote": "> quote\n  ## Scope",
+            "non-one-ordered-paragraph-continuation": (
+                "paragraph\n2. continuation\n   ## Scope"
+            ),
+        }
+        for name, replacement in visible.items():
+            with self.subTest(name=name):
+                text = law.replace("## Scope", replacement, 1)
+                findings = promise_machine_module.validate_law_document(
+                    text.encode("utf-8"), text, f"{name}-root-heading.md"
+                )
+                self.assertNotIn("PM006", [finding.code for finding in findings])
+
     def test_section_gates_stop_at_commonmark_h1_and_h2_boundaries(self):
         law = LAW.read_text(encoding="utf-8")
         declaration = "The shared contract identity is `promise-machine/v1`."
