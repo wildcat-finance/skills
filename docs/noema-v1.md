@@ -754,7 +754,7 @@ transient provider-envelope refusals recovered under their preregistered
 second attempts, and the ledgers retain all four uncertain reservations. This
 is a cross-family capability record, not a deterministic-recurrence claim or
 evidence that a small local decoder meets the same boundary. The exact counts,
-earlier rejected runs and shadow-only decision live in ADR-059; raw provider
+earlier rejected runs and shadow-only decision live in ADR-066; raw provider
 transcripts are deliberately absent.
 
 ## Versioning and recovery
