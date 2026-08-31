@@ -203,6 +203,18 @@ opcodes, tokenizer or vocabulary identity, kernel bytes, alias dictionary and
 their SHA-256 values. Raw token ids are forbidden because text APIs and
 tokenizer revisions do not share their meaning.
 
+The prompt kernel begins `NK1` and is a complete interpretation prelude, not a
+format label. It defines canonical-JSON prefix terms, inverse alias decoding,
+typed atoms, literals, variables and sets, every directive used by the
+evaluation corpus, three-valued truth, fact identity, consequence metadata,
+record shapes, `NT1` binding, query application and the non-execution rule. It
+also fixes the policy priority used by the critical cases: active prohibition
+or failed requirement refuses; an unknown guard stays unknown; consequence 2
+or 3 needs the selected exclusive authority; only then may an active
+permission permit. A profile, lock or packet carrying other kernel bytes has a
+different identity. A shorter glossary that leaves any evaluated construct to
+model convention is not a valid kernel for family evidence.
+
 `noema-profile/v1` fixes the printable-ASCII alias alphabet and stores sorted
 `[source,target]` pairs. A projection contains exactly an ASCII header
 `NT1 <profile-sha256> <graph-sha256>`, one canonical JSON graph line and a final
@@ -629,16 +641,25 @@ document ratio is not a substitute acceptance gate.
 
 Evaluation emits one answer-free complete-source prompt and one Noema
 kernel/dictionary/slice prompt per case, one fresh process and nonce each. The
-Noema prompt contains no Markdown source excerpt. Candidate ids are opaque and
-their order carries no oracle. The packet is complete only after its manifest
-is written, its closed directory inventory is checked, and every prompt is
-reread against the deterministic corpus immediately before use. Tally requires
-exact case-set equality, no duplicate id, exact tree, source, graph, kernel,
-projection, profile and model identity, and two genuinely different family
-identities for a cross-family result. Only the selected candidate id and
-bounded request, generation, token and cost provenance are retained; raw model
-transcripts are not evidence. A committed run records that run; it does not
-predict a rerun or establish model quality.
+Noema prompt contains no Markdown source excerpt. Both representations receive
+the same closed runtime context: selected authority, tools, operation, state,
+target and facts. Each fact exposes its truth value, evidence digest and exact
+prefix proposition; its id must recompute from that proposition, and the
+proposition must resolve to a typed authored or macro-expanded proposition in
+the verified graph. A free fact name, non-proposition graph list or unresolved
+digest refuses before packet publication. The source prompt additionally
+receives its exact bound excerpt; the Noema prompt receives only the bound node
+id because the slice is its semantic evidence.
+
+Candidate ids are opaque and their order carries no oracle. The packet is
+complete only after its manifest is written, its closed directory inventory is
+checked, and every prompt is reread against the deterministic corpus
+immediately before use. Tally requires exact case-set equality, no duplicate
+id, exact tree, source, graph, kernel, projection, profile and model identity,
+and two genuinely different family identities for a cross-family result. Only
+the selected candidate id and bounded request, generation, token and cost
+provenance are retained; raw model transcripts are not evidence. A committed
+run records that run; it does not predict a rerun or establish model quality.
 
 `noema-external-profiles/v1` binds the catalogue URL and observation date,
 requested and endpoint model ids, provider name and exact route tag, context

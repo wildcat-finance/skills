@@ -5025,6 +5025,44 @@ class SourceBindingTests(unittest.TestCase):
         self.assertTrue(all(item["shadow"] for item in corpus["specimens"]))
         self.assertEqual(sum(item["unsupported_remainders"] for item in corpus["specimens"]), 44)
 
+    def test_critical_nodes_bind_source_text_that_names_their_semantics(self):
+        expected = {
+            ("brevitas", "rule.exact"): "brevitas: evidence-exception",
+            ("fiat", "rule.authorized"): "Wildcat contributor explicitly asks",
+            ("fiat", "rule.negated"): "status` and `next` are the truth",
+            ("fiat", "rule.ordered"): "receipt it, ask for the next one",
+            ("phylax", "rule.blocked"): "model output to a shell",
+            ("phylax", "rule.default"): "system prompt is not a security control",
+            ("sapheneia", "rule.authorized"): "destructive action",
+            ("sapheneia", "rule.unknown"): "genuinely ambiguous",
+        }
+        for (specimen, node), fragment in expected.items():
+            directory = specimen_directory(specimen)
+            identity = read_json(directory / "source.json")
+            source = (ROOT / identity["path"]).read_bytes()
+            spans = read_json(directory / "source-spans.json")["spans"]
+            span = next(item for item in spans if item.get("node") == node)
+            excerpt = source[span["start"] : span["end"]].decode("utf-8")
+            self.assertIn(fragment, excerpt, (specimen, node))
+
+    def test_specimen_effect_vocabularies_are_not_one_shared_scaffold(self):
+        vocabularies = {}
+        for specimen in SPECIMEN_NAMES:
+            records = noema._parse_source_lines(
+                (specimen_directory(specimen) / "source.noe").read_bytes()
+            )
+            vocabularies[specimen] = {
+                value
+                for record in records
+                if record[0] == "rule"
+                for kind, value in noema._typed_atoms(record[2])
+                if kind == "effect"
+            }
+            self.assertGreaterEqual(len(vocabularies[specimen]), 10)
+        for index, left in enumerate(SPECIMEN_NAMES):
+            for right in SPECIMEN_NAMES[index + 1 :]:
+                self.assertFalse(vocabularies[left] & vocabularies[right])
+
     def test_corpus_record_cannot_promote_a_fully_mapped_specimen(self):
         record = copy.deepcopy(read_json(CORPUS_MANIFEST)["specimens"][0])
         record["unsupported_remainders"] = 0
@@ -5453,8 +5491,98 @@ class SpecimenRoundTripTests(unittest.TestCase):
     def test_unreachable_hostile_literals_remain_out_of_the_operation_slice(self):
         directory = specimen_directory("brevitas")
         manifest = read_json(directory / "manifest.json")
-        self.assertEqual(manifest["literals"], ["lit.command"])
+        self.assertEqual(manifest["literals"], ["lit.quote"])
+        self.assertNotIn("lit.command", manifest["literals"])
         self.assertNotIn("lit.url", manifest["literals"])
+
+    def test_formal_kernel_is_complete_and_shared_by_every_projection(self):
+        kernel = KERNEL_FIXTURE.read_bytes()
+        self.assertGreater(len(kernel), 800)
+        for required in (
+            b"D[\"?\",g,d]=T:d,F:none,U:block(d)",
+            b"D[\"^\",actor,d]=actor is exclusive authority",
+            b"FACT id=sha256(canonical proposition)",
+            b"check(effect): active prohibit=>refuse",
+            b"execute=never",
+        ):
+            self.assertIn(required, kernel)
+        copies = [RUNTIME_FIXTURE / "kernel.noe"] + [
+            specimen_directory(name) / "kernel.noe" for name in SPECIMEN_NAMES
+        ]
+        for path in copies:
+            self.assertEqual(path.read_bytes(), kernel)
+
+    def test_every_checked_fact_has_one_exposed_graph_proposition(self):
+        for specimen in SPECIMEN_NAMES:
+            directory = specimen_directory(specimen)
+            build = read_json(directory / "build.json")
+            selection = read_json(directory / "selection.json")
+            context = noema._evaluation_runtime_context(
+                build["graph"],
+                selection,
+            )
+            self.assertEqual(
+                [item["id"] for item in context["facts"]],
+                [item["id"] for item in selection["facts"]],
+            )
+            for item in context["facts"]:
+                self.assertEqual(noema.fact_id(item["proposition"]), item["id"])
+
+    def test_unbound_checked_fact_cannot_enter_evaluation_context(self):
+        directory = specimen_directory("sapheneia")
+        build = read_json(directory / "build.json")
+        selection = copy.deepcopy(read_json(directory / "selection.json"))
+        selection["facts"] = [
+            {
+                "evidence_sha256": "0" * 64,
+                "id": "fact." + "0" * 64,
+                "value": "unknown",
+            }
+        ]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._evaluation_runtime_context(build["graph"], selection)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.FACT_CONTEXT")
+
+    def test_non_proposition_graph_list_cannot_enter_evaluation_context(self):
+        directory = specimen_directory("sapheneia")
+        build = read_json(directory / "build.json")
+        selection = copy.deepcopy(read_json(directory / "selection.json"))
+        rule = next(
+            record
+            for record in build["graph"]["records"]
+            if record[:2] == ["rule", "rule.authorized"]
+        )
+        selection["facts"] = [
+            {
+                "evidence_sha256": "0" * 64,
+                "id": noema.fact_id(rule[2]),
+                "value": "unknown",
+            }
+        ]
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._evaluation_runtime_context(build["graph"], selection)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.FACT_CONTEXT")
+
+    def test_expanded_checked_fact_is_exposed_as_its_exact_proposition(self):
+        directory = specimen_directory("fiat")
+        build = read_json(directory / "build.json")
+        selection = copy.deepcopy(read_json(directory / "selection.json"))
+        rule = next(
+            record
+            for record in build["graph"]["records"]
+            if record[:2] == ["rule", "rule.defined"]
+        )
+        _literals, definitions = noema._runtime_registry(build["graph"])
+        expanded = noema._expand_runtime_term(rule[2][1], definitions)
+        selection["facts"] = [
+            {
+                "evidence_sha256": "0" * 64,
+                "id": noema.fact_id(expanded),
+                "value": "true",
+            }
+        ]
+        context = noema._evaluation_runtime_context(build["graph"], selection)
+        self.assertEqual(context["facts"][0]["proposition"], expanded)
 
     def test_full_projection_and_slice_are_separate_objects(self):
         for name in SPECIMEN_NAMES:
@@ -5507,33 +5635,25 @@ class MutationTests(unittest.TestCase):
 
     def test_source_mutation_recipes_are_pairwise_distinct(self):
         source_categories = sorted(noema.MUTATION_CATEGORIES - {"alias-collision"})
-        for name in SPECIMEN_NAMES:
-            directory = specimen_directory(name)
-            baseline_source = (directory / "source.noe").read_bytes()
-            baseline_profile = (directory / "profile.json").read_bytes()
-            for planned in read_json(directory / "mutation-plan.json")["mutations"]:
-                if planned["kind"] != "source":
-                    continue
-                for alternate in source_categories:
-                    if alternate == planned["category"]:
-                        continue
+        fingerprints = {}
+        for category in source_categories:
+            outcomes = []
+            for name in SPECIMEN_NAMES:
+                baseline_source = (
+                    specimen_directory(name) / "source.noe"
+                ).read_bytes()
+                try:
                     artifact = noema._expected_source_mutation(
-                        alternate,
+                        category,
                         baseline_source,
-                        "test.alternate",
+                        f"test.{category}.{name}",
                     )
-                    with self.assertRaises(noema.Refusal) as raised:
-                        noema._validate_mutation_artifact(
-                            planned,
-                            artifact,
-                            baseline_source,
-                            baseline_profile,
-                            "test.planned",
-                        )
-                    self.assertEqual(
-                        raised.exception.code,
-                        "NOE-E-REFERENCE.MUTATION_ARTIFACT",
-                    )
+                except noema.Refusal as error:
+                    outcomes.append((name, "refused", error.code))
+                else:
+                    outcomes.append((name, "changed", sha256(artifact).hexdigest()))
+            fingerprints[category] = tuple(outcomes)
+        self.assertEqual(len(set(fingerprints.values())), len(source_categories))
 
     def test_alias_collision_rejects_a_different_colliding_profile(self):
         directory = specimen_directory("brevitas")
@@ -5577,11 +5697,10 @@ class MutationTests(unittest.TestCase):
             directory = specimen_directory("sapheneia", root)
             path = directory / "mutations/sapheneia.swapped-actor.noe"
             path.write_bytes(
-                noema._expected_source_mutation(
-                    "missing-authority",
-                    (directory / "source.noe").read_bytes(),
-                    "test",
-                )
+                (
+                    specimen_directory("fiat", root)
+                    / "mutations/fiat.missing-authority.noe"
+                ).read_bytes()
             )
             with self.assertRaises(noema.Refusal) as raised:
                 noema._derive_specimen(directory, ROOT)
@@ -5892,7 +6011,7 @@ def _hostile_literal_test(kind):
         self.assertEqual(item["bytes"], len(item["value"].encode("utf-8")))
         self.assertEqual(item["sha256"], sha256(item["value"].encode("utf-8")).hexdigest())
         manifest, _projection = noema._verify_manifest_path(directory / "manifest.json")
-        if kind == "command":
+        if kind == "quote":
             result = noema.literal_runtime(item["id"], manifest)
             self.assertEqual(result["output"]["value"], item["value"])
         else:
@@ -6730,6 +6849,9 @@ class MeasurementEvaluationTests(unittest.TestCase):
             closed("evaluationFamilyProfile", profile)
         for case in self.packet["cases"]:
             closed("evaluationCase", case)
+            closed("evaluationRuntimeContext", case["runtime_context"])
+            for fact in case["runtime_context"]["facts"]:
+                closed("evaluationFactContext", fact)
             for candidate in case["candidate_answers"]:
                 closed("evaluationCandidate", candidate)
                 closed("answerView", candidate["value"])
@@ -6956,6 +7078,31 @@ class MeasurementEvaluationTests(unittest.TestCase):
             prompt = next(item for item in case["prompts"] if item["mode"] == "noema")
             payload = (self.packet_directory / prompt["path"]).read_bytes()
             self.assertNotIn(case["source_excerpt"]["text"].encode(), payload)
+
+    def test_each_prompt_carries_the_exact_runtime_context_and_bounded_focus(self):
+        for case in self.packet["cases"]:
+            context = noema._canonical_json(case["runtime_context"]).rstrip()
+            source_excerpt = case["source_excerpt"]["text"].encode()
+            for prompt in case["prompts"]:
+                payload = (self.packet_directory / prompt["path"]).read_bytes()
+                self.assertIn(b"runtime_context: " + context + b"\n", payload)
+                if prompt["mode"] == "source":
+                    self.assertIn(source_excerpt, payload)
+                else:
+                    self.assertNotIn(source_excerpt, payload)
+
+    def test_packet_fact_proposition_tamper_refuses(self):
+        with self.copied_packet() as packet:
+            manifest = read_json(packet / "manifest.json")
+            fact = manifest["cases"][0]["runtime_context"]["facts"][0]
+            fact["proposition"] = [
+                "core.checked",
+                [":", "evidence", "substituted"],
+            ]
+            write_canonical_json(packet / "manifest.json", manifest)
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._load_packet(packet / "manifest.json")
+            self.assertEqual(raised.exception.code, "NOE-E-DIGEST.FACTS")
 
     def test_packet_missing_prompt_refuses(self):
         with self.copied_packet() as packet:

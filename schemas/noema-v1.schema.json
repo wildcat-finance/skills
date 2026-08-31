@@ -2376,6 +2376,39 @@
         "provider": { "type": "string", "minLength": 1, "maxLength": 256 }
       }
     },
+    "evaluationFactContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_sha256", "id", "proposition", "value"],
+      "properties": {
+        "evidence_sha256": { "$ref": "#/$defs/sha256" },
+        "id": { "type": "string", "pattern": "^fact\\.[0-9a-f]{64}$" },
+        "proposition": { "$ref": "#/$defs/term" },
+        "value": { "enum": ["true", "false", "unknown"] }
+      }
+    },
+    "evaluationRuntimeContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authority", "facts", "operation", "state", "target", "tools"],
+      "properties": {
+        "authority": {
+          "type": "array", "maxItems": 256, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        },
+        "facts": {
+          "type": "array", "maxItems": 4096, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/evaluationFactContext" }
+        },
+        "operation": { "$ref": "#/$defs/identifier" },
+        "state": { "$ref": "#/$defs/identifier" },
+        "target": { "$ref": "#/$defs/identifier" },
+        "tools": {
+          "type": "array", "maxItems": 256, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/identifier" }
+        }
+      }
+    },
     "evaluationCandidate": {
       "type": "object",
       "additionalProperties": false,
@@ -2416,7 +2449,7 @@
         "candidate_answers", "case_sha256", "category", "graph_sha256", "id",
         "kernel_sha256", "mutation_id", "projection_profile_sha256",
         "projection_sha256", "prompts", "query", "required_answer_id",
-        "source_excerpt", "source_identity_sha256", "source_sha256", "specimen", "vector"
+        "runtime_context", "source_excerpt", "source_identity_sha256", "source_sha256", "specimen", "vector"
       ],
       "properties": {
         "candidate_answers": {
@@ -2443,6 +2476,7 @@
         },
         "query": { "$ref": "#/$defs/evaluationQuery" },
         "required_answer_id": { "$ref": "#/$defs/identifier" },
+        "runtime_context": { "$ref": "#/$defs/evaluationRuntimeContext" },
         "source_excerpt": {
           "type": "object",
           "additionalProperties": false,

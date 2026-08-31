@@ -132,6 +132,7 @@ OPERATORS = frozenset(
      "all", "any", "one", "in", "subset", "lt", "le", "gt", "ge", "count"}
 )
 DIRECTIVE_OPERATORS = frozenset({"!", "-", "+", "?", "/", "@", "^", ";"})
+PROPOSITION_OPERATORS = OPERATORS - DIRECTIVE_OPERATORS - {"<", "count"}
 TERM_TAGS = frozenset({"$", "%", ":", "{}"})
 RESERVED_SYMBOLS = frozenset({SOURCE_MAGIC, PROJECTION_MAGIC, *RECORD_FORMS, *OPERATORS, *TERM_TAGS, "src"})
 PROFILE_SCHEMA = "noema-profile/v1"
@@ -306,26 +307,31 @@ CHECK_REASONS = frozenset(
 MUTATION_CONTRACTS = {
     "alias-collision": {
         "kind": "profile",
-        "query": {"kind": "literal", "id": "lit.command"},
+        "query": {"kind": "literal", "id": "lit.quote"},
         "status": "refused",
         "code": "NOE-E-ALIAS.COLLISION",
+        "literal_kind": "quote",
+        "baseline_value": '<!-- brevitas: evidence-exception reason="counterexample requires ordered steps" -->',
     },
     "changed-exact-literal": {
         "kind": "source",
-        "query": {"kind": "literal", "id": "lit.command"},
+        "query": {"kind": "literal", "id": "lit.quote"},
         "status": "changed",
-        "facets": frozenset({("literal:lit.command", "literal")}),
+        "facets": frozenset({("literal:lit.quote", "literal")}),
+        "literal_kind": "quote",
+        "baseline_value": '<!-- brevitas: evidence-exception reason="counterexample requires ordered steps" -->',
+        "mutated_value": '<!-- brevitas: evidence-exception reason="counterexample requires unordered steps" -->',
     },
     "consequence-3-bypass": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "defaultdeny"},
+        "query": {"kind": "check", "effect": "model-output.authorize"},
         "status": "changed",
         "facets": frozenset({("rule:rule.default", "effect")}),
         "decisions": ("refuse", "permit"),
     },
     "dropped-negation": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "proceed"},
+        "query": {"kind": "check", "effect": "progress.use-status-next"},
         "status": "changed",
         "facets": frozenset(
             {("rule:rule.negated", "effect"), ("rule:rule.negated", "gate")}
@@ -334,7 +340,7 @@ MUTATION_CONTRACTS = {
     },
     "missing-authority": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "authorized"},
+        "query": {"kind": "check", "effect": "fiat.start"},
         "status": "changed",
         "facets": frozenset(
             {
@@ -343,16 +349,17 @@ MUTATION_CONTRACTS = {
             }
         ),
         "decisions": ("permit", "refuse"),
+        "baseline_actor": "contributor",
     },
     "omitted-dependency": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "defined"},
+        "query": {"kind": "check", "effect": "path.validate"},
         "status": "refused",
         "code": "NOE-E-REFERENCE.PREDICATE",
     },
     "permission-for-prohibition": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "blocked"},
+        "query": {"kind": "check", "effect": "model-output.execute"},
         "status": "changed",
         "facets": frozenset({("rule:rule.blocked", "effect")}),
         "decisions": ("refuse", "permit"),
@@ -365,13 +372,13 @@ MUTATION_CONTRACTS = {
     },
     "stale-module": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "permit"},
+        "query": {"kind": "check", "effect": "directive.execute-one"},
         "status": "refused",
         "code": "NOE-E-DIGEST.MODULE",
     },
     "swapped-actor": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "authorized"},
+        "query": {"kind": "check", "effect": "destructive.proceed"},
         "status": "changed",
         "facets": frozenset(
             {
@@ -380,10 +387,12 @@ MUTATION_CONTRACTS = {
             }
         ),
         "decisions": ("permit", "refuse"),
+        "baseline_actor": "user",
+        "mutated_actor": "agent",
     },
     "unknown-guard-deletion": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "uncertain"},
+        "query": {"kind": "check", "effect": "request.act"},
         "status": "changed",
         "facets": frozenset(
             {("rule:rule.unknown", "effect"), ("rule:rule.unknown", "gate")}
@@ -392,18 +401,20 @@ MUTATION_CONTRACTS = {
     },
     "unknown-opcode": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "permit"},
+        "query": {"kind": "check", "effect": "reply.lead-action"},
         "status": "refused",
         "code": "NOE-E-TYPE.OPERATOR",
     },
     "widened-scope": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "scoped"},
+        "query": {"kind": "check", "effect": "path.use"},
         "status": "changed",
         "facets": frozenset(
             {("rule:rule.scoped", "effect"), ("rule:rule.scoped", "scope")}
         ),
         "decisions": ("refuse", "permit"),
+        "baseline_scope": "intended-directory",
+        "mutated_scope": "global",
     },
 }
 RUNTIME_ARTIFACT_LEAVES = frozenset(
@@ -5823,7 +5834,11 @@ def _validate_mutation_semantics(
                 "mutation refusal code differs from its fixed category contract",
             )
         if category == "alias-collision":
-            if baseline.get("value") != "$(touch /tmp/noema-owned)":
+            if (
+                baseline.get("id") != query["id"]
+                or baseline.get("kind") != contract["literal_kind"]
+                or baseline.get("value") != contract["baseline_value"]
+            ):
                 refuse(
                     "NOE-E-REFERENCE.MUTATION_OUTCOME",
                     f"{field}.baseline_answer",
@@ -5877,13 +5892,19 @@ def _validate_mutation_semantics(
                 "policy decision transition differs from the fixed category contract",
             )
     elif category == "changed-exact-literal":
+        literal_id = str(query["id"])
+        literal_kind = str(contract["literal_kind"])
+        baseline_value = str(contract["baseline_value"])
+        mutated_value = str(contract["mutated_value"])
         if (
-            baseline.get("id") != "lit.command"
-            or answer.get("id") != "lit.command"
-            or baseline.get("kind") != "command"
-            or answer.get("kind") != "command"
-            or baseline.get("value") != "$(touch /tmp/noema-owned)"
-            or answer.get("value") != "$(touch /tmp/noema-mutated)"
+            baseline.get("id") != literal_id
+            or answer.get("id") != literal_id
+            or baseline.get("kind") != literal_kind
+            or answer.get("kind") != literal_kind
+            or baseline.get("bytes") != len(baseline_value.encode("utf-8"))
+            or answer.get("bytes") != len(mutated_value.encode("utf-8"))
+            or baseline.get("value") != baseline_value
+            or answer.get("value") != mutated_value
         ):
             refuse(
                 "NOE-E-REFERENCE.MUTATION_OUTCOME",
@@ -5981,10 +6002,17 @@ def _expected_source_mutation(
 
     try:
         if category == "changed-exact-literal":
-            record = _mutation_record(changed, "literal", "lit.command", field)
-            if record[2:] != ["command", "25", "$(touch /tmp/noema-owned)"]:
+            contract = MUTATION_CONTRACTS[category]
+            query = contract["query"]
+            assert isinstance(query, dict)
+            identifier = str(query["id"])
+            literal_kind = str(contract["literal_kind"])
+            before = str(contract["baseline_value"])
+            after = str(contract["mutated_value"])
+            record = _mutation_record(changed, "literal", identifier, field)
+            if record[2:] != [literal_kind, str(len(before.encode("utf-8"))), before]:
                 malformed()
-            record[3:] = ["27", "$(touch /tmp/noema-mutated)"]
+            record[3:] = [str(len(after.encode("utf-8"))), after]
         elif category == "consequence-3-bypass":
             directive = _mutation_record(
                 changed, "rule", "rule.default", field
@@ -6016,13 +6044,14 @@ def _expected_source_mutation(
                 malformed()
             directive[1] = directive[1][1]
         elif category == "missing-authority":
+            baseline_actor = str(MUTATION_CONTRACTS[category]["baseline_actor"])
             record = _mutation_record(changed, "rule", "rule.authorized", field)
             directive = record[2]
             if (
                 not isinstance(directive, list)
                 or len(directive) != 3
                 or directive[0] != "^"
-                or directive[1] != [":", "actor", "reviewer"]
+                or directive[1] != [":", "actor", baseline_actor]
             ):
                 malformed()
             record[2] = directive[2]
@@ -6060,6 +6089,9 @@ def _expected_source_mutation(
                 malformed()
             record[2] = "0" * 64
         elif category == "swapped-actor":
+            contract = MUTATION_CONTRACTS[category]
+            baseline_actor = str(contract["baseline_actor"])
+            mutated_actor = str(contract["mutated_actor"])
             directive = _mutation_record(
                 changed, "rule", "rule.authorized", field
             )[2]
@@ -6067,10 +6099,10 @@ def _expected_source_mutation(
                 not isinstance(directive, list)
                 or len(directive) != 3
                 or directive[0] != "^"
-                or directive[1] != [":", "actor", "reviewer"]
+                or directive[1] != [":", "actor", baseline_actor]
             ):
                 malformed()
-            directive[1][2] = "intruder"
+            directive[1][2] = mutated_actor
         elif category == "unknown-guard-deletion":
             record = _mutation_record(changed, "rule", "rule.unknown", field)
             directive = record[2]
@@ -6089,6 +6121,9 @@ def _expected_source_mutation(
                 malformed()
             directive[0] = "zap"
         elif category == "widened-scope":
+            contract = MUTATION_CONTRACTS[category]
+            baseline_scope = str(contract["baseline_scope"])
+            mutated_scope = str(contract["mutated_scope"])
             directive = _mutation_record(
                 changed, "rule", "rule.scoped", field
             )[2]
@@ -6096,10 +6131,10 @@ def _expected_source_mutation(
                 not isinstance(directive, list)
                 or len(directive) != 3
                 or directive[0] != "@"
-                or directive[1] != [":", "scope", "restricted"]
+                or directive[1] != [":", "scope", baseline_scope]
             ):
                 malformed()
-            directive[1][2] = "global"
+            directive[1][2] = mutated_scope
         else:
             malformed()
     except (IndexError, KeyError, TypeError):
@@ -9518,6 +9553,248 @@ def _source_excerpt(directory: Path, node: str, repository_root: Path) -> dict[s
     }
 
 
+def _evaluation_runtime_context(
+    graph: dict[str, object],
+    selection_value: object,
+) -> dict[str, object]:
+    selection = _validate_selection(selection_value, "evaluation.selection")
+    facts = selection["facts"]
+    assert isinstance(facts, list)
+    wanted = {str(item["id"]) for item in facts}
+    matches: dict[str, dict[bytes, list[object]]] = {
+        identifier: {} for identifier in wanted
+    }
+    modules_value = graph.get("modules")
+    records = graph.get("records")
+    if not isinstance(modules_value, list) or not isinstance(records, list):
+        refuse(
+            "NOE-E-TYPE.GRAPH",
+            "evaluation.runtime_context",
+            "evaluation graph has no module or record list",
+        )
+    modules: dict[str, dict[str, object]] = {}
+    source_definitions: list[list[object]] = []
+    literals: dict[str, tuple[str, str]] = {}
+    roots: list[object] = []
+    record_term_positions = {
+        "definition": (3,),
+        "rule": (2,),
+        "precedence": (3, 4, 5),
+        "override": (2, 5, 6),
+        "transition": (2, 3, 4, 5, 6, 7),
+        "promise": tuple(range(2, 11)),
+        "handoff": tuple(range(2, 11)),
+        "exception": tuple(range(2, 9)),
+    }
+    for module_value in modules_value:
+        if not isinstance(module_value, dict) or not isinstance(
+            module_value.get("value"), dict
+        ):
+            refuse(
+                "NOE-E-TYPE.GRAPH",
+                "evaluation.runtime_context",
+                "evaluation graph contains an invalid module",
+            )
+        module_id = _identifier(
+            module_value.get("id"),
+            "evaluation.runtime_context.module.id",
+        )
+        modules[module_id] = module_value
+        for definition in module_value["value"]["definitions"]:
+            assert isinstance(definition, list)
+            roots.append(definition[2])
+    for record in records:
+        if not isinstance(record, list) or not record:
+            refuse(
+                "NOE-E-TYPE.GRAPH",
+                "evaluation.runtime_context",
+                "evaluation graph contains an invalid record",
+            )
+        form = str(record[0])
+        if form == "literal":
+            literals[str(record[1])] = (str(record[2]), str(record[4]))
+        elif form == "definition":
+            source_definitions.append(record)
+        for position in record_term_positions.get(form, ()):
+            roots.append(record[position])
+    type_context = _build_registry(
+        modules,
+        source_definitions,
+        literals,
+        _Budget(),
+    )
+    _runtime_literals, runtime_definitions = _runtime_registry(graph)
+    visited = 0
+
+    def is_proposition(value: list[object]) -> bool:
+        if not value or not isinstance(value[0], str):
+            return False
+        tag = value[0]
+        if tag in PROPOSITION_OPERATORS:
+            return True
+        if tag in type_context.signatures:
+            return type_context.signatures[tag][1] == "proposition"
+        if tag in type_context.definitions:
+            return type_context.definition_type(tag) == "proposition"
+        return False
+
+    authored_propositions: dict[bytes, list[object]] = {}
+
+    def visit(value: object, *, expanded: bool = False) -> None:
+        nonlocal visited
+        if not isinstance(value, list):
+            return
+        visited += 1
+        if visited > MAX_TRUTH_EXPANSION_NODES:
+            refuse(
+                "NOE-E-BOUNDS.EVALUATION_CONTEXT",
+                "evaluation.runtime_context",
+                "fact-proposition discovery exceeds its closed work budget",
+            )
+        if is_proposition(value):
+            encoded = _canonical_json(value)
+            if not expanded:
+                authored_propositions[encoded] = value
+            identifier = f"fact.{sha256(encoded).hexdigest()}"
+            if identifier in matches:
+                matches[identifier][encoded] = value
+        for child in value:
+            visit(child, expanded=expanded)
+
+    for root in roots:
+        visit(root)
+    expansion_nodes = [0]
+    for proposition in authored_propositions.values():
+        expanded_proposition = _expand_runtime_term(
+            proposition,
+            runtime_definitions,
+            nodes=expansion_nodes,
+            limit=MAX_TRUTH_EXPANSION_NODES,
+        )
+        visit(expanded_proposition, expanded=True)
+    resolved_facts: list[dict[str, object]] = []
+    for fact in facts:
+        identifier = str(fact["id"])
+        candidates = matches[identifier]
+        if len(candidates) != 1:
+            refuse(
+                "NOE-E-EVALUATION.FACT_CONTEXT",
+                f"evaluation.runtime_context.facts.{identifier}",
+                "checked fact does not resolve to one exact graph proposition",
+            )
+        proposition = next(iter(candidates.values()))
+        resolved_facts.append(
+            {
+                "evidence_sha256": fact["evidence_sha256"],
+                "id": identifier,
+                "proposition": proposition,
+                "value": fact["value"],
+            }
+        )
+    context = {
+        "authority": selection["authority"],
+        "facts": resolved_facts,
+        "operation": selection["operation"],
+        "state": selection["state"],
+        "target": selection["target"],
+        "tools": selection["tools"],
+    }
+    return _validate_evaluation_runtime_context(
+        context,
+        "evaluation.runtime_context",
+    )
+
+
+def _validate_evaluation_runtime_context(
+    value: object,
+    field: str,
+) -> dict[str, object]:
+    context = _exact_keys(
+        value,
+        {"authority", "facts", "operation", "state", "target", "tools"},
+        field,
+    )
+    fact_values = context["facts"]
+    if not isinstance(fact_values, list) or len(fact_values) > MAX_SET_MEMBERS:
+        refuse(
+            "NOE-E-BOUNDS.FACTS",
+            f"{field}.facts",
+            "evaluation fact context exceeds its limit",
+        )
+    facts: list[dict[str, object]] = []
+    plain_facts: list[dict[str, object]] = []
+    previous = ""
+    for index, item_value in enumerate(fact_values):
+        item = _exact_keys(
+            item_value,
+            {"evidence_sha256", "id", "proposition", "value"},
+            f"{field}.facts[{index}]",
+        )
+        identifier = _fact_identifier(item["id"], f"{field}.facts[{index}].id")
+        if identifier <= previous:
+            refuse(
+                "NOE-E-SYNTAX.ORDER",
+                f"{field}.facts",
+                "evaluation facts must be unique and sorted by identity",
+            )
+        proposition = item["proposition"]
+        if not isinstance(proposition, list) or not proposition:
+            refuse(
+                "NOE-E-TYPE.PROPOSITION",
+                f"{field}.facts[{index}].proposition",
+                "evaluation fact must expose one prefix proposition",
+            )
+        _bounded_value_depth(
+            proposition,
+            f"{field}.facts[{index}].proposition",
+            maximum=MAX_DEPTH,
+        )
+        if fact_id(proposition) != identifier:
+            refuse(
+                "NOE-E-DIGEST.FACTS",
+                f"{field}.facts[{index}].proposition",
+                "evaluation proposition differs from its fact identity",
+            )
+        if item["value"] not in TRUTH_VALUES:
+            refuse(
+                "NOE-E-TYPE.TRUTH",
+                f"{field}.facts[{index}].value",
+                "evaluation fact truth is outside the closed domain",
+            )
+        _digest(
+            item["evidence_sha256"],
+            f"{field}.facts[{index}].evidence_sha256",
+        )
+        facts.append(item)
+        plain_facts.append(
+            {
+                "evidence_sha256": item["evidence_sha256"],
+                "id": identifier,
+                "value": item["value"],
+            }
+        )
+        previous = identifier
+    selection = _validate_selection(
+        {
+            "authority": context["authority"],
+            "facts": plain_facts,
+            "operation": context["operation"],
+            "state": context["state"],
+            "target": context["target"],
+            "tools": context["tools"],
+        },
+        field,
+    )
+    return {
+        "authority": selection["authority"],
+        "facts": facts,
+        "operation": selection["operation"],
+        "state": selection["state"],
+        "target": selection["target"],
+        "tools": selection["tools"],
+    }
+
+
 def _evaluation_cases(manifest_path: Path, verified: dict[str, object]) -> list[dict[str, object]]:
     corpus = verified["manifest"]
     assert isinstance(corpus, dict)
@@ -9538,6 +9815,24 @@ def _evaluation_cases(manifest_path: Path, verified: dict[str, object]) -> list[
         outcomes = {str(item["id"]): item for item in outcomes_value["results"]}
         source_identity, source_identity_raw = _read_canonical_json(directory / "source.json", "evaluation.source_identity")
         source = _read_regular(repository_root / str(source_identity["path"]), "evaluation.source", MAX_INPUT_BYTES)
+        build_value, _build_raw = _read_canonical_json(
+            directory / "build.json",
+            "evaluation.build",
+            maximum_depth=MAX_DEPTH + 8,
+        )
+        manifest_value, _manifest_raw = _read_canonical_json(
+            directory / "manifest.json",
+            "evaluation.manifest",
+            maximum_depth=MAX_DEPTH + 8,
+        )
+        if not isinstance(build_value, dict) or not isinstance(build_value.get("graph"), dict):
+            refuse("NOE-E-TYPE.GRAPH", "evaluation.build", "evaluation build has no graph")
+        if not isinstance(manifest_value, dict) or "selection" not in manifest_value:
+            refuse("NOE-E-TYPE.MANIFEST", "evaluation.manifest", "evaluation manifest has no selection")
+        runtime_context = _evaluation_runtime_context(
+            build_value["graph"],
+            manifest_value["selection"],
+        )
         projection = _projection_text(directory / "projection.json", "evaluation.projection")
         kernel = _read_regular(directory / "kernel.noe", "evaluation.kernel", MAX_INPUT_BYTES)
         projection_profile, projection_profile_raw = _read_canonical_json(directory / "profile.json", "evaluation.projection_profile")
@@ -9584,6 +9879,7 @@ def _evaluation_cases(manifest_path: Path, verified: dict[str, object]) -> list[
                 "projection_sha256": specimen_value["projection_sha256"],
                 "query": plan["query"],
                 "required_answer_id": required,
+                "runtime_context": runtime_context,
                 "source": source,
                 "source_excerpt": excerpt,
                 "source_identity_sha256": sha256(source_identity_raw).hexdigest(),
@@ -9640,10 +9936,20 @@ def _render_evaluation_prompt(
         f"{item['id']}\t{_canonical_json(item['value']).decode('utf-8').rstrip()}"
         for item in case["candidate_answers"]
     )
+    runtime_context = _canonical_json(case["runtime_context"]).decode("utf-8").rstrip()
+    excerpt = case["source_excerpt"]
+    assert isinstance(excerpt, dict)
+    focus = (
+        _canonical_json(excerpt).decode("utf-8").rstrip()
+        if mode == "source"
+        else _canonical_json({"node": excerpt["node"]}).decode("utf-8").rstrip()
+    )
     prompt = (
         "isolated noema shadow evaluation\n"
         f"context_nonce: {nonce}\n"
         f"representation: {mode}\n"
+        f"runtime_context: {runtime_context}\n"
+        f"focus: {focus}\n"
         f"query: {_canonical_json(case['query']).decode('utf-8').rstrip()}\n"
         "candidate outcomes (ids are opaque and unordered):\n"
         f"{candidates}\n"
@@ -9986,6 +10292,7 @@ def _load_packet(path: Path) -> tuple[dict[str, object], bytes]:
                     "prompts",
                     "query",
                     "required_answer_id",
+                    "runtime_context",
                     "source_excerpt",
                     "source_identity_sha256",
                     "source_sha256",
@@ -10039,6 +10346,10 @@ def _load_packet(path: Path) -> tuple[dict[str, object], bytes]:
                 refuse("NOE-E-EVALUATION.CASE", f"evaluation_packet.cases[{index}].source_excerpt", "source excerpt span or digest is invalid")
             if excerpt["node"] != EVALUATION_NODE_BY_CATEGORY[category]:
                 refuse("NOE-E-EVALUATION.CASE", f"evaluation_packet.cases[{index}].source_excerpt.node", "source binding names another critical node")
+            _validate_evaluation_runtime_context(
+                case["runtime_context"],
+                f"evaluation_packet.cases[{index}].runtime_context",
+            )
             candidates = case["candidate_answers"]
             if not isinstance(candidates, list) or len(candidates) != 2:
                 refuse("NOE-E-EVALUATION.CASE", f"evaluation_packet.cases[{index}].candidate_answers", "case needs exactly two candidates")
