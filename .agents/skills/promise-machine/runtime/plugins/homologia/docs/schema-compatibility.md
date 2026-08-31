@@ -72,12 +72,10 @@ nanosecond metadata-change time.
 
 ## Fixed safety caps
 
-| Boundary | Version-1 cap |
-| --- | ---: |
-| Vector sets per manifest | 16 |
-| Vectors per set | 100,000 |
-| Bytes per manifest or vector file | 8 MiB |
-| Bytes across one manifest and its vector files | 64 MiB |
+- Vector sets per manifest: 16
+- Vectors per set: 100,000
+- Bytes per manifest or vector file: 8 MiB
+- Bytes across one manifest and its vector files: 64 MiB
 
 The file cap is checked before decoding. Set and vector counts and aggregate
 bytes are checked before any output is installed. Raising a cap requires a new
@@ -102,22 +100,20 @@ Success and refusal are one-line JSON events on standard error. Success uses
 counts. Refusal uses `homologia_check_refused`, a stable code, a subject capped
 at 256 characters and one recovery action. Standard output stays empty.
 
-| Code | Boundary |
-| --- | --- |
-| `HOM-CHECK-PATH` | lexical containment, symlink or changed file identity |
-| `HOM-CHECK-READ` | stable descriptor read |
-| `HOM-CHECK-FILE-CAP` | one input file |
-| `HOM-CHECK-AGGREGATE-CAP` | all declared input bytes |
-| `HOM-CHECK-SET-CAP` | vector-set count |
-| `HOM-CHECK-VECTOR-CAP` | vectors in one set |
-| `HOM-CHECK-JSON` | UTF-8, JSON, JSONL or duplicate-key decoding |
-| `HOM-CHECK-SHAPE` | closed version-1 object shape and identities |
-| `HOM-CHECK-INTEGER` | canonical decimal-integer form |
-| `HOM-CHECK-SCALE` | exact mirror and set scale equality |
-| `HOM-CHECK-PROVENANCE` | closed expected-answer evidence form |
-| `HOM-CHECK-TOLERANCE` | undeclared or unequal tolerance use |
-| `HOM-CHECK-DUPLICATE` | repeated set id, path or vector id |
-| `HOM-CHECK-OUTPUT` | atomic destination installation |
+- `HOM-CHECK-PATH`: lexical containment, symlink or changed file identity
+- `HOM-CHECK-READ`: stable descriptor read
+- `HOM-CHECK-FILE-CAP`: one input file
+- `HOM-CHECK-AGGREGATE-CAP`: all declared input bytes
+- `HOM-CHECK-SET-CAP`: vector-set count
+- `HOM-CHECK-VECTOR-CAP`: vectors in one set
+- `HOM-CHECK-JSON`: UTF-8, JSON, JSONL or duplicate-key decoding
+- `HOM-CHECK-SHAPE`: closed version-1 object shape and identities
+- `HOM-CHECK-INTEGER`: canonical decimal-integer form
+- `HOM-CHECK-SCALE`: exact mirror and set scale equality
+- `HOM-CHECK-PROVENANCE`: closed expected-answer evidence form
+- `HOM-CHECK-TOLERANCE`: undeclared or unequal tolerance use
+- `HOM-CHECK-DUPLICATE`: repeated set id, path or vector id
+- `HOM-CHECK-OUTPUT`: atomic destination installation
 
 Bad command syntax is argparse exit 2. A governed but unavailable verb exits
 3. A refused input exits 4, an output-install refusal exits 5, and successful

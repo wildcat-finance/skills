@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1042,
-  "total_bytes": 22204431,
+  "total_bytes": 22204299,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -3319,9 +3319,9 @@
       "source": "plugins/homologia/docs/homologia-study.md"
     },
     {
-      "bytes": 6309,
+      "bytes": 6177,
       "path": "plugins/homologia/docs/schema-compatibility.md",
-      "sha256": "ad9fdfa22a1118504202b7d0ba8634400832e05ca4609811363ab9e906a206bc",
+      "sha256": "a8923cba57e9a497c3f362c5e73945486e884a4a29a7f95fe644f01d29e210fd",
       "source": "plugins/homologia/docs/schema-compatibility.md"
     },
     {
