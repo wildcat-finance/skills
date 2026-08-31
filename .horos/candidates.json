@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16183068,
+    "bytes_blob": 16205285,
     "bytes_generated": 98
   },
   "entries": [
@@ -75,6 +75,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-391-unified-live-and-archive-collection.synopsis.md"
+    },
+    {
+      "bytes": 22217,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-395-resumable-ethereum-usdc-interval-collector.synopsis.md"
     },
     {
       "bytes": 297271,
