@@ -775,3 +775,38 @@ evidence, threshold, authority and stop-before-integration condition.
 **Steps touched.** Step 5.
 
 **Still holding.** Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement evidence publication: bind the final
+Step 5 evidence to the signed clean implementation anchor that includes the
+historyless Git-object witness verifier and the current external-profile
+record. A full checkout must still resolve the anchor tree and prove real
+ancestry. A Git-reported shallow checkout may use the digest-bound witness for
+the missing anchor commit, root tree and one signed direct carrier; the witness
+does not prove the shallow head descends from that carrier. Keep hosted CI
+historyless and make no workflow change. If an acquired provider endpoint is
+not callable under the fixed ZDR, no-fallback request policy, record the
+terminal measurement and ledger, cut a new signed profile anchor, and run that
+anchor's one measurement command. Do not relax privacy, fallback, model,
+prompt, seed, threshold or accounting constraints. Retain every terminal run.
+Only the final anchor may emit the shared evaluation packet, and both required
+cohorts must still pass 16/16. Historical, terminated ledgers are never
+resumed; their settled charges and conservative reservations count against
+the operator's external authority, while unused per-command allowance does
+not remain reserved after termination.
+
+**Why.** Hosted CI exposed two separate facts. A depth-one checkout cannot
+reach a valid signed evidence anchor, so repository verification needs a
+bounded historyless witness while the controller and full checkouts retain
+the stronger ancestry gate. Separately, the generic Azure route degraded and
+the public direct OpenAI routes returned HTTP 404 under the unchanged ZDR
+policy; the regional `azure/eu` route accepted the same bounded request. These
+are publication and provider-routing failures, not semantic or token-gate
+failures. Each changed profile set therefore received a new signed anchor
+rather than relabelling earlier paid responses. The exit remains continued
+shadowing; integration is out of scope.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.

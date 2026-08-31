@@ -5076,21 +5076,23 @@ class SourceBindingTests(unittest.TestCase):
         evidence_root = NOEMA_FIXTURES / "evidence"
         retained = {
             "answers-cohort-1.json":
-                "0f4c63b987cef6f454b0f62b9f7c0c66c4797ea5e8468665c074e73bee031a99",
+                "d6d7033112d5966f62e5ae70173ca22f34846ba1bc33a5695d771c706ce4a46d",
             "evaluation-cohort-1.json":
-                "91e58fbf333006406ca188b1f04399ed2dcc65a57b8a079a77da7d1701f2401d",
-            "ledger-6e48bb02-attempt-1.json":
-                "2b91972438cf3aed6acb151b135b0554841cd5b6444f98c162d6ba0ff8f2026c",
+                "c91c8c488d6ff93605de52533e3f2baa1b52d61c9367ae3d582141f324437b24",
+            "ledger-0fd3801b-attempt-2.json":
+                "d5d25216e4d118ff1624dcac965184b98e96b9f3d307abf519c2869cbd3afaab",
+            "ledger-3806eb24-attempt-1.json":
+                "7fd00ad3082abb0261e2923c1e6ebaeb60be1778c6c2004b73212020131c8c68",
             "ledger-cohort-1.json":
-                "df634c7aa71e3587b35c825cf0bba536c8a7474115e32572f476f7f863113b4e",
+                "cbec46c8ae063db4829abd9d17f30dfef763d1f3ad07b55f6fc16f842b3d0757",
             "ledger-cohort-2.json":
-                "b351a74fb7d68a5ba87ab4af49336eb208549e90633abb92c9a96feeb9530349",
+                "65e5295bf5be968ec5f0ad567aa7185c9dc4280dfc25fb0d62d12243129ba6ee",
             "ledger-measurement.json":
-                "f50723555895dd44ab77be8ad1ac662763779a8c059e2b3c7e32c7a5e5e0fb4c",
-            "measurement-6e48bb02-attempt-1.json":
-                "104d5e95b5a93ef90280f426e3e9de79fa6f89f736cbff34b7f2242c7a2897f6",
-            "measurement-6e48bb02-attempt-2.json":
-                "6bdb9240453cc53dcf5aca1fc10e4eadeb7f54b380aa129465eb864eca9bc2dd",
+                "069ec47c7f4c8809403f8c22b302264be166b38663bc09cff86556a71dac09fe",
+            "measurement-0fd3801b-attempt-2.json":
+                "b617cbdd9abbfd3081ab085d069eea0a466b5744343fb73f2d95e2fb4b861058",
+            "measurement-3806eb24-attempt-1.json":
+                "90f4bfdf6af3f4a6e5318c28d505ba19b98ff66c01af794f0390f34879599650",
         }
         for name, expected in retained.items():
             actual = sha256((evidence_root / name).read_bytes()).hexdigest()
@@ -5127,9 +5129,9 @@ class SourceBindingTests(unittest.TestCase):
         )
 
         expected_ledgers = {
-            "ledger-measurement.json": ("30", "2.9930459", 271, 1),
-            "ledger-cohort-1.json": ("8", "0.67074575", 32, 2),
-            "ledger-cohort-2.json": ("8", "0.639935975", 32, 2),
+            "ledger-measurement.json": ("30", "1.900021075", 152, 2),
+            "ledger-cohort-1.json": ("8", "0.723863125", 32, 0),
+            "ledger-cohort-2.json": ("8", "0.2818785", 32, 0),
         }
         for name, expected in expected_ledgers.items():
             ledger = read_json(evidence_root / name)
@@ -5143,6 +5145,35 @@ class SourceBindingTests(unittest.TestCase):
                 expected,
             )
             self.assertIsNone(ledger["breach"])
+
+        failed_measurements = {
+            "measurement-3806eb24-attempt-1.json": (
+                "3806eb2456a4b7fe4f5eb02944591d2877e96eb4",
+                "NOE-E-ADAPTER.RESPONSE",
+                24,
+            ),
+            "measurement-0fd3801b-attempt-2.json": (
+                "0fd3801bd7ce65bfad1ec370ab1f1f79eabed29a",
+                "NOE-E-ADAPTER.HTTP_404",
+                1,
+            ),
+        }
+        for name, expected in failed_measurements.items():
+            measurement = read_json(evidence_root / name)
+            unknown = [
+                profile for profile in measurement["profiles"]
+                if profile["status"] == "unknown"
+            ]
+            self.assertEqual(measurement["summary"]["status"], "unknown")
+            self.assertEqual(len(unknown), 1)
+            self.assertEqual(
+                (
+                    measurement["repository_commit"],
+                    unknown[0]["refusal_code"],
+                    len(unknown[0]["attempts"]),
+                ),
+                expected,
+            )
 
     def test_corpus_evidence_byte_tamper_refuses(self):
         with copied_corpus() as root:

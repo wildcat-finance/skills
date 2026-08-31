@@ -1,1 +1,1 @@
-{"breach":null,"budget_usd":"8","calls":32,"reservations":[{"estimated_usd":"0.1241415","request_sha256":"c06e9d6e59d14814d48a3c290a09887fc38f6984839367a72756c7628516cfc7"},{"estimated_usd":"0.4271295","request_sha256":"c213bd878f71f80ae1cacfb031b776270bab0991d30ce98c5f58093173316d60"}],"schema":"noema-budget-ledger/v2","spent_usd":"0.639935975"}
+{"breach":null,"budget_usd":"8","calls":32,"reservations":[],"schema":"noema-budget-ledger/v2","spent_usd":"0.2818785"}
