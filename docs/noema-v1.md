@@ -748,6 +748,15 @@ When published by the corpus manifest, the checked-in
 the canonical second cohort's 32 answer-provenance records and 16/16 tally to
 one ancestor commit, tree, corpus, profile set, packet and case set. Corpus
 verification reconstructs the packet and tally before accepting those bytes.
+It also validates a digest-bound three-object Git witness: the exact recorded
+commit, its root tree and one SSH-signature-bearing direct carrier child. A
+full checkout still has to resolve that commit to the recorded tree and prove it is an
+ancestor of `HEAD`. Only when Git itself reports a shallow repository may a
+valid `HEAD` use the witness after missing-object or incomplete-ancestry
+failure. That fallback proves the pinned object identities, tree relation and
+direct carrier edge; it does not prove the shallow checkout descends from the
+carrier. The full Fiat/controller checkout remains the publication ancestry
+gate.
 The first cohort, all three ledger snapshots and their digests remain beside
 the canonical files. Both exact same-packet cohorts scored 16/16. Four
 transient provider-envelope refusals recovered under their preregistered

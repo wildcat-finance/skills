@@ -41,6 +41,7 @@ BOUND_SOURCE = NOEMA_FIXTURES / "codec" / "bound-source.txt"
 SOURCE_DIGEST = "34a6411e347aa461190a71ceaa666418923ac947101c4d6db2f5e62f2b386dac"
 RUNTIME_FIXTURE = NOEMA_FIXTURES / "runtime"
 CORPUS_MANIFEST = NOEMA_FIXTURES / "manifest.json"
+GIT_ANCHOR_WITNESS = NOEMA_FIXTURES / "evidence" / "git-anchor-witness.json"
 MEASUREMENT_PROFILES = NOEMA_FIXTURES / "profiles" / "measurement.json"
 SPECIMEN_FIXTURES = NOEMA_FIXTURES / "specimens"
 SEED_REFERENCE = NOEMA_FIXTURES / "seed-reference"
@@ -644,14 +645,9 @@ class NoemaScaffoldTests(unittest.TestCase):
     def test_repository_python_pin_is_exact(self):
         self.assertEqual((ROOT / ".python-version").read_text().strip(), "3.14.6")
 
-    def test_repository_invariant_checkout_retains_evidence_history(self):
+    def test_repository_invariant_checkout_remains_historyless(self):
         workflow = (ROOT / ".github/workflows/repo.yml").read_text(encoding="utf-8")
-        self.assertIn(
-            "      - uses: actions/checkout@v4\n"
-            "        with:\n"
-            "          fetch-depth: 0\n",
-            workflow,
-        )
+        self.assertNotIn("fetch-depth: 0", workflow)
 
     def test_schema_is_closed_and_names_all_record_families(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
@@ -666,6 +662,7 @@ class NoemaScaffoldTests(unittest.TestCase):
             "specimenCorpus", "externalProfiles", "measurement",
             "evaluationPacket", "evaluationAnswers", "evaluationReport",
             "corpusEvidence",
+            "gitAnchorWitness",
         }
         self.assertEqual(
             public_records,
@@ -4932,6 +4929,122 @@ class PathBoundaryTests(unittest.TestCase):
             )
 
 
+class GitAnchorWitnessTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.witness = read_json(GIT_ANCHOR_WITNESS)
+        cls.commit = cls.witness["repository_commit"]
+        cls.tree = cls.witness["repository_tree"]
+
+    @staticmethod
+    def completed(returncode=0, stdout=b""):
+        return subprocess.CompletedProcess([], returncode, stdout, b"")
+
+    def test_witness_carries_the_exact_anchor_tree_and_direct_carrier(self):
+        checked = noema._git_anchor_witness(
+            self.witness,
+            self.commit,
+            self.tree,
+        )
+        self.assertEqual(
+            checked["carrier_commit"],
+            "55089dab51888032a117ac986e76ace77c6172dc",
+        )
+        self.assertEqual(
+            {item["oid"] for item in checked["objects"]},
+            {self.commit, self.tree, checked["carrier_commit"]},
+        )
+
+    def test_full_checkout_still_requires_and_passes_real_ancestry(self):
+        noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+
+    def test_shallow_checkout_accepts_a_valid_witness_after_missing_history(self):
+        results = [
+            self.completed(128),
+            self.completed(128),
+            self.completed(stdout=b"true\n"),
+            self.completed(stdout=("f" * 40 + "\n").encode()),
+        ]
+        with mock.patch.object(noema.subprocess, "run", side_effect=results):
+            noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+
+    def test_non_shallow_checkout_cannot_replace_ancestry_with_the_witness(self):
+        results = [
+            self.completed(128),
+            self.completed(128),
+            self.completed(stdout=b"false\n"),
+            self.completed(stdout=("f" * 40 + "\n").encode()),
+        ]
+        with mock.patch.object(noema.subprocess, "run", side_effect=results):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_shallow_checkout_still_requires_one_valid_head_commit(self):
+        results = [
+            self.completed(128),
+            self.completed(128),
+            self.completed(stdout=b"true\n"),
+            self.completed(128),
+        ]
+        with mock.patch.object(noema.subprocess, "run", side_effect=results):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_resolved_wrong_tree_refuses_even_when_git_reports_shallow(self):
+        results = [
+            self.completed(stdout=("0" * 40 + "\n").encode()),
+            self.completed(),
+        ]
+        with mock.patch.object(noema.subprocess, "run", side_effect=results):
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._verify_git_anchor(ROOT, self.commit, self.tree, self.witness)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_changed_object_bytes_refuse_before_any_git_query(self):
+        witness = copy.deepcopy(self.witness)
+        encoded = witness["objects"][0]["data_base64"]
+        witness["objects"][0]["data_base64"] = encoded[:-2] + "AA"
+        with mock.patch.object(noema.subprocess, "run") as run:
+            with self.assertRaises(noema.Refusal) as raised:
+                noema._verify_git_anchor(ROOT, self.commit, self.tree, witness)
+        run.assert_not_called()
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_rehashed_carrier_with_another_parent_still_refuses(self):
+        witness = copy.deepcopy(self.witness)
+        carrier = next(
+            item for item in witness["objects"]
+            if item["oid"] == witness["carrier_commit"]
+        )
+        raw = noema.base64.b64decode(carrier["data_base64"], validate=True)
+        changed = raw.replace(self.commit.encode(), b"0" * 40, 1)
+        changed_oid = noema._git_object_id("commit", changed)
+        carrier["data_base64"] = noema.base64.b64encode(changed).decode("ascii")
+        carrier["oid"] = changed_oid
+        witness["carrier_commit"] = changed_oid
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._git_anchor_witness(witness, self.commit, self.tree)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+    def test_rehashed_carrier_without_ssh_markers_still_refuses(self):
+        witness = copy.deepcopy(self.witness)
+        carrier = next(
+            item for item in witness["objects"]
+            if item["oid"] == witness["carrier_commit"]
+        )
+        raw = noema.base64.b64decode(carrier["data_base64"], validate=True)
+        changed = raw.replace(b"BEGIN SSH SIGNATURE", b"BEGIN BAD SIGNATURE", 1)
+        changed_oid = noema._git_object_id("commit", changed)
+        carrier["data_base64"] = noema.base64.b64encode(changed).decode("ascii")
+        carrier["oid"] = changed_oid
+        witness["carrier_commit"] = changed_oid
+        with self.assertRaises(noema.Refusal) as raised:
+            noema._git_anchor_witness(witness, self.commit, self.tree)
+        self.assertEqual(raised.exception.code, "NOE-E-EVALUATION.TREE")
+
+
 class SourceBindingTests(unittest.TestCase):
     def test_corpus_verifier_binds_four_specimens(self):
         verified = noema.verify_specimen_corpus(CORPUS_MANIFEST)
@@ -5034,6 +5147,14 @@ class SourceBindingTests(unittest.TestCase):
     def test_corpus_evidence_byte_tamper_refuses(self):
         with copied_corpus() as root:
             path = root / "evidence/evaluation.json"
+            path.write_bytes(path.read_bytes() + b"\n")
+            with self.assertRaises(noema.Refusal) as raised:
+                noema.verify_specimen_corpus(root / "manifest.json")
+        self.assertEqual(raised.exception.code, "NOE-E-DIGEST.EVIDENCE")
+
+    def test_corpus_git_witness_byte_tamper_refuses(self):
+        with copied_corpus() as root:
+            path = root / "evidence/git-anchor-witness.json"
             path.write_bytes(path.read_bytes() + b"\n")
             with self.assertRaises(noema.Refusal) as raised:
                 noema.verify_specimen_corpus(root / "manifest.json")
