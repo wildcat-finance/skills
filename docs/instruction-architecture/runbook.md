@@ -592,3 +592,104 @@ targets and leaves every research statement unchanged.
 **Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
 holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Exit: All of the following hold:
+
+1. The committed corpus manifest binds exactly 175 agent-facing Markdown files
+   and 2,069,258 physical bytes at the entry ref. It retains the original 32
+   skill contracts, 18 `AGENTS.md` contracts, 18 Promise Machine contracts and
+   38 Markdown references, and adds one identity contract, one conditional
+   identity roster, one installed-router contract, one vendored-overlay
+   contract, one frontier policy, 26 frontier ledgers, 14 worker prompts and 24
+   operation references. It records path, logical document, document class,
+   admission kind, size, SHA-256, exact duplicate group, canonical owner,
+   authority tier, loader roots, scenario reachability and external runtime
+   ownership. Exact whole-file deduplication yields 158 unique files and
+   1,597,814 unique bytes. The reconciliation enumerates all 69 additions by
+   class, path, bytes and source anchor, and classifies excluded human,
+   background, generated, historical, dynamic-target and unavailable-operation
+   links rather than treating their presence as a load.
+2. Every physical byte belongs to exactly one range classified as governed
+   operative semantics, exact literal or evidence, human-only explanation or
+   rationale, generated duplicate, or unsupported/unknown. Ranges are ordered,
+   non-overlapping, gapless and source-digest bound. Any unsupported operative
+   range is visible and blocks later selection.
+3. The loader graph proves every root and edge from a source path, byte span
+   and digest. It distinguishes unconditional loads from installed-route,
+   credential-identity, vendored-overlay, frontier-gate, worker-dispatch and
+   operation-branch conditions; resolves a same-repository canonical URL to a
+   pinned local path only on an exact repository-and-path match; recursively
+   closes required Markdown loads; and refuses a manifest loader-root or
+   scenario claim that graph reachability does not reproduce. File presence, a
+   human or background link, a generated reader artefact, a historical record
+   or an unavailable-operation specification creates no edge. Test fixtures
+   and the moved `skills-runtime` package remain excluded.
+4. A deterministic stratified selection fixes a development cohort covering
+   at least 50% of unique bytes, every shared root/runtime contract, at least
+   12 logical skills, every observed construct and authority tier, every
+   admitted document class and every size decile. A disjoint sealed holdout
+   fixes at least 20% of unique bytes and five logical skills with authority,
+   failure, recovery, exact-literal and cross-document cases. The seal binds
+   source, method, seed, membership and a closed future case envelope; Step 1
+   does not open or score that envelope.
+5. `benchmark.py verify-corpus`, `verify-loader`, `verify-partition` and
+   `verify-seal` each emit one bounded correlated JSON result and exit zero.
+   Repeating all four commands is byte-identical. `build-baseline` reproduces
+   the five committed records, their inventory and the reconciliation byte for
+   byte without permitting any output/reconciliation alias. The committed
+   runbook matches its amended receipted bytes. The committed study differs
+   from its receipted bytes only in the ten guarded relative-link relocations.
+   Focused and root tests attributable to the changed paths pass; any unrelated
+   repository-selected baseline or environment failure is reproduced on the
+   parent and recorded. No live instruction or production path changes.
+Complete replacement Tests: Add `CorpusManifestTests`, `BytePartitionTests`,
+`LoaderGraphTests` and `HoldoutSealTests` for the exact 175-path inventory, all
+twelve document-class counts and four denominators; the 69-path admission
+inventory; the 26-ledger, 14-worker-prompt and 24-operation-reference closures;
+same-repository canonical-URL resolution; recursive required-load closure;
+explicit refusal of file-presence, human/background, generated, historical,
+dynamic-target and unavailable-operation edges; exact duplicate groups; range
+closure; source-span anchors; unconditional and conditional edges;
+graph-derived loader-root and scenario equality; runtime-owner exclusions;
+cohort coverage and disjointness; seed replay; sealed-envelope non-disclosure;
+study-link relocation; output/reconciliation non-aliasing; host-independent
+integer bounds; and stale-source refusal. Run these exact commands from the
+repository root under the pinned runtime:
+
+```text
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py build-baseline
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-corpus --manifest tests/fixtures/instruction-architecture/corpus-manifest.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-loader --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --graph tests/fixtures/instruction-architecture/loader-graph.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-partition --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --partition tests/fixtures/instruction-architecture/byte-partition.json
+uv run --no-project --python 3.14.6 python research/instruction-architecture/benchmark.py verify-seal --manifest tests/fixtures/instruction-architecture/corpus-manifest.json --cohorts tests/fixtures/instruction-architecture/cohorts.json --seal tests/fixtures/instruction-architecture/holdout-seal.json
+uv run --no-project --python 3.14.6 python -m unittest tests.test_instruction_architecture.CorpusManifestTests tests.test_instruction_architecture.BytePartitionTests tests.test_instruction_architecture.LoaderGraphTests tests.test_instruction_architecture.HoldoutSealTests -v
+uv run --no-project --python 3.14.6 python scripts/run_checks.py --base a2b634d8e039af988bf30c8316defccf70071d8d
+cmp -s .hexaemeron/runbook.md docs/instruction-architecture/runbook.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/instruction-architecture/study.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/protasis/scripts/protasis.py docs/instruction-architecture/runbook.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/instruction-architecture/study.md docs/instruction-architecture/runbook.md docs/instruction-architecture/corpus-reconciliation.md
+uv run --no-project --python 3.14.6 python plugins/hexaemeron/skills/fiat/scripts/audit_synopsis.py --check .
+uv run --no-project --python 3.14.6 python plugins/horos/skills/horos/scripts/horos.py check .
+git diff --check
+```
+
+Run the four verifiers twice and require byte-identical stdout. After
+`build-baseline`, require the five records, artifact inventory and
+reconciliation to match the committed bytes. For an audit repair, run
+`uv run --no-project --python 3.14.6 python tests/run_tests.py --elenchus-report .elenchus/fiat-1046-step-1.json`;
+require schema
+`elenchus.unittest.v1`. A missing, stale, malformed or infrastructure-failed
+report is inconclusive.
+**Why.** Audit round 4 proved that the starting 106-path census omitted 69
+source-directed identity, routing, overlay, frontier, worker and operation
+documents. It also proved that graph reachability and manifest loader roots
+could disagree, the integer cap depended on mutable host configuration, and
+two individually allowed scratch outputs could alias. The replacement binds
+the corrected corpus and those refusal checks without changing the selected
+design or any production source.
+**Steps touched.** Step 1.
+**Still holding.** Step 1: entry holds; exit holds. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.

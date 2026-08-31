@@ -31,12 +31,20 @@
     "counts": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["markdown_reference", "promise_machine_contract", "runtime_contract", "skill_contract"],
+      "required": ["frontier_ledger", "frontier_policy", "identity_contract", "identity_roster", "markdown_reference", "operation_reference", "overlay_contract", "promise_machine_contract", "router_install_contract", "runtime_contract", "skill_contract", "worker_prompt"],
       "properties": {
+        "frontier_ledger": {"type": "integer", "minimum": 0},
+        "frontier_policy": {"type": "integer", "minimum": 0},
+        "identity_contract": {"type": "integer", "minimum": 0},
+        "identity_roster": {"type": "integer", "minimum": 0},
         "markdown_reference": {"type": "integer", "minimum": 0},
+        "operation_reference": {"type": "integer", "minimum": 0},
+        "overlay_contract": {"type": "integer", "minimum": 0},
         "promise_machine_contract": {"type": "integer", "minimum": 0},
+        "router_install_contract": {"type": "integer", "minimum": 0},
         "runtime_contract": {"type": "integer", "minimum": 0},
-        "skill_contract": {"type": "integer", "minimum": 0}
+        "skill_contract": {"type": "integer", "minimum": 0},
+        "worker_prompt": {"type": "integer", "minimum": 0}
       }
     },
     "corpusTotals": {
@@ -53,13 +61,14 @@
     "document": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["authority_tier", "bytes", "canonical_content_path", "canonical_owner", "document_class", "exact_duplicate_group", "external_runtime_owner", "loader_roots", "logical_document", "path", "scenario_reachability", "sha256"],
+      "required": ["admission_kind", "authority_tier", "bytes", "canonical_content_path", "canonical_owner", "document_class", "exact_duplicate_group", "external_runtime_owner", "loader_roots", "logical_document", "path", "scenario_reachability", "sha256"],
       "properties": {
-        "authority_tier": {"enum": ["canonical_skill", "conditional_reference", "generated_copy", "plugin_runtime", "router", "suite_law", "suite_runtime"]},
+        "admission_kind": {"enum": ["credential-identity", "frontier-gate", "identity-contract", "installed-route", "issue-census", "operation-branch", "vendored-overlay", "worker-dispatch"]},
+        "authority_tier": {"enum": ["canonical_skill", "conditional_reference", "frontier_ledger", "frontier_policy", "generated_copy", "identity_roster", "plugin_overlay", "plugin_runtime", "router", "router_install", "suite_identity", "suite_law", "suite_runtime", "worker_prompt"]},
         "bytes": {"type": "integer", "minimum": 1},
         "canonical_content_path": {"$ref": "#/$defs/path"},
         "canonical_owner": {"$ref": "#/$defs/path"},
-        "document_class": {"enum": ["markdown_reference", "promise_machine_contract", "runtime_contract", "skill_contract"]},
+        "document_class": {"enum": ["frontier_ledger", "frontier_policy", "identity_contract", "identity_roster", "markdown_reference", "operation_reference", "overlay_contract", "promise_machine_contract", "router_install_contract", "runtime_contract", "skill_contract", "worker_prompt"]},
         "exact_duplicate_group": {"type": ["string", "null"]},
         "external_runtime_owner": {"enum": ["upstream-pashov", null]},
         "loader_roots": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
@@ -107,37 +116,69 @@
     "edge": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["evidence", "id", "kind", "reason", "source", "target"],
+      "required": ["active_roots", "evidence", "id", "kind", "reason", "source", "target"],
       "properties": {
+        "active_roots": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
         "evidence": {"$ref": "#/$defs/evidence"},
         "id": {"type": "string", "pattern": "^edge-[0-9]{3}$"},
-        "kind": {"enum": ["conditional", "unconditional"]},
+        "kind": {"enum": ["conditional", "credential-identity", "frontier-gate", "installed-route", "operation-branch", "unconditional", "vendored-overlay", "worker-dispatch"]},
         "reason": {"type": "string", "minLength": 1},
         "source": {"$ref": "#/$defs/path"},
         "target": {"$ref": "#/$defs/path"}
       }
     },
+    "scenarioEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["active_scenarios", "evidence", "id", "kind", "reason", "source", "target"],
+      "properties": {
+        "active_scenarios": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "id": {"type": "string", "pattern": "^scenario-edge-[0-9]{3}$"},
+        "kind": {"enum": ["conditional", "credential-identity", "frontier-gate", "installed-route", "operation-branch", "unconditional", "vendored-overlay", "worker-dispatch"]},
+        "reason": {"type": "string", "minLength": 1},
+        "source": {"$ref": "#/$defs/path"},
+        "target": {"$ref": "#/$defs/path"}
+      }
+    },
+    "excludedLink": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["class", "evidence", "path", "reason"],
+      "properties": {
+        "class": {"enum": ["dynamic_target", "example_or_evidence", "generated_reader", "historical_record", "human_or_background", "unavailable_operation"]},
+        "evidence": {"$ref": "#/$defs/evidence"},
+        "path": {"$ref": "#/$defs/path"},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
     "loaderConstraints": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["conditional_references_require_source_span", "file_presence_creates_edge", "fixtures_excluded", "skills_runtime_excluded"],
+      "required": ["conditional_references_require_source_span", "file_presence_creates_edge", "fixtures_excluded", "manifest_reachability_is_graph_derived", "recursive_required_loads_closed", "same_repository_urls_require_exact_match", "skills_runtime_excluded"],
       "properties": {
         "conditional_references_require_source_span": {"const": true},
         "file_presence_creates_edge": {"const": false},
         "fixtures_excluded": {"const": true},
+        "manifest_reachability_is_graph_derived": {"const": true},
+        "recursive_required_loads_closed": {"const": true},
+        "same_repository_urls_require_exact_match": {"const": true},
         "skills_runtime_excluded": {"const": true}
       }
     },
     "loaderGraph": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["constraints", "edges", "manifest_sha256", "roots", "schema", "source_ref"],
+      "required": ["constraints", "edges", "excluded_links", "manifest_sha256", "roots", "scenario_edges", "scenario_roots", "schema", "source_ref"],
       "properties": {
         "schema": {"const": "wildcat-instruction-architecture-loader-graph/v1"},
         "source_ref": {"$ref": "#/$defs/gitOid"},
         "manifest_sha256": {"$ref": "#/$defs/sha256"},
         "roots": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/root"}},
         "edges": {"type": "array", "items": {"$ref": "#/$defs/edge"}},
+        "scenario_roots": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/root"}},
+        "scenario_edges": {"type": "array", "items": {"$ref": "#/$defs/scenarioEdge"}},
+        "excluded_links": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/excludedLink"}},
         "constraints": {"$ref": "#/$defs/loaderConstraints"}
       }
     },
@@ -202,10 +243,11 @@
     "development": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["authority_tiers", "constructs", "logical_skills", "paths", "size_deciles", "unique_byte_ratio", "unique_bytes"],
+      "required": ["authority_tiers", "constructs", "document_classes", "logical_skills", "paths", "size_deciles", "unique_byte_ratio", "unique_bytes"],
       "properties": {
         "authority_tiers": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
         "constructs": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "document_classes": {"type": "array", "minItems": 12, "maxItems": 12, "uniqueItems": true, "items": {"type": "string"}},
         "logical_skills": {"type": "array", "minItems": 12, "uniqueItems": true, "items": {"type": "string"}},
         "paths": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/path"}},
         "size_deciles": {"type": "array", "minItems": 10, "maxItems": 10, "uniqueItems": true, "items": {"type": "integer", "minimum": 0, "maximum": 9}},

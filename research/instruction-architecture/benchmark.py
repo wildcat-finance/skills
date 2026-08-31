@@ -36,17 +36,26 @@ MAX_GIT_OUTPUT = 4 * 1024 * 1024
 MAX_SOURCE_BYTES = 2 * 1024 * 1024
 MAX_JSON_DEPTH = 64
 MAX_JSON_TOKENS = 100_000
+MAX_JSON_NUMBER_CHARS = 640
 EXPECTED_COUNTS = {
     "skill_contract": 32,
     "runtime_contract": 18,
     "promise_machine_contract": 18,
     "markdown_reference": 38,
+    "identity_contract": 1,
+    "identity_roster": 1,
+    "router_install_contract": 1,
+    "overlay_contract": 1,
+    "frontier_policy": 1,
+    "frontier_ledger": 26,
+    "worker_prompt": 14,
+    "operation_reference": 24,
 }
 EXPECTED_TOTALS = {
-    "physical_files": 106,
-    "physical_bytes": 1_545_537,
-    "unique_files": 89,
-    "unique_bytes": 1_074_093,
+    "physical_files": 175,
+    "physical_bytes": 2_069_258,
+    "unique_files": 158,
+    "unique_bytes": 1_597_814,
 }
 PARTITION_CLASSES = (
     "governed_operative_semantics",
@@ -65,6 +74,200 @@ BASELINE_RECONCILIATION = PurePosixPath(
     "docs/instruction-architecture/corpus-reconciliation.md"
 )
 SCRATCH_ROOT = PurePosixPath("tmp")
+BASELINE_RECORD_NAMES = (
+    "corpus-manifest.json",
+    "loader-graph.json",
+    "byte-partition.json",
+    "cohorts.json",
+    "holdout-seal.json",
+)
+
+FRONTIER_SKILLS = (
+    "plugins/alexandria/skills/alexandria",
+    "plugins/anamnesis/skills/anamnesis",
+    "plugins/ariadne/skills/ariadne",
+    "plugins/berean/skills/berean",
+    "plugins/brevitas/skills/brevitas",
+    "plugins/hermes/skills/hermes",
+    "plugins/hexaemeron/skills/elenchus",
+    "plugins/hexaemeron/skills/ephoros",
+    "plugins/hexaemeron/skills/fiat",
+    "plugins/hexaemeron/skills/hypomnema",
+    "plugins/hexaemeron/skills/imprimatur",
+    "plugins/hexaemeron/skills/kronos",
+    "plugins/hexaemeron/skills/metron",
+    "plugins/hexaemeron/skills/phylax",
+    "plugins/hexaemeron/skills/protasis",
+    "plugins/hexaemeron/skills/vulgate",
+    "plugins/homologia/skills/homologia",
+    "plugins/horos/skills/horos",
+    "plugins/janus/skills/janus",
+    "plugins/lazarus/skills/lazarus",
+    "plugins/lemma/skills/lemma",
+    "plugins/pandects/skills/pandects",
+    "plugins/probitas/skills/probitas",
+    "plugins/sapheneia/skills/sapheneia",
+    "plugins/synkrisis/skills/synkrisis",
+    "plugins/tabularium/skills/tabularium",
+)
+
+FIAT_WORKER_PROMPTS = (
+    "plugins/hexaemeron/agents/mason.md",
+    "plugins/hexaemeron/agents/scribe.md",
+    "plugins/hexaemeron/agents/surveyor.md",
+    "plugins/hexaemeron/agents/warden.md",
+)
+
+FIZZ_WORKER_PROMPTS = (
+    "plugins/hexaemeron/skills/fizz/agents/implementers/global-property-implementer.md",
+    "plugins/hexaemeron/skills/fizz/agents/implementers/specific-property-implementer.md",
+    "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/adversarial-profit-maximizer.md",
+    "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/conservation-auditor.md",
+    "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/protocol-type-specialist.md",
+    "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/roundtrip-rounding-analyst.md",
+    "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/state-transition-mapper.md",
+    "plugins/hexaemeron/skills/fizz/agents/invariant-discovery/synthesizer.md",
+    "plugins/hexaemeron/skills/fizz/agents/protocol-analyzer.md",
+    "plugins/hexaemeron/skills/fizz/agents/report-writer.md",
+)
+
+# path, canonical owner, source path, exact source needle
+OPERATION_REFERENCES = (
+    ("plugins/alexandria/docs/runbook.md", "plugins/alexandria/skills/alexandria/SKILL.md", "plugins/alexandria/skills/alexandria/SKILL.md", "../../docs/runbook.md"),
+    ("plugins/alexandria/docs/study.md", "plugins/alexandria/skills/alexandria/SKILL.md", "plugins/alexandria/skills/alexandria/SKILL.md", "../../docs/study.md"),
+    ("plugins/alexandria/docs/usdc-interval-collector.md", "plugins/alexandria/skills/alexandria/SKILL.md", "plugins/alexandria/skills/alexandria/SKILL.md", "../../docs/usdc-interval-collector.md"),
+    ("plugins/ariadne/docs/capturing-a-dataset.md", "plugins/ariadne/skills/ariadne/SKILL.md", "plugins/ariadne/skills/ariadne/SKILL.md", "../../docs/capturing-a-dataset.md"),
+    ("plugins/ariadne/docs/capturing-a-grounded-agent.md", "plugins/ariadne/skills/ariadne/SKILL.md", "plugins/ariadne/skills/ariadne/SKILL.md", "../../docs/capturing-a-grounded-agent.md"),
+    ("plugins/ariadne/docs/capturing-a-release.md", "plugins/ariadne/skills/ariadne/SKILL.md", "plugins/ariadne/skills/ariadne/SKILL.md", "../../docs/capturing-a-release.md"),
+    ("plugins/ariadne/docs/capturing-a-state-fixture.md", "plugins/ariadne/skills/ariadne/SKILL.md", "plugins/ariadne/skills/ariadne/SKILL.md", "../../docs/capturing-a-state-fixture.md"),
+    ("plugins/ariadne/docs/conformance.md", "plugins/ariadne/skills/ariadne/SKILL.md", "plugins/ariadne/skills/ariadne/SKILL.md", "../../docs/conformance.md"),
+    ("plugins/ariadne/docs/dataset.md", "plugins/ariadne/skills/ariadne/SKILL.md", "plugins/ariadne/skills/ariadne/SKILL.md", "../../docs/dataset.md"),
+    ("plugins/ariadne/docs/grounded-agent.md", "plugins/ariadne/skills/ariadne/SKILL.md", "plugins/ariadne/skills/ariadne/SKILL.md", "../../docs/grounded-agent.md"),
+    ("plugins/ariadne/docs/solidity-release.md", "plugins/ariadne/skills/ariadne/SKILL.md", "plugins/ariadne/skills/ariadne/SKILL.md", "../../docs/solidity-release.md"),
+    ("plugins/ariadne/docs/state-fixture.md", "plugins/ariadne/skills/ariadne/SKILL.md", "plugins/ariadne/skills/ariadne/SKILL.md", "../../docs/state-fixture.md"),
+    ("docs/fiat-run-observation-binding-v1.md", "plugins/hexaemeron/skills/fiat/SKILL.md", "plugins/hexaemeron/skills/fiat/SKILL.md", "../../../../docs/fiat-run-observation-binding-v1.md"),
+    ("plugins/lazarus/docs/chain-anchors.md", "plugins/lazarus/skills/lazarus/SKILL.md", "plugins/lazarus/skills/lazarus/SKILL.md", "../../docs/chain-anchors.md"),
+    ("plugins/lazarus/docs/preservation-release.md", "plugins/lazarus/skills/lazarus/SKILL.md", "plugins/lazarus/skills/lazarus/SKILL.md", "../../docs/preservation-release.md"),
+    ("plugins/lazarus/docs/runbook.md", "plugins/lazarus/skills/lazarus/SKILL.md", "plugins/lazarus/skills/lazarus/SKILL.md", "../../docs/runbook.md"),
+    ("plugins/lazarus/docs/study.md", "plugins/lazarus/skills/lazarus/SKILL.md", "plugins/lazarus/skills/lazarus/SKILL.md", "../../docs/study.md"),
+    ("plugins/lemma/INVARIANTS.md", "plugins/lemma/skills/lemma/SKILL.md", "plugins/lemma/skills/lemma/SKILL.md", "../../INVARIANTS.md"),
+    ("plugins/pandects/docs/applicability.md", "plugins/pandects/skills/pandects/SKILL.md", "plugins/pandects/skills/pandects/SKILL.md", "docs/applicability.md"),
+    ("plugins/pandects/docs/writing-a-law.md", "plugins/pandects/skills/pandects/SKILL.md", "plugins/pandects/skills/pandects/SKILL.md", "docs/writing-a-law.md"),
+    ("plugins/pandects/integrations/wildcat/APPLICABILITY.md", "plugins/pandects/skills/pandects/SKILL.md", "plugins/pandects/skills/pandects/SKILL.md", "integrations/wildcat/APPLICABILITY.md"),
+    ("plugins/probitas/docs/adding-a-venue.md", "plugins/probitas/skills/probitas/SKILL.md", "plugins/probitas/skills/probitas/references/venues.md", "../../../docs/adding-a-venue.md"),
+    ("plugins/tabularium/docs/adding-an-adapter.md", "plugins/tabularium/skills/tabularium/SKILL.md", "plugins/tabularium/skills/tabularium/SKILL.md", "../../docs/adding-an-adapter.md"),
+    ("plugins/tabularium/docs/release-policy.md", "plugins/tabularium/skills/tabularium/SKILL.md", "plugins/tabularium/skills/tabularium/SKILL.md", "../../docs/release-policy.md"),
+)
+
+EXCLUDED_LINK_CLASSES = (
+    ("human_or_background", "README.md", "AGENTS.md", "A person can begin with `README.md`; an agent begins here."),
+    ("generated_reader", "plugins/pandects/docs/catalogue.md", "plugins/pandects/skills/pandects/SKILL.md", "rather than a second source"),
+    ("historical_record", "audit/AUDIT.md", "plugins/hexaemeron/skills/fiat/references/audit-loop.md", "audit/AUDIT.md"),
+    ("dynamic_target", ".hexaemeron/study.md", "plugins/hexaemeron/agents/surveyor.md", ".hexaemeron/study.md"),
+    ("example_or_evidence", "plugins/probitas/docs/example-dossier.md", "plugins/probitas/docs/adding-a-venue.md", "example-dossier.md"),
+    ("unavailable_operation", "plugins/alexandria/docs/compound-v3-harvest.md", "plugins/alexandria/skills/alexandria/SKILL.md", "more than this collector covers"),
+)
+
+CONTRIBUTORS_CANONICAL_URL = (
+    "https://github.com/wildcat-finance/skills/blob/main/CONTRIBUTORS.md"
+)
+SAME_REPOSITORY_MARKDOWN_URLS = {
+    CONTRIBUTORS_CANONICAL_URL: "CONTRIBUTORS.md",
+}
+
+
+@lru_cache(maxsize=1)
+def _additional_metadata() -> dict[str, dict[str, str]]:
+    """Return the receipted, source-anchored 69-path corpus admission."""
+    result: dict[str, dict[str, str]] = {
+        "SHOGGOTH.md": {
+            "document_class": "identity_contract",
+            "admission_kind": "identity-contract",
+            "canonical_owner": "SHOGGOTH.md",
+            "source_path": "AGENTS.md",
+            "source_needle": "[Shoggoth collective identity](SHOGGOTH.md)",
+            "edge_kind": "unconditional",
+        },
+        "CONTRIBUTORS.md": {
+            "document_class": "identity_roster",
+            "admission_kind": "credential-identity",
+            "canonical_owner": "SHOGGOTH.md",
+            "source_path": "SHOGGOTH.md",
+            "source_needle": (
+                CONTRIBUTORS_CANONICAL_URL
+            ),
+            "edge_kind": "credential-identity",
+        },
+        ".agents/skills/promise-machine/PORTABLE.md": {
+            "document_class": "router_install_contract",
+            "admission_kind": "installed-route",
+            "canonical_owner": ".agents/skills/promise-machine/SKILL.md",
+            "source_path": ".agents/skills/promise-machine/SKILL.md",
+            "source_needle": "read `PORTABLE.md`",
+            "edge_kind": "installed-route",
+        },
+        "plugins/hexaemeron/PROMISES.md": {
+            "document_class": "overlay_contract",
+            "admission_kind": "vendored-overlay",
+            "canonical_owner": "plugins/hexaemeron/AGENTS.md",
+            "source_path": "plugins/hexaemeron/AGENTS.md",
+            "source_needle": "[PROMISES.md](PROMISES.md)",
+            "edge_kind": "vendored-overlay",
+        },
+        "plugins/hexaemeron/skills/VERSIONING.md": {
+            "document_class": "frontier_policy",
+            "admission_kind": "frontier-gate",
+            "canonical_owner": "plugins/hexaemeron/AGENTS.md",
+            "source_path": "plugins/hexaemeron/AGENTS.md",
+            "source_needle": "`skills/VERSIONING.md`",
+            "edge_kind": "frontier-gate",
+        },
+    }
+    for prefix in FRONTIER_SKILLS:
+        skill = f"{prefix}/SKILL.md"
+        ledger = f"{prefix}/EVOLUTION.md"
+        result[ledger] = {
+            "document_class": "frontier_ledger",
+            "admission_kind": "frontier-gate",
+            "canonical_owner": skill,
+            "source_path": skill,
+            "source_needle": "EVOLUTION.md",
+            "edge_kind": "frontier-gate",
+        }
+    for path in FIAT_WORKER_PROMPTS:
+        role = PurePosixPath(path).stem
+        result[path] = {
+            "document_class": "worker_prompt",
+            "admission_kind": "worker-dispatch",
+            "canonical_owner": "plugins/hexaemeron/skills/fiat/SKILL.md",
+            "source_path": "plugins/hexaemeron/skills/fiat/SKILL.md",
+            "source_needle": f"`{role}`",
+            "edge_kind": "worker-dispatch",
+        }
+    for path in FIZZ_WORKER_PROMPTS:
+        relative = PurePosixPath(path).relative_to(
+            "plugins/hexaemeron/skills/fizz"
+        )
+        result[path] = {
+            "document_class": "worker_prompt",
+            "admission_kind": "worker-dispatch",
+            "canonical_owner": "plugins/hexaemeron/skills/fizz/SKILL.md",
+            "source_path": "plugins/hexaemeron/skills/fizz/SKILL.md",
+            "source_needle": relative.as_posix(),
+            "edge_kind": "worker-dispatch",
+        }
+    for path, owner, source, needle in OPERATION_REFERENCES:
+        result[path] = {
+            "document_class": "operation_reference",
+            "admission_kind": "operation-branch",
+            "canonical_owner": owner,
+            "source_path": source,
+            "source_needle": needle,
+            "edge_kind": "operation-branch",
+        }
+    if len(result) != 69:
+        raise Refusal(f"receipted admission inventory drift: {len(result)}")
+    return result
 
 
 class Refusal(ValueError):
@@ -89,6 +292,21 @@ def _canonical_json(value: Any) -> bytes:
 
 def _reject_constant(value: str) -> None:
     raise Refusal(f"non-finite JSON number: {value}")
+
+
+def _parse_integer(value: str) -> int:
+    if len(value.removeprefix("-")) > MAX_JSON_NUMBER_CHARS:
+        raise Refusal("record exceeds JSON number length limit")
+    return int(value)
+
+
+def _parse_float(value: str) -> float:
+    if len(value) > MAX_JSON_NUMBER_CHARS:
+        raise Refusal("record exceeds JSON number length limit")
+    result = float(value)
+    if not math.isfinite(result):
+        raise Refusal(f"non-finite JSON number: {value}")
+    return result
 
 
 def _closed_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -291,6 +509,8 @@ def _load_record(path: Path) -> tuple[dict[str, Any], bytes]:
         value = json.loads(
             raw.decode("utf-8", errors="strict"),
             object_pairs_hook=_closed_object,
+            parse_int=_parse_integer,
+            parse_float=_parse_float,
             parse_constant=_reject_constant,
         )
     except Refusal:
@@ -459,6 +679,11 @@ def _corpus_paths() -> list[str]:
             selected.append(name)
         elif re.fullmatch(r"plugins/[^/]+/skills/.+/references/.+\.md", name):
             selected.append(name)
+    admitted = set(_additional_metadata())
+    missing = admitted - set(names)
+    if missing:
+        raise Refusal(f"admitted source missing at frozen ref: {min(missing)}")
+    selected.extend(sorted(admitted))
     result = sorted(set(selected))
     if len(result) != len(selected):
         raise Refusal("corpus selection produced duplicate paths")
@@ -468,6 +693,9 @@ def _corpus_paths() -> list[str]:
 
 
 def _document_class(path: str) -> str:
+    admission = _additional_metadata().get(path)
+    if admission is not None:
+        return admission["document_class"]
     if path == "AGENTS.md" or path.endswith("/AGENTS.md"):
         return "runtime_contract"
     if path == "PROMISE_MACHINE.md" or path.endswith("/PROMISE_MACHINE.md"):
@@ -504,6 +732,15 @@ def _logical_document(path: str, document_class: str) -> str:
         return "suite-runtime"
     if document_class == "runtime_contract":
         return f"plugin:{_plugin(path)}"
+    if document_class in ("identity_contract", "identity_roster"):
+        return "suite-identity"
+    if document_class == "router_install_contract":
+        return "promise-machine/router"
+    if document_class in ("overlay_contract", "frontier_policy"):
+        return "plugin:hexaemeron"
+    if document_class in ("frontier_ledger", "worker_prompt", "operation_reference"):
+        owner = _additional_metadata()[path]["canonical_owner"]
+        return f"skill:{_skill_name(owner)}"
     if document_class == "markdown_reference":
         return f"skill:{_skill_name(_reference_owner(path))}"
     return f"skill:{_skill_name(path)}"
@@ -522,6 +759,18 @@ def _authority_tier(path: str, document_class: str) -> str:
         return "plugin_runtime"
     if document_class == "skill_contract":
         return "canonical_skill"
+    additional = {
+        "identity_contract": "suite_identity",
+        "identity_roster": "identity_roster",
+        "router_install_contract": "router_install",
+        "overlay_contract": "plugin_overlay",
+        "frontier_policy": "frontier_policy",
+        "frontier_ledger": "frontier_ledger",
+        "worker_prompt": "worker_prompt",
+        "operation_reference": "conditional_reference",
+    }
+    if document_class in additional:
+        return additional[document_class]
     return "conditional_reference"
 
 
@@ -531,30 +780,20 @@ def _external_owner(path: str) -> str | None:
     return None
 
 
-def _loader_roots(path: str, document_class: str) -> list[str]:
-    plugin = _plugin(path)
-    if path == "AGENTS.md":
-        return ["repository", "agent-skills"]
-    if path == "PROMISE_MACHINE.md":
-        return ["repository", "agent-skills"]
-    if path == ".agents/skills/promise-machine/SKILL.md":
-        return ["repository", "agent-skills"]
+def _same_repository_markdown_url(value: str) -> str | None:
+    """Map only a known canonical URL into this pinned source repository."""
+    return SAME_REPOSITORY_MARKDOWN_URLS.get(value)
+
+
+def _canonical_owner(path: str, document_class: str) -> str:
+    admission = _additional_metadata().get(path)
+    if admission is not None:
+        return admission["canonical_owner"]
+    if document_class == "markdown_reference":
+        return _reference_owner(path)
     if document_class == "promise_machine_contract":
-        return [f"standalone:{plugin}"]
-    return ["repository", "agent-skills", f"standalone:{plugin}"]
-
-
-def _scenarios(path: str, document_class: str) -> list[str]:
-    if path in (
-        "AGENTS.md",
-        "PROMISE_MACHINE.md",
-        ".agents/skills/promise-machine/SKILL.md",
-    ):
-        return ["all"]
-    if document_class in ("runtime_contract", "promise_machine_contract"):
-        return [f"plugin:{_plugin(path)}"]
-    owner = path if document_class == "skill_contract" else _reference_owner(path)
-    return [f"skill:{_skill_name(owner)}"]
+        return "PROMISE_MACHINE.md"
+    return path
 
 
 def build_manifest() -> dict[str, Any]:
@@ -566,27 +805,45 @@ def build_manifest() -> dict[str, Any]:
         digest = _sha256(blob)
         by_digest.setdefault(digest, []).append(path)
         document_class = _document_class(path)
-        owner = (
-            _reference_owner(path) if document_class == "markdown_reference" else path
-        )
-        if document_class == "promise_machine_contract":
-            owner = "PROMISE_MACHINE.md"
+        owner = _canonical_owner(path, document_class)
+        admission = _additional_metadata().get(path)
         provisional.append(
             {
                 "path": path,
                 "logical_document": _logical_document(path, document_class),
                 "document_class": document_class,
+                "admission_kind": (
+                    "issue-census"
+                    if admission is None
+                    else admission["admission_kind"]
+                ),
                 "bytes": len(blob),
                 "sha256": digest,
                 "exact_duplicate_group": None,
                 "canonical_content_path": None,
                 "canonical_owner": owner,
                 "authority_tier": _authority_tier(path, document_class),
-                "loader_roots": _loader_roots(path, document_class),
-                "scenario_reachability": _scenarios(path, document_class),
+                "loader_roots": [],
+                "scenario_reachability": [],
                 "external_runtime_owner": _external_owner(path),
             }
         )
+    topology = _build_topology(provisional)
+    loader_reachability = _reachability_by_root(
+        topology["roots"], topology["edges"], "active_roots"
+    )
+    scenario_reachability = _reachability_by_root(
+        topology["scenario_roots"],
+        topology["scenario_edges"],
+        "active_scenarios",
+    )
+    for record in provisional:
+        record["loader_roots"] = sorted(loader_reachability[record["path"]])
+        record["scenario_reachability"] = sorted(
+            scenario_reachability[record["path"]]
+        )
+        if not record["loader_roots"] or not record["scenario_reachability"]:
+            raise Refusal(f"unreachable admitted document: {record['path']}")
     canonical_by_digest: dict[str, str] = {}
     for digest, members in by_digest.items():
         canonical_by_digest[digest] = (
@@ -677,12 +934,49 @@ def _reference_link(
     return source, needle
 
 
-def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
-    manifest_digest = _artifact_digest(manifest)
-    documents = manifest["documents"]
+def _reachability_by_root(
+    roots: list[dict[str, Any]],
+    edges: list[dict[str, Any]],
+    scope_field: str,
+) -> dict[str, set[str]]:
+    paths = {
+        path
+        for root in roots
+        for path in (root["node"],)
+    } | {
+        path
+        for edge in edges
+        for path in (edge["source"], edge["target"])
+    }
+    observed: dict[str, set[str]] = {path: set() for path in paths}
+    for root in roots:
+        adjacency: dict[str, set[str]] = {}
+        for edge in edges:
+            scope = edge[scope_field]
+            if "*" in scope or root["id"] in scope:
+                adjacency.setdefault(edge["source"], set()).add(edge["target"])
+        pending = [root["node"]]
+        reached: set[str] = set()
+        while pending:
+            node = pending.pop()
+            if node in reached:
+                continue
+            reached.add(node)
+            pending.extend(sorted(adjacency.get(node, set()), reverse=True))
+        for path in reached:
+            observed[path].add(root["id"])
+    return observed
+
+
+def _build_topology(documents: list[dict[str, Any]]) -> dict[str, Any]:
     document_paths = {item["path"] for item in documents}
     plugins = sorted(
-        {_plugin(path) for path in document_paths if _plugin(path) is not None}
+        {
+            _plugin(item["path"])
+            for item in documents
+            if item["document_class"] == "runtime_contract"
+            and _plugin(item["path"]) is not None
+        }
     )
     roots = [
         {
@@ -713,9 +1007,22 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
         )
     edges: list[dict[str, Any]] = []
 
-    def add_edge(source: str, target: str, kind: str, reason: str, needle: str) -> None:
+    def add_edge(
+        source: str,
+        target: str,
+        kind: str,
+        reason: str,
+        needle: str,
+        *,
+        evidence_path: str | None = None,
+        active_roots: tuple[str, ...] = ("*",),
+    ) -> None:
         if source not in document_paths or target not in document_paths:
             raise Refusal("loader edge leaves the frozen corpus")
+        if any(
+            item["source"] == source and item["target"] == target for item in edges
+        ):
+            raise Refusal(f"duplicate loader edge: {source} -> {target}")
         edges.append(
             {
                 "id": f"edge-{len(edges) + 1:03d}",
@@ -723,16 +1030,36 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
                 "target": target,
                 "kind": kind,
                 "reason": reason,
-                "evidence": _evidence(source, needle),
+                "active_roots": list(active_roots),
+                "evidence": _evidence(evidence_path or source, needle),
             }
         )
 
+    add_edge(
+        "AGENTS.md",
+        "SHOGGOTH.md",
+        "unconditional",
+        "the repository runtime loads the collective identity before routing",
+        "[Shoggoth collective identity](SHOGGOTH.md)",
+        active_roots=("repository", "agent-skills"),
+    )
+    if _same_repository_markdown_url(CONTRIBUTORS_CANONICAL_URL) != "CONTRIBUTORS.md":
+        raise Refusal("canonical contributor URL did not resolve to the pinned path")
+    add_edge(
+        "SHOGGOTH.md",
+        "CONTRIBUTORS.md",
+        "credential-identity",
+        "the identity contract conditionally resolves an existing credential to the canonical local roster",
+        CONTRIBUTORS_CANONICAL_URL,
+        active_roots=("repository", "agent-skills"),
+    )
     add_edge(
         "AGENTS.md",
         "PROMISE_MACHINE.md",
         "unconditional",
         "the repository runtime requires the suite-wide law before selection",
         "[Promise Machine contract](PROMISE_MACHINE.md)",
+        active_roots=("repository", "agent-skills"),
     )
     add_edge(
         "AGENTS.md",
@@ -740,6 +1067,7 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
         "unconditional",
         "the repository runtime routes requests through the sole host-neutral entrypoint",
         "`.agents/skills/promise-machine/SKILL.md`",
+        active_roots=("repository", "agent-skills"),
     )
     router = ".agents/skills/promise-machine/SKILL.md"
     add_edge(
@@ -748,6 +1076,7 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
         "conditional",
         "the Agent Skills source-checkout path requires the root runtime before routing",
         "../../../AGENTS.md",
+        active_roots=("repository",),
     )
     add_edge(
         router,
@@ -755,7 +1084,30 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
         "conditional",
         "the Agent Skills source-checkout path loads the suite law",
         "../../../PROMISE_MACHINE.md",
+        active_roots=("repository",),
     )
+    portable = ".agents/skills/promise-machine/PORTABLE.md"
+    add_edge(
+        router,
+        portable,
+        "installed-route",
+        "the isolated Agent Skills installation loads its dependency-closed runtime contract",
+        "read `PORTABLE.md`",
+        active_roots=("agent-skills",),
+    )
+    for target, needle in (
+        ("SHOGGOTH.md", "runtime/SHOGGOTH.md"),
+        ("PROMISE_MACHINE.md", "runtime/PROMISE_MACHINE.md"),
+        ("AGENTS.md", "runtime/AGENTS.md"),
+    ):
+        add_edge(
+            portable,
+            target,
+            "installed-route",
+            "the installed contract maps a verified runtime copy to its pinned canonical source",
+            needle,
+            active_roots=("agent-skills",),
+        )
     for plugin in plugins:
         runtime = f"plugins/{plugin}/AGENTS.md"
         add_edge(
@@ -764,6 +1116,7 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
             "conditional",
             "the router loads the runtime contract only when its selection row wins",
             f"../../../plugins/{plugin}/AGENTS.md",
+            active_roots=("repository", "agent-skills"),
         )
         promise = f"plugins/{plugin}/PROMISE_MACHINE.md"
         add_edge(
@@ -792,6 +1145,31 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
                 "the plugin selection table loads exactly the selected canonical skill",
                 relative,
             )
+    for path, metadata in sorted(_additional_metadata().items()):
+        document_class = metadata["document_class"]
+        if document_class in (
+            "identity_contract",
+            "identity_roster",
+            "router_install_contract",
+        ):
+            continue
+        source = metadata["source_path"]
+        add_edge(
+            source,
+            path,
+            metadata["edge_kind"],
+            "the source-directed admission requires this Markdown load",
+            metadata["source_needle"],
+        )
+    for prefix in FRONTIER_SKILLS:
+        ledger = f"{prefix}/EVOLUTION.md"
+        add_edge(
+            ledger,
+            "plugins/hexaemeron/skills/VERSIONING.md",
+            "frontier-gate",
+            "the admitted frontier ledger requires the shared versioning policy",
+            "VERSIONING.md",
+        )
     references_by_owner: dict[str, list[str]] = {}
     for item in documents:
         if item["document_class"] == "markdown_reference":
@@ -821,17 +1199,271 @@ def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
                 break
             if not progress:
                 raise Refusal(f"unproved reference loader edge: {sorted(pending)[0]}")
+    scenario_roots = [
+        {
+            "id": "all",
+            "node": "AGENTS.md",
+            "mode": "unconditional",
+            "evidence": _evidence("AGENTS.md", "The safe loading path is short:"),
+        }
+    ]
+    for plugin in plugins:
+        runtime = f"plugins/{plugin}/AGENTS.md"
+        scenario_roots.append(
+            {
+                "id": f"plugin:{plugin}",
+                "node": runtime,
+                "mode": "unconditional",
+                "evidence": _evidence(runtime, "## Promise Machine binding"),
+            }
+        )
+    skill_paths: dict[str, str] = {}
+    for item in documents:
+        if item["document_class"] != "skill_contract":
+            continue
+        name = _skill_name(item["path"])
+        if name in skill_paths:
+            raise Refusal(f"duplicate scenario skill name: {name}")
+        skill_paths[name] = item["path"]
+        scenario_roots.append(
+            {
+                "id": f"skill:{name}",
+                "node": item["path"],
+                "mode": "unconditional",
+                "evidence": _evidence(item["path"], f"name: {name}"),
+            }
+        )
+    scenario_roots.sort(key=lambda item: item["id"])
+    scenario_edges: list[dict[str, Any]] = []
+
+    def add_scenario_edge(
+        source: str,
+        target: str,
+        kind: str,
+        reason: str,
+        needle: str,
+        *,
+        evidence_path: str | None = None,
+    ) -> None:
+        if source not in document_paths or target not in document_paths:
+            raise Refusal("scenario edge leaves the frozen corpus")
+        if any(
+            item["source"] == source and item["target"] == target
+            for item in scenario_edges
+        ):
+            return
+        scenario_edges.append(
+            {
+                "id": f"scenario-edge-{len(scenario_edges) + 1:03d}",
+                "source": source,
+                "target": target,
+                "kind": kind,
+                "reason": reason,
+                "active_scenarios": ["*"],
+                "evidence": _evidence(evidence_path or source, needle),
+            }
+        )
+
+    for source, target, kind, needle in (
+        ("AGENTS.md", "SHOGGOTH.md", "unconditional", "SHOGGOTH.md"),
+        ("SHOGGOTH.md", "CONTRIBUTORS.md", "credential-identity", "CONTRIBUTORS.md"),
+        ("AGENTS.md", "PROMISE_MACHINE.md", "unconditional", "PROMISE_MACHINE.md"),
+        ("AGENTS.md", router, "unconditional", router),
+        (router, portable, "installed-route", "PORTABLE.md"),
+    ):
+        add_scenario_edge(
+            source,
+            target,
+            kind,
+            "the shared scenario follows the source-directed load",
+            needle,
+        )
+    for plugin in plugins:
+        runtime = f"plugins/{plugin}/AGENTS.md"
+        add_scenario_edge(
+            runtime,
+            f"plugins/{plugin}/PROMISE_MACHINE.md",
+            "unconditional",
+            "the plugin scenario loads its suite-law copy",
+            "PROMISE_MACHINE.md",
+        )
+    owned_targets: dict[str, list[tuple[str, dict[str, str]]]] = {}
+    for target, metadata in sorted(_additional_metadata().items()):
+        if metadata["document_class"] in (
+            "identity_contract",
+            "identity_roster",
+            "router_install_contract",
+        ):
+            continue
+        owned_targets.setdefault(metadata["canonical_owner"], []).append(
+            (target, metadata)
+        )
+    for owner, targets in sorted(owned_targets.items()):
+        for target, metadata in targets:
+            source = metadata["source_path"]
+            if source != owner and source not in document_paths:
+                raise Refusal(f"admission anchor leaves corpus: {source}")
+            add_scenario_edge(
+                source,
+                target,
+                metadata["edge_kind"],
+                "the selected workflow follows its admitted source directive",
+                metadata["source_needle"],
+            )
+    for ledger in (f"{prefix}/EVOLUTION.md" for prefix in FRONTIER_SKILLS):
+        add_scenario_edge(
+            ledger,
+            "plugins/hexaemeron/skills/VERSIONING.md",
+            "frontier-gate",
+            "the frontier ledger requires the shared versioning policy",
+            "VERSIONING.md",
+        )
+    for owner, references in sorted(references_by_owner.items()):
+        reachable = {owner}
+        pending = set(references)
+        while pending:
+            for target in sorted(pending):
+                link = _reference_link(owner, target, reachable)
+                if link is None:
+                    continue
+                source, needle = link
+                add_scenario_edge(
+                    source,
+                    target,
+                    "conditional",
+                    "the selected skill recursively follows a required reference",
+                    needle,
+                )
+                reachable.add(target)
+                pending.remove(target)
+                break
+            else:
+                raise Refusal(
+                    f"unproved scenario reference edge: {sorted(pending)[0]}"
+                )
+
+    fiat = "plugins/hexaemeron/skills/fiat/SKILL.md"
+    for name in ("protasis", "phylax", "ephoros", "metron", "elenchus", "hypomnema"):
+        add_scenario_edge(
+            fiat,
+            skill_paths[name],
+            "operation-branch",
+            "Fiat delegates the named phase content contract",
+            f"[{name}]",
+        )
+    for name in ("x-ray", "solidity-auditor", "fizz"):
+        add_scenario_edge(
+            fiat,
+            skill_paths[name],
+            "operation-branch",
+            "Fiat conditionally loads the vendored security suite",
+            f"`{name}`",
+        )
+    fizz = skill_paths["fizz"]
+    add_scenario_edge(
+        fizz,
+        skill_paths["x-ray"],
+        "operation-branch",
+        "Fizz requires X-Ray before its analyzer fallback",
+        "x-ray Acquisition Protocol",
+    )
+    kronos = skill_paths["kronos"]
+    add_scenario_edge(
+        kronos,
+        fiat,
+        "operation-branch",
+        "Kronos dispatches an accepted selection through Fiat",
+        "dispatches that exact job to Fiat",
+    )
+    for prefix in FRONTIER_SKILLS:
+        target = f"{prefix}/SKILL.md"
+        if target == kronos:
+            continue
+        add_scenario_edge(
+            kronos,
+            target,
+            "operation-branch",
+            "Kronos reads the dynamically selected first-party skill",
+            "Read the selected skill's canonical instructions",
+        )
+    scribe = "plugins/hexaemeron/agents/scribe.md"
+    for name, needle in (("imprimatur", "imprimatur.py"), ("vulgate", "vulgate/SKILL.md")):
+        add_scenario_edge(
+            scribe,
+            skill_paths[name],
+            "operation-branch",
+            "the prose worker loads its required mask",
+            needle,
+        )
+    warden = "plugins/hexaemeron/agents/warden.md"
+    for name, needle in (
+        ("x-ray", "x-ray/SKILL.md"),
+        ("solidity-auditor", "solidity-auditor/SKILL.md"),
+        ("fizz", "fizz/SKILL.md"),
+        ("sapheneia", "sapheneia:sapheneia"),
+    ):
+        add_scenario_edge(
+            warden,
+            skill_paths[name],
+            "operation-branch",
+            "the audit worker follows its required review or filter contract",
+            needle,
+        )
+    return {
+        "roots": roots,
+        "edges": edges,
+        "scenario_roots": scenario_roots,
+        "scenario_edges": scenario_edges,
+    }
+
+
+def build_loader_graph(manifest: dict[str, Any]) -> dict[str, Any]:
+    manifest_digest = _artifact_digest(manifest)
+    documents = manifest["documents"]
+    topology = _build_topology(documents)
+    observed_roots = _reachability_by_root(
+        topology["roots"], topology["edges"], "active_roots"
+    )
+    observed_scenarios = _reachability_by_root(
+        topology["scenario_roots"],
+        topology["scenario_edges"],
+        "active_scenarios",
+    )
+    for document in documents:
+        if set(document["loader_roots"]) != observed_roots[document["path"]]:
+            raise Refusal(f"loader roots disagree with graph: {document['path']}")
+        if set(document["scenario_reachability"]) != observed_scenarios[
+            document["path"]
+        ]:
+            raise Refusal(
+                f"scenario reachability disagrees with graph: {document['path']}"
+            )
+    exclusions = [
+        {
+            "class": class_name,
+            "path": path,
+            "reason": "the source classifies this link as non-operative for agent loading",
+            "evidence": _evidence(source, needle),
+        }
+        for class_name, path, source, needle in EXCLUDED_LINK_CLASSES
+    ]
     return {
         "schema": f"{SCHEMA_PREFIX}-loader-graph/v1",
         "source_ref": SOURCE_REF,
         "manifest_sha256": manifest_digest,
-        "roots": roots,
-        "edges": edges,
+        "roots": topology["roots"],
+        "edges": topology["edges"],
+        "scenario_roots": topology["scenario_roots"],
+        "scenario_edges": topology["scenario_edges"],
+        "excluded_links": exclusions,
         "constraints": {
             "file_presence_creates_edge": False,
             "fixtures_excluded": True,
             "skills_runtime_excluded": True,
             "conditional_references_require_source_span": True,
+            "same_repository_urls_require_exact_match": True,
+            "recursive_required_loads_closed": True,
+            "manifest_reachability_is_graph_derived": True,
         },
     }
 
@@ -1101,6 +1733,18 @@ def build_cohorts(manifest: dict[str, Any]) -> dict[str, Any]:
     )
     development_bytes = sum(item["bytes"] for item in development_records)
     holdout_bytes = sum(item["bytes"] for item in holdout_records)
+    development_classes = sorted(
+        {item["document_class"] for item in development_records}
+    )
+    all_classes = sorted({item["document_class"] for item in unique_records})
+    if development_classes != all_classes or all_classes != sorted(EXPECTED_COUNTS):
+        raise Refusal("development cohort does not cover every document class")
+    development_authorities = sorted(
+        {item["authority_tier"] for item in development_records}
+    )
+    all_authorities = sorted({item["authority_tier"] for item in unique_records})
+    if development_authorities != all_authorities:
+        raise Refusal("development cohort does not cover every authority tier")
     if len(development_skills) < 12 or development_bytes / total < 0.50:
         raise Refusal("development cohort coverage gate failed")
     if len(holdout_skills) != 5 or holdout_bytes / total < 0.20:
@@ -1128,9 +1772,8 @@ def build_cohorts(manifest: dict[str, Any]) -> dict[str, Any]:
             "paths": sorted(item["path"] for item in development_records),
             "unique_bytes": development_bytes,
             "unique_byte_ratio": f"{development_bytes / total:.6f}",
-            "authority_tiers": sorted(
-                {item["authority_tier"] for item in development_records}
-            ),
+            "authority_tiers": development_authorities,
+            "document_classes": development_classes,
             "size_deciles": development_deciles,
             "constructs": _observed_constructs(
                 sorted(item["path"] for item in development_records)
@@ -1200,6 +1843,7 @@ def _validate_manifest_shape(manifest: dict[str, Any]) -> None:
         "path",
         "logical_document",
         "document_class",
+        "admission_kind",
         "bytes",
         "sha256",
         "exact_duplicate_group",
@@ -1275,10 +1919,17 @@ def verify_loader(args: argparse.Namespace) -> bytes:
     expected = build_loader_graph(manifest)
     graph, raw = _verify_exact(args.graph, expected, "loader graph")
     paths = {item["path"] for item in manifest["documents"]}
-    for edge in graph["edges"]:
+    for edge in [*graph["edges"], *graph["scenario_edges"]]:
         if edge["source"] not in paths or edge["target"] not in paths:
             raise Refusal("loader graph escapes the manifest")
-        evidence = edge["evidence"]
+    for relation in [
+        *graph["roots"],
+        *graph["edges"],
+        *graph["scenario_roots"],
+        *graph["scenario_edges"],
+        *graph["excluded_links"],
+    ]:
+        evidence = relation["evidence"]
         data = _source_blob(evidence["path"])
         span = data[evidence["start"] : evidence["end"]]
         if (
@@ -1289,7 +1940,12 @@ def verify_loader(args: argparse.Namespace) -> bytes:
     return _result(
         "verify-loader",
         raw,
-        {"roots": len(graph["roots"]), "edges": len(graph["edges"])},
+        {
+            "roots": len(graph["roots"]),
+            "edges": len(graph["edges"]),
+            "scenario_roots": len(graph["scenario_roots"]),
+            "scenario_edges": len(graph["scenario_edges"]),
+        },
     )
 
 
@@ -1455,6 +2111,28 @@ def _reconciliation_markdown(
 ) -> bytes:
     totals = manifest["totals"]
     classes = manifest["counts"]
+    documents = {item["path"]: item for item in manifest["documents"]}
+    inventory_rows = "\n".join(
+        f"| `{name}` | {classes[name]} |" for name in sorted(classes)
+    )
+    admission_rows: list[str] = []
+    for path, metadata in sorted(
+        _additional_metadata().items(),
+        key=lambda item: (item[1]["document_class"], item[0]),
+    ):
+        evidence = _evidence(metadata["source_path"], metadata["source_needle"])
+        admission_rows.append(
+            f"| `{metadata['document_class']}` | `{metadata['admission_kind']}` | "
+            f"`{path}` | {documents[path]['bytes']} | "
+            f"`{evidence['path']}:{evidence['start']}-{evidence['end']}` |"
+        )
+    exclusion_rows: list[str] = []
+    for class_name, path, source, needle in EXCLUDED_LINK_CLASSES:
+        evidence = _evidence(source, needle)
+        exclusion_rows.append(
+            f"| `{class_name}` | `{path}` | "
+            f"`{source}:{evidence['start']}-{evidence['end']}` |"
+        )
     text = f"""# instruction architecture corpus reconciliation
 
 source: `{SOURCE_REF}`
@@ -1468,22 +2146,41 @@ repository denominators, not prompt-size or semantic-compression claims.
 
 | class | files |
 | --- | ---: |
-| canonical skill contracts | {classes["skill_contract"]} |
-| runtime contracts | {classes["runtime_contract"]} |
-| Promise Machine contracts | {classes["promise_machine_contract"]} |
-| linked Markdown references | {classes["markdown_reference"]} |
+{inventory_rows}
 
 the sole exact duplicate family is the root Promise Machine contract and its
 17 generated plugin copies. that family accounts for
 {totals["physical_bytes"] - totals["unique_bytes"]:,} bytes removed by exact
 deduplication. similar prose is not deduplicated.
 
+## source-directed admissions
+
+the 69 paths below close the imperative and conditional agent-load directives
+that the original issue census omitted. each row binds the admitted class,
+condition, exact source bytes and source anchor at the frozen ref.
+
+| class | admission | path | bytes | source anchor |
+| --- | --- | --- | ---: | --- |
+{chr(10).join(admission_rows)}
+
+## excluded links
+
+these representative links do not create loader edges. the classification is
+source-bound rather than inferred from a file's presence.
+
+| excluded class | path | source anchor |
+| --- | --- | --- |
+{chr(10).join(exclusion_rows)}
+
 ## loader evidence
 
 `loader-graph.json` records {len(graph["roots"])} roots and {len(graph["edges"])}
-edges. every edge cites a source path, exact byte range, source digest and span
-digest. unconditional runtime loads and conditional selection or reference
-loads remain distinct. a file's presence creates no edge. fixtures and
+host edges, plus {len(graph["scenario_roots"])} scenario roots and
+{len(graph["scenario_edges"])} scenario edges. every edge cites a source path,
+exact byte range, source digest and span digest. unconditional runtime loads,
+installed routes, identity checks, overlays, frontier gates, worker dispatches
+and operation branches remain distinct. manifest reachability is recomputed
+from those edges. a file's presence creates no edge. fixtures and
 `distribution/skills-runtime/` are outside this corpus.
 
 ## byte classes
@@ -1502,7 +2199,8 @@ bytes ({cohorts["development"]["unique_byte_ratio"]}). the sealed holdout holds
 five logical skills and {cohorts["holdout"]["unique_bytes"]:,} exact-unique
 bytes ({cohorts["holdout"]["unique_byte_ratio"]}). memberships are disjoint.
 the development set covers every shared root and runtime contract, all ten
-file-size deciles and every construct class recorded in `cohorts.json`.
+file-size deciles, authority tier, admitted document class and construct class
+recorded in `cohorts.json`.
 
 `holdout-seal.json` commits the selection method, seed, membership and 16-slot
 case envelope. it contains no prompt, expected answer, scorer key or model
@@ -1534,18 +2232,29 @@ def build_baseline(args: argparse.Namespace) -> bytes:
             exact=(BASELINE_RECONCILIATION,),
             roots=(SCRATCH_ROOT,),
         )
+        artifact_targets = {
+            output / name
+            for name in (*BASELINE_RECORD_NAMES, "artifact-inventory.json")
+        }
+        if (
+            reconciliation == output
+            or reconciliation in output.parents
+            or reconciliation in artifact_targets
+            or any(target in reconciliation.parents for target in artifact_targets)
+        ):
+            raise Refusal("reconciliation output overlaps baseline artifacts")
     manifest = build_manifest()
     graph = build_loader_graph(manifest)
     partition = build_partition(manifest)
     cohorts = build_cohorts(manifest)
     seal = build_holdout_seal(manifest, cohorts)
-    records = {
-        "corpus-manifest.json": manifest,
-        "loader-graph.json": graph,
-        "byte-partition.json": partition,
-        "cohorts.json": cohorts,
-        "holdout-seal.json": seal,
-    }
+    records = dict(
+        zip(
+            BASELINE_RECORD_NAMES,
+            (manifest, graph, partition, cohorts, seal),
+            strict=True,
+        )
+    )
     digests: dict[str, dict[str, Any]] = {}
     for name, value in records.items():
         data = _canonical_json(value)

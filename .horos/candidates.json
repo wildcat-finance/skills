@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16666526,
+    "bytes_blob": 16945936,
     "bytes_generated": 98
   },
   "entries": [
@@ -12,6 +12,13 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/AUDIT_SYNOPSIS.md"
+    },
+    {
+      "bytes": 22986,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-1046-framework-74-select-an-implementation-ready.synopsis.md"
     },
     {
       "bytes": 173841,
@@ -575,23 +582,23 @@
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     },
     {
-      "bytes": 99854,
+      "bytes": 139560,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 99854 bytes",
+      "evidence": "no newline in the first 4096 bytes of 139560 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/byte-partition.json"
     },
     {
-      "bytes": 61020,
+      "bytes": 109481,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 61020 bytes",
+      "evidence": "no newline in the first 4096 bytes of 109481 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/corpus-manifest.json"
     },
     {
-      "bytes": 56929,
+      "bytes": 225186,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 56929 bytes",
+      "evidence": "no newline in the first 4096 bytes of 225186 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/loader-graph.json"
     }

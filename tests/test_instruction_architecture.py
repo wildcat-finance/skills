@@ -29,10 +29,10 @@ SCHEMA = ROOT / "research/instruction-architecture/schemas/source-bound-v1.schem
 STUDY = ROOT / "docs/instruction-architecture/study.md"
 RUNBOOK = ROOT / "docs/instruction-architecture/runbook.md"
 RECEIPTED_STUDY_SHA256 = (
-    "99a9195aa31af3f15ed70c51ac3f9d3d2221c724494b65a2d6c4c7185453d48f"
+    "9edd0a06ae72dd1b9108ee47c0514ae70edc577e0d62a0603585a99455d96e7d"
 )
 AMENDED_RUNBOOK_SHA256 = (
-    "32bb6f457818fd4938431d48595a0517fa577a4f80c90896a8d956bd4da91051"
+    "9c6144a1b819b6ce04289722836a38d694770a10638af59afd6d147970e635f9"
 )
 
 
@@ -99,6 +99,67 @@ class CorpusManifestTests(unittest.TestCase):
         self.assertEqual(paths, sorted(paths))
         self.assertEqual(len(paths), len(set(paths)))
 
+    def test_source_directed_admission_is_exact_and_anchored(self):
+        documents = {item["path"]: item for item in self.manifest["documents"]}
+        admissions = AI._additional_metadata()
+        self.assertEqual(len(admissions), 69)
+        self.assertEqual(
+            {
+                item["path"]
+                for item in self.manifest["documents"]
+                if item["admission_kind"] != "issue-census"
+            },
+            set(admissions),
+        )
+        self.assertEqual(sum(documents[path]["bytes"] for path in admissions), 523_721)
+        self.assertEqual(
+            {
+                class_name: sum(
+                    1
+                    for metadata in admissions.values()
+                    if metadata["document_class"] == class_name
+                )
+                for class_name in sorted(
+                    {metadata["document_class"] for metadata in admissions.values()}
+                )
+            },
+            {
+                "frontier_ledger": 26,
+                "frontier_policy": 1,
+                "identity_contract": 1,
+                "identity_roster": 1,
+                "operation_reference": 24,
+                "overlay_contract": 1,
+                "router_install_contract": 1,
+                "worker_prompt": 14,
+            },
+        )
+        for path, metadata in admissions.items():
+            with self.subTest(path=path):
+                self.assertEqual(
+                    documents[path]["document_class"], metadata["document_class"]
+                )
+                evidence = AI._evidence(
+                    metadata["source_path"], metadata["source_needle"]
+                )
+                self.assertGreater(evidence["end"], evidence["start"])
+
+    def test_same_repository_url_requires_exact_repository_ref_and_path(self):
+        self.assertEqual(
+            AI._same_repository_markdown_url(AI.CONTRIBUTORS_CANONICAL_URL),
+            "CONTRIBUTORS.md",
+        )
+        for changed in (
+            AI.CONTRIBUTORS_CANONICAL_URL.replace("wildcat-finance", "attacker"),
+            AI.CONTRIBUTORS_CANONICAL_URL.replace("/main/", "/other/"),
+            AI.CONTRIBUTORS_CANONICAL_URL.replace(
+                "CONTRIBUTORS.md", "contributors.md"
+            ),
+            f"{AI.CONTRIBUTORS_CANONICAL_URL}?raw=1",
+        ):
+            with self.subTest(changed=changed):
+                self.assertIsNone(AI._same_repository_markdown_url(changed))
+
     def test_exact_duplicate_group_is_only_promise_machine(self):
         groups: dict[str, list[dict]] = {}
         for item in self.manifest["documents"]:
@@ -138,6 +199,20 @@ class CorpusManifestTests(unittest.TestCase):
             path = FIXTURES / name
             self.assertEqual(
                 record, {"bytes": path.stat().st_size, "sha256": sha256(path)}
+            )
+
+    def test_build_baseline_reproduces_all_committed_outputs(self):
+        with scratch_directory("instruction-architecture-rebuild-") as inside:
+            output = Path(inside) / "records"
+            reconciliation = Path(inside) / "corpus-reconciliation.md"
+            AI.build_baseline(
+                mock.Mock(output=output, reconciliation=reconciliation)
+            )
+            for name in (*AI.BASELINE_RECORD_NAMES, "artifact-inventory.json"):
+                self.assertEqual((output / name).read_bytes(), (FIXTURES / name).read_bytes())
+            self.assertEqual(
+                reconciliation.read_bytes(),
+                (ROOT / "docs/instruction-architecture/corpus-reconciliation.md").read_bytes(),
             )
 
     def test_moved_runtime_and_fixtures_are_excluded(self):
@@ -364,9 +439,35 @@ class CorpusManifestTests(unittest.TestCase):
                 AI._load_record(record)
             except Exception as exc:
                 self.assertIsInstance(exc, AI.Refusal)
-                self.assertRegex(str(exc), "strict UTF-8 JSON")
+                self.assertRegex(str(exc), "number length limit|strict UTF-8 JSON")
             else:
                 self.fail("oversized JSON integer was accepted")
+
+    def test_integer_bound_does_not_depend_on_the_host_python_limit(self):
+        with scratch_directory() as inside:
+            record = Path(inside) / "integer.json"
+            record.write_bytes(b'{"value":' + b"1" * 5_000 + b"}\n")
+            prior_limit = sys.get_int_max_str_digits()
+            try:
+                sys.set_int_max_str_digits(0)
+                with self.assertRaisesRegex(AI.Refusal, "number length limit"):
+                    AI._load_record(record)
+            finally:
+                sys.set_int_max_str_digits(prior_limit)
+
+    def test_integer_bound_remains_usable_at_the_lowest_host_limit(self):
+        with scratch_directory() as inside:
+            record = Path(inside) / "integer.json"
+            record.write_bytes(
+                b'{"value":' + b"1" * AI.MAX_JSON_NUMBER_CHARS + b"}\n"
+            )
+            prior_limit = sys.get_int_max_str_digits()
+            try:
+                sys.set_int_max_str_digits(sys.int_info.str_digits_check_threshold)
+                value, _ = AI._load_record(record)
+            finally:
+                sys.set_int_max_str_digits(prior_limit)
+            self.assertEqual(len(str(value["value"])), AI.MAX_JSON_NUMBER_CHARS)
 
     def test_non_scalar_json_refuses_without_encoder_exception(self):
         with scratch_directory() as inside:
@@ -414,6 +515,25 @@ class CorpusManifestTests(unittest.TestCase):
                 self.assertTrue(refused, "unowned output path was accepted")
                 derive.assert_not_called()
                 write.assert_not_called()
+
+    def test_build_baseline_refuses_output_aliases_before_derivation(self):
+        with scratch_directory("instruction-architecture-alias-") as inside:
+            output = Path(inside) / "records"
+            for reconciliation in (
+                output,
+                output / "corpus-manifest.json",
+                output / "artifact-inventory.json",
+                output / "corpus-manifest.json" / "nested.md",
+            ):
+                with self.subTest(reconciliation=reconciliation):
+                    arguments = mock.Mock(
+                        output=output,
+                        reconciliation=reconciliation,
+                    )
+                    with mock.patch.object(AI, "build_manifest") as derive:
+                        with self.assertRaisesRegex(AI.Refusal, "overlaps"):
+                            AI.build_baseline(arguments)
+                    derive.assert_not_called()
 
     def test_output_refuses_parent_symlink_escape_without_writing(self):
         with (
@@ -469,7 +589,7 @@ class BytePartitionTests(unittest.TestCase):
         cls.sources = {item["path"]: item for item in cls.manifest["documents"]}
 
     def test_every_range_is_ordered_gapless_and_digest_bound(self):
-        self.assertEqual(len(self.partition["files"]), 106)
+        self.assertEqual(len(self.partition["files"]), 175)
         for file_record in self.partition["files"]:
             source = AI._source_blob(file_record["path"])
             cursor = 0
@@ -488,7 +608,7 @@ class BytePartitionTests(unittest.TestCase):
             )
 
     def test_partition_totals_reconcile(self):
-        self.assertEqual(sum(self.partition["totals"].values()), 1_545_537)
+        self.assertEqual(sum(self.partition["totals"].values()), 2_069_258)
         self.assertEqual(self.partition["unsupported_operative_bytes"], 0)
         self.assertEqual(self.partition["totals"]["generated_duplicate"], 471_444)
 
@@ -588,8 +708,16 @@ class LoaderGraphTests(unittest.TestCase):
 
     def test_roots_and_edges_are_source_span_bound(self):
         self.assertEqual(len(self.graph["roots"]), 19)
-        self.assertEqual(len(self.graph["edges"]), 107)
-        for relation in [*self.graph["roots"], *self.graph["edges"]]:
+        self.assertEqual(len(self.graph["edges"]), 205)
+        self.assertEqual(len(self.graph["scenario_roots"]), 50)
+        self.assertEqual(len(self.graph["scenario_edges"]), 193)
+        for relation in [
+            *self.graph["roots"],
+            *self.graph["edges"],
+            *self.graph["scenario_roots"],
+            *self.graph["scenario_edges"],
+            *self.graph["excluded_links"],
+        ]:
             evidence = relation["evidence"]
             source = AI._source_blob(evidence["path"])
             self.assertEqual(
@@ -600,23 +728,57 @@ class LoaderGraphTests(unittest.TestCase):
                 evidence["span_sha256"],
             )
 
-    def test_agent_skills_root_loads_the_source_checkout_runtime_and_law(self):
+    def test_installed_router_path_is_agent_skills_only(self):
         router = ".agents/skills/promise-machine/SKILL.md"
-        expected = {
-            (router, "AGENTS.md"),
-            (router, "PROMISE_MACHINE.md"),
-        }
+        portable = ".agents/skills/promise-machine/PORTABLE.md"
         edges = {
             (item["source"], item["target"]): item for item in self.graph["edges"]
         }
-        self.assertLessEqual(expected, set(edges))
-        self.assertTrue(all(edges[pair]["kind"] == "conditional" for pair in expected))
+        self.assertEqual(edges[(router, portable)]["kind"], "installed-route")
+        self.assertEqual(edges[(router, portable)]["active_roots"], ["agent-skills"])
+        for target in ("AGENTS.md", "PROMISE_MACHINE.md", "SHOGGOTH.md"):
+            self.assertEqual(
+                edges[(portable, target)]["active_roots"], ["agent-skills"]
+            )
+        portable_record = next(
+            item for item in self.manifest["documents"] if item["path"] == portable
+        )
+        self.assertEqual(portable_record["loader_roots"], ["agent-skills"])
         promise = next(
             item
             for item in self.manifest["documents"]
             if item["path"] == "PROMISE_MACHINE.md"
         )
-        self.assertEqual(promise["loader_roots"], ["repository", "agent-skills"])
+        self.assertEqual(promise["loader_roots"], ["agent-skills", "repository"])
+
+    def test_manifest_loader_roots_equal_graph_reachability(self):
+        observed = AI._reachability_by_root(
+            self.graph["roots"], self.graph["edges"], "active_roots"
+        )
+        for item in self.manifest["documents"]:
+            self.assertEqual(set(item["loader_roots"]), observed[item["path"]])
+
+    def test_manifest_scenarios_equal_graph_reachability(self):
+        observed = AI._reachability_by_root(
+            self.graph["scenario_roots"],
+            self.graph["scenario_edges"],
+            "active_scenarios",
+        )
+        for item in self.manifest["documents"]:
+            self.assertEqual(
+                set(item["scenario_reachability"]), observed[item["path"]]
+            )
+
+    def test_graph_refuses_fabricated_manifest_reachability(self):
+        for field, message in (
+            ("loader_roots", "loader roots disagree"),
+            ("scenario_reachability", "scenario reachability disagrees"),
+        ):
+            changed = copy.deepcopy(self.manifest)
+            changed["documents"][0][field].append("fabricated")
+            with self.subTest(field=field):
+                with self.assertRaisesRegex(AI.Refusal, message):
+                    AI.build_loader_graph(changed)
 
     def test_every_reference_has_a_conditional_inbound_edge(self):
         references = {
@@ -631,9 +793,67 @@ class LoaderGraphTests(unittest.TestCase):
         }
         self.assertLessEqual(references, inbound)
 
+    def test_all_69_admissions_have_exact_inbound_source_edges(self):
+        edges = {
+            (item["source"], item["target"]): item for item in self.graph["edges"]
+        }
+        for path, metadata in AI._additional_metadata().items():
+            with self.subTest(path=path):
+                edge = edges[(metadata["source_path"], path)]
+                self.assertEqual(edge["kind"], metadata["edge_kind"])
+                self.assertEqual(
+                    edge["evidence"],
+                    AI._evidence(metadata["source_path"], metadata["source_needle"]),
+                )
+
+    def test_recursive_frontier_and_workflow_closure_is_explicit(self):
+        host_pairs = {
+            (item["source"], item["target"]) for item in self.graph["edges"]
+        }
+        policy = "plugins/hexaemeron/skills/VERSIONING.md"
+        for prefix in AI.FRONTIER_SKILLS:
+            self.assertIn((f"{prefix}/EVOLUTION.md", policy), host_pairs)
+        scenario_pairs = {
+            (item["source"], item["target"])
+            for item in self.graph["scenario_edges"]
+        }
+        fiat = "plugins/hexaemeron/skills/fiat/SKILL.md"
+        fizz = "plugins/hexaemeron/skills/fizz/SKILL.md"
+        kronos = "plugins/hexaemeron/skills/kronos/SKILL.md"
+        xray = "plugins/hexaemeron/skills/x-ray/SKILL.md"
+        self.assertIn((fiat, xray), scenario_pairs)
+        self.assertIn((fizz, xray), scenario_pairs)
+        self.assertIn((kronos, fiat), scenario_pairs)
+        for path in AI.FIAT_WORKER_PROMPTS:
+            self.assertIn((fiat, path), scenario_pairs)
+
+    def test_excluded_link_classes_never_become_targets(self):
+        excluded = {item["path"] for item in self.graph["excluded_links"]}
+        self.assertEqual(
+            {item[0] for item in AI.EXCLUDED_LINK_CLASSES},
+            {item["class"] for item in self.graph["excluded_links"]},
+        )
+        targets = {
+            item["target"]
+            for item in [*self.graph["edges"], *self.graph["scenario_edges"]]
+        }
+        self.assertFalse(excluded & targets)
+
     def test_actual_loader_separates_unconditional_and_conditional_edges(self):
         kinds = {item["kind"] for item in self.graph["edges"]}
-        self.assertEqual(kinds, {"conditional", "unconditional"})
+        self.assertEqual(
+            kinds,
+            {
+                "conditional",
+                "credential-identity",
+                "frontier-gate",
+                "installed-route",
+                "operation-branch",
+                "unconditional",
+                "vendored-overlay",
+                "worker-dispatch",
+            },
+        )
         self.assertFalse(self.graph["constraints"]["file_presence_creates_edge"])
         self.assertTrue(self.graph["constraints"]["fixtures_excluded"])
         self.assertTrue(self.graph["constraints"]["skills_runtime_excluded"])
@@ -695,13 +915,14 @@ class HoldoutSealTests(unittest.TestCase):
         self.assertEqual(
             set(self.cohorts["development"]["authority_tiers"]),
             {
-                "canonical_skill",
-                "conditional_reference",
-                "plugin_runtime",
-                "router",
-                "suite_law",
-                "suite_runtime",
+                item["authority_tier"]
+                for item in self.manifest["documents"]
+                if item["path"] == item["canonical_content_path"]
             },
+        )
+        self.assertEqual(
+            set(self.cohorts["development"]["document_classes"]),
+            set(AI.EXPECTED_COUNTS),
         )
 
     def test_sealed_envelope_has_required_classes_without_answers(self):

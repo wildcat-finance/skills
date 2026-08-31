@@ -444,3 +444,53 @@ repository decomposition lives in
 and no production file is changed. These homes follow
 [Hypomnema](../../plugins/hexaemeron/skills/hypomnema/SKILL.md) and keep evidence,
 decision, specification and future work distinct.
+
+### Amendment -- 2026-08-31
+
+**What changed.** A8's 106-file, 1,545,537-byte issue census remains the
+starting physical denominator, but no longer stands in for the verified load
+closure. A source-span audit at the frozen ref admits 69 more canonical or
+conditionally loaded Markdown documents: one identity contract, one
+conditional identity roster, one installed-router contract, one vendored
+overlay contract, one frontier policy, 26 frontier ledgers, 14 dispatched
+worker prompts and 24 operation references. The closed corpus is 175 physical
+files and 2,069,258 bytes; exact whole-file deduplication reduces it to 158
+unique files and 1,597,814 bytes. Reachable and complete-prompt denominators
+remain separate measurements.
+
+The corpus is now the least fixed point over the 106-file issue census and
+source-proved Markdown loads at A1. Admit a source-ref Markdown path when the
+repository, router or selected runtime requires it unconditionally; when an
+installed route, credential-backed identity lookup, vendored overlay,
+frontier gate or worker dispatch conditionally requires it; or when a
+supported operation directs the agent to read it or depends on its flags or
+field contract. Recurse through each admitted document until no required local
+Markdown target remains. A canonical URL into this same repository resolves
+to the pinned local path only when repository and path match exactly. Exclude
+human landing pages, generated reader views, examples and evidence outputs,
+historical rationale and audit records, dynamic target-repository artefacts,
+tests, code and schemas, generated portable-runtime copies, and future or
+unavailable operation specifications. The reconciliation names every admitted
+addition and every excluded linked class with source-span evidence. Fixtures,
+JSON schemas, code and audit records remain part of TCB, disk and upkeep
+measurements where applicable; they are not inserted into the compression
+denominator.
+
+The source manifest must therefore contain exactly 175 in-scope physical files
+and 2,069,258 physical bytes at the frozen ref, reducing by exact whole-file
+digest to 158 unique files and 1,597,814 unique bytes, unless its reconciliation
+report explains and source-proves a topology change. This corrects the corpus
+and loader evidence used by every later measurement; it does not change the
+selected neutral evidence workbench, its design criteria, any holdout or model
+gate, or the prohibition on production integration.
+**Why.** Audit round 4 proved the 106-path selector omitted operative bytes
+that the source itself tells agents to load, including identity, frontier,
+worker and operation contracts. Treating those files as absent would make the
+raw arm incomplete and every coverage, prompt and compression denominator
+unsound. The issue explicitly requires reconciliation when the actual
+canonical or load corpus differs from its starting census.
+**Steps touched.** Steps 1, 2, 3, 4 and 5 inherit the corrected corpus identity
+and denominators; only Step 1's exit and tests require replacement.
+**Still holding.** Step 1: entry holds; exit broken. Step 2: entry holds; exit
+holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step
+5: entry holds; exit holds.
