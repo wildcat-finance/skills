@@ -699,6 +699,41 @@ class TestDelegationPackets(HexctlCase):
         self.assertIn("2097152-byte output cap", error.getvalue())
 
 
+    def test_brief_out_diverts_the_body_and_leaves_the_directive_readable(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        inline = self.next_json()
+        self.assertTrue(inline["brief"])
+        diverted = json.loads(
+            self.run_ctl("next", "--brief-out", ".hexaemeron/brief.json").stdout
+        )
+        self.assertEqual(diverted["brief"], {})
+        self.assertEqual(
+            diverted["brief_path"],
+            os.path.realpath(os.path.join(self.target, ".hexaemeron", "brief.json")),
+        )
+        with open(diverted["brief_path"], encoding="utf-8") as handle:
+            self.assertEqual(json.load(handle), inline["brief"])
+        for key in ("do", "agent", "step", "round", "state_sha256", "audit_filter"):
+            self.assertEqual(diverted.get(key), inline.get(key))
+
+    def test_brief_out_refuses_a_path_outside_the_target(self):
+        self.to_audit()
+        self.run_ctl("record", "security_suite", SUITE)
+        self.run_ctl("next", "--brief-out", "../escape.json", expect=2)
+
+    def test_brief_out_leaves_an_inline_directive_alone(self):
+        self.init("packet work")
+        self.run_ctl("halt", "--reason", "waiting on the user")
+        out = json.loads(
+            self.run_ctl("next", "--brief-out", ".hexaemeron/brief.json").stdout
+        )
+        self.assertEqual(out["do"], "halted")
+        self.assertNotIn("brief_path", out)
+        self.assertFalse(
+            os.path.exists(os.path.join(self.target, ".hexaemeron", "brief.json"))
+        )
+
 class XRayReuseStateSeparationTests(HexctlCase):
     FORBIDDEN_FIELDS = frozenset(
         {
