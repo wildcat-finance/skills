@@ -173,6 +173,81 @@
       "path": "plugins/alexandria/tests/test_statement.py",
       "selector": "test_projection_validation_refuses_missing_subjects_and_changed_fields"
     },
+    "anamnesis-curate-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_curate_reports_no_result"
+    },
+    "anamnesis-curate-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_curate_accepts_no_policy_shortcut"
+    },
+    "anamnesis-curate-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_curate_refuses_by_name"
+    },
+    "anamnesis-curate-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_curate_declares_its_recovery"
+    },
+    "anamnesis-curate-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_curate_writes_nothing"
+    },
+    "anamnesis-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/anamnesis/tests/test_s1_admission.py",
+      "selector": "test_a_missing_rights_basis_is_refused"
+    },
+    "anamnesis-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/anamnesis/tests/test_s1_admission.py",
+      "selector": "test_public_visibility_is_not_a_rights_basis"
+    },
+    "anamnesis-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/anamnesis/tests/test_s1_admission.py",
+      "selector": "test_the_pilot_admits_every_declared_source_and_record"
+    },
+    "anamnesis-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/anamnesis/tests/test_s1_admission.py",
+      "selector": "test_correcting_a_refused_policy_admits_on_rerun"
+    },
+    "anamnesis-release-m": {
+      "claim": "Missing required evidence is refused rather than treated as success.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_release_reports_no_result"
+    },
+    "anamnesis-release-o": {
+      "claim": "The nearest tempting overclaim remains explicitly unavailable.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_release_accepts_no_policy_shortcut"
+    },
+    "anamnesis-release-p": {
+      "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_release_refuses_by_name"
+    },
+    "anamnesis-release-r": {
+      "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_release_declares_its_recovery"
+    },
+    "anamnesis-release-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
+      "selector": "test_release_writes_nothing"
+    },
+    "anamnesis-s": {
+      "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
+      "path": "plugins/anamnesis/tests/test_s1_admission.py",
+      "selector": "test_a_digest_mismatch_is_refused"
+    },
     "ariadne-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
       "path": "plugins/ariadne/tests/test_gates.py",
@@ -1464,7 +1539,7 @@
     "fixtures": [
       {
         "path": "tests/fixtures/router-selection/cases.json",
-        "sha256": "927862aa8985965145d75c717d509cc55bb43779cb0c14ccdd8e6b0cfda72f50"
+        "sha256": "83a33a3658a96fc7fff7b035c09165fc456c24612cd181b98dccdb4652b14dea"
       },
       {
         "path": "tests/fixtures/router-selection/guard-altered-sentence.json",
@@ -1472,7 +1547,7 @@
       },
       {
         "path": "tests/fixtures/router-selection/guard-missing-row.json",
-        "sha256": "9589a112393ff93dc396a670c7403987cec0866309edff22ab37db7b3fa94f96"
+        "sha256": "e7df230c98de794a754862a9aeeeb3c0d17be5bb366d349852d099f65c96fd71"
       },
       {
         "path": "tests/fixtures/router-selection/prompt-template.txt",
@@ -2962,6 +3037,54 @@
           "reason": "The canonical declaration supports no exception for this promise."
         }
       }
+    },
+    {
+      "cases": {
+        "M": "anamnesis-m",
+        "O": "anamnesis-o",
+        "P": "anamnesis-p",
+        "R": "anamnesis-r",
+        "S": "anamnesis-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "anamnesis-source-admission",
+      "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "anamnesis-curate-m",
+        "O": "anamnesis-curate-o",
+        "P": "anamnesis-curate-p",
+        "R": "anamnesis-curate-r",
+        "S": "anamnesis-curate-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "anamnesis-corpus-curation",
+      "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+    },
+    {
+      "cases": {
+        "M": "anamnesis-release-m",
+        "O": "anamnesis-release-o",
+        "P": "anamnesis-release-p",
+        "R": "anamnesis-release-r",
+        "S": "anamnesis-release-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "group": "executable",
+      "promise_id": "anamnesis-corpus-release",
+      "skill_path": "plugins/anamnesis/skills/anamnesis/SKILL.md"
     }
   ],
   "run_observation": {
@@ -3212,6 +3335,20 @@
       },
       "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947",
       "source": "plugins/alexandria/schemas/archive-manifest-v1.schema.json"
+    },
+    "anamnesis-source-admission": {
+      "bindings": {
+        "evidence_classes": "checked digest, recomputed size and recorded rights joined to the canonical Evidence classes field",
+        "evidence_references": "sources, provenance and rights",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "the policy's declared sources and records",
+        "subject": "source id, path and sha256",
+        "transition": "successful admit and admit-seed status joined to the canonical Authorises field",
+        "unknowns": "absent optional provenance and rights fields, kept distinct from none"
+      },
+      "sha256": "6349a4747ae141f18513cb5c9384f96320cd7e99dfbaa5aef34a69cec7607f23",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json"
     },
     "ariadne-replay-command": {
       "bindings": {

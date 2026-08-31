@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 995,
-  "total_bytes": 21663769,
+  "file_count": 1014,
+  "total_bytes": 21856324,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -50,16 +50,16 @@
   ],
   "files": [
     {
-      "bytes": 6901,
+      "bytes": 7030,
       "path": ".agents/skills/promise-machine/SKILL.md",
-      "sha256": "cb5e32e054335ebab10b35c1b194fade1d37a3cba0ed49d35315a73fa8f6d403",
+      "sha256": "48cfb58aa59881ea915ce536d97f3a5094a7e0938f7a345927f6c3cdb0dc3be9",
       "source": ".agents/skills/promise-machine/SKILL.md"
     },
     {
-      "bytes": 9125,
+      "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "70c2679e2b28ea0d8c80b124889dd04f8a09aa134603984c2ffae8c4bc0fab02",
+      "sha256": "f934aee445665dfe44217d993419a9350f97c9bc9851de57801a0b25fe721126",
       "source": null
     },
     {
@@ -69,9 +69,9 @@
       "source": ".python-version"
     },
     {
-      "bytes": 13874,
+      "bytes": 14500,
       "path": "AGENTS.md",
-      "sha256": "eff47c7cd9d3960ee4731cc373373e2bbb599a2c9310ee06d56af15f6a54a3dc",
+      "sha256": "2cecf00a2b88474ab0ad9c3eab2fe713d637772a592d501760bfe52107781ad0",
       "source": "AGENTS.md"
     },
     {
@@ -487,6 +487,120 @@
       "path": "plugins/alexandria/skills/alexandria/agents/openai.yaml",
       "sha256": "4c1fce07fb2d0c9d4b5188da3df8513b4447fadf8d7af6ec2467cefc184f813d",
       "source": "plugins/alexandria/skills/alexandria/agents/openai.yaml"
+    },
+    {
+      "bytes": 3078,
+      "path": "plugins/anamnesis/AGENTS.md",
+      "sha256": "73b94188fd47e26b434df2588014744c30859babcd81a26b8d8cb8852e0f1620",
+      "source": "plugins/anamnesis/AGENTS.md"
+    },
+    {
+      "bytes": 11342,
+      "path": "plugins/anamnesis/LICENSE",
+      "sha256": "624ddb0910d0925eafa5ac16a65a1360417e3d7c72aff6df0f3eab475695b68d",
+      "source": "plugins/anamnesis/LICENSE"
+    },
+    {
+      "bytes": 24626,
+      "path": "plugins/anamnesis/PROMISE_MACHINE.md",
+      "sha256": "b5c605ad130e1b6d420fe5487d336108cb561580d4d4f61f87f627b3ab9bf2a1",
+      "source": "plugins/anamnesis/PROMISE_MACHINE.md"
+    },
+    {
+      "bytes": 3951,
+      "path": "plugins/anamnesis/README.md",
+      "sha256": "a4333562331820d3f2aae7408288456b5115c51421f2848296912bbb9be39a39",
+      "source": "plugins/anamnesis/README.md"
+    },
+    {
+      "bytes": 2814,
+      "path": "plugins/anamnesis/docs/decisions/ADR-001-member-boundary.md",
+      "sha256": "7202129cf8632f988526401b7f90044a7ef228c9263fc326b87ec6dbe44e60e8",
+      "source": "plugins/anamnesis/docs/decisions/ADR-001-member-boundary.md"
+    },
+    {
+      "bytes": 2616,
+      "path": "plugins/anamnesis/docs/decisions/ADR-002-corpus-graph.md",
+      "sha256": "b64d20b1696d54bd62325ecbf3abd271acc24226ae64c6161bc614e4a3506622",
+      "source": "plugins/anamnesis/docs/decisions/ADR-002-corpus-graph.md"
+    },
+    {
+      "bytes": 2657,
+      "path": "plugins/anamnesis/docs/decisions/ADR-003-source-rights.md",
+      "sha256": "379a9b961d38a8cce0435b21778cf6fc552415a6c1b3bb88e3d0c957cc6e4e93",
+      "source": "plugins/anamnesis/docs/decisions/ADR-003-source-rights.md"
+    },
+    {
+      "bytes": 2387,
+      "path": "plugins/anamnesis/docs/decisions/ADR-004-consumer-projections.md",
+      "sha256": "2fdfb80eb0a29b03175e5d031cf8d38244d727f45f74c62a4935a74f45c352e6",
+      "source": "plugins/anamnesis/docs/decisions/ADR-004-consumer-projections.md"
+    },
+    {
+      "bytes": 9848,
+      "path": "plugins/anamnesis/docs/runbook.md",
+      "sha256": "afdf10f0b957b40f44c2c66dee8f66c773d8c9904c927d682ef4dff71eeda3a1",
+      "source": "plugins/anamnesis/docs/runbook.md"
+    },
+    {
+      "bytes": 21209,
+      "path": "plugins/anamnesis/docs/study.md",
+      "sha256": "d5d86cf7be16cd5dc3523535a92c20066b13c9f12adb50ad294025b230375891",
+      "source": "plugins/anamnesis/docs/study.md"
+    },
+    {
+      "bytes": 1861,
+      "path": "plugins/anamnesis/skills/anamnesis/EVOLUTION.md",
+      "sha256": "649281149fba130252badde6068b2f93b403caf362f89c8ad8500e674e5d7174",
+      "source": "plugins/anamnesis/skills/anamnesis/EVOLUTION.md"
+    },
+    {
+      "bytes": 8880,
+      "path": "plugins/anamnesis/skills/anamnesis/SKILL.md",
+      "sha256": "66a3394faea1bff4c57afe77dc0b1d0b308234545262dd4ed8b5a2f28108828c",
+      "source": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+    },
+    {
+      "bytes": 1863,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/rights-v1.json",
+      "sha256": "61eca1b7a95c327e952caa9ece52b19623330b9e2c0604857039d8fcabda82b0",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/rights-v1.json"
+    },
+    {
+      "bytes": 3141,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json",
+      "sha256": "6349a4747ae141f18513cb5c9384f96320cd7e99dfbaa5aef34a69cec7607f23",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json"
+    },
+    {
+      "bytes": 17013,
+      "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
+      "sha256": "bc7972d247d95ef08740f1771e3c5303bbbc0520fd08e7f5cf004f0571a8f733",
+      "source": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py"
+    },
+    {
+      "bytes": 8586,
+      "path": "plugins/anamnesis/specimens/pilot/policy.json",
+      "sha256": "a068952efec9baba2f5b28d73ac321a856642155049a2d008424474bcd959a56",
+      "source": "plugins/anamnesis/specimens/pilot/policy.json"
+    },
+    {
+      "bytes": 5621,
+      "path": "plugins/anamnesis/specimens/pilot/sources/hexaemeron-audit-rounds.md",
+      "sha256": "8acff29ed567c97902941a85d72e41171c10850de6aa898b5d50564248eac28f",
+      "source": "plugins/anamnesis/specimens/pilot/sources/hexaemeron-audit-rounds.md"
+    },
+    {
+      "bytes": 45906,
+      "path": "plugins/anamnesis/specimens/pilot/sources/pandects-audit-rounds.md",
+      "sha256": "66908cb68630f3c3cbea432aec6cf6efc305bcab85ccf5fadb278c535635edf9",
+      "source": "plugins/anamnesis/specimens/pilot/sources/pandects-audit-rounds.md"
+    },
+    {
+      "bytes": 14400,
+      "path": "plugins/anamnesis/specimens/pilot/sources/tabularium-audit-rounds.md",
+      "sha256": "1de310b5df5784d7e623ea9dbda83ae77e02cb1798b3aeedffc5d0c715f8e3a7",
+      "source": "plugins/anamnesis/specimens/pilot/sources/tabularium-audit-rounds.md"
     },
     {
       "bytes": 5761,

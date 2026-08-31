@@ -1,0 +1,274 @@
+{
+  "schema": "anamnesis-pilot-policy/v1",
+  "policy_version": "pilot-2026-08-31",
+  "engagement": "Wildcat Labs Shoggoth delivery runs, preserved at wildcat-finance/skills@1c1137898bce",
+  "max_source_bytes": 1000000,
+  "sources": [
+    {
+      "id": "tabularium-audit-rounds",
+      "path": "sources/tabularium-audit-rounds.md",
+      "sha256": "1de310b5df5784d7e623ea9dbda83ae77e02cb1798b3aeedffc5d0c715f8e3a7",
+      "bytes": 14400,
+      "media_type": "text/markdown",
+      "producer": "Warden, Tabularium delivery runs",
+      "provenance": {
+        "origin": "wildcat-finance/skills",
+        "origin_path": "plugins/tabularium/audit/AUDIT.md",
+        "origin_commit": "1c1137898bce9086c34310bd29b5cf8a889f800c",
+        "retrieved": "2026-08-31"
+      },
+      "rights": {
+        "basis": "licence",
+        "disclosure": "public",
+        "holder": "Wildcat Labs",
+        "statement": "Apache-2.0, as the repository LICENSE records for its own audit records."
+      }
+    },
+    {
+      "id": "pandects-audit-rounds",
+      "path": "sources/pandects-audit-rounds.md",
+      "sha256": "66908cb68630f3c3cbea432aec6cf6efc305bcab85ccf5fadb278c535635edf9",
+      "bytes": 45906,
+      "media_type": "text/markdown",
+      "producer": "Warden, Pandects delivery runs",
+      "provenance": {
+        "origin": "wildcat-finance/skills",
+        "origin_path": "plugins/pandects/audit/AUDIT.md",
+        "origin_commit": "1c1137898bce9086c34310bd29b5cf8a889f800c",
+        "retrieved": "2026-08-31"
+      },
+      "rights": {
+        "basis": "licence",
+        "disclosure": "public",
+        "holder": "Wildcat Labs",
+        "statement": "Apache-2.0, as the repository LICENSE records for its own audit records."
+      }
+    },
+    {
+      "id": "hexaemeron-audit-rounds",
+      "path": "sources/hexaemeron-audit-rounds.md",
+      "sha256": "8acff29ed567c97902941a85d72e41171c10850de6aa898b5d50564248eac28f",
+      "bytes": 5621,
+      "media_type": "text/markdown",
+      "producer": "Warden, Hexaemeron delivery runs",
+      "provenance": {
+        "origin": "wildcat-finance/skills",
+        "origin_path": "plugins/hexaemeron/audit/AUDIT.md",
+        "origin_commit": "1c1137898bce9086c34310bd29b5cf8a889f800c",
+        "retrieved": "2026-08-31"
+      },
+      "rights": {
+        "basis": "licence",
+        "disclosure": "public",
+        "holder": "Wildcat Labs",
+        "statement": "Apache-2.0, as the repository LICENSE records for its own audit records."
+      }
+    }
+  ],
+  "records": [
+    {
+      "id": "tabularium-audit-rounds:S2-R1-01",
+      "source": "tabularium-audit-rounds",
+      "native_id": "S2-R1-01",
+      "round": "Step 2, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "tabularium-audit-rounds:S3-R1-01",
+      "source": "tabularium-audit-rounds",
+      "native_id": "S3-R1-01",
+      "round": "Step 3, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "tabularium-audit-rounds:S3-R2-01",
+      "source": "tabularium-audit-rounds",
+      "native_id": "S3-R2-01",
+      "round": "Step 3, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "tabularium-audit-rounds:S3-R2-02",
+      "source": "tabularium-audit-rounds",
+      "native_id": "S3-R2-02",
+      "round": "Step 3, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "tabularium-audit-rounds:S4-R1-01",
+      "source": "tabularium-audit-rounds",
+      "native_id": "S4-R1-01",
+      "round": "Step 4, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S1-R1-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S1-R1-01",
+      "round": "Step 1, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S1-R1-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S1-R1-02",
+      "round": "Step 1, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S1-R1-03",
+      "source": "pandects-audit-rounds",
+      "native_id": "S1-R1-03",
+      "round": "Step 1, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S1-R1-04",
+      "source": "pandects-audit-rounds",
+      "native_id": "S1-R1-04",
+      "round": "Step 1, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S1-R2-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S1-R2-01",
+      "round": "Step 1, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S1-R2-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S1-R2-02",
+      "round": "Step 1, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S1-R3-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S1-R3-01",
+      "round": "Step 1, round 3 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S2-R1-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S2-R1-01",
+      "round": "Step 2, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S2-R1-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S2-R1-02",
+      "round": "Step 2, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S2-R1-03",
+      "source": "pandects-audit-rounds",
+      "native_id": "S2-R1-03",
+      "round": "Step 2, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S2-R2-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S2-R2-01",
+      "round": "Step 2, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S2-R2-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S2-R2-02",
+      "round": "Step 2, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S2-R2-03",
+      "source": "pandects-audit-rounds",
+      "native_id": "S2-R2-03",
+      "round": "Step 2, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S2-R2-04",
+      "source": "pandects-audit-rounds",
+      "native_id": "S2-R2-04",
+      "round": "Step 2, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S3-R1-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S3-R1-01",
+      "round": "Step 3, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S3-R1-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S3-R1-02",
+      "round": "Step 3, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S3-R1-03",
+      "source": "pandects-audit-rounds",
+      "native_id": "S3-R1-03",
+      "round": "Step 3, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S3-R1-04",
+      "source": "pandects-audit-rounds",
+      "native_id": "S3-R1-04",
+      "round": "Step 3, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S3-R2-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S3-R2-01",
+      "round": "Step 3, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S3-R2-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S3-R2-02",
+      "round": "Step 3, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S4-R1-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S4-R1-01",
+      "round": "Step 4, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S4-R1-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S4-R1-02",
+      "round": "Step 4, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S4-R1-03",
+      "source": "pandects-audit-rounds",
+      "native_id": "S4-R1-03",
+      "round": "Step 4, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S4-R2-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S4-R2-01",
+      "round": "Step 4, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S4-R2-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S4-R2-02",
+      "round": "Step 4, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S5-R1-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S5-R1-01",
+      "round": "Step 5, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S5-R1-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S5-R1-02",
+      "round": "Step 5, round 1 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S5-R2-01",
+      "source": "pandects-audit-rounds",
+      "native_id": "S5-R2-01",
+      "round": "Step 5, round 2 -- 2026-08-16"
+    },
+    {
+      "id": "pandects-audit-rounds:S5-R2-02",
+      "source": "pandects-audit-rounds",
+      "native_id": "S5-R2-02",
+      "round": "Step 5, round 2 -- 2026-08-16"
+    }
+  ]
+}

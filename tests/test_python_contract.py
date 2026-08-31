@@ -194,6 +194,10 @@ def is_current_runtime_prose(path):
         return False
     if "audit" in parts or "baseline" in parts:
         return False
+    # A specimen is preserved input. Editing one to satisfy a later pin changes
+    # what the specimen is, and breaks the digest the preserving policy declares.
+    if "specimens" in parts:
+        return False
     if "tests" in parts and "fixtures" in parts:
         return False
     if name in {"evolution.md", "promise_machine.md"}:

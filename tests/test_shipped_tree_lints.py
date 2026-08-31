@@ -49,7 +49,14 @@ class ShippedTreeChecks(unittest.TestCase):
     def test_hypomnema_record_pointers_all_resolve(self):
         # Folds the two former hypomnema whole-tree cases: pointers resolve, and
         # the walk reaches source files, not only Markdown.
-        files = hypomnema.walk([str(PLUGINS), str(DOCS)])
+        # A preserved specimen carries its origin's links. Repointing one so it
+        # resolves here would change the bytes the preserving policy pins, and
+        # the record would no longer be what was preserved.
+        files = [
+            path
+            for path in hypomnema.walk([str(PLUGINS), str(DOCS)])
+            if "specimens" not in path.parts
+        ]
         self.assertTrue(any(p.suffix == ".py" for p in files))
         index = hypomnema.adr_index(files)
         findings = []

@@ -37,7 +37,7 @@ generated installation copies and must remain byte-identical to it.
 
 ## Marketplace boundaries
 
-The sixteen plugins form one marketplace, not sixteen competing descriptions
+The seventeen plugins form one marketplace, not seventeen competing descriptions
 of the same job. Alexandria preserves lending inputs; Tabularium interprets
 preserved venue records; Probitas assembles a counterparty dossier. Lazarus
 preserves the finite historical Ethereum state and exact RPC traffic a test
@@ -61,7 +61,13 @@ events, and any operation whose runbook step has not landed refuses by name
 rather than guessing. All four current operations ship: cohort, diagnosis,
 rendering, and whole-path verification. Its findings stay bounded inferences: capture,
 redaction, receipt binding, causal triage, and every decision to act stay
-with their owners. Sapheneia
+with their owners. Anamnesis keeps custody of audit findings and the
+changes that answered them: it admits a source only against an explicit rights
+basis, preserves the producer's bytes unchanged, and hands Elenchus a
+historical analogue and Synkrisis a checked cohort projection. The analogue is
+a hypothesis, so Elenchus still reproduces the present failure and still earns
+its own guard, and Synkrisis takes no custody of the source. Warden still
+produces a round's record; Anamnesis does not produce one. Sapheneia
 shapes the agent's replies for AuDHD readers and has one bounded operation for
 durable audit, issue, and comment prose. It does not change another skill's
 facts or gates. Brevitas controls the volume and structure of engineering prose
@@ -120,6 +126,9 @@ these instructions.
 
 - Alexandria is under `plugins/alexandria/`. Read
   `plugins/alexandria/AGENTS.md` before running its skill or changing that
+  plugin.
+- Anamnesis is under `plugins/anamnesis/`. Read
+  `plugins/anamnesis/AGENTS.md` before running its skill or changing that
   plugin.
 - Ariadne is under `plugins/ariadne/`. Read `plugins/ariadne/AGENTS.md` before
   running its skill or changing that plugin.

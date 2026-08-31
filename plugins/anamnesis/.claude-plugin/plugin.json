@@ -1,0 +1,24 @@
+{
+  "name": "anamnesis",
+  "displayName": "Anamnesis",
+  "version": "0.1.0",
+  "description": "Preserve audit findings and their remedies as a source-bound corpus, and release checked read-only projections for Elenchus and Synkrisis.",
+  "author": {
+    "name": "Wildcat Labs",
+    "url": "https://wildcat.finance"
+  },
+  "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/anamnesis",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "audit",
+    "findings",
+    "remediation",
+    "corpus",
+    "provenance",
+    "rights",
+    "release",
+    "wildcat"
+  ],
+  "skills": "./skills/"
+}
