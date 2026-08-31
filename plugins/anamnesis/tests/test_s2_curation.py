@@ -8,6 +8,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import pathlib
 import shutil
 import tempfile
 import unittest
@@ -355,20 +356,53 @@ class ReleaseBoundary(EdgeCases):
             anamnesis.verify_release(out)
         self.assertIn(caught.exception.code, {"A104", "A105"})
 
-    def test_a_tampered_manifest_fails_verification(self):
-        _, out = self.build()
+    def edit_manifest(self, out, mutate):
         path = Path(out) / "manifest.json"
         manifest = json.loads(path.read_text(encoding="utf-8"))
-        manifest["counts"]["findings"] += 1
+        mutate(manifest)
         path.chmod(0o600)
         path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-        # The manifest is not self-covering, so its own edit is caught by the
-        # release id no longer describing the graph rather than by a digest.
-        checked = anamnesis.verify_release(out)
-        self.assertNotEqual(
-            checked["counts"]["findings"],
-            len([a for a in self.graph()["assertions"] if a["kind"] == "finding"]),
-        )
+
+    def refuses(self, out):
+        with self.assertRaises(anamnesis.Refusal) as caught:
+            anamnesis.verify_release(out)
+        return caught.exception.code
+
+    def test_a_tampered_count_fails_verification(self):
+        """The manifest is not covered by its own digest, so its claims are
+        checked against the components instead."""
+        _, out = self.build()
+        self.edit_manifest(out, lambda m: m["counts"].__setitem__(
+            "findings", m["counts"]["findings"] + 1))
+        self.assertEqual(self.refuses(out), "A119")
+
+    def test_a_dropped_exclusion_fails_verification(self):
+        _, out = self.build()
+        self.assertTrue(json.loads(
+            (Path(out) / "manifest.json").read_text(encoding="utf-8"))["exclusions"])
+        self.edit_manifest(out, lambda m: m.__setitem__("exclusions", []))
+        self.assertEqual(self.refuses(out), "A118")
+
+    def test_a_dropped_unknown_fails_verification(self):
+        _, out = self.build()
+        self.edit_manifest(out, lambda m: m.__setitem__("unknowns", {}))
+        self.assertEqual(self.refuses(out), "A123")
+
+    def test_a_forged_policy_fails_verification(self):
+        _, out = self.build()
+        self.edit_manifest(out, lambda m: m["policy"].__setitem__("version", "forged"))
+        self.assertEqual(self.refuses(out), "A117")
+
+    def test_a_forged_release_id_fails_verification(self):
+        _, out = self.build()
+        self.edit_manifest(out, lambda m: m.__setitem__("release_id", "0" * 64))
+        self.assertEqual(self.refuses(out), "A109")
+
+    def test_a_forged_source_digest_fails_verification(self):
+        _, out = self.build()
+        self.edit_manifest(
+            out, lambda m: m["sources"][0].__setitem__("sha256", "0" * 64))
+        self.assertEqual(self.refuses(out), "A109")
 
     def test_an_extra_file_in_the_release_fails_verification(self):
         _, out = self.build()
@@ -439,6 +473,62 @@ class SourceTampering(EdgeCases):
             payload = (PILOT / source["path"]).read_bytes()
             self.assertEqual(hashlib.sha256(payload).hexdigest(), source["sha256"])
             self.assertEqual(len(payload), source["bytes"])
+
+
+
+
+class AdmissionToCurationBoundary(EdgeCases):
+    """S2-R1-02: curation reads the files a second time and must re-check them."""
+
+    def test_a_source_swapped_after_admission_is_refused(self):
+        admitted = anamnesis.admit(str(self.policy_path), anamnesis.Events())["sources"]
+        # Same length, different bytes: the byte-count check passes and the
+        # digest check is the one that has to catch it.
+        swapped = self.text.replace("The first finding", "The worst finding")
+        self.assertEqual(len(swapped), len(self.text))
+        (self.root / "edge-cases.md").write_text(swapped, encoding="utf-8")
+        with self.assertRaises(anamnesis.Refusal) as caught:
+            anamnesis._admitted_texts(str(self.policy_path), admitted)
+        self.assertEqual(caught.exception.code, "A121")
+
+    def test_a_source_truncated_after_admission_is_refused(self):
+        admitted = anamnesis.admit(str(self.policy_path), anamnesis.Events())["sources"]
+        (self.root / "edge-cases.md").write_text("short", encoding="utf-8")
+        with self.assertRaises(anamnesis.Refusal) as caught:
+            anamnesis._admitted_texts(str(self.policy_path), admitted)
+        self.assertEqual(caught.exception.code, "A120")
+
+    def test_unchanged_sources_pass_the_second_read(self):
+        admitted = anamnesis.admit(str(self.policy_path), anamnesis.Events())["sources"]
+        texts = anamnesis._admitted_texts(str(self.policy_path), admitted)
+        self.assertEqual(texts["edge-cases"], self.text)
+
+    def test_a_source_that_is_not_utf8_is_refused_not_traced(self):
+        payload = b"## Step 1, round 1 -- 2026-08-20\n\n\xff\xfe not utf-8\n"
+        target = self.root / "edge-cases.md"
+        target.write_bytes(payload)
+        policy = json.loads(self.policy_path.read_text(encoding="utf-8"))
+        policy["sources"][0]["bytes"] = len(payload)
+        policy["sources"][0]["sha256"] = hashlib.sha256(payload).hexdigest()
+        self.policy_path.write_text(json.dumps(policy, indent=2), encoding="utf-8")
+        admitted = anamnesis.admit(str(self.policy_path), anamnesis.Events())["sources"]
+        with self.assertRaises(anamnesis.Refusal) as caught:
+            anamnesis._admitted_texts(str(self.policy_path), admitted)
+        self.assertEqual(caught.exception.code, "A122")
+
+
+class ComponentBound(EdgeCases):
+    """S2-R1-03: a component is bounded by the release cap, not the source one."""
+
+    def test_verification_bounds_a_component_by_the_release_cap(self):
+        source = pathlib.Path(SCRIPT).read_text(encoding="utf-8")
+        self.assertIn("MAX_RELEASE_BYTES,\n", source)
+        self.assertNotIn(
+            "os.path.join(out, component[\"path\"]), MAX_SOURCE_BYTES_CEILING", source)
+
+    def test_the_release_cap_is_larger_than_the_source_ceiling(self):
+        self.assertGreater(
+            anamnesis.MAX_RELEASE_BYTES, anamnesis.MAX_SOURCE_BYTES_CEILING)
 
 
 if __name__ == "__main__":

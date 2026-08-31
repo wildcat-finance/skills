@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1015,
-  "total_bytes": 21827576,
+  "total_bytes": 21830460,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -607,9 +607,9 @@
       "source": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json"
     },
     {
-      "bytes": 46596,
+      "bytes": 49480,
       "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
-      "sha256": "44ac14a44071ebf762bd7f08027e433e6666a6add92d2f04161f4a7cc19c30ee",
+      "sha256": "a965d3a5d9ec16c07fd32c0cdc59c161b878b94233f11a4c6f2b3422ce67719a",
       "source": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py"
     },
     {

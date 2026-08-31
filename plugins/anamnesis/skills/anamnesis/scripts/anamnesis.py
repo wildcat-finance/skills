@@ -869,9 +869,26 @@ def release_id(policy, admitted, graph):
     digest.update(canonical(policy))
     for source in sorted(admitted, key=lambda s: s["id"]):
         digest.update(f"{source['id']}:{source['sha256']}:{source['bytes']}".encode("utf-8"))
-    for key in ("engagements", "assertions", "relations", "quarantine"):
+    for key in ("engagements", "assertions", "relations", "quarantine", "unknowns"):
         digest.update(canonical(graph[key]))
     return digest.hexdigest()
+
+
+def _counts(graph):
+    """The denominators, computed one way so the build and verify agree."""
+    kinds = collections.Counter(a["kind"] for a in graph["assertions"])
+    rounds = [r for e in graph["engagements"] for r in e["rounds"]]
+    return {
+        "engagements": len(graph["engagements"]),
+        "rounds": len(rounds),
+        "rounds_with_no_findings": sum(1 for r in rounds if r["findings"] == 0),
+        "submissions": kinds.get("submission", 0),
+        "findings": kinds.get("finding", 0),
+        "occurrences": kinds.get("occurrence", 0),
+        "remediations": kinds.get("remediation", 0),
+        "verifications": kinds.get("verification", 0),
+        "relations": len(graph["relations"]),
+    }
 
 
 def _write_component(directory, name, payload, components):
@@ -909,12 +926,11 @@ def build_release(out, policy, admitted, graph):
             ("assertions.json", graph["assertions"]),
             ("relations.json", graph["relations"]),
             ("quarantine.json", graph["quarantine"]),
+            ("unknowns.json", graph["unknowns"]),
             ("policy.json", policy),
         ):
             _write_component(staging, name, payload, components)
 
-        kinds = collections.Counter(a["kind"] for a in graph["assertions"])
-        rounds = [r for e in graph["engagements"] for r in e["rounds"]]
         manifest = {
             "schema": RELEASE_SCHEMA,
             "release_id": release_id(policy, admitted, graph),
@@ -925,17 +941,7 @@ def build_release(out, policy, admitted, graph):
                 for s in sorted(admitted, key=lambda s: s["id"])
             ],
             "components": sorted(components, key=lambda c: c["path"]),
-            "counts": {
-                "engagements": len(graph["engagements"]),
-                "rounds": len(rounds),
-                "rounds_with_no_findings": sum(1 for r in rounds if r["findings"] == 0),
-                "submissions": kinds.get("submission", 0),
-                "findings": kinds.get("finding", 0),
-                "occurrences": kinds.get("occurrence", 0),
-                "remediations": kinds.get("remediation", 0),
-                "verifications": kinds.get("verification", 0),
-                "relations": len(graph["relations"]),
-            },
+            "counts": _counts(graph),
             "exclusions": graph["quarantine"],
             "unknowns": graph["unknowns"],
         }
@@ -977,9 +983,10 @@ def verify_release(out):
             "A103",
             f"release contents differ from the manifest; missing={missing} extra={extra}",
         )
+    bodies = {}
     for component in manifest["components"]:
         body = read_bounded(
-            os.path.join(out, component["path"]), MAX_SOURCE_BYTES_CEILING,
+            os.path.join(out, component["path"]), MAX_RELEASE_BYTES,
             f"release component {component['path']}",
         )
         if len(body) != component["bytes"]:
@@ -995,6 +1002,38 @@ def verify_release(out):
                 f"component {quote(component['path'])} digest is {quote(actual)}, "
                 f"not the manifested {quote(component['sha256'])}",
             )
+        bodies[component["path"]] = body
+
+    # The manifest is not covered by its own digest, so its claims are checked
+    # against the components instead. Without this, editing a count or dropping
+    # an exclusion passes verification untouched.
+    try:
+        graph = {
+            "engagements": json.loads(bodies["engagements.json"]),
+            "assertions": json.loads(bodies["assertions.json"]),
+            "relations": json.loads(bodies["relations.json"]),
+            "quarantine": json.loads(bodies["quarantine.json"]),
+            "unknowns": json.loads(bodies["unknowns.json"]),
+        }
+        policy = json.loads(bodies["policy.json"])
+    except (KeyError, json.JSONDecodeError) as error:
+        raise Refusal("A108", f"release components are not readable: {quote(error)}")
+
+    recomputed = release_id(policy, manifest["sources"], graph)
+    if recomputed != manifest["release_id"]:
+        raise Refusal(
+            "A109",
+            f"manifest release id is {quote(manifest['release_id'])}, but its "
+            f"components and sources produce {quote(recomputed)}",
+        )
+    if manifest["policy"] != policy:
+        raise Refusal("A117", "manifest policy differs from the released policy component")
+    if manifest["exclusions"] != graph["quarantine"]:
+        raise Refusal("A118", "manifest exclusions differ from the released quarantine")
+    if manifest["unknowns"] != graph["unknowns"]:
+        raise Refusal("A123", "manifest unknowns differ from the released unknowns")
+    if manifest["counts"] != _counts(graph):
+        raise Refusal("A119", "manifest counts differ from the released components")
     return manifest
 
 
@@ -1031,15 +1070,42 @@ def load_curation_policy(path):
 
 
 def _admitted_texts(policy_path, admitted):
+    """Read the admitted bytes again, and re-check them against admission.
+
+    Admission verifies a digest and then returns. Curation reads the files a
+    second time, so the bytes it curates are not the bytes admission checked
+    unless it checks them itself. Every read here is compared against the
+    digest and byte count admission recorded.
+    """
     root = os.path.dirname(os.path.abspath(policy_path)) or "."
-    raw = read_bounded(policy_path, MAX_POLICY_BYTES, "policy")
-    declared = parse_policy(raw, "policy")
-    cap = declared["max_source_bytes"]
     texts = {}
-    for entry in declared["sources"]:
-        path = resolve_within(root, entry["path"], entry["id"])
-        texts[entry["id"]] = read_bounded(path, cap, f"source {entry['id']}").decode(
-            "utf-8", errors="strict")
+    for source in admitted:
+        path = resolve_within(root, source["path"], source["id"])
+        payload = read_bounded(
+            path, MAX_SOURCE_BYTES_CEILING, f"source {source['id']}")
+        if len(payload) != source["bytes"]:
+            raise Refusal(
+                "A120",
+                f"source {source['id']} changed between admission and curation: "
+                f"{len(payload)} bytes, not the admitted {source['bytes']}",
+                source["id"],
+            )
+        digest = hashlib.sha256(payload).hexdigest()
+        if digest != source["sha256"]:
+            raise Refusal(
+                "A121",
+                f"source {source['id']} changed between admission and curation: "
+                f"digest {quote(digest)}, not the admitted {quote(source['sha256'])}",
+                source["id"],
+            )
+        try:
+            texts[source["id"]] = payload.decode("utf-8")
+        except UnicodeDecodeError as error:
+            raise Refusal(
+                "A122",
+                f"source {source['id']} is not valid UTF-8: {quote(error.reason)}",
+                source["id"],
+            )
     return texts
 
 
