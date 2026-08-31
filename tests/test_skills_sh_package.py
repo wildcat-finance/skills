@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 GENERATOR = ROOT / "scripts" / "portable_promise_machine.py"
 CONFIG = ROOT / "skills.sh.json"
 PAYLOAD_ROOT = ROOT / ".agents"
+DISTRIBUTION = ROOT / "distribution" / "skills-runtime" / "sync.yml"
 
 # The eight package guarantees below are asserted against a tree the generator
 # builds during this run, not against a copy committed here.  That keeps them
@@ -461,6 +462,40 @@ class SkillsShPackageTests(unittest.TestCase):
             empty.mkdir()
             self.assertEqual(build_package(empty), empty)
             self.assertEqual(build_package(empty), empty)
+
+
+    def test_published_workflow_copy_stays_narrow(self):
+        """The destination's job is authored here, and its powers are bounded.
+
+        The job commits to its own repository with GITHUB_TOKEN. Two properties
+        keep that safe to leave running: it may write contents and nothing else,
+        and it never writes a path under .github/workflows/, which is the one
+        place a token could widen what runs next. A third keeps it honest: it
+        refuses to run when it has drifted from this copy.
+        """
+        text = DISTRIBUTION.read_text(encoding="utf-8")
+        self.assertIn("permissions:\n  contents: write\n", text)
+        for scope in ("actions:", "packages:", "id-token:", "pull-requests:"):
+            self.assertNotIn(scope, text)
+        self.assertIn(
+            "if: github.repository == 'wildcat-finance/skills-runtime'", text
+        )
+        self.assertIn(
+            "git clone --depth=1 https://github.com/wildcat-finance/skills.git", text
+        )
+        body = text.split("jobs:", 1)[1]
+        writes = re.findall(r"(?:cp|mv|rm|tee|>>?)\s+[^\n]*\.github/workflows", body)
+        self.assertEqual(writes, [])
+        self.assertIn("source/distribution/skills-runtime/sync.yml", text)
+        self.assertIn("verify_runtime.py", text)
+        # The job executes a generator cloned from another repository. A
+        # push-capable credential must not be sitting in .git/config while that
+        # runs, so the checkout drops it and the push supplies one explicitly.
+        self.assertIn("persist-credentials: false", text)
+        self.assertIn("x-access-token:${GITHUB_TOKEN}", text)
+        # An unparsed README would otherwise commit "…/skills@" and read as a
+        # successful rebuild of nothing identifiable.
+        self.assertIn("the generated README names no source commit", text)
 
 
 if __name__ == "__main__":
