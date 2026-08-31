@@ -1,7 +1,7 @@
 # Alexandria schemas
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Compound v3 Phase 0 now pins the Comet registry and preserves one verified Ethereum execution witness; a resumable, reconciled Ethereum USDC interval harvester remains unimplemented.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
 <!-- marketplace-context:end -->
 
 Step 2 defines three raw-release contracts:
@@ -51,3 +51,23 @@ Compound v3 Phase 0 adds `compound-v3-registry-v1.schema.json` for the pinned
 `compound-v3-method-receipt-v1.schema.json` for the bounded archive, nested
 call, ordered-storage and provider-reported finality gate outcomes. Runtime
 checks bind these contracts to the exact upstream commit and raw RPC objects.
+
+The resumable interval collector adds three more.
+`interval-plan-v1.schema.json` declares the chain, deployment, proxy, block
+interval, shard width, evidence classes and the named finality policy that
+fixed the interval's end. `interval-checkpoint-v1.schema.json` covers the
+working state a killed collection resumes from: the next shard, the last
+accepted block and hash, and each journal's committed byte offset. It is not
+release truth and no release names it. `interval-receipt-v1.schema.json`
+covers what a collected interval turns out to hold: its code-hash-bound
+implementation epochs, its shards with their status and record counts, and
+what a second provider said about it. Runtime checks bind a checkpoint to its
+own plan's digest and refuse a shard outside it.
+
+The interval release itself enters through the ordinary capture plan. Its
+components are one JSON journal per evidence class, format
+`alexandria-interval-journal/v1`, each carrying the plan's interval and one
+record per preserved exchange under `/records`, plus the interval receipt, the
+reconciliation record, the error receipts, the plan and the pinned registry.
+Every coverage count is a JSON pointer into the component it describes, so
+`ingest` refuses a count the payload does not carry.

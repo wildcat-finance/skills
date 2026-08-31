@@ -68,19 +68,42 @@ class TestTheDemoPath(unittest.TestCase):
             self.assertIn(": pass --", line)
         self.assertNotIn("FAIL", self.verified.stdout)
 
-    def test_it_gathered_from_both_venues(self):
+    def test_it_gathered_from_all_three_record_bearing_venues(self):
         with open(self.evidence, encoding="utf-8") as handle:
             payload = json.load(handle)
         venues = {record["venue"] for record in payload["records"]}
-        self.assertEqual(venues, {"wildcat", "morpho-blue"})
+        self.assertEqual(venues, {"wildcat", "morpho-blue", "morpho-midnight"})
 
     def test_the_venues_with_no_adapter_are_named_gaps(self):
         with open(self.evidence, encoding="utf-8") as handle:
             payload = json.load(handle)
         subjects = {gap["subject"] for gap in payload["gaps"]}
-        for venue in ("maple", "aave-v3", "metamorpho", "morpho-midnight"):
+        for venue in ("maple", "aave-v3", "metamorpho"):
             with self.subTest(venue=venue):
                 self.assertIn(f"{venue} borrowing history", subjects)
+        self.assertNotIn("morpho-midnight borrowing history", subjects)
+
+    def test_midnight_coverage_and_late_outcome_are_visible(self):
+        with open(self.evidence, encoding="utf-8") as handle:
+            payload = json.load(handle)
+        coverage = next(
+            row for row in payload["coverage"] if row["venue"] == "morpho-midnight"
+        )
+        outcome = next(
+            record
+            for record in payload["records"]
+            if record["venue"] == "morpho-midnight"
+            and record["claim"] == "maturity_outcome"
+        )
+        self.assertEqual(coverage["status"], "checked")
+        self.assertIn("cursor walk(s) exhausted", coverage["note"])
+        self.assertEqual(outcome["values"]["obligation_state"], "outstanding_at_maturity")
+        self.assertEqual(outcome["values"]["observation_state"], "settled_late")
+
+        with open(self.dossier, encoding="utf-8") as handle:
+            document = handle.read()
+        self.assertIn("Outstanding at maturity", document)
+        self.assertIn("Settled late through liquidation", document)
 
     def test_a_wildcat_default_and_a_morpho_liquidation_read_differently(self):
         """The distinction the two adapters exist to hold."""

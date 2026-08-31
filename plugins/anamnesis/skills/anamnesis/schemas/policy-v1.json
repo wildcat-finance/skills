@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/anamnesis/schemas/policy-v1.json",
+  "title": "anamnesis-curation-policy/v1",
+  "description": "The versioned rules a curation ran under. A release records the exact policy that produced it, because the same sources under a different policy are a different corpus and must not be compared as though they were the same one.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "mapper", "taxonomy", "disclosure"],
+  "properties": {
+    "version": {"type": "string", "minLength": 1, "maxLength": 100},
+    "mapper": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"}
+      }
+    },
+    "taxonomy": {
+      "description": "The severity vocabulary this policy admits. A source severity outside it is quarantined rather than mapped to the nearest neighbour, which is how taxonomy drift becomes silent.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "severities"],
+      "properties": {
+        "name": {"type": "string"},
+        "version": {"type": "string"},
+        "severities": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      }
+    },
+    "disclosure": {
+      "description": "Which disclosure classes may contribute derived text to a release. A class absent here contributes identifiers and digests only.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["derived_text"],
+      "properties": {
+        "derived_text": {"type": "array", "items": {"enum": ["public", "restricted", "embargoed"]}}
+      }
+    }
+  }
+}

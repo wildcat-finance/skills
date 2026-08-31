@@ -19,7 +19,7 @@
   "interface": {
     "displayName": "Berean",
     "shortDescription": "Digest-pinned agent releases with byte-exact citations, block-bound reads and evaluated refusals.",
-    "longDescription": "Berean releases evidence-backed protocol agents. A release pins its corpus by digest, proves every citation as exact bytes, binds every live value to a chain and block, separates document claims from chain readings, states when it refuses, and records the evaluation that made it active. The verifier checks all of that offline, without the model that produced the answers.",
+    "longDescription": "Berean checks protocol-agent releases without rerunning the model. A release pins its corpus by digest, proves citations against exact bytes, binds each live value to a chain and block, separates source classes, records refusals, and preserves the evaluation, promotion, or rollback decision. The checked-in reference still uses a demonstration corpus and preserved Goldfinch reads; no live Wildcat reference release or Ariadne binding exists yet.",
     "developerName": "Wildcat Labs",
     "category": "Developer Tools",
     "capabilities": [],

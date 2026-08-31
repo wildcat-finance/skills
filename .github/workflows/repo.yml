@@ -1,32 +1,24 @@
 name: repo
 
+# The invariant suite is the gate main is protected by, so it runs on every
+# pull request without a path filter. Two reasons it cannot be filtered:
+#
+#   * The suite asserts over paths the filter never listed. Boundary currency
+#     reads .horos/boundary.json, the audit tests read audit/, and others read
+#     CONTRIBUTORS.md, LICENSE and .gitignore. A pull request touching only
+#     those could break the suite and never run it.
+#   * A required status check that a pull request never produces blocks that
+#     pull request forever. Requiring a path-filtered check would wedge every
+#     change outside the filter.
+#
+# The job takes one to two minutes, so running it unconditionally is cheap.
+
 on:
   push:
-    paths:
-      - "plugins/**"
-      - "tests/**"
-      - "repo_contract.py"
-      - ".python-version"
-      - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "docs/**"
-      - "AGENTS.md"
-      - "README.md"
-      - ".github/workflows/*.yml"
+    branches:
+      - main
+  workflow_dispatch:
   pull_request:
-    paths:
-      - "plugins/**"
-      - "tests/**"
-      - "repo_contract.py"
-      - ".python-version"
-      - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/**"
-      - "docs/**"
-      - "AGENTS.md"
-      - "README.md"
-      - ".github/workflows/*.yml"
 
 permissions:
   contents: read

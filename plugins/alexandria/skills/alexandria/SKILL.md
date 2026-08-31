@@ -6,10 +6,11 @@ description: >
   user names Alexandria or asks to archive lending data for reproducible,
   address-scoped credit research. Raw release and registered Goldfinch and
   Clearpool derivation, disposable indexing, address queries and a checked-in
-  offline demonstration, unsigned in-toto release statements and a bounded
-  Compound v3 Phase 0 method proof are available.
+  offline demonstration, unsigned in-toto release statements, a bounded
+  Compound v3 Phase 0 method proof and a resumable Ethereum USDC interval
+  collector are available.
 metadata:
-  version: "0.3.0"
+  version: "1.4.0"
 ---
 
 <p align="center">
@@ -30,7 +31,7 @@ another frontier pass after that ledger becomes mature.
 
 Alexandria preserves heterogeneous lending captures byte for byte, then exposes only the source-bound credit view a reviewed mapping can defend.
 
-**Current frontier.** Compound v3 Phase 0 now pins the Comet registry and preserves one verified Ethereum execution witness; a resumable, reconciled Ethereum USDC interval harvester remains unimplemented.
+**Current frontier.** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
 <!-- marketplace-context:end -->
 
 Alexandria is the archive and catalogue behind durable lending-protocol
@@ -41,9 +42,10 @@ neighbouring specialist for the finite historical Ethereum state and exact RPC
 traffic one application test needs; it does not replace Alexandria's dataset
 boundary.
 
-Synkrisis is reserved for comparison across validated agent-run observations.
-Its current command scaffold refuses every operation, so it cannot reinterpret
-an Alexandria release, produce a finding about it, or authorise a new capture.
+Synkrisis compares validated agent-run observations through a checked cohort,
+bounded findings, a fixed report, and whole-path verification. It cannot
+reinterpret an Alexandria release, treat release rows as run observations, or
+authorise a new capture.
 
 `$SKILL_DIR` is the directory holding this file. The command lives at
 `$SKILL_DIR/../../scripts/alexandria.py`; resolve it from where you loaded this
@@ -202,9 +204,51 @@ The separate `capture` subcommand is networked. It requires
 and collects only the fixed corpus. Do not describe the result as an interval
 history, chain proof or independent finality check.
 
-The [Compound v3 harvest specification](../../docs/compound-v3-harvest.md)
-describes the resumable, reconciled production collector that remains to be
-built. Tabularium owns the separate canonical mapping.
+## Collect an Ethereum USDC interval
+
+Four commands, of which only the first reaches a network:
+
+```bash
+python3 "$SKILL_DIR/../../scripts/usdc_interval.py" collect --plan plan.json --staging staging
+python3 "$SKILL_DIR/../../scripts/usdc_interval.py" reconcile --plan plan.json --staging staging \
+  --provider-class "<non-secret class>"
+python3 "$SKILL_DIR/../../scripts/usdc_interval.py" build --plan plan.json --staging staging \
+  --epochs epochs.json --registry registry.json --created-at <timestamp> --output release
+python3 "$SKILL_DIR/../../scripts/usdc_interval.py" check release
+```
+
+`collect` walks a declared block interval of the Ethereum USDC Comet in
+bounded shards, binding its end boundary under the plan's named finality policy
+before it asks for anything. It reads its endpoint from
+`ALEXANDRIA_COMPOUND_RPC_URL` alone and writes it nowhere. A checkpoint is
+written only after a shard's bytes are fsynced, so a killed run resumes to
+byte-identical journals; when a remembered boundary hash has changed, the run
+rewinds to the deepest one that still matches, and refuses a reorg deeper than
+its bounded trail. Every refused response leaves a receipt naming the code, the
+shard, the unresolved range and the provider class, and copying nothing the
+provider or the transport said.
+
+`reconcile` runs the finished interval past a second provider and records
+agreement or dispute over boundary hashes, ordered transaction hashes and every
+log's identity tuple. It settles nothing: a disputed shard becomes `partial` or
+`failed`, both providers' bytes are kept, and a provider that cannot answer
+leaves the interval `unreconciled`.
+
+`build` emits an ordinary capture plan and calls `ingest`; `check` verifies the
+release offline and re-derives every shard's record counts from the journals.
+Implementation epochs come from `discover_epochs` over preserved `Upgraded`
+logs, EIP-1967 slot reads and runtime code reads, and are bound by code hash
+because the pinned `CometExt.version()` returns the constant string `0`.
+
+Read [the collector document](../../docs/usdc-interval-collector.md) for the
+finality, epoch and reconciliation boundaries, and run
+[`examples/usdc-interval-v0`](../../examples/usdc-interval-v0/README.md) to see
+the whole path offline. This release establishes no publisher identity, no
+provider completeness, no consensus finality and no canonical-chain membership,
+and derives no credit event; Tabularium owns the separate canonical mapping.
+The [harvest specification](../../docs/compound-v3-harvest.md) still describes
+more than this collector covers: one market of the pin's 28, no start-block
+read, and no preserved implementation code.
 
 Read the [study](../../docs/study.md) for the selected construction and the
 [runbook](../../docs/runbook.md) for the implementation boundaries.

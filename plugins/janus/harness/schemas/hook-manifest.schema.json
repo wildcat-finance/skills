@@ -69,7 +69,7 @@
       "properties": {
         "scope": {"enum": ["hook", "host", "external"]},
         "slot": {
-          "description": "A named storage location the hook may write. A literal wildcard is rejected by the validator.",
+          "description": "A named storage location the hook may write. A literal wildcard is rejected by the validator. The account is the text before the first '.', and the rest is documentation: enforcement is account-granular, so naming a slot expression permits writes to the account that holds it and the slot itself is recorded but never compared.",
           "type": "string",
           "minLength": 1
         }
@@ -81,7 +81,7 @@
       "required": ["target", "kind"],
       "properties": {
         "target": {
-          "description": "A named call target the hook may reach. A literal wildcard is rejected by the validator.",
+          "description": "A named call target the hook may reach. A literal wildcard is rejected by the validator. The account is the text before the first '.', and a function suffix is documentation that is never resolved. A dot is an ordinary character in an account name, so where a host adapter also answers for a longer reading of the same string the entry is ambiguous and resolution refuses rather than choosing one.",
           "type": "string",
           "minLength": 1
         },
@@ -124,17 +124,17 @@
           "type": "boolean"
         },
         "permittedStorageWrites": {
-          "description": "The storage the hook may change. An empty list permits none.",
+          "description": "The storage the hook may change. An empty list permits none. Scope 'hook' and 'host' resolve those symbols through the host adapter and 'external' resolves its slot expression's account prefix. A call the manifest permits into another account is a call and not a licence to write that account's storage, so an account whose storage the hook causes to change must be named here as well.",
           "type": "array",
           "items": {"$ref": "#/$defs/storageWrite"}
         },
         "permittedCalls": {
-          "description": "The external calls and callbacks the hook may make. An empty list permits none.",
+          "description": "The external calls and callbacks the hook may make. An empty list permits none. Only entries of kind 'call' and 'delegatecall' admit a state-changing call, and the two are kept apart because a delegatecall runs the target's code in the hook's own storage. A 'staticcall' entry admits nothing state-changing; its symbol must still resolve, so a misnamed read target aborts rather than vanishing.",
           "type": "array",
           "items": {"$ref": "#/$defs/call"}
         },
         "permittedValueMovements": {
-          "description": "The assets and recipients the hook may cause to move. An empty list permits none.",
+          "description": "The assets and recipients the hook may cause to move. An empty list permits none. Unlike a call target or a storage slot, these names carry no suffix, so the whole string is the account name and a dot inside it is part of that name.",
           "type": "array",
           "items": {"$ref": "#/$defs/valueMovement"}
         },

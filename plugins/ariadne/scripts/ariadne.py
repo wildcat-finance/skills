@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 """ariadne -- signed evidence another person can check.
 
-Seven subcommands:
+Eight subcommands:
 
     predicates  list the predicate types this build understands
     capture     read a build on disk into a statement
     capture-dataset  read a dataset release on disk into a statement
     capture-state-fixture  read a Lazarus v1 or v2 fixture into its matching statement
+    capture-grounded-agent  read a bounded local berean-release/v1 into a statement
     inspect     read a statement or DSSE envelope and report what it covers
     verify      run the gates over a statement and report each one
     replay      re-run the deterministic commands a statement records
@@ -21,9 +22,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from ariadne_lib import digests, envelope, registry, replay, safejson, verify  # noqa: E402
+from ariadne_lib import digests, envelope, gates, registry, replay, safejson, verify  # noqa: E402
 from ariadne_lib import predicates  # noqa: E402,F401  (registers them)
 from ariadne_lib.capture import dataset as dataset_capture
+from ariadne_lib.capture import grounded_agent as grounded_agent_capture
 from ariadne_lib.capture import state_fixture as state_fixture_capture  # noqa: E402
 from ariadne_lib.capture import foundry  # noqa: E402
 from ariadne_lib.statement import StatementError  # noqa: E402
@@ -32,6 +34,19 @@ GATE_BREACHED = 1
 USAGE_ERROR = 2
 
 READ_ERRORS = (envelope.EnvelopeError, StatementError, safejson.InputError)
+
+
+class BoundedArgumentParser(argparse.ArgumentParser):
+    """Refuse malformed argv without echoing an input-sized token or usage block."""
+
+    def error(self, message):
+        rendered = grounded_agent_capture.diagnostic(message)
+        self.exit(USAGE_ERROR, "%s: error: %s\n" % (self.prog, rendered))
+
+
+def print_read_error(path, error):
+    """Emit one line even when a rejected document supplied the reason."""
+    print(gates.one_line("%s: %s" % (path, error)), file=sys.stderr)
 
 
 def load_document(path, max_bytes, max_depth):
@@ -82,7 +97,7 @@ def cmd_inspect(args):
     try:
         document = load_document(args.file, args.max_bytes, args.max_depth)
     except READ_ERRORS as error:
-        print("%s: %s" % (args.file, error), file=sys.stderr)
+        print_read_error(args.file, error)
         return USAGE_ERROR
 
     found = document.statement
@@ -101,12 +116,15 @@ def cmd_inspect(args):
         )
         return 0
 
-    print("predicate type: %s" % found.predicate_type)
+    print("predicate type: %s" % gates.one_line(found.predicate_type))
     print("                %s" % ("registered" if known else "not registered here"))
     print("signatures:     %s" % document.signature_state)
     print("subjects:")
     for entry in found.subjects:
-        print("  %s  %s" % (digests.short(entry.digest), entry.name or "<unnamed>"))
+        print(
+            "  %s  %s"
+            % (digests.short(entry.digest), gates.one_line(entry.name or "<unnamed>"))
+        )
     return 0
 
 
@@ -114,7 +132,7 @@ def cmd_verify(args):
     try:
         document = load_document(args.file, args.max_bytes, args.max_depth)
     except READ_ERRORS as error:
-        print("%s: %s" % (args.file, error), file=sys.stderr)
+        print_read_error(args.file, error)
         return USAGE_ERROR
 
     report = verify.report(document, registry.DEFAULT)
@@ -302,6 +320,29 @@ def cmd_capture_state_fixture(args):
     return write_statement(statement, args.out)
 
 
+def cmd_capture_grounded_agent(args):
+    try:
+        statement = grounded_agent_capture.capture(
+            args.release,
+            name=args.name,
+            producer_tool=args.producer_tool,
+            producer_version=args.producer_version,
+            producer_command=args.producer_command,
+            output=args.output,
+            previous=args.previous,
+            first_capture_reason=args.first_capture_reason,
+        )
+        grounded_agent_capture.write(args.output, statement, args.release)
+    except (grounded_agent_capture.CaptureError, OSError) as error:
+        print(
+            "capture failed: %s" % grounded_agent_capture.diagnostic(error),
+            file=sys.stderr,
+        )
+        return USAGE_ERROR
+    print("wrote %s" % args.output)
+    return 0
+
+
 def cmd_capture(args):
     try:
         statement = foundry.capture(
@@ -330,12 +371,20 @@ def recomputer(project):
 
     A build's recorded output digest is over the artefacts rather than over
     what the command printed, so the comparison means recomputing the artefacts
-    the way capture did.
+    the way capture did. Other predicate types do not describe that Foundry
+    bundle, so applying this recomputer to them would compare unrelated bytes.
+    Even a Solidity statement only earns that comparison for the exact command
+    its build environment records.
     """
     if not project:
         return None
 
     def recompute(step):
+        if (
+            step.predicate_type != predicates.solidity_release.TYPE
+            or step.argv != step.build_command
+        ):
+            return None
         try:
             subjects = foundry.release_subjects(foundry.confined(project, "--project"))
         except foundry.CaptureError:
@@ -349,7 +398,7 @@ def cmd_replay(args):
     try:
         document = load_document(args.file, args.max_bytes, args.max_depth)
     except READ_ERRORS as error:
-        print("%s: %s" % (args.file, error), file=sys.stderr)
+        print_read_error(args.file, error)
         return USAGE_ERROR
 
     if args.allow_execution and not args.project:
@@ -364,13 +413,20 @@ def cmd_replay(args):
         # instructions from a document on trust, which is the habit this whole
         # tool exists to break.
         report = verify.report(document, registry.DEFAULT)
-        if not report.ok:
+        if not report.ok or not report.predicate_gates_checked:
             print(
                 "refusing to run: this statement does not verify", file=sys.stderr
             )
             for gate in report.ordered:
                 if not gate.passed:
                     print("  %s" % gate.line(), file=sys.stderr)
+            if not report.predicate_gates_checked:
+                print(
+                    "  replay requires registered checks for gates 2 and 5",
+                    file=sys.stderr,
+                )
+            for line in report.unchecked:
+                print("  %s" % gates.one_line(line), file=sys.stderr)
             return GATE_BREACHED
 
     result = replay.replay(
@@ -404,7 +460,7 @@ def add_input_bounds(parser):
 
 
 def build_parser():
-    parser = argparse.ArgumentParser(
+    parser = BoundedArgumentParser(
         prog="ariadne", description="Signed evidence another person can check."
     )
     subcommands = parser.add_subparsers(dest="command")
@@ -503,6 +559,21 @@ def build_parser():
     grab_fixture.add_argument("--first-capture-reason")
     grab_fixture.add_argument("--out")
     grab_fixture.set_defaults(handler=cmd_capture_state_fixture)
+
+    grab_agent = subcommands.add_parser(
+        "capture-grounded-agent",
+        help="read a bounded local berean-release/v1 into a statement",
+        description="read a bounded local berean-release/v1 into a statement",
+    )
+    grab_agent.add_argument("--release", required=True)
+    grab_agent.add_argument("--name", required=True)
+    grab_agent.add_argument("--producer-tool", required=True)
+    grab_agent.add_argument("--producer-version", required=True)
+    grab_agent.add_argument("--producer-command", action="append", required=True)
+    grab_agent.add_argument("--previous")
+    grab_agent.add_argument("--first-capture-reason")
+    grab_agent.add_argument("--output", required=True)
+    grab_agent.set_defaults(handler=cmd_capture_grounded_agent)
 
     check = subcommands.add_parser(
         "verify", help="run the core gates over a statement"

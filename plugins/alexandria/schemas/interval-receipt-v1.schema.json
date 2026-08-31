@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/alexandria/interval-receipt-v1.schema.json",
+  "title": "Alexandria interval receipt v1",
+  "description": "What a collected interval covers: its implementation epochs, its shards, and what a second provider said about it.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "epochs", "shards", "reconciliation"],
+  "properties": {
+    "format": {"const": "alexandria-interval-receipt/v1"},
+    "epochs": {"type": "array", "minItems": 1, "maxItems": 256, "items": {"$ref": "#/$defs/epoch"}},
+    "shards": {"type": "array", "minItems": 1, "maxItems": 4096, "items": {"$ref": "#/$defs/shard"}},
+    "reconciliation": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/reconciliation"}]}
+  },
+  "$defs": {
+    "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,127}$"},
+    "address": {"type": "string", "pattern": "^0x[0-9a-f]{40}$"},
+    "hash": {"type": "string", "pattern": "^0x[0-9a-f]{64}$"},
+    "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "block": {"type": "string", "maxLength": 19, "pattern": "^(0|[1-9][0-9]*)$"},
+    "epoch": {
+      "type": "object", "additionalProperties": false,
+      "required": ["chain", "deployment", "proxy", "start_block", "end_block", "start_hash", "end_hash", "upgrade", "implementation", "implementation_code_sha256"],
+      "properties": {
+        "chain": {"type": "string", "pattern": "^eip155:(0|[1-9][0-9]*)$"},
+        "deployment": {"$ref": "#/$defs/name"},
+        "proxy": {"$ref": "#/$defs/address"},
+        "start_block": {"$ref": "#/$defs/block"},
+        "end_block": {"$ref": "#/$defs/block"},
+        "start_hash": {"$ref": "#/$defs/hash"},
+        "end_hash": {"$ref": "#/$defs/hash"},
+        "upgrade": {
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object", "additionalProperties": false,
+              "required": ["transaction_hash", "log_index", "block_number"],
+              "properties": {
+                "transaction_hash": {"$ref": "#/$defs/hash"},
+                "log_index": {"type": "integer", "minimum": 0},
+                "block_number": {"$ref": "#/$defs/block"}
+              }
+            }
+          ]
+        },
+        "implementation": {"$ref": "#/$defs/address"},
+        "implementation_code_sha256": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "shard": {
+      "type": "object", "additionalProperties": false,
+      "required": ["index", "start", "end", "end_hash", "status", "record_counts"],
+      "properties": {
+        "index": {"type": "integer", "minimum": 0, "maximum": 4095},
+        "start": {"type": "integer", "minimum": 0},
+        "end": {"type": "integer", "minimum": 0},
+        "end_hash": {"$ref": "#/$defs/hash"},
+        "status": {"enum": ["complete", "partial", "failed"]},
+        "record_counts": {
+          "type": "object", "minProperties": 1, "maxProperties": 16,
+          "additionalProperties": false,
+          "patternProperties": {"^[a-z0-9][a-z0-9._-]{0,127}$": {"type": "integer", "minimum": 0}}
+        }
+      }
+    },
+    "reconciliation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["provider_class", "status", "compared", "matched", "disputed"],
+      "properties": {
+        "provider_class": {"type": "string", "minLength": 1, "maxLength": 256},
+        "status": {"enum": ["agreed", "disputed", "unreconciled"]},
+        "compared": {"type": "integer", "minimum": 0},
+        "matched": {"type": "integer", "minimum": 0},
+        "disputed": {
+          "type": "array", "maxItems": 1024,
+          "items": {
+            "type": "object", "additionalProperties": false,
+            "required": ["shard", "kind", "identity"],
+            "properties": {
+              "shard": {"type": "integer", "minimum": 0},
+              "kind": {"enum": ["boundary-hash", "log-identity", "transaction-order"]},
+              "identity": {"type": "string", "minLength": 1, "maxLength": 1024}
+            }
+          }
+        }
+      }
+    }
+  }
+}

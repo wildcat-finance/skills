@@ -1,0 +1,1 @@
+{"correlation_id":"24f5909f595b58c3","event":"anamnesis.source.refused","policy_version":"pilot-2026-08-31","reason":"source tabularium-audit-rounds digest is 1de310b5df5784d7e623ea9dbda83ae77e02cb1798b3aeedffc5d0c715f8e3a7, not the declared 0000000000000000000000000000000000000000000000000000000000000000","record":"tabularium-audit-rounds","rule":"A057"}

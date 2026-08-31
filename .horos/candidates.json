@@ -2,16 +2,30 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 13870852,
+    "bytes_blob": 16494907,
     "bytes_generated": 98
   },
   "entries": [
     {
-      "bytes": 385852,
+      "bytes": 389658,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/AUDIT_SYNOPSIS.md"
+    },
+    {
+      "bytes": 173841,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 171793",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-329-janus-resolve-the-manifest-s-permitted-effec.md"
+    },
+    {
+      "bytes": 175070,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-329-janus-resolve-the-manifest-s-permitted-effec.synopsis.md"
     },
     {
       "bytes": 55818,
@@ -40,6 +54,62 @@
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-383-prove-receipts-against-the-captured-header-s.synopsis.md"
+    },
+    {
+      "bytes": 50402,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-390-add-fail-closed-morpho-midnight-fixed-maturi.synopsis.md"
+    },
+    {
+      "bytes": 23478,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-390-restore-fail-closed-morpho-midnight-fixed-ma.synopsis.md"
+    },
+    {
+      "bytes": 18752,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-391-unified-live-and-archive-collection.synopsis.md"
+    },
+    {
+      "bytes": 41059,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-395-resumable-ethereum-usdc-interval-collector.synopsis.md"
+    },
+    {
+      "bytes": 297271,
+      "category": "blob",
+      "evidence": "no newline in a 2048-byte window at offset 148635 of 297271 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-402-implement-the-grounded-agent-predicate.md"
+    },
+    {
+      "bytes": 299247,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-402-implement-the-grounded-agent-predicate.synopsis.md"
+    },
+    {
+      "bytes": 89662,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 44831",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-409-chunk-corpora-carry-dataset-provenance.md"
+    },
+    {
+      "bytes": 90390,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-409-chunk-corpora-carry-dataset-provenance.synopsis.md"
     },
     {
       "bytes": 79134,
@@ -84,11 +154,137 @@
       "path": "audit/rounds/fiat-510-reuse-source-bound-x-ray-analysis-across-fia.synopsis.md"
     },
     {
+      "bytes": 33981,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-556-resolve-runbook-target-versions-at-integrate.synopsis.md"
+    },
+    {
+      "bytes": 52994,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-557-portable-run-state-recovery-r2.synopsis.md"
+    },
+    {
       "bytes": 31859,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
       "path": "audit/rounds/fiat-617-runtime-host-reinstates-the-byline-the-ident.synopsis.md"
+    },
+    {
+      "bytes": 141575,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 139527",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-621-isolate-disposable-fixture-signing.md"
+    },
+    {
+      "bytes": 142297,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-621-isolate-disposable-fixture-signing.synopsis.md"
+    },
+    {
+      "bytes": 65312,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-2-implementation-continuation.synopsis.md"
+    },
+    {
+      "bytes": 132367,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 130319",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-3-implementation-continuation.md"
+    },
+    {
+      "bytes": 133422,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-3-implementation-continuation.synopsis.md"
+    },
+    {
+      "bytes": 42672,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-carryover-inoculate-affected-scope-runner.synopsis.md"
+    },
+    {
+      "bytes": 28413,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-622-fix-disposable-fixture-signing-and-add-affec.synopsis.md"
+    },
+    {
+      "bytes": 119875,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 117827",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-700-proxy-model-traffic-without-giving-the-worke.md"
+    },
+    {
+      "bytes": 121312,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-700-proxy-model-traffic-without-giving-the-worke.synopsis.md"
+    },
+    {
+      "bytes": 27146,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
+    },
+    {
+      "bytes": 46184,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-881-macos-path-repair-clean-run.synopsis.md"
+    },
+    {
+      "bytes": 86469,
+      "category": "blob",
+      "evidence": "mean line length above 400 in a window at offset 84421",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.md"
+    },
+    {
+      "bytes": 87424,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-909-compact-lossless-agent-instruction-language.synopsis.md"
+    },
+    {
+      "bytes": 17050,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-936-report-dead-code-baseline-staleness-instead.synopsis.md"
+    },
+    {
+      "bytes": 31881,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-975-remove-the-child-or-golden-retriever-primer.synopsis.md"
+    },
+    {
+      "bytes": 27325,
+      "category": "blob",
+      "evidence": "mean line length above 400 in the first 4096 bytes",
+      "grade": "candidate",
+      "path": "audit/rounds/fiat-anamnesis-source-bound-curation-and-release-of-a.synopsis.md"
     },
     {
       "bytes": 59394,
@@ -377,6 +573,13 @@
       "evidence": "no newline in the first 4096 bytes of 203679 bytes",
       "grade": "candidate",
       "path": "plugins/tabularium/examples/goldfinch-v0/source.json"
+    },
+    {
+      "bytes": 23378,
+      "category": "blob",
+      "evidence": "no newline in the first 4096 bytes of 23378 bytes",
+      "grade": "candidate",
+      "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     }
   ],
   "schema": 2,

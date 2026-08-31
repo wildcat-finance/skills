@@ -12,6 +12,17 @@ Horos records which repository paths an agent may usually leave unread, with the
 **Next Fiat job.** Use /hexaemeron:fiat to ship the content-addressed object rule whose evidence is the digest a file's own bytes produce. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Horos before broad reading of a large repository. It records which files
+are proven token sinks, why they can usually stay unread, and whether that
+boundary still matches the tree. It can also produce outline maps for several
+programming languages.
+
+The boundary is advisory, fail-open, and disabled during every security
+review. The content-addressed-object rule still owes its frontier run, and
+Markdown has no outline extractor yet.
+
 ## Place in the collective
 
 Horos runs before broad repository reading and reduces the files every later

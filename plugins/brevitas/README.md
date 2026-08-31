@@ -12,6 +12,17 @@ Brevitas enforces mechanical volume and structure limits on engineering prose wh
 **Next Fiat job.** Use /hexaemeron:fiat to Forward-test Brevitas across held x-ray, Solidity-auditor, gas, `invariant` and diff-review outputs, then add every confirmed structural bypass to the corpus without weakening evidence precedence. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
+## Start here
+
+Use Brevitas after the facts and wording of an engineering review are settled
+but the result is still too long or structurally hard to use. It enforces
+bounded finding, heading, table, and fence shapes while protecting identifiers,
+numbers, counterexamples, and reproduction steps.
+
+It does not decide what the text should say or prove that every meaning
+survived compression. Its linter has not yet been forward-tested on a held
+cross-model review corpus.
+
 ## Place in the collective
 
 Imprimatur catches banned wording and unsupported technical terms; Vulgate
@@ -29,12 +40,15 @@ a claim the findings do not hold.
 
 ## How it works
 
-Evidence outranks every budget. Addresses, transaction hashes, `file:line`
-references, numbers, counterexamples, reproduction steps and statements of what
-could not be established survive compression. The linter accepts a draft from a
-file or stdin, rejects mechanical breaches with line-numbered diagnostics, and
-can compare a compressed draft with its source. A marked evidence exception keeps
-an irreducible finding intact when the evidence itself needs more than five lines.
+Evidence outranks every budget. Transaction hashes, addresses, 4-byte selectors,
+bare SHA-256-shaped digests, Git object ids, `file:line` references, numbers,
+counterexamples, reproduction steps and statements of what could not be
+established survive compression. Abbreviated Git ids require Markdown code
+quoting, an explicit Git label, or an `owner/repository@oid` form. The linter
+accepts a draft from a file or stdin, rejects mechanical breaches with
+line-numbered diagnostics, and can compare a compressed draft with its source. A
+marked evidence exception keeps an irreducible finding intact when the evidence
+itself needs more than five lines.
 
 ## What it ships
 
@@ -61,10 +75,12 @@ analysis, `invariant` discussion, diff review and protocol commentary. It does
 not choose words or voice. It controls line count, finding shape, headings,
 tables, code fences and the prose between points.
 
-The evidence rule comes first. Addresses, transaction hashes, `file:line`
-references, numbers, counterexamples, reproduction steps and statements of
-what could not be established survive every rewrite. `--source` checks the
-machine-readable subset. An explicit evidence exception keeps longer material
+The evidence rule comes first. Transaction hashes, addresses, 4-byte selectors,
+bare SHA-256-shaped digests, Git object ids, `file:line` references, numbers,
+counterexamples, reproduction steps and statements of what could not be
+established survive every rewrite. `--source` checks literal survival of the
+machine-readable subset; it does not establish that a digest, selector or Git
+object exists or is valid. An explicit evidence exception keeps longer material
 when the five-line finding form cannot hold it.
 
 - one canonical [`SKILL.md`](skills/brevitas/SKILL.md) shared by Codex, Claude Code and portable agents;

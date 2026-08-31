@@ -1,0 +1,179 @@
+{
+  "schema": "anamnesis-pilot-policy/v1",
+  "policy_version": "edge-cases-v1",
+  "engagement": "Synthetic edge cases for the Anamnesis curation tests",
+  "max_source_bytes": 100000,
+  "sources": [
+    {
+      "id": "edge-cases",
+      "path": "edge-cases.md",
+      "sha256": "35513a86a5680be9772759838cf7d40779b0489ab92a48f53dc3bf8a4bf58cb1",
+      "bytes": 1524,
+      "media_type": "text/markdown",
+      "producer": "Synthetic, authored for these tests",
+      "provenance": {
+        "origin": "wildcat-finance/skills",
+        "origin_path": "plugins/anamnesis/tests/fixtures/edge-cases.md",
+        "retrieved": "2026-08-31"
+      },
+      "rights": {
+        "basis": "licence",
+        "disclosure": "public",
+        "holder": "Wildcat Labs",
+        "statement": "Apache-2.0, authored in this repository for these tests."
+      }
+    }
+  ],
+  "records": [
+    {
+      "id": "edge-cases:r1",
+      "source": "edge-cases",
+      "native_id": "S1",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r2",
+      "source": "edge-cases",
+      "native_id": "S2",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r3",
+      "source": "edge-cases",
+      "native_id": "S3",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r4",
+      "source": "edge-cases",
+      "native_id": "S4",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r5",
+      "source": "edge-cases",
+      "native_id": "S5",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r6",
+      "source": "edge-cases",
+      "native_id": "S6",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r7",
+      "source": "edge-cases",
+      "native_id": "S7",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r8",
+      "source": "edge-cases",
+      "native_id": "S8",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r9",
+      "source": "edge-cases",
+      "native_id": "S9",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r10",
+      "source": "edge-cases",
+      "native_id": "S10",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r11",
+      "source": "edge-cases",
+      "native_id": "S11",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r12",
+      "source": "edge-cases",
+      "native_id": "S12",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r13",
+      "source": "edge-cases",
+      "native_id": "S13",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r14",
+      "source": "edge-cases",
+      "native_id": "S14",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r15",
+      "source": "edge-cases",
+      "native_id": "S15",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r16",
+      "source": "edge-cases",
+      "native_id": "S16",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r17",
+      "source": "edge-cases",
+      "native_id": "S17",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r18",
+      "source": "edge-cases",
+      "native_id": "S18",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r19",
+      "source": "edge-cases",
+      "native_id": "S19",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r20",
+      "source": "edge-cases",
+      "native_id": "S20",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r21",
+      "source": "edge-cases",
+      "native_id": "S21",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r22",
+      "source": "edge-cases",
+      "native_id": "S22",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r23",
+      "source": "edge-cases",
+      "native_id": "S23",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r24",
+      "source": "edge-cases",
+      "native_id": "S24",
+      "round": "synthetic"
+    },
+    {
+      "id": "edge-cases:r25",
+      "source": "edge-cases",
+      "native_id": "S25",
+      "round": "synthetic"
+    }
+  ]
+}

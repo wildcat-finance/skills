@@ -1,0 +1,11 @@
+{
+  "schema": "wildcat.check-map.v1",
+  "checks": {
+    "build": {"title": "Build", "argv": ["python3", "-c", "raise SystemExit(3)"], "cwd": ".", "kind": "build", "group": "chain", "order": 1},
+    "test": {"title": "Test", "argv": ["python3", "-c", "print('test')"], "cwd": ".", "kind": "suite", "group": "chain", "order": 2}
+  },
+  "groups": {"chain": {"title": "Build then test", "ordered": ["build", "test"]}},
+  "scopes": {"one": {"title": "One", "checks": ["build", "test"]}},
+  "dependencies": {},
+  "owners": [{"path": "one", "scope": "one"}]
+}

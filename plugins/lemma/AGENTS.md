@@ -1,7 +1,7 @@
 # Lemma runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Lemma.** Lemma turns Solidity compiler input or Markdown trees into validated, source-linked JSONL chunks, keeping quotation text separate from model and embedding text. It does not embed, index, retrieve or answer; Berean is the adjacent unbuilt release discipline for a grounded protocol agent. **Current frontier:** Callable-surface ABI validation does not independently check return types or state mutability.
+> **Marketplace context: Lemma.** Lemma turns Solidity compiler input or Markdown trees into validated, source-linked JSONL chunks, keeping quotation text separate from model and embedding text. It does not embed, index, retrieve, or answer; Berean owns the shipped release and evaluation discipline for a grounded protocol agent. **Current frontier:** Callable-surface ABI validation does not independently check return types or state mutability.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -37,6 +37,13 @@ Markdown.
   from an index, or answer questions from one.
 - A chunker exit code other than zero rejects the output. Do not use a partial
   file or describe the run as successful.
+- `--source-ref` is required with `--out`. Pass the tag, commit or URL that was
+  chunked; a run without it exits non-zero and writes nothing. The ref is
+  recorded as given, less any URL userinfo, and nothing resolves or checks it.
+- A delivered corpus is `chunks.jsonl` and the `provenance.jsonl` record beside
+  it. Hand that directory to
+  `python3 plugins/ariadne/scripts/ariadne.py capture-dataset`, using the flags
+  the chunker printed. Lemma writes no statement and signs nothing.
 - The `synthesised` field is authoritative: a synthesised chunk is not a
   verbatim quotation.
 - Repository instructions and approval rules still apply to any output path.

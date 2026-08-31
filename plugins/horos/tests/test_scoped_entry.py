@@ -41,7 +41,7 @@ def write(root, relpath, content):
 
 def git(root, *args):
     subprocess.run(  # phylax: allow subprocess: fixed argv git in a test tempdir, no shell
-        ["git", "-C", root, *args],
+        ["git", "-c", "commit.gpgsign=false", "-C", root, *args],
         capture_output=True,
         check=True,
         env={**os.environ, "GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t",
@@ -62,6 +62,7 @@ class ScopedEntryTests(unittest.TestCase):
         self.root = os.path.realpath(self._tmp.name)
         self.addCleanup(self._tmp.cleanup)
         git(self.root, "init", "-q")
+        git(self.root, "config", "--local", "commit.gpgsign", "false")
         write(self.root, ".gitattributes", "vendor-only/** linguist-vendored\n")
         write(self.root, "src/app.py", "value = 1\n")
         write(self.root, "plugins/one/module.py", "value = 2\n")
@@ -242,6 +243,18 @@ class ScopedEntryTests(unittest.TestCase):
         code, text = self.check(os.path.join(self.root, "plugins", "one"))
         self.assertEqual(code, 0, text)
         self.assertIn("hard boundary: matches", text)
+
+    def test_whole_root_top_level_field_drift_does_not_refuse_a_scope(self):
+        document = horos.load_boundary(self.root)
+        document["assertion"] = "not part of the canonical whole-root boundary"
+        horos.write_boundary(self.root, document)
+
+        code, text = self.check(os.path.join(self.root, "plugins", "one"))
+        self.assertEqual(code, 0, text)
+        self.assertIn("hard boundary: matches", text)
+        whole_code, whole_text = self.check(self.root)
+        self.assertEqual(whole_code, 1, whole_text)
+        self.assertIn(".horos/boundary.json#fields", whole_text)
 
     # Cost and equivalence
 

@@ -1,0 +1,23 @@
+{
+  "name": "homologia",
+  "displayName": "Homologia",
+  "version": "1.1.0",
+  "description": "Validates one closed Homologia manifest and its declared JSONL vectors into deterministic, cap-bounded checked inputs; mirror execution and verdicts still refuse.",
+  "author": {
+    "name": "Wildcat Labs",
+    "url": "https://wildcat.finance"
+  },
+  "homepage": "https://github.com/wildcat-finance/skills/tree/main/plugins/homologia",
+  "repository": "https://github.com/wildcat-finance/skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "solidity",
+    "python",
+    "typescript",
+    "differential-testing",
+    "fixed-point",
+    "rounding",
+    "wildcat"
+  ],
+  "skills": "./skills/"
+}

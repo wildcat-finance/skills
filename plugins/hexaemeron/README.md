@@ -14,6 +14,17 @@ Hexaemeron carries an explicit, receipted delivery from study to one merged chan
 
 Let there be light.
 
+## Start here
+
+Use Hexaemeron when you want one repository issue carried through the complete
+controlled delivery, not merely edited. Its Fiat controller orders study,
+runbook, implementation, audit, prose, push, and integration, and records each
+accepted transition in durable state.
+
+Fiat is explicit-only. It does not start because a task sounds like delivery.
+Its checkpoints survive local context loss at completed boundaries; they are
+not arbitrary mid-step snapshots or a distributed cross-machine service.
+
 ## Place in the collective
 
 Hexaemeron is the delivery system, not a general replacement for the other
@@ -28,10 +39,10 @@ contracts by path; Hexaemeron does not rewrite or absorb them. Domain work such
 as gas optimisation, credit laws, evidence preservation, or source chunking
 stays with Hermes, Pandects, Lazarus or Alexandria, and Lemma respectively.
 
-Synkrisis sits outside the delivery controller. It is intended to compare
-validated observations from several completed runs, but its present scaffold
-refuses every operation. It cannot select work, steer a worker, file an issue,
-or dispatch Fiat.
+Synkrisis sits outside the delivery controller. Its four operations compare
+validated observations from several runs, emit bounded findings and a fixed
+report, and verify the path from the original inputs. It cannot select work,
+steer a worker, file an issue, or dispatch Fiat.
 
 One explicit Fiat request takes a topic through a study and runbook, then
 implements, audits, documents, pushes, and integrates each runbook step. The
@@ -49,7 +60,7 @@ Let there be light. A deterministic controller (`hexctl`) decides what comes nex
 
 1. Study the topic and write a linted study file.
 2. Derive a runbook of discrete, self-contained steps.
-3. Implement the least complicated construction that satisfies each runbook step.
+3. Implement the checked candidate bound into the runbook, one step at a time.
 4. Run the vendored Pashov suite (`x-ray`, `solidity-auditor`, `fizz`) in rounds until a round comes back clean or the remaining leads are judged not worth another pass, shape each audit record through Sapheneia, and put fixes on a stacked branch.
 5. Rewrite every shipped document and the PR text through the bundled `imprimatur` lint and `vulgate` voice mask.
 6. Push the step branch, open its pull request against the step below it, and move to the next step.
@@ -67,7 +78,7 @@ exactly one merge per run.
 - the executable [`hexctl.py`](./skills/fiat/scripts/hexctl.py) controller with a tamper-evident ledger (`verify` proves both chain and state);
 - the [`imprimatur`](./skills/imprimatur) three-tier prose lint and the [`vulgate`](./skills/vulgate) voice mask, invokable on their own;
 - [`kronos`](./skills/kronos), which ranks eligible held frontier jobs and loops complete Fiat runs until none remain;
-- six phase disciplines; all six ship an executable check: [`protasis`](./skills/protasis) on what a study and runbook must answer, [`elenchus`](./skills/elenchus) on the root cause of a failure that already happened, [`phylax`](./skills/phylax) on the off-chain surface, [`ephoros`](./skills/ephoros) on what a step emits once it runs unattended, [`metron`](./skills/metron) on every measurement except gas, and [`hypomnema`](./skills/hypomnema) on what gets recorded and where;
+- six phase disciplines; all six ship an executable check: [`protasis`](./skills/protasis) on what a study and runbook must answer and whether the evidence due for their chosen design is present, [`elenchus`](./skills/elenchus) on the root cause of a failure that already happened, [`phylax`](./skills/phylax) on the off-chain surface, [`ephoros`](./skills/ephoros) on what a step emits once it runs unattended, [`metron`](./skills/metron) on every measurement except gas, and [`hypomnema`](./skills/hypomnema) on what gets recorded and where;
 - the Pashov Audit Group suite vendored verbatim (MIT; `LICENSE` and `NOTICE.md` in each skill directory);
 - Codex metadata for explicit or automatic invocation; and
 - the controller, contract, practice-check and lint test suite, plus a fuzz-audit log ([`audit/AUDIT.md`](./audit/AUDIT.md)) covering the controller's own surfaces.
@@ -233,19 +244,23 @@ post-write read. It has no network, shell, dependency, or generation clock.
 
 ## Configuration
 
-Per-run, via `hexctl config set <path> <value>`:
+`hexctl config get <path>` reads every path. After `init`, `config set` may
+change only the exact `audit.log_path` leaf, the `git` section, or a path below
+`git`. Every other write is refused before value parsing or a ledger append.
 
-| Path | Default | Meaning |
-| --- | --- | --- |
-| `skills.prose_lint` | `hexaemeron:imprimatur` | Bundled lint the prose receipt demands |
-| `skills.voice` | `hexaemeron:vulgate` | Bundled voice mask the prose receipt demands |
-| `skills.security` | the vendored Pashov ids | Intent only; the ids the `security_suite` receipt records at preflight |
-| `audit.max_rounds` | `8` | Rounds before the controller forces a verdict |
-| `audit.stacked_suffix` | `--audit` | Fix branch: `<step-branch>--audit` |
-| `audit.fold` | `false` | Merge the stacked branch into the step branch on close |
-| `audit.log_path` | `audit/rounds/<flattened run branch>.md` | Where this run's rounds append; `init` derives it, and an override may move the directory but must keep the file name, so no two runs share a record |
-| `git.base` | `main` | Starting ref, and the only branch a run merges into |
-| `git.run_branch_prefix` | `fiat/` | Run branch is this plus the topic slug, or `<issue>-<topic slug>` when `init --task-issue` binds a known issue; an exact override must keep that issue prefix |
+| Path | Default | Mutable after `init` | Meaning |
+| --- | --- | --- | --- |
+| `skills.prose_lint` | `hexaemeron:imprimatur` | no | Bundled lint the prose receipt demands |
+| `skills.voice` | `hexaemeron:vulgate` | no | Bundled voice mask the prose receipt demands |
+| `skills.security` | the vendored Pashov ids | no | Intent only; the ids the `security_suite` receipt records at preflight |
+| `audit.max_rounds` | `8` | no | Rounds before the controller forces a verdict |
+| `audit.stacked_suffix` | `--audit` | no | Fix branch: `<step-branch>--audit` |
+| `audit.fold` | `false` | no | Whether a legacy run folds the stacked audit branch on close |
+| `audit.log_path` | `audit/rounds/<flattened run branch>.md` | yes | Where this run's rounds append; `init` derives it, and an override may move the directory but must keep the file name, so no two runs share a record |
+| `git.base` | `main` | yes | Starting ref, and the only branch a run merges into |
+| `git.run_branch_prefix` | `fiat/` | yes | Run branch is this plus the topic slug, or `<issue>-<topic slug>` when `init --task-issue` binds a known issue; an exact override must keep that issue prefix |
+| `git.draft_pr` | `false` | yes | Whether a run asks for draft pull requests |
+| `solidity` | `auto` | no | Classify the round from the `security_suite` receipt; older recorded boolean overrides remain readable |
 
 The Pashov suite -- `x-ray`, `solidity-auditor`, and `fizz` -- is based on
 https://github.com/pashov/skills tag `v28062026` under the MIT licence. Each
@@ -263,11 +278,15 @@ Six skills carry the standards each phase is held to, and each runs on its own
 outside the loop. `protasis` says what a study and a runbook must answer.
 `elenchus` works an observed failure down to its cause and guards it.
 `phylax` holds the off-chain surface: input, subprocesses, fetched hosts,
-secrets, dependencies and model output. `ephoros` chooses what a step emits
-once it runs unattended. `metron` refuses a performance change without a
-recorded before and after. `hypomnema` decides which decisions earn a written
-reason and where each record lives. Each carries its own `EVOLUTION.md`, so
-Kronos ranks their frontiers alongside the rest.
+secrets, dependencies and model output. It also ships the synthetic
+job-scoped model proxy component and its digest-bound fourteen-row conformance
+command. That proof leaves the JobSpec acceptance receipt, launch receipt,
+live provider, public pilot and #702 Fiat integration/end-to-end digest join
+open. `ephoros` chooses
+what a step emits once it runs unattended. `metron` refuses a performance
+change without a recorded before and after. `hypomnema` decides which
+decisions earn a written reason and where each record lives. Each carries its
+own `EVOLUTION.md`, so Kronos ranks their frontiers alongside the rest.
 
 ## The prose masks
 

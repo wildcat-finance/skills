@@ -221,6 +221,8 @@
     },
     "hash32": {
       "type": "string",
+      "minLength": 66,
+      "maxLength": 66,
       "pattern": "^0x(?!0{64}$)[0-9a-f]{64}$"
     },
     "count": {

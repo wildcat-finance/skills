@@ -2,23 +2,26 @@ name: lazarus
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "plugins/lazarus/**"
+      - "docs/lazarus-multi-provider-chain-anchor/**"
+      - "docs/lazarus-receipt-inclusion-proofs/**"
+      - "docs/decisions/ADR-037-prove-receipts-with-a-full-ordered-witness.md"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/skills/promise-machine/SKILL.md"
-      - "AGENTS.md"
       - ".github/workflows/lazarus.yml"
   pull_request:
     paths:
       - "plugins/lazarus/**"
+      - "docs/lazarus-multi-provider-chain-anchor/**"
+      - "docs/lazarus-receipt-inclusion-proofs/**"
+      - "docs/decisions/ADR-037-prove-receipts-with-a-full-ordered-witness.md"
       - ".python-version"
       - "pyproject.toml"
-      - ".claude-plugin/**"
-      - ".agents/skills/promise-machine/SKILL.md"
-      - "AGENTS.md"
       - ".github/workflows/lazarus.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -39,3 +42,212 @@ jobs:
         run: python3 -m pip install --requirement plugins/lazarus/requirements.lock
       - name: Lazarus test suite
         run: python3 -m unittest discover -s plugins/lazarus/tests -t plugins/lazarus -v
+
+  darwin:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+          cache: pip
+          cache-dependency-path: |
+            plugins/lazarus/requirements.txt
+            plugins/lazarus/requirements.lock
+      - name: Install locked Lazarus dependencies
+        run: python3 -m pip install --requirement plugins/lazarus/requirements.lock
+      - name: Complete Lazarus suite without skips
+        run: |
+          test ! -e .lazarus-ci
+          python3 plugins/lazarus/tests/run_tests.py --elenchus-report .lazarus-ci/lazarus-darwin-tests.json
+      - name: Goldfinch fixture and default-temporary release
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import platform
+          import shutil
+          import subprocess
+          import sys
+          import tempfile
+          from pathlib import Path
+
+          root = Path.cwd()
+          sys.path.insert(0, str(root / "plugins" / "lazarus" / "scripts"))
+          from lazarus_lib.paths import read_confined_bytes
+          from lazarus_lib.release import verify_release, write_release
+
+          def _read_test_report(root):
+              report = read_confined_bytes(
+                  root,
+                  ".lazarus-ci/lazarus-darwin-tests.json",
+                  max_bytes=4096,
+              )
+
+              def _closed_object(pairs):
+                  result = {}
+                  for key, value in pairs:
+                      if key in result:
+                          raise ValueError("duplicate test report field")
+                      result[key] = value
+                  return result
+
+              try:
+                  tests = json.loads(report, object_pairs_hook=_closed_object)
+              except (json.JSONDecodeError, TypeError, ValueError):
+                  raise AssertionError("the complete Lazarus test report is malformed") from None
+              fields = {
+                  "schema",
+                  "complete",
+                  "testsRun",
+                  "failures",
+                  "errors",
+                  "skipped",
+                  "expectedFailures",
+                  "unexpectedSuccesses",
+              }
+              if type(tests) is not dict or set(tests) != fields:
+                  raise AssertionError("the complete Lazarus test report has changed shape")
+              if tests["schema"] != "elenchus.unittest.v1" or tests["complete"] is not True:
+                  raise AssertionError("the complete Lazarus test report is unavailable")
+              for field in fields - {"schema", "complete"}:
+                  if type(tests[field]) is not int or tests[field] < 0:
+                      raise AssertionError("the complete Lazarus test counters are malformed")
+              return tests, hashlib.sha256(report).hexdigest()
+
+          def _acceptance_event(
+              commit,
+              environment,
+              tests,
+              test_report_sha256,
+              fixture_digest,
+              release_digest,
+              statement_sha256,
+              alias_class,
+          ):
+              return {
+                  "schema": "lazarus.darwin-acceptance.v1",
+                  "event": "lazarus_darwin_acceptance",
+                  "stage": "complete",
+                  "commit": commit,
+                  "environment": environment,
+                  "tests": {
+                      "exit": 0,
+                      "report_sha256": test_report_sha256,
+                      "run": tests["testsRun"],
+                      "failures": tests["failures"],
+                      "errors": tests["errors"],
+                      "skipped": tests["skipped"],
+                      "expected_failures": tests["expectedFailures"],
+                      "unexpected_successes": tests["unexpectedSuccesses"],
+                  },
+                  "fixture": {
+                      "comparison": "byte-identical",
+                      "digest": fixture_digest,
+                  },
+                  "release": {
+                      "verification_exit": 0,
+                      "verified": True,
+                      "statement_sha256": statement_sha256,
+                      "fixture_digest": fixture_digest,
+                      "digest": release_digest,
+                  },
+                  "lexical_root": alias_class,
+                  "darwin_root_alias": alias_class,
+              }
+
+          def _tree_bytes(directory):
+              return {
+                  path.relative_to(directory).as_posix(): path.read_bytes()
+                  for path in sorted(directory.rglob("*"))
+                  if path.is_file()
+              }
+
+          tests, test_report_sha256 = _read_test_report(root)
+          if tests["testsRun"] <= 0:
+              raise AssertionError("the complete Lazarus suite ran no tests")
+          if tests["skipped"] != 0:
+              raise AssertionError("the Darwin Lazarus suite skipped a regression")
+          for outcome in (
+              "failures",
+              "errors",
+              "expectedFailures",
+              "unexpectedSuccesses",
+          ):
+              if tests[outcome] != 0:
+                  raise AssertionError("the complete Darwin Lazarus suite was not green")
+
+          environment = {
+              "os": platform.system(),
+              "architecture": platform.machine(),
+              "python": platform.python_version(),
+          }
+          if environment["os"] != "Darwin" or environment["python"] != "3.14.6":
+              raise AssertionError("the pinned Darwin execution environment changed")
+          if not environment["architecture"]:
+              raise AssertionError("the Darwin architecture is unavailable")
+
+          demo = root / "plugins" / "lazarus" / "examples" / "goldfinch-v1" / "demo.py"
+          checked_fixture = demo.parent
+          checked_statement = (
+              root
+              / "plugins"
+              / "lazarus"
+              / "examples"
+              / "goldfinch-v1-release"
+              / "statement.json"
+          )
+          with tempfile.TemporaryDirectory() as directory:
+              workspace = Path(directory)
+              alias_class = workspace.parts[1] if len(workspace.parts) > 1 else ""
+              if alias_class not in {"etc", "tmp", "var"}:
+                  raise AssertionError("the default Darwin temporary root is not checked")
+
+              rebuilt_fixture = workspace / "fixture"
+              built = subprocess.run(
+                  [sys.executable, str(demo), "build-fixture", "--out", str(rebuilt_fixture)],
+                  cwd=root,
+                  stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE,
+                  text=True,
+                  check=False,
+              )
+              if built.returncode != 0:
+                  raise AssertionError("the Goldfinch fixture rebuild failed")
+              try:
+                  fixture_event = json.loads(built.stdout)
+              except (json.JSONDecodeError, TypeError):
+                  raise AssertionError("the Goldfinch fixture event is malformed") from None
+              if (
+                  fixture_event.get("event") != "goldfinch_fixture_build"
+                  or fixture_event.get("stage") != "complete"
+              ):
+                  raise AssertionError("the Goldfinch fixture rebuild is incomplete")
+              if _tree_bytes(rebuilt_fixture) != _tree_bytes(checked_fixture):
+                  raise AssertionError("the rebuilt Goldfinch fixture bytes changed")
+
+              statement = workspace / "statement.json"
+              shutil.copyfile(checked_statement, statement)
+              release = workspace / "release"
+              written = write_release(rebuilt_fixture, statement, release)
+              verified = verify_release(release)
+              if written["release_digest"] != verified["release_digest"]:
+                  raise AssertionError("the rebuilt release did not verify")
+              if fixture_event["fixture_digest"] != verified["fixture_digest"]:
+                  raise AssertionError("the rebuilt fixture and release disagree")
+
+          commit = subprocess.check_output(
+              ["git", "rev-parse", "HEAD"], cwd=root, text=True
+          ).strip()
+          evidence = _acceptance_event(
+              commit,
+              environment,
+              tests,
+              test_report_sha256,
+              fixture_event["fixture_digest"],
+              verified["release_digest"],
+              verified["statement_sha256"],
+              alias_class,
+          )
+          print(json.dumps(evidence, sort_keys=True, separators=(",", ":")))
+          PY

@@ -23,9 +23,9 @@ security review and does not narrow Warden, the Pashov suite, Phylax, or
 Elenchus while they investigate risk or a failure. Its version, held frontier,
 next job, and maturity state live in [EVOLUTION.md](EVOLUTION.md).
 
-The Synkrisis specification allows a future finding to suggest a Horos review
-when observations repeat. Its current scaffold cannot form a cohort or
-finding, and a future suggestion will not write or widen a reading boundary.
+A Synkrisis finding may suggest a Horos review when validated observations
+repeat. The finding does not write or widen a reading boundary; Horos still
+checks the repository evidence before changing one.
 
 **Current frontier.** The v9.2.3 reopening's first job is done: a generated-file marker binds only on a comment-led line, horos.py and test_classify.py read as ordinary source again, and a repository-level test holds this tree to zero self-exclusions. Two held jobs remain: the content-addressed object rule, whose drafted rule already classifies 7,844,971 bytes of this repository's object stores in the committed boundary while the rule still owes its own frontier run, and the Markdown outline extractor, with maturity expected after both.
 
@@ -69,7 +69,10 @@ counters: classified 210, listed outside scope 3, attribute files above scope 0
 
 Exit 1 means hard drift inside the scope, and every drifted path is named.
 Exit 2 means no usable ancestor boundary, or a path that resolves out of the
-worktree. Candidate drift never changes the exit code. A scoped pass is not a
+worktree. Candidate drift never changes a scoped check's exit code. At the
+root, candidate classification or content drift at the same file count remains
+advisory, but every raw canonical boundary count binds; adding or removing a
+tracked candidate therefore drifts `files_walked`. A scoped pass is not a
 whole-repository pass, which is why the output says so in those words: the
 release-time answer is still `check` at the root. The walk begins at the
 boundary root even for a scope, because a `.gitattributes` above the scope
@@ -199,7 +202,7 @@ shows the demo commands and the mutation that makes `check` fail.
 - Promise: A successful `check` establishes that the committed hard boundary equals the current re-derived classification for the stated root or subtree.
 - Evidence: The nearest confined boundary, current tracked-file walk, applicable attributes, recomputed entries, scope counters and zero-drift result.
 - Evidence classes: checked, recomputed
-- Boundary: A scoped pass says nothing about outside-scope drift, candidate findings never change the exit code and a clean boundary does not prove omitted files are cheap to read.
+- Boundary: A scoped pass says nothing about outside-scope drift; root candidate classification or content drift is advisory only while canonical boundary metadata remains equal; and a clean boundary does not prove omitted files are cheap to read.
 - Authorises: Leaving listed hard-boundary paths unread by default within the checked non-security scope.
 - Consequence: 0
 - Refuses: Trusting a stale, forged, missing or out-of-scope boundary, or applying any boundary during security review.

@@ -171,10 +171,19 @@ class HarnessFixture:
         forge.write_text(FAKE_FORGE)
         forge.chmod(0o755)
         subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
+        subprocess.run(
+            ["git", "config", "--local", "commit.gpgsign", "false"],
+            cwd=self.repo,
+            check=True,
+        )
         subprocess.run(["git", "config", "user.name", "Hermes Tests"], cwd=self.repo, check=True)
         subprocess.run(["git", "config", "user.email", "hermes@example.invalid"], cwd=self.repo, check=True)
         subprocess.run(["git", "add", "foundry.toml", "src/C.sol", "test/C.t.sol"], cwd=self.repo, check=True)
-        subprocess.run(["git", "commit", "-qm", "baseline"], cwd=self.repo, check=True)
+        subprocess.run(
+            ["git", "-c", "commit.gpgsign=false", "commit", "-qm", "baseline"],
+            cwd=self.repo,
+            check=True,
+        )
         self.environment = os.environ.copy()
         self.environment["PATH"] = f"{self.bin_dir}{os.pathsep}{self.environment['PATH']}"
         self.path_patch = mock.patch.dict(os.environ, self.environment, clear=True)
@@ -277,7 +286,7 @@ class HermesHarnessTests(HarnessFixture, unittest.TestCase):
     def test_accepts_unchanged_invariant_snapshot_rows(self) -> None:
         (self.repo / ".include-invariant").write_text("1")
         subprocess.run(["git", "add", ".include-invariant"], cwd=self.repo, check=True)
-        subprocess.run(["git", "commit", "-qm", "enable invariant snapshot"], cwd=self.repo, check=True)
+        subprocess.run(["git", "-c", "commit.gpgsign=false", "commit", "-qm", "enable invariant snapshot"], cwd=self.repo, check=True)
         self.baseline()
         self.prepare_candidate()
         self.assertEqual(self.verify("--no-sensitive-unchecked"), 0)
@@ -298,7 +307,7 @@ class HermesHarnessTests(HarnessFixture, unittest.TestCase):
     def test_rejects_changed_invariant_snapshot_rows(self) -> None:
         (self.repo / ".include-invariant").write_text("1")
         subprocess.run(["git", "add", ".include-invariant"], cwd=self.repo, check=True)
-        subprocess.run(["git", "commit", "-qm", "enable invariant snapshot"], cwd=self.repo, check=True)
+        subprocess.run(["git", "-c", "commit.gpgsign=false", "commit", "-qm", "enable invariant snapshot"], cwd=self.repo, check=True)
         self.baseline()
         self.prepare_candidate()
         (self.repo / ".candidate-invariant-calls").write_text("59999")
@@ -310,7 +319,7 @@ class HermesHarnessTests(HarnessFixture, unittest.TestCase):
     def test_accepts_fuzz_statistic_snapshot_rows(self) -> None:
         (self.repo / ".include-fuzz").write_text("1")
         subprocess.run(["git", "add", ".include-fuzz"], cwd=self.repo, check=True)
-        subprocess.run(["git", "commit", "-qm", "enable fuzz snapshot"], cwd=self.repo, check=True)
+        subprocess.run(["git", "-c", "commit.gpgsign=false", "commit", "-qm", "enable fuzz snapshot"], cwd=self.repo, check=True)
         self.baseline()
         self.prepare_candidate()
         self.assertEqual(self.verify("--no-sensitive-unchecked"), 0)
@@ -321,7 +330,7 @@ class HermesHarnessTests(HarnessFixture, unittest.TestCase):
     def test_records_changed_fuzz_statistics_without_calling_them_a_regression(self) -> None:
         (self.repo / ".include-fuzz").write_text("1")
         subprocess.run(["git", "add", ".include-fuzz"], cwd=self.repo, check=True)
-        subprocess.run(["git", "commit", "-qm", "enable fuzz snapshot"], cwd=self.repo, check=True)
+        subprocess.run(["git", "-c", "commit.gpgsign=false", "commit", "-qm", "enable fuzz snapshot"], cwd=self.repo, check=True)
         self.baseline()
         self.prepare_candidate()
         (self.repo / ".candidate-fuzz-mean").write_text("121")
@@ -332,7 +341,7 @@ class HermesHarnessTests(HarnessFixture, unittest.TestCase):
     def test_rejects_changed_fuzz_run_count(self) -> None:
         (self.repo / ".include-fuzz").write_text("1")
         subprocess.run(["git", "add", ".include-fuzz"], cwd=self.repo, check=True)
-        subprocess.run(["git", "commit", "-qm", "enable fuzz snapshot"], cwd=self.repo, check=True)
+        subprocess.run(["git", "-c", "commit.gpgsign=false", "commit", "-qm", "enable fuzz snapshot"], cwd=self.repo, check=True)
         self.baseline()
         self.prepare_candidate()
         (self.repo / ".candidate-fuzz-runs").write_text("999")

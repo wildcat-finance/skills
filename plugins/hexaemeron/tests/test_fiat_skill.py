@@ -34,6 +34,9 @@ except ModuleNotFoundError:
 ROOT = Path(__file__).resolve().parents[1]
 FIAT = ROOT / "skills" / "fiat" / "SKILL.md"
 PROTASIS = ROOT / "skills" / "protasis" / "SKILL.md"
+FIAT_LEDGER = ROOT / "skills" / "fiat" / "EVOLUTION.md"
+PROTASIS_LEDGER = ROOT / "skills" / "protasis" / "EVOLUTION.md"
+ADR_006 = ROOT.parents[1] / "docs" / "decisions" / "ADR-006-skill-ledgers-are-not-semver.md"
 MARKETPLACE = ROOT / "skills" / "fiat" / "references" / "wildcat-marketplace.md"
 CONTRIBUTOR_CHECK = ROOT / "skills" / "fiat" / "scripts" / "check_wildcat_contributor.py"
 PUSH_DISCIPLINE = ROOT / "skills" / "fiat" / "references" / "push-discipline.md"
@@ -146,19 +149,21 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("Preserve a human contributor as Git author and signer", flat)
         self.assertIn("publish through their own GitHub account", flat)
         self.assertIn("Never ask for, copy, upload, configure or use the Shoggoth private signing key", flat)
-        self.assertIn("Only a run contributed by Shoggoth needs the Shoggoth publication identity", flat)
-        self.assertIn("is neither author nor co-author", flat)
-        self.assertIn("stops before publication", flat)
+        self.assertIn("Publication is a separate role", flat)
+        self.assertIn("explicitly authorises a human publisher", flat)
+        self.assertIn("Record both roles", flat)
+        self.assertIn("is neither author, committer nor co-author", flat)
+        self.assertIn("Without explicit authority", flat)
         self.assertIn("known host account as pull-request author", flat)
 
     def test_agent_contracts_own_the_exact_delegation_brief_fields(self):
         clauses = {
-            "surveyor": "`topic`, `target_dir`, `base_ref`, and `output_path`",
-            "mason": "`runbook_step`, `branch`, and `branch_from`",
+            "surveyor": "`topic`, `target_dir`, `base_ref`, `output_path`, and `design_output_path`",
+            "mason": "`runbook_step`, `design_evidence`, `branch`, and `branch_from`",
             "warden": (
                 "`step_branch`, `stacked_branch`, `security_suite`, `plugin_root`, "
-                "`audit_log_path`, `round`, `audit_filter`, `risk_register`, and "
-                "`runbook_step`"
+                "`audit_log_path`, `round`, `audit_filter`, `risk_register`, "
+                "`runbook_step`, and `design_evidence`"
             ),
             "scribe": "`files`, `pr_base`, `pr_draft_path`, and `plugin_root`",
         }
@@ -233,6 +238,35 @@ class FiatSkillContractTests(unittest.TestCase):
         self.assertIn("read the remote comment back", push)
         self.assertIn("does not make the comment controller-attested", push)
 
+    def test_step_checkpoint_is_unconditional_local_agent_work(self):
+        section = self.push_discipline.split("## Step checkpoint", 1)[1].split(
+            "\n## ", 1
+        )[0]
+        flat = " ".join(section.split())
+        required = (
+            "Every successful `done push` boundary",
+            "mandatory controller work",
+            "cannot be waived",
+            "must not ask the user",
+            "<origin>/.hexaemeron/checkpoints/<run-worktree-name>/",
+            "A save failure blocks the next directive",
+            "Do not upload the checkpoint",
+            "direct agent-to-agent hand-off",
+            "absolute archive path",
+            "outer SHA-256",
+            "controller-manifest SHA-256",
+        )
+        missing = [item for item in required if item not in flat]
+        self.assertEqual([], missing)
+        self.assertNotIn("HexaemeronCheckpoints Drive", section)
+        self.assertNotIn("Anyone directing a run may waive", section)
+        self.assertNotIn("Post a note on the run's task issue", section)
+
+        fiat = " ".join(self.fiat.split())
+        self.assertIn("fixed local checkpoint store", fiat)
+        self.assertIn("mandatory controller work", fiat)
+        self.assertIn("do not ask the user whether to save it", fiat)
+
     def test_provenance_is_verified_without_reclassifying_human_work(self):
         # Flattened: these assert what the instruction says, and a reflow of the
         # same sentence is not a change to it. Pinning the line breaks made an
@@ -247,6 +281,8 @@ class FiatSkillContractTests(unittest.TestCase):
         flat = " ".join(self.push_discipline.split())
         self.assertIn("permitted merge method", flat)
         self.assertIn("close that exact issue", flat)
+        self.assertIn("Closes owner/repository#number", flat)
+        self.assertIn("recognised closing reference to the exact issue", flat)
         self.assertIn(
             "hexctl done integrate --pr-url <url> --merge-commit <sha>",
             self.push_discipline,
@@ -271,7 +307,7 @@ class FiatSkillContractTests(unittest.TestCase):
         fiat = " ".join(self.fiat.split())
         # A step's pull request targets the step below it, never the base.
         self.assertIn("gh pr create --base <pr_base> --head <branch>", self.push_discipline)
-        self.assertIn("hexctl done push --pr-url <url> --head-commit <sha> --pr-base <ref>",
+        self.assertIn("hexctl done push --pr-url <url> --head-commit <full-sha> --pr-base <ref>",
                       self.push_discipline)
         self.assertIn("never point one at the recorded base", flat)
         self.assertIn("only merge into the base in the whole run", flat)
@@ -385,6 +421,76 @@ class FiatSkillContractTests(unittest.TestCase):
             for rule, clause in required.items():
                 with self.subTest(passage=passage_name, rule=rule):
                     self.assertIn(clause, flat)
+
+    def test_protasis_owns_the_closed_version_relation_and_p006_boundary(self):
+        flat = " ".join(self.protasis.split())
+        self.assertIn("```version-relations", self.protasis)
+        self.assertIn("next-generation-after-integration-base", self.protasis)
+        self.assertIn("P006", self.protasis)
+        self.assertIn("Prose, examples, commands and amendments all count", flat)
+        self.assertIn("It does not open the ledger", flat)
+        self.assertIn("allocate a version", flat)
+
+    def test_fiat_owns_the_exact_anchor_without_calling_it_a_reservation(self):
+        flat = " ".join(self.fiat.split())
+        self.assertIn("`fiat-version-relations/v1` anchor", flat)
+        self.assertIn("bounded regular Git blob", flat)
+        self.assertIn("The generation-plus-one value", flat)
+        self.assertIn("It is not a reservation", flat)
+        self.assertIn("an explicit null resolution", flat)
+        self.assertIn("worker directive shapes stay unchanged", flat)
+        self.assertIn("no Git version evidence is read", flat)
+
+    def test_version_resolution_has_a_narrow_consequence_two_promise(self):
+        promise = self.fiat.split("### fiat-version-resolution", 1)[1]
+        promise = promise.split("### ", 1)[0]
+        self.assertIn("- Consequence: 2", promise)
+        self.assertIn("- Authorises:", promise)
+        self.assertIn("newest still-current receipt", promise)
+        self.assertIn("does not reserve a label", promise)
+        self.assertIn("subject-labelled pending record", promise)
+        self.assertIn("ninth resolution", promise)
+
+    def test_resolution_transition_and_final_replay_are_explicit(self):
+        flat = " ".join(self.fiat.split())
+        push = " ".join(self.push_discipline.split())
+        self.assertIn("`resolve-versions`", self.fiat)
+        self.assertIn("`done resolve-versions`", self.fiat)
+        for text in (flat, push):
+            self.assertIn("subject-labelled pending", text)
+            self.assertIn("eight", text)
+        self.assertIn("[base, candidate]", flat)
+        self.assertIn("[checked base, checked candidate]", push)
+        self.assertIn("All targets pass or none are recorded", push)
+        self.assertIn("performs none of these version reads", push)
+
+    def test_issue_556_generation_records_retain_the_declared_relation(self):
+        ledgers = {
+            "fiat-v5.37.1": FIAT_LEDGER.read_text(encoding="utf-8"),
+            "protasis-v4.9.0": PROTASIS_LEDGER.read_text(encoding="utf-8"),
+        }
+        for version, ledger in ledgers.items():
+            with self.subTest(version=version):
+                latest = next(
+                    line for line in ledger.splitlines()
+                    if line.startswith(f"| `{version}` |")
+                )
+                self.assertIn(f"| `{version}` | generation |", latest)
+                self.assertIn("skills#556", latest)
+                self.assertIn("ADR-006", latest)
+                self.assertIn("next-generation-after-integration-base", latest)
+
+    def test_issue_556_addendum_separates_relation_from_resolution(self):
+        record = ADR_006.read_text(encoding="utf-8")
+        addendum = record.split("## Issue 556 addendum", 1)[1]
+        self.assertIn("Accepted, 2026-08-28", addendum)
+        self.assertIn("skills#556", addendum)
+        self.assertIn("next-generation-after-integration-base", addendum)
+        self.assertIn("does not reserve a label", addendum)
+        self.assertIn("exact integration base", addendum)
+        self.assertIn("signed two-parent", addendum)
+        self.assertIn("fiat-integration-revalidation/v1", addendum)
+        self.assertIn("self-hosted", addendum)
 
     def test_observation_binding_is_optional_and_non_authorising(self):
         flat = " ".join(self.fiat.split())
@@ -796,6 +902,19 @@ class RunWorktreeContractTests(unittest.TestCase):
         self.assertIn("removes the tree when git can remove it without force", collapsed)
         self.assertIn("A tree holding work is kept and named instead", collapsed)
 
+    def test_terminal_cleanup_follows_status_and_verification(self):
+        final_report = self.fiat.split("## Final report", 1)[1].split(
+            "## Promise Machine contract", 1
+        )[0]
+        status_at = final_report.index("`hexctl status`")
+        verify_at = final_report.index("`hexctl verify`")
+        reset_at = final_report.index("`hexctl reset`")
+        self.assertLess(status_at, verify_at)
+        self.assertLess(verify_at, reset_at)
+        self.assertIn("local archive path", final_report)
+        self.assertIn("no `.hexaemeron/` byte", final_report)
+        self.assertIn("### fiat-local-retirement", self.fiat)
+
     def test_the_contract_states_the_fail_closed_fallback(self):
         self.assertIn("There is no in-place fallback.", self.fiat)
 
@@ -971,6 +1090,7 @@ class TestRunbookAmendments(HexctlCase):
         runbook = self.write("runbook.md", original)
         steps = self.write("steps.json", '["Core", "Finish"]')
         self.run_ctl("done", "runbook", "--artifact", runbook, "--steps-file", steps)
+        original = Path(os.path.join(self.target, runbook)).read_text(encoding="utf-8")
         valid = self.write("candidate.md", original + self.runbook_amendment())
         self.run_ctl("amend", "runbook", "--artifact", valid)
 

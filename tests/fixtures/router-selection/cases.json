@@ -3,7 +3,11 @@
   "pairs": [
     {
       "id": "alexandria-tabularium-probitas",
-      "skills": ["alexandria", "probitas", "tabularium"],
+      "skills": [
+        "alexandria",
+        "probitas",
+        "tabularium"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -12,7 +16,10 @@
     },
     {
       "id": "berean-lemma",
-      "skills": ["berean", "lemma"],
+      "skills": [
+        "berean",
+        "lemma"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -21,7 +28,10 @@
     },
     {
       "id": "berean-lazarus",
-      "skills": ["berean", "lazarus"],
+      "skills": [
+        "berean",
+        "lazarus"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -30,7 +40,10 @@
     },
     {
       "id": "lazarus-ariadne",
-      "skills": ["ariadne", "lazarus"],
+      "skills": [
+        "ariadne",
+        "lazarus"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -39,7 +52,10 @@
     },
     {
       "id": "pandects-hermes",
-      "skills": ["hermes", "pandects"],
+      "skills": [
+        "hermes",
+        "pandects"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -48,7 +64,10 @@
     },
     {
       "id": "pandects-janus",
-      "skills": ["janus", "pandects"],
+      "skills": [
+        "janus",
+        "pandects"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -57,7 +76,11 @@
     },
     {
       "id": "sapheneia-and-the-prose-masks",
-      "skills": ["brevitas", "sapheneia", "vulgate"],
+      "skills": [
+        "brevitas",
+        "sapheneia",
+        "vulgate"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -66,7 +89,11 @@
     },
     {
       "id": "brevitas-imprimatur-vulgate",
-      "skills": ["brevitas", "imprimatur", "vulgate"],
+      "skills": [
+        "brevitas",
+        "imprimatur",
+        "vulgate"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -75,7 +102,10 @@
     },
     {
       "id": "elenchus-metron",
-      "skills": ["elenchus", "metron"],
+      "skills": [
+        "elenchus",
+        "metron"
+      ],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
         "section": "## Preserve the selected promise",
@@ -84,7 +114,10 @@
     },
     {
       "id": "phylax-and-the-pashov-row",
-      "skills": ["phylax", "solidity-auditor"],
+      "skills": [
+        "phylax",
+        "solidity-auditor"
+      ],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
         "section": "## Select one runtime contract",
@@ -93,7 +126,11 @@
     },
     {
       "id": "fiat-and-its-phase-disciplines",
-      "skills": ["fiat", "hypomnema", "protasis"],
+      "skills": [
+        "fiat",
+        "hypomnema",
+        "protasis"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -106,7 +143,10 @@
       "id": "RS-01",
       "family": "plugin-row",
       "request": "Take this lender's raw loan tape and give me a reviewed credit view of it.",
-      "expect": {"outcome": "select", "canonical": "alexandria"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "alexandria"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -119,7 +159,10 @@
       "id": "RS-02",
       "family": "plugin-row",
       "request": "I have a release artefact digest and the evidence record behind it; bind the two together.",
-      "expect": {"outcome": "select", "canonical": "ariadne"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "ariadne"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -132,7 +175,10 @@
       "id": "RS-03",
       "family": "plugin-row",
       "request": "Check this protocol agent's answers against our pinned corpus and the chain reads we captured.",
-      "expect": {"outcome": "select", "canonical": "berean"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "berean"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -145,7 +191,10 @@
       "id": "RS-04",
       "family": "plugin-row",
       "request": "This gas review runs to three pages; cut it down and keep every number in it.",
-      "expect": {"outcome": "select", "canonical": "brevitas"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "brevitas"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -158,7 +207,10 @@
       "id": "RS-05",
       "family": "plugin-row",
       "request": "Measure the gas this contract saves when the storage read moves out of the loop.",
-      "expect": {"outcome": "select", "canonical": "hermes"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "hermes"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -171,7 +223,10 @@
       "id": "RS-06",
       "family": "plugin-row",
       "request": "Work out which parts of this repository an agent should not read, and write that boundary down.",
-      "expect": {"outcome": "select", "canonical": "horos"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "horos"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -184,7 +239,10 @@
       "id": "RS-07",
       "family": "plugin-row",
       "request": "Find out what this hook can observe and change when the host calls into it.",
-      "expect": {"outcome": "select", "canonical": "janus"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "janus"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -197,7 +255,10 @@
       "id": "RS-08",
       "family": "plugin-row",
       "request": "Capture the exact RPC traffic and historical state this fork test needs so it replays offline.",
-      "expect": {"outcome": "select", "canonical": "lazarus"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "lazarus"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -210,7 +271,10 @@
       "id": "RS-09",
       "family": "plugin-row",
       "request": "Split these Solidity files into chunks that link back to the lines they came from.",
-      "expect": {"outcome": "select", "canonical": "lemma"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "lemma"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -223,7 +287,10 @@
       "id": "RS-10",
       "family": "plugin-row",
       "request": "Apply our reviewed credit laws to this borrower's proposed drawdown.",
-      "expect": {"outcome": "select", "canonical": "pandects"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "pandects"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -236,7 +303,10 @@
       "id": "RS-11",
       "family": "plugin-row",
       "request": "Build a dossier on this counterparty from the addresses they declared to us.",
-      "expect": {"outcome": "select", "canonical": "probitas"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "probitas"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -249,7 +319,10 @@
       "id": "RS-12",
       "family": "plugin-row",
       "request": "Rewrite this issue body so an AuDHD reader can act on it, without dropping the evidence.",
-      "expect": {"outcome": "select", "canonical": "sapheneia"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "sapheneia"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -262,7 +335,10 @@
       "id": "RS-13",
       "family": "plugin-row",
       "request": "Turn these preserved venue records into a credit-event release for that venue.",
-      "expect": {"outcome": "select", "canonical": "tabularium"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "tabularium"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -275,7 +351,10 @@
       "id": "RS-14",
       "family": "hexaemeron-row",
       "request": "Start the receipted delivery loop on this issue and run it through to a working prototype.",
-      "expect": {"outcome": "select", "canonical": "fiat"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "fiat"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -288,7 +367,10 @@
       "id": "RS-15",
       "family": "hexaemeron-row",
       "request": "Rank the held frontier jobs across the non-mature skills and tell me which one to run next.",
-      "expect": {"outcome": "select", "canonical": "kronos"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "kronos"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -301,7 +383,10 @@
       "id": "RS-16",
       "family": "hexaemeron-row",
       "request": "Check this runbook against its content contract before anyone writes code from it.",
-      "expect": {"outcome": "select", "canonical": "protasis"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "protasis"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -314,7 +399,10 @@
       "id": "RS-17",
       "family": "hexaemeron-row",
       "request": "This test started failing after the merge; find the cause and leave a guard behind.",
-      "expect": {"outcome": "select", "canonical": "elenchus"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "elenchus"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -327,7 +415,10 @@
       "id": "RS-18",
       "family": "hexaemeron-row",
       "request": "This script builds a command out of a config value; review the off-chain surface around it.",
-      "expect": {"outcome": "select", "canonical": "phylax"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "phylax"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -340,7 +431,10 @@
       "id": "RS-19",
       "family": "hexaemeron-row",
       "request": "This job runs nightly with nobody watching; decide what it should emit while it runs.",
-      "expect": {"outcome": "select", "canonical": "ephoros"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "ephoros"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -353,7 +447,10 @@
       "id": "RS-20",
       "family": "hexaemeron-row",
       "request": "The indexer got slower this week; measure it before and after I change the query.",
-      "expect": {"outcome": "select", "canonical": "metron"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "metron"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -366,7 +463,10 @@
       "id": "RS-21",
       "family": "hexaemeron-row",
       "request": "We just made a call that would be expensive to undo; where should that be written down?",
-      "expect": {"outcome": "select", "canonical": "hypomnema"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "hypomnema"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -379,7 +479,10 @@
       "id": "RS-22",
       "family": "hexaemeron-row",
       "request": "Scan this announcement for banned AI tells and for terms of art used without evidence.",
-      "expect": {"outcome": "select", "canonical": "imprimatur"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "imprimatur"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -392,7 +495,10 @@
       "id": "RS-23",
       "family": "hexaemeron-row",
       "request": "Rewrite this paragraph into plain human register and keep every number and caveat in it.",
-      "expect": {"outcome": "select", "canonical": "vulgate"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "vulgate"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -405,7 +511,10 @@
       "id": "RS-24",
       "family": "hexaemeron-row",
       "request": "Produce an audit-readiness report for this protocol before we book the audit.",
-      "expect": {"outcome": "select", "canonical": "x-ray"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "x-ray"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -418,8 +527,15 @@
       "id": "RS-25",
       "family": "contested-pair",
       "request": "The borrower has sent us a list of addresses they say are theirs along with their loan tape. Work up what we can say about them as a counterparty.",
-      "expect": {"outcome": "select", "canonical": "probitas"},
-      "contested": ["alexandria", "probitas", "tabularium"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "probitas"
+      },
+      "contested": [
+        "alexandria",
+        "probitas",
+        "tabularium"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -431,8 +547,14 @@
       "id": "RS-26",
       "family": "contested-pair",
       "request": "We want to grade an agent's answers about this protocol against its documentation. Start by getting the documentation into retrievable pieces that cite the lines they came from.",
-      "expect": {"outcome": "select", "canonical": "lemma"},
-      "contested": ["berean", "lemma"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "lemma"
+      },
+      "contested": [
+        "berean",
+        "lemma"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -444,8 +566,14 @@
       "id": "RS-27",
       "family": "contested-pair",
       "request": "The answers we are about to grade depend on chain state at a fixed block. Get that state and the RPC traffic behind it captured so the grading replays offline.",
-      "expect": {"outcome": "select", "canonical": "lazarus"},
-      "contested": ["berean", "lazarus"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "lazarus"
+      },
+      "contested": [
+        "berean",
+        "lazarus"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -457,8 +585,14 @@
       "id": "RS-28",
       "family": "contested-pair",
       "request": "We shipped a fork-test fixture bundle last week. Show that the digest we published is the one the evidence record describes.",
-      "expect": {"outcome": "select", "canonical": "ariadne"},
-      "contested": ["ariadne", "lazarus"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "ariadne"
+      },
+      "contested": [
+        "ariadne",
+        "lazarus"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -470,8 +604,14 @@
       "id": "RS-29",
       "family": "contested-pair",
       "request": "The on-chain check that applies our credit laws costs more than we budgeted for. Find where the saving is.",
-      "expect": {"outcome": "select", "canonical": "hermes"},
-      "contested": ["hermes", "pandects"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "hermes"
+      },
+      "contested": [
+        "hermes",
+        "pandects"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -483,8 +623,14 @@
       "id": "RS-30",
       "family": "contested-pair",
       "request": "A hook fires in the middle of our drawdown call. Establish what it can observe and change before the drawdown's economic laws are re-checked.",
-      "expect": {"outcome": "select", "canonical": "janus"},
-      "contested": ["janus", "pandects"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "janus"
+      },
+      "contested": [
+        "janus",
+        "pandects"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -496,8 +642,15 @@
       "id": "RS-31",
       "family": "contested-pair",
       "request": "Shape this audit record so an AuDHD reader can act on it, and change no fact and no gate inside it.",
-      "expect": {"outcome": "select", "canonical": "sapheneia"},
-      "contested": ["brevitas", "sapheneia", "vulgate"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "sapheneia"
+      },
+      "contested": [
+        "brevitas",
+        "sapheneia",
+        "vulgate"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -509,8 +662,15 @@
       "id": "RS-32",
       "family": "contested-pair",
       "request": "The wording pass is done and the register reads fine. This review is still twice the length it should be.",
-      "expect": {"outcome": "select", "canonical": "brevitas"},
-      "contested": ["brevitas", "imprimatur", "vulgate"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "brevitas"
+      },
+      "contested": [
+        "brevitas",
+        "imprimatur",
+        "vulgate"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -522,8 +682,14 @@
       "id": "RS-33",
       "family": "ambiguous-refusal",
       "request": "The nightly indexer job started timing out this week.",
-      "expect": {"outcome": "refuse", "reason": "ambiguous"},
-      "contested": ["elenchus", "metron"],
+      "expect": {
+        "outcome": "refuse",
+        "reason": "ambiguous"
+      },
+      "contested": [
+        "elenchus",
+        "metron"
+      ],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
         "section": "## Preserve the selected promise",
@@ -535,8 +701,14 @@
       "id": "RS-34",
       "family": "contested-pair",
       "request": "Review the service that holds our settlement signing key and submits the transactions it signs.",
-      "expect": {"outcome": "select", "canonical": "phylax"},
-      "contested": ["phylax", "solidity-auditor"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "phylax"
+      },
+      "contested": [
+        "phylax",
+        "solidity-auditor"
+      ],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
         "section": "## Select one runtime contract",
@@ -548,8 +720,15 @@
       "id": "RS-35",
       "family": "contested-pair",
       "request": "We are about to start the receipted delivery loop from this study. Is the study fit to build from?",
-      "expect": {"outcome": "select", "canonical": "protasis"},
-      "contested": ["fiat", "hypomnema", "protasis"],
+      "expect": {
+        "outcome": "select",
+        "canonical": "protasis"
+      },
+      "contested": [
+        "fiat",
+        "hypomnema",
+        "protasis"
+      ],
       "deciding_sentence": {
         "path": "AGENTS.md",
         "section": "## Marketplace boundaries",
@@ -561,7 +740,10 @@
       "id": "RS-36",
       "family": "uncovered-refusal",
       "request": "Deploy this contract to mainnet and verify its source on the block explorer.",
-      "expect": {"outcome": "refuse", "reason": "uncovered"},
+      "expect": {
+        "outcome": "refuse",
+        "reason": "uncovered"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": ".agents/skills/promise-machine/SKILL.md",
@@ -574,7 +756,10 @@
       "id": "RS-37",
       "family": "plugin-row",
       "request": "A teammate says we already have something here for looking across runs. Before I plan anything on top of it, I need to know what this repository has actually committed to and what the thing as it stands will refuse to do.",
-      "expect": {"outcome": "select", "canonical": "synkrisis"},
+      "expect": {
+        "outcome": "select",
+        "canonical": "synkrisis"
+      },
       "contested": [],
       "deciding_sentence": {
         "path": "AGENTS.md",
@@ -582,16 +767,48 @@
         "text": "Synkrisis owns the cross-run comparison boundary: it builds one checked cohort from declared run observations and infers only bounded relations between named events, and any operation whose runbook step has not landed refuses by name rather than guessing."
       },
       "not_established": "Selecting Synkrisis does not establish that any operation whose runbook step has not landed will run, since each refuses by name, and it does not establish that a finding carries capture, redaction, receipt binding or causal triage, which stay with their owners."
+    },
+    {
+      "id": "RS-38",
+      "family": "plugin-row",
+      "request": "Check whether this Solidity fee calculation and my Python reimplementation of it return the same integers over the vectors I have declared.",
+      "expect": {
+        "outcome": "select",
+        "canonical": "homologia"
+      },
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Homologia compares one pinned contract computation with one pinned off-chain"
+      },
+      "not_established": "Selecting Homologia does not establish that either implementation is correct; two implementations of the same misunderstanding agree."
+    },
+    {
+      "id": "RS-39",
+      "family": "plugin-row",
+      "request": "I want the findings from our past audit rounds and the changes that answered them kept somewhere I can query later.",
+      "expect": {
+        "outcome": "select",
+        "canonical": "anamnesis"
+      },
+      "contested": [],
+      "deciding_sentence": {
+        "path": "AGENTS.md",
+        "section": "## Marketplace boundaries",
+        "text": "Anamnesis keeps custody of audit findings and the"
+      },
+      "not_established": "Selecting Anamnesis does not establish that a preserved finding was real, that its remedy worked, or that a corpus figure describes anything beyond the records it counted."
     }
   ],
   "runs": [
     {
       "model": "claude-opus-5",
-      "date": "2026-08-28",
+      "date": "2026-08-31",
       "prompt_template_sha256": "171c0c6cf0cfc542cd3f52a3598b3d4de644bae02a88f2237c3ba0e75a16ab12",
-      "corpus_sha256": "503b19da95595e803514bb3ab06fba1f3fefd7862a5080f9d6e8a9edb5f74e8d",
-      "cases": 37,
-      "passed": 36,
+      "corpus_sha256": "b80f5a0632cb7967dfcbc57c98819012e4ec1b9fdb8907bf13610cfb5cd786b0",
+      "cases": 39,
+      "passed": 38,
       "failed": 1,
       "failures": [
         {

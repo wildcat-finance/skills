@@ -15,6 +15,10 @@ Runbook mode (the default):
   P004  more steps than the check will track, so the tail went unchecked
   P005  an appended runbook amendment is not one final dated four-field block
         carrying at least one complete replacement field
+  P006  an optional version-relations declaration is malformed, ambiguous, or
+        contradicted by a concrete version token elsewhere in the runbook
+  P007  an optional design-lock declaration is malformed, duplicated or placed
+        after Step 1
 
 Study mode (`--study`):
 
@@ -30,6 +34,7 @@ Study mode (`--study`):
         fields the shape fixes
   S007  a register field that is malformed: an id that is not kebab-case
         or already used, or an empty boundary or check
+  S008  an appended study amendment is not one final dated four-field block
 
 Exit 0 clean, 1 findings, 2 bad invocation.
 
@@ -41,7 +46,10 @@ answer is any good: a Disciplines line naming the wrong gates and an Exit whose
 command proves nothing both pass. Judging an answer is the reviewer's job, and
 the study's non-goals say so. P002 is the closest to a judgement, and it is
 still only presence: a step carrying no code at all cannot have named a command,
-while a step carrying one may still have named the wrong one. The study mode
+while a step carrying one may still have named the wrong one. P006 settles the
+closed declaration shape and lexical target identity; it neither opens the
+declared ledgers nor decides whether the relation is suitable or which version
+it will resolve to. The study mode
 holds the same line: S002 refuses silence and a bare none, never a weak reason,
 and items 1 through 7 are checked for presence only, because "none, and here is
 why" is a complete answer solely for items 8 through 12. The register codes
@@ -134,6 +142,13 @@ COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
 # A runbook is a document somebody handed over. Bound both axes.
 MAX_BYTES = 2 * 1024 * 1024
 MAX_STEPS = 500
+MAX_VERSION_RELATIONS = 32
+VERSION_RELATIONS_INFO = "version-relations"
+VERSION_RELATION = "next-generation-after-integration-base"
+DESIGN_LOCK_INFO = "design-lock"
+DESIGN_LOCK_SCHEMA = "protasis-design-evidence/v1"
+DESIGN_LOCK_FIELDS = ("schema", "sha256", "candidate")
+SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
 class Finding:
@@ -310,8 +325,301 @@ def _replacement_fields(value: str) -> tuple[list[str], str | None]:
     return fields, None
 
 
-def _runbook_amendment_findings(path: Path, lines: list[str]) -> list[Finding]:
-    """Check every real appended amendment without reading fenced decoys."""
+def _version_relation_blocks(
+    lines: list[str],
+) -> list[tuple[int, int, int, bool, bool]]:
+    """Return candidate relation blocks without accepting nested decoys.
+
+    Each tuple is opening line, first body line, last body line, exact info
+    string, and closed. A near declaration such as ``version-relations extra``
+    is retained so the checker refuses it instead of treating it as legacy
+    prose with no declaration. Two candidates are enough: the second proves
+    the closed one-block contract failed, so retaining further bodies would
+    turn an already bounded refusal into attacker-chosen memory use.
+    """
+    blocks: list[tuple[int, int, int, bool, bool]] = []
+    open_mark: str | None = None
+    open_length: int | None = None
+    relation_open: tuple[int, bool] | None = None
+    for number, line in enumerate(lines, start=1):
+        match = FENCE.match(line)
+        if match is None:
+            continue
+        sequence = match.group("mark")
+        mark = sequence[0]
+        tail = line[match.end():].strip()
+        if open_mark is None:
+            open_mark = mark
+            open_length = len(sequence)
+            words = tail.split()
+            relation_open = (
+                (number, tail == VERSION_RELATIONS_INFO)
+                if words and words[0] == VERSION_RELATIONS_INFO
+                else None
+            )
+            continue
+        if (
+            mark == open_mark
+            and len(sequence) >= open_length
+            and not tail
+        ):
+            if relation_open is not None:
+                opening, exact_info = relation_open
+                if len(blocks) < 2:
+                    blocks.append((
+                        opening, opening + 1, number - 1, exact_info, True,
+                    ))
+            open_mark = None
+            open_length = None
+            relation_open = None
+    if relation_open is not None:
+        opening, exact_info = relation_open
+        if len(blocks) < 2:
+            blocks.append((opening, opening + 1, len(lines), exact_info, False))
+    return blocks
+
+
+def _contains_nonprinting_character(value: str) -> bool:
+    """Cover C0, C1, and Unicode format controls at the text boundary."""
+    return any(not character.isprintable() for character in value)
+
+
+def _safe_relation_path(value: str, skill_id: str) -> str | None:
+    """Return a lexical path fault without opening a runbook-controlled path."""
+    parts = value.split("/")
+    if (
+        not value
+        or value.startswith(("/", "\\"))
+        or re.match(r"^[A-Za-z]:", value)
+        or "\\" in value
+        or any(part in ("", ".", "..") for part in parts)
+        or _contains_nonprinting_character(value)
+    ):
+        return "relation path is not a safe repository-relative path"
+    if len(parts) < 2 or parts[-1] != "EVOLUTION.md":
+        return "relation path must name an EVOLUTION.md file"
+    if parts[-2] != skill_id:
+        return "relation target id must match the skill directory before EVOLUTION.md"
+    return None
+
+
+def _version_relation_findings(path: Path, lines: list[str]) -> list[Finding]:
+    """Check the optional closed version relation declaration."""
+    blocks = _version_relation_blocks(lines)
+    if not blocks:
+        return []
+
+    findings: list[Finding] = []
+    if len(blocks) > 1:
+        findings.append(Finding(
+            path, blocks[1][0], "P006",
+            "runbook carries more than one version-relations block",
+        ))
+
+    first_step = next((
+        number for number, line, in_fence in _scan(lines)
+        if not in_fence and STEP.match(line)
+    ), None)
+    declared: set[str] = set()
+    seen_ids: set[str] = set()
+    seen_paths: set[str] = set()
+    inside_relation_block = bytearray(len(lines) + 1)
+
+    for opening, body_start, body_end, exact_info, closed in blocks[:1]:
+        last_block_line = body_end + (1 if closed else 0)
+        for number in range(opening, last_block_line + 1):
+            inside_relation_block[number] = 1
+        if not exact_info:
+            findings.append(Finding(
+                path, opening, "P006",
+                "version-relations fence must carry only that exact info string",
+            ))
+        if not closed:
+            findings.append(Finding(
+                path, opening, "P006", "version-relations block is not closed",
+            ))
+            continue
+        if first_step is not None and opening >= first_step:
+            findings.append(Finding(
+                path, opening, "P006",
+                "version-relations block must occur before Step 1",
+            ))
+
+        rows = lines[body_start - 1:body_end]
+        if not rows:
+            findings.append(Finding(
+                path, opening, "P006", "version-relations block carries no row",
+            ))
+            continue
+        if len(rows) > MAX_VERSION_RELATIONS:
+            findings.append(Finding(
+                path, opening, "P006",
+                f"version-relations block exceeds {MAX_VERSION_RELATIONS} rows",
+            ))
+        for offset, text in enumerate(rows[:MAX_VERSION_RELATIONS], start=body_start):
+            if not text.strip():
+                findings.append(Finding(
+                    path, offset, "P006", "version-relations row must not be blank",
+                ))
+                continue
+            if _contains_nonprinting_character(text):
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version-relations row contains a control character",
+                ))
+                continue
+            fields = [field.strip() for field in text.split("|")]
+            if len(fields) != 3 or any(not field for field in fields):
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version-relations row must carry three non-empty fields "
+                    "(skill id | EVOLUTION.md path | relation)",
+                ))
+                continue
+            skill_id, ledger_path, relation = fields
+            if not KEBAB.fullmatch(skill_id):
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version relation target id is not kebab-case",
+                ))
+                continue
+            if skill_id in seen_ids:
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version relation target id appears more than once",
+                ))
+            else:
+                seen_ids.add(skill_id)
+            if ledger_path in seen_paths:
+                findings.append(Finding(
+                    path, offset, "P006",
+                    "version relation path appears more than once",
+                ))
+            else:
+                seen_paths.add(ledger_path)
+            path_fault = _safe_relation_path(ledger_path, skill_id)
+            if path_fault:
+                findings.append(Finding(path, offset, "P006", path_fault))
+            if relation != VERSION_RELATION:
+                findings.append(Finding(
+                    path, offset, "P006",
+                    f"unknown version relation; expected {VERSION_RELATION!r}",
+                ))
+            if path_fault is None and relation == VERSION_RELATION:
+                declared.add(skill_id)
+
+    for skill_id in sorted(declared):
+        concrete = re.compile(
+            rf"(?<![A-Za-z0-9-]){re.escape(skill_id)}-v"
+            rf"\d+\.\d+\.\d+(?![A-Za-z0-9-])"
+        )
+        for number, line in enumerate(lines, start=1):
+            if not inside_relation_block[number] and concrete.search(line):
+                findings.append(Finding(
+                    path, number, "P006",
+                    "declared target has a concrete version token outside the "
+                    "version-relations block",
+                ))
+                break
+    return findings
+
+
+def _design_lock_findings(path: Path, lines: list[str]) -> list[Finding]:
+    """Check the optional runbook binding to one receipted design record."""
+    blocks: list[tuple[int, int, int, bool, bool]] = []
+    open_mark: str | None = None
+    open_length: int | None = None
+    design_open: tuple[int, bool] | None = None
+    for number, line in enumerate(lines, start=1):
+        match = FENCE.match(line)
+        if match is None:
+            continue
+        sequence = match.group("mark")
+        mark = sequence[0]
+        tail = line[match.end():].strip()
+        if open_mark is None:
+            open_mark, open_length = mark, len(sequence)
+            words = tail.split()
+            design_open = (
+                (number, tail == DESIGN_LOCK_INFO)
+                if words and words[0] == DESIGN_LOCK_INFO
+                else None
+            )
+            continue
+        if mark == open_mark and len(sequence) >= open_length and not tail:
+            if design_open is not None and len(blocks) < 2:
+                opening, exact_info = design_open
+                blocks.append((opening, opening + 1, number - 1, exact_info, True))
+            open_mark, open_length, design_open = None, None, None
+    if design_open is not None and len(blocks) < 2:
+        opening, exact_info = design_open
+        blocks.append((opening, opening + 1, len(lines), exact_info, False))
+    if not blocks:
+        return []
+
+    findings: list[Finding] = []
+    if len(blocks) > 1:
+        findings.append(Finding(
+            path, blocks[1][0], "P007", "runbook carries more than one design-lock block",
+        ))
+    opening, body_start, body_end, exact_info, closed = blocks[0]
+    if not exact_info:
+        findings.append(Finding(
+            path, opening, "P007", "design-lock fence must carry only that exact info string",
+        ))
+    if not closed:
+        findings.append(Finding(path, opening, "P007", "design-lock block is not closed"))
+        return findings
+    first_step = next((
+        number for number, line, in_fence in _scan(lines)
+        if not in_fence and STEP.match(line)
+    ), None)
+    if first_step is not None and opening >= first_step:
+        findings.append(Finding(
+            path, opening, "P007", "design-lock block must occur before Step 1",
+        ))
+    rows = lines[body_start - 1:body_end]
+    if len(rows) != len(DESIGN_LOCK_FIELDS):
+        findings.append(Finding(
+            path, opening, "P007",
+            "design-lock block must carry schema, sha256 and candidate rows once in order",
+        ))
+        return findings
+    parsed = {}
+    for offset, (expected, row) in enumerate(
+        zip(DESIGN_LOCK_FIELDS, rows), start=body_start
+    ):
+        fields = [field.strip() for field in row.split("|")]
+        if (
+            len(fields) != 2
+            or not all(fields)
+            or fields[0] != expected
+            or _contains_nonprinting_character(row)
+        ):
+            findings.append(Finding(
+                path, offset, "P007",
+                "design-lock rows must be schema, sha256 and candidate once in order",
+            ))
+            continue
+        parsed[fields[0]] = fields[1]
+    if parsed.get("schema") not in (None, DESIGN_LOCK_SCHEMA):
+        findings.append(Finding(path, body_start, "P007", "design-lock schema is unsupported"))
+    if parsed.get("sha256") is not None and SHA256.fullmatch(parsed["sha256"]) is None:
+        findings.append(Finding(path, body_start + 1, "P007", "design-lock sha256 is malformed"))
+    if parsed.get("candidate") is not None and KEBAB.fullmatch(parsed["candidate"]) is None:
+        findings.append(Finding(path, body_start + 2, "P007", "design-lock candidate is not kebab-case"))
+    return findings
+
+
+def _amendment_findings(
+    path: Path,
+    lines: list[str],
+    *,
+    code: str,
+    subject: str,
+    require_replacements: bool,
+) -> list[Finding]:
+    """Check real study or runbook amendments with one bounded Markdown walk."""
     headings = [
         (number, line)
         for number, line, in_fence in _scan(lines)
@@ -322,15 +630,16 @@ def _runbook_amendment_findings(path: Path, lines: list[str]) -> list[Finding]:
         heading = AMENDMENT.fullmatch(heading_line)
         if heading is None:
             findings.append(Finding(
-                path, line_number, "P005", "runbook amendment heading has an invalid date"
+                path, line_number, code,
+                f"{subject} amendment heading has an invalid date",
             ))
         else:
             try:
                 datetime.date.fromisoformat(heading.group("date"))
             except ValueError:
                 findings.append(Finding(
-                    path, line_number, "P005",
-                    "runbook amendment date is not a calendar date",
+                    path, line_number, code,
+                    f"{subject} amendment date is not a calendar date",
                 ))
         end = headings[position + 1][0] - 1 if position + 1 < len(headings) else len(lines)
         body = lines[line_number:end]
@@ -341,21 +650,23 @@ def _runbook_amendment_findings(path: Path, lines: list[str]) -> list[Finding]:
                 continue
             if re.match(r"^#{1,3}\s+", line):
                 findings.append(Finding(
-                    path, offset, "P005", "runbook amendment must remain a final section"
+                    path, offset, code,
+                    f"{subject} amendment must remain a final section",
                 ))
             match = AMENDMENT_FIELD.fullmatch(line)
             if match:
                 fields.append((offset, match.group("name"), match.group("value") or ""))
             elif ANY_AMENDMENT_FIELD.fullmatch(line):
                 findings.append(Finding(
-                    path, offset, "P005", f"unexpected runbook amendment field: {line}"
+                    path, offset, code,
+                    f"unexpected {subject} amendment field",
                 ))
 
         names = [field[1] for field in fields]
         if names != list(AMENDMENT_FIELDS):
             findings.append(Finding(
-                path, line_number, "P005",
-                "runbook amendment fields must occur once in order: "
+                path, line_number, code,
+                f"{subject} amendment fields must occur once in order: "
                 + ", ".join(AMENDMENT_FIELDS),
             ))
             continue
@@ -367,12 +678,14 @@ def _runbook_amendment_findings(path: Path, lines: list[str]) -> list[Finding]:
             value = " ".join((first + "\n" + "\n".join(continuation)).split())
             if not value:
                 findings.append(Finding(
-                    path, field_line, "P005", f"runbook amendment field {name!r} is empty"
+                    path, field_line, code,
+                    f"{subject} amendment field {name!r} is empty",
                 ))
             values[name] = value
-        _, replacement_fault = _replacement_fields(values.get("What changed", ""))
-        if replacement_fault:
-            findings.append(Finding(path, fields[0][0], "P005", replacement_fault))
+        if require_replacements:
+            _, replacement_fault = _replacement_fields(values.get("What changed", ""))
+            if replacement_fault:
+                findings.append(Finding(path, fields[0][0], code, replacement_fault))
     return findings
 
 
@@ -381,10 +694,21 @@ def check(path: Path) -> list[Finding]:
     if lines is None:
         return [Finding(path, 1, "P000", "cannot be read as a runbook")]
 
-    findings: list[Finding] = _runbook_amendment_findings(path, lines)
+    findings: list[Finding] = _version_relation_findings(path, lines)
+    findings.extend(_design_lock_findings(path, lines))
+    findings.extend(_amendment_findings(
+        path,
+        lines,
+        code="P005",
+        subject="runbook",
+        require_replacements=True,
+    ))
     spans, dropped = _spans(lines)
     if not spans:
-        return [Finding(path, 1, "P003", "no step found; expected a '## Step N: title' heading")]
+        findings.append(Finding(
+            path, 1, "P003", "no step found; expected a '## Step N: title' heading",
+        ))
+        return findings
     if dropped:
         findings.append(Finding(
             path, 1, "P004",
@@ -519,12 +843,21 @@ def check_study(path: Path) -> list[Finding]:
     if lines is None:
         return [Finding(path, 1, "S000", "cannot be read as a study")]
 
+    findings = _amendment_findings(
+        path,
+        lines,
+        code="S008",
+        subject="study",
+        require_replacements=False,
+    )
     spans = _item_spans(lines)
     if not spans:
-        return [Finding(path, 1, "S003",
-                        "no study item found; expected '## N. Title' headings, 1 to 12")]
+        findings.append(Finding(
+            path, 1, "S003",
+            "no study item found; expected '## N. Title' headings, 1 to 12",
+        ))
+        return findings
 
-    findings: list[Finding] = []
     for number in sorted(ITEMS):
         name = ITEMS[number]
         occurrences = spans.get(number, [])

@@ -1,12 +1,19 @@
 """The Lazarus shell keeps every host and document on one contract."""
 
+import ast
 import hashlib
 import json
 import re
 import sys
+import textwrap
 import unittest
+from pathlib import Path
 
-from . import support
+if __package__:
+    from . import support
+else:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from tests import support
 from lazarus_lib import __version__
 
 sys.path.insert(0, str(support.REPO_ROOT))
@@ -15,6 +22,33 @@ from repo_contract import (
     assert_host_descriptions_agree,
     assert_router_reaches,
 )
+
+
+def darwin_workflow_function(workflow, name, namespace=None):
+    """Compile one helper from the embedded Darwin acceptance program."""
+    match = re.search(
+        r"(?ms)^          python3 - <<'PY'\n(?P<script>.*?)^          PY$",
+        workflow,
+    )
+    if match is None:
+        raise AssertionError("the Darwin acceptance program is missing")
+    module = ast.parse(textwrap.dedent(match["script"]))
+    function = next(
+        (
+            node
+            for node in module.body
+            if isinstance(node, ast.FunctionDef) and node.name == name
+        ),
+        None,
+    )
+    if function is None:
+        raise AssertionError(f"the Darwin acceptance helper {name} is missing")
+    selected = ast.Module(body=[function], type_ignores=[])
+    ast.fix_missing_locations(selected)
+    scope = dict(namespace or {})
+    # phylax: allow execute one AST-selected committed workflow helper in a closed test namespace
+    exec(compile(selected, ".github/workflows/lazarus.yml", "exec"), scope)
+    return scope[name]
 
 
 class ScaffoldTests(unittest.TestCase):
@@ -300,30 +334,53 @@ class ScaffoldTests(unittest.TestCase):
         ):
             self.assertIn(term, text)
 
-    def test_fixed_shell_ci_toolchain_and_licence_remain_in_place(self):
+    def test_fixed_shell_ci_scope_toolchain_and_licence_remain_in_place(self):
         workflow = (support.REPO_ROOT / ".github/workflows/lazarus.yml").read_text(
             encoding="utf-8"
         )
 
-        def event_paths(source, event):
-            match = re.search(
-                rf"(?m)^  {event}:\n    paths:\n(?P<paths>(?:      - .+\n)+)",
+        def event_paths(source, event, required=True):
+            event_match = re.search(
+                rf"(?ms)^  {re.escape(event)}:\n(?P<body>.*?)(?=^  [a-z_]+:|\Z)",
                 source,
             )
-            self.assertIsNotNone(match)
-            return set(re.findall(r'^      - "([^"]+)"$', match["paths"], re.M))
+            self.assertIsNotNone(event_match)
+            paths_match = re.search(
+                r"(?m)^    paths:\n(?P<paths>(?:      - .+\n)+)",
+                event_match["body"],
+            )
+            if not required and paths_match is None:
+                return None
+            self.assertIsNotNone(paths_match)
+            return set(
+                re.findall(r'^      - "([^"]+)"$', paths_match["paths"], re.M)
+            )
 
         repo_workflow = (
             support.REPO_ROOT / ".github/workflows/repo.yml"
         ).read_text(encoding="utf-8")
-        router = ".agents/skills/promise-machine/SKILL.md"
-        generated_runtime = ".agents/**"
+        shared_paths = {".agents/**", ".claude-plugin/**", "AGENTS.md"}
         for event in ("push", "pull_request"):
             with self.subTest(event=event):
                 lazarus_paths = event_paths(workflow, event)
-                self.assertIn(router, lazarus_paths)
-                self.assertNotIn(generated_runtime, lazarus_paths)
-                self.assertIn(generated_runtime, event_paths(repo_workflow, event))
+                self.assertTrue(lazarus_paths.isdisjoint(shared_paths))
+                self.assertIsNone(event_paths(repo_workflow, event, required=False))
+
+        plugins_path = support.REPO_ROOT / ".github/workflows/plugins.yml"
+        self.assertTrue(plugins_path.is_file(), "the complete plugin workflow is missing")
+        plugins_workflow = plugins_path.read_text(encoding="utf-8")
+        for event in ("push", "pull_request"):
+            with self.subTest(aggregate_event=event):
+                self.assertIsNone(event_paths(plugins_workflow, event, required=False))
+        # The aggregate gate shards the declared graph, one job per scope, so
+        # Lazarus is covered by its own shard rather than by a single --full
+        # invocation. What matters here is unchanged: the gate carries no path
+        # filter, so its context reaches every pull request.
+        self.assertIn(
+            "python3 scripts/run_checks.py\n          --scope ${{ matrix.scope }}",
+            plugins_workflow,
+        )
+        self.assertIn("          - lazarus\n", plugins_workflow)
 
         self.assertIn('python-version-file: ".python-version"', workflow)
         self.assertNotIn("matrix.python-version", workflow)
@@ -335,6 +392,168 @@ class ScaffoldTests(unittest.TestCase):
             (support.PLUGIN_ROOT / "LICENSE").read_bytes(),
             (support.REPO_ROOT / "LICENSE").read_bytes(),
         )
+
+    def test_darwin_job_holds_both_macos_path_repairs(self):
+        workflow = (support.REPO_ROOT / ".github/workflows/lazarus.yml").read_text(
+            encoding="utf-8"
+        )
+        match = re.search(r"(?ms)^  darwin:\n(?P<body>.*?)(?=^  [a-z][a-z0-9_-]*:\n|\Z)", workflow)
+        self.assertIsNotNone(match, "the durable Darwin job is missing")
+        body = match["body"]
+        self.assertEqual(
+            (support.REPO_ROOT / ".python-version").read_text(encoding="utf-8"),
+            "3.14.6\n",
+        )
+
+        for term in (
+            "runs-on: macos-15",
+            'python-version-file: ".python-version"',
+            "python3 -m pip install --requirement plugins/lazarus/requirements.lock",
+            "test ! -e .lazarus-ci",
+            "python3 plugins/lazarus/tests/run_tests.py --elenchus-report .lazarus-ci/lazarus-darwin-tests.json",
+            "read_confined_bytes(",
+            '"report_sha256": test_report_sha256',
+            '"exit": 0',
+            'tests["skipped"] != 0',
+            "tempfile.TemporaryDirectory()",
+            '"build-fixture"',
+            "_tree_bytes(rebuilt_fixture) != _tree_bytes(checked_fixture)",
+            "write_release(rebuilt_fixture, statement, release)",
+            "verify_release(release)",
+            '["git", "rev-parse", "HEAD"]',
+            "platform.system()",
+            "platform.machine()",
+            "platform.python_version()",
+            '"event": "lazarus_darwin_acceptance"',
+            '"comparison": "byte-identical"',
+            '"verification_exit": 0',
+            '"statement_sha256": statement_sha256',
+            '"lexical_root": alias_class',
+            '"darwin_root_alias": alias_class',
+            '"verified": True',
+        ):
+            with self.subTest(term=term):
+                self.assertIn(term, body)
+
+        self.assertEqual(
+            re.findall(r"(?m)^permissions:\n  ([a-z-]+): ([a-z]+)$", workflow),
+            [("contents", "read")],
+        )
+        for forbidden in (
+            ".hexaemeron",
+            "permissions:",
+            "secrets.",
+            "--rpc-url",
+            "lazarus.py capture",
+            "actions/upload-artifact",
+        ):
+            with self.subTest(forbidden=forbidden):
+                self.assertNotIn(forbidden, body)
+
+    def test_darwin_job_refuses_malformed_test_report_counters(self):
+        workflow = (support.REPO_ROOT / ".github/workflows/lazarus.yml").read_text(
+            encoding="utf-8"
+        )
+        valid = {
+            "schema": "elenchus.unittest.v1",
+            "complete": True,
+            "testsRun": 621,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        }
+        report = {"bytes": (json.dumps(valid, sort_keys=True) + "\n").encode()}
+        calls = []
+
+        def read_confined_bytes(root, relative, *, max_bytes):
+            calls.append((root, relative, max_bytes))
+            return report["bytes"]
+
+        read_test_report = darwin_workflow_function(
+            workflow,
+            "_read_test_report",
+            {
+                "hashlib": hashlib,
+                "json": json,
+                "read_confined_bytes": read_confined_bytes,
+            },
+        )
+        parsed, digest = read_test_report(Path("/checked-worktree"))
+        self.assertEqual(parsed, valid)
+        self.assertEqual(digest, hashlib.sha256(report["bytes"]).hexdigest())
+        self.assertEqual(
+            calls,
+            [
+                (
+                    Path("/checked-worktree"),
+                    ".lazarus-ci/lazarus-darwin-tests.json",
+                    4096,
+                )
+            ],
+        )
+
+        malformed = []
+        truthy_complete = dict(valid)
+        truthy_complete["complete"] = "false"
+        malformed.append(("truthy-complete", truthy_complete))
+        boolean_counter = dict(valid)
+        boolean_counter["testsRun"] = True
+        malformed.append(("boolean-counter", boolean_counter))
+        unknown_field = dict(valid)
+        unknown_field["unknown"] = "silently accepted"
+        malformed.append(("unknown-field", unknown_field))
+        negative_counter = dict(valid)
+        negative_counter["skipped"] = -1
+        malformed.append(("negative-counter", negative_counter))
+        for label, payload in malformed:
+            with self.subTest(label=label):
+                report["bytes"] = (json.dumps(payload, sort_keys=True) + "\n").encode()
+                with self.assertRaises(AssertionError):
+                    read_test_report(Path("/checked-worktree"))
+
+    def test_darwin_acceptance_event_carries_the_required_signal_inventory(self):
+        workflow = (support.REPO_ROOT / ".github/workflows/lazarus.yml").read_text(
+            encoding="utf-8"
+        )
+        acceptance_event = darwin_workflow_function(
+            workflow,
+            "_acceptance_event",
+        )
+        tests = {
+            "testsRun": 621,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0,
+            "expectedFailures": 0,
+            "unexpectedSuccesses": 0,
+        }
+        event = acceptance_event(
+            "d" * 40,
+            {"os": "Darwin", "architecture": "arm64", "python": "3.14.6"},
+            tests,
+            "1" * 64,
+            "2" * 64,
+            "3" * 64,
+            "4" * 64,
+            "var",
+        )
+        self.assertEqual(event["tests"]["exit"], 0)
+        self.assertEqual(event["tests"]["report_sha256"], "1" * 64)
+        self.assertEqual(event["release"]["verification_exit"], 0)
+        self.assertEqual(event["release"]["statement_sha256"], "4" * 64)
+        self.assertEqual(event["lexical_root"], "var")
+        self.assertEqual(event["darwin_root_alias"], "var")
+        rendered = json.dumps(event, sort_keys=True, separators=(",", ":"))
+        for private_value in (
+            ".lazarus-ci",
+            "/private/tmp",
+            "/var/folders",
+            "statement bytes",
+        ):
+            with self.subTest(private_value=private_value):
+                self.assertNotIn(private_value, rendered)
 
     def test_lazarus_owns_its_structured_unittest_runner(self):
         tests = support.PLUGIN_ROOT / "tests"

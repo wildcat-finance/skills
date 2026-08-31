@@ -214,7 +214,12 @@ class TestControllerCurrency(HexctlCase):
     def test_init_current_pin_proceeds_with_provenance(self):
         controller = self.install_layout(pin=self.HEAD)
         proc = self.run_installed_ctl(controller, "init", "--topic", "t")
-        self.assertNotIn("warning", proc.stderr)
+        # Scoped to currency. A run naming no task issue also warns that it read
+        # no filed decision, which is that gate's own report rather than drift
+        # in this one.
+        self.assertNotIn("controller currency", proc.stderr)
+        self.assertNotIn("older than a Fiat", proc.stderr)
+        self.assertNotIn("currency is unknown", proc.stderr)
         receipt = self.provenance()
         self.assertEqual(receipt["route"], "git-backed")
         self.assertEqual(receipt["verdict"], "current")

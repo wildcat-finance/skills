@@ -37,20 +37,22 @@ MARKETPLACE = ROOT / ".claude-plugin" / "marketplace.json"
 
 UNGOVERNED = {"fizz", "fizz-convert", "fizz-sync", "x-ray", "solidity-auditor"}
 DELIVERY_PACKAGE_VERSIONS = {
-    "alexandria": "0.3.0",
-    "ariadne": "1.2.2",
+    "alexandria": "0.4.0",
+    "anamnesis": "0.3.0",
+    "ariadne": "1.3.0",
     "berean": "0.1.2",
-    "brevitas": "0.2.1",
+    "brevitas": "0.2.2",
     "hermes": "0.1.1",
-    "hexaemeron": "1.6.5",
+    "hexaemeron": "1.6.20",
+    "homologia": "1.1.0",
     "horos": "0.1.1",
     "janus": "0.1.1",
     "lazarus": "1.1.2",
     "lemma": "0.1.2",
     "pandects": "0.1.1",
-    "probitas": "0.1.1",
+    "probitas": "0.1.3",
     "sapheneia": "0.1.2",
-    "synkrisis": "0.5.0",
+    "synkrisis": "0.5.1",
     "tabularium": "0.3.1",
 }
 
@@ -126,6 +128,36 @@ class PluginVersionPropagationTests(unittest.TestCase):
             {
                 "agents_marketplace": agents_entry["version"],
                 "claude_marketplace": self.marketplace["hexaemeron"],
+                "claude_manifest": manifest_version(
+                    directory / ".claude-plugin" / "plugin.json"
+                ),
+                "codex_manifest": manifest_version(
+                    directory / ".codex-plugin" / "plugin.json"
+                ),
+            },
+            {
+                "agents_marketplace": expected,
+                "claude_marketplace": expected,
+                "claude_manifest": expected,
+                "codex_manifest": expected,
+            },
+        )
+
+    def test_ariadne_version_reaches_both_marketplaces(self):
+        expected = DELIVERY_PACKAGE_VERSIONS["ariadne"]
+        agents = json.loads(
+            (ROOT / ".agents" / "plugins" / "marketplace.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        agents_entry = next(
+            entry for entry in agents["plugins"] if entry["name"] == "ariadne"
+        )
+        directory = PLUGINS / "ariadne"
+        self.assertEqual(
+            {
+                "agents_marketplace": agents_entry["version"],
+                "claude_marketplace": self.marketplace["ariadne"],
                 "claude_manifest": manifest_version(
                     directory / ".claude-plugin" / "plugin.json"
                 ),

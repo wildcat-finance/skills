@@ -1,0 +1,348 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wildcat.finance/schemas/dead-code-report-v2.schema.json",
+  "title": "dead-code-report/v2",
+  "description": "A report-only inventory over one committed Git tree or one immutable tracked-worktree snapshot. Findings are candidates, their count is not a gate, and only committed reports are baseline-eligible.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "tool",
+    "source",
+    "universe",
+    "status",
+    "analysers",
+    "findings"
+  ],
+  "properties": {
+    "schema": {
+      "const": "dead-code-report/v2"
+    },
+    "tool": {
+      "$ref": "#/$defs/toolIdentity"
+    },
+    "source": {
+      "$ref": "#/$defs/sourceIdentity"
+    },
+    "universe": {
+      "$ref": "#/$defs/universeIdentity"
+    },
+    "status": {
+      "$ref": "#/$defs/analysisStatus"
+    },
+    "analysers": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/analyserStatus"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    }
+  },
+  "$defs": {
+    "sha256Identity": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "gitObjectIdentity": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^[^/].*$"
+    },
+    "toolIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": {
+          "const": "dead-code"
+        },
+        "version": {
+          "const": "1"
+        }
+      }
+    },
+    "sourceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "head_commit",
+        "git_tree",
+        "worktree_identity",
+        "baseline_eligible"
+      ],
+      "properties": {
+        "kind": {
+          "enum": ["commit", "worktree-snapshot"]
+        },
+        "id": {
+          "$ref": "#/$defs/sha256Identity"
+        },
+        "head_commit": {
+          "$ref": "#/$defs/gitObjectIdentity"
+        },
+        "git_tree": {
+          "$ref": "#/$defs/gitObjectIdentity"
+        },
+        "worktree_identity": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/sha256Identity"}
+          ]
+        },
+        "baseline_eligible": {
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"kind": {"const": "commit"}},
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "worktree_identity": {"type": "null"},
+              "baseline_eligible": {"const": true}
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {"kind": {"const": "worktree-snapshot"}},
+            "required": ["kind"]
+          },
+          "then": {
+            "properties": {
+              "worktree_identity": {"$ref": "#/$defs/sha256Identity"},
+              "baseline_eligible": {"const": false}
+            }
+          }
+        }
+      ]
+    },
+    "classifiedPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "category", "evidence", "grade"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grade": {
+          "const": "hard"
+        }
+      }
+    },
+    "universeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "tracked_count",
+        "analysed_count",
+        "analysed",
+        "excluded_count",
+        "excluded_by_category",
+        "excluded"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/sha256Identity"
+        },
+        "tracked_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "analysed_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "analysed": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/repositoryPath"
+          }
+        },
+        "excluded_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "excluded_by_category": {
+          "type": "object",
+          "propertyNames": {
+            "minLength": 1
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "excluded": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/classifiedPath"
+          }
+        }
+      }
+    },
+    "analysisStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "detail"],
+      "properties": {
+        "id": {
+          "const": "analysis"
+        },
+        "state": {
+          "enum": ["not-run", "ran", "degraded", "failed"]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "analyserStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "state", "version", "detail", "records"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "state": {
+          "enum": ["ran", "not-available", "degraded", "failed"]
+        },
+        "version": {
+          "type": ["string", "null"]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1
+        },
+        "records": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/analyserRecord"
+          }
+        }
+      }
+    },
+    "analyserRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "state",
+        "detail",
+        "bytes",
+        "version",
+        "duration_ms",
+        "evidence_count",
+        "reason"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": ["file", "check", "family", "project"]
+        },
+        "state": {
+          "enum": ["parsed", "parse-error", "skipped", "passed", "failed", "unavailable"]
+        },
+        "detail": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "version": {
+          "type": ["string", "null"],
+          "minLength": 1
+        },
+        "duration_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "evidence_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "reason": {
+          "type": ["string", "null"],
+          "minLength": 1
+        }
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "analyser_id",
+        "path",
+        "symbol",
+        "evidence",
+        "confidence",
+        "false_positive_boundary"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/sha256Identity"
+        },
+        "analyser_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9-]*$"
+        },
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "symbol": {
+          "type": ["string", "null"]
+        },
+        "evidence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidence": {
+          "enum": ["high", "medium", "low"]
+        },
+        "false_positive_boundary": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

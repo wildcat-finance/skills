@@ -451,11 +451,41 @@ class ProbitasBridgeTests(IndexTestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_probitas_refuses_fixture_and_archive_inputs_together(self):
+    def test_probitas_gathers_fixture_and_archive_evidence_in_one_run(self):
+        """The union issue 391 asked for, offline and end to end."""
         self.build_index()
         fixture = Path(__file__).resolve().parents[2] / "probitas" / "tests" / "fixtures" / "empty"
         result = subprocess.run(
             self._command(CLEARPOOL)[:-2] + ["--fixtures", str(fixture), "--out", "-"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        sources = {row["venue"]: row["source"] for row in payload["coverage"]}
+        self.assertEqual(sources["clearpool"], "archive")
+        for venue in ("wildcat", "morpho-blue", "euler", "euler-v1"):
+            with self.subTest(venue=venue):
+                self.assertEqual(sources[venue], "fixtures")
+        archive = next(r for r in payload["coverage"] if r["venue"] == "clearpool")
+        self.assertTrue(archive["releases"])
+        self.assertTrue(payload["records"])
+        self.assertEqual({r["venue"] for r in payload["records"]}, {"clearpool"})
+
+    def test_probitas_still_reaches_no_adapter_on_an_index_alone(self):
+        """No invocation that worked before starts making requests."""
+        self.build_index()
+        payload = self._collect(CLEARPOOL)
+        adapter_rows = [
+            row for row in payload["coverage"] if row["source"] in ("live", "fixtures")
+        ]
+        self.assertEqual(adapter_rows, [])
+
+    def test_probitas_refuses_live_and_fixture_backings_together(self):
+        self.build_index()
+        fixture = Path(__file__).resolve().parents[2] / "probitas" / "tests" / "fixtures" / "empty"
+        result = subprocess.run(
+            self._command(CLEARPOOL)[:-2]
+            + ["--fixtures", str(fixture), "--live", "--out", "-"],
             capture_output=True, text=True, check=False,
         )
         self.assertEqual(result.returncode, 2)
