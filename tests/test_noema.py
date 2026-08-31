@@ -5032,7 +5032,8 @@ class SourceBindingTests(unittest.TestCase):
             ("fiat", "rule.negated"): "status` and `next` are the truth",
             ("fiat", "rule.ordered"): "receipt it, ask for the next one",
             ("phylax", "rule.blocked"): "model output to a shell",
-            ("phylax", "rule.default"): "system prompt is not a security control",
+            ("phylax", "rule.default"): "Adding a dependency.",
+            ("phylax", "rule.authorized"): "approval a widened trust boundary",
             ("sapheneia", "rule.authorized"): "destructive action",
             ("sapheneia", "rule.unknown"): "genuinely ambiguous",
         }
@@ -7114,6 +7115,26 @@ class MeasurementEvaluationTests(unittest.TestCase):
                     self.assertIn(source_excerpt, payload)
                 else:
                     self.assertNotIn(source_excerpt, payload)
+
+    def test_each_prompt_defines_runtime_context_semantics(self):
+        contract = (
+            b"runtime_context contract: authority lists established authorizing actors; "
+            b"facts bind exact propositions to true, false, or unknown; "
+            b"absent conditions are unknown.\n"
+        )
+        for case in self.packet["cases"]:
+            for prompt in case["prompts"]:
+                payload = (self.packet_directory / prompt["path"]).read_bytes()
+                self.assertEqual(payload.count(contract), 1)
+
+    def test_phylax_consequence_case_binds_ask_first_without_minting_approval(self):
+        directory = specimen_directory("phylax")
+        source = (ROOT / read_json(directory / "source.json")["path"]).read_bytes()
+        records = noema._parse_source_lines((directory / "source.noe").read_bytes())
+        rule = next(record for record in records if record[:2] == ["rule", "rule.default"])
+        self.assertEqual(rule[2][-1], ["+", [":", "effect", "dependency.add"]])
+        self.assertEqual(source[int(rule[3][3]) : int(rule[3][4])], b"**Ask first.** Adding a dependency.")
+        self.assertEqual(read_json(directory / "selection.json")["authority"], [])
 
     def test_packet_fact_proposition_tamper_refuses(self):
         with self.copied_packet() as packet:

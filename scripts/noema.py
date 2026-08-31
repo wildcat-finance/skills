@@ -324,7 +324,7 @@ MUTATION_CONTRACTS = {
     },
     "consequence-3-bypass": {
         "kind": "source",
-        "query": {"kind": "check", "effect": "model-output.authorize"},
+        "query": {"kind": "check", "effect": "dependency.add"},
         "status": "changed",
         "facets": frozenset({("rule:rule.default", "effect")}),
         "decisions": ("refuse", "permit"),
@@ -9949,6 +9949,8 @@ def _render_evaluation_prompt(
         f"context_nonce: {nonce}\n"
         f"representation: {mode}\n"
         f"runtime_context: {runtime_context}\n"
+        "runtime_context contract: authority lists established authorizing actors; "
+        "facts bind exact propositions to true, false, or unknown; absent conditions are unknown.\n"
         f"focus: {focus}\n"
         f"query: {_canonical_json(case['query']).decode('utf-8').rstrip()}\n"
         "candidate outcomes (ids are opaque and unordered):\n"
