@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1024,
-  "total_bytes": 21710916,
+  "file_count": 1039,
+  "total_bytes": 22471198,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -20,6 +20,18 @@
     {
       "pattern": "plugins/*/tests/**",
       "exceptions": [
+        "plugins/alexandria/tests/test_release.py",
+        "plugins/ariadne/tests/test_examples.py",
+        "plugins/ariadne/tests/test_gates.py",
+        "plugins/berean/tests/test_corpus.py",
+        "plugins/berean/tests/test_examples.py",
+        "plugins/berean/tests/test_promote.py",
+        "plugins/hexaemeron/tests/test_hexctl.py",
+        "plugins/hexaemeron/tests/test_run_observation_binding.py",
+        "plugins/lazarus/tests/test_verifier.py",
+        "plugins/lemma/tests/test_markdown.py",
+        "plugins/synkrisis/tests/test_cohort.py",
+        "plugins/synkrisis/tests/test_verify.py",
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/duplicate-field.json",
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/excessive-depth.json",
@@ -33,7 +45,7 @@
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/provider-cases.json",
         "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
       ],
-      "reason": "development suites and other fixtures remain in the full source checkout; the listed closed model-proxy-v1 fixture set closes the portable commands and vectors advertised by the copied reference"
+      "reason": "development suites and other fixtures remain in the full source checkout; the listed composition evidence sources and closed model-proxy-v1 fixture set close the portable gates and commands"
     },
     {
       "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
@@ -59,7 +71,7 @@
       "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "b7e055744f794f6e587e1b9c8202f663631667bcaeeed45a79f573f3d17ca86b",
+      "sha256": "1d30381d04b79e3134120a2b9356ae9f6608e6a7f4474cf6b9c79bbed46b8729",
       "source": null
     },
     {
@@ -81,9 +93,9 @@
       "source": "LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "PROMISE_MACHINE.md"
     },
     {
@@ -141,9 +153,9 @@
       "source": "plugins/alexandria/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/alexandria/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/alexandria/PROMISE_MACHINE.md"
     },
     {
@@ -489,6 +501,12 @@
       "source": "plugins/alexandria/skills/alexandria/agents/openai.yaml"
     },
     {
+      "bytes": 30169,
+      "path": "plugins/alexandria/tests/test_release.py",
+      "sha256": "8e3dc3adfb31808c25726fe7827dacc6bf5b2d3dde4cafa6e8bbb85c914585bc",
+      "source": "plugins/alexandria/tests/test_release.py"
+    },
+    {
       "bytes": 5761,
       "path": "plugins/ariadne/AGENTS.md",
       "sha256": "8dc976eae803da26f07f11a8aed014805acefe7a405301334b70beddbbaacc68",
@@ -501,9 +519,9 @@
       "source": "plugins/ariadne/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/ariadne/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/ariadne/PROMISE_MACHINE.md"
     },
     {
@@ -831,6 +849,18 @@
       "source": "plugins/ariadne/skills/ariadne/agents/openai.yaml"
     },
     {
+      "bytes": 11762,
+      "path": "plugins/ariadne/tests/test_examples.py",
+      "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8",
+      "source": "plugins/ariadne/tests/test_examples.py"
+    },
+    {
+      "bytes": 19058,
+      "path": "plugins/ariadne/tests/test_gates.py",
+      "sha256": "ccbd8e93c84c6a9492e7f2754977946f977c9e1641965086e3d54d8a7b612c0a",
+      "source": "plugins/ariadne/tests/test_gates.py"
+    },
+    {
       "bytes": 4235,
       "path": "plugins/berean/AGENTS.md",
       "sha256": "ecbed8f25c940cf17f63d6fadf9069b9618ad2c34b0b9223137765dd071cfe90",
@@ -843,9 +873,9 @@
       "source": "plugins/berean/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/berean/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/berean/PROMISE_MACHINE.md"
     },
     {
@@ -1119,6 +1149,24 @@
       "source": "plugins/berean/skills/berean/agents/openai.yaml"
     },
     {
+      "bytes": 6511,
+      "path": "plugins/berean/tests/test_corpus.py",
+      "sha256": "9b00b934fc42ecf7ea8de5d6227fc7796ba0ae9f1a82a4fa76df483c3eb9f23b",
+      "source": "plugins/berean/tests/test_corpus.py"
+    },
+    {
+      "bytes": 4333,
+      "path": "plugins/berean/tests/test_examples.py",
+      "sha256": "25115e21b21f0b905c5c6f4bbefda570b442598e808ca0134390a5d1b752c0b5",
+      "source": "plugins/berean/tests/test_examples.py"
+    },
+    {
+      "bytes": 11111,
+      "path": "plugins/berean/tests/test_promote.py",
+      "sha256": "bb5bd008727f75086eaf8bc265286c59e09df7045d3926ff31c3a4a9aa86091f",
+      "source": "plugins/berean/tests/test_promote.py"
+    },
+    {
       "bytes": 2231,
       "path": "plugins/brevitas/AGENTS.md",
       "sha256": "4f93d4a26a277f85407341c5a89dca84d8ca03cd8ee2e597ccda9bf06570e613",
@@ -1131,9 +1179,9 @@
       "source": "plugins/brevitas/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/brevitas/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/brevitas/PROMISE_MACHINE.md"
     },
     {
@@ -1389,9 +1437,9 @@
       "source": "plugins/hermes/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/hermes/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/hermes/PROMISE_MACHINE.md"
     },
     {
@@ -1473,9 +1521,9 @@
       "source": "plugins/hexaemeron/PROMISES.md"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/hexaemeron/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/hexaemeron/PROMISE_MACHINE.md"
     },
     {
@@ -1983,9 +2031,9 @@
       "source": "plugins/hexaemeron/skills/fiat/scripts/check_wildcat_contributor.py"
     },
     {
-      "bytes": 512907,
+      "bytes": 513833,
       "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-      "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
+      "sha256": "a4ea86cdd550f300e2ed103ce6e7862d0c6c2273e5fa264498530fd96faeeddd",
       "source": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
     },
     {
@@ -3027,6 +3075,18 @@
       "source": "plugins/hexaemeron/tests/fixtures/model-proxy-v1/rejections.json"
     },
     {
+      "bytes": 230175,
+      "path": "plugins/hexaemeron/tests/test_hexctl.py",
+      "sha256": "2f04553591862f7f59d11b4ed9466a123c2ae85198f539ac4e3a7509e2defdc7",
+      "source": "plugins/hexaemeron/tests/test_hexctl.py"
+    },
+    {
+      "bytes": 24129,
+      "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
+      "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9",
+      "source": "plugins/hexaemeron/tests/test_run_observation_binding.py"
+    },
+    {
       "bytes": 2331,
       "path": "plugins/homologia/AGENTS.md",
       "sha256": "76789665f787bed4f42fd857ffa6a0bf4d504e52833b7f9209e3341f27bb9dd7",
@@ -3039,9 +3099,9 @@
       "source": "plugins/homologia/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/homologia/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/homologia/PROMISE_MACHINE.md"
     },
     {
@@ -3099,9 +3159,9 @@
       "source": "plugins/horos/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/horos/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/horos/PROMISE_MACHINE.md"
     },
     {
@@ -3711,9 +3771,9 @@
       "source": "plugins/janus/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/janus/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/janus/PROMISE_MACHINE.md"
     },
     {
@@ -3945,9 +4005,9 @@
       "source": "plugins/lazarus/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/lazarus/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/lazarus/PROMISE_MACHINE.md"
     },
     {
@@ -4551,6 +4611,12 @@
       "source": "plugins/lazarus/skills/lazarus/agents/openai.yaml"
     },
     {
+      "bytes": 28205,
+      "path": "plugins/lazarus/tests/test_verifier.py",
+      "sha256": "3174198bb6d4e8d3c09ab11941bc0ff8aa3a31f34b806c766ec8b4f22b4039c5",
+      "source": "plugins/lazarus/tests/test_verifier.py"
+    },
+    {
       "bytes": 2910,
       "path": "plugins/lemma/AGENTS.md",
       "sha256": "f2bc1f012dea49178f23f66df920ac89cb683b34a8d8a9de4338a979d0884684",
@@ -4575,9 +4641,9 @@
       "source": "plugins/lemma/NOTICE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/lemma/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/lemma/PROMISE_MACHINE.md"
     },
     {
@@ -4731,6 +4797,12 @@
       "source": "plugins/lemma/solc-container"
     },
     {
+      "bytes": 68688,
+      "path": "plugins/lemma/tests/test_markdown.py",
+      "sha256": "33f676bceb634f02c8a0817d742727f004ccb6ffd4f41153a9313f6402dac43b",
+      "source": "plugins/lemma/tests/test_markdown.py"
+    },
+    {
       "bytes": 4526,
       "path": "plugins/lemma/tools/verify_anchors.py",
       "sha256": "7acd29792a375de943dbdef3dd71afa052cca484e525b38bcaa4ab704e0cc518",
@@ -4749,9 +4821,9 @@
       "source": "plugins/pandects/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/pandects/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/pandects/PROMISE_MACHINE.md"
     },
     {
@@ -5187,9 +5259,9 @@
       "source": "plugins/probitas/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/probitas/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/probitas/PROMISE_MACHINE.md"
     },
     {
@@ -5403,9 +5475,9 @@
       "source": "plugins/sapheneia/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/sapheneia/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/sapheneia/PROMISE_MACHINE.md"
     },
     {
@@ -5451,9 +5523,9 @@
       "source": "plugins/synkrisis/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/synkrisis/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/synkrisis/PROMISE_MACHINE.md"
     },
     {
@@ -5613,6 +5685,18 @@
       "source": "plugins/synkrisis/skills/synkrisis/SKILL.md"
     },
     {
+      "bytes": 17412,
+      "path": "plugins/synkrisis/tests/test_cohort.py",
+      "sha256": "488313693633eb80f60abb4a749a64151f959b6fd7091d069cb93ba5cc30c634",
+      "source": "plugins/synkrisis/tests/test_cohort.py"
+    },
+    {
+      "bytes": 5206,
+      "path": "plugins/synkrisis/tests/test_verify.py",
+      "sha256": "24721420dc4a8b864f947313951a9c035faae6cd8b8f4ac3632f1bc0260d3e05",
+      "source": "plugins/synkrisis/tests/test_verify.py"
+    },
+    {
       "bytes": 4570,
       "path": "plugins/tabularium/AGENTS.md",
       "sha256": "d15ae515e368880449c551984a848968e3d29b1cad633447850d1ff562bae469",
@@ -5625,9 +5709,9 @@
       "source": "plugins/tabularium/LICENSE"
     },
     {
-      "bytes": 25475,
+      "bytes": 27980,
       "path": "plugins/tabularium/PROMISE_MACHINE.md",
-      "sha256": "060f13a442840b1d666a18b44a04b2957ea730b7556673d6245b0879c506bb81",
+      "sha256": "2b16db71ac2ca1e380bc391fcae8ac1f1db88cf1147ce9f0fd9cbd6b4ebc862f",
       "source": "plugins/tabularium/PROMISE_MACHINE.md"
     },
     {
@@ -6003,9 +6087,9 @@
       "source": "schemas/promise-machine-semantic-v1.schema.json"
     },
     {
-      "bytes": 240768,
+      "bytes": 274477,
       "path": "scripts/promise_machine.py",
-      "sha256": "519d1784f51b7e2e535407dfb61409cb398714399f1919c2cf976e8e18c4c3fa",
+      "sha256": "6191257caea8de1573b7da83e482277836330ccf45c0b09cdacb4dd2ea40b770",
       "source": "scripts/promise_machine.py"
     },
     {
@@ -6019,6 +6103,12 @@
       "path": "scripts/run_observation_capture.py",
       "sha256": "a2c964edb4024a6287e6d6173dba6d606a6fb247e75b19c4b2b6348b77390e55",
       "source": "scripts/run_observation_capture.py"
+    },
+    {
+      "bytes": 26545,
+      "path": "tests/fixtures/promise-machine/composition/cases.json",
+      "sha256": "e9a7cefcd50835bfcfdacd68a5bca694bb642a24cb66e79af216517bd06dd29a",
+      "source": "tests/fixtures/promise-machine/composition/cases.json"
     },
     {
       "bytes": 208,
@@ -6189,9 +6279,21 @@
       "source": "tests/fixtures/promise-machine/obligations/law-required-sections.json"
     },
     {
-      "bytes": 6063,
+      "bytes": 4326,
+      "path": "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json",
+      "sha256": "e2257a4df5adb963f7f3fe56dedc47a1cdcbd840e1f682f9c9bd9f3494cd64fa",
+      "source": "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json"
+    },
+    {
+      "bytes": 191865,
+      "path": "tests/promise_machine_coverage.json",
+      "sha256": "96e85a349641c19bbbff7f5c227fa16c2dbfd75988a7edf771a2a8f35c5a250c",
+      "source": "tests/promise_machine_coverage.json"
+    },
+    {
+      "bytes": 9630,
       "path": "tests/promise_machine_obligations.json",
-      "sha256": "828476d3ad92d0d960f684b541f1272a6f04ffb16695f555bc2ed6abb78e2db4",
+      "sha256": "384512818a3001477f919968a0e4a8c8d3aae90de621e548d906996f8c09954f",
       "source": "tests/promise_machine_obligations.json"
     }
   ]

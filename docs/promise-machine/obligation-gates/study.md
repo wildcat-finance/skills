@@ -307,3 +307,10 @@ No plugin EVOLUTION.md entry is owed merely because the framework begins checkin
 **Why.** Keeping the old number would make this branch collide with an unrelated default-branch decision and fail the repository's decision-record uniqueness gate. ADR-062 is the next number absent from both this branch and the current default branch.
 **Steps touched.** Step 3.
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** The standing decision record identifier for the current and pending obligation-gate work moves from ADR-062 to ADR-066. Earlier ADR-054 and ADR-062 references remain historical bytes in the receipted prefix; ADR-066 is the standing record for the unchanged obligation ledger, native binding layer, composition contract, rejected alternatives, structural-versus-behavioural boundary, offline core, and separate upstream verifier.
+**Why.** The current default branch now owns ADR-062 through ADR-065, and the root uniqueness check reports the ADR-062 collision. ADR-066 is absent from both this branch and the exact current default branch. Renumbering the record and current-step reference resolves the collision without changing the selected design, evidence boundary, entry, or exit.
+**Steps touched.** Step 4.
+**Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.

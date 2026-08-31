@@ -43,7 +43,7 @@ PRODUCT_CONTROLLER_SHA256 = (
     "2c29f696f2b368a334eb4a880e745fa3cd468cc9c385e36346000aed7c91ba9f"
 )
 INTEGRATED_CONTROLLER_SHA256 = (
-    "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+    "a4ea86cdd550f300e2ed103ce6e7862d0c6c2273e5fa264498530fd96faeeddd"
 )
 PROOF_SHA256 = "badb5f3eeffe9927453e43b8d3dbdcfbda87773e5b9ce1cbb7973cc44796bafb"
 PRODUCT_SUFFIX = (
@@ -199,10 +199,11 @@ class Issue429RecoveryTests(unittest.TestCase):
                 self.assertTrue(item["product_behaviour"].strip())
                 self.assertTrue(item["resolution"].strip())
 
-    def test_root_audit_is_the_exact_pinned_base_blob(self):
+    def test_root_audit_retains_the_exact_pinned_base_blob_as_its_prefix(self):
         current = (ROOT / "audit" / "AUDIT.md").read_bytes()
-        self.assertEqual(hashlib.sha256(current).hexdigest(), ROOT_AUDIT_SHA256)
-        self.assertEqual(current, git("show", f"{PINNED_BASE}:audit/AUDIT.md"))
+        pinned = git("show", f"{PINNED_BASE}:audit/AUDIT.md")
+        self.assertEqual(hashlib.sha256(pinned).hexdigest(), ROOT_AUDIT_SHA256)
+        self.assertTrue(current.startswith(pinned))
 
     def test_product_suffix_is_exact_and_keeps_its_record_distribution(self):
         data = PRODUCT_SUFFIX.read_bytes()

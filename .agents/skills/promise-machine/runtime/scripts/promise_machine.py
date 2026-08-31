@@ -84,6 +84,7 @@ OBLIGATION_SPECIMEN_SCHEMA = "promise-machine-obligation-specimen/v1"
 OBLIGATION_FIXTURE_ROOT = Path("tests/fixtures/promise-machine/obligations")
 PROMISE_MACHINE_FIXTURE_ROOT = Path("tests/fixtures/promise-machine")
 SEMANTIC_FIXTURE_DIRECTORIES = {
+    "composition",
     "consequences",
     "exceptions",
     "findings",
@@ -100,6 +101,193 @@ IMPORT_SPECIMEN_SCHEMA = "promise-machine-import-specimen/v1"
 RUNTIME_SPECIMEN_SCHEMA = "promise-machine-runtime-specimens/v1"
 RUNTIME_OBLIGATION_SPECIMEN_SCHEMA = "promise-machine-runtime-obligation-specimen/v1"
 RUNTIME_FIXTURE_ROOT = Path("tests/fixtures/promise-machine/runtime")
+COMPOSITION_CASES_SCHEMA = "promise-machine-composition-cases/v1"
+COMPOSITION_RECORD_SCHEMA = "promise-machine-composition/v1"
+COMPOSITION_FIXTURE = Path("tests/fixtures/promise-machine/composition/cases.json")
+COMPOSITION_COMMON_FIELDS = (
+    "subject",
+    "scope",
+    "time-domain",
+    "evidence-references",
+    "evidence-classes",
+    "unknowns",
+    "conflicts",
+    "refusals",
+    "recovery",
+)
+COMPOSITION_RELATIONS = {
+    "lemma-retrieval-to-berean-corpus": {
+        "obligation_id": "law-composition-lemma-boundary",
+        "producer": "lemma-chunk-validation",
+        "consumer": "berean-corpus-binding",
+        "transition": "admit source-linked chunks as retrieval input",
+        "consequence": 3,
+        "producer_sources": ("plugins/lemma/tests/test_markdown.py",),
+        "consumer_sources": ("plugins/berean/tests/test_corpus.py",),
+        "producer_classes": ("recorded",),
+        "consumer_classes": ("recorded", "checked"),
+        "bindings": {
+            "subject": "markdown-corpus",
+            "scope": "source-linked-chunks",
+            "time-domain": "captured-source-revision",
+            "unknowns": ("answer-truth-not-established",),
+            "conflicts": ("source-disagreement-retained",),
+            "refusals": ("answer-truth",),
+            "recovery": ("return to the cited source bytes",),
+            "source-links": "path-line-and-byte-ranges",
+            "chunk-locations": "validated-jsonl-locations",
+        },
+    },
+    "lazarus-rpc-to-berean-answer": {
+        "obligation_id": "law-composition-lazarus-boundary",
+        "producer": "lazarus-fixture-verification",
+        "consumer": "berean-answer-evidence",
+        "transition": "admit recorded RPC evidence to the pinned answer evidence set",
+        "consequence": 3,
+        "producer_sources": ("plugins/lazarus/tests/test_verifier.py",),
+        "consumer_sources": ("plugins/berean/tests/test_examples.py",),
+        "producer_classes": ("recorded",),
+        "consumer_classes": ("recorded", "checked"),
+        "bindings": {
+            "subject": "historical-ethereum-read",
+            "scope": "declared-rpc-fixture",
+            "time-domain": "pinned-chain-and-block",
+            "unknowns": ("proof-relation-not-established",),
+            "conflicts": ("rpc-counterevidence-retained",),
+            "refusals": ("proved-without-proof-relation", "answer-truth"),
+            "recovery": ("run the named proof checker for the exact fixture",),
+            "block": "chain-1-block-19000000",
+            "rpc-methods": "declared-method-set",
+            "proof-relation": "not-established",
+        },
+    },
+    "berean-promotion-to-ariadne-capture": {
+        "obligation_id": "law-composition-berean-boundary",
+        "producer": "berean-release-promotion",
+        "consumer": "ariadne-capture-statement",
+        "transition": "bind the promoted Berean release digest to its declared evidence",
+        "consequence": 3,
+        "producer_sources": ("plugins/berean/tests/test_promote.py",),
+        "consumer_sources": ("plugins/ariadne/tests/test_gates.py",),
+        "producer_classes": ("checked",),
+        "consumer_classes": ("checked", "attested"),
+        "bindings": {
+            "subject": "grounded-agent-release",
+            "scope": "pinned-corpus-and-answer-set",
+            "time-domain": "recorded-evaluation-run",
+            "unknowns": ("model-quality-not-established",),
+            "conflicts": ("failed-answer-counterevidence-retained",),
+            "refusals": ("answer-truth", "model-quality"),
+            "recovery": ("inspect the pinned corpus, answers, and evaluation record",),
+            "answer-digest": "sha256:berean-answer-set",
+            "corpus-digest": "sha256:berean-corpus",
+            "evaluation-digest": "sha256:berean-evaluation",
+        },
+    },
+    "janus-bounded-to-ariadne-capture": {
+        "obligation_id": "law-composition-janus-boundary",
+        "producer": "janus-bounded-conformance",
+        "consumer": "ariadne-capture-statement",
+        "transition": "bind the bounded Janus result to its host-specific evidence",
+        "consequence": 3,
+        "producer_sources": ("plugins/janus/harness/test/WildcatConformance.t.sol",),
+        "consumer_sources": ("plugins/ariadne/tests/test_gates.py",),
+        "producer_classes": ("checked",),
+        "consumer_classes": ("checked", "attested"),
+        "bindings": {
+            "subject": "wildcat-hook-specimen",
+            "scope": "named-host-adapter",
+            "time-domain": "bounded-conformance-run",
+            "unknowns": ("cross-host-safety-not-established",),
+            "conflicts": ("unknown-effects-retained",),
+            "refusals": (
+                "hook-safety",
+                "complete-liveness",
+                "cross-host-conformance",
+            ),
+            "recovery": ("rerun against the named host adapter and bounded manifest",),
+            "adapter": "wildcat-host-adapter-v1",
+            "manifest": "janus-effects-manifest-v1",
+            "recorder": "janus-transition-recorder-v1",
+            "bounded-search": "declared-effect-and-revert-space",
+        },
+    },
+    "ariadne-verification-to-fiat-delivery": {
+        "obligation_id": "law-composition-ariadne-boundary",
+        "producer": "ariadne-verify-statement",
+        "consumer": "fiat-receipted-delivery",
+        "transition": "consume the verified statement as an artefact-evidence binding",
+        "consequence": 3,
+        "producer_sources": ("plugins/ariadne/tests/test_examples.py",),
+        "consumer_sources": ("plugins/hexaemeron/tests/test_hexctl.py",),
+        "producer_classes": ("checked",),
+        "consumer_classes": ("checked", "recorded"),
+        "bindings": {
+            "subject": "released-artefact",
+            "scope": "declared-statement-and-predicate",
+            "time-domain": "statement-verification-run",
+            "unknowns": ("author-identity-not-established",),
+            "conflicts": ("statement-counterevidence-retained",),
+            "refusals": ("author-identity-without-signature-verifier",),
+            "recovery": ("run an external signature verifier bound to the statement",),
+            "artefact-digest": "sha256:released-artefact",
+            "predicate-type": "https://wildcat.finance/predicate/example/v1",
+            "signature-verifier-state": "not-established",
+        },
+    },
+    "fiat-observation-to-synkrisis-cohort": {
+        "obligation_id": "law-composition-fiat-observation-boundary",
+        "producer": "fiat-run-observation-binding",
+        "consumer": "synkrisis-cohort-construction",
+        "transition": "admit the checked observation prefix to the named comparison cohort",
+        "consequence": 3,
+        "producer_sources": (
+            "plugins/hexaemeron/tests/test_run_observation_binding.py",
+        ),
+        "consumer_sources": ("plugins/synkrisis/tests/test_cohort.py",),
+        "producer_classes": ("checked",),
+        "consumer_classes": ("checked", "recomputed"),
+        "bindings": {
+            "subject": "fiat-run-observation",
+            "scope": "checked-observation-prefix",
+            "time-domain": "receipt-bound-run-prefix",
+            "unknowns": ("event-truth-not-established",),
+            "conflicts": ("capture-gaps-retained",),
+            "refusals": ("event-truth", "delivery-evidence"),
+            "recovery": ("return to the validator, capture, and bound receipt",),
+            "observation-validator": "promise-machine-run-observation-v1",
+            "capture-boundary": "regular-file-stable-read",
+            "receipt": "fiat-receipt-prefix-binding",
+        },
+    },
+    "synkrisis-verification-to-fiat-integration": {
+        "obligation_id": "law-composition-synkrisis-boundary",
+        "producer": "synkrisis-report-verification",
+        "consumer": "fiat-final-integration",
+        "transition": "consume the recomputable comparison as bounded integration evidence",
+        "consequence": 3,
+        "producer_sources": ("plugins/synkrisis/tests/test_verify.py",),
+        "consumer_sources": ("plugins/hexaemeron/tests/test_hexctl.py",),
+        "producer_classes": ("recomputed",),
+        "consumer_classes": ("recomputed", "recorded"),
+        "bindings": {
+            "subject": "comparison-report",
+            "scope": "validated-cohort-and-bounded-findings",
+            "time-domain": "recorded-comparison-run",
+            "unknowns": ("causal-explanation-not-established",),
+            "conflicts": ("counterevidence-retained",),
+            "refusals": ("cause", "model-quality", "authority-to-act"),
+            "recovery": (
+                "inspect the cohort, findings, report, counterevidence, and unknown runs",
+            ),
+            "cohort-digest": "sha256:synkrisis-cohort",
+            "findings-digest": "sha256:synkrisis-findings",
+            "report-digest": "sha256:synkrisis-report",
+            "counterevidence": "retained",
+            "unknown-runs": "retained",
+        },
+    },
+}
 CONSEQUENCE_FIXTURES = tuple(
     Path(f"tests/fixtures/promise-machine/consequences/level-{level}.json")
     for level in range(4)
@@ -182,6 +370,41 @@ OBLIGATION_ROW_KEYS = {
     "recovery",
 }
 OBLIGATION_GATES = {
+    "law-composition-ariadne-boundary": (
+        "composition.ariadne-verification-to-fiat-delivery",
+        "PM097",
+        "e93b1f2112733c6406194f01674449d4e5649dd361ccf92fa7b55fa7629b4b2c",
+    ),
+    "law-composition-berean-boundary": (
+        "composition.berean-promotion-to-ariadne-capture",
+        "PM097",
+        "014a5c68553e7f7654693dc08c0149b9c5d2ec8f1baf34e2a8af6c30cf693567",
+    ),
+    "law-composition-fiat-observation-boundary": (
+        "composition.fiat-observation-to-synkrisis-cohort",
+        "PM097",
+        "48b93c6d57958d7c04f0ea69938a6d880fa91f8adbe28a0c29c107f089ea64a1",
+    ),
+    "law-composition-janus-boundary": (
+        "composition.janus-bounded-to-ariadne-capture",
+        "PM097",
+        "4b25765f9a8d7c4fd116d9e58ba7975a501cc509fb152dbbf0b1ad7b86d7472e",
+    ),
+    "law-composition-lazarus-boundary": (
+        "composition.lazarus-rpc-to-berean-answer",
+        "PM097",
+        "85a7135e01ead8eee132472bcc426ca08868801609ad6e9a53a7863d47a2f181",
+    ),
+    "law-composition-lemma-boundary": (
+        "composition.lemma-retrieval-to-berean-corpus",
+        "PM097",
+        "cfa8e9445e421a0ebcb176f8f8f9c8703fed5c1aa9b28974000759d81858ae1d",
+    ),
+    "law-composition-synkrisis-boundary": (
+        "composition.synkrisis-verification-to-fiat-integration",
+        "PM097",
+        "e3e202d89778883c0dcf83ba6932eaad94b438e6649d1811bfd4d298bb8bc910",
+    ),
     "law-consequence-separation": (
         "transition.consequence",
         "PM090",
@@ -2807,6 +3030,10 @@ def validate_obligation_specimen(root: Path, law_text: str, row: dict):
             )
             for item in findings
         ]
+    if document.get("schema") == COMPOSITION_CASES_SCHEMA:
+        return validate_composition_obligation_specimen(
+            root, relative_specimen, document, row
+        )
     semantic = validate_semantic_specimen(root, relative_specimen, document, row)
     if semantic is not None:
         return verify_negative_specimen(relative_specimen, semantic, row)
@@ -4896,6 +5123,499 @@ def validate_runtime_result(
     return []
 
 
+def composition_finding(spec, path: str, field: str, message: str):
+    relation_id = spec["relation_id"]
+    producer = spec["producer"]
+    consumer = spec["consumer"]
+    recovery = spec["bindings"]["recovery"][0]
+    return Finding(
+        "PM097",
+        "composition",
+        path,
+        (
+            f"relation {relation_id} producer {producer} consumer {consumer} "
+            f"lost field {field}: {message}"
+        ),
+        f"restore {field} at the {producer} to {consumer} boundary and rerun the composition check",
+        promise_id=producer,
+        obligation_id=spec["obligation_id"],
+        consequence=spec["consequence"],
+        blocked_transition=spec["transition"],
+        recovery=recovery,
+    )
+
+
+def composition_spec(relation_id: str, raw_spec: dict):
+    spec = dict(raw_spec)
+    spec["relation_id"] = relation_id
+    return spec
+
+
+def composition_descriptor(relation_id: str, raw_spec: dict):
+    spec = composition_spec(relation_id, raw_spec)
+    domain_fields = [
+        field for field in spec["bindings"] if field not in COMPOSITION_COMMON_FIELDS
+    ]
+    return {
+        "obligation_id": spec["obligation_id"],
+        "relation_id": relation_id,
+        "producer": spec["producer"],
+        "consumer": spec["consumer"],
+        "preserves": list(COMPOSITION_COMMON_FIELDS) + domain_fields,
+        "transition": spec["transition"],
+        "refuses": list(spec["bindings"]["refusals"]),
+    }
+
+
+def composition_generic_finding(path: str, field: str, message: str):
+    return Finding(
+        "PM097",
+        "composition",
+        path,
+        f"composition catalogue lost field {field}: {message}",
+        "restore the seven registered root-law relations and rerun the composition check",
+        promise_id=SEMANTIC_PROMISE_ID,
+        consequence=3,
+        blocked_transition="consume a producer result at a root-law composition boundary",
+        recovery="restore the named relation and its bounded fixture, then rerun the composition check",
+    )
+
+
+def composition_reference_paths(root: Path, references):
+    if not isinstance(references, list) or not references:
+        return None, "references are not a non-empty array"
+    paths: list[str] = []
+    digests: set[str] = set()
+    for reference in references:
+        error = runtime_reference_error(root, reference)
+        if error is not None:
+            return None, error
+        if reference["path"] in paths or reference["sha256"] in digests:
+            return None, "references repeat a path or digest"
+        paths.append(reference["path"])
+        digests.add(reference["sha256"])
+    return tuple(paths), None
+
+
+def expected_composition_binding_keys(spec):
+    return set(COMPOSITION_COMMON_FIELDS) | set(spec["bindings"])
+
+
+def expected_json_value(value):
+    return list(value) if isinstance(value, tuple) else value
+
+
+def validate_composition_record(root: Path, raw_spec: dict, record, path: str):
+    relation_id = raw_spec.get("relation_id")
+    if relation_id is None and isinstance(record, dict):
+        relation_id = record.get("relation_id")
+    if relation_id not in COMPOSITION_RELATIONS:
+        return [
+            composition_generic_finding(
+                path, "relation identity", f"unknown relation {relation_id!r}"
+            )
+        ]
+    spec = composition_spec(relation_id, COMPOSITION_RELATIONS[relation_id])
+
+    def refuse(field, message):
+        return [composition_finding(spec, path, field, message)]
+
+    if not isinstance(record, dict) or set(record) != {
+        "schema",
+        "relation_id",
+        "producer",
+        "consumer",
+        "transformation",
+    }:
+        return refuse("record shape", "record fields are not the closed composition shape")
+    if record.get("schema") != COMPOSITION_RECORD_SCHEMA:
+        return refuse("schema", "composition schema identity is absent or unsupported")
+    if record.get("relation_id") != relation_id:
+        return refuse("relation identity", "record names a different relation")
+    producer = record.get("producer")
+    consumer = record.get("consumer")
+    if not isinstance(producer, dict) or set(producer) != {"promise_id", "bindings"}:
+        return refuse("producer identity", "producer is not the closed promise and bindings object")
+    if not isinstance(consumer, dict) or set(consumer) != {
+        "promise_id",
+        "transition",
+        "consequence",
+        "bindings",
+    }:
+        return refuse("consumer identity", "consumer is not the closed promise, transition, consequence, and bindings object")
+    if producer.get("promise_id") != spec["producer"]:
+        return refuse("producer identity", "producer promise does not match the registered relation")
+    if consumer.get("promise_id") != spec["consumer"]:
+        return refuse("consumer identity", "consumer promise does not match the registered relation")
+
+    producer_bindings = producer.get("bindings")
+    consumer_bindings = consumer.get("bindings")
+    if relation_id == "synkrisis-verification-to-fiat-integration" and (
+        isinstance(producer_bindings, dict)
+        and isinstance(consumer_bindings, dict)
+        and (
+            "inferred" in producer_bindings.get("evidence-classes", [])
+            or "inferred" in consumer_bindings.get("evidence-classes", [])
+            or consumer.get("transition") != spec["transition"]
+        )
+    ):
+        return refuse(
+            "model-graded domain overclaim",
+            "model-graded evidence or a stronger external-action transition was introduced",
+        )
+    if consumer.get("transition") != spec["transition"]:
+        return refuse("consumer transition", "consumer transition changed or strengthened")
+    if consumer.get("consequence") != spec["consequence"]:
+        return refuse("consequence", "consumer consequence changed from the registered level")
+    if record.get("transformation") != "preserve-producer-boundary":
+        return refuse("transformation", "composition no longer preserves the producer boundary")
+    expected_keys = expected_composition_binding_keys(spec)
+    for role, bindings in (("producer", producer_bindings), ("consumer", consumer_bindings)):
+        if not isinstance(bindings, dict):
+            return refuse(f"{role} bindings", f"{role} bindings are not an object")
+        observed_keys = set(bindings)
+        if observed_keys != expected_keys:
+            missing = sorted(expected_keys - observed_keys)
+            extra = sorted(observed_keys - expected_keys)
+            field = missing[0] if len(missing) == 1 and not extra else "preserved fields"
+            return refuse(
+                field,
+                f"{role} binding keys omit {missing!r} or add {extra!r}",
+            )
+
+    for field, expected in spec["bindings"].items():
+        expected_value = expected_json_value(expected)
+        if producer_bindings.get(field) != expected_value:
+            label = "refused overclaim" if field == "refusals" else field
+            return refuse(label, f"producer {field} does not match the registered boundary")
+        if consumer_bindings.get(field) != expected_value:
+            label = "refused overclaim" if field == "refusals" else field
+            return refuse(label, f"consumer did not preserve producer {field}")
+
+    producer_paths, error = composition_reference_paths(
+        root, producer_bindings.get("evidence-references")
+    )
+    if error is not None or producer_paths != spec["producer_sources"]:
+        return refuse(
+            "evidence references",
+            error or "producer references do not match the registered evidence source",
+        )
+    consumer_paths, error = composition_reference_paths(
+        root, consumer_bindings.get("evidence-references")
+    )
+    expected_consumer_paths = spec["producer_sources"] + spec["consumer_sources"]
+    if error is not None or consumer_paths != expected_consumer_paths:
+        return refuse(
+            "evidence references",
+            error or "consumer dropped producer evidence or added an unregistered source",
+        )
+    if producer_bindings.get("evidence-classes") != list(spec["producer_classes"]):
+        return refuse(
+            "evidence-classes",
+            "producer evidence class changed from the registered source class",
+        )
+    if consumer_bindings.get("evidence-classes") != list(spec["consumer_classes"]):
+        return refuse(
+            "evidence-classes",
+            "consumer evidence classes dropped or strengthened the producer class",
+        )
+    return []
+
+
+def apply_composition_mutations(record, mutations):
+    try:
+        mutated = json.loads(json.dumps(record, separators=(",", ":")))
+    except (TypeError, ValueError) as exc:
+        return None, f"positive record is not JSON data: {exc}"
+    if not isinstance(mutations, list) or not mutations or len(mutations) > 8:
+        return None, "mutations are not a bounded non-empty array"
+    for mutation in mutations:
+        if not isinstance(mutation, dict) or set(mutation) not in (
+            {"operation", "path"},
+            {"operation", "path", "value"},
+        ):
+            return None, "mutation is not the closed operation, path, and optional value object"
+        operation = mutation.get("operation")
+        path = mutation.get("path")
+        if (
+            operation not in {"remove", "replace"}
+            or not isinstance(path, list)
+            or not path
+            or len(path) > 8
+            or any(not closed_non_empty_scalar(part) for part in path)
+            or (operation == "replace") != ("value" in mutation)
+        ):
+            return None, "mutation operation or path is invalid"
+        target = mutated
+        for part in path[:-1]:
+            if not isinstance(target, dict) or part not in target:
+                return None, f"mutation path does not resolve at {part!r}"
+            target = target[part]
+        final = path[-1]
+        if not isinstance(target, dict) or final not in target:
+            return None, f"mutation path does not resolve at {final!r}"
+        if operation == "remove":
+            target.pop(final)
+        else:
+            target[final] = mutation["value"]
+    if mutated == record:
+        return None, "mutations do not change the positive record"
+    return mutated, None
+
+
+def validate_composition_relation_case(root: Path, relation, path: str, spec):
+    relation_id = spec["relation_id"]
+    if not isinstance(relation, dict) or set(relation) != {
+        "obligation_id",
+        "relation_id",
+        "positive",
+        "negative",
+    }:
+        return [
+            composition_finding(
+                spec, path, "case shape", "relation case is not the closed positive and negative shape"
+            )
+        ]
+    if relation.get("obligation_id") != spec["obligation_id"]:
+        return [composition_finding(spec, path, "obligation identity", "case names a different law obligation")]
+    if relation.get("relation_id") != relation_id:
+        return [composition_finding(spec, path, "relation identity", "case names a different relation")]
+    positive_path = f"{path}#{relation_id}.positive"
+    positive_findings = validate_composition_record(
+        root, spec, relation.get("positive"), positive_path
+    )
+    if positive_findings:
+        return positive_findings
+    negatives = relation.get("negative")
+    if not isinstance(negatives, list) or len(negatives) != 2:
+        return [composition_finding(spec, path, "negative specimens", "relation does not carry exactly two hostile cases")]
+    fields: set[str] = set()
+    for index, negative in enumerate(negatives):
+        negative_path = f"{path}#{relation_id}.negative[{index}]"
+        if not isinstance(negative, dict) or set(negative) != {"field", "mutations"}:
+            return [composition_finding(spec, negative_path, "negative specimen", "hostile case is not the closed field and mutations object")]
+        field = negative.get("field")
+        if not closed_non_empty_scalar(field) or field in fields:
+            return [composition_finding(spec, negative_path, "negative specimen", "hostile case field is invalid or repeated")]
+        fields.add(field)
+        mutated, error = apply_composition_mutations(
+            relation["positive"], negative.get("mutations")
+        )
+        if error is not None:
+            return [composition_finding(spec, negative_path, field, error)]
+        produced = validate_composition_record(root, spec, mutated, negative_path)
+        if (
+            len(produced) != 1
+            or produced[0].code != "PM097"
+            or produced[0].obligation_id != spec["obligation_id"]
+            or field not in produced[0].message
+        ):
+            observed = [item.code for item in produced]
+            return [
+                composition_finding(
+                    spec,
+                    negative_path,
+                    field,
+                    f"hostile case produced {observed!r}; expected one contextual PM097 refusal",
+                )
+            ]
+    return []
+
+
+def validate_composition_cases(root: Path, document, path: str):
+    findings: list[Finding] = []
+    if not isinstance(document, dict) or set(document) != {"schema", "relations"}:
+        return 0, [composition_generic_finding(path, "case shape", "fixture fields are not exactly schema and relations")]
+    if document.get("schema") != COMPOSITION_CASES_SCHEMA:
+        return 0, [composition_generic_finding(path, "schema", "fixture schema identity is absent or unsupported")]
+    relations = document.get("relations")
+    if not isinstance(relations, list) or not relations or len(relations) > 32:
+        return 0, [composition_generic_finding(path, "relations", "fixture relations are not a bounded non-empty array")]
+    seen: set[str] = set()
+    for index, relation in enumerate(relations):
+        relation_path = f"{path}#relations[{index}]"
+        relation_id = relation.get("relation_id") if isinstance(relation, dict) else None
+        raw_spec = COMPOSITION_RELATIONS.get(relation_id)
+        if raw_spec is None:
+            findings.append(
+                composition_generic_finding(
+                    relation_path,
+                    "relation identity",
+                    f"unknown relation {relation_id!r}",
+                )
+            )
+            continue
+        spec = composition_spec(relation_id, raw_spec)
+        if relation_id in seen:
+            findings.append(
+                composition_finding(
+                    spec,
+                    relation_path,
+                    "relation identity",
+                    "registered relation is repeated",
+                )
+            )
+            continue
+        seen.add(relation_id)
+        findings.extend(
+            validate_composition_relation_case(root, relation, relation_path, spec)
+        )
+    for relation_id in sorted(set(COMPOSITION_RELATIONS) - seen):
+        spec = composition_spec(relation_id, COMPOSITION_RELATIONS[relation_id])
+        findings.append(
+            composition_finding(
+                spec,
+                path,
+                "relation identity",
+                "registered root-law relation is absent",
+            )
+        )
+    return len(seen), findings
+
+
+def validate_composition_obligation_specimen(
+    root: Path, relative_specimen: Path, document, row
+):
+    path = relative_specimen.as_posix()
+    if not isinstance(document, dict) or set(document) != {"schema", "relations"}:
+        return [
+            obligation_finding(
+                "PM088",
+                path,
+                "composition specimen fields are not exactly schema and relations",
+                "restore the closed promise-machine-composition-cases/v1 document",
+                row,
+            )
+        ]
+    if document.get("schema") != COMPOSITION_CASES_SCHEMA:
+        return [
+            obligation_finding(
+                "PM088",
+                path,
+                "composition specimen schema identity is unsupported",
+                f"declare {COMPOSITION_CASES_SCHEMA}",
+                row,
+            )
+        ]
+    matching_specs = [
+        composition_spec(relation_id, spec)
+        for relation_id, spec in COMPOSITION_RELATIONS.items()
+        if spec["obligation_id"] == row.get("id")
+    ]
+    if len(matching_specs) != 1:
+        return [
+            obligation_finding(
+                "PM088",
+                path,
+                "composition obligation does not own exactly one registered relation",
+                "bind the stable law obligation to one producer-to-consumer relation",
+                row,
+            )
+        ]
+    spec = matching_specs[0]
+    relations = document.get("relations")
+    if not isinstance(relations, list):
+        return [
+            obligation_finding(
+                "PM088",
+                path,
+                "composition specimen relations are not an array",
+                "restore the bounded relation cases",
+                row,
+            )
+        ]
+    matches = [
+        relation
+        for relation in relations
+        if isinstance(relation, dict)
+        and relation.get("relation_id") == spec["relation_id"]
+    ]
+    if len(matches) != 1:
+        return [
+            obligation_finding(
+                "PM089",
+                path,
+                f"composition specimen contains {len(matches)} cases for {spec['relation_id']}",
+                "restore one positive case and its two bounded hostile mutations",
+                row,
+            )
+        ]
+    produced = validate_composition_relation_case(
+        root, matches[0], path, spec
+    )
+    if produced:
+        return [
+            obligation_finding(
+                "PM089",
+                path,
+                (
+                    f"composition specimen did not exercise the {spec['relation_id']} "
+                    f"gate cleanly: {[item.code for item in produced]!r}"
+                ),
+                "restore the positive case and hostile mutations against the production gate",
+                row,
+            )
+        ]
+    return []
+
+
+def check_composition(root: Path, coverage):
+    findings: list[Finding] = []
+    catalogue = coverage.get("composition") if isinstance(coverage, dict) else None
+    if not isinstance(catalogue, dict) or set(catalogue) != {"fixture", "relations"}:
+        for relation_id, raw_spec in COMPOSITION_RELATIONS.items():
+            spec = composition_spec(relation_id, raw_spec)
+            findings.append(
+                composition_finding(
+                    spec,
+                    COVERAGE_PATH.as_posix(),
+                    "relation identity",
+                    "composition catalogue is absent or not the closed fixture and relations object",
+                )
+            )
+        return 0, findings
+    fixture = catalogue.get("fixture")
+    expected_fixture_path = COMPOSITION_FIXTURE.as_posix()
+    if not isinstance(fixture, dict) or set(fixture) != {"path", "sha256"}:
+        return 0, [composition_generic_finding(COVERAGE_PATH.as_posix(), "fixture", "fixture reference is not the closed path and digest object")]
+    if fixture.get("path") != expected_fixture_path:
+        return 0, [composition_generic_finding(COVERAGE_PATH.as_posix(), "fixture", "fixture path does not name the registered composition cases")]
+    payload, error = read_bound_reference(root, fixture, "composition cases")
+    if error is not None:
+        return 0, [composition_generic_finding(COVERAGE_PATH.as_posix(), "fixture", error)]
+    document, error = parse_json_object_bytes(payload, "composition cases")
+    if error is not None:
+        return 0, [composition_generic_finding(expected_fixture_path, "fixture", error)]
+
+    descriptors = catalogue.get("relations")
+    seen: set[str] = set()
+    if not isinstance(descriptors, list) or len(descriptors) > 32:
+        findings.append(composition_generic_finding(COVERAGE_PATH.as_posix(), "relations", "relation descriptors are not a bounded array"))
+        descriptors = []
+    for index, descriptor in enumerate(descriptors):
+        descriptor_path = f"{COVERAGE_PATH.as_posix()}#composition.relations[{index}]"
+        relation_id = descriptor.get("relation_id") if isinstance(descriptor, dict) else None
+        raw_spec = COMPOSITION_RELATIONS.get(relation_id)
+        if raw_spec is None:
+            findings.append(composition_generic_finding(descriptor_path, "relation identity", f"unknown relation {relation_id!r}"))
+            continue
+        spec = composition_spec(relation_id, raw_spec)
+        if relation_id in seen:
+            findings.append(composition_finding(spec, descriptor_path, "relation identity", "coverage relation is repeated"))
+            continue
+        seen.add(relation_id)
+        if descriptor != composition_descriptor(relation_id, raw_spec):
+            findings.append(composition_finding(spec, descriptor_path, "preserved fields", "coverage descriptor differs from the registered producer, consumer, transition, preservation, or refusal"))
+    for relation_id in sorted(set(COMPOSITION_RELATIONS) - seen):
+        spec = composition_spec(relation_id, COMPOSITION_RELATIONS[relation_id])
+        findings.append(composition_finding(spec, COVERAGE_PATH.as_posix(), "relation identity", "coverage descriptor is absent"))
+    count, case_findings = validate_composition_cases(
+        root, document, expected_fixture_path
+    )
+    findings.extend(case_findings)
+    return count, findings
+
+
 def check_runtime(root: Path, inventory: Inventory):
     findings: list[Finding] = []
     records = {
@@ -5049,6 +5769,13 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
     findings: list[Finding] = []
     expected_records = promise_records(root, inventory)
     expected = {item.promise_id: item for item in expected_records}
+    law_path = root / LAW_NAME
+    composition_required = (
+        law_path.is_file()
+        and not law_path.is_symlink()
+        and confined(law_path, root)
+    )
+    composition_relations = 0
     required_handoffs = {
         pair for pair in REQUIRED_HANDOFFS if pair[0] in expected and pair[1] in expected
     }
@@ -5063,7 +5790,7 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
     )
     findings.extend(read_findings)
     if document is None:
-        return 0, 0, findings
+        return 0, 0, 0, findings
     if document.get("contract") != CONTRACT_ID or document.get("schema") != COVERAGE_SCHEMA:
         findings.append(
             Finding(
@@ -5074,6 +5801,11 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
                 f"use contract {CONTRACT_ID!r} and schema {COVERAGE_SCHEMA!r}",
             )
         )
+    if composition_required:
+        composition_relations, composition_findings = check_composition(
+            root, document
+        )
+        findings.extend(composition_findings)
     handoffs = document.get("handoffs")
     seen_handoffs: set[tuple[str, str]] = set()
     if not isinstance(handoffs, list):
@@ -5609,7 +6341,7 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
                     promise_id=promise_id,
                 )
             )
-    return len(rows), selected, findings
+    return len(rows), selected, composition_relations, findings
 
 
 def check_identity(inventory: Inventory):
@@ -6274,6 +7006,7 @@ def report(
         "package_versions": 0,
         "skill_versions": 0,
         "licensed_plugins": 0,
+        "composition_relations": 0,
         "runtime_bindings": 0,
     }
     if stats:
@@ -6361,6 +7094,7 @@ def parse_only(raw: str):
         "versions",
         "hosts",
         "coverage",
+        "composition",
         "licences",
         "obligations",
         "exceptions",
@@ -6442,7 +7176,12 @@ def main(argv=None):
             require_hexaemeron_contracts=True,
         )
         overlay_promises, overlay_findings = check_overlays(root, inventory)
-        coverage_rows, coverage_selected, coverage_findings = check_coverage(
+        (
+            coverage_rows,
+            coverage_selected,
+            composition_relations,
+            coverage_findings,
+        ) = check_coverage(
             root, inventory, selected_groups
         )
         runtime_bindings, runtime_findings = check_runtime(root, inventory)
@@ -6461,6 +7200,7 @@ def main(argv=None):
             stats={
                 "coverage_rows": coverage_rows,
                 "coverage_selected": coverage_selected,
+                "composition_relations": composition_relations,
                 "runtime_bindings": runtime_bindings,
             },
         )
@@ -6533,12 +7273,35 @@ def main(argv=None):
             stats["licensed_plugins"] = licensed_plugins
             findings.extend(licence_findings)
         if "coverage" in only and inventory is not None:
-            coverage_rows, coverage_selected, coverage_findings = check_coverage(
+            (
+                coverage_rows,
+                coverage_selected,
+                composition_relations,
+                coverage_findings,
+            ) = check_coverage(
                 root, inventory, {"executable", "prompt", "vendored"}
             )
             stats["coverage_rows"] = coverage_rows
             stats["coverage_selected"] = coverage_selected
+            stats["composition_relations"] = composition_relations
             findings.extend(coverage_findings)
+        if "composition" in only and "coverage" not in only:
+            composition_document, composition_read_findings = read_json(
+                root / COVERAGE_PATH,
+                root,
+                max_bytes=MAX_COVERAGE_BYTES,
+                missing_code="PM097",
+                unsafe_code="PM097",
+                malformed_code="PM097",
+                noun="composition coverage catalogue",
+            )
+            findings.extend(composition_read_findings)
+            if composition_document is not None:
+                composition_relations, composition_findings = check_composition(
+                    root, composition_document
+                )
+                stats["composition_relations"] = composition_relations
+                findings.extend(composition_findings)
         if "runtime" in only and inventory is not None:
             runtime_bindings, runtime_findings = check_runtime(root, inventory)
             stats["runtime_bindings"] = runtime_bindings

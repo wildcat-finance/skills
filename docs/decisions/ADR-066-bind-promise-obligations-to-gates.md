@@ -1,13 +1,16 @@
-# ADR-062: Bind explicit Promise Machine obligations to production gates
+# ADR-066: Bind explicit Promise Machine obligations to production gates
 
 ## Status
 
 Accepted, 2026-08-30; renumbered 2026-08-31. This record fixes the framework
 rule selected for issue
 [#884](https://github.com/wildcat-finance/skills/issues/884). ADR-054 was free
-on the pinned implementation branch when this record was written. The current
-default branch later assigned ADR-054 through ADR-061 to other decisions, so
-the receipted Step 3 amendment moves this unchanged decision to ADR-062.
+on the pinned implementation branch when this record was written. The default
+branch later assigned ADR-054 through ADR-061 to other decisions, and a
+receipted Step 3 amendment moved this unchanged decision to ADR-062. The
+default branch then assigned ADR-062 through ADR-065 as well, so the receipted
+Step 4 amendments move the standing identifier to ADR-066 without changing
+the decision.
 
 ## Context
 
