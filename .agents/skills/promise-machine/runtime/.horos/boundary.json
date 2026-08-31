@@ -1,12 +1,12 @@
 {
   "counts": {
-    "bytes_binary": 8730071,
+    "bytes_binary": 8788285,
     "bytes_content_addressed": 94,
     "bytes_generated": 1139,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 1023
+    "files_walked": 1024
   },
   "entries": [
     {
@@ -22,6 +22,13 @@
       "evidence": "file signature png",
       "grade": "hard",
       "path": "plugins/alexandria/assets/characters/alexandria.png"
+    },
+    {
+      "bytes": 58214,
+      "category": "binary",
+      "evidence": "file signature riff",
+      "grade": "hard",
+      "path": "plugins/anamnesis/assets/characters/anamnesis.webp"
     },
     {
       "bytes": 314982,

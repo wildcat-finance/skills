@@ -1,19 +1,19 @@
 {
   "counts": {
-    "bytes_binary": 43884009,
+    "bytes_binary": 43942223,
     "bytes_content_addressed": 7844971,
-    "bytes_generated": 22456629,
+    "bytes_generated": 22524697,
     "bytes_lockfile": 254,
     "bytes_vendored": 94,
     "files_skipped_unreadable": 0,
-    "files_walked": 2254
+    "files_walked": 2255
   },
   "entries": [
     {
-      "bytes": 22389559,
+      "bytes": 22457627,
       "category": "generated",
       "evidence": "linguist-generated for '.agents/skills/promise-machine/runtime/**' in .gitattributes",
-      "files": 1027,
+      "files": 1028,
       "grade": "hard",
       "path": ".agents/skills/promise-machine/runtime/"
     },
@@ -604,6 +604,13 @@
       "evidence": "sha256 digest of the file's own bytes equals its name",
       "grade": "hard",
       "path": "plugins/alexandria/examples/compound-v3-phase0-v0/release/objects/sha256/ff/ff544298cc52691fb55e78265bb9f64c492dd41a9938788e6e4e28acf438407f"
+    },
+    {
+      "bytes": 58214,
+      "category": "binary",
+      "evidence": "file signature riff",
+      "grade": "hard",
+      "path": "plugins/anamnesis/assets/characters/anamnesis.webp"
     },
     {
       "bytes": 314982,

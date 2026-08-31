@@ -171,6 +171,13 @@ operations, examples, evidence contract, and current frontier.
   answered them, admitted against an explicit rights basis. It releases
   read-only projections rather than lending its source material.
 
+<p align="center">
+  <a href="./plugins/anamnesis#character">
+    <img src="./plugins/anamnesis/assets/characters/anamnesis.webp" width="960" alt="Anamnesis, keeper of the recalled record">
+  </a><br>
+  <a href="./plugins/anamnesis#character">Keeper of the recalled record</a>
+</p>
+
 ### Protocol behaviour and Solidity
 
 - [Janus](./plugins/janus) checks what a contract hook may observe and change
