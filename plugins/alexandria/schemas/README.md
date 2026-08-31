@@ -63,3 +63,11 @@ covers what a collected interval turns out to hold: its code-hash-bound
 implementation epochs, its shards with their status and record counts, and
 what a second provider said about it. Runtime checks bind a checkpoint to its
 own plan's digest and refuse a shard outside it.
+
+The interval release itself enters through the ordinary capture plan. Its
+components are one JSON journal per evidence class, format
+`alexandria-interval-journal/v1`, each carrying the plan's interval and one
+record per preserved exchange under `/records`, plus the interval receipt, the
+reconciliation record, the error receipts, the plan and the pinned registry.
+Every coverage count is a JSON pointer into the component it describes, so
+`ingest` refuses a count the payload does not carry.
