@@ -205,6 +205,6 @@ Elenchus verdict: null
 
 | id | severity | file | finding | status |
 | --- | --- | --- | --- | --- |
-| -- | -- | -- | -- | none |
+| -- | -- | -- | none | -- |
 
 Leads not pursued: the whole battery ran against the fixed tree. The three bundled lints exited 0, the Alexandria suite reported 471 of 471 with zero skips, the demonstration built and verified, and `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .`, `promise_machine.py check` and `git diff --check` each exited 0 with a clean working tree. The design checker exited 0 at `integration` with the demonstration conformance report passing on eleven cases. The root suite reports 776 tests with two failures, S1-R1-07 and S6-R1-03, both the payload ceilings framework-63 removes, and nothing else. The three bounded items from round 1 still stand, along with S1-R1-07, S2-R1-04, S5-R1-04, S5-R1-05 and S6-R1-03.
