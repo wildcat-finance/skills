@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import hashlib
+import io
 import importlib.util
 import json
 import os
@@ -336,21 +338,20 @@ class NoNetwork(unittest.TestCase):
         self.assertNotIn("os.system", source)
 
 
-class Reserved(unittest.TestCase):
-    def test_curate_refuses_and_names_the_step_that_owes_it(self):
-        with self.assertRaises(anamnesis.Refusal) as caught:
-            anamnesis.cmd_curate(None)
-        self.assertEqual(caught.exception.code, "A090")
-        self.assertIn("step 2", caught.exception.message)
-
-    def test_release_refuses_and_names_the_step_that_owes_it(self):
-        with self.assertRaises(anamnesis.Refusal) as caught:
-            anamnesis.cmd_release(None)
-        self.assertEqual(caught.exception.code, "A091")
-        self.assertIn("step 3", caught.exception.message)
+class Refusals(unittest.TestCase):
+    """A refusal reaches the caller as an exit code, not a traceback."""
 
     def test_a_refusal_exits_non_zero_without_a_traceback(self):
-        self.assertEqual(anamnesis.main(["curate"]), 1)
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            code = anamnesis.main(["verify", "--release", "/nonexistent/release"])
+        self.assertEqual(code, 1)
+        self.assertEqual(out.getvalue(), "")
+        self.assertTrue(err.getvalue().startswith("refused ["))
+
+    def test_the_skill_still_names_the_step_that_owes_the_projections(self):
+        skill = (PLUGIN_ROOT / "skills/anamnesis/SKILL.md").read_text(encoding="utf-8")
+        self.assertIn("Runbook step 3 owes the Elenchus and Synkrisis", skill)
 
 
 if __name__ == "__main__":

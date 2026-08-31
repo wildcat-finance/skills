@@ -192,6 +192,10 @@ def is_current_runtime_prose(path):
     name = relative.name.lower()
     if parts[:4] == (".agents", "skills", "promise-machine", "runtime"):
         return False
+    # Controller state, gitignored: a Fiat run's own receipts and pull-request
+    # drafts quote the records they describe, including their runtime versions.
+    if parts[0] == ".hexaemeron":
+        return False
     if "audit" in parts or "baseline" in parts:
         return False
     # A specimen is preserved input. Editing one to satisfy a later pin changes

@@ -12,16 +12,19 @@ none of them is executed.
 from __future__ import annotations
 
 import argparse
+import collections
 import contextlib
 import hashlib
 import json
 import os
+import re
 import secrets
 import stat
 import sys
 
 POLICY_SCHEMA = "anamnesis-pilot-policy/v1"
 REPORT_SCHEMA = "protasis-design-report/v1"
+RELEASE_SCHEMA = "anamnesis-release/v1"
 CANDIDATE = "anamnesis-member"
 
 # Absolute ceilings. A policy may declare something smaller; it may not raise
@@ -30,6 +33,7 @@ MAX_POLICY_BYTES = 1_000_000
 MAX_SOURCE_BYTES_CEILING = 8_000_000
 MAX_TOTAL_SOURCE_BYTES = 50_000_000
 MAX_REPORT_BYTES = 64_000
+MAX_RELEASE_BYTES = 50_000_000
 
 # Bounded error output: a refusal quotes at most this much of any value it
 # names, so a hostile source cannot flood an operator's terminal or a log.
@@ -69,6 +73,13 @@ RIGHTS_KEYS = {
     "holder": True,
     "statement": True,
     "expires": False,
+}
+CURATION_POLICY_KEYS = {
+    "version": True,
+    "mapper": True,
+    "taxonomy": True,
+    "disclosure": True,
+    "duplicates": False,
 }
 RECORD_KEYS = {
     "id": True,
@@ -337,6 +348,8 @@ def admit_source(entry, root, cap, seen, events, policy_version, policy_digest):
         "bytes": observed,
         "basis": basis,
         "disclosure": disclosure,
+        "producer": entry["producer"],
+        "path": entry["path"],
     }
 
 
@@ -486,20 +499,642 @@ def cmd_admit_seed(args):
     return 0
 
 
+
+# ---------------------------------------------------------------------------
+# The mapper.
+#
+# Warden writes an audit round as Markdown. The shape has changed over time:
+# the rounds preserved in the pilot predate the `Audit schema`, `Covered` and
+# `Elenchus verdict` fields entirely. A missing field is recorded as unknown,
+# never as none, because "this round declared no verdict" and "this round
+# format had no verdict to declare" are different facts and only one of them
+# is about the round.
+
+MAPPER = {"name": "warden-audit-round-markdown", "version": "1"}
+
+ROUND_HEADING = re.compile(
+    r"^## (?P<label>.+?,\s*round\s*(?P<round>\d+))\s*--\s*(?P<date>.+?)\s*$"
+)
+OTHER_HEADING = re.compile(r"^## (?P<label>.+?)\s*$")
+FINDING_ROW = re.compile(
+    r"^\|\s*`?(?P<native>[A-Z]?\d*S?\d+-R\d+-\d+)`?\s*\|"
+    r"\s*(?P<severity>[a-z-]+)\s*\|"
+    r"\s*(?P<file>[^|]*?)\s*\|"
+    r"\s*(?P<finding>.*?)\s*\|"
+    r"\s*(?P<status>.*?)\s*\|$"
+)
+ROUND_FIELD = re.compile(
+    r"^(?P<name>Audit schema|Covered|Not checked|Elenchus verdict):\s*(?P<value>.*)$"
+)
+
+# The remediation reference a status names. "fixed in this round" points at the
+# round itself; "fixed in <sha>" points at a commit that may answer several
+# findings, which is where one-fix-to-many-findings actually comes from.
+FIXED_IN_COMMIT = re.compile(r"^fixed in `?(?P<ref>[0-9a-f]{7,40})`?\b")
+FIXED_IN_ROUND = re.compile(r"^fixed in this round\b")
+REJECTED = re.compile(r"^(rejected|invalid|not a finding)\b", re.I)
+ACCEPTED = re.compile(r"^accepted\b", re.I)
+OPEN = re.compile(r"^(open|carried forward|deferred)\b", re.I)
+
+REMEDIATION_STATES = {
+    "applied": "the source records a change that was made",
+    "rejected": "the source records the finding as not accepted",
+    "accepted-risk": "the source records the risk as accepted without a change",
+    "unknown": "the source records no remediation state",
+}
+VERIFICATION_STATES = ("guarded", "unguarded", "passed", "inconclusive", "unknown")
+
+
+def _strip_code(value):
+    """Take a Markdown code span down to its contents, leaving other text alone."""
+    stripped = value.strip()
+    if len(stripped) > 1 and stripped.startswith("`") and stripped.endswith("`"):
+        return stripped[1:-1]
+    return stripped
+
+
+def parse_source(text, source_id):
+    """Read one Warden Markdown record into its native rounds and findings.
+
+    Nothing here normalises: the round label, date and every finding field are
+    the producer's own bytes. Curation reads this, and never the file again.
+    """
+    rounds = []
+    current = None
+    for number, line in enumerate(text.splitlines(), start=1):
+        heading = ROUND_HEADING.match(line)
+        if heading:
+            current = {
+                "id": f"round:{source_id}:{len(rounds) + 1}",
+                "label": heading.group("label").strip(),
+                "date": heading.group("date").strip(),
+                "line": number,
+                "fields": {},
+                "findings": [],
+            }
+            rounds.append(current)
+            continue
+        if OTHER_HEADING.match(line):
+            # A heading that is not a round closes the current one. The pilot
+            # carries "## Leads closed since", which owns no findings.
+            current = None
+            continue
+        if current is None:
+            continue
+        field = ROUND_FIELD.match(line)
+        if field:
+            current["fields"][field.group("name")] = field.group("value").strip()
+            continue
+        row = FINDING_ROW.match(line)
+        if row and row.group("severity") not in {"---"}:
+            current["findings"].append({
+                "native_id": row.group("native"),
+                "severity": row.group("severity"),
+                "file": _strip_code(row.group("file")),
+                "finding": row.group("finding").strip(),
+                "status": row.group("status").strip(),
+                "line": number,
+            })
+    return rounds
+
+
+def read_status(status):
+    """Classify a status line without discarding what it said.
+
+    Returns the finding's own adjudication, the remediation state if the line
+    records one, the reference that remediation is keyed by, and the verbatim
+    basis.
+
+    Two different facts live in this one column and they belong on different
+    records. "fixed in 2429718" is a statement about a change, and several
+    findings may name the same one. "rejected" and "accepted" are statements
+    about the finding, and neither produces a remediation at all. Keying both
+    off the round would collapse a rejection and a fix recorded in the same
+    round into one record, which is exactly the loss the graph exists to
+    prevent.
+
+    `applied` is as far as any of these strings reach. A round saying it fixed
+    something records a change, not a verification.
+    """
+    if FIXED_IN_ROUND.match(status):
+        return "unknown", "applied", "this-round", status
+    commit = FIXED_IN_COMMIT.match(status)
+    if commit:
+        return "unknown", "applied", commit.group("ref"), status
+    if REJECTED.match(status):
+        return "rejected", None, None, status
+    if ACCEPTED.match(status):
+        return "accepted-risk", None, None, status
+    return "unknown", None, None, status
+
+
+def check_duplicates(duplicates):
+    """A duplicate cluster resolves to exactly one canonical finding."""
+    if not isinstance(duplicates, dict):
+        raise Refusal("A113", "policy duplicates is not a mapping")
+    for reported, canonical_id in duplicates.items():
+        if not isinstance(canonical_id, str) or not canonical_id:
+            raise Refusal("A114", f"duplicate {quote(reported)} names no canonical finding")
+        if canonical_id == reported:
+            raise Refusal("A115", f"duplicate {quote(reported)} names itself")
+        if canonical_id in duplicates:
+            raise Refusal(
+                "A116",
+                f"duplicate {quote(reported)} points at {quote(canonical_id)}, which is "
+                "itself a duplicate; a cluster resolves to one canonical finding",
+            )
+    return duplicates
+
+
+def _assertion(kind, ident, source, line, native, state, basis, mapper):
+    return {
+        "id": ident,
+        "kind": kind,
+        "source": source,
+        "locator": {"line": line},
+        "native": native,
+        "mapper": dict(mapper),
+        "state": {"value": state, "basis": basis},
+    }
+
+
+def curate(admitted, policy, texts):
+    """Build the graph from admitted sources.
+
+    Submissions, findings, occurrences, remediations and verifications stay
+    separate records joined by edges. A remediation named by several findings
+    is one record with several edges, which is the whole point of keeping the
+    edge many-to-many.
+    """
+    severities = set(policy["taxonomy"]["severities"])
+    duplicates = check_duplicates(policy.get("duplicates", {}))
+    derived_text = set(policy["disclosure"]["derived_text"])
+    version = policy["version"]
+    mapper = policy["mapper"]
+
+    engagements, assertions, relations, quarantine, unknowns = [], [], [], [], {}
+
+    def note_unknown(name):
+        unknowns[name] = unknowns.get(name, 0) + 1
+
+    for source in admitted:
+        source_id = source["id"]
+        speaks = source["disclosure"] in derived_text
+        rounds = parse_source(texts[source_id], source_id)
+        engagement = {
+            "id": f"eng:{source_id}",
+            "source": source_id,
+            "producer": source["producer"],
+            "rounds": [],
+        }
+        for entry in rounds:
+            native_schema = entry["fields"].get("Audit schema")
+            verdict = entry["fields"].get("Elenchus verdict")
+            if native_schema is None:
+                note_unknown("round.native_schema")
+            if verdict is None:
+                note_unknown("round.verdict")
+            engagement["rounds"].append({
+                "id": entry["id"],
+                "label": entry["label"] if speaks else "",
+                "date": entry["date"] if speaks else "",
+                "findings": len(entry["findings"]),
+                "native_schema": native_schema,
+                "verdict": verdict,
+            })
+            verification_state = verdict if verdict in VERIFICATION_STATES else "unknown"
+            if verdict is None:
+                verification_basis = ""
+            else:
+                verification_basis = verdict
+            verification_id = f"ver:{entry['id']}"
+            assertions.append(_assertion(
+                "verification", verification_id, source_id, entry["line"],
+                {"round": entry["label"] if speaks else "", "declared": verdict},
+                verification_state, verification_basis, mapper,
+            ))
+
+            for finding in entry["findings"]:
+                native_id = finding["native_id"]
+                if finding["severity"] not in severities:
+                    quarantine.append({
+                        "rule": "taxonomy-drift",
+                        "subject": f"{source_id}:{native_id}",
+                        "reason": (
+                            f"severity {quote(finding['severity'])} is outside taxonomy "
+                            f"{policy['taxonomy']['name']} {policy['taxonomy']['version']}"
+                        ),
+                    })
+                    continue
+
+                native = {
+                    "native_id": native_id,
+                    "severity": finding["severity"],
+                    "file": finding["file"] if speaks else "",
+                    "finding": finding["finding"] if speaks else "",
+                    "status": finding["status"] if speaks else "",
+                }
+                if not speaks:
+                    quarantine.append({
+                        "rule": "restricted-derived-text",
+                        "subject": f"{source_id}:{native_id}",
+                        "reason": (
+                            f"source disclosure {source['disclosure']} is not in the "
+                            "policy's derived-text classes; identifiers and digests only"
+                        ),
+                    })
+
+                submission_id = f"sub:{source_id}:{native_id}"
+                reported_key = f"{source_id}:{native_id}"
+                canonical_key = duplicates.get(reported_key, reported_key)
+                finding_id = f"find:{canonical_key}"
+                is_duplicate = canonical_key != reported_key
+                assertions.append(_assertion(
+                    "submission", submission_id, source_id, finding["line"],
+                    dict(native), "unknown",
+                    "the source records no adjudication of the submission", mapper,
+                ))
+                note_unknown("submission.adjudication")
+                adjudication, remediation_state, ref, basis = read_status(
+                    finding["status"] if speaks else "")
+                if not is_duplicate:
+                    assertions.append(_assertion(
+                        "finding", finding_id, source_id, finding["line"],
+                        dict(native), adjudication,
+                        basis or "the source records no acceptance or rejection",
+                        mapper,
+                    ))
+                    if adjudication == "unknown":
+                        note_unknown("finding.adjudication")
+                relations.append({
+                    "id": f"rel:reported-as:{submission_id}",
+                    "kind": "reported-as", "from": submission_id, "to": finding_id,
+                    "policy_version": version,
+                    "rationale": (
+                        "the policy joined this submission to another submission's "
+                        "canonical finding" if is_duplicate else
+                        "one submission, adjudicated to itself"
+                    ),
+                })
+                if is_duplicate:
+                    note_unknown("submission.duplicate-of")
+                    relations.append({
+                        "id": f"rel:duplicate-of:{submission_id}",
+                        "kind": "duplicate-of", "from": submission_id,
+                        "to": f"sub:{canonical_key}",
+                        "policy_version": version,
+                        "rationale": (
+                            "the duplicate keeps its own submission record; only the "
+                            "canonical finding is shared"
+                        ),
+                    })
+
+                if finding["file"] and speaks:
+                    occurrence_id = f"occ:{source_id}:{native_id}"
+                    assertions.append(_assertion(
+                        "occurrence", occurrence_id, source_id, finding["line"],
+                        {"file": finding["file"]}, "not-applicable",
+                        "an occurrence has no lifecycle state of its own", mapper,
+                    ))
+                    relations.append({
+                        "id": f"rel:occurs-at:{occurrence_id}",
+                        "kind": "occurs-at", "from": finding_id, "to": occurrence_id,
+                        "policy_version": version,
+                    })
+
+                if remediation_state is None:
+                    note_unknown("finding.remediation")
+                    continue
+                key = ref if ref and ref != "this-round" else entry["id"]
+                remediation_id = f"rem:{source_id}:{key}"
+                assertions.append(_assertion(
+                    "remediation", remediation_id, source_id, finding["line"],
+                    {"reference": ref, "round": entry["id"]},
+                    remediation_state, basis, mapper,
+                ))
+                relations.append({
+                    "id": f"rel:addressed-by:{finding_id}:{remediation_id}",
+                    "kind": "addressed-by", "from": finding_id, "to": remediation_id,
+                    "policy_version": version,
+                    "rationale": (
+                        "the finding's status names this remediation; several findings "
+                        "may name the same one"
+                    ),
+                })
+                relations.append({
+                    "id": f"rel:verified-by:{remediation_id}:{verification_id}",
+                    "kind": "verified-by", "from": remediation_id, "to": verification_id,
+                    "policy_version": version,
+                    "rationale": (
+                        "the round that recorded the remediation; its verdict is the "
+                        "only verification evidence, and unknown when it declared none"
+                    ),
+                })
+        engagements.append(engagement)
+
+    seen_assertions = set()
+    unique_assertions = []
+    for assertion in assertions:
+        if assertion["id"] in seen_assertions:
+            continue
+        seen_assertions.add(assertion["id"])
+        unique_assertions.append(assertion)
+    assertions = unique_assertions
+
+    seen_relations = set()
+    unique_relations = []
+    for relation in relations:
+        if relation["id"] in seen_relations:
+            continue
+        seen_relations.add(relation["id"])
+        unique_relations.append(relation)
+
+    return {
+        "engagements": sorted(engagements, key=lambda e: e["id"]),
+        "assertions": sorted(assertions, key=lambda a: (a["kind"], a["id"])),
+        "relations": sorted(unique_relations, key=lambda r: (r["kind"], r["id"])),
+        "quarantine": sorted(quarantine, key=lambda q: (q["rule"], q["subject"])),
+        "unknowns": dict(sorted(unknowns.items())),
+    }
+
+
+def canonical(payload):
+    """One byte form for a component, so two builds of the same graph agree."""
+    return (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
+
+
+def release_id(policy, admitted, graph):
+    """Derived from the inputs and the policy, never from a clock."""
+    digest = hashlib.sha256()
+    digest.update(canonical(policy))
+    for source in sorted(admitted, key=lambda s: s["id"]):
+        digest.update(f"{source['id']}:{source['sha256']}:{source['bytes']}".encode("utf-8"))
+    for key in ("engagements", "assertions", "relations", "quarantine"):
+        digest.update(canonical(graph[key]))
+    return digest.hexdigest()
+
+
+def _write_component(directory, name, payload, components):
+    body = canonical(payload)
+    target = os.path.join(directory, name)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(target, flags, 0o600)
+    try:
+        os.write(descriptor, body)
+        os.fsync(descriptor)
+    finally:
+        os.close(descriptor)
+    components.append({
+        "path": name,
+        "sha256": hashlib.sha256(body).hexdigest(),
+        "bytes": len(body),
+    })
+
+
+def build_release(out, policy, admitted, graph):
+    """Stage a complete release, then promote it. A partial build never verifies.
+
+    The staging directory is built beside the destination and moved into place
+    only once every component is written, so a killed run leaves nothing that
+    could be mistaken for a release.
+    """
+    if os.path.exists(out):
+        raise Refusal("A100", f"release destination already exists: {quote(out)}")
+    staging = f"{out}.{os.getpid()}.{secrets.token_hex(8)}.staging"
+    os.makedirs(staging, exist_ok=False)
+    try:
+        components = []
+        for name, payload in (
+            ("engagements.json", graph["engagements"]),
+            ("assertions.json", graph["assertions"]),
+            ("relations.json", graph["relations"]),
+            ("quarantine.json", graph["quarantine"]),
+            ("policy.json", policy),
+        ):
+            _write_component(staging, name, payload, components)
+
+        kinds = collections.Counter(a["kind"] for a in graph["assertions"])
+        rounds = [r for e in graph["engagements"] for r in e["rounds"]]
+        manifest = {
+            "schema": RELEASE_SCHEMA,
+            "release_id": release_id(policy, admitted, graph),
+            "policy": policy,
+            "sources": [
+                {"id": s["id"], "sha256": s["sha256"], "bytes": s["bytes"],
+                 "disclosure": s["disclosure"]}
+                for s in sorted(admitted, key=lambda s: s["id"])
+            ],
+            "components": sorted(components, key=lambda c: c["path"]),
+            "counts": {
+                "engagements": len(graph["engagements"]),
+                "rounds": len(rounds),
+                "rounds_with_no_findings": sum(1 for r in rounds if r["findings"] == 0),
+                "submissions": kinds.get("submission", 0),
+                "findings": kinds.get("finding", 0),
+                "occurrences": kinds.get("occurrence", 0),
+                "remediations": kinds.get("remediation", 0),
+                "verifications": kinds.get("verification", 0),
+                "relations": len(graph["relations"]),
+            },
+            "exclusions": graph["quarantine"],
+            "unknowns": graph["unknowns"],
+        }
+        body = canonical(manifest)
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(os.path.join(staging, "manifest.json"), flags, 0o600)
+        try:
+            os.write(descriptor, body)
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        os.rename(staging, out)
+        return manifest
+    except BaseException:
+        for name in sorted(os.listdir(staging)) if os.path.isdir(staging) else []:
+            os.unlink(os.path.join(staging, name))
+        if os.path.isdir(staging):
+            os.rmdir(staging)
+        raise
+
+
+def verify_release(out):
+    """Recompute every component digest from the bytes on disk."""
+    manifest_path = os.path.join(out, "manifest.json")
+    raw = read_bounded(manifest_path, MAX_POLICY_BYTES, "release manifest")
+    try:
+        manifest = json.loads(raw.decode("utf-8"), object_pairs_hook=_no_duplicate_keys)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise Refusal("A101", f"release manifest is not valid JSON: {quote(error)}")
+    if manifest.get("schema") != RELEASE_SCHEMA:
+        raise Refusal("A102", "release manifest declares another schema")
+
+    listed = {c["path"] for c in manifest["components"]} | {"manifest.json"}
+    present = set(os.listdir(out))
+    if present != listed:
+        missing = sorted(listed - present)
+        extra = sorted(present - listed)
+        raise Refusal(
+            "A103",
+            f"release contents differ from the manifest; missing={missing} extra={extra}",
+        )
+    for component in manifest["components"]:
+        body = read_bounded(
+            os.path.join(out, component["path"]), MAX_SOURCE_BYTES_CEILING,
+            f"release component {component['path']}",
+        )
+        if len(body) != component["bytes"]:
+            raise Refusal(
+                "A104",
+                f"component {quote(component['path'])} is {len(body)} bytes, "
+                f"not the manifested {component['bytes']}",
+            )
+        actual = hashlib.sha256(body).hexdigest()
+        if actual != component["sha256"]:
+            raise Refusal(
+                "A105",
+                f"component {quote(component['path'])} digest is {quote(actual)}, "
+                f"not the manifested {quote(component['sha256'])}",
+            )
+    return manifest
+
+
+def measure_release(out):
+    """Total the release bytes, which is what the byte cap is about."""
+    total = 0
+    for name in sorted(os.listdir(out)):
+        info = os.lstat(os.path.join(out, name))
+        if not stat.S_ISREG(info.st_mode):
+            raise Refusal("A106", f"release holds a non-regular entry: {quote(name)}")
+        total += info.st_size
+    return total
+
+
+def load_curation_policy(path):
+    raw = read_bounded(path, MAX_POLICY_BYTES, "curation policy")
+    try:
+        policy = json.loads(raw.decode("utf-8"), object_pairs_hook=_no_duplicate_keys)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise Refusal("A110", f"curation policy is not valid JSON: {quote(error)}")
+    closed_object(policy, CURATION_POLICY_KEYS, "curation policy")
+    closed_object(policy["mapper"], {"name": True, "version": True}, "policy mapper")
+    closed_object(policy["taxonomy"],
+                  {"name": True, "version": True, "severities": True}, "policy taxonomy")
+    closed_object(policy["disclosure"], {"derived_text": True}, "policy disclosure")
+    text(policy["version"], "policy version", 100)
+    if not isinstance(policy["taxonomy"]["severities"], list) or not policy["taxonomy"]["severities"]:
+        raise Refusal("A111", "policy taxonomy declares no severities")
+    for value in policy["disclosure"]["derived_text"]:
+        if value not in DISCLOSURES:
+            raise Refusal("A112", f"policy names unknown disclosure class {quote(value)}")
+    check_duplicates(policy.get("duplicates", {}))
+    return policy
+
+
+def _admitted_texts(policy_path, admitted):
+    root = os.path.dirname(os.path.abspath(policy_path)) or "."
+    raw = read_bounded(policy_path, MAX_POLICY_BYTES, "policy")
+    declared = parse_policy(raw, "policy")
+    cap = declared["max_source_bytes"]
+    texts = {}
+    for entry in declared["sources"]:
+        path = resolve_within(root, entry["path"], entry["id"])
+        texts[entry["id"]] = read_bounded(path, cap, f"source {entry['id']}").decode(
+            "utf-8", errors="strict")
+    return texts
+
+
+def cmd_ingest(args):
+    events = Events(args.events)
+    result = admit(args.policy, events)
+    texts = _admitted_texts(args.policy, result["sources"])
+    total = 0
+    for source in result["sources"]:
+        rounds = parse_source(texts[source["id"]], source["id"])
+        found = sum(len(r["findings"]) for r in rounds)
+        total += found
+        print(f"{source['id']}: {len(rounds)} round(s), {found} finding(s)")
+    print(f"ingested {len(result['sources'])} source(s) and {total} finding(s)")
+    return 0
+
+
 def cmd_curate(args):
-    raise Refusal(
-        "A090",
-        "curate is not implemented in anamnesis-v0.1.0; runbook step 2 owes the "
-        "corpus graph, its closed schemas and its specimens",
+    events = Events(args.events)
+    result = admit(args.policy, events)
+    policy = load_curation_policy(args.curation_policy)
+    texts = _admitted_texts(args.policy, result["sources"])
+    graph = curate(result["sources"], policy, texts)
+    print(
+        f"curated {len(graph['engagements'])} engagement(s), "
+        f"{len(graph['assertions'])} assertion(s), {len(graph['relations'])} relation(s), "
+        f"{len(graph['quarantine'])} quarantined"
     )
+    return 0
 
 
 def cmd_release(args):
-    raise Refusal(
-        "A091",
-        "release is not implemented in anamnesis-v0.1.0; runbook step 3 owes the "
-        "deterministic release and its consumer projections",
+    events = Events(args.events)
+    result = admit(args.policy, events)
+    policy = load_curation_policy(args.curation_policy)
+    texts = _admitted_texts(args.policy, result["sources"])
+    graph = curate(result["sources"], policy, texts)
+    manifest = build_release(args.out, policy, result["sources"], graph)
+    print(f"released {manifest['release_id']} to {args.out}")
+    return 0
+
+
+def cmd_verify(args):
+    manifest = verify_release(args.release)
+    print(
+        f"verified {manifest['release_id']}: "
+        f"{len(manifest['components'])} component(s), "
+        f"{manifest['counts']['findings']} finding(s), "
+        f"{len(manifest['exclusions'])} exclusion(s)"
     )
+    return 0
+
+
+def cmd_measure_release(args):
+    verify_release(args.release)
+    total = measure_release(args.release)
+    if total > MAX_RELEASE_BYTES:
+        raise Refusal(
+            "A107",
+            f"release is {total} bytes, above the {MAX_RELEASE_BYTES}-byte cap",
+        )
+    command = (
+        "python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py measure-release "
+        f"--release {args.release} --report {args.report}"
+    )
+    report = {
+        "schema": REPORT_SCHEMA,
+        "candidate": CANDIDATE,
+        "criterion": "seed-release-byte-cap",
+        "value": total,
+        "unit": "bytes",
+        "command": command,
+        "exit": 0,
+    }
+    payload = json.dumps(report, indent=2) + "\n"
+    encoded = payload.encode("utf-8")
+    if len(encoded) > MAX_REPORT_BYTES:
+        raise Refusal("A080", f"report exceeds the {MAX_REPORT_BYTES}-byte cap")
+    parent = os.path.dirname(os.path.abspath(args.report))
+    os.makedirs(parent, exist_ok=True)
+    staging = f"{args.report}.{os.getpid()}.{secrets.token_hex(8)}.partial"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+    descriptor = os.open(staging, flags, 0o600)
+    try:
+        os.write(descriptor, encoded)
+        os.fsync(descriptor)
+    except BaseException:
+        os.close(descriptor)
+        os.unlink(staging)
+        raise
+    os.close(descriptor)
+    os.replace(staging, args.report)
+    print(f"release is {total} bytes, within the {MAX_RELEASE_BYTES}-byte cap; "
+          f"wrote {args.report}")
+    return 0
 
 
 def build_parser():
@@ -525,13 +1160,36 @@ def build_parser():
     seed.add_argument("--events", default=None)
     seed.set_defaults(handler=cmd_admit_seed)
 
-    curate = sub.add_parser("curate", help="not implemented; runbook step 2 owes it")
-    curate.add_argument("--policy", default=None)
+    ingest = sub.add_parser(
+        "ingest", help="read the admitted sources into their native rounds")
+    ingest.add_argument("--policy", required=True)
+    ingest.add_argument("--events", default=None)
+    ingest.set_defaults(handler=cmd_ingest)
+
+    curate = sub.add_parser(
+        "curate", help="build the finding-to-remedy graph from admitted sources")
+    curate.add_argument("--policy", required=True)
+    curate.add_argument("--curation-policy", required=True)
+    curate.add_argument("--events", default=None)
     curate.set_defaults(handler=cmd_curate)
 
-    release = sub.add_parser("release", help="not implemented; runbook step 3 owes it")
-    release.add_argument("--policy", default=None)
+    release = sub.add_parser("release", help="write one checked release")
+    release.add_argument("--policy", required=True)
+    release.add_argument("--curation-policy", required=True)
+    release.add_argument("--out", required=True)
+    release.add_argument("--events", default=None)
     release.set_defaults(handler=cmd_release)
+
+    verify = sub.add_parser(
+        "verify", help="recompute every component digest in a release")
+    verify.add_argument("--release", required=True)
+    verify.set_defaults(handler=cmd_verify)
+
+    measure = sub.add_parser(
+        "measure-release", help="verify a release and write the byte-cap report")
+    measure.add_argument("--release", required=True)
+    measure.add_argument("--report", required=True)
+    measure.set_defaults(handler=cmd_measure_release)
 
     return parser
 

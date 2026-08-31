@@ -1,7 +1,7 @@
 # Anamnesis runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Anamnesis.** Anamnesis keeps custody of audit findings and the changes that answered them: it admits sources against an explicit rights basis, preserves the producer's bytes and identifiers unchanged, and releases read-only projections for Elenchus and Synkrisis. It does not produce audit rounds, judge whether a finding was real, or compare runs. **Current frontier:** Source admission ships as the member's first promise: a closed pilot policy, no-follow regular-file reads under a declared byte cap, exact digest checks, and a closed rights and disclosure enumeration in which public visibility is not a rights basis. Curation and release are declared boundaries that refuse by name and say which runbook step owes them.
+> **Marketplace context: Anamnesis.** Anamnesis keeps custody of audit findings and the changes that answered them: it admits sources against an explicit rights basis, preserves the producer's bytes and identifiers unchanged, and releases read-only projections for Elenchus and Synkrisis. It does not produce audit rounds, judge whether a finding was real, or compare runs. **Current frontier:** The curation graph and the deterministic release ship. Submissions, findings, occurrences, remediation attempts and verifications are separate records joined by many-to-many edges; a severity outside the policy taxonomy is quarantined rather than mapped; a duplicate cluster arrives from the policy and keeps every submission; and a release rebuilds byte-for-byte or refuses. The Elenchus and Synkrisis projections are declared boundaries that refuse by name.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
