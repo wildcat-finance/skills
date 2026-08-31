@@ -13938,12 +13938,25 @@ def cmd_status(args) -> None:
             )
             if version_relations is not None:
                 resolution_state = version_resolution_status(args.dir, state)
-    if args.json:
+    field = getattr(args, "field", None)
+    if args.json or field is not None:
         payload = dict(state)
         payload["observation_run_id"] = controller_run_id(state)
         if resolution_state is not None:
             payload["version_resolution_status"] = resolution_state
-        print(json.dumps(payload, indent=2))
+        if field is None:
+            print(json.dumps(payload, indent=2))
+            return
+        # Reading one value should not cost the whole state. The state grows
+        # a step, a receipt and a round at a time, and a caller after
+        # `observation_run_id` wants twenty bytes of it. The walk matches
+        # `config get`, over the same payload `--json` would have printed.
+        node = payload
+        for part in field.split("."):
+            if not isinstance(node, dict) or part not in node:
+                die(f"status field not found: {field}")
+            node = node[part]
+        print(json.dumps(node))
         return
     print(f"topic: {clean(state['topic'])}")
     print(f"base:  {state['base']}")
@@ -14407,7 +14420,16 @@ def build_parser() -> argparse.ArgumentParser:
     sp.set_defaults(fn=cmd_init)
 
     sp = sub.add_parser("status", help="show run state")
-    sp.add_argument("--json", action="store_true")
+    shape = sp.add_mutually_exclusive_group()
+    shape.add_argument("--json", action="store_true")
+    shape.add_argument(
+        "--field",
+        metavar="PATH",
+        help=(
+            "print one dotted path out of the state --json would print, "
+            "such as observation_run_id"
+        ),
+    )
     sp.set_defaults(fn=cmd_status)
 
     sp = sub.add_parser(
