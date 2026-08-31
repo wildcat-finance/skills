@@ -23,9 +23,18 @@ import unittest
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DECISIONS = REPOSITORY_ROOT / "docs/decisions"
 FILENAME_RE = re.compile(r"\AADR-(\d+)-[a-z0-9.-]+\.md\Z")
+FINAL_ID_RE = re.compile(
+    r"\AADR-(?P<number>\d+)-(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)\.md\Z")
+DRAFT_RE = re.compile(r"\A(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)\.md\Z")
+MAX_SLUG_BYTES = 96
 
 def records():
     return sorted(p for p in DECISIONS.glob("ADR-*.md") if p.is_file())
+
+
+def drafts():
+    root = DECISIONS / "drafts"
+    return sorted(p for p in root.glob("*.md") if p.is_file())
 
 
 def numbers_on(ref):
@@ -105,6 +114,42 @@ class DecisionRecordNumbering(unittest.TestCase):
                     f"{path.name}: heading says ADR-{heading.group(1)}"
                 )
         self.assertEqual(wrong, [], "; ".join(wrong))
+
+    def test_draft_names_are_bounded_lowercase_ascii_slugs(self):
+        bad = []
+        for path in drafts():
+            match = DRAFT_RE.fullmatch(path.name)
+            if match is None or len(path.stem.encode("utf-8")) > MAX_SLUG_BYTES:
+                bad.append(path.name)
+        self.assertEqual(
+            bad, [],
+            f"drafts must be <lowercase-ascii-slug>.md at most {MAX_SLUG_BYTES} bytes: {bad}",
+        )
+
+    def test_draft_headings_carry_no_assigned_number(self):
+        wrong = []
+        for path in drafts():
+            first = path.read_text(encoding="utf-8").splitlines()[0]
+            if not first.startswith("# Decision: ") or first == "# Decision: ":
+                wrong.append(f"{path.name}: {first!r}")
+        self.assertEqual(wrong, [], "; ".join(wrong))
+
+    def test_each_stable_slug_names_exactly_one_draft_or_final(self):
+        identities: dict[str, list[str]] = {}
+        for path in drafts():
+            match = DRAFT_RE.fullmatch(path.name)
+            if match:
+                identities.setdefault(match.group("slug"), []).append(str(path))
+        for path in records():
+            match = FINAL_ID_RE.fullmatch(path.name)
+            if match:
+                identities.setdefault(match.group("slug"), []).append(str(path))
+        collisions = {slug: paths for slug, paths in identities.items() if len(paths) > 1}
+        self.assertEqual(
+            collisions, {},
+            "one stable adr/<slug> identity names both a draft and a final record: "
+            + repr(collisions),
+        )
 
 
     def test_no_number_collides_with_one_already_on_the_default_branch(self):

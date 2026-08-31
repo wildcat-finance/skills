@@ -830,6 +830,36 @@
       "path": "plugins/horos/tests/test_boundary.py",
       "selector": "test_a_changed_entry_drifts_and_is_named"
     },
+    "hypomnema-assignment-m": {
+      "claim": "A changed result tree or output blob is refused instead of replayed as the recorded transform.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_report_and_blob_drift_are_refused"
+    },
+    "hypomnema-assignment-o": {
+      "claim": "The assignment changes only the draft path and exact first heading; signing and hosted admission remain outside this helper.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_apply_changes_only_the_path_and_exact_first_heading"
+    },
+    "hypomnema-assignment-p": {
+      "claim": "Planning and replay reproduce one canonical report with the same ordered mapping and result tree.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_plan_and_replay_emit_the_same_canonical_report"
+    },
+    "hypomnema-assignment-r": {
+      "claim": "A refusal before apply leaves every draft and destination unchanged for a corrected retry.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_refusal_rolls_back_every_mapping"
+    },
+    "hypomnema-assignment-s": {
+      "claim": "The exact repository subject is preserved when inherited Git variables try to repoint native object reads.",
+      "evidence_class": "checked",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "selector": "test_repointing_environment_is_ignored"
+    },
     "hypomnema-pointer-m": {
       "claim": "A recognised YAML runbook pointer to an absent target is refused.",
       "evidence_class": "checked",
@@ -2578,6 +2608,29 @@
     },
     {
       "cases": {
+        "M": "hypomnema-assignment-m",
+        "O": "hypomnema-assignment-o",
+        "P": "hypomnema-assignment-p",
+        "R": "hypomnema-assignment-r",
+        "S": "hypomnema-assignment-s",
+        "X": {
+          "not_applicable": true,
+          "reason": "The canonical declaration supports no exception for this promise."
+        }
+      },
+      "evaluation": {
+        "corpus": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+        "disposition": "Checked P/M/S/O/R cases; X is unsupported by the canonical declaration.",
+        "model": "not-applicable: deterministic checker",
+        "prompt": "Plan and replay one bounded ADR assignment from exact Git objects.",
+        "status": "recorded"
+      },
+      "group": "prompt",
+      "promise_id": "hypomnema-decision-assignment",
+      "skill_path": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
+    },
+    {
+      "cases": {
         "M": "hex-eval-m",
         "O": "hex-eval-o",
         "P": "hex-eval-p",
@@ -3444,6 +3497,20 @@
       "sha256": "0b76758510763d094fe11100c4e3e502a5e3376de97cd449469625002b135045",
       "source": "plugins/horos/skills/horos/scripts/horos.py"
     },
+    "hypomnema-decision-assignment": {
+      "bindings": {
+        "evidence_classes": "native Git-object checks joined to the canonical Evidence classes field",
+        "evidence_references": "canonical report, base, product, result tree, ordered mappings and blob ids",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "bounded draft set, exact commits, active base ref and fixed transform",
+        "subject": "repository object format and immutable base and product commits",
+        "transition": "zero-exit replay joined to the canonical Authorises field",
+        "unknowns": "commit signature, hosted exact-head status and repository admission policy"
+      },
+      "sha256": "d6c2b2e82e51f3f46acc8a99a3a1d17498da1d25472303a00ba6ae565e16279b",
+      "source": "plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py"
+    },
     "hypomnema-record-placement": {
       "bindings": {
         "evidence_classes": "review disposition joined to the canonical Evidence classes field",
@@ -3455,7 +3522,7 @@
         "transition": "accepted record placement joined to the canonical Authorises field",
         "unknowns": "unresolved decisions and intentionally absent records"
       },
-      "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
+      "sha256": "6594219e68793c7fd53ee629d766941d731fa510dface354d182a583e2bd28a1",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     "janus-bounded-conformance": {

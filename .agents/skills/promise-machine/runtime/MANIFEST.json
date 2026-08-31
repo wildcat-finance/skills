@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 994,
-  "total_bytes": 21563568,
+  "file_count": 995,
+  "total_bytes": 21610314,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -59,7 +59,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "b74c7efd3f4234a29572a7afe107f89499f9b58aea9ba89644d974bb5c5fb011",
+      "sha256": "70c2679e2b28ea0d8c80b124889dd04f8a09aa134603984c2ffae8c4bc0fab02",
       "source": null
     },
     {
@@ -2319,15 +2319,15 @@
       "source": "plugins/hexaemeron/skills/fizz/templates/utils/StringUtils.sol"
     },
     {
-      "bytes": 11633,
+      "bytes": 12973,
       "path": "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md",
-      "sha256": "f06b3c19c05dc58b28a73892a61148d12255555e0c7aec4dcbadab1a17100026",
+      "sha256": "26ec45eb7b76913e0af90baf99b9fe3d61dd009b619b1b1fd3db9005dccae75c",
       "source": "plugins/hexaemeron/skills/hypomnema/EVOLUTION.md"
     },
     {
-      "bytes": 15325,
+      "bytes": 20158,
       "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-      "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
+      "sha256": "6594219e68793c7fd53ee629d766941d731fa510dface354d182a583e2bd28a1",
       "source": "plugins/hexaemeron/skills/hypomnema/SKILL.md"
     },
     {
@@ -2337,9 +2337,15 @@
       "source": "plugins/hexaemeron/skills/hypomnema/agents/openai.yaml"
     },
     {
-      "bytes": 24987,
+      "bytes": 34278,
+      "path": "plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py",
+      "sha256": "d6c2b2e82e51f3f46acc8a99a3a1d17498da1d25472303a00ba6ae565e16279b",
+      "source": "plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py"
+    },
+    {
+      "bytes": 31282,
       "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
-      "sha256": "15e86a563cf51bb532cc187ec1f6e3804bcbaabaf8236867823bda04c3842728",
+      "sha256": "06c72c34c81c4fc54d1111bc640b4be01fbadf53cbfe8012880184d74e6a07a9",
       "source": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py"
     },
     {
