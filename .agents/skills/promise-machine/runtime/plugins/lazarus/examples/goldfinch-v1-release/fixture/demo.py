@@ -213,22 +213,6 @@ def _entry_identity(directory_fd: int, name: str) -> tuple[int, int] | None:
     return details.st_dev, details.st_ino
 
 
-def _descriptor_directory(
-    directory_fd: int,
-    name: str,
-    identity: tuple[int, int],
-) -> Path:
-    for root in (Path("/proc/self/fd"), Path("/dev/fd")):
-        candidate = root / str(directory_fd) / name
-        try:
-            details = candidate.stat()
-        except OSError:
-            continue
-        if stat.S_ISDIR(details.st_mode) and (details.st_dev, details.st_ino) == identity:
-            return candidate
-    raise PathError("platform cannot anchor fixture stage")
-
-
 def _make_directory_entry(
     directory_fd: int,
     prefix: str,
@@ -510,7 +494,6 @@ def build_fixture(output: str | Path) -> dict[str, Any]:
     stage_name: str | None = None
     stage_identity: tuple[int, int] | None = None
     fixture_identity: tuple[int, int] | None = None
-    anchored_stage: Path | None = None
     published = False
     cleanup_failed = False
     rollback_failed = False
@@ -539,11 +522,6 @@ def build_fixture(output: str | Path) -> dict[str, Any]:
         fixture_details = os.fstat(fixture_fd)
         if (fixture_details.st_dev, fixture_details.st_ino) != fixture_identity:
             raise PathError("fixture stage identity changed during build")
-        anchored_stage = _descriptor_directory(
-            stage_fd,
-            "fixture",
-            fixture_identity,
-        )
         _require_same_parent(parent_path, parent, parent_identity)
         for claim in source_claims:
             relative = claim["path"]
@@ -563,7 +541,7 @@ def build_fixture(output: str | Path) -> dict[str, Any]:
             _require_same_parent(parent_path, parent, parent_identity)
         _require_same_parent(parent_path, parent, parent_identity)
         copied_claims = [
-            component_claim(anchored_stage, relative) for relative in SOURCE_COMPONENTS
+            component_claim(fixture_fd, relative) for relative in SOURCE_COMPONENTS
         ]
         _require_same_parent(parent_path, parent, parent_identity)
         if copied_claims != source_claims:
@@ -574,16 +552,16 @@ def build_fixture(output: str | Path) -> dict[str, Any]:
         _require_same_parent(parent_path, parent, parent_identity)
 
         manifest = build_manifest(
-            anchored_stage,
+            fixture_fd,
             FIXTURE_COMPONENTS,
             chain_id="0x1",
             block_number=BLOCK_NUMBER,
             block_hash=BLOCK_HASH,
         )
         _require_same_parent(parent_path, parent, parent_identity)
-        write_manifest(anchored_stage, manifest)
+        write_manifest(fixture_fd, manifest)
         _require_same_parent(parent_path, parent, parent_identity)
-        report = verify_fixture(anchored_stage)
+        report = verify_fixture(fixture_fd)
         _require_same_parent(parent_path, parent, parent_identity)
         destination = parent / requested.name
         if _output_exists(destination):
@@ -971,6 +949,11 @@ def main(arguments: list[str] | None = None) -> int:
             help="materialise the byte-exact fixture from pinned local sources",
         )
         builder.add_argument("--out", required=True)
+        release_verifier = commands.add_parser(
+            "verify-release",
+            help="verify the checked preservation release without network access",
+        )
+        release_verifier.add_argument("--release", required=True)
         parsed = parser.parse_args(words)
         if parsed.command == "build-fixture":
             try:
@@ -984,6 +967,23 @@ def main(arguments: list[str] | None = None) -> int:
                         "event": "goldfinch_fixture_build",
                         "stage": "complete",
                         "fixture_digest": report["fixture_digest"],
+                    }
+                ).decode("utf-8")
+            )
+            return 0
+        if parsed.command == "verify-release":
+            try:
+                report = verify_release(parsed.release)
+            except LazarusError as error:
+                print(f"refused: {error}", file=sys.stderr)
+                return 1
+            print(
+                dumps(
+                    {
+                        "event": "goldfinch_release_verify",
+                        "stage": "complete",
+                        "fixture_digest": report["fixture_digest"],
+                        "release_digest": report["release_digest"],
                     }
                 ).decode("utf-8")
             )
