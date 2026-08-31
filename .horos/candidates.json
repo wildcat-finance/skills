@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16429125,
+    "bytes_blob": 16435332,
     "bytes_generated": 98
   },
   "entries": [
@@ -238,14 +238,14 @@
       "path": "audit/rounds/fiat-710-give-sync-run-one-checked-transition-across.synopsis.md"
     },
     {
-      "bytes": 146789,
+      "bytes": 149872,
       "category": "blob",
-      "evidence": "mean line length above 400 in a window at offset 144741",
+      "evidence": "mean line length above 400 in a window at offset 74936",
       "grade": "candidate",
       "path": "audit/rounds/fiat-884-reconstruct-promise-machine-obligation-gates.md"
     },
     {
-      "bytes": 148199,
+      "bytes": 151323,
       "category": "blob",
       "evidence": "mean line length above 400 in the first 4096 bytes",
       "grade": "candidate",
