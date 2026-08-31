@@ -3159,6 +3159,40 @@ class PromiseCoverageTests(unittest.TestCase):
                     self.assertIn(f"def {selector}(", source)
         self.assertIn("without advancing Fiat", coverage["transition"])
 
+    def test_runtime_positive_selectors_reject_declaration_text_decoys(self):
+        cases = {
+            "python-string": (
+                Path("decoy.py"),
+                '\"\"\"\ndef test_positive():\n    pass\n\"\"\"\n',
+            ),
+            "solidity-comment": (
+                Path("decoy.sol"),
+                "/*\nfunction test_positive() external {}\n*/\n",
+            ),
+        }
+        for label, (path, source) in cases.items():
+            with self.subTest(label=label):
+                self.assertFalse(
+                    promise_machine_module.selector_resolves(
+                        path, source, "test_positive"
+                    )
+                )
+
+        self.assertTrue(
+            promise_machine_module.selector_resolves(
+                Path("live.py"),
+                "class Tests:\n    async def test_positive(self):\n        pass\n",
+                "test_positive",
+            )
+        )
+        self.assertTrue(
+            promise_machine_module.selector_resolves(
+                Path("live.sol"),
+                "contract Tests {\nfunction test_positive() external {}\n}\n",
+                "test_positive",
+            )
+        )
+
     def test_repository_high_consequence_runtime_bindings_are_complete(self):
         coverage = json.loads(
             (ROOT / "tests" / "promise_machine_coverage.json").read_text(

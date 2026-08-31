@@ -4040,14 +4040,84 @@ def parse_groups(raw: str):
     return groups
 
 
+def python_selector_resolves(text: str, selector: str):
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return False
+
+    containers = [tree]
+    while containers:
+        container = containers.pop()
+        for node in container.body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if node.name == selector:
+                    return True
+            elif isinstance(node, ast.ClassDef):
+                containers.append(node)
+    return False
+
+
+def mask_solidity_non_code(text: str):
+    masked = list(text)
+    index = 0
+    state = "code"
+    quote = ""
+    while index < len(text):
+        if state == "code":
+            if text.startswith("//", index):
+                masked[index] = masked[index + 1] = " "
+                index += 2
+                state = "line-comment"
+                continue
+            if text.startswith("/*", index):
+                masked[index] = masked[index + 1] = " "
+                index += 2
+                state = "block-comment"
+                continue
+            if text[index] in {'"', "'"}:
+                quote = text[index]
+                masked[index] = " "
+                index += 1
+                state = "string"
+                continue
+        elif state == "line-comment":
+            if text[index] == "\n":
+                state = "code"
+            else:
+                masked[index] = " "
+        elif state == "block-comment":
+            if text.startswith("*/", index):
+                masked[index] = masked[index + 1] = " "
+                index += 2
+                state = "code"
+                continue
+            if text[index] != "\n":
+                masked[index] = " "
+        else:
+            if text[index] == "\\" and index + 1 < len(text):
+                masked[index] = " "
+                if text[index + 1] != "\n":
+                    masked[index + 1] = " "
+                index += 2
+                continue
+            if text[index] == quote:
+                state = "code"
+            if text[index] != "\n":
+                masked[index] = " "
+        index += 1
+    return "".join(masked)
+
+
 def selector_resolves(path: Path, text: str, selector: str):
     if path.suffix == ".py":
-        pattern = rf"^\s*def\s+{re.escape(selector)}\s*\("
-    elif path.suffix == ".sol":
-        pattern = rf"^\s*function\s+{re.escape(selector)}\s*\("
-    else:
-        return False
-    return re.search(pattern, text, re.MULTILINE) is not None
+        return python_selector_resolves(text, selector)
+    if path.suffix == ".sol":
+        pattern = rf"^[ \t]*function[ \t]+{re.escape(selector)}[ \t]*\("
+        return re.search(
+            pattern, mask_solidity_non_code(text), re.MULTILINE
+        ) is not None
+    return False
 
 
 def runtime_expected_fields(record: PromiseRecord):
