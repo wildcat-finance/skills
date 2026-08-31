@@ -399,3 +399,10 @@ references needed to reproduce the framework claim.
 **Why.** The pinned base had ADR-054 free, but the current default branch now uses ADR-054 for an unrelated decision and uses ADR-055 through ADR-061. The Step 3 study amendment receipts ADR-062 as the next collision-free identifier without changing the reader design or exit.
 **Steps touched.** Step 3.
 **Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Files: `scripts/promise_machine.py`, `tests/promise_machine_coverage.json`, `tests/promise_machine_obligations.json`, `tests/test_promise_machine_contract.py`, exact coverage-declared source or adapter paths that need a binding surface, bounded specimens under `tests/fixtures/promise-machine/runtime/`, `plugins/hexaemeron/tests/test_issue_429_recovery.py` and `plugins/hexaemeron/tests/test_phylax_model_proxy.py` only to replace assertions whose source-digest assumptions are superseded by the Step 3 runtime binding, and `docs/promise-machine/obligation-gates/runbook.md` only as the byte-identical repository copy of this receipted runbook; generated portable runtime, ownership map, and Horos boundary files only when checked regeneration requires them.
+**Why.** Round 1 joined each runtime row to its declared positive evidence source and selector. Two affected Hexaemeron compatibility tests still require the earlier universal controller digest or a Phylax skill digest in runtime rows, so the domain suite now fails even though the production checker correctly requires the declared positive evidence digest. This amendment permits only those stale assertions and the checked-in runbook copy to move; it does not widen a runtime reader or claim that a domain operation ran.
+**Steps touched.** Step 3.
+**Still holding.** Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
