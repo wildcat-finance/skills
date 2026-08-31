@@ -456,3 +456,13 @@ record.
 **Steps touched.** Steps 2, 3, 4 and 5.
 
 **Still holding.** Step 2: entry holds; exit holds. Step 3: entry holds; exit holds. Step 4: entry holds; exit holds. Step 5: entry holds; exit holds.
+
+### Amendment -- 2026-08-30
+
+**What changed.** Complete replacement Files: For Step 5, change `scripts/noema.py`, `schemas/noema-v1.schema.json`, `docs/noema-v1.md`, `docs/decisions/ADR-059-evaluate-noema-as-a-sliced-instruction-ir.md`, `tests/test_noema.py`, `tests/fixtures/noema-v1/manifest.json`, profile and kernel records below `tests/fixtures/noema-v1/profiles/`, and the canonical inputs, hostile mutations and derived records below `tests/fixtures/noema-v1/specimens/`; create evidence below `tests/fixtures/noema-v1/evidence/`; permit deterministic Horos and configured audit record or synopsis updates; add no dependency, credential, provider SDK, model bytes, raw response transcript, plugin, Promise Machine claim, README entry, CI workflow, #909 file or external-repository change.
+
+**Why.** The first live family run exposed a prior-step implementation defect: all four specimens reuse one generic policy scaffold, several graph nodes do not express their bound Markdown spans, checked fact propositions are absent from evaluation context, and the 58-byte kernel does not define the projection grammar. The resulting 12-of-16 score measures model guessing rather than Noema comprehension. Step 5 must preserve that failed run, repair the evaluation boundary on the same selected design, and rerun the fixed gates before recording a decision.
+
+**Steps touched.** Step 5.
+
+**Still holding.** Step 5: entry holds; exit holds.
