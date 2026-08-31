@@ -1037,17 +1037,31 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:251aba75141866439180c0cc707e7fc0d05433b63041fb6be89f7c3dff58676b",
-      "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+      "id": "sha256:b6fd3531953fb3fffba4f10466a81d954d29233a1cc62b609e7f5ef56fcd727a",
+      "path": "plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py",
       "suppressed": false,
-      "symbol": "annotations@58"
+      "symbol": "annotations@15"
     },
     {
       "analyser_id": "python",
-      "id": "sha256:7bac061ca9e94c1663aec5272788cd73d764f12ab7f2eb47e89c7656869cbdc0",
+      "id": "sha256:35f2476ed5bd4d2830d5c1684abcd6e1bc2ac154a4d6005b7cebeb2615f1086c",
       "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
       "suppressed": false,
-      "symbol": "line:421:constant-true"
+      "symbol": "annotations@60"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:5521f6ff4edf7bb7dcd06e676546b633c207d5cc76c3cf5459da37164e6f0a6d",
+      "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+      "suppressed": false,
+      "symbol": "line:461:constant-true"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:e5e43aca4811e01fd0c472bae7cf7d3e9c6b7c614dcaf6d4a30ff0ee04b1e0d1",
+      "path": "plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py",
+      "suppressed": false,
+      "symbol": "line:505:constant-true"
     },
     {
       "analyser_id": "python",
@@ -1727,6 +1741,13 @@
       "path": "plugins/hexaemeron/tests/test_hexctl_sync_resolution_guard.py",
       "suppressed": false,
       "symbol": "annotations@3"
+    },
+    {
+      "analyser_id": "python",
+      "id": "sha256:7909a6fe19a67b55a0a23ff073d2d548bb8ccf7ab93ce50fe7d25e7a59ba50cd",
+      "path": "plugins/hexaemeron/tests/test_hypomnema_decision_assignments.py",
+      "suppressed": false,
+      "symbol": "annotations@8"
     },
     {
       "analyser_id": "python",
@@ -3090,10 +3111,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "b19458e2ee88eec50f7622efe44498d6aefa2dca",
-    "git_tree": "f4780aac820b43f728d6c25b5a6dfb6637d8aee6"
+    "commit": "166c95a66741031a2012623250df4db20800ffe6",
+    "git_tree": "7852de2ebf9f20e24df7d708d86387f32223c8b7"
   },
   "universe": {
-    "id": "sha256:bf0bb965a0bd4fe051eff15f2a901394e5189dafc5853bf0439076de65dfd3e5"
+    "id": "sha256:848cf0f9cc1cbeb963903f5dbabd46810d9d8c2728a960fe342c44a3f2cc640d"
   }
 }
