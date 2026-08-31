@@ -33,10 +33,10 @@ CONFIG = ROOT / "skills.sh.json"
 
 SCHEMA = "promise-machine-portable-runtime/v1"
 CONTRACT = "promise-machine/v1"
-# Step 5 adds the offline id-history ledger and the separate upstream verifier
-# to the dependency-closed runtime. Keep the ceiling exact enough that another
+# Step 6 adds the isolated evaluation driver, inputs and recorded evidence to
+# the dependency-closed runtime. Keep the ceiling exact enough that another
 # unreviewed payload addition still fails.
-MAX_FILES = 1_042
+MAX_FILES = 1_048
 MAX_BYTES = 25 * 1024 * 1024
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",
@@ -55,10 +55,12 @@ PORTABLE_TEST_FILES = {
     "plugins/berean/tests/test_examples.py",
     "plugins/berean/tests/test_promote.py",
     "plugins/hexaemeron/tests/test_hexctl.py",
+    "plugins/hexaemeron/tests/fixtures/promise-machine/evaluation-cases.json",
     "plugins/hexaemeron/tests/test_run_observation_binding.py",
     "plugins/lazarus/tests/test_capture.py",
     "plugins/lazarus/tests/test_verifier.py",
     "plugins/lemma/tests/test_markdown.py",
+    "plugins/sapheneia/tests/fixtures/promise-machine/cases.json",
     "plugins/synkrisis/tests/test_cohort.py",
     "plugins/synkrisis/tests/test_verify.py",
     "plugins/hexaemeron/tests/fixtures/model-proxy-v1/accepted-job.json",
@@ -80,6 +82,9 @@ OBLIGATION_FIXTURE_FILES = {
     "tests/fixtures/promise-machine/obligations/law-generated-copy-identity.json",
     "tests/fixtures/promise-machine/obligations/law-governing-principle.json",
     "tests/fixtures/promise-machine/obligations/law-required-sections.json",
+}
+EVALUATION_FIXTURE_FILES = {
+    "tests/fixtures/promise-machine/evaluation/prompt-template.txt",
 }
 SEMANTIC_FIXTURE_FILES = {
     "tests/fixtures/promise-machine/composition/cases.json",
@@ -134,6 +139,65 @@ class SkillsShPackageTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_generated_runtime_carries_the_complete_evaluation_gate(self):
+        checker = RUNTIME / "scripts" / "promise_machine.py"
+        result = subprocess.run(  # phylax: allow subprocess: fixed installed checker
+            [
+                sys.executable,
+                str(checker),
+                "check",
+                "--root",
+                str(RUNTIME),
+                "--only",
+                "evaluation",
+                "--json",
+            ],
+            cwd=RUNTIME,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["counts"]["evaluation_cases"], 11)
+        self.assertEqual(report["counts"]["evaluation_outcomes"], 55)
+
+        driver = RUNTIME / "tests" / "promise_evaluation_driver.py"
+        answers = (
+            RUNTIME
+            / "docs/promise-machine/obligation-gates/evaluation-answers.json"
+        )
+        run = RUNTIME / "docs/promise-machine/obligation-gates/evaluation-run.json"
+        with tempfile.TemporaryDirectory() as directory:
+            packet = Path(directory) / "packet"
+            emitted = subprocess.run(  # phylax: allow subprocess: fixed installed driver
+                [sys.executable, str(driver), "emit", "--out", str(packet)],
+                cwd=RUNTIME,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                emitted.returncode, 0, emitted.stdout + emitted.stderr
+            )
+            verified = subprocess.run(  # phylax: allow subprocess: fixed installed driver
+                [
+                    sys.executable,
+                    str(driver),
+                    "verify",
+                    "--packet",
+                    str(packet),
+                    "--answers",
+                    str(answers),
+                    "--run",
+                    str(run),
+                ],
+                cwd=RUNTIME,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                verified.returncode, 0, verified.stdout + verified.stderr
+            )
 
     def test_manifest_binds_every_runtime_file_to_source_bytes(self):
         manifest = load_manifest()
@@ -280,7 +344,9 @@ class SkillsShPackageTests(unittest.TestCase):
                 for path in promise_machine_fixtures.rglob("*")
                 if path.is_file() or path.is_symlink()
             },
-            OBLIGATION_FIXTURE_FILES | SEMANTIC_FIXTURE_FILES,
+            OBLIGATION_FIXTURE_FILES
+            | EVALUATION_FIXTURE_FILES
+            | SEMANTIC_FIXTURE_FILES,
         )
         example = RUNTIME / "plugins/alexandria/examples/compound-v3-phase0-v0"
         self.assertTrue((example / "README.md").is_file())

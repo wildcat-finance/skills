@@ -303,7 +303,7 @@ affected Hexaemeron and Sapheneia suites, and `python3 scripts/run_checks.py
 `tests/promise_machine_coverage.json`, the existing Hexaemeron and Sapheneia
 Promise Machine evaluation corpora and tests, shared fixtures under
 `tests/fixtures/promise-machine/evaluation/`, committed demonstration answers
-and run records under `docs/promise-machine/obligation-gates/`, ADR-054, and
+and run records under `docs/promise-machine/obligation-gates/`, ADR-066, and
 `tests/check-map-v1.json` if ownership of a new driver is not already covered.
 
 **Tests.** Cover exact eleven-promise discovery; one-context-per-case packet
@@ -323,7 +323,7 @@ run record retains model, template, corpus, tree, date, case, and outcome
 counts without logging requests, expected labels, credentials, or unrelated
 context. metron: none, external model latency and cost are outside this
 offline tool. elenchus: contamination, partial-write, and
-evidence-substitution failures start red and remain guards. hypomnema: ADR-054
+evidence-substitution failures start red and remain guards. hypomnema: ADR-066
 records the evaluation boundary and cites the existing router driver.
 
 ## Step 7: Demonstrate every gate from a clean tree
@@ -420,3 +420,10 @@ references needed to reproduce the framework claim.
 **Why.** The Step 4 exit requires the complete Hexaemeron and root dependencies selected by `python3 scripts/run_checks.py --scope promise-machine --jobs 12`. The five baseline defects already named in the receipted Step 1 amendments now have accepted fixes in upstream commit `4217f707fbb9174fcd13bca3cf6030771a50a693`; the incident fixture needs only its recoverable public Git object. Porting the narrow accepted path, depth, append-safe audit, and Homologia ownership hunks makes 1,990 of 1,990 Hexaemeron tests pass without changing a composition promise. The current default branch also owns ADR-062 through ADR-065, so ADR-066 and its append-only receipts are required for the root dependency. No Lazarus, Synkrisis, or other unrelated baseline is changed.
 **Steps touched.** Step 4.
 **Still holding.** Step 4: entry holds; exit holds. Step 5: entry holds; exit holds. Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
+
+### Amendment -- 2026-08-31
+
+**What changed.** Complete replacement Files: `tests/promise_evaluation_driver.py`, `tests/test_promise_evaluation_driver.py`, `scripts/promise_machine.py`, `tests/test_promise_machine_contract.py`, `tests/promise_machine_coverage.json`, the existing Hexaemeron and Sapheneia Promise Machine evaluation corpora and tests, shared fixtures under `tests/fixtures/promise-machine/evaluation/`, committed demonstration answers and run records under `docs/promise-machine/obligation-gates/`, the six existing runtime specimens whose bound Hexaemeron evaluation-test source digest changes, ADR-066, `scripts/portable_promise_machine.py`, `tests/test_skills_sh_package.py`, and `tests/check-map-v1.json`; generated portable runtime and Horos boundary files only when checked regeneration requires them. Step 6's Hypomnema reference is ADR-066 rather than the superseded ADR-054 name.
+**Why.** Moving model identity out of the labelled corpora changes the owning Hexaemeron case-test bytes. Six existing runtime rows bind that exact test source, so their source and specimen digests must move together even though every record continues to say `domain-operation-not-run` and `operation_ran: false`. ADR-066 is the already receipted collision-free standing decision; changing the reference does not mint another decision or widen the evaluation gate.
+**Steps touched.** Step 6.
+**Still holding.** Step 6: entry holds; exit holds. Step 7: entry holds; exit holds.
