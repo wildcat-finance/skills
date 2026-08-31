@@ -339,9 +339,11 @@ FORBIDDEN_CALLS = {
     "builtins.__dict__",
     "builtins.eval",
     "builtins.exec",
+    "builtins.open",
     "compile",
     "eval",
     "exec",
+    "open",
     "__builtins__.__dict__",
     "__builtins__.__import__",
     "__builtins__.compile",
@@ -351,14 +353,57 @@ FORBIDDEN_CALLS = {
     "os.__dict__",
     "os.fork",
     "os.forkpty",
+    "os.chown",
+    "os.fchmod",
+    "os.fchown",
+    "os.ftruncate",
     "os.getenv",
+    "os.lchmod",
+    "os.lchown",
+    "os.link",
+    "os.makedirs",
+    "os.mkdir",
+    "os.mkfifo",
+    "os.mknod",
     "os.popen",
     "os.posix_spawn",
     "os.posix_spawnp",
+    "os.pwrite",
+    "os.pwritev",
+    "os.remove",
+    "os.removedirs",
+    "os.rename",
+    "os.renames",
+    "os.rmdir",
     "os.startfile",
+    "os.symlink",
     "os.system",
+    "os.truncate",
+    "os.utime",
+    "os.write",
+    "os.writev",
     "runpy.run_module",
     "runpy.run_path",
+    "tempfile.NamedTemporaryFile",
+    "tempfile.SpooledTemporaryFile",
+    "tempfile.TemporaryDirectory",
+    "tempfile.TemporaryFile",
+    "tempfile.mkdtemp",
+    "tempfile.mktemp",
+}
+FORBIDDEN_FILE_METHODS = {
+    "chmod",
+    "hardlink_to",
+    "lchmod",
+    "link_to",
+    "mkdir",
+    "rename",
+    "rmdir",
+    "symlink_to",
+    "touch",
+    "unlink",
+    "write_bytes",
+    "write_text",
 }
 FORBIDDEN_DYNAMIC_NAMES = {"__import__", "compile", "eval", "exec"}
 FORBIDDEN_OS_IMPORTS = {
@@ -2015,9 +2060,88 @@ def check_core_source_text(source: str, shown: str):
         head, separator, tail = name.partition(".")
         return aliases.get(head, head) + (separator + tail if separator else "")
 
+    path_names: set[str] = set()
+
+    def path_annotation(annotation):
+        return annotation is not None and resolve_alias(
+            qualified_call_name(annotation)
+        ) == "pathlib.Path"
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            arguments = (
+                list(node.args.posonlyargs)
+                + list(node.args.args)
+                + list(node.args.kwonlyargs)
+            )
+            if node.args.vararg is not None:
+                arguments.append(node.args.vararg)
+            if node.args.kwarg is not None:
+                arguments.append(node.args.kwarg)
+            path_names.update(
+                argument.arg
+                for argument in arguments
+                if path_annotation(argument.annotation)
+            )
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and path_annotation(node.annotation)
+        ):
+            path_names.add(node.target.id)
+
+    def path_expression(node):
+        if isinstance(node, ast.Name):
+            return node.id in path_names
+        if isinstance(node, ast.Call):
+            if resolve_alias(qualified_call_name(node.func)) == "pathlib.Path":
+                return True
+            if isinstance(node.func, ast.Attribute) and node.func.attr in {
+                "absolute",
+                "joinpath",
+                "resolve",
+                "with_name",
+                "with_stem",
+                "with_suffix",
+            }:
+                return path_expression(node.func.value)
+        if isinstance(node, ast.Attribute) and node.attr == "parent":
+            return path_expression(node.value)
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+            return path_expression(node.left)
+        return False
+
+    changed = True
+    while changed:
+        changed = False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and path_expression(node.value):
+                names = [
+                    target.id
+                    for target in node.targets
+                    if isinstance(target, ast.Name)
+                ]
+            elif (
+                isinstance(node, ast.AnnAssign)
+                and isinstance(node.target, ast.Name)
+                and node.value is not None
+                and path_expression(node.value)
+            ):
+                names = [node.target.id]
+            else:
+                names = []
+            for name in names:
+                if name not in path_names:
+                    path_names.add(name)
+                    changed = True
+
     def forbidden_operation(name: str):
         return (
             name in FORBIDDEN_CALLS
+            or (
+                name.rsplit(".", 1)[-1] in FORBIDDEN_FILE_METHODS
+                and not name.startswith("os.")
+            )
             or name.startswith("asyncio.create_subprocess")
             or name.startswith("multiprocessing.")
             or name.startswith("os.exec")
@@ -2033,6 +2157,24 @@ def check_core_source_text(source: str, shown: str):
             name = resolve_alias(qualified_call_name(node.func))
             if forbidden_operation(name):
                 violations.append(f"forbidden call {name}")
+            if isinstance(node.func, ast.Attribute) and path_expression(
+                node.func.value
+            ):
+                if node.func.attr == "replace":
+                    violations.append("forbidden path mutation replace")
+                elif node.func.attr == "open":
+                    mode_node = node.args[0] if node.args else None
+                    for keyword in node.keywords:
+                        if keyword.arg == "mode":
+                            mode_node = keyword.value
+                    mode = (
+                        mode_node.value
+                        if isinstance(mode_node, ast.Constant)
+                        and isinstance(mode_node.value, str)
+                        else None
+                    )
+                    if mode is None or any(marker in mode for marker in "wax+"):
+                        violations.append("forbidden write-capable path open")
             if (
                 name == "getattr"
                 and len(node.args) >= 2

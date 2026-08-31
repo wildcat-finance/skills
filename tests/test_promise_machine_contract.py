@@ -2,7 +2,7 @@ import json
 import hashlib
 import io
 import os
-from contextlib import redirect_stdout
+from contextlib import ExitStack, redirect_stdout
 from pathlib import Path
 import shutil
 import subprocess
@@ -1746,6 +1746,16 @@ class PromiseSemanticGateTests(unittest.TestCase):
             "import builtins\nbuiltins.eval('1 + 1')\n",
             "__builtins__.eval('1 + 1')\n",
             "__builtins__['exec']('fixture = 1')\n",
+            "open('fixture', 'w').write('x')\n",
+            "from pathlib import Path\nPath('fixture').write_text('x')\n",
+            "from pathlib import Path\nPath('fixture').write_bytes(b'x')\n",
+            "from pathlib import Path\nPath('fixture').open('w').write('x')\n",
+            "from pathlib import Path\nPath('fixture').replace('target')\n",
+            "from pathlib import Path\npath = Path('fixture')\npath.replace('target')\n",
+            "import tempfile\ntempfile.NamedTemporaryFile()\n",
+            "import tempfile\ntempfile.TemporaryFile()\n",
+            "import os\nos.rename('fixture', 'target')\n",
+            "import os\nos.write(1, b'x')\n",
         )
         for source in sources:
             with self.subTest(source=source.splitlines()[-1]):
@@ -1771,25 +1781,121 @@ class PromiseSemanticGateTests(unittest.TestCase):
                 self.assertEqual(semantic_codes(findings), ["PM094"])
 
     def test_core_check_remains_clean_when_network_and_children_are_denied(self):
-        output = io.StringIO()
-        with mock.patch("socket.socket", side_effect=AssertionError("network used")):
-            with mock.patch.object(
+        real_os_fdopen = os.fdopen
+        real_os_open = os.open
+        real_path_open = Path.open
+
+        def guarded_os_fdopen(descriptor, mode="r", *args, **kwargs):
+            if any(marker in mode for marker in "wax+"):
+                raise AssertionError("write-capable os.fdopen used")
+            return real_os_fdopen(descriptor, mode, *args, **kwargs)
+
+        def guarded_os_open(path, flags, *args, **kwargs):
+            write_flags = (
+                os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND
+            )
+            if flags & write_flags:
+                raise AssertionError("write-capable os.open used")
+            return real_os_open(path, flags, *args, **kwargs)
+
+        def guarded_path_open(path, mode="r", *args, **kwargs):
+            if any(marker in mode for marker in "wax+"):
+                raise AssertionError("write-capable Path.open used")
+            return real_path_open(path, mode, *args, **kwargs)
+
+        denied = mock.Mock(side_effect=AssertionError("side effect used"))
+        patches = (
+            mock.patch("socket.socket", side_effect=AssertionError("network used")),
+            mock.patch.object(
                 subprocess, "Popen", side_effect=AssertionError("child used")
-            ):
-                with mock.patch.object(
-                    promise_machine_module,
-                    "atomic_write",
-                    side_effect=AssertionError("write used"),
-                ):
-                    with redirect_stdout(output):
-                        status = promise_machine_module.main(
-                            [
-                                "check",
-                                "--only",
-                                "obligations,contracts,exceptions,imports",
-                                "--json",
-                            ]
-                        )
+            ),
+            mock.patch("builtins.open", denied),
+            mock.patch.object(promise_machine_module, "atomic_write", denied),
+            mock.patch.object(os, "fdopen", side_effect=guarded_os_fdopen),
+            mock.patch.object(os, "open", side_effect=guarded_os_open),
+            mock.patch.object(Path, "open", new=guarded_path_open),
+        )
+        denied_attributes = (
+            (
+                os,
+                (
+                    "chmod",
+                    "chown",
+                    "fchmod",
+                    "fchown",
+                    "ftruncate",
+                    "lchmod",
+                    "lchown",
+                    "link",
+                    "makedirs",
+                    "mkdir",
+                    "mkfifo",
+                    "mknod",
+                    "pwrite",
+                    "pwritev",
+                    "remove",
+                    "removedirs",
+                    "rename",
+                    "renames",
+                    "replace",
+                    "rmdir",
+                    "symlink",
+                    "truncate",
+                    "unlink",
+                    "utime",
+                    "write",
+                    "writev",
+                ),
+            ),
+            (
+                Path,
+                (
+                    "chmod",
+                    "hardlink_to",
+                    "lchmod",
+                    "link_to",
+                    "mkdir",
+                    "rename",
+                    "replace",
+                    "rmdir",
+                    "symlink_to",
+                    "touch",
+                    "unlink",
+                    "write_bytes",
+                    "write_text",
+                ),
+            ),
+            (
+                tempfile,
+                (
+                    "NamedTemporaryFile",
+                    "SpooledTemporaryFile",
+                    "TemporaryDirectory",
+                    "TemporaryFile",
+                    "mkdtemp",
+                    "mkstemp",
+                ),
+            ),
+        )
+        for owner, names in denied_attributes:
+            patches += tuple(
+                mock.patch.object(owner, name, denied)
+                for name in names
+                if hasattr(owner, name)
+            )
+        output = io.StringIO()
+        with ExitStack() as stack:
+            for patch in patches:
+                stack.enter_context(patch)
+            with redirect_stdout(output):
+                status = promise_machine_module.main(
+                    [
+                        "check",
+                        "--only",
+                        "obligations,contracts,exceptions,imports",
+                        "--json",
+                    ]
+                )
         report = json.loads(output.getvalue())
         self.assertEqual(status, 0)
         self.assertEqual(report["findings"], [])
