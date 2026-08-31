@@ -120,7 +120,12 @@ class Collector:
         self.staging = Staging(staging_root, plan)
         root = Path(receipts_root) if receipts_root else self.staging.root
         self.receipts = root / RECEIPTS_DIRECTORY
-        self.receipts.mkdir(exist_ok=True)
+        try:
+            self.receipts.mkdir(exist_ok=True)
+        except OSError as exc:
+            raise AlexandriaError(f"cannot open the receipts directory: {exc}") from exc
+        if self.receipts.is_symlink() or not self.receipts.is_dir():
+            raise AlexandriaError("the receipts directory is not a directory")
         self._started = None
         self._bytes = 0
 
@@ -142,11 +147,11 @@ class Collector:
         label = f"shard {shard_index} {name}"
         try:
             data = self.transport.request(payload, label)
-        except AlexandriaError as error:
-            self.record_error(shard_index, name, "transport", str(error))
+        except AlexandriaError:
+            self.record_error(shard_index, name, "transport")
             raise
         if len(data) > MAX_RAW_COMPONENT_BYTES:
-            self.record_error(shard_index, name, "oversized-response", f"{label} exceeded the component byte ceiling")
+            self.record_error(shard_index, name, "oversized-response", len(data))
             raise AlexandriaError(f"{label} exceeded the component byte ceiling")
         self._spend(len(data))
         try:
@@ -154,50 +159,73 @@ class Collector:
                 data, label, max_bytes=MAX_RAW_COMPONENT_BYTES, max_nodes=MAX_RESPONSE_NODES,
                 preserve_integers=True,
             )
-        except AlexandriaError as error:
-            self.record_error(shard_index, name, "malformed-response", str(error))
+        except AlexandriaError:
+            self.record_error(shard_index, name, "malformed-response")
             raise
         if not isinstance(envelope, dict) or envelope.get("jsonrpc") != "2.0" or envelope.get("id") != identifier:
-            self.record_error(shard_index, name, "envelope-mismatch", f"{label} envelope does not match its request")
+            self.record_error(shard_index, name, "envelope-mismatch")
             raise AlexandriaError(f"{label} envelope does not match its request")
         if "error" in envelope:
             code = envelope["error"].get("code") if isinstance(envelope["error"], dict) else None
-            self.record_error(shard_index, name, "json-rpc-error", f"{label} returned JSON-RPC error {code}")
+            self.record_error(
+                shard_index, name, "json-rpc-error",
+                code if isinstance(code, int) and not isinstance(code, bool) else None,
+            )
             raise AlexandriaError(f"{label} returned a JSON-RPC error")
         if "result" not in envelope:
-            self.record_error(shard_index, name, "no-result", f"{label} carried neither result nor error")
+            self.record_error(shard_index, name, "no-result")
             raise AlexandriaError(f"{label} carried neither result nor error")
         result = envelope["result"]
         if isinstance(envelope.get("truncated"), bool) and envelope["truncated"]:
-            self.record_error(shard_index, name, "truncated-response", f"{label} was marked truncated")
+            self.record_error(shard_index, name, "truncated-response")
             raise AlexandriaError(f"{label} was marked truncated")
         if isinstance(result, list) and len(result) >= self.provider["page_limit"]:
-            self.record_error(
-                shard_index, name, "page-limit",
-                f"{label} returned {len(result)} records at the provider's page limit",
-            )
+            self.record_error(shard_index, name, "page-limit", len(result))
             raise AlexandriaError(
                 f"{label} returned a page at the provider's limit, so it may be short"
             )
         return payload, data, result
 
-    def record_error(self, shard_index: int, name: str, code: str, detail: str) -> None:
-        """Append one sanitised receipt. A retry does not erase the earlier one."""
-        shard = self.plan["shards"][shard_index] if shard_index < len(self.plan["shards"]) else None
+    def record_error(self, shard_index: int, name: str, code: str, status=None) -> None:
+        """Append one receipt built here, not copied from anything the provider said.
+
+        A receipt is a durable file, and the only text a transport can reach is
+        its own exception message. A caller-supplied transport that puts its
+        endpoint in that message would otherwise write the endpoint, and any
+        credential inside it, straight to disk. So nothing from an exception is
+        copied: the receipt carries the code this module chose, the class, the
+        shard, the unresolved range, the provider class the plan declared, and
+        one bounded status this module computed. The exception text still
+        reaches the operator on stderr, which is not a file this writes.
+        """
+        shard = self.plan["shards"][shard_index] if 0 <= shard_index < len(self.plan["shards"]) else None
+        if status is not None and not isinstance(status, (int, str)):
+            raise AlexandriaError("an error receipt status must be a number or a short string")
+        if isinstance(status, str) and (len(status) > 64 or not status.replace("-", "").isalnum()):
+            raise AlexandriaError("an error receipt status string must be short and plain")
         receipt = {
-            "class": name,
+            "class": name if name in EVIDENCE_CLASSES else "boundary",
             "code": code,
-            "detail": detail,
             "provider_class": self.provider["class"],
             "shard": shard_index,
+            "status": status,
             "unresolved": (
                 {"end": shard["end"], "start": shard["start"]} if shard else None
             ),
         }
-        with open(self.receipts / ERROR_RECEIPTS, "ab") as handle:
-            handle.write(canonical_bytes(receipt))
-            handle.flush()
-            os.fsync(handle.fileno())
+        path = self.receipts / ERROR_RECEIPTS
+        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = os.open(path, flags, 0o600)
+        except OSError as exc:
+            raise AlexandriaError(f"cannot open the error receipt file: {exc}") from exc
+        try:
+            with os.fdopen(descriptor, "ab", closefd=False) as handle:
+                handle.write(canonical_bytes(receipt))
+                handle.flush()
+                os.fsync(handle.fileno())
+        finally:
+            os.close(descriptor)
 
     # -- the loop ---------------------------------------------------------
 
@@ -210,7 +238,11 @@ class Collector:
             tag = FINALITY_TAGS[policy]
         payload = request_bytes(0, "eth_getBlockByNumber", [tag, False])
         self._spend(len(payload))
-        data = self.transport.request(payload, f"finality boundary under {policy}")
+        try:
+            data = self.transport.request(payload, f"finality boundary under {policy}")
+        except AlexandriaError:
+            self.record_error(-1, "finality", "transport")
+            raise
         self._spend(len(data))
         envelope = load_raw_json(
             data, "finality boundary", max_bytes=MAX_RAW_COMPONENT_BYTES,
@@ -218,6 +250,7 @@ class Collector:
         )
         header = envelope.get("result") if isinstance(envelope, dict) else None
         if not isinstance(header, dict):
+            self.record_error(-1, "finality", "no-result")
             raise AlexandriaError("the finality boundary response carries no header")
         declared = self.plan["finality"]
         if header.get("hash") != declared["block_hash"]:
@@ -238,7 +271,11 @@ class Collector:
             "eth_getBlockByNumber", [hex(shard["end"]), False],
         )
         self._spend(len(payload))
-        data = self.transport.request(payload, f"shard {shard_index} boundary re-read")
+        try:
+            data = self.transport.request(payload, f"shard {shard_index} boundary re-read")
+        except AlexandriaError:
+            self.record_error(shard_index, "boundary-re-read", "transport")
+            raise
         self._spend(len(data))
         envelope = load_raw_json(
             data, f"shard {shard_index} boundary re-read", max_bytes=MAX_RAW_COMPONENT_BYTES,
@@ -246,6 +283,7 @@ class Collector:
         )
         header = envelope.get("result") if isinstance(envelope, dict) else None
         if not isinstance(header, dict) or not isinstance(header.get("hash"), str):
+            self.record_error(shard_index, "boundary-re-read", "no-result")
             raise AlexandriaError(f"shard {shard_index} boundary re-read carries no block hash")
         return header["hash"]
 

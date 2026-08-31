@@ -220,7 +220,7 @@ class ResponseRefusalTests(CollectorTestCase):
             "JSON-RPC error",
         )
         self.assertEqual(receipt["code"], "json-rpc-error")
-        self.assertIn("-32000", receipt["detail"])
+        self.assertEqual(receipt["status"], -32000)
 
     def test_a_response_marked_truncated_refuses_and_leaves_a_receipt(self):
         receipt = self.refuse(
@@ -256,10 +256,74 @@ class ResponseRefusalTests(CollectorTestCase):
         self.assertEqual(receipt["code"], "transport")
 
     def test_no_receipt_carries_the_endpoint_or_a_header(self):
-        self.test_a_json_rpc_error_refuses_and_leaves_a_receipt()
+        """A transport that puts its endpoint in its own message must not reach the file."""
+        leaked = "https://user:hunter2@rpc.example.invalid/v1/SECRET-KEY"
+
+        def leak(_envelope):
+            raise TransportError(f"POST {leaked} failed: connection reset")
+
+        transport = FixtureTransport(self.state, faults={"shard 0 logs": leak})
+        with self.assertRaisesRegex(AlexandriaError, "connection reset"):
+            self.collect(transport=transport)
         body = (self.root / "receipts" / "errors.jsonl").read_text()
-        for secret in ("https://", "fixture.invalid", "secret-token", "Content-Type", "Authorization"):
+        for secret in ("https://", "rpc.example.invalid", "SECRET-KEY", "hunter2",
+                       "Content-Type", "Authorization"):
             self.assertNotIn(secret, body)
+        self.assertEqual(self.receipts()[-1]["code"], "transport")
+
+    def test_a_receipt_carries_no_field_the_provider_wrote(self):
+        self.test_a_json_rpc_error_refuses_and_leaves_a_receipt()
+        self.assertEqual(
+            set(self.receipts()[-1]),
+            {"class", "code", "provider_class", "shard", "status", "unresolved"},
+        )
+
+    def test_a_symlinked_receipts_directory_refuses(self):
+        elsewhere = tempfile.TemporaryDirectory()
+        self.addCleanup(elsewhere.cleanup)
+        root = self.scratch("hostile")
+        (root / "receipts").symlink_to(Path(elsewhere.name))
+        with self.assertRaisesRegex(AlexandriaError, "not a directory"):
+            Collector(self.plan, root, FixtureTransport(self.state))
+        self.assertFalse((Path(elsewhere.name) / "errors.jsonl").exists())
+
+    def test_a_symlinked_receipt_file_refuses(self):
+        elsewhere = tempfile.TemporaryDirectory()
+        self.addCleanup(elsewhere.cleanup)
+        root = self.scratch("hostile-file")
+        (root / "receipts").mkdir()
+        (root / "receipts" / "errors.jsonl").symlink_to(Path(elsewhere.name) / "captured")
+        collector = Collector(self.plan, root, FixtureTransport(self.state))
+        with self.assertRaisesRegex(AlexandriaError, "cannot open the error receipt file"):
+            collector.record_error(0, "logs", "probe")
+        self.assertFalse((Path(elsewhere.name) / "captured").exists())
+
+    def test_a_failed_finality_bind_leaves_a_receipt(self):
+        def fail(_envelope):
+            raise TransportError("finality boundary transport failed")
+
+        transport = FixtureTransport(self.state, faults={"finality boundary under finalized": fail})
+        with self.assertRaisesRegex(AlexandriaError, "transport failed"):
+            self.collect(transport=transport)
+        receipt = self.receipts()[-1]
+        self.assertEqual((receipt["code"], receipt["class"], receipt["shard"]), ("transport", "boundary", -1))
+        self.assertIsNone(receipt["unresolved"])
+
+    def test_a_failed_boundary_re_read_leaves_a_receipt(self):
+        root = self.scratch("interrupted")
+        with self.assertRaises(_Killed):
+            Collector(self.plan, root, KillingTransport(self.state, kill_at="shard 3 logs")).collect()
+
+        def fail(_envelope):
+            raise TransportError("boundary re-read transport failed")
+
+        transport = FixtureTransport(
+            self.state, faults={"shard 2 boundary re-read": fail}
+        )
+        with self.assertRaisesRegex(AlexandriaError, "transport failed"):
+            Collector(self.plan, root, transport).collect()
+        receipt = self.receipts(root)[-1]
+        self.assertEqual((receipt["code"], receipt["class"]), ("transport", "boundary"))
 
     def test_a_retry_does_not_erase_the_earlier_receipt(self):
         self.test_a_json_rpc_error_refuses_and_leaves_a_receipt()
