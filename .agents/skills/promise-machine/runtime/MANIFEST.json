@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 995,
-  "total_bytes": 21663769,
+  "file_count": 1001,
+  "total_bytes": 21754404,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -59,7 +59,7 @@
       "bytes": 9125,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "70c2679e2b28ea0d8c80b124889dd04f8a09aa134603984c2ffae8c4bc0fab02",
+      "sha256": "202906ebaa7cb0c187f209795af7d1eae79bbf923229c9d1ce2927c99959f0a0",
       "source": null
     },
     {
@@ -219,6 +219,18 @@
       "source": "plugins/alexandria/docs/study.md"
     },
     {
+      "bytes": 28205,
+      "path": "plugins/alexandria/docs/usdc-interval-runbook.md",
+      "sha256": "7987cce84de122338662a5c5ed167b8a0d3de68f7635d1ae170214cd2151ddfa",
+      "source": "plugins/alexandria/docs/usdc-interval-runbook.md"
+    },
+    {
+      "bytes": 33392,
+      "path": "plugins/alexandria/docs/usdc-interval-study.md",
+      "sha256": "7497f41814162d289b1ebeb2bed8051c840795e240e01614f341f93feee27888",
+      "source": "plugins/alexandria/docs/usdc-interval-study.md"
+    },
+    {
       "bytes": 1229,
       "path": "plugins/alexandria/examples/README.md",
       "sha256": "e655f79ead2d4076489c6912f6548db838b452444a55afdc23dd55bb25a1bead",
@@ -273,9 +285,9 @@
       "source": "plugins/alexandria/examples/credit-history-v0/sources/clearpool.json"
     },
     {
-      "bytes": 3310,
+      "bytes": 4083,
       "path": "plugins/alexandria/schemas/README.md",
-      "sha256": "786ae7e794a37bdd6c214b9ceecfee782dd72c342cd05a0aea0dae34e974cd42",
+      "sha256": "ac8c212735e53841e5e697e02c0a3e60f830b3e972c3b4f4315a5d3b69ce083f",
       "source": "plugins/alexandria/schemas/README.md"
     },
     {
@@ -337,6 +349,24 @@
       "path": "plugins/alexandria/schemas/demo-summary-v1.schema.json",
       "sha256": "18b449f56c320be00c8b3d2364ec9a2b04357696c6ce1457626102cf63a80660",
       "source": "plugins/alexandria/schemas/demo-summary-v1.schema.json"
+    },
+    {
+      "bytes": 1348,
+      "path": "plugins/alexandria/schemas/interval-checkpoint-v1.schema.json",
+      "sha256": "7021b515ca219da4fac161723247337514c2ba33c17f07c4141ddaedeca5a68a",
+      "source": "plugins/alexandria/schemas/interval-checkpoint-v1.schema.json"
+    },
+    {
+      "bytes": 2639,
+      "path": "plugins/alexandria/schemas/interval-plan-v1.schema.json",
+      "sha256": "63af61ad8754256d944d93d88896da96494190bff4018bbfc3c3e874f9a2ee1f",
+      "source": "plugins/alexandria/schemas/interval-plan-v1.schema.json"
+    },
+    {
+      "bytes": 4101,
+      "path": "plugins/alexandria/schemas/interval-receipt-v1.schema.json",
+      "sha256": "54e078dd3ad19de2340dd427914fad48caa8b556ddd390779739e2ced841077d",
+      "source": "plugins/alexandria/schemas/interval-receipt-v1.schema.json"
     },
     {
       "bytes": 2269,
@@ -403,6 +433,12 @@
       "path": "plugins/alexandria/scripts/alexandria_lib/index.py",
       "sha256": "b4a1a90e3465e5cbf4380634a261f0637d89efbc027fec4aec4b3dafa7c92437",
       "source": "plugins/alexandria/scripts/alexandria_lib/index.py"
+    },
+    {
+      "bytes": 20177,
+      "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
+      "sha256": "78d9d063dc2ae92d23872fe65790cd1ffd79a7f4e2dd54f41b17db9c31475c7c",
+      "source": "plugins/alexandria/scripts/alexandria_lib/interval.py"
     },
     {
       "bytes": 818,
