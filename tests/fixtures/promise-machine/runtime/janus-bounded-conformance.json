@@ -14,7 +14,7 @@
           "binding": {
             "promise_id": "janus-bounded-conformance",
             "scope": "structural binding for janus-bounded-conformance",
-            "subject": "runtime source plugins/janus/scripts/janus.py"
+            "subject": "runtime source plugins/janus/harness/test/WildcatConformance.t.sol#test_gate1_and_gate2_honest_deposit"
           },
           "classes": [
             "checked",
@@ -26,14 +26,14 @@
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/janus/scripts/janus.py",
-            "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+            "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+            "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/janus/scripts/janus.py",
-              "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+              "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+              "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -66,8 +66,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/janus/scripts/janus.py",
-            "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+            "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+            "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
           }
         ],
         "exception": {
@@ -75,13 +75,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/janus/scripts/janus.py",
-          "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+          "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+          "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
         },
         "promise_id": "janus-bounded-conformance",
         "scope": "structural binding for janus-bounded-conformance",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/janus/scripts/janus.py",
+        "subject": "runtime source plugins/janus/harness/test/WildcatConformance.t.sol#test_gate1_and_gate2_honest_deposit",
         "transition": {
           "action": "structurally bind janus-bounded-conformance without running its domain operation",
           "operation_ran": false,
@@ -109,7 +109,7 @@
           "binding": {
             "promise_id": "janus-bounded-conformance",
             "scope": "structural binding for janus-bounded-conformance",
-            "subject": "runtime source plugins/janus/scripts/janus.py"
+            "subject": "runtime source plugins/janus/harness/test/WildcatConformance.t.sol#test_gate1_and_gate2_honest_deposit"
           },
           "classes": [
             "checked",
@@ -121,17 +121,17 @@
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/janus/scripts/janus.py",
-            "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+            "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+            "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/janus/scripts/janus.py",
-              "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+              "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+              "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
             }
           ],
-          "source_digest": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d",
+          "source_digest": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b",
           "transition": {
             "action": "structurally bind janus-bounded-conformance without running its domain operation",
             "operation_ran": false,
@@ -161,8 +161,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/janus/scripts/janus.py",
-            "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+            "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+            "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
           }
         ],
         "exception": {
@@ -170,13 +170,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/janus/scripts/janus.py",
-          "sha256": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d"
+          "path": "plugins/janus/harness/test/WildcatConformance.t.sol",
+          "sha256": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b"
         },
         "promise_id": "janus-bounded-conformance",
         "scope": "structural binding for janus-bounded-conformance",
-        "source_digest": "46f586289cf3def05130fb7870e1f60bb27b1b85a41c2f43630d74a45685d80d",
-        "subject": "runtime source plugins/janus/scripts/janus.py",
+        "source_digest": "6a593a90ed58c14d1428d60817611b120a3c5c32c81dae60fcfa2751ee2e552b",
+        "subject": "runtime source plugins/janus/harness/test/WildcatConformance.t.sol#test_gate1_and_gate2_honest_deposit",
         "transition": {
           "action": "structurally bind janus-bounded-conformance without running its domain operation",
           "operation_ran": false,

@@ -7,7 +7,7 @@
           "binding": {
             "promise_id": "kronos-parked-lane",
             "scope": "structural binding for kronos-parked-lane",
-            "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py"
+            "subject": "runtime source plugins/hexaemeron/tests/test_kronos_scoreboard.py#test_a_park_stores_the_reason_byte_for_byte"
           },
           "classes": [
             "checked",
@@ -19,8 +19,8 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-              "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+              "path": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
+              "sha256": "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -45,8 +45,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-            "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+            "path": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
+            "sha256": "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
           }
         ],
         "exception": {
@@ -55,7 +55,7 @@
         "promise_id": "kronos-parked-lane",
         "scope": "structural binding for kronos-parked-lane",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+        "subject": "runtime source plugins/hexaemeron/tests/test_kronos_scoreboard.py#test_a_park_stores_the_reason_byte_for_byte",
         "transition": {
           "action": "structurally bind kronos-parked-lane without running its domain operation",
           "operation_ran": false,
@@ -76,7 +76,7 @@
           "binding": {
             "promise_id": "kronos-parked-lane",
             "scope": "structural binding for kronos-parked-lane",
-            "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py"
+            "subject": "runtime source plugins/hexaemeron/tests/test_kronos_scoreboard.py#test_a_park_stores_the_reason_byte_for_byte"
           },
           "classes": [
             "checked",
@@ -88,11 +88,11 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-              "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+              "path": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
+              "sha256": "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
             }
           ],
-          "source_digest": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
+          "source_digest": "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1",
           "transition": {
             "action": "structurally bind kronos-parked-lane without running its domain operation",
             "operation_ran": false,
@@ -114,8 +114,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-            "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+            "path": "plugins/hexaemeron/tests/test_kronos_scoreboard.py",
+            "sha256": "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1"
           }
         ],
         "exception": {
@@ -123,8 +123,8 @@
         },
         "promise_id": "kronos-parked-lane",
         "scope": "structural binding for kronos-parked-lane",
-        "source_digest": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
-        "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+        "source_digest": "0fd6c9c81a9211ff07911333c5989b3766aaaeab13d48da50de2033e688cc0f1",
+        "subject": "runtime source plugins/hexaemeron/tests/test_kronos_scoreboard.py#test_a_park_stores_the_reason_byte_for_byte",
         "transition": {
           "action": "structurally bind kronos-parked-lane without running its domain operation",
           "operation_ran": false,

@@ -13,8 +13,8 @@
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-                "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407"
+                "path": "plugins/hexaemeron/tests/test_promise_cases.py",
+                "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735"
               }
             ]
           },
@@ -24,7 +24,7 @@
           "promise": "ephoros-observability-review",
           "scope": "structural binding for ephoros-observability-review",
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-          "subject": "runtime source plugins/hexaemeron/skills/ephoros/SKILL.md",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_cases.py#test_ephoros_review_positive",
           "transition": {
             "action": "structurally bind ephoros-observability-review without running its domain operation",
             "operation_ran": false,
@@ -47,8 +47,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-            "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407"
+            "path": "plugins/hexaemeron/tests/test_promise_cases.py",
+            "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735"
           }
         ],
         "exception": {
@@ -57,7 +57,7 @@
         "promise_id": "ephoros-observability-review",
         "scope": "structural binding for ephoros-observability-review",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/skills/ephoros/SKILL.md",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_cases.py#test_ephoros_review_positive",
         "transition": {
           "action": "structurally bind ephoros-observability-review without running its domain operation",
           "operation_ran": false,
@@ -84,8 +84,8 @@
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-                "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407"
+                "path": "plugins/hexaemeron/tests/test_promise_cases.py",
+                "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735"
               }
             ]
           },
@@ -94,8 +94,8 @@
           },
           "promise": "ephoros-observability-review",
           "scope": "structural binding for ephoros-observability-review",
-          "source_digest": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407",
-          "subject": "runtime source plugins/hexaemeron/skills/ephoros/SKILL.md",
+          "source_digest": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_cases.py#test_ephoros_review_positive",
           "transition": {
             "action": "structurally bind ephoros-observability-review without running its domain operation",
             "operation_ran": false,
@@ -118,8 +118,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/ephoros/SKILL.md",
-            "sha256": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407"
+            "path": "plugins/hexaemeron/tests/test_promise_cases.py",
+            "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735"
           }
         ],
         "exception": {
@@ -127,8 +127,8 @@
         },
         "promise_id": "ephoros-observability-review",
         "scope": "structural binding for ephoros-observability-review",
-        "source_digest": "2017fda2b5bbbea04a69cae4f30d16813114338ad5af47038da1ff2e98772407",
-        "subject": "runtime source plugins/hexaemeron/skills/ephoros/SKILL.md",
+        "source_digest": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_cases.py#test_ephoros_review_positive",
         "transition": {
           "action": "structurally bind ephoros-observability-review without running its domain operation",
           "operation_ran": false,

@@ -13,8 +13,8 @@
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-                "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3"
+                "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+                "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
               }
             ]
           },
@@ -24,7 +24,7 @@
           "promise": "hypomnema-record-placement",
           "scope": "structural binding for hypomnema-record-placement",
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-          "subject": "runtime source plugins/hexaemeron/skills/hypomnema/SKILL.md",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
           "transition": {
             "action": "structurally bind hypomnema-record-placement without running its domain operation",
             "operation_ran": false,
@@ -47,8 +47,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-            "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           }
         ],
         "exception": {
@@ -57,7 +57,7 @@
         "promise_id": "hypomnema-record-placement",
         "scope": "structural binding for hypomnema-record-placement",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/skills/hypomnema/SKILL.md",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
         "transition": {
           "action": "structurally bind hypomnema-record-placement without running its domain operation",
           "operation_ran": false,
@@ -84,8 +84,8 @@
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-                "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3"
+                "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+                "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
               }
             ]
           },
@@ -94,8 +94,8 @@
           },
           "promise": "hypomnema-record-placement",
           "scope": "structural binding for hypomnema-record-placement",
-          "source_digest": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
-          "subject": "runtime source plugins/hexaemeron/skills/hypomnema/SKILL.md",
+          "source_digest": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
           "transition": {
             "action": "structurally bind hypomnema-record-placement without running its domain operation",
             "operation_ran": false,
@@ -118,8 +118,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/hypomnema/SKILL.md",
-            "sha256": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           }
         ],
         "exception": {
@@ -127,8 +127,8 @@
         },
         "promise_id": "hypomnema-record-placement",
         "scope": "structural binding for hypomnema-record-placement",
-        "source_digest": "997b3273161cd9f55c6d1d5cc023ae289332c5cf87b81962045f8fb72cb8f3b3",
-        "subject": "runtime source plugins/hexaemeron/skills/hypomnema/SKILL.md",
+        "source_digest": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
         "transition": {
           "action": "structurally bind hypomnema-record-placement without running its domain operation",
           "operation_ran": false,

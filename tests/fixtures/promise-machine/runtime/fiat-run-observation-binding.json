@@ -7,7 +7,7 @@
           "binding": {
             "promise_id": "fiat-run-observation-binding",
             "scope": "structural binding for fiat-run-observation-binding",
-            "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+            "subject": "runtime source plugins/hexaemeron/tests/test_run_observation_binding.py#test_normal_prefix_binds_to_the_selected_receipt"
           },
           "classes": [
             "checked",
@@ -19,8 +19,8 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-              "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+              "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
+              "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -45,8 +45,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+            "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
+            "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9"
           }
         ],
         "exception": {
@@ -55,7 +55,7 @@
         "promise_id": "fiat-run-observation-binding",
         "scope": "structural binding for fiat-run-observation-binding",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+        "subject": "runtime source plugins/hexaemeron/tests/test_run_observation_binding.py#test_normal_prefix_binds_to_the_selected_receipt",
         "transition": {
           "action": "structurally bind fiat-run-observation-binding without running its domain operation",
           "operation_ran": false,
@@ -76,7 +76,7 @@
           "binding": {
             "promise_id": "fiat-run-observation-binding",
             "scope": "structural binding for fiat-run-observation-binding",
-            "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+            "subject": "runtime source plugins/hexaemeron/tests/test_run_observation_binding.py#test_normal_prefix_binds_to_the_selected_receipt"
           },
           "classes": [
             "checked",
@@ -88,11 +88,11 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-              "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+              "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
+              "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9"
             }
           ],
-          "source_digest": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
+          "source_digest": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9",
           "transition": {
             "action": "structurally bind fiat-run-observation-binding without running its domain operation",
             "operation_ran": false,
@@ -114,8 +114,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+            "path": "plugins/hexaemeron/tests/test_run_observation_binding.py",
+            "sha256": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9"
           }
         ],
         "exception": {
@@ -123,8 +123,8 @@
         },
         "promise_id": "fiat-run-observation-binding",
         "scope": "structural binding for fiat-run-observation-binding",
-        "source_digest": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-        "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+        "source_digest": "0d5bc849287e5811a5027575adcbeb66a05532de317d06714547c62cd1e7a6c9",
+        "subject": "runtime source plugins/hexaemeron/tests/test_run_observation_binding.py#test_normal_prefix_binds_to_the_selected_receipt",
         "transition": {
           "action": "structurally bind fiat-run-observation-binding without running its domain operation",
           "operation_ran": false,

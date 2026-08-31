@@ -7,7 +7,7 @@
           "binding": {
             "promise_id": "lazarus-exact-replay",
             "scope": "structural binding for lazarus-exact-replay",
-            "subject": "runtime source plugins/lazarus/scripts/lazarus.py"
+            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           },
           "classes": [
             "checked",
@@ -20,8 +20,8 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/lazarus/scripts/lazarus.py",
-              "sha256": "3d9e0d692ce7167eff795ed8d724026220613e2c90bf58aec2ffc99f9957113b"
+              "path": "plugins/lazarus/tests/test_goldfinch.py",
+              "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -47,8 +47,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/scripts/lazarus.py",
-            "sha256": "3d9e0d692ce7167eff795ed8d724026220613e2c90bf58aec2ffc99f9957113b"
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           }
         ],
         "exception": {
@@ -57,7 +57,7 @@
         "promise_id": "lazarus-exact-replay",
         "scope": "structural binding for lazarus-exact-replay",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/lazarus/scripts/lazarus.py",
+        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-exact-replay without running its domain operation",
           "operation_ran": false,
@@ -78,7 +78,7 @@
           "binding": {
             "promise_id": "lazarus-exact-replay",
             "scope": "structural binding for lazarus-exact-replay",
-            "subject": "runtime source plugins/lazarus/scripts/lazarus.py"
+            "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           },
           "classes": [
             "checked",
@@ -91,11 +91,11 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/lazarus/scripts/lazarus.py",
-              "sha256": "3d9e0d692ce7167eff795ed8d724026220613e2c90bf58aec2ffc99f9957113b"
+              "path": "plugins/lazarus/tests/test_goldfinch.py",
+              "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
             }
           ],
-          "source_digest": "3d9e0d692ce7167eff795ed8d724026220613e2c90bf58aec2ffc99f9957113b",
+          "source_digest": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
           "transition": {
             "action": "structurally bind lazarus-exact-replay without running its domain operation",
             "operation_ran": false,
@@ -118,8 +118,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/lazarus/scripts/lazarus.py",
-            "sha256": "3d9e0d692ce7167eff795ed8d724026220613e2c90bf58aec2ffc99f9957113b"
+            "path": "plugins/lazarus/tests/test_goldfinch.py",
+            "sha256": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b"
           }
         ],
         "exception": {
@@ -127,8 +127,8 @@
         },
         "promise_id": "lazarus-exact-replay",
         "scope": "structural binding for lazarus-exact-replay",
-        "source_digest": "3d9e0d692ce7167eff795ed8d724026220613e2c90bf58aec2ffc99f9957113b",
-        "subject": "runtime source plugins/lazarus/scripts/lazarus.py",
+        "source_digest": "e4cf53f4425fc3e4883e898ef3ba139fff7998e7b184d9bc483d57f549d0e77b",
+        "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance",
         "transition": {
           "action": "structurally bind lazarus-exact-replay without running its domain operation",
           "operation_ran": false,

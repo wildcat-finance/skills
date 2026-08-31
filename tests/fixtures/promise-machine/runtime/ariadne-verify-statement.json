@@ -14,7 +14,7 @@
           "binding": {
             "promise_id": "ariadne-verify-statement",
             "scope": "structural binding for ariadne-verify-statement",
-            "subject": "runtime source plugins/ariadne/scripts/ariadne.py"
+            "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked"
           },
           "classes": [
             "checked",
@@ -25,14 +25,14 @@
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/ariadne/scripts/ariadne.py",
-            "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10"
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/ariadne/scripts/ariadne.py",
-              "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10"
+              "path": "plugins/ariadne/tests/test_examples.py",
+              "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -64,8 +64,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/ariadne/scripts/ariadne.py",
-            "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10"
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
           }
         ],
         "exception": {
@@ -73,13 +73,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/ariadne/scripts/ariadne.py",
-          "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10"
+          "path": "plugins/ariadne/tests/test_examples.py",
+          "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
         },
         "promise_id": "ariadne-verify-statement",
         "scope": "structural binding for ariadne-verify-statement",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/ariadne/scripts/ariadne.py",
+        "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked",
         "transition": {
           "action": "structurally bind ariadne-verify-statement without running its domain operation",
           "operation_ran": false,
@@ -107,7 +107,7 @@
           "binding": {
             "promise_id": "ariadne-verify-statement",
             "scope": "structural binding for ariadne-verify-statement",
-            "subject": "runtime source plugins/ariadne/scripts/ariadne.py"
+            "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked"
           },
           "classes": [
             "checked",
@@ -118,17 +118,17 @@
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/ariadne/scripts/ariadne.py",
-            "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10"
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/ariadne/scripts/ariadne.py",
-              "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10"
+              "path": "plugins/ariadne/tests/test_examples.py",
+              "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
             }
           ],
-          "source_digest": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
+          "source_digest": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8",
           "transition": {
             "action": "structurally bind ariadne-verify-statement without running its domain operation",
             "operation_ran": false,
@@ -157,8 +157,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/ariadne/scripts/ariadne.py",
-            "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10"
+            "path": "plugins/ariadne/tests/test_examples.py",
+            "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
           }
         ],
         "exception": {
@@ -166,13 +166,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/ariadne/scripts/ariadne.py",
-          "sha256": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10"
+          "path": "plugins/ariadne/tests/test_examples.py",
+          "sha256": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8"
         },
         "promise_id": "ariadne-verify-statement",
         "scope": "structural binding for ariadne-verify-statement",
-        "source_digest": "f8686b026d843ef41990162ffff00c7b8ef024dc1433447d11e63a89869f7b10",
-        "subject": "runtime source plugins/ariadne/scripts/ariadne.py",
+        "source_digest": "94278b118f5f9771c96c9d433c56708cdd45e37682a07880f775bff9391cbac8",
+        "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked",
         "transition": {
           "action": "structurally bind ariadne-verify-statement without running its domain operation",
           "operation_ran": false,

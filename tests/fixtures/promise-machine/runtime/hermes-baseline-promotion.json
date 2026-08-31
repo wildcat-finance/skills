@@ -7,7 +7,7 @@
           "binding": {
             "promise_id": "hermes-baseline-promotion",
             "scope": "structural binding for hermes-baseline-promotion",
-            "subject": "runtime source plugins/hermes/skills/hermes/scripts/hermes.py"
+            "subject": "runtime source plugins/hermes/skills/hermes/scripts/test_hermes.py#test_accepts_and_promotes_a_fully_verified_candidate"
           },
           "classes": [
             "checked",
@@ -19,8 +19,8 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
-              "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+              "path": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
+              "sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -45,8 +45,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
-            "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+            "path": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
+            "sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b"
           }
         ],
         "exception": {
@@ -55,7 +55,7 @@
         "promise_id": "hermes-baseline-promotion",
         "scope": "structural binding for hermes-baseline-promotion",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hermes/skills/hermes/scripts/hermes.py",
+        "subject": "runtime source plugins/hermes/skills/hermes/scripts/test_hermes.py#test_accepts_and_promotes_a_fully_verified_candidate",
         "transition": {
           "action": "structurally bind hermes-baseline-promotion without running its domain operation",
           "operation_ran": false,
@@ -76,7 +76,7 @@
           "binding": {
             "promise_id": "hermes-baseline-promotion",
             "scope": "structural binding for hermes-baseline-promotion",
-            "subject": "runtime source plugins/hermes/skills/hermes/scripts/hermes.py"
+            "subject": "runtime source plugins/hermes/skills/hermes/scripts/test_hermes.py#test_accepts_and_promotes_a_fully_verified_candidate"
           },
           "classes": [
             "checked",
@@ -88,11 +88,11 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
-              "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+              "path": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
+              "sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b"
             }
           ],
-          "source_digest": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805",
+          "source_digest": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b",
           "transition": {
             "action": "structurally bind hermes-baseline-promotion without running its domain operation",
             "operation_ran": false,
@@ -114,8 +114,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hermes/skills/hermes/scripts/hermes.py",
-            "sha256": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805"
+            "path": "plugins/hermes/skills/hermes/scripts/test_hermes.py",
+            "sha256": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b"
           }
         ],
         "exception": {
@@ -123,8 +123,8 @@
         },
         "promise_id": "hermes-baseline-promotion",
         "scope": "structural binding for hermes-baseline-promotion",
-        "source_digest": "36e80da4405645486e4f34caf6fa59ed795d864c685e04a9b37a959bc43c1805",
-        "subject": "runtime source plugins/hermes/skills/hermes/scripts/hermes.py",
+        "source_digest": "cbd8ea125cabd63943eb82737d13e7acb18e9d9a8b434ca2ea2e373186d2c05b",
+        "subject": "runtime source plugins/hermes/skills/hermes/scripts/test_hermes.py#test_accepts_and_promotes_a_fully_verified_candidate",
         "transition": {
           "action": "structurally bind hermes-baseline-promotion without running its domain operation",
           "operation_ran": false,

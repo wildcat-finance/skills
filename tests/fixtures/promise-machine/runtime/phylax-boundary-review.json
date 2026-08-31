@@ -13,8 +13,8 @@
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-                "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d"
+                "path": "plugins/hexaemeron/tests/test_promise_cases.py",
+                "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735"
               }
             ]
           },
@@ -24,7 +24,7 @@
           "promise": "phylax-boundary-review",
           "scope": "structural binding for phylax-boundary-review",
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-          "subject": "runtime source plugins/hexaemeron/skills/phylax/SKILL.md",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_cases.py#test_phylax_review_positive",
           "transition": {
             "action": "structurally bind phylax-boundary-review without running its domain operation",
             "operation_ran": false,
@@ -47,8 +47,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-            "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d"
+            "path": "plugins/hexaemeron/tests/test_promise_cases.py",
+            "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735"
           }
         ],
         "exception": {
@@ -57,7 +57,7 @@
         "promise_id": "phylax-boundary-review",
         "scope": "structural binding for phylax-boundary-review",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/skills/phylax/SKILL.md",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_cases.py#test_phylax_review_positive",
         "transition": {
           "action": "structurally bind phylax-boundary-review without running its domain operation",
           "operation_ran": false,
@@ -84,8 +84,8 @@
             "references": [
               {
                 "evidence_class": "checked",
-                "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-                "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d"
+                "path": "plugins/hexaemeron/tests/test_promise_cases.py",
+                "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735"
               }
             ]
           },
@@ -94,8 +94,8 @@
           },
           "promise": "phylax-boundary-review",
           "scope": "structural binding for phylax-boundary-review",
-          "source_digest": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d",
-          "subject": "runtime source plugins/hexaemeron/skills/phylax/SKILL.md",
+          "source_digest": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
+          "subject": "runtime source plugins/hexaemeron/tests/test_promise_cases.py#test_phylax_review_positive",
           "transition": {
             "action": "structurally bind phylax-boundary-review without running its domain operation",
             "operation_ran": false,
@@ -118,8 +118,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/phylax/SKILL.md",
-            "sha256": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d"
+            "path": "plugins/hexaemeron/tests/test_promise_cases.py",
+            "sha256": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735"
           }
         ],
         "exception": {
@@ -127,8 +127,8 @@
         },
         "promise_id": "phylax-boundary-review",
         "scope": "structural binding for phylax-boundary-review",
-        "source_digest": "fc910735a3f1df7390bf4544d4f8863724615f48b4d0413e92f8d98d7bc0e73d",
-        "subject": "runtime source plugins/hexaemeron/skills/phylax/SKILL.md",
+        "source_digest": "8a8836db67bc385c8311001da3aa56e7b712df2cd255f1654f7f7c025e0bc735",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_cases.py#test_phylax_review_positive",
         "transition": {
           "action": "structurally bind phylax-boundary-review without running its domain operation",
           "operation_ran": false,

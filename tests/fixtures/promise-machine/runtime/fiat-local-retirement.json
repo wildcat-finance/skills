@@ -7,7 +7,7 @@
           "binding": {
             "promise_id": "fiat-local-retirement",
             "scope": "structural binding for fiat-local-retirement",
-            "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_local_retirement.py#test_terminal_archive_is_local_and_ignored_by_git"
           },
           "classes": [
             "checked",
@@ -19,8 +19,8 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-              "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+              "path": "plugins/hexaemeron/tests/test_fiat_local_retirement.py",
+              "sha256": "d89a1baad35e234733f5897facb33cfa9c3188b782dd46b9abd35b4912505a98"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -45,8 +45,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+            "path": "plugins/hexaemeron/tests/test_fiat_local_retirement.py",
+            "sha256": "d89a1baad35e234733f5897facb33cfa9c3188b782dd46b9abd35b4912505a98"
           }
         ],
         "exception": {
@@ -55,7 +55,7 @@
         "promise_id": "fiat-local-retirement",
         "scope": "structural binding for fiat-local-retirement",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_local_retirement.py#test_terminal_archive_is_local_and_ignored_by_git",
         "transition": {
           "action": "structurally bind fiat-local-retirement without running its domain operation",
           "operation_ran": false,
@@ -76,7 +76,7 @@
           "binding": {
             "promise_id": "fiat-local-retirement",
             "scope": "structural binding for fiat-local-retirement",
-            "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py"
+            "subject": "runtime source plugins/hexaemeron/tests/test_fiat_local_retirement.py#test_terminal_archive_is_local_and_ignored_by_git"
           },
           "classes": [
             "checked",
@@ -88,11 +88,11 @@
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-              "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+              "path": "plugins/hexaemeron/tests/test_fiat_local_retirement.py",
+              "sha256": "d89a1baad35e234733f5897facb33cfa9c3188b782dd46b9abd35b4912505a98"
             }
           ],
-          "source_digest": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
+          "source_digest": "d89a1baad35e234733f5897facb33cfa9c3188b782dd46b9abd35b4912505a98",
           "transition": {
             "action": "structurally bind fiat-local-retirement without running its domain operation",
             "operation_ran": false,
@@ -114,8 +114,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
-            "sha256": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115"
+            "path": "plugins/hexaemeron/tests/test_fiat_local_retirement.py",
+            "sha256": "d89a1baad35e234733f5897facb33cfa9c3188b782dd46b9abd35b4912505a98"
           }
         ],
         "exception": {
@@ -123,8 +123,8 @@
         },
         "promise_id": "fiat-local-retirement",
         "scope": "structural binding for fiat-local-retirement",
-        "source_digest": "310dac029bca484532900068257fd8c6e9836e31e5f87b55aab9c8d4c0261115",
-        "subject": "runtime source plugins/hexaemeron/skills/fiat/scripts/hexctl.py",
+        "source_digest": "d89a1baad35e234733f5897facb33cfa9c3188b782dd46b9abd35b4912505a98",
+        "subject": "runtime source plugins/hexaemeron/tests/test_fiat_local_retirement.py#test_terminal_archive_is_local_and_ignored_by_git",
         "transition": {
           "action": "structurally bind fiat-local-retirement without running its domain operation",
           "operation_ran": false,

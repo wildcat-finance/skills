@@ -208,6 +208,7 @@ def fixture_runtime_binding(source, digest):
     negative["finding"] = "PM095"
     return {
         "source": source,
+        "selector": "test_positive",
         "sha256": digest,
         "reader": "python-result-adapter-v1",
         "bindings": dict(PYTHON_RUNTIME_BINDINGS),
@@ -3188,7 +3189,15 @@ class PromiseCoverageTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     set(binding),
-                    {"source", "sha256", "reader", "bindings", "positive", "negative"},
+                    {
+                        "source",
+                        "selector",
+                        "sha256",
+                        "reader",
+                        "bindings",
+                        "positive",
+                        "negative",
+                    },
                 )
                 self.assertIn(
                     binding["reader"],
@@ -3204,6 +3213,12 @@ class PromiseCoverageTests(unittest.TestCase):
                 self.assertNotIn(native_map, native_maps)
                 native_maps.add(native_map)
                 source = ROOT / binding["source"]
+                row = next(
+                    item for item in coverage["rows"] if item["promise_id"] == promise_id
+                )
+                positive_evidence = coverage["evidence"][row["cases"]["P"]]
+                self.assertEqual(binding["source"], positive_evidence["path"])
+                self.assertEqual(binding["selector"], positive_evidence["selector"])
                 self.assertTrue(source.is_file())
                 self.assertEqual(
                     hashlib.sha256(source.read_bytes()).hexdigest(), binding["sha256"]
@@ -3503,6 +3518,105 @@ class PromiseCoverageTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM070", [item["code"] for item in report["findings"]])
+
+    def test_runtime_binding_source_must_be_the_covered_positive_surface(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            coverage_path, document = write_coverage_fixture(target)
+            skill = target / "plugins/hexaemeron/skills/elenchus/SKILL.md"
+            skill.write_text(
+                skill.read_text(encoding="utf-8").replace(
+                    "- Consequence: 1", "- Consequence: 2"
+                ),
+                encoding="utf-8",
+            )
+            unrelated = target / "tests" / "unrelated.py"
+            unrelated.write_text("def unrelated():\n    pass\n", encoding="utf-8")
+            source = unrelated.relative_to(target).as_posix()
+            source_digest = hashlib.sha256(unrelated.read_bytes()).hexdigest()
+            values = {
+                "promise_id": "example-check",
+                "subject": f"runtime source {source}",
+                "scope": "structural binding for example-check",
+                "evidence_references": [
+                    {
+                        "path": source,
+                        "sha256": source_digest,
+                        "evidence_class": "checked",
+                    }
+                ],
+                "evidence_classes": ["checked"],
+                "unknowns": [
+                    {
+                        "code": "domain-operation-not-run",
+                        "detail": "The structural reader did not run the domain operation.",
+                    }
+                ],
+                "transition": {
+                    "status": "structurally-bound",
+                    "action": "structurally bind example-check without running its domain operation",
+                    "operation_ran": False,
+                },
+                "exception": {"status": "none"},
+                "source_digest": source_digest,
+            }
+            positive = {
+                "schema": "promise-machine-python-result-adapter/v1",
+                "adapter_output": {},
+                "promise_machine": copy.deepcopy(values),
+            }
+            for field, dotted in PYTHON_RUNTIME_BINDINGS.items():
+                cursor = positive
+                parts = dotted.split(".")
+                for part in parts[:-1]:
+                    cursor = cursor.setdefault(part, {})
+                cursor[parts[-1]] = copy.deepcopy(values[field])
+            negative = mutate_runtime_field(
+                positive,
+                {"bindings": PYTHON_RUNTIME_BINDINGS},
+                "source_digest",
+                "0" * 64,
+            )
+            specimen_path = (
+                target
+                / "tests"
+                / "fixtures"
+                / "promise-machine"
+                / "runtime"
+                / "example-check.json"
+            )
+            specimen_path.parent.mkdir(parents=True)
+            specimen_path.write_text(
+                json.dumps(
+                    {
+                        "schema": "promise-machine-runtime-specimens/v1",
+                        "specimens": {"positive": positive, "negative": negative},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            specimen_digest = hashlib.sha256(specimen_path.read_bytes()).hexdigest()
+            binding = fixture_runtime_binding(source, source_digest)
+            for kind in ("positive", "negative"):
+                binding[kind]["path"] = specimen_path.relative_to(target).as_posix()
+                binding[kind]["sha256"] = specimen_digest
+            document["runtime"] = {"example-check": binding}
+            coverage_path.write_text(json.dumps(document), encoding="utf-8")
+            completed = run_cli(
+                "coverage",
+                "--check",
+                "--root",
+                target,
+                "--group",
+                "executable",
+                "--json",
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM095", [item["code"] for item in report["findings"]])
+        self.assertTrue(
+            any("positive evidence" in item["message"] for item in report["findings"])
+        )
 
     def test_runtime_binding_source_digest_must_be_current(self):
         with tempfile.TemporaryDirectory() as directory:

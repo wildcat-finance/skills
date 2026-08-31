@@ -14,7 +14,7 @@
           "binding": {
             "promise_id": "tabularium-release-verification",
             "scope": "structural binding for tabularium-release-verification",
-            "subject": "runtime source plugins/tabularium/scripts/tabularium.py"
+            "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites"
           },
           "classes": [
             "checked",
@@ -26,14 +26,14 @@
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/tabularium/scripts/tabularium.py",
-            "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+            "path": "plugins/tabularium/tests/test_release.py",
+            "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/tabularium/scripts/tabularium.py",
-              "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+              "path": "plugins/tabularium/tests/test_release.py",
+              "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -66,8 +66,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/tabularium/scripts/tabularium.py",
-            "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+            "path": "plugins/tabularium/tests/test_release.py",
+            "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
           }
         ],
         "exception": {
@@ -75,13 +75,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/tabularium/scripts/tabularium.py",
-          "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+          "path": "plugins/tabularium/tests/test_release.py",
+          "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
         },
         "promise_id": "tabularium-release-verification",
         "scope": "structural binding for tabularium-release-verification",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/tabularium/scripts/tabularium.py",
+        "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites",
         "transition": {
           "action": "structurally bind tabularium-release-verification without running its domain operation",
           "operation_ran": false,
@@ -109,7 +109,7 @@
           "binding": {
             "promise_id": "tabularium-release-verification",
             "scope": "structural binding for tabularium-release-verification",
-            "subject": "runtime source plugins/tabularium/scripts/tabularium.py"
+            "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites"
           },
           "classes": [
             "checked",
@@ -121,17 +121,17 @@
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/tabularium/scripts/tabularium.py",
-            "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+            "path": "plugins/tabularium/tests/test_release.py",
+            "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/tabularium/scripts/tabularium.py",
-              "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+              "path": "plugins/tabularium/tests/test_release.py",
+              "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
             }
           ],
-          "source_digest": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
+          "source_digest": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695",
           "transition": {
             "action": "structurally bind tabularium-release-verification without running its domain operation",
             "operation_ran": false,
@@ -161,8 +161,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/tabularium/scripts/tabularium.py",
-            "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+            "path": "plugins/tabularium/tests/test_release.py",
+            "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
           }
         ],
         "exception": {
@@ -170,13 +170,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/tabularium/scripts/tabularium.py",
-          "sha256": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f"
+          "path": "plugins/tabularium/tests/test_release.py",
+          "sha256": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695"
         },
         "promise_id": "tabularium-release-verification",
         "scope": "structural binding for tabularium-release-verification",
-        "source_digest": "733c4c67e327fa5cf5818e50aa612d8bd8dc23a276a53d46cd5e5d037dc54d0f",
-        "subject": "runtime source plugins/tabularium/scripts/tabularium.py",
+        "source_digest": "a9a762f780d5a4f2935c3442bb2ba3050ecf13580eb38674bd670a0c66256695",
+        "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites",
         "transition": {
           "action": "structurally bind tabularium-release-verification without running its domain operation",
           "operation_ran": false,

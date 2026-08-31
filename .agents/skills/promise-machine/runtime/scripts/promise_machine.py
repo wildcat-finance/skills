@@ -520,6 +520,7 @@ RUNTIME_BINDING_KEYS = {
 RUNTIME_LEVEL_THREE_KEYS = {"authority", "inspectable_evidence"}
 RUNTIME_CATALOGUE_KEYS = {
     "source",
+    "selector",
     "sha256",
     "reader",
     "bindings",
@@ -530,11 +531,6 @@ RUNTIME_READER_SCHEMAS = {
     "native-json-v1": "promise-machine-native-json-binding/v1",
     "python-result-adapter-v1": "promise-machine-python-result-adapter/v1",
     "markdown-result-adapter-v1": "promise-machine-markdown-result-adapter/v1",
-}
-RUNTIME_READER_EXTENSIONS = {
-    "native-json-v1": ".json",
-    "python-result-adapter-v1": ".py",
-    "markdown-result-adapter-v1": ".md",
 }
 RUNTIME_READER_CONTAINERS = {
     "native-json-v1": "native_document",
@@ -4187,8 +4183,66 @@ def runtime_binding_map_error(reader: str, mappings, expected_fields: set[str]):
     return None
 
 
+def runtime_positive_evidence(document, promise_id: str):
+    rows = document.get("rows") if isinstance(document, dict) else None
+    evidence = document.get("evidence") if isinstance(document, dict) else None
+    if not isinstance(rows, list) or not isinstance(evidence, dict):
+        return None, "coverage rows or evidence catalogue is unavailable"
+    matches = [
+        row
+        for row in rows
+        if isinstance(row, dict) and row.get("promise_id") == promise_id
+    ]
+    if len(matches) != 1:
+        return None, "promise does not have one exact coverage row"
+    cases = matches[0].get("cases")
+    positive_id = cases.get("P") if isinstance(cases, dict) else None
+    descriptor = evidence.get(positive_id) if isinstance(positive_id, str) else None
+    if (
+        not isinstance(descriptor, dict)
+        or not closed_non_empty_scalar(descriptor.get("path"))
+        or not closed_non_empty_scalar(descriptor.get("selector"))
+    ):
+        return None, "promise does not resolve one covered positive evidence surface"
+    return descriptor, None
+
+
+def runtime_positive_source_error(root: Path, binding, positive_evidence):
+    if not isinstance(positive_evidence, dict):
+        return "covered positive evidence is unavailable"
+    expected_source = positive_evidence.get("path")
+    expected_selector = positive_evidence.get("selector")
+    if binding.get("source") != expected_source or binding.get("selector") != expected_selector:
+        return (
+            "runtime source and selector do not match the promise's covered positive "
+            f"evidence surface {expected_source!r}#{expected_selector!r}"
+        )
+    actual, error = runtime_path_digest(root, expected_source, MAX_RUNTIME_SOURCE_BYTES)
+    if error is not None:
+        return f"covered positive evidence source {error}"
+    try:
+        payload = bounded_read_bytes(
+            root / expected_source, root, MAX_RUNTIME_SOURCE_BYTES
+        )
+        text = payload.decode("utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
+        return f"covered positive evidence source is not bounded UTF-8: {exc}"
+    if not selector_resolves(Path(expected_source), text, expected_selector):
+        return (
+            f"covered positive selector {expected_selector!r} does not resolve in "
+            f"{expected_source!r}"
+        )
+    if actual != binding.get("sha256"):
+        return "covered positive evidence source and runtime digest disagree"
+    return None
+
+
 def validate_runtime_catalogue_entry(
-    root: Path, record: PromiseRecord, binding, binding_path: str
+    root: Path,
+    record: PromiseRecord,
+    binding,
+    binding_path: str,
+    positive_evidence=None,
 ):
     findings: list[Finding] = []
     if not isinstance(binding, dict) or set(binding) != RUNTIME_CATALOGUE_KEYS:
@@ -4197,7 +4251,7 @@ def validate_runtime_catalogue_entry(
                 "PM070",
                 "structural",
                 binding_path,
-                "runtime binding must contain source, sha256, reader, bindings, positive and negative",
+                "runtime binding must contain source, selector, sha256, reader, bindings, positive and negative",
                 "name one bounded native reader and its source-bound positive and negative specimens",
                 promise_id=record.promise_id,
             )
@@ -4240,6 +4294,21 @@ def validate_runtime_catalogue_entry(
             )
         )
 
+    positive_source_error = runtime_positive_source_error(
+        root, binding, positive_evidence
+    )
+    if positive_source_error is not None:
+        findings.append(
+            Finding(
+                "PM070",
+                "identity",
+                binding_path,
+                positive_source_error,
+                "bind the runtime row to its exact covered P evidence path and selector",
+                promise_id=record.promise_id,
+            )
+        )
+
     reader = binding["reader"]
     if reader not in RUNTIME_READER_BINDINGS:
         findings.append(
@@ -4249,17 +4318,6 @@ def validate_runtime_catalogue_entry(
                 binding_path,
                 f"runtime reader is unsupported: {reader!r}",
                 "use the native JSON, Python-result, or Markdown-result reader",
-                promise_id=record.promise_id,
-            )
-        )
-    elif isinstance(source, str) and Path(source).suffix != RUNTIME_READER_EXTENSIONS[reader]:
-        findings.append(
-            Finding(
-                "PM070",
-                "structural",
-                binding_path,
-                f"runtime reader {reader!r} does not match source suffix {Path(source).suffix!r}",
-                "select the bounded reader for the source's domain-native format",
                 promise_id=record.promise_id,
             )
         )
@@ -4580,7 +4638,7 @@ def validate_runtime_result(
             f"result, catalogue, and bounded source digest do not agree ({native['source_digest']!r}, {source_digest!r}, {actual_source!r})",
         )
 
-    expected_subject = f"runtime source {source}"
+    expected_subject = f"runtime source {source}#{binding.get('selector')}"
     expected_scope = f"structural binding for {record.promise_id}"
     if native["promise_id"] != record.promise_id:
         return refuse("promise_id", "result promise identity does not match its runtime row")
@@ -4742,8 +4800,22 @@ def check_runtime(root: Path, inventory: Inventory):
         record = records[promise_id]
         binding = catalogue[promise_id]
         binding_path = f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}"
+        positive_evidence, positive_error = runtime_positive_evidence(
+            document, promise_id
+        )
+        if positive_error is not None:
+            findings.append(
+                runtime_finding(
+                    record,
+                    binding,
+                    binding_path,
+                    "source",
+                    positive_error,
+                )
+            )
+            continue
         catalogue_findings = validate_runtime_catalogue_entry(
-            root, record, binding, binding_path
+            root, record, binding, binding_path, positive_evidence
         )
         if catalogue_findings:
             findings.append(
@@ -5002,12 +5074,14 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
             )
         )
     for promise_id in sorted(required_runtime & actual_runtime):
+        positive_evidence, _ = runtime_positive_evidence(document, promise_id)
         findings.extend(
             validate_runtime_catalogue_entry(
                 root,
                 expected[promise_id],
                 runtime_catalog[promise_id],
                 f"{COVERAGE_PATH.as_posix()}#runtime.{promise_id}",
+                positive_evidence,
             )
         )
 

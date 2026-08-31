@@ -14,7 +14,7 @@
           "binding": {
             "promise_id": "kronos-fiat-dispatch",
             "scope": "structural binding for kronos-fiat-dispatch",
-            "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py"
+            "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases"
           },
           "classes": [
             "checked",
@@ -26,14 +26,14 @@
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-            "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-              "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+              "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+              "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
             }
           ],
           "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
@@ -66,8 +66,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-            "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           }
         ],
         "exception": {
@@ -75,13 +75,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-          "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+          "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+          "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
         },
         "promise_id": "kronos-fiat-dispatch",
         "scope": "structural binding for kronos-fiat-dispatch",
         "source_digest": "0000000000000000000000000000000000000000000000000000000000000000",
-        "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
         "transition": {
           "action": "structurally bind kronos-fiat-dispatch without running its domain operation",
           "operation_ran": false,
@@ -109,7 +109,7 @@
           "binding": {
             "promise_id": "kronos-fiat-dispatch",
             "scope": "structural binding for kronos-fiat-dispatch",
-            "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py"
+            "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases"
           },
           "classes": [
             "checked",
@@ -121,17 +121,17 @@
           },
           "inspectable": {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-            "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           },
           "references": [
             {
               "evidence_class": "checked",
-              "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-              "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+              "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+              "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
             }
           ],
-          "source_digest": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
+          "source_digest": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
           "transition": {
             "action": "structurally bind kronos-fiat-dispatch without running its domain operation",
             "operation_ran": false,
@@ -161,8 +161,8 @@
         "evidence_references": [
           {
             "evidence_class": "checked",
-            "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-            "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+            "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+            "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
           }
         ],
         "exception": {
@@ -170,13 +170,13 @@
         },
         "inspectable_evidence": {
           "evidence_class": "checked",
-          "path": "plugins/hexaemeron/skills/kronos/scripts/kronos.py",
-          "sha256": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26"
+          "path": "plugins/hexaemeron/tests/test_promise_evaluation_cases.py",
+          "sha256": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437"
         },
         "promise_id": "kronos-fiat-dispatch",
         "scope": "structural binding for kronos-fiat-dispatch",
-        "source_digest": "5136c11b021208ee3ab0d82033bd6531745c289436dc394089adc31554947b26",
-        "subject": "runtime source plugins/hexaemeron/skills/kronos/scripts/kronos.py",
+        "source_digest": "e63a8c23fcd87607d0b78127df6e0e6ccdbc75ff548ba9326883be9890d0c437",
+        "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases",
         "transition": {
           "action": "structurally bind kronos-fiat-dispatch without running its domain operation",
           "operation_ran": false,
