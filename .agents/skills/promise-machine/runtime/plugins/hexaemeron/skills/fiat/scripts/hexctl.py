@@ -216,10 +216,18 @@ SOURCE_BYTES_MAX = 2 * 1024 * 1024
 AMENDMENT_HISTORY_MAX = 500
 GIT_OUTPUT_MAX = 2 * 1024 * 1024
 GIT_PATHS_MAX = 500
-# Integration revalidation reads a surface that grows with the base, so it
-# carries its own ceiling. GIT_PATHS_MAX still bounds the commit range, the
-# prose diff and the checkpoint ref set, none of which grow that way.
+# Two surfaces grow with work the count is not about, so each carries its own
+# ceiling. Integration revalidation grows with the base, because the
+# composition delta spans everything that landed since the final step merge.
+# The prose packet grows with one step's change, because a step may remove,
+# vendor or rename a generated tree. GIT_PATHS_MAX still bounds the commit
+# range, measured in commits, and the checkpoint ref set; neither grows that
+# way.
 INTEGRATION_PATHS_MAX = 4096
+# The prose packet already drops every deleted path, so this bounds the files a
+# prose pass could actually act on. It is separate from INTEGRATION_PATHS_MAX
+# because the two surfaces answer to different work and may diverge.
+PROSE_PATHS_MAX = 4096
 GIT_TIMEOUT = 30
 INTEGRATION_REVALIDATION_SCHEMA = "fiat-integration-revalidation/v1"
 INTEGRATION_REVALIDATION_SCHEMA_V2 = "fiat-integration-revalidation/v2"
@@ -10603,17 +10611,43 @@ def verify_github_commits(base_dir: str, commits: list[str]) -> list[str]:
 
 
 def scribe_files(base_dir: str, pr_base: str, branch: str) -> list[str]:
+    """The step's changed paths that a prose pass could act on.
+
+    Deletions are excluded on the read's argv rather than filtered afterwards,
+    so the grammar and scope refusals below still run over every path this
+    returns. A removed path carries no prose to rewrite, and excluding it is
+    what lets a step that drops a generated tree reach its prose phase at all:
+    the count that stopped it was a count of files with no prose in them.
+    Everything the step added, modified, renamed or copied is retained, so no
+    prose artefact is lost, and a rename keeps its new name.
+    """
     check_branch_name(pr_base)
     check_branch_name(branch)
-    raw = bounded_git(base_dir, ["diff", "--name-only", "-z", f"{pr_base}..{branch}", "--"])
+    raw = bounded_git(
+        base_dir,
+        [
+            "diff",
+            "--name-only",
+            "-z",
+            "--diff-filter=d",
+            f"{pr_base}..{branch}",
+            "--",
+        ],
+    )
     try:
         decoded = raw.decode("utf-8")
     except UnicodeDecodeError:
         die("git diff path list is not UTF-8")
     paths = [path for path in decoded.split("\0") if path]
     unique = sorted(set(paths))
-    if len(unique) > GIT_PATHS_MAX:
-        die(f"git diff returned more than {GIT_PATHS_MAX} paths")
+    if len(unique) > PROSE_PATHS_MAX:
+        die(
+            "the prose packet names every path this step changed that a prose "
+            f"pass could act on, and this step changed {len(unique)}, above "
+            f"the {PROSE_PATHS_MAX}-path prose ceiling; deleted paths are "
+            "already excluded, so this is authored surface rather than a "
+            "removed tree"
+        )
     for path in unique:
         if os.path.isabs(path) or path in (".", ".."):
             die(f"git diff returned an unsafe path: {path}")

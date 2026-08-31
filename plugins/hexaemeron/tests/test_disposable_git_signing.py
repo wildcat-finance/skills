@@ -47,6 +47,13 @@ FIXTURE_COMMIT_MATRIX = (
              "test_a_v2_artifact_with_more_than_500_outside_paths_is_accepted"),
         ),
         (
+            "hexctl-prose-packet-bounds",
+            (sys.executable,
+             "plugins/hexaemeron/tests/test_hexctl_prose_packet_bounds.py",
+             "ProseSelectionTests."
+             "test_a_removed_generated_tree_leaves_only_the_prose_behind"),
+        ),
+        (
             "hexctl-sync-resolution-guard",
             (sys.executable,
              "plugins/hexaemeron/tests/test_hexctl_sync_resolution_guard.py",
