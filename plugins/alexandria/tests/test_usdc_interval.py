@@ -16,13 +16,19 @@ sys.path.insert(0, str(PLUGIN / "scripts"))
 
 from alexandria_lib.canonical import canonical_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
-from alexandria_lib.interval import EVIDENCE_CLASSES, Staging  # noqa: E402
+from alexandria_lib.interval import (  # noqa: E402
+    EVIDENCE_CLASSES,
+    Staging,
+    discover_epochs,
+)
 import usdc_interval  # noqa: E402
 from usdc_interval import (  # noqa: E402
+    Builder,
     Collector,
     HttpsTransport,
     Reconciler,
     TransportError,
+    check_interval,
     request_identifier,
 )
 
@@ -744,6 +750,277 @@ class ReconciliationTests(CollectorTestCase):
         root = self.collected()
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
             self.reconcile(root, FixtureTransport(self.state))
+
+
+
+REGISTRY = PLUGIN / "examples" / "compound-v3-phase0-v0" / "input" / "registry.json"
+CREATED_AT = "2026-08-31T06:00:00Z"
+
+
+def registry():
+    if not REGISTRY.is_file():
+        raise AssertionError(
+            f"the pinned Comet registry is missing at {REGISTRY}; the release cannot "
+            "declare its uncollected markets without it"
+        )
+    return json.loads(REGISTRY.read_text(encoding="utf-8"))
+
+
+class IntervalCheckTests(CollectorTestCase):
+    """The conformance evidence for `release-verifies-offline`."""
+
+    IMPLEMENTATION = "0x42f9505a376761b180e27a01ba0554244ed1de7d"
+
+    def setUp(self):
+        super().setUp()
+        self.registry = registry()
+        self.epochs = self.epoch_table()
+
+    def epoch_table(self, plan=None):
+        plan = plan or self.plan
+        start, end = int(plan["interval"]["start"]), int(plan["interval"]["end"])
+        return discover_epochs(
+            chain=plan["chain"], deployment=plan["deployment"], proxy=plan["proxy"],
+            interval=plan["interval"], upgrade_logs=[],
+            slot_reads={str(start): "0x" + "0" * 24 + self.IMPLEMENTATION[2:]},
+            code_reads={self.IMPLEMENTATION: "0x60806040" + "ab" * 32},
+            block_hashes={
+                str(start): self.state["blocks"][str(plan["shards"][0]["end"])],
+                str(end): self.state["blocks"][str(end)],
+            },
+        )
+
+    def pipeline(self, name="release", second=None, reconcile=True):
+        staging = self.scratch(f"{name}-staging")
+        Collector(self.plan, staging, FixtureTransport(self.state)).collect()
+        if reconcile:
+            Reconciler(
+                self.plan, staging, second or FixtureTransport(self.state),
+                "second archive endpoint, class only",
+            ).reconcile()
+        return staging, self.root / name
+
+    def build(self, staging, output, epochs=None, registry_document=None):
+        return Builder(
+            self.plan, staging, epochs or self.epochs,
+            registry_document or self.registry, created_at=CREATED_AT,
+        ).build(output)
+
+    def test_a_release_over_a_clean_interval_verifies_offline(self):
+        staging, output = self.pipeline()
+        release_id = self.build(staging, output)
+        summary = check_interval(output)
+        self.assertEqual(summary["release_id"], release_id)
+        self.assertEqual(summary["interval"], dict(self.plan["interval"]))
+        self.assertEqual(summary["shard_statuses"], {"complete": 5})
+        self.assertEqual(summary["reconciliation"], "agreed")
+        self.assertEqual(summary["epochs"], 1)
+
+    def test_a_second_build_over_the_same_tree_yields_the_same_identity(self):
+        staging, output = self.pipeline()
+        first = self.build(staging, output)
+        second = self.build(staging, self.root / "release-again")
+        self.assertEqual(first, second)
+
+    def test_the_release_declares_one_component_per_class_and_its_receipts(self):
+        staging, output = self.pipeline()
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        self.assertEqual(
+            {component["name"] for component in manifest["components"]},
+            {"boundary-blocks", "epoch-table", "error-receipts", "interval-plan",
+             "logs", "reconciliation", "registry", "traces"},
+        )
+        self.assertLess(len(manifest["components"]), 128)
+
+    def test_every_coverage_count_is_derived_from_the_component_bytes(self):
+        staging, output = self.pipeline()
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        captures = {capture["id"]: capture for capture in manifest["captures"]}
+        self.assertEqual(captures["logs"]["coverage"]["record_count"], 5)
+        self.assertEqual(captures["registry"]["coverage"]["record_count"], 28)
+        for capture in captures.values():
+            self.assertEqual(capture["venue"], "compound-v3")
+            self.assertEqual(capture["chain"], "eip155:1")
+            self.assertEqual(capture["scope"]["interval"]["kind"], "block-range")
+
+    def test_an_inflated_coverage_count_is_refused_by_ingest(self):
+        """A count asserted rather than derived must not survive `ingest`."""
+
+        class Inflating(Builder):
+            def _capture(self, component, document, reconciliation):
+                capture = super()._capture(component, document, reconciliation)
+                if component == "logs":
+                    capture["coverage"]["collections"][0]["record_count"] += 1
+                    capture["coverage"]["record_count"] += 1
+                return capture
+
+        staging, output = self.pipeline()
+        builder = Inflating(
+            self.plan, staging, self.epochs, self.registry, created_at=CREATED_AT
+        )
+        with self.assertRaisesRegex(AlexandriaError, "declares .* records but found"):
+            builder.build(output)
+
+    def test_the_uncollected_registry_entries_are_declared_as_a_gap(self):
+        staging, output = self.pipeline()
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        gaps = {
+            capture["id"]: capture["coverage"]["gaps"] for capture in manifest["captures"]
+        }
+        self.assertTrue(any("27 of the 28 registry entries" in gap for gap in gaps["registry"]))
+        for name in EVIDENCE_CLASSES:
+            self.assertTrue(any("no credit event" in gap for gap in gaps[name]))
+            self.assertTrue(any("first block" in gap for gap in gaps[name]))
+
+    def test_no_coverage_reports_complete_while_naming_a_gap(self):
+        staging, output = self.pipeline()
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        for capture in manifest["captures"]:
+            with self.subTest(capture=capture["id"]):
+                if capture["coverage"]["gaps"] or capture["coverage"]["unsupported_collections"]:
+                    self.assertEqual(capture["coverage"]["status"], "partial")
+
+    def test_a_disputed_shard_is_named_in_every_evidence_coverage(self):
+        staging, output = self.pipeline(
+            "disputed",
+            second=SecondProviderTransport(
+                self.state, {"boundary_hash_overrides": second_fixture()["boundary_hash_overrides"]}
+            ),
+        )
+        self.build(staging, output)
+        summary = check_interval(output)
+        self.assertEqual(summary["shard_statuses"], {"complete": 4, "failed": 1})
+        manifest = json.loads((output / "manifest.json").read_text())
+        for capture in manifest["captures"]:
+            if capture["id"] in EVIDENCE_CLASSES:
+                self.assertTrue(
+                    any("shard 2," in gap for gap in capture["coverage"]["gaps"]),
+                    capture["id"],
+                )
+
+    def test_building_without_a_reconciliation_refuses(self):
+        staging, output = self.pipeline("unreconciled", reconcile=False)
+        with self.assertRaisesRegex(AlexandriaError, "has not been reconciled"):
+            self.build(staging, output)
+
+    def test_building_over_an_incomplete_interval_refuses(self):
+        staging = self.scratch("incomplete")
+        with self.assertRaises(_Killed):
+            Collector(self.plan, staging, KillingTransport(self.state, kill_at="shard 3 logs")).collect()
+        with self.assertRaisesRegex(AlexandriaError, "not completely collected"):
+            self.build(staging, self.root / "no-release")
+
+    def test_an_epoch_table_that_does_not_tile_the_interval_refuses(self):
+        staging, output = self.pipeline("short-epochs")
+        epochs = deepcopy(self.epochs)
+        epochs[0]["end_block"] = str(int(epochs[0]["end_block"]) - 1)
+        with self.assertRaisesRegex(AlexandriaError, "uncovered"):
+            self.build(staging, output, epochs=epochs)
+
+    def test_an_epoch_from_another_market_refuses_at_check(self):
+        staging, output = self.pipeline("other-market")
+        epochs = deepcopy(self.epochs)
+        epochs[0]["proxy"] = "0x" + "ab" * 20
+        self.build(staging, output, epochs=epochs)
+        with self.assertRaisesRegex(AlexandriaError, "does not belong to the plan's market"):
+            check_interval(output)
+
+    def test_a_tampered_component_refuses_at_check(self):
+        staging, output = self.pipeline("tampered")
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        target = next(
+            output / component["object_path"]
+            for component in manifest["components"]
+            if component["name"] == "logs"
+        )
+        target.write_bytes(target.read_bytes().replace(b'"logs"', b'"logz"', 1))
+        with self.assertRaises(AlexandriaError):
+            check_interval(output)
+
+    def test_a_receipt_disagreeing_with_the_reconciliation_refuses_at_check(self):
+        staging, output = self.pipeline("disagree")
+        with mock.patch("usdc_interval._receipt_shards", autospec=True) as shards:
+            def flip(table, *_arguments):
+                rows = deepcopy(table)
+                rows[0]["status"] = "partial"
+                return rows
+
+            shards.side_effect = flip
+            self.build(staging, output)
+        with self.assertRaisesRegex(AlexandriaError, "disagree about a shard"):
+            check_interval(output)
+
+    def test_a_receipt_whose_counts_the_journals_do_not_carry_refuses(self):
+        """A self-consistent release must still not be able to inflate a count."""
+
+        class Inflating(Builder):
+            def build(self, output):
+                original = usdc_interval._receipt_shards
+
+                def inflate(*arguments):
+                    rows = original(*arguments)
+                    for row in rows:
+                        row["record_counts"]["logs"] *= 100
+                    return rows
+
+                usdc_interval._receipt_shards = inflate
+                try:
+                    return super().build(output)
+                finally:
+                    usdc_interval._receipt_shards = original
+
+        staging, output = self.pipeline("inflated-receipt")
+        Inflating(
+            self.plan, staging, self.epochs, self.registry, created_at=CREATED_AT
+        ).build(output)
+        with self.assertRaisesRegex(AlexandriaError, "record counts the journals do not carry"):
+            check_interval(output)
+
+    def test_the_receipt_counts_come_from_the_journals(self):
+        staging, output = self.pipeline("counted")
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        receipt = json.loads(
+            (output / next(
+                component["object_path"] for component in manifest["components"]
+                if component["name"] == "epoch-table"
+            )).read_text()
+        )
+        for shard in receipt["shards"]:
+            self.assertEqual(
+                shard["record_counts"], {"boundary-blocks": 1, "logs": 3, "traces": 2}
+            )
+
+    def test_only_the_evidence_components_carry_the_unread_first_block_gap(self):
+        staging, output = self.pipeline("gap-scope")
+        self.build(staging, output)
+        manifest = json.loads((output / "manifest.json").read_text())
+        naming = {
+            capture["id"]
+            for capture in manifest["captures"]
+            if any("first block" in gap for gap in capture["coverage"]["gaps"])
+        }
+        self.assertEqual(naming, set(EVIDENCE_CLASSES))
+
+    def test_the_check_opens_no_socket_and_changes_no_file(self):
+        staging, output = self.pipeline("read-only")
+        self.build(staging, output)
+        before = {
+            path.relative_to(output): path.read_bytes()
+            for path in sorted(output.rglob("*")) if path.is_file()
+        }
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            check_interval(output)
+        after = {
+            path.relative_to(output): path.read_bytes()
+            for path in sorted(output.rglob("*")) if path.is_file()
+        }
+        self.assertEqual(after, before)
 
 
 class BoundsTests(CollectorTestCase):

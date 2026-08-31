@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1002,
-  "total_bytes": 21813446,
+  "total_bytes": 21834158,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -285,9 +285,9 @@
       "source": "plugins/alexandria/examples/credit-history-v0/sources/clearpool.json"
     },
     {
-      "bytes": 4083,
+      "bytes": 4577,
       "path": "plugins/alexandria/schemas/README.md",
-      "sha256": "ac8c212735e53841e5e697e02c0a3e60f830b3e972c3b4f4315a5d3b69ce083f",
+      "sha256": "1ea0fc5018fa4e2bde77fdb39aa46edc966c3f0f36ed16e2dc1bbbb093718f1a",
       "source": "plugins/alexandria/schemas/README.md"
     },
     {
@@ -435,9 +435,9 @@
       "source": "plugins/alexandria/scripts/alexandria_lib/index.py"
     },
     {
-      "bytes": 46644,
+      "bytes": 46745,
       "path": "plugins/alexandria/scripts/alexandria_lib/interval.py",
-      "sha256": "91a172ad94535c5941d5ba1bfa1994dab1a84a0ce5dd7f81e6c4e388a0b2da64",
+      "sha256": "30a4c77db7a89982367a1b3328b9a0b447e64223c0e9db679266ed5a0a2efcfa",
       "source": "plugins/alexandria/scripts/alexandria_lib/interval.py"
     },
     {
@@ -507,9 +507,9 @@
       "source": "plugins/alexandria/scripts/compound_v3_phase0.py"
     },
     {
-      "bytes": 29356,
+      "bytes": 49473,
       "path": "plugins/alexandria/scripts/usdc_interval.py",
-      "sha256": "6bc2e4c40c12052f4cc3ab99ee6a112ce39607651bb25e550968722c023422a3",
+      "sha256": "7ab0ede3388019b9e119b3e296580d866b67f933d53a4836ddc768037cdeb210",
       "source": "plugins/alexandria/scripts/usdc_interval.py"
     },
     {

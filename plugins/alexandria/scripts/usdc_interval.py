@@ -28,18 +28,28 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from alexandria_lib.canonical import MAX_CONTROL_BYTES, canonical_bytes, load_bytes, load_raw_json
 from alexandria_lib.errors import AlexandriaError
+import re
+import shutil
+import tempfile
+
 from alexandria_lib.interval import (
     EVIDENCE_CLASSES,
     MAX_DISPUTES,
+    RECEIPT_FORMAT,
     Staging,
     log_identity,
+    FINALITY_POLICIES,
+    HASH_RE,
     plan_digest,
+    read_regular,
+    validate_epochs,
     validate_plan,
     validate_reconciliation,
     validate_shard_coverage,
 )
+from alexandria_lib.compound_registry import validate_registry
 from alexandria_lib.paths import read_confined_file
-from alexandria_lib.release import MAX_RAW_COMPONENT_BYTES
+from alexandria_lib.release import MAX_RAW_COMPONENT_BYTES, ingest, verify
 
 
 ENDPOINT_ENV = "ALEXANDRIA_COMPOUND_RPC_URL"
@@ -51,8 +61,11 @@ ERROR_RECEIPTS = "errors.jsonl"
 RECONCILIATION_DIRECTORY = "reconciliation"
 RECONCILIATION_RECORD = "reconciliation.json"
 DISPUTED_RESPONSES = "disputed.jsonl"
+JOURNAL_FORMAT = "alexandria-interval-journal/v1"
+RELEASE_NAME = "usdc-interval-v0"
 
 FINALITY_TAGS = {"finalized": "finalized", "safe": "safe"}
+TIMESTAMP_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
 
 
 class TransportError(AlexandriaError):
@@ -572,6 +585,304 @@ class Reconciler:
         return document
 
 
+
+class Builder:
+    """Turn a reconciled staging tree into an Alexandria release, offline.
+
+    Every count and every declared interval is derived from the preserved bytes
+    rather than asserted, so `ingest` can refuse an inflated coverage figure
+    against the component it describes.
+    """
+
+    def __init__(self, plan, staging_root, epochs, registry, *, created_at) -> None:
+        validate_plan(plan)
+        self.plan = plan
+        self.staging = Staging(staging_root, plan)
+        self.root = self.staging.root
+        validate_epochs(
+            epochs,
+            int(plan["interval"]["start"]),
+            int(plan["interval"]["end"]),
+        )
+        self.epochs = epochs
+        validate_registry(registry)
+        self.registry = registry
+        if not isinstance(created_at, str) or TIMESTAMP_RE.fullmatch(created_at) is None:
+            raise AlexandriaError("the release creation time is not a UTC timestamp")
+        self.created_at = created_at
+
+    def _reconciliation(self) -> dict:
+        path = self.root / RECONCILIATION_DIRECTORY / RECONCILIATION_RECORD
+        if not path.is_file() or path.is_symlink():
+            raise AlexandriaError(
+                "the interval has not been reconciled, so there is no release to build"
+            )
+        document = load_bytes(
+            read_regular(path, "reconciliation record", MAX_CONTROL_BYTES), "reconciliation record"
+        )
+        if not isinstance(document, dict) or set(document) != {
+            "format", "plan_sha256", "reconciliation", "shards",
+        }:
+            raise AlexandriaError("the reconciliation record has an unknown shape")
+        if document["plan_sha256"] != plan_digest(self.plan):
+            raise AlexandriaError("the reconciliation record belongs to a different plan")
+        validate_reconciliation(document["reconciliation"])
+        validate_shard_coverage(document["shards"], self.plan["shards"])
+        return document
+
+    def _errors(self) -> list:
+        path = self.root / RECEIPTS_DIRECTORY / ERROR_RECEIPTS
+        if not path.is_file():
+            return []
+        if path.is_symlink():
+            raise AlexandriaError("the error receipt file must not be a symlink")
+        return [
+            load_bytes(line + b"\n", "error receipt", max_bytes=MAX_CONTROL_BYTES)
+            for line in read_regular(path, "error receipts", MAX_CONTROL_BYTES).splitlines()
+            if line
+        ]
+
+    def _journal(self, name: str) -> dict:
+        records = list(self.staging.entries(name))
+        for record in records:
+            if set(record) != {"class", "request", "response", "shard"}:
+                raise AlexandriaError(f"a staged {name} record has an unknown shape")
+        return {
+            "class": name,
+            "format": JOURNAL_FORMAT,
+            "interval": dict(self.plan["interval"]),
+            "records": records,
+        }
+
+    def build(self, output: Path) -> str:
+        state = self.staging.committed()
+        if state["next_shard"] != len(self.plan["shards"]):
+            raise AlexandriaError(
+                "the interval is not completely collected, so there is no release to build"
+            )
+        reconciliation = self._reconciliation()
+        documents = {
+            "epoch-table": {
+                "epochs": self.epochs,
+                "format": RECEIPT_FORMAT,
+                "reconciliation": reconciliation["reconciliation"],
+                "shards": _receipt_shards(reconciliation["shards"]),
+            },
+            "error-receipts": {"format": "alexandria-interval-errors/v1", "records": self._errors()},
+            "interval-plan": self.plan,
+            "reconciliation": reconciliation,
+            "registry": self.registry,
+        }
+        for name in EVIDENCE_CLASSES:
+            documents[name] = self._journal(name)
+
+        parent = output.absolute().parent
+        parent.mkdir(parents=True, exist_ok=True)
+        staging = Path(tempfile.mkdtemp(prefix=f".{output.name}.plan-", dir=parent))
+        try:
+            components = []
+            captures = []
+            for component, document in sorted(documents.items()):
+                relative = f"{component}.json"
+                (staging / relative).write_bytes(canonical_bytes(document))
+                components.append({
+                    "access": "public",
+                    "media_type": "application/json",
+                    "name": component,
+                    "path": relative,
+                    "redistribution": "permitted",
+                    "role": _role(component),
+                })
+                captures.append(self._capture(component, document, reconciliation))
+            plan_document = {
+                "captures": captures,
+                "components": components,
+                "format": "alexandria-capture-plan/v1",
+                "release": {"created_at": self.created_at, "name": RELEASE_NAME},
+            }
+            (staging / "capture-plan.json").write_bytes(canonical_bytes(plan_document))
+            return ingest(staging / "capture-plan.json", output)
+        finally:
+            shutil.rmtree(staging, ignore_errors=True)
+
+    def _capture(self, component: str, document, reconciliation) -> dict:
+        interval = self.plan["interval"]
+        collections = []
+        record_count = 0
+        if component in EVIDENCE_CLASSES:
+            record_count = len(document["records"])
+            collections = [{
+                "name": component,
+                "record_count": record_count,
+                "selector": "/records",
+            }]
+        elif component == "error-receipts":
+            record_count = len(document["records"])
+            collections = [{
+                "name": "error-receipts",
+                "record_count": record_count,
+                "selector": "/records",
+            }]
+        elif component == "epoch-table":
+            record_count = len(document["epochs"])
+            collections = [{
+                "name": "epochs",
+                "record_count": record_count,
+                "selector": "/epochs",
+            }]
+        elif component == "registry":
+            record_count = len(document["entries"])
+            collections = [{
+                "name": "registry-entries",
+                "record_count": record_count,
+                "selector": "/entries",
+            }]
+        else:
+            # The plan and the reconciliation record are single documents, but
+            # Alexandria will not call a coverage complete without a counted
+            # collection, and each of them does carry one: its shard table.
+            record_count = len(document["shards"])
+            collections = [{
+                "name": f"{component}-shards",
+                "record_count": record_count,
+                "selector": "/shards",
+            }]
+        gaps = _gaps(component, self.plan, self.registry, reconciliation)
+        unsupported = _unsupported(component)
+        return {
+            "chain": self.plan["chain"],
+            "component": component,
+            "coverage": {
+                "collections": collections,
+                "gaps": gaps,
+                "record_count": record_count,
+                "status": _status(gaps, unsupported, reconciliation),
+                "unsupported_collections": unsupported,
+            },
+            "evidence_class": "recorded-rpc" if component in EVIDENCE_CLASSES else "header-bound",
+            "id": component,
+            "source": {
+                "kind": "json-rpc" if component in EVIDENCE_CLASSES else "local-fixture",
+                "locator_class": "provider-endpoint" if component in EVIDENCE_CLASSES else "local-fixture",
+                "reference": self.plan["provider"]["class"] if component in EVIDENCE_CLASSES
+                else f"derived offline from the collected interval, {component}",
+            },
+            "scope": {
+                "deployment": self.plan["deployment"],
+                # `provider-reported`, whatever the plan's policy is called. A
+                # `safe` or `finalized` scope owes Alexandria both of its
+                # block-range hashes, and this collector reads each shard's end
+                # block, never the interval's first one, so the start hash does
+                # not exist to give. The named policy and the boundary block it
+                # bound are in the plan and the interval receipt; what the
+                # release establishes about finality is that a provider
+                # reported it, which is the class Phase 0's captures use for
+                # the same reason.
+                "finality": "provider-reported",
+                # No scope hash. Alexandria wants a block-range's start and end
+                # hashes together or not at all, and this collector never reads
+                # the interval's first block: it reads each shard's end. Those
+                # hashes, the epoch boundaries and the finality boundary are all
+                # bound in the interval receipt, which is where they belong.
+                # Borrowing the operator's epoch evidence to fill a scope field
+                # would put one source's hash behind another source's claim.
+                "interval": {
+                    "end": interval["end"],
+                    "kind": "block-range",
+                    "start": interval["start"],
+                },
+                "kind": "full-dataset",
+            },
+            "venue": self.plan["venue"],
+        }
+
+
+def _role(component: str) -> str:
+    return {
+        "boundary-blocks": "json-rpc-response",
+        "epoch-table": "interval-receipt",
+        "error-receipts": "error-receipt",
+        "interval-plan": "capture-contract",
+        "logs": "json-rpc-response",
+        "reconciliation": "provider-reconciliation",
+        "registry": "deployment-registry",
+        "traces": "json-rpc-response",
+    }[component]
+
+
+def _status(gaps, unsupported, reconciliation) -> str:
+    """`complete` only when nothing is missing, which Alexandria also enforces.
+
+    A coverage status of `complete` may name no gap and no unsupported
+    collection, so the status is derived from what the gaps say rather than
+    asserted beside them. Every component of this release names at least one
+    gap today, so every status is `partial`: that is the shape of a first
+    collector, not a defect to code around.
+    """
+    if gaps or unsupported:
+        return "partial"
+    if {shard["status"] for shard in reconciliation["shards"]} != {"complete"}:
+        return "partial"
+    if reconciliation["reconciliation"]["status"] != "agreed":
+        return "partial"
+    return "complete"
+
+
+def _unsupported(component: str) -> list:
+    if component == "traces":
+        return ["internal-call-replay"]
+    if component in ("boundary-blocks", "logs"):
+        return ["credit-event-mapping"]
+    return []
+
+
+def _gaps(component: str, plan, registry, reconciliation) -> list:
+    gaps = []
+    if component == "registry":
+        others = [
+            f"{entry['network']}/{entry['market']}"
+            for entry in registry["entries"]
+            if not (entry["network"] == "mainnet" and entry["market"] == "usdc")
+        ]
+        gaps.append(
+            f"{len(others)} of the {len(registry['entries'])} registry entries at the pin "
+            "were not collected; this release covers the Ethereum USDC Comet only"
+        )
+        return gaps
+    for shard in reconciliation["shards"]:
+        if shard["status"] != "complete":
+            gaps.append(
+                f"shard {shard['index']}, blocks {shard['start']} to {shard['end']}, is "
+                f"{shard['status']} after provider reconciliation"
+            )
+    if reconciliation["reconciliation"]["status"] == "unreconciled":
+        gaps.append("the interval was not reconciled against a second provider")
+    if component in EVIDENCE_CLASSES:
+        gaps.append(
+            f"the interval's first block, {plan['interval']['start']}, was not read, so this "
+            f"scope binds no start hash and its finality class is provider-reported rather "
+            f"than {plan['finality']['policy']}"
+        )
+        gaps.append(
+            "no credit event, position observation or repayment conclusion is derived here"
+        )
+    return gaps
+
+
+def _receipt_shards(shards) -> list:
+    return [
+        {
+            "end": shard["end"],
+            "end_hash": shard["end_hash"],
+            "index": shard["index"],
+            "record_counts": shard["record_counts"],
+            "start": shard["start"],
+            "status": shard["status"],
+        }
+        for shard in shards
+    ]
+
+
 def _transaction_order(header) -> list:
     transactions = header.get("transactions") if isinstance(header, dict) else None
     if transactions is None:
@@ -605,8 +916,6 @@ def _identity_comparison(first, second):
 
 
 def _atomic_json(path: Path, value) -> None:
-    import tempfile
-
     data = canonical_bytes(value)
     descriptor, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.")
     try:
@@ -622,6 +931,140 @@ def _atomic_json(path: Path, value) -> None:
             os.close(descriptor)
         if temporary is not None:
             Path(temporary).unlink(missing_ok=True)
+
+
+
+def check_interval(release_root: Path) -> dict:
+    """Verify one interval release offline: Alexandria's checks, then the interval's.
+
+    Reaches no network and changes no file. The Alexandria verifier settles
+    canonical bytes, digests, paths and declared coverage counts; what follows
+    settles the things only an interval release can be wrong about.
+    """
+    release_root = Path(release_root).absolute()
+    release_id = verify(release_root)
+    manifest = load_bytes(
+        read_confined_file(release_root, "manifest.json", "manifest", max_bytes=MAX_CONTROL_BYTES),
+        "manifest",
+    )
+    documents = {}
+    for name in (
+        "boundary-blocks", "epoch-table", "error-receipts", "interval-plan",
+        "logs", "reconciliation", "registry", "traces",
+    ):
+        documents[name] = load_bytes(
+            _component(release_root, manifest, name), f"component {name}",
+            max_bytes=MAX_RAW_COMPONENT_BYTES,
+        )
+
+    plan = documents["interval-plan"]
+    validate_plan(plan)
+    interval = plan["interval"]
+    start = int(interval["start"])
+    end = int(interval["end"])
+
+    receipt = documents["epoch-table"]
+    if not isinstance(receipt, dict) or set(receipt) != {
+        "epochs", "format", "reconciliation", "shards",
+    } or receipt["format"] != RECEIPT_FORMAT:
+        raise AlexandriaError("the interval receipt has an unknown shape")
+    validate_epochs(receipt["epochs"], start, end)
+    for epoch in receipt["epochs"]:
+        if epoch["proxy"] != plan["proxy"] or epoch["chain"] != plan["chain"]:
+            raise AlexandriaError("an epoch does not belong to the plan's market")
+
+    shards = receipt["shards"]
+    validate_shard_coverage(shards, plan["shards"])
+    expected = start
+    for shard in shards:
+        if shard["start"] != expected:
+            raise AlexandriaError(
+                f"the shard table leaves block {expected} uncovered"
+                if shard["start"] > expected
+                else f"the shard table overlaps at block {shard['start']}"
+            )
+        expected = shard["end"] + 1
+    if expected != end + 1:
+        raise AlexandriaError(f"the shard table leaves block {expected} uncovered")
+
+    finality = plan["finality"]
+    if finality["policy"] not in FINALITY_POLICIES:
+        raise AlexandriaError("the release's finality policy is not recognised")
+    if HASH_RE.fullmatch(finality["block_hash"]) is None:
+        raise AlexandriaError("the release's finality boundary carries no block hash")
+    if int(finality["block_number"]) < end:
+        raise AlexandriaError("the release's interval ends above its finality boundary")
+
+    reconciliation = documents["reconciliation"]
+    if reconciliation["plan_sha256"] != plan_digest(plan):
+        raise AlexandriaError("the reconciliation record belongs to a different plan")
+    validate_reconciliation(reconciliation["reconciliation"])
+    validate_shard_coverage(reconciliation["shards"], plan["shards"])
+    if [shard["status"] for shard in reconciliation["shards"]] != [
+        shard["status"] for shard in shards
+    ]:
+        raise AlexandriaError("the reconciliation and the receipt disagree about a shard")
+
+    disputed = {
+        shard["index"] for shard in shards if shard["status"] != "complete"
+    }
+    captures = {capture["id"]: capture for capture in manifest["captures"]}
+    derived = {shard["index"]: {} for shard in plan["shards"]}
+    for name in EVIDENCE_CLASSES:
+        journal = documents[name]
+        if journal["format"] != JOURNAL_FORMAT or journal["class"] != name:
+            raise AlexandriaError(f"the {name} component is not its own journal")
+        if journal["interval"] != interval:
+            raise AlexandriaError(f"the {name} journal declares another interval")
+        staged = {record["shard"] for record in journal["records"]}
+        if staged != {shard["index"] for shard in plan["shards"]}:
+            raise AlexandriaError(f"the {name} journal does not cover every shard")
+        for record in journal["records"]:
+            envelope = load_bytes(
+                record["response"].encode(), f"{name} response for shard {record['shard']}",
+                max_bytes=MAX_RAW_COMPONENT_BYTES,
+            )
+            result = envelope.get("result")
+            derived[record["shard"]][name] = (
+                len(result) if isinstance(result, list) else 1
+            )
+        gaps = captures[name]["coverage"]["gaps"]
+        for index in sorted(disputed):
+            if not any(f"shard {index}," in gap for gap in gaps):
+                raise AlexandriaError(
+                    f"shard {index} is not complete but the {name} coverage does not name it"
+                )
+        if disputed and captures[name]["coverage"]["status"] == "complete":
+            raise AlexandriaError(
+                f"the {name} coverage reports complete while a shard is not"
+            )
+
+    for shard in shards:
+        if shard["record_counts"] != derived[shard["index"]]:
+            raise AlexandriaError(
+                f"shard {shard['index']} declares record counts the journals do not carry"
+            )
+
+    return {
+        "epochs": len(receipt["epochs"]),
+        "interval": {"end": interval["end"], "start": interval["start"]},
+        "reconciliation": reconciliation["reconciliation"]["status"],
+        "release_id": release_id,
+        "shard_statuses": {
+            status: sum(1 for shard in shards if shard["status"] == status)
+            for status in sorted({shard["status"] for shard in shards})
+        },
+    }
+
+
+def _component(release_root: Path, manifest, name: str) -> bytes:
+    matches = [item for item in manifest["components"] if item["name"] == name]
+    if len(matches) != 1:
+        raise AlexandriaError(f"release component {name} is missing or duplicated")
+    return read_confined_file(
+        release_root, matches[0]["object_path"], f"release component {name}",
+        max_bytes=MAX_RAW_COMPONENT_BYTES,
+    )
 
 
 def _number(value) -> int:
@@ -649,7 +1092,7 @@ def parser() -> argparse.ArgumentParser:
     value = argparse.ArgumentParser(
         description="Collect a bounded Ethereum USDC Comet interval, resumably."
     )
-    commands = value.add_subparsers(dest="command", metavar="{collect,reconcile}")
+    commands = value.add_subparsers(dest="command", metavar="{collect,reconcile,build,check}")
     collect = commands.add_parser("collect", help="collect the plan's interval from the explicit RPC endpoint")
     collect.add_argument("--plan", required=True, type=Path)
     collect.add_argument("--staging", required=True, type=Path)
@@ -659,6 +1102,15 @@ def parser() -> argparse.ArgumentParser:
     reconcile.add_argument("--plan", required=True, type=Path)
     reconcile.add_argument("--staging", required=True, type=Path)
     reconcile.add_argument("--provider-class", required=True)
+    build = commands.add_parser("build", help="build the Alexandria release offline")
+    build.add_argument("--plan", required=True, type=Path)
+    build.add_argument("--staging", required=True, type=Path)
+    build.add_argument("--epochs", required=True, type=Path)
+    build.add_argument("--registry", required=True, type=Path)
+    build.add_argument("--created-at", required=True)
+    build.add_argument("--output", required=True, type=Path)
+    check = commands.add_parser("check", help="verify an interval release offline")
+    check.add_argument("release", type=Path)
     return value
 
 
@@ -669,8 +1121,19 @@ def main(argv=None) -> int:
         value.print_help(sys.stderr)
         return 2
     try:
+        if args.command == "check":
+            sys.stdout.buffer.write(canonical_bytes(check_interval(args.release)))
+            return 0
         plan = load_control(args.plan, "interval plan")
         validate_plan(plan)
+        if args.command == "build":
+            epochs = load_control(args.epochs, "epoch table")
+            registry = load_control(args.registry, "Compound registry")
+            release_id = Builder(
+                plan, args.staging, epochs, registry, created_at=args.created_at
+            ).build(args.output)
+            print(release_id)
+            return 0
         transport = HttpsTransport.from_environment(plan["provider"]["timeout_seconds"])
         if args.command == "reconcile":
             document = Reconciler(plan, args.staging, transport, args.provider_class).reconcile()

@@ -138,3 +138,39 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the whole battery ran against the fixed tree. The three bundled lints exited 0, the Alexandria suite reported 440 of 440 with zero skips, `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with a clean working tree, and the design checker exited 0 at `step:5` with the reconciliation conformance report passing on seventeen cases. The root suite reports 776 tests with one failure, S1-R1-07 and nothing else. One thing is recorded rather than fixed: `committed` and `resume` now both read and validate the checkpoint, which is the same work twice on the collect path, and folding them would mean one method that sometimes truncates. The two bounded items from round 1 still stand, as do S1-R1-07 and S2-R1-04.
+
+## Step 5, round 1 -- 2026-08-31T06:19:47Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-inflation=reviewed; epoch-gap=reviewed; staging-path-escape=reviewed; endpoint-leak=reviewed; skip-as-pass=reviewed; whole-battery-regression=reviewed; reconciliation-bias=reviewed; torn-shard=not-applicable; reorg-rewind=not-applicable; silent-truncation=not-applicable; unbounded-response=not-applicable
+
+Not checked: x-ray, solidity-auditor and fizz did not run; the `security_suite` receipt waives them because the run ships no Solidity. The transport concerns belong to step 3 and this step reaches no network at all. The three bundled lints ran over the changed command and test module and each exited 0. The round read the diff for the register's concerns the lints cannot see and drove `build` and `check` by hand against a release rebuilt to lie about itself.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R1-01 | high | plugins/alexandria/scripts/usdc_interval.py | `check` trusted the interval receipt's per-shard record counts. Rebuilding the release with those counts multiplied by a hundred produced a self-consistent tree, so every digest matched and `check` accepted it: the receipt claimed 300 logs in a shard holding 3. Coverage inflation is the concern the study named for this step, and the capture plan's counts were already derived from the component bytes while the receipt's were only copied along. A release that verifies while overstating what it holds is the failure this whole check exists to prevent. `check` now re-derives every shard's counts from the journal records. | fixed in 20358d64e2dc5aa247a3b85dfbf99caade6e9c64 |
+| S5-R1-02 | low | plugins/alexandria/scripts/usdc_interval.py | The gap naming the unread first block was declared on every component, including the interval plan and the reconciliation record, which make no claim about chain evidence. A gap on the wrong component tells a reader the release is weaker somewhere it is not. It now sits on the three evidence components, and those two documents declare the shard table Alexandria requires before it will call a coverage complete. | fixed in 20358d64e2dc5aa247a3b85dfbf99caade6e9c64 |
+| S5-R1-03 | info | plugins/alexandria/scripts/usdc_interval.py | `_receipt_shards` took an epoch table it never read. | fixed in 20358d64e2dc5aa247a3b85dfbf99caade6e9c64 |
+| S5-R1-04 | medium | plugins/alexandria/docs/usdc-interval-runbook.md | Step 3's receipted Exit says `collect` walks the shard plan "for a declared interval and epoch table", and the delivered command takes no epoch table: the three requests per shard need none, and the table is consumed by `build` instead, where it becomes a release component. Step 5's own Exit is satisfied, so nothing is missing from the delivery, but a reader holding step 3's Exit would look for an argument that is not there. The runbook is receipted, so the divergence is recorded here rather than edited. | open |
+| S5-R1-05 | medium | plugins/alexandria/scripts/usdc_interval.py | Step 5's Exit says `check` establishes that "every epoch is code-hash-bound". It establishes that every epoch declares a SHA-256 and that the epochs tile the interval and name this market's proxy. It cannot establish that the digest is of any particular bytes, because the release carries no implementation code to hash: the code read lives in the operator's epoch evidence and is not preserved as a component. The check is sound about what it checks; the Exit's phrase claims more than the release can support. | open |
+
+Leads not pursued: the fixes commit changed tests as well as code, and two guards fail against `0954f5eb24bfc9d65920466d6c23bd6ea14addc4` by assertion with no infrastructure error, so the verdict is `guarded` and the fixed tree reports 458 of 458 with zero skips. One thing about the guards is worth stating: both replace `_receipt_shards` and take `*arguments`, because the parent's signature has one more parameter than the fixed one and a fixed-arity replacement would have raised `TypeError` on the parent and turned two assertion failures into errors. Three bounded things are recorded rather than fixed. The capture scope's finality class is `provider-reported` rather than the plan's named policy, which S5-R1-05's sibling limitation explains and every evidence component declares as a gap. Every coverage status in this release is `partial`, because each component names at least one gap and Alexandria forbids a complete coverage from naming any; that is the shape of a first collector rather than something to code around. And the release preserves no implementation code, no configuration read and no state call, so nothing here supports a mapping; Tabularium's issue #398 owns that and the evidence components say so in their own gaps. S1-R1-07 and S2-R1-04 stay open and accepted.
+
+## Step 5, round 2 -- 2026-08-31T06:23:47Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: coverage-inflation=reviewed; epoch-gap=reviewed; staging-path-escape=reviewed; endpoint-leak=reviewed; skip-as-pass=reviewed; whole-battery-regression=reviewed; reconciliation-bias=reviewed; torn-shard=not-applicable; reorg-rewind=not-applicable; silent-truncation=not-applicable; unbounded-response=not-applicable
+
+Not checked: nothing new. This step reaches no network and the Pashov pair remains waived. The round re-read the repaired check for faults the repair could have introduced: the re-derived counts read each journal record's own response bytes under the component ceiling rather than the control limit, so the reader agrees with the writer; the derived table is keyed by every planned shard, so a journal missing one shard refuses before the comparison; and the two single-document components now declare a shard-table collection whose count `ingest` resolves by pointer like any other.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the whole battery ran against the fixed tree. The three bundled lints exited 0, the Alexandria suite reported 458 of 458 with zero skips, `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with a clean working tree, and the design checker exited 0 at `step:6` with the release conformance report passing on eighteen cases. The root suite reports 776 tests with one failure, S1-R1-07 and nothing else. One thing is recorded rather than fixed: `check` re-derives a count for every journal record on every run, so its cost grows with the interval; for a first collector over a bounded interval that is the right trade against trusting a number, and a release too large to re-derive is a release too large for this contract's 64 MiB component ceiling anyway. The three bounded items from round 1 still stand, along with the two open findings S5-R1-04 and S5-R1-05, and S1-R1-07 and S2-R1-04.

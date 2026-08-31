@@ -971,14 +971,15 @@ def _truncate(path: Path, offset: int) -> None:
 
 
 def _read_control(path: Path, label: str) -> bytes:
-    return _read_regular(path, label, MAX_CONTROL_BYTES)
+    return read_regular(path, label, MAX_CONTROL_BYTES)
 
 
 def _read_journal(path: Path) -> bytes:
-    return _read_regular(path, f"journal {path.name}", MAX_JOURNAL_BYTES)
+    return read_regular(path, f"journal {path.name}", MAX_JOURNAL_BYTES)
 
 
-def _read_regular(path: Path, label: str, maximum: int) -> bytes:
+def read_regular(path: Path, label: str, maximum: int) -> bytes:
+    """Read one bounded regular file, refusing a symlink at its final component."""
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
         descriptor = os.open(path, flags)
@@ -1018,6 +1019,7 @@ __all__ = [
     "discover_epochs",
     "plan_digest",
     "plan_shards",
+    "read_regular",
     "resolve_root",
     "DISPUTE_KINDS",
     "RECONCILIATION_STATUSES",
