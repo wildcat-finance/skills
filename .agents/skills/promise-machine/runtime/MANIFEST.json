@@ -3,7 +3,7 @@
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
   "file_count": 1034,
-  "total_bytes": 22181083,
+  "total_bytes": 22188425,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -4201,9 +4201,9 @@
       "source": "plugins/lazarus/docs/chain-anchors.md"
     },
     {
-      "bytes": 16164,
+      "bytes": 17167,
       "path": "plugins/lazarus/docs/macos-path-repair-runbook.md",
-      "sha256": "01e35332c3ffff7ae8ea6973e945fe84f506a057205fe52c9e56073a530008b0",
+      "sha256": "030c38f2d051f5aea430507a7967bae261e8e78fd13b3f923dcbb459b9e44d3c",
       "source": "plugins/lazarus/docs/macos-path-repair-runbook.md"
     },
     {
@@ -4711,9 +4711,9 @@
       "source": "plugins/lazarus/scripts/lazarus_lib/records.py"
     },
     {
-      "bytes": 21512,
+      "bytes": 27851,
       "path": "plugins/lazarus/scripts/lazarus_lib/release.py",
-      "sha256": "06d0567bf2392724053a1a786dba67450486fdabecd62cbd90f5c31c343799ce",
+      "sha256": "aa75b2b3d83547900a7126e4847953e077c011563a318ebe08b030a1b1dd910f",
       "source": "plugins/lazarus/scripts/lazarus_lib/release.py"
     },
     {
