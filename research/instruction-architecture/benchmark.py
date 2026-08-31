@@ -16,10 +16,10 @@ import math
 import os
 from pathlib import Path, PurePosixPath
 import re
+import secrets
 import stat
 import subprocess
 import sys
-import tempfile
 from functools import lru_cache
 from typing import Any, Iterable
 
@@ -31,6 +31,8 @@ SELECTION_SEED = "framework-74-holdout-v1-2026-08-31"
 MAX_JSON_BYTES = 8 * 1024 * 1024
 MAX_GIT_OUTPUT = 4 * 1024 * 1024
 MAX_SOURCE_BYTES = 2 * 1024 * 1024
+MAX_JSON_DEPTH = 64
+MAX_JSON_TOKENS = 100_000
 EXPECTED_COUNTS = {
     "skill_contract": 32,
     "runtime_contract": 18,
@@ -98,64 +100,159 @@ def _safe_relative(path: str) -> PurePosixPath:
     return candidate
 
 
-def _read_regular(path: Path, limit: int) -> bytes:
+def _identity(item: os.stat_result) -> tuple[int, ...]:
+    return (
+        item.st_dev,
+        item.st_ino,
+        item.st_mode,
+        item.st_nlink,
+        item.st_size,
+        item.st_mtime_ns,
+        item.st_ctime_ns,
+    )
+
+
+def _directory_identity(item: os.stat_result) -> tuple[int, ...]:
+    return (item.st_dev, item.st_ino, item.st_mode)
+
+
+def _repository_relative(path: Path, label: str) -> PurePosixPath:
     try:
         relative = path.relative_to(ROOT).as_posix()
     except ValueError as exc:
-        raise Refusal("path leaves repository") from exc
-    _safe_relative(relative)
+        raise Refusal(f"{label} leaves repository") from exc
+    return _safe_relative(relative)
+
+
+def _directory_flags() -> int:
+    if not hasattr(os, "O_DIRECTORY") or not hasattr(os, "O_NOFOLLOW"):
+        raise Refusal("descriptor-relative no-follow operations are unavailable")
+    flags = os.O_RDONLY
+    return flags | os.O_DIRECTORY | os.O_NOFOLLOW
+
+
+def _open_parent(
+    relative: PurePosixPath, *, create: bool, label: str
+) -> tuple[int, str]:
+    """Open a repository-relative parent one no-follow component at a time."""
+    flags = _directory_flags()
     try:
-        root = ROOT.resolve(strict=True)
-        parent = path.parent.resolve(strict=True)
+        descriptor = os.open(ROOT, flags)
     except OSError as exc:
-        raise Refusal("input parent is unavailable") from exc
-    if not parent.is_relative_to(root):
-        raise Refusal("input parent resolves outside repository")
+        raise Refusal(f"{label} root is unavailable or unsafe") from exc
+    try:
+        for part in relative.parent.parts:
+            try:
+                child = os.open(part, flags, dir_fd=descriptor)
+            except FileNotFoundError:
+                if not create:
+                    raise Refusal(f"{label} parent is unavailable or unsafe")
+                try:
+                    os.mkdir(part, mode=0o755, dir_fd=descriptor)
+                    child = os.open(part, flags, dir_fd=descriptor)
+                except OSError as exc:
+                    raise Refusal(f"{label} parent is unavailable or unsafe") from exc
+            except OSError as exc:
+                raise Refusal(f"{label} parent is unavailable or unsafe") from exc
+            metadata = os.fstat(child)
+            if not stat.S_ISDIR(metadata.st_mode):
+                os.close(child)
+                raise Refusal(f"{label} parent is unavailable or unsafe")
+            os.close(descriptor)
+            descriptor = child
+        return descriptor, relative.name
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _read_descriptor(descriptor: int, limit: int) -> tuple[bytes, os.stat_result]:
+    before = os.fstat(descriptor)
+    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+        raise Refusal("input is not a single-link regular file")
+    if before.st_size > limit:
+        raise Refusal("input exceeds byte limit")
+    chunks: list[bytes] = []
+    size = 0
+    while True:
+        chunk = os.read(descriptor, min(65_536, limit + 1 - size))
+        if not chunk:
+            break
+        chunks.append(chunk)
+        size += len(chunk)
+        if size > limit:
+            raise Refusal("input exceeds byte limit")
+    after = os.fstat(descriptor)
+    if _identity(before) != _identity(after):
+        raise Refusal("input changed during read")
+    return b"".join(chunks), after
+
+
+def _read_regular(path: Path, limit: int) -> bytes:
+    relative = _repository_relative(path, "path")
+    parent, name = _open_parent(relative, create=False, label="input")
     flags = os.O_RDONLY
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
     try:
-        descriptor = os.open(path, flags)
+        descriptor = os.open(name, flags, dir_fd=parent)
     except OSError as exc:
+        os.close(parent)
         raise Refusal("input is unavailable or unsafe") from exc
     try:
-        before = os.fstat(descriptor)
-        if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
-            raise Refusal("input is not a single-link regular file")
-        if before.st_size > limit:
-            raise Refusal("input exceeds byte limit")
-        chunks: list[bytes] = []
-        size = 0
-        while True:
-            chunk = os.read(descriptor, min(65_536, limit + 1 - size))
-            if not chunk:
-                break
-            chunks.append(chunk)
-            size += len(chunk)
-            if size > limit:
-                raise Refusal("input exceeds byte limit")
-        after = os.fstat(descriptor)
-
-        def identity(item: os.stat_result) -> tuple[int, ...]:
-            return (
-                item.st_dev,
-                item.st_ino,
-                item.st_mode,
-                item.st_nlink,
-                item.st_size,
-                item.st_mtime_ns,
-                item.st_ctime_ns,
-            )
-
-        if identity(before) != identity(after):
-            raise Refusal("input changed during read")
-        return b"".join(chunks)
+        data, after = _read_descriptor(descriptor, limit)
     finally:
         os.close(descriptor)
+        os.close(parent)
+
+    current_parent, current_name = _open_parent(relative, create=False, label="input")
+    try:
+        try:
+            current = os.open(current_name, flags, dir_fd=current_parent)
+        except OSError as exc:
+            raise Refusal("input changed during read") from exc
+        try:
+            if _identity(os.fstat(current)) != _identity(after):
+                raise Refusal("input changed during read")
+        finally:
+            os.close(current)
+    finally:
+        os.close(current_parent)
+    return data
+
+
+def _preflight_json(raw: bytes) -> None:
+    depth = 0
+    tokens = 0
+    in_string = False
+    escaped = False
+    for byte in raw:
+        if in_string:
+            if escaped:
+                escaped = False
+            elif byte == 0x5C:
+                escaped = True
+            elif byte == 0x22:
+                in_string = False
+            continue
+        if byte == 0x22:
+            in_string = True
+        elif byte in (0x7B, 0x5B):
+            depth += 1
+            tokens += 1
+            if depth > MAX_JSON_DEPTH:
+                raise Refusal("record exceeds JSON depth limit")
+        elif byte in (0x7D, 0x5D):
+            depth -= 1
+        elif byte in (0x2C, 0x3A):
+            tokens += 1
+        if tokens > MAX_JSON_TOKENS:
+            raise Refusal("record exceeds JSON token limit")
 
 
 def _load_record(path: Path) -> tuple[dict[str, Any], bytes]:
     raw = _read_regular(path, MAX_JSON_BYTES)
+    _preflight_json(raw)
     try:
         value = json.loads(
             raw.decode("utf-8", errors="strict"),
@@ -626,29 +723,44 @@ def _partition_ranges(path: str, generated: bool) -> list[dict[str, Any]]:
         ]
     ranges: list[tuple[int, int, str]] = []
     offset = 0
-    in_fence = False
+    fence_stack: list[tuple[int, int]] = []
     for line in data.splitlines(keepends=True):
-        stripped = line.lstrip()
-        fence = stripped.startswith(b"```") or stripped.startswith(b"~~~")
-        classification = (
-            "exact_literal_or_evidence"
-            if in_fence or fence
-            else "governed_operative_semantics"
-        )
+        marker = re.match(rb"^ {0,3}(`{3,}|~{3,})([^\r\n]*)", line)
+        classification = "governed_operative_semantics"
+        if fence_stack:
+            classification = "exact_literal_or_evidence"
+            if marker is not None:
+                fence = marker.group(1)
+                remainder = marker.group(2)
+                active = fence_stack[-1]
+                if (
+                    fence[0] == active[0]
+                    and len(fence) >= active[1]
+                    and not remainder.strip(b" \t")
+                ):
+                    fence_stack.pop()
+                elif fence[:1] == b"~" or b"`" not in remainder:
+                    fence_stack.append((fence[0], len(fence)))
+        elif marker is not None:
+            fence = marker.group(1)
+            remainder = marker.group(2)
+            if fence[:1] == b"~" or b"`" not in remainder:
+                classification = "exact_literal_or_evidence"
+                fence_stack.append((fence[0], len(fence)))
         end = offset + len(line)
         if ranges and ranges[-1][2] == classification:
             ranges[-1] = (ranges[-1][0], end, classification)
         else:
             ranges.append((offset, end, classification))
-        if fence:
-            in_fence = not in_fence
         offset = end
     if offset < len(data):
         classification = (
-            "exact_literal_or_evidence" if in_fence else "governed_operative_semantics"
+            "exact_literal_or_evidence"
+            if fence_stack
+            else "governed_operative_semantics"
         )
         ranges.append((offset, len(data), classification))
-    if in_fence:
+    if fence_stack:
         raise Refusal(f"unterminated Markdown fence: {path}")
     return [
         {
@@ -1054,56 +1166,116 @@ def verify_seal(args: argparse.Namespace) -> bytes:
 
 
 def _safe_output(path: Path) -> Path:
+    relative = _repository_relative(path, "output")
+    parent, name = _open_parent(relative, create=True, label="output")
     try:
-        relative = path.relative_to(ROOT)
-    except ValueError as exc:
-        raise Refusal("output leaves repository") from exc
-    _safe_relative(relative.as_posix())
+        try:
+            metadata = os.stat(name, dir_fd=parent, follow_symlinks=False)
+        except FileNotFoundError:
+            metadata = None
+        except OSError as exc:
+            raise Refusal("output target is unavailable or unsafe") from exc
+        if metadata is not None and not stat.S_ISREG(metadata.st_mode):
+            raise Refusal("output target is not an ordinary file")
+    finally:
+        os.close(parent)
+    return ROOT / Path(*relative.parts)
+
+
+def _fresh_named_identity(
+    relative: PurePosixPath, parent_identity: tuple[int, ...], expected: os.stat_result
+) -> None:
+    parent, name = _open_parent(relative, create=False, label="output")
+    flags = os.O_RDONLY | os.O_NOFOLLOW
     try:
-        root = ROOT.resolve(strict=True)
-        parent = root
-        for part in relative.parent.parts:
-            parent /= part
-            try:
-                metadata = os.lstat(parent)
-            except FileNotFoundError:
-                os.mkdir(parent, mode=0o755)
-                metadata = os.lstat(parent)
-            if stat.S_ISLNK(metadata.st_mode) or not stat.S_ISDIR(metadata.st_mode):
-                raise Refusal("output parent is not a real directory")
-        if not parent.resolve(strict=True).is_relative_to(root):
-            raise Refusal("output parent resolves outside repository")
-    except Refusal:
-        raise
-    except OSError as exc:
-        raise Refusal("output parent is unavailable or unsafe") from exc
-    path = root / relative
-    if path.is_symlink() or (path.exists() and not path.is_file()):
-        raise Refusal("output target is not an ordinary file")
-    return path
+        if _directory_identity(os.fstat(parent)) != parent_identity:
+            raise Refusal("output parent changed during publication")
+        try:
+            descriptor = os.open(name, flags, dir_fd=parent)
+        except OSError as exc:
+            raise Refusal("output changed during publication") from exc
+        try:
+            if _identity(os.fstat(descriptor)) != _identity(expected):
+                raise Refusal("output changed during publication")
+        finally:
+            os.close(descriptor)
+    finally:
+        os.close(parent)
 
 
 def _atomic_write(path: Path, data: bytes) -> None:
     path = _safe_output(path)
-    descriptor, temporary = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    relative = _repository_relative(path, "output")
+    parent, name = _open_parent(relative, create=True, label="output")
+    parent_identity = _directory_identity(os.fstat(parent))
+    temporary: str | None = None
     try:
+        descriptor = -1
+        for _ in range(32):
+            candidate = f".{name}.{secrets.token_hex(16)}"
+            try:
+                descriptor = os.open(
+                    candidate,
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                    0o644,
+                    dir_fd=parent,
+                )
+                temporary = candidate
+                break
+            except FileExistsError:
+                continue
+            except OSError as exc:
+                raise Refusal("output stage is unavailable or unsafe") from exc
+        if temporary is None or descriptor < 0:
+            raise Refusal("could not allocate an output stage")
         with os.fdopen(descriptor, "wb") as handle:
             handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, path)
-        directory = os.open(path.parent, os.O_RDONLY)
+            staged = os.fstat(handle.fileno())
         try:
-            os.fsync(directory)
+            named_stage = os.open(temporary, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+        except OSError as exc:
+            raise Refusal("output stage changed before publication") from exc
+        try:
+            if _identity(os.fstat(named_stage)) != _identity(staged):
+                raise Refusal("output stage changed before publication")
         finally:
-            os.close(directory)
-        if _read_regular(path, max(MAX_JSON_BYTES, len(data))) != data:
-            raise Refusal("published output failed reread")
-    finally:
+            os.close(named_stage)
+        routed_parent, _ = _open_parent(relative, create=False, label="output")
         try:
-            os.unlink(temporary)
-        except FileNotFoundError:
-            pass
+            if _directory_identity(os.fstat(routed_parent)) != parent_identity:
+                raise Refusal("output parent changed before publication")
+        finally:
+            os.close(routed_parent)
+        os.replace(
+            temporary,
+            name,
+            src_dir_fd=parent,
+            dst_dir_fd=parent,
+        )
+        temporary = None
+        os.fsync(parent)
+        try:
+            published = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=parent)
+        except OSError as exc:
+            raise Refusal("published output is unavailable or unsafe") from exc
+        try:
+            reread, published_stat = _read_descriptor(
+                published, max(MAX_JSON_BYTES, len(data))
+            )
+        finally:
+            os.close(published)
+        if reread != data:
+            raise Refusal("published output failed reread")
+        _fresh_named_identity(relative, parent_identity, published_stat)
+    finally:
+        if temporary is not None:
+            try:
+                os.unlink(temporary, dir_fd=parent)
+            except FileNotFoundError:
+                pass
+        os.close(parent)
 
 
 def _reconciliation_markdown(

@@ -2,7 +2,7 @@
   "counts": {
     "bytes_asset": 138,
     "bytes_binary": 11,
-    "bytes_blob": 16667483,
+    "bytes_blob": 16665625,
     "bytes_generated": 98
   },
   "entries": [
@@ -575,9 +575,9 @@
       "path": "tests/fixtures/agent-instruction-v1/evidence/parity.json"
     },
     {
-      "bytes": 101712,
+      "bytes": 99854,
       "category": "blob",
-      "evidence": "no newline in the first 4096 bytes of 101712 bytes",
+      "evidence": "no newline in the first 4096 bytes of 99854 bytes",
       "grade": "candidate",
       "path": "tests/fixtures/instruction-architecture/byte-partition.json"
     },

@@ -6,6 +6,7 @@ import copy
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -175,8 +176,86 @@ class CorpusManifestTests(unittest.TestCase):
             outside_record.write_text("{}\n", encoding="utf-8")
             escape = Path(inside) / "escape"
             escape.symlink_to(outside, target_is_directory=True)
-            with self.assertRaisesRegex(AI.Refusal, "resolves outside repository"):
+            with self.assertRaisesRegex(
+                AI.Refusal, "outside repository|unavailable or unsafe"
+            ):
                 AI._read_regular(escape / "record.json", AI.MAX_JSON_BYTES)
+
+    def test_regular_read_refuses_concurrent_parent_swap(self):
+        with (
+            scratch_directory() as inside,
+            tempfile.TemporaryDirectory() as outside,
+        ):
+            holder = Path(inside)
+            outside = Path(outside)
+            safe = holder / "safe"
+            safe.mkdir()
+            target = safe / "record.json"
+            target.write_text("inside\n", encoding="utf-8")
+            (outside / "record.json").write_text("outside\n", encoding="utf-8")
+            original_open = os.open
+            swapped = False
+
+            def racing_open(path, flags, *arguments, **keywords):
+                nonlocal swapped
+                if not swapped and path == "record.json" and "dir_fd" in keywords:
+                    swapped = True
+                    safe.rename(holder / "safe-old")
+                    safe.symlink_to(outside, target_is_directory=True)
+                return original_open(path, flags, *arguments, **keywords)
+
+            with mock.patch.object(AI.os, "open", side_effect=racing_open):
+                with self.assertRaisesRegex(AI.Refusal, "parent|changed"):
+                    AI._read_regular(target, AI.MAX_JSON_BYTES)
+
+    def test_atomic_write_refuses_concurrent_parent_swap_without_escape(self):
+        with (
+            scratch_directory() as inside,
+            tempfile.TemporaryDirectory() as outside,
+        ):
+            holder = Path(inside)
+            outside = Path(outside)
+            safe = holder / "safe"
+            safe.mkdir()
+            target = safe / "record.json"
+            original_replace = os.replace
+            swapped = False
+
+            def racing_replace(source, destination, *arguments, **keywords):
+                nonlocal swapped
+                if not swapped:
+                    swapped = True
+                    safe.rename(holder / "safe-old")
+                    safe.symlink_to(outside, target_is_directory=True)
+                    if "src_dir_fd" not in keywords:
+                        staged = holder / "safe-old" / Path(source).name
+                        staged.rename(outside / Path(source).name)
+                return original_replace(source, destination, *arguments, **keywords)
+
+            with mock.patch.object(AI.os, "replace", side_effect=racing_replace):
+                with self.assertRaisesRegex(
+                    AI.Refusal, "parent|outside repository"
+                ):
+                    AI._atomic_write(target, b"bounded\n")
+            self.assertFalse((outside / "record.json").exists())
+
+    def test_json_depth_and_token_caps_refuse_before_decode(self):
+        depth_ceiling = 64
+        token_ceiling = 100_000
+        with scratch_directory() as inside:
+            deep = Path(inside) / "deep.json"
+            deep.write_bytes(
+                b"[" * (depth_ceiling + 1) + b"0" + b"]" * (depth_ceiling + 1)
+            )
+            with self.assertRaisesRegex(AI.Refusal, "JSON depth limit"):
+                AI._load_record(deep)
+
+            wide = Path(inside) / "wide.json"
+            wide.write_bytes(
+                b'{"items":[' + b"0," * (token_ceiling + 1) + b"0]}\n"
+            )
+            with self.assertRaisesRegex(AI.Refusal, "JSON token limit"):
+                AI._load_record(wide)
 
     def test_output_refuses_parent_symlink_escape_without_writing(self):
         with (
@@ -186,7 +265,9 @@ class CorpusManifestTests(unittest.TestCase):
             escape = Path(inside) / "escape"
             escape.symlink_to(outside, target_is_directory=True)
             target = escape / "record.json"
-            with self.assertRaisesRegex(AI.Refusal, "not a real directory"):
+            with self.assertRaisesRegex(
+                AI.Refusal, "not a real directory|parent is unavailable or unsafe"
+            ):
                 AI._safe_output(target)
             self.assertFalse((Path(outside) / "record.json").exists())
 
@@ -263,6 +344,24 @@ class BytePartitionTests(unittest.TestCase):
         self.assertEqual(len(generated), 17)
         self.assertNotIn("PROMISE_MACHINE.md", generated)
         self.assertTrue(all(path.endswith("/PROMISE_MACHINE.md") for path in generated))
+
+    def test_nested_fences_remain_exact_literal_evidence(self):
+        specimens = {
+            "plugins/hexaemeron/skills/fiat/references/push-discipline.md": b"plugin-ci-workflow | filed",
+            "plugins/hexaemeron/skills/solidity-auditor/references/report-formatting.md": b"- vulnerable line(s)",
+        }
+        by_path = {item["path"]: item for item in self.partition["files"]}
+        for path, needle in specimens.items():
+            source = AI._source_blob(path)
+            position = source.index(needle)
+            containing = next(
+                item
+                for item in by_path[path]["ranges"]
+                if item["start"] <= position < item["end"]
+            )
+            self.assertEqual(
+                containing["classification"], "exact_literal_or_evidence", path
+            )
 
     def test_partition_rebuild_and_command_are_exact(self):
         self.assertEqual(self.partition, AI.build_partition(self.manifest))
