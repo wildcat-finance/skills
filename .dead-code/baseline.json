@@ -2822,10 +2822,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:20f4b1cd0dc932636ccb9300eecc242b61990c4125a1654208d5a29690588ca9",
+      "id": "sha256:2d3c88434dd29b89983b425880b3264edce860960b81cc04708bb9f93cbf8ff1",
       "path": "scripts/promise_machine.py",
       "suppressed": false,
-      "symbol": "line:1626:constant-true"
+      "symbol": "line:3110:constant-true"
     },
     {
       "analyser_id": "python",
@@ -2955,10 +2955,10 @@
     },
     {
       "analyser_id": "python",
-      "id": "sha256:ed100e82a425a129d81eaeed8c1db5c80337e943ec382062537841930493f948",
+      "id": "sha256:addde49dedd0a674bccb963e1722059a91a58d582d38f6363248fe24b2213c98",
       "path": "tests/test_promise_machine_contract.py",
       "suppressed": false,
-      "symbol": "test_missing_root_licence_is_refused.plugin@1396"
+      "symbol": "test_missing_root_licence_is_refused.plugin@2122"
     },
     {
       "analyser_id": "python",
@@ -3076,10 +3076,10 @@
     "version": "1"
   },
   "tree": {
-    "commit": "95e327b86f7a7ce87e37bf71bf7162286582e30d",
-    "git_tree": "c2b5702e34c46c5c9a121e5998a854e9d0fea73a"
+    "commit": "3d34e5a52b47402ee6ec6e00119c5336bdd39895",
+    "git_tree": "c0b4b1bed25084dd57aa2a9f4ce9adeae1b39e2d"
   },
   "universe": {
-    "id": "sha256:daa9d2751d2aad5078dbe604e350b8c751bc79b852a0b35504815e14e272bf6a"
+    "id": "sha256:fe91487bc19baca5ea824755d369bde1d0ff9167a57e2287f41054f94813489d"
   }
 }
