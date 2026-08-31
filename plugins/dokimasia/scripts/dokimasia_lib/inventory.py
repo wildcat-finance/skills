@@ -124,16 +124,33 @@ def _owning_app_root(relative: PurePosixPath, app_roots: list[PurePosixPath]):
     return None
 
 
+MATCHER_TOKEN_CAP = 512
+
+
 def _matchers(tokens: list[lexer.Token]) -> list[str]:
-    """String values that follow a `matcher` key, in source order."""
+    """String values that follow a `matcher` key, up to a stated bound.
+
+    The scan is capped, and reaching the cap refuses rather than returning a
+    shorter list. A guard whose matchers were silently truncated would read as
+    a guard that covers fewer paths than it does.
+    """
     found: list[str] = []
     for position, token in enumerate(tokens):
-        if token.kind == "name" and token.value == "matcher":
-            for candidate in tokens[position + 1:position + 40]:
-                if candidate.kind == "string":
-                    found.append(candidate.value)
-                if candidate.kind == "punct" and candidate.value == "}":
-                    break
+        if not (token.kind == "name" and token.value == "matcher"):
+            continue
+        window = tokens[position + 1:position + 1 + MATCHER_TOKEN_CAP]
+        closed = False
+        for candidate in window:
+            if candidate.kind == "string":
+                found.append(candidate.value)
+            if candidate.kind == "punct" and candidate.value == "}":
+                closed = True
+                break
+        if not closed and len(window) == MATCHER_TOKEN_CAP:
+            raise InventoryError(
+                f"a matcher list did not close within the "
+                f"{MATCHER_TOKEN_CAP}-token cap, so it cannot be recorded whole"
+            )
     return sorted(set(found))
 
 
@@ -217,21 +234,17 @@ def refusal_proofs() -> list[tuple[str, str]]:
         record("over-deep-tree",
                lambda: paths.source_files(resolved, SOURCE_SUFFIXES))
 
-        # The file-count cap is exercised against a substituted value rather
+        # The file-count cap is exercised by passing a smaller bound rather
         # than by writing twenty thousand files. The branch under test is the
-        # same one; only the number it compares against changes.
+        # same one; only the number it compares against changes, and no module
+        # global is mutated, so no concurrent read ever sees a lowered cap.
         shallow = base / "counted"
         (shallow / "src").mkdir(parents=True)
         for index in range(4):
             (shallow / "src" / f"p{index}.tsx").write_text("export default function P() {}", "utf-8")
         counted_root = paths.declared_root(shallow)
-        original = paths.MAX_FILES
-        paths.MAX_FILES = 2
-        try:
-            record("over-large-file-count",
-                   lambda: paths.source_files(counted_root, SOURCE_SUFFIXES))
-        finally:
-            paths.MAX_FILES = original
+        record("over-large-file-count",
+               lambda: paths.source_files(counted_root, SOURCE_SUFFIXES, max_files=2))
     return results
 
 

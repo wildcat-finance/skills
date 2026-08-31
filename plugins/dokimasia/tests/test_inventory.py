@@ -154,10 +154,19 @@ class RefusalTests(unittest.TestCase):
             with self.subTest(rule=name):
                 self.assertTrue(refusal, f"{name} was accepted; it must refuse")
 
-    def test_the_file_count_cap_is_restored_after_its_proof(self):
-        before = paths.MAX_FILES
+    def test_no_declared_cap_is_mutated_while_the_proofs_run(self):
+        before = (paths.MAX_FILES, paths.MAX_FILE_BYTES, paths.MAX_DEPTH)
         inventory.refusal_proofs()
-        self.assertEqual(paths.MAX_FILES, before)
+        self.assertEqual((paths.MAX_FILES, paths.MAX_FILE_BYTES, paths.MAX_DEPTH), before)
+
+    def test_a_matcher_list_that_never_closes_refuses_rather_than_truncating(self):
+        from dokimasia_lib import lexer
+        runaway = lexer.tokenize(
+            "export const config = { matcher: [" + '"/a",' * 400 + "\n"
+        )
+        with self.assertRaises(inventory.InventoryError) as caught:
+            inventory._matchers(runaway)
+        self.assertIn("token cap", str(caught.exception))
 
     def test_the_check_entry_point_reports_no_failures_on_the_fixture(self):
         self.assertEqual(inventory.check(paths.declared_root(FIXTURE)), [])

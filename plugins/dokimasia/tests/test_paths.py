@@ -98,12 +98,17 @@ class WalkAndReadTests(unittest.TestCase):
     def test_an_over_large_file_count_refuses_by_name(self):
         for index in range(4):
             (self.base / "src" / f"p{index}.tsx").write_text("export default function P() {}", encoding="utf-8")
-        original = paths.MAX_FILES
-        paths.MAX_FILES = 2
-        self.addCleanup(setattr, paths, "MAX_FILES", original)
         with self.assertRaises(paths.PathRefusal) as caught:
-            paths.source_files(self.root, frozenset({".tsx"}))
+            paths.source_files(self.root, frozenset({".tsx"}), max_files=2)
         self.assertIn("2-file cap", str(caught.exception))
+
+    def test_the_file_count_cap_is_a_parameter_and_never_a_mutated_global(self):
+        # A cap that a library function lowers in place is a cap another caller
+        # can observe lowered. Passing it keeps the declared value fixed.
+        before = paths.MAX_FILES
+        with self.assertRaises(paths.PathRefusal):
+            paths.source_files(self.root, frozenset({".tsx"}), max_files=0)
+        self.assertEqual(paths.MAX_FILES, before)
 
     def test_an_oversized_file_refuses_by_name(self):
         big = self.base / "src" / "big.tsx"

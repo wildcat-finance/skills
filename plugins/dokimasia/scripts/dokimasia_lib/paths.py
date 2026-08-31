@@ -50,7 +50,11 @@ def relative_within(root: Path, supplied: str) -> PurePosixPath:
     return candidate
 
 
-def source_files(root: Path, suffixes: frozenset[str]) -> list[PurePosixPath]:
+def source_files(
+    root: Path,
+    suffixes: frozenset[str],
+    max_files: int = MAX_FILES,
+) -> list[PurePosixPath]:
     """Every readable source file under the root, sorted, under every cap.
 
     Sorted because the inventory digest has to be reproducible, and an
@@ -81,8 +85,8 @@ def source_files(root: Path, suffixes: frozenset[str]) -> list[PurePosixPath]:
             if path.suffix not in suffixes:
                 continue
             found.append(PurePosixPath((relative_parent / name).as_posix()))
-            if len(found) > MAX_FILES:
-                raise PathRefusal(f"the tree holds more than the {MAX_FILES}-file cap")
+            if len(found) > max_files:
+                raise PathRefusal(f"the tree holds more than the {max_files}-file cap")
     return sorted(found)
 
 
