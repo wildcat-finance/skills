@@ -644,6 +644,15 @@ class NoemaScaffoldTests(unittest.TestCase):
     def test_repository_python_pin_is_exact(self):
         self.assertEqual((ROOT / ".python-version").read_text().strip(), "3.14.6")
 
+    def test_repository_invariant_checkout_retains_evidence_history(self):
+        workflow = (ROOT / ".github/workflows/repo.yml").read_text(encoding="utf-8")
+        self.assertIn(
+            "      - uses: actions/checkout@v4\n"
+            "        with:\n"
+            "          fetch-depth: 0\n",
+            workflow,
+        )
+
     def test_schema_is_closed_and_names_all_record_families(self):
         schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
         self.assertEqual(
