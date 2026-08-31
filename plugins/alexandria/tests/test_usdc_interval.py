@@ -1,6 +1,7 @@
 """Collecting a bounded interval: bounds, refusals, resume and reorg rewind."""
 
 from copy import deepcopy
+import hashlib
 import json
 from pathlib import Path
 import socket
@@ -17,7 +18,13 @@ from alexandria_lib.canonical import canonical_bytes  # noqa: E402
 from alexandria_lib.errors import AlexandriaError  # noqa: E402
 from alexandria_lib.interval import EVIDENCE_CLASSES, Staging  # noqa: E402
 import usdc_interval  # noqa: E402
-from usdc_interval import Collector, HttpsTransport, TransportError, request_identifier  # noqa: E402
+from usdc_interval import (  # noqa: E402
+    Collector,
+    HttpsTransport,
+    Reconciler,
+    TransportError,
+    request_identifier,
+)
 
 
 FIXTURE = PLUGIN / "tests" / "fixtures" / "usdc-interval-transport.json"
@@ -49,6 +56,13 @@ class FixtureTransport:
             return "0x" + f"{number:064x}"
         return self.state["blocks"][str(number)]
 
+    def transactions(self, number):
+        """A deterministic, ordered transaction list for one block."""
+        return [
+            "0x" + hashlib.sha256(f"usdc-interval-blocktx:{number}:{position}".encode()).hexdigest()
+            for position in range(2)
+        ]
+
     def _shard_for(self, end):
         for shard in self.state["plan"]["shards"]:
             if shard["end"] == end:
@@ -69,7 +83,11 @@ class FixtureTransport:
                 number = int(self.state["plan"]["finality"]["block_number"])
             else:
                 number = int(tag, 16)
-            result = {"hash": self._hash(number), "number": hex(number), "transactions": []}
+            result = {
+                "hash": self._hash(number),
+                "number": hex(number),
+                "transactions": self.transactions(number),
+            }
         elif method == "eth_getLogs":
             shard = self._shard_for(int(envelope["params"][0]["toBlock"], 16))
             result = self.state["logs"][str(shard["index"])]
@@ -450,6 +468,211 @@ class ReorgRewindTests(CollectorTestCase):
         reorged = self.plan["shards"][2]["end"]
         with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
             Collector(self.plan, root, FixtureTransport(self.state, reorg_from=reorged)).collect()
+
+
+
+SECOND_FIXTURE = PLUGIN / "tests" / "fixtures" / "usdc-interval-second-provider.json"
+
+
+def second_fixture():
+    if not SECOND_FIXTURE.is_file():
+        raise AssertionError(
+            f"the second-provider fixture is missing at {SECOND_FIXTURE}; the reconciler "
+            "cannot be shown without it and this suite must fail rather than skip"
+        )
+    return json.loads(SECOND_FIXTURE.read_text(encoding="utf-8"))
+
+
+class SecondProviderTransport(FixtureTransport):
+    """The same chain, with the disagreements the second-provider fixture declares."""
+
+    def __init__(self, state, disagreements, **kwargs):
+        super().__init__(state, **kwargs)
+        self.disagreements = disagreements
+
+    def _shard_index(self, number):
+        shard = self._shard_for(number)
+        return None if shard is None else str(shard["index"])
+
+    def _hash(self, number):
+        index = self._shard_index(number)
+        override = self.disagreements.get("boundary_hash_overrides", {}).get(index)
+        return override if override else super()._hash(number)
+
+    def transactions(self, number):
+        index = self._shard_index(number)
+        order = self.disagreements.get("transaction_orders", {}).get(index)
+        return list(order) if order else super().transactions(number)
+
+    def request(self, payload, label):
+        data = super().request(payload, label)
+        envelope = json.loads(data)
+        method = json.loads(payload)["method"]
+        if method == "eth_getLogs":
+            shard = self._shard_for(int(json.loads(payload)["params"][0]["toBlock"], 16))
+            extra = self.disagreements.get("extra_logs", {}).get(str(shard["index"]))
+            if extra:
+                envelope["result"] = list(envelope["result"]) + list(extra)
+                return canonical_bytes(envelope)
+        return data
+
+
+class ReconciliationTests(CollectorTestCase):
+    """The conformance evidence for `reconciliation-refuses-mismatch`."""
+
+    def setUp(self):
+        super().setUp()
+        self.disagreements = second_fixture()
+
+    def collected(self, name="collected"):
+        root = self.scratch(name)
+        Collector(self.plan, root, FixtureTransport(self.state)).collect()
+        return root
+
+    def reconcile(self, root, transport, provider_class="second archive endpoint, class only"):
+        return Reconciler(self.plan, root, transport, provider_class).reconcile()
+
+    def test_two_agreeing_providers_record_an_agreement(self):
+        root = self.collected()
+        document = self.reconcile(root, FixtureTransport(self.state))
+        record = document["reconciliation"]
+        self.assertEqual(record["status"], "agreed")
+        self.assertEqual(record["disputed"], [])
+        self.assertEqual(record["matched"], record["compared"])
+        self.assertGreater(record["compared"], 0)
+        self.assertEqual({shard["status"] for shard in document["shards"]}, {"complete"})
+
+    def test_a_disputed_log_identity_makes_only_its_own_shard_partial(self):
+        root = self.collected()
+        document = self.reconcile(
+            root,
+            SecondProviderTransport(self.state, {"extra_logs": self.disagreements["extra_logs"]}),
+        )
+        record = document["reconciliation"]
+        self.assertEqual(record["status"], "disputed")
+        self.assertEqual([entry["kind"] for entry in record["disputed"]], ["log-identity"])
+        self.assertEqual(record["disputed"][0]["shard"], 1)
+        statuses = {shard["index"]: shard["status"] for shard in document["shards"]}
+        self.assertEqual(statuses[1], "partial")
+        self.assertEqual({index: status for index, status in statuses.items() if index != 1},
+                         {0: "complete", 2: "complete", 3: "complete", 4: "complete"})
+
+    def test_a_disagreeing_boundary_hash_makes_its_shard_failed(self):
+        root = self.collected()
+        document = self.reconcile(
+            root,
+            SecondProviderTransport(
+                self.state,
+                {"boundary_hash_overrides": self.disagreements["boundary_hash_overrides"]},
+            ),
+        )
+        record = document["reconciliation"]
+        self.assertEqual(record["status"], "disputed")
+        self.assertIn("boundary-hash", [entry["kind"] for entry in record["disputed"]])
+        statuses = {shard["index"]: shard["status"] for shard in document["shards"]}
+        self.assertEqual(statuses[2], "failed")
+
+    def test_a_disagreeing_transaction_order_is_recorded(self):
+        root = self.collected()
+        document = self.reconcile(
+            root,
+            SecondProviderTransport(
+                self.state,
+                {"transaction_orders": self.disagreements["transaction_orders"]},
+            ),
+        )
+        kinds = {entry["kind"] for entry in document["reconciliation"]["disputed"]}
+        self.assertIn("transaction-order", kinds)
+        statuses = {shard["index"]: shard["status"] for shard in document["shards"]}
+        self.assertEqual(statuses[3], "partial")
+
+    def test_neither_provider_wins_by_answering_first(self):
+        """The disputed shard keeps both sets of bytes and takes neither as truth."""
+        root = self.collected()
+        document = self.reconcile(
+            root,
+            SecondProviderTransport(
+                self.state,
+                {"boundary_hash_overrides": self.disagreements["boundary_hash_overrides"]},
+            ),
+        )
+        kept = (root / "reconciliation" / "disputed.jsonl").read_bytes()
+        entries = [json.loads(line) for line in kept.splitlines() if line]
+        self.assertTrue(entries)
+        self.assertEqual({entry["shard"] for entry in entries}, {2})
+        staged = {
+            entry["shard"]: entry["response"]
+            for entry in Staging(root, self.plan).entries("boundary-blocks")
+        }
+        self.assertIn("0x" + "9" * 64, entries[0]["response"])
+        self.assertNotIn("0x" + "9" * 64, staged[2])
+        self.assertEqual(
+            [shard["status"] for shard in document["shards"] if shard["index"] == 2], ["failed"]
+        )
+
+    def test_a_second_provider_that_raises_leaves_the_interval_unreconciled(self):
+        def fail(_envelope):
+            raise TransportError("second provider transport failed")
+
+        for label in ("shard 0 boundary-blocks second provider", "shard 0 logs second provider"):
+            with self.subTest(label=label):
+                root = self.collected(f"unreconciled-{label.split()[1]}-{label.split()[2]}")
+                document = self.reconcile(
+                    root, SecondProviderTransport(self.state, {}, faults={label: fail})
+                )
+                record = document["reconciliation"]
+                self.assertEqual(record["status"], "unreconciled")
+                self.assertEqual((record["compared"], record["matched"]), (0, 0))
+
+    def test_a_second_provider_returning_an_error_leaves_the_interval_unreconciled(self):
+        root = self.collected()
+        transport = SecondProviderTransport(self.state, {}, faults={
+            "shard 0 logs second provider": canonical_bytes(
+                {"error": {"code": -32000}, "id": 2, "jsonrpc": "2.0"}
+            ),
+        })
+        self.assertEqual(self.reconcile(root, transport)["reconciliation"]["status"], "unreconciled")
+
+    def test_an_incompletely_collected_interval_refuses(self):
+        root = self.scratch("partial")
+        with self.assertRaises(_Killed):
+            Collector(self.plan, root, KillingTransport(self.state, kill_at="shard 3 logs")).collect()
+        with self.assertRaisesRegex(AlexandriaError, "not completely collected"):
+            self.reconcile(root, FixtureTransport(self.state))
+
+    def test_a_provider_class_carrying_an_endpoint_refuses(self):
+        root = self.collected()
+        with self.assertRaisesRegex(AlexandriaError, "must not carry an endpoint"):
+            self.reconcile(root, FixtureTransport(self.state), "https://second.invalid/rpc")
+
+    def test_a_symlinked_reconciliation_directory_refuses(self):
+        elsewhere = tempfile.TemporaryDirectory()
+        self.addCleanup(elsewhere.cleanup)
+        root = self.collected("symlinked")
+        (root / "reconciliation").symlink_to(Path(elsewhere.name))
+        with self.assertRaisesRegex(AlexandriaError, "not a directory"):
+            self.reconcile(root, FixtureTransport(self.state))
+
+    def test_the_record_matches_the_receipt_schema(self):
+        root = self.collected()
+        document = self.reconcile(
+            root,
+            SecondProviderTransport(self.state, {"extra_logs": self.disagreements["extra_logs"]}),
+        )
+        schema = json.loads(
+            (PLUGIN / "schemas" / "interval-receipt-v1.schema.json").read_text()
+        )
+        self.assertEqual(
+            set(document["reconciliation"]),
+            set(schema["$defs"]["reconciliation"]["required"]),
+        )
+        dispute = schema["$defs"]["reconciliation"]["properties"]["disputed"]["items"]
+        self.assertEqual(set(document["reconciliation"]["disputed"][0]), set(dispute["required"]))
+
+    def test_reconciliation_opens_no_socket(self):
+        root = self.collected()
+        with mock.patch.object(socket.socket, "connect", side_effect=AssertionError("network used")):
+            self.reconcile(root, FixtureTransport(self.state))
 
 
 class BoundsTests(CollectorTestCase):
