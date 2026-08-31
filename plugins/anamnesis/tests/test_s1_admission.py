@@ -215,18 +215,27 @@ class Paths(Harness):
 
 
 class PilotScope(Harness):
-    def test_fewer_than_25_records_is_refused(self):
-        self.policy["records"] = self.policy["records"][:10]
-        self.assertEqual(self.refusal().code, "A073")
+    """The 25-to-50 range scopes the seed pilot, not admission in general."""
 
-    def test_more_than_50_records_is_refused(self):
-        extra = []
-        for index in range(60):
-            record = copy.deepcopy(self.policy["records"][0])
-            record["id"] = f"synthetic-{index}"
-            extra.append(record)
-        self.policy["records"] = extra
-        self.assertEqual(self.refusal().code, "A073")
+    def scope_refusal(self, count):
+        with self.assertRaises(anamnesis.Refusal) as caught:
+            anamnesis.seed_scope(count)
+        return caught.exception
+
+    def test_fewer_than_25_records_is_outside_the_seed_scope(self):
+        self.assertEqual(self.scope_refusal(10).code, "A073")
+
+    def test_more_than_50_records_is_outside_the_seed_scope(self):
+        self.assertEqual(self.scope_refusal(60).code, "A073")
+
+    def test_the_pilot_itself_is_inside_the_seed_scope(self):
+        anamnesis.seed_scope(len(self.policy["records"]))
+
+    def test_admission_alone_does_not_enforce_the_pilot_range(self):
+        """A corpus is not required to be pilot-sized to be admitted."""
+        self.policy["records"] = self.policy["records"][:10]
+        result = self.admit()
+        self.assertEqual(result["records"], 10)
 
 
 class BoundedOutput(Harness):

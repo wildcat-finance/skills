@@ -134,3 +134,54 @@ class DuplicateKeyBoundary(Sandbox):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RefusalEventCoverage(Sandbox):
+    """S1-R2-02: only per-source refusals left a durable event behind."""
+
+    def setUp(self):
+        super().setUp()
+        (self.root / "sources").mkdir()
+        self.policy = json.loads(PILOT.read_text(encoding="utf-8"))
+        for source in self.policy["sources"]:
+            origin = PLUGIN_ROOT / "specimens/pilot" / source["path"]
+            (self.root / source["path"]).write_bytes(origin.read_bytes())
+
+    def refuse(self, policy):
+        path = self.root / "policy.json"
+        path.write_text(json.dumps(policy, indent=2), encoding="utf-8")
+        events = anamnesis.Events()
+        with self.assertRaises(anamnesis.Refusal) as caught:
+            anamnesis.admit(str(path), events)
+        return caught.exception, events
+
+    def assert_recorded(self, refusal, events):
+        refused = [e for e in events.emitted if e["event"] == "anamnesis.source.refused"]
+        self.assertEqual(len(refused), 1)
+        self.assertEqual(refused[0]["rule"], refusal.code)
+        self.assertEqual(refused[0]["policy_version"], self.policy["policy_version"])
+        self.assertEqual(len(refused[0]["correlation_id"]), 16)
+
+    def test_a_record_level_refusal_is_recorded(self):
+        self.policy["records"][0]["source"] = "no-such-source"
+        refusal, events = self.refuse(self.policy)
+        self.assertEqual(refusal.code, "A072")
+        self.assert_recorded(refusal, events)
+
+    def test_a_duplicate_record_id_refusal_is_recorded(self):
+        self.policy["records"].append(dict(self.policy["records"][0]))
+        refusal, events = self.refuse(self.policy)
+        self.assertEqual(refusal.code, "A071")
+        self.assert_recorded(refusal, events)
+
+    def test_an_unknown_record_key_refusal_is_recorded(self):
+        self.policy["records"][0]["extra"] = True
+        refusal, events = self.refuse(self.policy)
+        self.assertEqual(refusal.code, "A011")
+        self.assert_recorded(refusal, events)
+
+    def test_a_source_refusal_is_still_recorded_once(self):
+        self.policy["sources"][0]["sha256"] = "0" * 64
+        refusal, events = self.refuse(self.policy)
+        self.assertEqual(refusal.code, "A057")
+        self.assert_recorded(refusal, events)
