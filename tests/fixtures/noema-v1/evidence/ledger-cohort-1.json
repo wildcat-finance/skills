@@ -1,0 +1,1 @@
+{"breach":null,"budget_usd":"8","calls":32,"reservations":[{"estimated_usd":"0.124887","request_sha256":"17d10d154a366029d83ef3f8164954c213f71379b114cfa16d5ce51d45df9e4c"},{"estimated_usd":"0.12503925","request_sha256":"861655bc1e9fe3e05e04d8a66b40cad298986658821da843b1e7742e47b69108"}],"schema":"noema-budget-ledger/v2","spent_usd":"0.67074575"}

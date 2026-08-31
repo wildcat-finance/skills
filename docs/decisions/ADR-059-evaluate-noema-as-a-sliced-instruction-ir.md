@@ -109,21 +109,23 @@ reference evidence and no seed Python enters the implementation process.
 
 ## Step 5 result
 
-The measured hypothesis is accepted for continued shadowing. All four exact
-profiles recorded counts, all three corpus gates passed under each profile,
-all seven critical vectors passed, and Google and OpenAI each matched the
-required answer for all eight source/Noema pairs. There were no unknown
-profiles or answers. The private vocabulary digest remains unknown for all
-four providers by design; token counts are endpoint accounting, not recovered
-tokenizer vocabularies.
+The measured hypothesis is accepted for continued shadowing. One four-family
+measurement recorded all profiles and passed all three corpus gates. Two
+independent evaluation cohorts then used the same answer-free packet and fresh
+ledgers; both scored 16/16 across Google and OpenAI, with all seven critical
+vectors passing. There were no terminal unknown profiles or answers. The
+private vocabulary digest remains unknown for all four providers by design;
+token counts are endpoint accounting, not recovered tokenizer vocabularies.
 
-The current corpus anchor records one complete accepted run at the final audit
-checkpoint. Its exact same-packet predecessor scored 15/16; the only changed
-selection was OpenAI's Noema answer for the ordering case. The accepted repeat
-therefore establishes one complete capability run, not deterministic recurrence
-or a frequency estimate. The rejected predecessor remains below. No later
-integration may treat this one-shot family result as an automated release gate
-without a preregistered repetition/aggregation rule or a deterministic judge.
+The corpus anchor publishes the second accepted cohort as its canonical answer
+and tally pair. The first accepted cohort and all three final ledger snapshots
+remain beside it. Each cohort recovered two transient OpenAI provider-envelope
+refusals under the preregistered second request identity; the four uncertain
+first attempts remain reserved. This is two clean capability results under one
+fixed packet, not deterministic recurrence or a frequency estimate. It also
+says nothing about minimum decoder size: a named small local model must pass the
+same paired boundary before any integration issue can treat that deployment as
+viable.
 
 The complete corpus component counts are below. Bytes are representation bytes
 and therefore common to every profile; the remaining columns are
@@ -150,9 +152,9 @@ precondition.
 
 | family | canonical, limit 55% | four-document first use, limit 70% | steady state, limit 40% | gate | measurement cost |
 | --- | --- | --- | --- | --- | ---: |
-| Anthropic | 7,597/35,866, 21.182% | 8,610/35,866, 24.006% | 7,699/35,866, 21.466% | pass | $0.875985 |
-| Google | 6,854/23,980, 28.582% | 7,892/23,980, 32.911% | 7,258/23,980, 30.267% | pass | $0.10799475 |
-| open-weight | 6,625/23,686, 27.970% | 7,623/23,686, 32.184% | 7,046/23,686, 29.748% | pass | $0.0401932 |
+| Anthropic | 7,597/35,866, 21.182% | 8,610/35,866, 24.006% | 7,699/35,866, 21.466% | pass | $0.875560 |
+| Google | 6,854/23,980, 28.582% | 7,892/23,980, 32.911% | 7,258/23,980, 30.267% | pass | $0.108021 |
+| open-weight | 6,625/23,686, 27.970% | 7,623/23,686, 32.184% | 7,046/23,686, 29.748% | pass | $0.0515612 |
 | OpenAI | 5,550/23,141, 23.983% | 6,359/23,141, 27.479% | 5,797/23,141, 25.051% | pass | $0.80443125 |
 
 The one-through-four-document first-use evidence is not an alternate gate.
@@ -167,32 +169,46 @@ declared four-source corpus.
 | open-weight | 2,375/1,619, 146.695% | 4,180/15,449, 27.057% | 5,944/20,798, 28.580% | 7,623/23,686, 32.184% |
 | OpenAI | 2,037/1,550, 131.419% | 3,559/15,178, 23.448% | 4,991/20,356, 24.519% | 6,359/23,141, 27.479% |
 
-| evaluation family | recorded answers | paired cases | required classes | input/output tokens | cost | result |
-| --- | ---: | ---: | --- | ---: | ---: | --- |
-| Google Gemini 3.7 Flash | 16, 0 unknown | 8/8 | 5 decision, 2 refusal, 1 unknown | 95,443/9,631 | $0.080335350 | pass |
-| OpenAI GPT-5.6 Sol | 16, 0 unknown | 8/8 | 5 decision, 2 refusal, 1 unknown | 86,735/710 | $0.0648835 | pass |
+| cohort | evaluation family | recorded answers | paired cases | required classes | input/output tokens | cost | result |
+| --- | --- | ---: | ---: | --- | ---: | ---: | --- |
+| 1 | Google Gemini 3.7 Flash | 16, 0 unknown | 8/8 | 5 decision, 2 refusal, 1 unknown | 95,446/8,440 | $0.10323450 | pass |
+| 1 | OpenAI GPT-5.6 Sol | 16, 0 unknown | 8/8 | 5 decision, 2 refusal, 1 unknown | 86,741/848 | $0.56751125 | pass |
+| 2 | Google Gemini 3.7 Flash | 16, 0 unknown | 8/8 | 5 decision, 2 refusal, 1 unknown | 95,446/8,440 | $0.078574725 | pass |
+| 2 | OpenAI GPT-5.6 Sol | 16, 0 unknown | 8/8 | 5 decision, 2 refusal, 1 unknown | 86,741/643 | $0.56136125 | pass |
 
-The accepted run cost $1.82860420 for measurement and $0.145218850 for
-evaluation. The cumulative append-only ledger records 1,559 calls and
-$20.062954925 spent under the $25 ceiling. Nine unresolved reservations retain
-$0.2926388325, leaving $4.6444062425 usable authority. No reservation was
-deleted or discounted.
+The final anchor added $1.83957345 for measurement, $0.67074575 for cohort 1
+and $0.639935975 for cohort 2: $3.150255175 settled. Its current ledgers have
+$30, $8 and $8 ceilings, an aggregate $46 under the operator's $55 authority.
+Because the measurement ledger also retains the preceding anchor's calls, the
+three snapshots record $4.303727625 settled and $0.84588525 reserved. Across
+both operator-authorised ledgers and both cohort ledgers, historical settled
+plus reserved exposure is $26.7331883325. No reservation was deleted,
+discounted or reused.
 
 The durable evidence is anchored to commit
-`33d598808e15ff273bc7b888e1e068f75c81a014` and tree
-`e096ce0b4c8a90e2e67ae06a81f5419e608bb177`. The corpus identity is
-`e2e142f9c97651d1044cb279ddcf508c9007fdf4bf0a72c757d308049e9abf0b`,
+`b5802f21b8d81fa21c9d63e8753e44c39faf2831` and tree
+`84673116ed334a4a7479f933f0d5d5fc804c9b21`. The corpus identity is
+`1acd30ed4a8fdd6aeb7ae2e65ea4c3ad497569e2398263f31bfa68bfcd4c5f2b`,
 the profile set is
-`d12c424df29b98dd2e05f85cc7dcf87ef91f86e5cad0056d806dfe82a2c944d6`,
+`59559d56830f072f7ee45dc9d8ad1d897523e2aa322909a88cc58dfd74fde2d9`,
 and the case set is
-`472eee16b04970745158cb432b0c1092f24ce8fdf538f0d2a2cedc72e8e259c2`.
-The packet, measurement, answers and evaluation digests are respectively
-`3739074eb60422d3c171e03012d0110a841fb765de8c425afa85ead19ed0e0c6`,
-`66da3a5a860ee4499a5c7c28fd63124013f211a143e7978a17878d7fd7eddd00`,
-`75750a6b241220b1db07a309b67eb78a8af29966f8e240e562dd39dd9cd06f94`
-and `ee5373e26d425f714ef98146b8bd00a5b0c66349956e8550bba5d4b38cbfab91`.
+`3691a2f94b56a49eed21c46ffe4bb296b3e0cf613af7d9f20b6e1ad06596df77`.
+The packet and measurement digests are
+`94b848cfdc255f7627bd3331ff612ab90169ec098b18da2afa009fd641f9a5c4`
+and `db58e137f4d896ed4b23ab02590a18831f0f3b1c6634a2d25facd4a29d9a2afb`.
+Cohort 1's answers and tally are
+`0f4c63b987cef6f454b0f62b9f7c0c66c4797ea5e8468665c074e73bee031a99`
+and `91e58fbf333006406ca188b1f04399ed2dcc65a57b8a079a77da7d1701f2401d`;
+the canonical cohort 2 pair is
+`427d33d45ab6d07e8bd3bc048128adbeda53a5ab87c8672033ecf77961b35efa`
+and `6b7c2df3377cbf3a4ad68c31a46c7ccd9400b1ba16b14fc244516cfd8e483429`.
+The measurement, cohort 1 and cohort 2 ledger digests are
+`f50723555895dd44ab77be8ad1ac662763779a8c059e2b3c7e32c7a5e5e0fb4c`,
+`df634c7aa71e3587b35c825cf0bba536c8a7474115e32572f476f7f863113b4e`
+and `b351a74fb7d68a5ba87ab4af49336eb208549e90633abb92c9a96feeb9530349`.
 
-Eight rejected runs remain part of the decision record:
+Earlier behavioral runs and incomplete measurements remain part of the
+decision record:
 
 - `a4af9ffd` scored 12/16 and 5/7 vectors. The shared generic graph, absent proposition facts and 58-byte non-grammar kernel made it a guessing test. Its packet/measurement/answers/evaluation digests are `0141beedd32870e32195f06ab3e816f697e72701727eaddfcabea259a1542543`, `a8b528123384f6bc4ba4840c25fd32fcd449b9abdf0e848dbb5427bc3e99a51d`, `8f917366ba3542ecb0aed0d54bdf6c0294454d33324167cc0ce9284cab9fd26a` and `95174a935dbcdeaa4cbe825326408fa343e287fcd1477109770350bc38bc2c46`.
 - `d19b6dec` scored 13/16 and 6/7 vectors after source-bound graphs, a complete kernel and typed runtime context landed. Google missed the Sapheneia actor swap; OpenAI missed that case and Fiat's missing authority because the source's explicit-request conditions were not present as facts. Its four digests are `a3c9e4ce0865d3a99e7182eb9b242a4d77cda5ea4e454e2e867156b83a3cdb2f`, `75768505c7806c035151de707dbe4009596e14bde37117a94831ecc908918c05`, `d973df277ea78284f5f83920fbc6973efa44b9915f9bc679a8c2656491b8be9e` and `0872d13783bb514f1b6521ff265b58dd85524a86bf86c8bcd87a8b4861a62bfb`.
@@ -201,7 +217,9 @@ Eight rejected runs remain part of the decision record:
 - The first unseeded `2574382c` audit cohort scored 15/16 and 6/7 vectors. Google permitted the exact Phylax ask-first dependency source case as `answer.z.625af7046e684a94079702`; its Noema arm and both OpenAI arms returned the required refusal `answer.a.7d7158973e0e3e66ef4641`. Its packet, measurement, answers and evaluation digests are `afefe3d370cc01aa18629a9cd8dcb5ef837d7af1d5d9e2a4c28456a316f5d840`, `519b0c6d8cdfe0ece40b71f928280c141b13f0fd46f83691cef8272d211c3131`, `eb29178c050bbdea946e7678df160f73f7256693b91810f4bddb4a93deed30eb` and `80f6540c34d6d03c0094836ddcca7907954611acab56e36773af701f4acf6045`.
 - An exact repeat at `2574382c` produced the same 15/16 miss. Its packet and measurement digests are unchanged; its answers and evaluation digests are `300dc7c061b35b79515dc8d45868265e7fc2852c580d8a414bd0952b14225dd0` and `45ed98b4a27a72228578fe8be38cb9c6327adf6bcbc43c98f4999f17679f0811`. Controlled single-case probes changed the Google source answer under semantically irrelevant request sampling, so the one-shot unseeded gate was not reproducible. The audit repair fixes the evaluation seed at `0` before rerunning it; it does not search seeds or introduce a quorum.
 - The fixed-seed `b0691aeb` cohort also scored 15/16 and 6/7 vectors, falsifying sampling noise as the whole cause. Google again treated Phylax's ask-first source clause as the mutated unconditional permit while its Noema arm and both OpenAI arms returned the required refusal. Its packet, measurement, answers and evaluation digests are `8af43c6d52b2d4fe18ebc031b8a3f6093ded749dc7a0f747300b71b2335aa053`, `7598c511a34ad06ffbade292df42e562741b8bf489a8231bcc4199d7b728502b`, `2be2c3e5b2b738fe643e52a92e1e36b3abccd8544b7ca82eee7c77462285af29` and `39f99699d25207c9fcd8f7a0f7e473c857a76214d5ea796171c89a8df237dacf`. The next repair defines the representation-neutral decision rule that asking, confirmation and approval are requirements rather than permission when no authorising actor is established; candidate output fields are alternatives, not policy evidence.
-- The first `33d59880` cohort scored 15/16 and 6/7 vectors after that ambiguity was removed. Google passed every arm; OpenAI's source arm preserved Fiat's act-then-receipt order, but its Noema arm selected the reversed candidate despite an exact tape match and a kernel that declares list order semantic and `explain` order-preserving. Its packet and measurement digests match the accepted repeat; its answers and evaluation digests are `1807e89a334a8d34ddf9d36c52d9381e42004c4c1d42133d8dcc69373dcddb66` and `9429976c4befb6783166d2abb9787e25a6fb4118ddaa5737f42abf02585d1c9d`. The one exact same-packet repeat changed only that model selection and passed 16/16, proving that provider seed `0` is best-effort rather than a deterministic replay key.
+- The first `33d59880` cohort scored 15/16 and 6/7 vectors after that ambiguity was removed. Google passed every arm; OpenAI's source arm preserved Fiat's act-then-receipt order, but its Noema arm selected the reversed candidate despite an exact tape match and a kernel that declares list order semantic and `explain` order-preserving. Its answers and evaluation digests are `1807e89a334a8d34ddf9d36c52d9381e42004c4c1d42133d8dcc69373dcddb66` and `9429976c4befb6783166d2abb9787e25a6fb4118ddaa5737f42abf02585d1c9d`. The one exact same-packet repeat changed only that model selection and passed 16/16, proving that provider seed `0` is best-effort rather than a deterministic replay key. The shared packet and measurement digests are `3739074eb60422d3c171e03012d0110a841fb765de8c425afa85ead19ed0e0c6` and `66da3a5a860ee4499a5c7c28fd63124013f211a143e7978a17878d7fd7eddd00`; the accepted repeat's answers and tally are `75750a6b241220b1db07a309b67eb78a8af29966f8e240e562dd39dd9cd06f94` and `ee5373e26d425f714ef98146b8bd00a5b0c66349956e8550bba5d4b38cbfab91`.
+- The first preregistered `6e48bb02` replacement measurement recorded Anthropic and Google but left open-weight unknown after HTTP 429 and OpenAI unknown after a malformed provider envelope. Its digest is `104d5e95b5a93ef90280f426e3e9de79fa6f89f736cbff34b7f2242c7a2897f6`; its cumulative $25 ledger digest is `2b91972438cf3aed6acb151b135b0554841cd5b6444f98c162d6ba0ff8f2026c`.
+- The one allowed whole-command retry at `6e48bb02` recorded Anthropic, Google and open-weight but left OpenAI unknown after HTTP 502. Its digest is `6bdb9240453cc53dcf5aca1fc10e4eadeb7f54b380aa129465eb864eca9bc2dd`. No evaluation followed either incomplete measurement. Repeating 37 successful calls to recover one transient response motivated the bounded per-invocation retry repair; the replacement `b5802f21` anchor then completed without a measurement retry.
 
 This result does not compete with #909 on equal coverage. #909's whole-model
 codec retains the complete governed model under Markdown authority. Noema gets

@@ -4941,6 +4941,78 @@ class SourceBindingTests(unittest.TestCase):
             {"failed": 0, "pairs": 16, "passed": 16, "status": "accepted"},
         )
 
+    def test_corpus_evidence_retains_both_cohorts_and_all_final_ledgers(self):
+        evidence_root = NOEMA_FIXTURES / "evidence"
+        retained = {
+            "answers-cohort-1.json":
+                "0f4c63b987cef6f454b0f62b9f7c0c66c4797ea5e8468665c074e73bee031a99",
+            "evaluation-cohort-1.json":
+                "91e58fbf333006406ca188b1f04399ed2dcc65a57b8a079a77da7d1701f2401d",
+            "ledger-6e48bb02-attempt-1.json":
+                "2b91972438cf3aed6acb151b135b0554841cd5b6444f98c162d6ba0ff8f2026c",
+            "ledger-cohort-1.json":
+                "df634c7aa71e3587b35c825cf0bba536c8a7474115e32572f476f7f863113b4e",
+            "ledger-cohort-2.json":
+                "b351a74fb7d68a5ba87ab4af49336eb208549e90633abb92c9a96feeb9530349",
+            "ledger-measurement.json":
+                "f50723555895dd44ab77be8ad1ac662763779a8c059e2b3c7e32c7a5e5e0fb4c",
+            "measurement-6e48bb02-attempt-1.json":
+                "104d5e95b5a93ef90280f426e3e9de79fa6f89f736cbff34b7f2242c7a2897f6",
+            "measurement-6e48bb02-attempt-2.json":
+                "6bdb9240453cc53dcf5aca1fc10e4eadeb7f54b380aa129465eb864eca9bc2dd",
+        }
+        for name, expected in retained.items():
+            actual = sha256((evidence_root / name).read_bytes()).hexdigest()
+            self.assertEqual(actual, expected)
+
+        verified = noema.verify_specimen_corpus(CORPUS_MANIFEST)
+        corpus = verified["manifest"]
+        evidence = corpus["evidence"]
+        profiles_path = NOEMA_FIXTURES / evidence["profiles"]
+        _record, profiles_raw, profiles = noema.load_external_profiles(
+            profiles_path,
+            require_measurement_families=True,
+            verify_files=False,
+        )
+        packet, packet_raw, _files = noema._build_evaluation_packet(
+            CORPUS_MANIFEST,
+            verified,
+            profiles_raw,
+            profiles,
+            evidence["repository_commit"],
+            evidence["repository_tree"],
+        )
+        answers_raw = (evidence_root / "answers-cohort-1.json").read_bytes()
+        first_report, success = noema._tally_evaluation_values(
+            packet,
+            packet_raw,
+            json.loads(answers_raw),
+            answers_raw,
+        )
+        self.assertTrue(success)
+        self.assertEqual(
+            first_report,
+            read_json(evidence_root / "evaluation-cohort-1.json"),
+        )
+
+        expected_ledgers = {
+            "ledger-measurement.json": ("30", "2.9930459", 271, 1),
+            "ledger-cohort-1.json": ("8", "0.67074575", 32, 2),
+            "ledger-cohort-2.json": ("8", "0.639935975", 32, 2),
+        }
+        for name, expected in expected_ledgers.items():
+            ledger = read_json(evidence_root / name)
+            self.assertEqual(
+                (
+                    ledger["budget_usd"],
+                    ledger["spent_usd"],
+                    ledger["calls"],
+                    len(ledger["reservations"]),
+                ),
+                expected,
+            )
+            self.assertIsNone(ledger["breach"])
+
     def test_corpus_evidence_byte_tamper_refuses(self):
         with copied_corpus() as root:
             path = root / "evidence/evaluation.json"

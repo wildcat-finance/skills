@@ -744,15 +744,18 @@ operator authority. Model output is untrusted data and never becomes a command,
 query, path, fact or authority edge.
 
 When published by the corpus manifest, the checked-in
-`tests/fixtures/noema-v1/evidence/` record binds one accepted measurement, 32
-answer-provenance records and 16/16 tally to one ancestor commit, tree, corpus,
-profile set, packet and case set. Corpus verification reconstructs the packet
-and tally before accepting those bytes. One exact same-packet predecessor
-scored 15/16 and the repeat scored 16/16 despite profile seed `0`; the provider
-seed is therefore best-effort, and this evidence is a capability record rather
-than a reproducibility claim. The exact counts, rejected predecessor runs and
-shadow-only decision live in ADR-059; raw provider transcripts are deliberately
-absent.
+`tests/fixtures/noema-v1/evidence/` record binds one accepted measurement and
+the canonical second cohort's 32 answer-provenance records and 16/16 tally to
+one ancestor commit, tree, corpus, profile set, packet and case set. Corpus
+verification reconstructs the packet and tally before accepting those bytes.
+The first cohort, all three ledger snapshots and their digests remain beside
+the canonical files. Both exact same-packet cohorts scored 16/16. Four
+transient provider-envelope refusals recovered under their preregistered
+second attempts, and the ledgers retain all four uncertain reservations. This
+is a cross-family capability record, not a deterministic-recurrence claim or
+evidence that a small local decoder meets the same boundary. The exact counts,
+earlier rejected runs and shadow-only decision live in ADR-059; raw provider
+transcripts are deliberately absent.
 
 ## Versioning and recovery
 
