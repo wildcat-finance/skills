@@ -1715,6 +1715,127 @@ class PromiseCompositionGateTests(unittest.TestCase):
             {item["relation_id"] for item in self.cases["relations"]}, expected
         )
 
+    def test_registered_composition_classes_are_owned_by_native_promises(self):
+        inventory, findings = promise_machine_module.discover_inventory(ROOT)
+        self.assertEqual(findings, [])
+        findings = promise_machine_module.validate_composition_registrations(
+            ROOT, inventory
+        )
+        self.assertEqual(findings, [])
+
+    def test_composition_refuses_an_undeclared_producer_class(self):
+        relation_id = "lemma-retrieval-to-berean-corpus"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["producer_classes"] = ("recorded", "attested")
+        spec["consumer_classes"] = ("recorded", "attested", "checked")
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = promise_machine_module.validate_composition_registrations(
+                ROOT, inventory
+            )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("not declared by promise lemma-corpus-provenance", findings[0].message)
+
+    def test_composition_refuses_an_undeclared_consumer_addition(self):
+        relation_id = "berean-promotion-to-ariadne-capture"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["consumer_classes"] = (*spec["consumer_classes"], "attested")
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = promise_machine_module.validate_composition_registrations(
+                ROOT, inventory
+            )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("not declared by promise ariadne-capture-statement", findings[0].message)
+
+    def test_composition_refuses_a_dropped_inherited_class(self):
+        relation_id = "synkrisis-verification-to-fiat-integration"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["consumer_classes"] = ("recorded",)
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = promise_machine_module.validate_composition_registrations(
+                ROOT, inventory
+            )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("dropped producer classes ['recomputed']", findings[0].message)
+
+    def test_composition_refuses_an_unknown_native_promise_identity(self):
+        relation_id = "ariadne-verification-to-fiat-delivery"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["producer"] = "missing-native-promise"
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = promise_machine_module.validate_composition_registrations(
+                ROOT, inventory
+            )
+        self.assertEqual(semantic_codes(findings), ["PM097"])
+        self.assertIn("resolves 0 times", findings[0].message)
+
+    def test_composition_obligation_evaluator_checks_native_promise_classes(self):
+        relation_id = "berean-promotion-to-ariadne-capture"
+        spec = copy.deepcopy(
+            promise_machine_module.COMPOSITION_RELATIONS[relation_id]
+        )
+        spec["consumer_classes"] = (*spec["consumer_classes"], "attested")
+        registry = json.loads(OBLIGATION_REGISTRY.read_text(encoding="utf-8"))
+        row = next(
+            item
+            for item in registry["obligations"]
+            if item["id"] == spec["obligation_id"]
+        )
+        inventory, inventory_findings = promise_machine_module.discover_inventory(
+            ROOT
+        )
+        self.assertEqual(inventory_findings, [])
+        with mock.patch.dict(
+            promise_machine_module.COMPOSITION_RELATIONS,
+            {relation_id: spec},
+        ):
+            findings = (
+                promise_machine_module.validate_composition_obligation_specimen(
+                    ROOT,
+                    COMPOSITION_CASES.relative_to(ROOT),
+                    copy.deepcopy(self.cases),
+                    row,
+                    inventory=inventory,
+                )
+            )
+        self.assertEqual(semantic_codes(findings), ["PM089"])
+        self.assertIn("did not resolve its native promise boundary", findings[0].message)
+
     def test_repository_composition_fixture_digest_is_coverage_bound(self):
         count, findings = promise_machine_module.check_composition(
             ROOT, self.coverage

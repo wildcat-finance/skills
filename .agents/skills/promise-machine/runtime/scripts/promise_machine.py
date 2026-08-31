@@ -118,7 +118,7 @@ COMPOSITION_COMMON_FIELDS = (
 COMPOSITION_RELATIONS = {
     "lemma-retrieval-to-berean-corpus": {
         "obligation_id": "law-composition-lemma-boundary",
-        "producer": "lemma-chunk-validation",
+        "producer": "lemma-corpus-provenance",
         "consumer": "berean-corpus-binding",
         "transition": "admit source-linked chunks as retrieval input",
         "consequence": 3,
@@ -140,11 +140,11 @@ COMPOSITION_RELATIONS = {
     },
     "lazarus-rpc-to-berean-answer": {
         "obligation_id": "law-composition-lazarus-boundary",
-        "producer": "lazarus-fixture-verification",
+        "producer": "lazarus-fixture-capture",
         "consumer": "berean-answer-evidence",
         "transition": "admit recorded RPC evidence to the pinned answer evidence set",
         "consequence": 3,
-        "producer_sources": ("plugins/lazarus/tests/test_verifier.py",),
+        "producer_sources": ("plugins/lazarus/tests/test_capture.py",),
         "consumer_sources": ("plugins/berean/tests/test_examples.py",),
         "producer_classes": ("recorded",),
         "consumer_classes": ("recorded", "checked"),
@@ -169,8 +169,8 @@ COMPOSITION_RELATIONS = {
         "consequence": 3,
         "producer_sources": ("plugins/berean/tests/test_promote.py",),
         "consumer_sources": ("plugins/ariadne/tests/test_gates.py",),
-        "producer_classes": ("checked",),
-        "consumer_classes": ("checked", "attested"),
+        "producer_classes": ("checked", "recorded"),
+        "consumer_classes": ("checked", "recorded", "recomputed"),
         "bindings": {
             "subject": "grounded-agent-release",
             "scope": "pinned-corpus-and-answer-set",
@@ -192,8 +192,8 @@ COMPOSITION_RELATIONS = {
         "consequence": 3,
         "producer_sources": ("plugins/janus/harness/test/WildcatConformance.t.sol",),
         "consumer_sources": ("plugins/ariadne/tests/test_gates.py",),
-        "producer_classes": ("checked",),
-        "consumer_classes": ("checked", "attested"),
+        "producer_classes": ("checked", "measured", "recorded"),
+        "consumer_classes": ("checked", "measured", "recorded", "recomputed"),
         "bindings": {
             "subject": "wildcat-hook-specimen",
             "scope": "named-host-adapter",
@@ -220,8 +220,8 @@ COMPOSITION_RELATIONS = {
         "consequence": 3,
         "producer_sources": ("plugins/ariadne/tests/test_examples.py",),
         "consumer_sources": ("plugins/hexaemeron/tests/test_hexctl.py",),
-        "producer_classes": ("checked",),
-        "consumer_classes": ("checked", "recorded"),
+        "producer_classes": ("checked", "recomputed"),
+        "consumer_classes": ("checked", "recomputed", "recorded"),
         "bindings": {
             "subject": "released-artefact",
             "scope": "declared-statement-and-predicate",
@@ -245,8 +245,8 @@ COMPOSITION_RELATIONS = {
             "plugins/hexaemeron/tests/test_run_observation_binding.py",
         ),
         "consumer_sources": ("plugins/synkrisis/tests/test_cohort.py",),
-        "producer_classes": ("checked",),
-        "consumer_classes": ("checked", "recomputed"),
+        "producer_classes": ("checked", "recorded"),
+        "consumer_classes": ("checked", "recorded"),
         "bindings": {
             "subject": "fiat-run-observation",
             "scope": "checked-observation-prefix",
@@ -2996,7 +2996,12 @@ def verify_negative_specimen(relative_specimen: Path, produced, row):
     return []
 
 
-def validate_obligation_specimen(root: Path, law_text: str, row: dict):
+def validate_obligation_specimen(
+    root: Path,
+    law_text: str,
+    row: dict,
+    composition_inventory: Inventory | None = None,
+):
     specimen_raw = row["specimen"]
     relative_specimen = repository_relative_fixture(specimen_raw)
     if relative_specimen is None:
@@ -3032,7 +3037,11 @@ def validate_obligation_specimen(root: Path, law_text: str, row: dict):
         ]
     if document.get("schema") == COMPOSITION_CASES_SCHEMA:
         return validate_composition_obligation_specimen(
-            root, relative_specimen, document, row
+            root,
+            relative_specimen,
+            document,
+            row,
+            inventory=composition_inventory,
         )
     semantic = validate_semantic_specimen(root, relative_specimen, document, row)
     if semantic is not None:
@@ -3290,6 +3299,14 @@ def check_obligations(root: Path, law: bytes | None):
             )
         )
 
+    composition_inventory = None
+    if any(
+        obligation_id.startswith("law-composition-")
+        for obligation_id in row_ids & marker_ids
+    ) and any((root / "plugins").glob("*/skills/**/SKILL.md")):
+        composition_inventory, inventory_findings = discover_inventory(root)
+        findings.extend(inventory_findings)
+
     for obligation_id in sorted(row_ids & marker_ids):
         row = valid_rows[obligation_id]
         expected_gate = OBLIGATION_GATES.get(obligation_id)
@@ -3331,7 +3348,14 @@ def check_obligations(root: Path, law: bytes | None):
                 )
             )
             continue
-        findings.extend(validate_obligation_specimen(root, law_text, row))
+        findings.extend(
+            validate_obligation_specimen(
+                root,
+                law_text,
+                row,
+                composition_inventory=composition_inventory,
+            )
+        )
     return len(marker_ids), findings
 
 
@@ -5181,6 +5205,120 @@ def composition_generic_finding(path: str, field: str, message: str):
     )
 
 
+def validate_composition_registrations(root: Path, inventory: Inventory):
+    records: dict[str, list[PromiseRecord]] = {}
+    for record in promise_records(root, inventory):
+        records.setdefault(record.promise_id, []).append(record)
+    findings: list[Finding] = []
+    for relation_id, raw_spec in COMPOSITION_RELATIONS.items():
+        spec = composition_spec(relation_id, raw_spec)
+        path = f"{COVERAGE_PATH.as_posix()}#composition.{relation_id}"
+        producer_records = records.get(spec["producer"], [])
+        consumer_records = records.get(spec["consumer"], [])
+        if len(producer_records) != 1:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "producer identity",
+                    (
+                        f"producer promise resolves {len(producer_records)} times in "
+                        "the canonical inventory"
+                    ),
+                )
+            )
+            continue
+        if len(consumer_records) != 1:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "consumer identity",
+                    (
+                        f"consumer promise resolves {len(consumer_records)} times in "
+                        "the canonical inventory"
+                    ),
+                )
+            )
+            continue
+
+        producer_classes = tuple(spec.get("producer_classes", ()))
+        consumer_classes = tuple(spec.get("consumer_classes", ()))
+        if (
+            not producer_classes
+            or len(set(producer_classes)) != len(producer_classes)
+            or any(item not in SUPPORTED_EVIDENCE_CLASSES for item in producer_classes)
+        ):
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "producer evidence classes",
+                    "registered producer classes are empty, repeated, or unsupported",
+                )
+            )
+            continue
+        if (
+            not consumer_classes
+            or len(set(consumer_classes)) != len(consumer_classes)
+            or any(item not in SUPPORTED_EVIDENCE_CLASSES for item in consumer_classes)
+        ):
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "consumer evidence classes",
+                    "registered consumer classes are empty, repeated, or unsupported",
+                )
+            )
+            continue
+
+        producer_record = producer_records[0]
+        consumer_record = consumer_records[0]
+        undeclared_producer = sorted(
+            set(producer_classes) - set(producer_record.evidence_classes)
+        )
+        if undeclared_producer:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "producer evidence classes",
+                    (
+                        f"classes {undeclared_producer!r} are not declared by "
+                        f"promise {producer_record.promise_id}"
+                    ),
+                )
+            )
+        dropped = sorted(set(producer_classes) - set(consumer_classes))
+        if dropped:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "consumer evidence classes",
+                    f"consumer dropped producer classes {dropped!r}",
+                )
+            )
+        additions = set(consumer_classes) - set(producer_classes)
+        undeclared_additions = sorted(
+            additions - set(consumer_record.evidence_classes)
+        )
+        if undeclared_additions:
+            findings.append(
+                composition_finding(
+                    spec,
+                    path,
+                    "consumer evidence classes",
+                    (
+                        f"added classes {undeclared_additions!r} are not declared by "
+                        f"promise {consumer_record.promise_id}"
+                    ),
+                )
+            )
+    return findings
+
+
 def composition_reference_paths(root: Path, references):
     if not isinstance(references, list) or not references:
         return None, "references are not a non-empty array"
@@ -5474,7 +5612,11 @@ def validate_composition_cases(root: Path, document, path: str):
 
 
 def validate_composition_obligation_specimen(
-    root: Path, relative_specimen: Path, document, row
+    root: Path,
+    relative_specimen: Path,
+    document,
+    row,
+    inventory: Inventory | None = None,
 ):
     path = relative_specimen.as_posix()
     if not isinstance(document, dict) or set(document) != {"schema", "relations"}:
@@ -5511,8 +5653,30 @@ def validate_composition_obligation_specimen(
                 "bind the stable law obligation to one producer-to-consumer relation",
                 row,
             )
-        ]
+    ]
     spec = matching_specs[0]
+    if inventory is not None:
+        registration_findings = [
+            finding
+            for finding in validate_composition_registrations(root, inventory)
+            if finding.obligation_id == row.get("id")
+        ]
+    else:
+        registration_findings = []
+    if registration_findings:
+        observed = [item.code for item in registration_findings]
+        return [
+            obligation_finding(
+                "PM089",
+                path,
+                (
+                    f"composition registration for {spec['relation_id']} did not "
+                    f"resolve its native promise boundary: {observed!r}"
+                ),
+                "restore the producer and consumer identities and their declared evidence classes",
+                row,
+            )
+        ]
     relations = document.get("relations")
     if not isinstance(relations, list):
         return [
@@ -5559,8 +5723,12 @@ def validate_composition_obligation_specimen(
     return []
 
 
-def check_composition(root: Path, coverage):
+def check_composition(root: Path, coverage, inventory: Inventory | None = None):
     findings: list[Finding] = []
+    if inventory is None:
+        inventory, inventory_findings = discover_inventory(root)
+        findings.extend(inventory_findings)
+    findings.extend(validate_composition_registrations(root, inventory))
     catalogue = coverage.get("composition") if isinstance(coverage, dict) else None
     if not isinstance(catalogue, dict) or set(catalogue) != {"fixture", "relations"}:
         for relation_id, raw_spec in COMPOSITION_RELATIONS.items():
@@ -5803,7 +5971,7 @@ def check_coverage(root: Path, inventory: Inventory, selected_groups: set[str]):
         )
     if composition_required:
         composition_relations, composition_findings = check_composition(
-            root, document
+            root, document, inventory
         )
         findings.extend(composition_findings)
     handoffs = document.get("handoffs")

@@ -3,13 +3,13 @@
   "composition": {
     "fixture": {
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "e9a7cefcd50835bfcfdacd68a5bca694bb642a24cb66e79af216517bd06dd29a"
+      "sha256": "4513dd956d6faa04c3852428313651b847b789a059a2a9236647e127608d99f0"
     },
     "relations": [
       {
         "obligation_id": "law-composition-lemma-boundary",
         "relation_id": "lemma-retrieval-to-berean-corpus",
-        "producer": "lemma-chunk-validation",
+        "producer": "lemma-corpus-provenance",
         "consumer": "berean-corpus-binding",
         "preserves": [
           "subject",
@@ -32,7 +32,7 @@
       {
         "obligation_id": "law-composition-lazarus-boundary",
         "relation_id": "lazarus-rpc-to-berean-answer",
-        "producer": "lazarus-fixture-verification",
+        "producer": "lazarus-fixture-capture",
         "consumer": "berean-answer-evidence",
         "preserves": [
           "subject",
