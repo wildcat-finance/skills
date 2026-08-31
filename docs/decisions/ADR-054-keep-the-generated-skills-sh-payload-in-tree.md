@@ -68,6 +68,23 @@ A reader who notices 994 against 1,000 should not conclude that installation is
 about to fail; the ceiling that would actually bite is the repository's own
 test, and it bites deliberately.
 
+The recorded figures move when the payload does, and the two ceilings in
+`tests/test_skills_sh_package.py` are updated together with this section rather
+than quietly. Re-measured after the resumable Ethereum USDC interval collector,
+product head `7fdc35641b7979b14f189bb249c5823d4704c051`, added its module,
+command, three schemas, two design records, one document and one example to the
+mirrored tree:
+
+```
+.agents         1037 files    22131731 bytes
+manifested      1032 files    22131731 bytes
+```
+
+`TRACKED_FILES_CEILING` moves from 1,030 to 1,060 for that growth, with
+`RECORDED_TRACKED_FILES` set to the measured 1,037. `MAX_FILES` and `MAX_BYTES`
+are untouched: they are the CLI's own defaults and the payload remains inside
+both.
+
 The real cost is the one measured above, and it is paid on every clone rather
 than at install time. It is paid twice on the install itself, because the
 shallow clone brings down all 115.69 MiB of the tracked tree in order to copy

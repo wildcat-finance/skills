@@ -55,9 +55,9 @@ MAX_BYTES = 25 * 1024 * 1024
 # The per-clone cost ADR-054 accepted and recorded, plus deliberate headroom.
 # This binds before MAX_BYTES does, so payload growth is refused against the
 # recorded figure rather than against a CLI limit that does not apply here.
-RECORDED_TRACKED_FILES = 999
+RECORDED_TRACKED_FILES = 1_037
 RECORDED_TRACKED_BYTES = 21_789_732
-TRACKED_FILES_CEILING = 1_030
+TRACKED_FILES_CEILING = 1_060
 TRACKED_BYTES_CEILING = 22_500_000
 EXPECTED_OMISSIONS = {
     "plugins/*/.claude-plugin/**",

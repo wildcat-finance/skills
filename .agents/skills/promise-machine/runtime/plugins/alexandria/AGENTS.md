@@ -1,7 +1,7 @@
 # Alexandria runtime contract
 
 <!-- marketplace-context:start -->
-> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** Compound v3 Phase 0 now pins the Comet registry and preserves one verified Ethereum execution witness; a resumable, reconciled Ethereum USDC interval harvester remains unimplemented.
+> **Marketplace context: Alexandria.** Alexandria preserves heterogeneous lending data as digest-bound releases, then derives only the credit views a reviewed mapping can defend. Use Tabularium when the job is semantic event mapping, Probitas when the deliverable is a counterparty dossier, and Lazarus when a test needs finite historical state or exact RPC replay. **Current frontier:** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
 <!-- marketplace-context:end -->
 
 ## Promise Machine binding
@@ -80,6 +80,16 @@ local tool.
 - `scripts/compound_v3_phase0.py registry` reads one local Comet checkout at
   the fixed commit and writes the canonical 28-market registry. `build` and
   `check` consume local files only; `check` is read-only.
+- `scripts/usdc_interval.py collect` is the interval collector's one network
+  path. It reads the HTTPS endpoint from `ALEXANDRIA_COMPOUND_RPC_URL`, never
+  records the endpoint, headers or credentials, follows no redirect, bounds
+  every response and the whole run, writes a checkpoint only after fsync, and
+  leaves a receipt for every refusal. `reconcile` opens the same boundary
+  against a second provider. `build` and `check` reach no network: `build`
+  writes one release through the existing `ingest`, and `check` changes no file.
+- `examples/usdc-interval-v0/demo.py build --output <directory>` runs the whole
+  collector path against checked-in synthetic fixtures, removes a partial
+  output after failure and opens no socket. `verify` changes no file.
 - `scripts/compound_v3_phase0.py capture` is the one explicit network path. It
   reads the HTTPS endpoint from `ALEXANDRIA_COMPOUND_RPC_URL`, writes the fixed
   bounded corpus through a sibling temporary directory and never records the

@@ -7,9 +7,9 @@
 
 Alexandria preserves heterogeneous lending captures byte for byte, then exposes only the source-bound credit view a reviewed mapping can defend.
 
-**Current frontier.** Compound v3 Phase 0 now pins the Comet registry and preserves one verified Ethereum execution witness; a resumable, reconciled Ethereum USDC interval harvester remains unimplemented.
+**Current frontier.** A resumable Ethereum USDC interval collector now shards, reconciles and verifies offline; it has never run against a live provider, reads no start block and preserves no implementation code.
 
-**Next Fiat job.** Use /hexaemeron:fiat to build the first resumable Ethereum USDC interval collector with implementation-epoch discovery, bounded shards, a second-provider reconciliation path, explicit finality and offline raw-release verification. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
+**Next Fiat job.** Use /hexaemeron:fiat to run the Ethereum USDC collector against two live providers, read the interval's first block so a finalized scope binds both boundary hashes, and preserve the implementation code each epoch names so its code hash can be rechecked offline. Before the run finishes, cold-read and reconcile all mutable first-party marketplace prose. Change a skill's Next Fiat job only when that exact frontier job completed; otherwise leave it unchanged.
 <!-- marketplace-context:end -->
 
 ## Start here
@@ -19,10 +19,14 @@ checked later. It keeps the original source bytes, records exactly what was and
 was not captured, and can derive only the reviewed rows its mappings support.
 
 Today it can ingest and verify releases, produce unsigned evidence statements,
-derive Goldfinch and Clearpool views, build a disposable address index, and
-verify one Compound v3 Phase 0 execution witness. It does not yet collect a
-complete resumable Ethereum USDC interval, reconcile two providers, or make a
-credit decision.
+derive Goldfinch and Clearpool views, build a disposable address index, verify
+one Compound v3 Phase 0 execution witness, and collect a declared Ethereum USDC
+Comet block interval in bounded shards that resumes after a kill, rewinds after
+a reorg, reconciles against a second provider and verifies offline.
+
+It has not run that collector against a live provider. It covers one market of
+the 28 at the registry pin, never reads an interval's first block, preserves no
+implementation code, and makes no credit decision.
 
 ## Place in the collective
 
@@ -220,6 +224,10 @@ its reported block was canonical.
   row contracts and derived-release verification.
 - [`docs/address-index.md`](docs/address-index.md) defines index rebuilding,
   queries, false-empty refusal and the Probitas bridge.
+- [`docs/usdc-interval-collector.md`](docs/usdc-interval-collector.md) covers
+  the resumable Ethereum USDC interval collector: its shard plan, its finality
+  policy, its epoch binding, its reconciliation boundary and what its release
+  does not establish.
 - [`docs/compound-v3-harvest.md`](docs/compound-v3-harvest.md) pins Compound's
   official registry and specifies production capture, revision, checkpoint,
   reconciliation and acceptance rules. Phase 0 proves the required methods;
