@@ -530,6 +530,92 @@ class ComponentBound(EdgeCases):
         self.assertGreater(
             anamnesis.MAX_RELEASE_BYTES, anamnesis.MAX_SOURCE_BYTES_CEILING)
 
+class HostileManifest(EdgeCases):
+    """S2-R2-01: a release from elsewhere carries an untrusted manifest."""
+
+    def setUp(self):
+        super().setUp()
+        graph = self.graph()
+        self.out = str(self.root / "release")
+        anamnesis.build_release(self.out, BASE_POLICY, self.admitted, graph)
+        self.manifest_path = Path(self.out) / "manifest.json"
+        self.manifest_path.chmod(0o600)
+
+    def write(self, manifest):
+        self.manifest_path.write_text(
+            json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+
+    def load(self):
+        return json.loads(self.manifest_path.read_text(encoding="utf-8"))
+
+    def refuses(self):
+        with self.assertRaises(anamnesis.Refusal) as caught:
+            anamnesis.verify_release(self.out)
+        return caught.exception.code
+
+    def test_a_manifest_missing_a_required_field_is_refused(self):
+        self.write({"schema": "anamnesis-release/v1"})
+        self.assertEqual(self.refuses(), "A012")
+
+    def test_a_manifest_with_an_unknown_field_is_refused(self):
+        manifest = self.load(); manifest["extra"] = True
+        self.write(manifest)
+        self.assertEqual(self.refuses(), "A011")
+
+    def test_a_malformed_release_id_is_refused(self):
+        manifest = self.load(); manifest["release_id"] = "short"
+        self.write(manifest)
+        self.assertEqual(self.refuses(), "A130")
+
+    def test_components_that_are_not_a_list_are_refused(self):
+        manifest = self.load(); manifest["components"] = {}
+        self.write(manifest)
+        self.assertEqual(self.refuses(), "A131")
+
+    def test_a_component_named_twice_is_refused(self):
+        manifest = self.load()
+        manifest["components"].append(dict(manifest["components"][0]))
+        self.write(manifest)
+        self.assertEqual(self.refuses(), "A133")
+
+    def test_a_malformed_component_digest_is_refused(self):
+        manifest = self.load()
+        manifest["components"][0]["sha256"] = "nope"
+        self.write(manifest)
+        self.assertEqual(self.refuses(), "A134")
+
+    def test_a_negative_byte_count_is_refused(self):
+        manifest = self.load()
+        manifest["components"][0]["bytes"] = -1
+        self.write(manifest)
+        self.assertEqual(self.refuses(), "A135")
+
+    def test_counts_that_are_not_an_object_are_refused(self):
+        manifest = self.load(); manifest["counts"] = []
+        self.write(manifest)
+        self.assertEqual(self.refuses(), "A136")
+
+    def test_exclusions_that_are_not_a_list_are_refused(self):
+        manifest = self.load(); manifest["exclusions"] = {}
+        self.write(manifest)
+        self.assertEqual(self.refuses(), "A137")
+
+    def test_a_component_path_escaping_the_release_is_refused(self):
+        manifest = self.load()
+        manifest["components"][0]["path"] = "../escape.json"
+        self.write(manifest)
+        self.assertIn(self.refuses(), {"A041", "A103"})
+
+    def test_a_duplicated_manifest_key_is_refused(self):
+        self.manifest_path.write_text(
+            '{"schema": "anamnesis-release/v1", "schema": "anamnesis-release/v1"}',
+            encoding="utf-8")
+        self.assertEqual(self.refuses(), "A025")
+
+    def test_the_untouched_release_still_verifies(self):
+        checked = anamnesis.verify_release(self.out)
+        self.assertEqual(len(checked["components"]), 6)
+
 
 if __name__ == "__main__":
     unittest.main()

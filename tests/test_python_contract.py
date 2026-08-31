@@ -192,9 +192,12 @@ def is_current_runtime_prose(path):
     name = relative.name.lower()
     if parts[:4] == (".agents", "skills", "promise-machine", "runtime"):
         return False
-    # Controller state, gitignored: a Fiat run's own receipts and pull-request
-    # drafts quote the records they describe, including their runtime versions.
-    if parts[0] == ".hexaemeron":
+    # Controller state and scratch, both gitignored. A Fiat run's receipts and
+    # pull-request drafts quote the records they describe, including their
+    # runtime versions, and `tmp/` is the documented run-worktree home where
+    # scripts/run_checks.py stages its disposable snapshot. Scanning either made
+    # this case fail for anybody with a delivery or a check run in flight.
+    if parts[0] in {".hexaemeron", "tmp"}:
         return False
     if "audit" in parts or "baseline" in parts:
         return False
@@ -419,6 +422,23 @@ class PythonRuntimeContractTests(unittest.TestCase):
         self.assertIn("[`.python-version`](./.python-version)", text)
         self.assertIn("[ADR-038]", text)
         self.assertIn("[ADR-042]", text)
+
+    def test_gitignored_run_state_is_outside_the_prose_scan(self):
+        """A run in flight must not fail this case.
+
+        `tmp/` is Fiat's documented worktree home and where run_checks.py stages
+        its disposable snapshot; `.hexaemeron/` is controller state. Both are
+        gitignored, and both hold copies of prose that quote whatever runtime
+        version the records they describe named.
+        """
+        for relative in (
+            "tmp/check-runner/abc/snapshot/docs/promise-machine/evidence/x.md",
+            "tmp/fiat/run/.hexaemeron/steps/1/pr.md",
+            ".hexaemeron/steps/1/pr.md",
+        ):
+            with self.subTest(path=relative):
+                self.assertFalse(is_current_runtime_prose(ROOT / relative))
+        self.assertTrue(is_current_runtime_prose(ROOT / "README.md"))
 
     def test_current_runtime_prose_points_to_the_pin(self):
         for relative in sorted(PIN_REFERENCING_PROSE):

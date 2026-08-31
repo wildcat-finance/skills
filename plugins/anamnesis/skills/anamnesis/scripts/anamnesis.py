@@ -192,7 +192,7 @@ def _no_duplicate_keys(pairs):
     seen = {}
     for key, value in pairs:
         if key in seen:
-            raise Refusal("A025", f"policy declares {quote(key)} twice")
+            raise Refusal("A025", f"the document declares {quote(key)} twice")
         seen[key] = value
     return seen
 
@@ -963,6 +963,57 @@ def build_release(out, policy, admitted, graph):
         raise
 
 
+MANIFEST_KEYS = {
+    "schema": True,
+    "release_id": True,
+    "policy": True,
+    "sources": True,
+    "components": True,
+    "counts": True,
+    "exclusions": True,
+    "unknowns": True,
+}
+COMPONENT_KEYS = {"path": True, "sha256": True, "bytes": True}
+MANIFEST_SOURCE_KEYS = {"id": True, "sha256": True, "bytes": True, "disclosure": True}
+
+
+def check_manifest_shape(manifest):
+    """Hold a release manifest to its closed shape before reading it.
+
+    When a release arrives from somewhere else, its manifest is untrusted input
+    like any other. Reading a field that is not there is a traceback, and a
+    traceback is not a refusal: it names no rule and leaves the caller nothing
+    to repair.
+    """
+    closed_object(manifest, MANIFEST_KEYS, "release manifest")
+    if not isinstance(manifest["release_id"], str) or len(manifest["release_id"]) != 64:
+        raise Refusal("A130", "release manifest id is malformed")
+    for name, keys in (("components", COMPONENT_KEYS), ("sources", MANIFEST_SOURCE_KEYS)):
+        entries = manifest[name]
+        if not isinstance(entries, list) or not entries:
+            raise Refusal("A131", f"release manifest {name} is not a non-empty list")
+        seen = set()
+        for entry in entries:
+            closed_object(entry, keys, f"release manifest {name} entry")
+            key = entry["path"] if name == "components" else entry["id"]
+            if not isinstance(key, str) or not key:
+                raise Refusal("A132", f"release manifest {name} entry has no name")
+            if key in seen:
+                raise Refusal("A133", f"release manifest {name} names {quote(key)} twice")
+            seen.add(key)
+            if not isinstance(entry["sha256"], str) or len(entry["sha256"]) != 64:
+                raise Refusal("A134", f"release manifest {name} digest is malformed")
+            size = entry["bytes"]
+            if not isinstance(size, int) or isinstance(size, bool) or size < 0:
+                raise Refusal("A135", f"release manifest {name} byte count is not a count")
+    for name in ("policy", "counts", "unknowns"):
+        if not isinstance(manifest[name], dict):
+            raise Refusal("A136", f"release manifest {name} is not an object")
+    if not isinstance(manifest["exclusions"], list):
+        raise Refusal("A137", "release manifest exclusions is not a list")
+    return manifest
+
+
 def verify_release(out):
     """Recompute every component digest from the bytes on disk."""
     manifest_path = os.path.join(out, "manifest.json")
@@ -973,6 +1024,7 @@ def verify_release(out):
         raise Refusal("A101", f"release manifest is not valid JSON: {quote(error)}")
     if manifest.get("schema") != RELEASE_SCHEMA:
         raise Refusal("A102", "release manifest declares another schema")
+    check_manifest_shape(manifest)
 
     listed = {c["path"] for c in manifest["components"]} | {"manifest.json"}
     present = set(os.listdir(out))
@@ -985,8 +1037,9 @@ def verify_release(out):
         )
     bodies = {}
     for component in manifest["components"]:
+        path = resolve_within(out, component["path"], component["path"])
         body = read_bounded(
-            os.path.join(out, component["path"]), MAX_RELEASE_BYTES,
+            path, MAX_RELEASE_BYTES,
             f"release component {component['path']}",
         )
         if len(body) != component["bytes"]:
