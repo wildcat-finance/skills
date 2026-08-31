@@ -88,3 +88,19 @@ Elenchus verdict: inconclusive
 | S3-R1-03 | medium | plugins/alexandria/scripts/usdc_interval.py | The finality bind and the boundary re-read raised without writing a receipt, so the two reads that happen before any shard left no record of a failed attempt. Reproduced by failing the finality read: the collection stopped and `receipts/errors.jsonl` did not exist. Those are the reads an operator most needs a record of, because they decide whether the run started at all. | fixed in 023820343441896f3fad153b46aa77cf802d05cb |
 
 Leads not pursued: the fixes commit changed tests as well as code. Against `a50e25a7b33a82833b68366e843b7d2470a96f2a` two of the eight new guards fail by assertion and six error, because they assert behaviour the parent has no code path for at all; the Elenchus contract classifies that mixed report as `inconclusive`, and the fixed tree reports 423 of 423 with zero skips. Three bounded things are recorded rather than fixed. An exception message still reaches the operator on stderr, so a caller-supplied transport that puts its endpoint there is visible to whoever is watching; that is a different surface from a durable file and the shipped transport does not do it. The `confirmations` finality policy asks for the block the plan already names and checks the provider agrees, which confirms the boundary rather than deriving it; deriving it would mean reading a head and subtracting, and the plan is the place that decision belongs. And `trace_filter` is requested per shard with no fallback to `trace_block`, so a provider serving only the latter is refused rather than degraded; Phase 0 measured `trace_filter` on the endpoint this collector targets. S1-R1-07 and S2-R1-04 stay open and accepted.
+
+## Step 3, round 2 -- 2026-08-31T05:21:03Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: endpoint-leak=reviewed; silent-truncation=reviewed; unbounded-response=reviewed; reorg-rewind=reviewed; torn-shard=reviewed; staging-path-escape=reviewed; skip-as-pass=reviewed; whole-battery-regression=reviewed; epoch-gap=not-applicable; coverage-inflation=not-applicable; reconciliation-bias=not-applicable
+
+Not checked: nothing new. Steps 4 and 5 still own their two concerns and the Pashov pair remains waived. The round re-read the repaired receipt path for faults the repair could have introduced: the symlink check on the receipts directory runs after the `mkdir`, so a symlink to a file raises `FileExistsError` and is converted rather than escaping; the receipt file descriptor is opened once and closed once, with `closefd=False` on the wrapper; and a status that is neither a bounded number nor a short plain string refuses before anything is written.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: the whole battery ran against the fixed tree. The three bundled lints exited 0, the Alexandria suite reported 423 of 423 with zero skips, `portable_promise_machine.py check`, `horos.py check .`, `audit_synopsis.py --check .` and `git diff --check` each exited 0 with a clean working tree, and the design checker exited 0 at `step:4` with the reorg conformance report passing on seven cases. The root suite reports 776 tests with one failure, S1-R1-07 and nothing else. One thing is recorded rather than fixed: `_ask` catches `AlexandriaError` from the transport, so a caller-supplied transport that raises something else propagates without a receipt. `HttpsTransport` raises only `TransportError`, and catching everything would swallow a `KeyboardInterrupt` during a long collection, which is the one exception an operator most wants to work. The three items recorded under round 1 still stand, as do S1-R1-07 and S2-R1-04.
