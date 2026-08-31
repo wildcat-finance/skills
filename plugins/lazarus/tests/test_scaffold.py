@@ -305,7 +305,7 @@ class ScaffoldTests(unittest.TestCase):
             encoding="utf-8"
         )
 
-        def event_paths(source, event):
+        def event_paths(source, event, required=True):
             event_match = re.search(
                 rf"(?ms)^  {re.escape(event)}:\n(?P<body>.*?)(?=^  [a-z_]+:|\Z)",
                 source,
@@ -315,6 +315,8 @@ class ScaffoldTests(unittest.TestCase):
                 r"(?m)^    paths:\n(?P<paths>(?:      - .+\n)+)",
                 event_match["body"],
             )
+            if not required and paths_match is None:
+                return None
             self.assertIsNotNone(paths_match)
             return set(
                 re.findall(r'^      - "([^"]+)"$', paths_match["paths"], re.M)
@@ -328,9 +330,7 @@ class ScaffoldTests(unittest.TestCase):
             with self.subTest(event=event):
                 lazarus_paths = event_paths(workflow, event)
                 self.assertTrue(lazarus_paths.isdisjoint(shared_paths))
-                self.assertTrue(
-                    shared_paths.issubset(event_paths(repo_workflow, event))
-                )
+                self.assertIsNone(event_paths(repo_workflow, event, required=False))
 
         self.assertIn('python-version-file: ".python-version"', workflow)
         self.assertNotIn("matrix.python-version", workflow)
