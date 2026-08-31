@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1014,
-  "total_bytes": 21858587,
+  "file_count": 1015,
+  "total_bytes": 21832920,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -36,6 +36,10 @@
       "reason": "development suites and other fixtures remain in the full source checkout; the listed closed model-proxy-v1 fixture set closes the portable commands and vectors advertised by the copied reference"
     },
     {
+      "pattern": "plugins/anamnesis/specimens/**",
+      "reason": "the preserved audit sources and the corpus release built from them are data the router never reads; they remain in the full source checkout, where the tests that rebuild and compare them run"
+    },
+    {
       "pattern": "plugins/alexandria/examples/compound-v3-phase0-v0/input/**",
       "reason": "the large offline trace inputs remain in the full source checkout"
     },
@@ -59,7 +63,7 @@
       "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "f934aee445665dfe44217d993419a9350f97c9bc9851de57801a0b25fe721126",
+      "sha256": "bab23cf29a6d99fe00f92e10b119af7fb874f534819852e93ef82287734f9913",
       "source": null
     },
     {
@@ -489,9 +493,9 @@
       "source": "plugins/alexandria/skills/alexandria/agents/openai.yaml"
     },
     {
-      "bytes": 3078,
+      "bytes": 3184,
       "path": "plugins/anamnesis/AGENTS.md",
-      "sha256": "73b94188fd47e26b434df2588014744c30859babcd81a26b8d8cb8852e0f1620",
+      "sha256": "9829ef8a98e4b6a9938096aa22741970f1f133e931cf79e59aad29cd83c0a0ec",
       "source": "plugins/anamnesis/AGENTS.md"
     },
     {
@@ -507,9 +511,9 @@
       "source": "plugins/anamnesis/PROMISE_MACHINE.md"
     },
     {
-      "bytes": 3951,
+      "bytes": 4068,
       "path": "plugins/anamnesis/README.md",
-      "sha256": "a4333562331820d3f2aae7408288456b5115c51421f2848296912bbb9be39a39",
+      "sha256": "b5144b34d7a6f27f63e39ad9f7381e37e0bd7ef128f3de85b9cc66d320860afe",
       "source": "plugins/anamnesis/README.md"
     },
     {
@@ -549,16 +553,46 @@
       "source": "plugins/anamnesis/docs/study.md"
     },
     {
-      "bytes": 1861,
+      "bytes": 2836,
       "path": "plugins/anamnesis/skills/anamnesis/EVOLUTION.md",
-      "sha256": "649281149fba130252badde6068b2f93b403caf362f89c8ad8500e674e5d7174",
+      "sha256": "870d187f61d785c08a161d29d6a3691b0e1fbdd7ad27e475f1261f9645ae68a1",
       "source": "plugins/anamnesis/skills/anamnesis/EVOLUTION.md"
     },
     {
-      "bytes": 8880,
+      "bytes": 12571,
       "path": "plugins/anamnesis/skills/anamnesis/SKILL.md",
-      "sha256": "66a3394faea1bff4c57afe77dc0b1d0b308234545262dd4ed8b5a2f28108828c",
+      "sha256": "0fff4122892173f1ffc6e5674073e2195b554286e57e0febe72f13a0ab2cb236",
       "source": "plugins/anamnesis/skills/anamnesis/SKILL.md"
+    },
+    {
+      "bytes": 2623,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/assertion-v1.json",
+      "sha256": "c49b552b1747f95a1dff894fefd4cfad7d9a1fb3e2903da38130edbc29aba5ef",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/assertion-v1.json"
+    },
+    {
+      "bytes": 1825,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/engagement-v1.json",
+      "sha256": "12a3ca5d76af0121e22e7b642f61ae0380eb38c6c6e8341d26a46a5d74dba706",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/engagement-v1.json"
+    },
+    {
+      "bytes": 1793,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/policy-v1.json",
+      "sha256": "dded70eeaf953a213fc2b89f50cb49745903c3871f6f1e067e42a0945b6f99e7",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/policy-v1.json"
+    },
+    {
+      "bytes": 1054,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/relation-v1.json",
+      "sha256": "501facb569e1afba43a2c5a66b0e663c8c79c39804c93da3f2b1219ac627b586",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/relation-v1.json"
+    },
+    {
+      "bytes": 3656,
+      "path": "plugins/anamnesis/skills/anamnesis/schemas/release-v1.json",
+      "sha256": "f2df106e4111e3ceed8ec2b7feec90631e3938f633925f0d9dcb71c956dc1f08",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/release-v1.json"
     },
     {
       "bytes": 1863,
@@ -573,34 +607,10 @@
       "source": "plugins/anamnesis/skills/anamnesis/schemas/source-v1.json"
     },
     {
-      "bytes": 18934,
+      "bytes": 51940,
       "path": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py",
-      "sha256": "04fb456e9ab266d5b1287940e570ab92018f495749c1885076f03dd2e6097dea",
+      "sha256": "8c163b89bd45fe2184f4e301761768fa792e413f4f5cfdd59543480ce54753b6",
       "source": "plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py"
-    },
-    {
-      "bytes": 8586,
-      "path": "plugins/anamnesis/specimens/pilot/policy.json",
-      "sha256": "a068952efec9baba2f5b28d73ac321a856642155049a2d008424474bcd959a56",
-      "source": "plugins/anamnesis/specimens/pilot/policy.json"
-    },
-    {
-      "bytes": 5621,
-      "path": "plugins/anamnesis/specimens/pilot/sources/hexaemeron-audit-rounds.md",
-      "sha256": "8acff29ed567c97902941a85d72e41171c10850de6aa898b5d50564248eac28f",
-      "source": "plugins/anamnesis/specimens/pilot/sources/hexaemeron-audit-rounds.md"
-    },
-    {
-      "bytes": 45906,
-      "path": "plugins/anamnesis/specimens/pilot/sources/pandects-audit-rounds.md",
-      "sha256": "66908cb68630f3c3cbea432aec6cf6efc305bcab85ccf5fadb278c535635edf9",
-      "source": "plugins/anamnesis/specimens/pilot/sources/pandects-audit-rounds.md"
-    },
-    {
-      "bytes": 14400,
-      "path": "plugins/anamnesis/specimens/pilot/sources/tabularium-audit-rounds.md",
-      "sha256": "1de310b5df5784d7e623ea9dbda83ae77e02cb1798b3aeedffc5d0c715f8e3a7",
-      "source": "plugins/anamnesis/specimens/pilot/sources/tabularium-audit-rounds.md"
     },
     {
       "bytes": 5761,

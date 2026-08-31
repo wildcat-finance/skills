@@ -175,28 +175,28 @@
     },
     "anamnesis-curate-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_curate_reports_no_result"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_a_missing_legacy_field_is_unknown_and_not_none"
     },
     "anamnesis-curate-o": {
       "claim": "The nearest tempting overclaim remains explicitly unavailable.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_curate_accepts_no_policy_shortcut"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_applied_never_becomes_verified"
     },
     "anamnesis-curate-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_curate_refuses_by_name"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_one_remediation_can_address_several_findings"
     },
     "anamnesis-curate-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_curate_declares_its_recovery"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_widening_the_taxonomy_admits_the_same_finding"
     },
     "anamnesis-curate-s": {
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_curate_writes_nothing"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_a_severity_outside_the_taxonomy_is_quarantined_not_mapped"
     },
     "anamnesis-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
@@ -220,28 +220,28 @@
     },
     "anamnesis-release-m": {
       "claim": "Missing required evidence is refused rather than treated as success.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_release_reports_no_result"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_a_missing_component_fails_verification"
     },
     "anamnesis-release-o": {
       "claim": "The nearest tempting overclaim remains explicitly unavailable.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_release_accepts_no_policy_shortcut"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_the_release_reports_its_exclusions"
     },
     "anamnesis-release-p": {
       "claim": "Positive evidence exercises the declared operation inside its stated boundary.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_release_refuses_by_name"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_a_release_verifies_from_its_own_bytes"
     },
     "anamnesis-release-r": {
       "claim": "The failure is contained and leaves a concrete rerun, rollback or repair path.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_release_declares_its_recovery"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_a_killed_build_leaves_no_release_and_no_staging"
     },
     "anamnesis-release-s": {
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
-      "path": "plugins/anamnesis/tests/test_s1_reserved.py",
-      "selector": "test_release_writes_nothing"
+      "path": "plugins/anamnesis/tests/test_s2_curation.py",
+      "selector": "test_a_tampered_component_fails_verification"
     },
     "anamnesis-s": {
       "claim": "Stale or mismatched subject evidence is refused or kept visibly scoped.",
@@ -3335,6 +3335,34 @@
       },
       "sha256": "59e92f0716b34c18705069d1bca86d48df3bc3485b06f5c4a8c7dbaa2bc88947",
       "source": "plugins/alexandria/schemas/archive-manifest-v1.schema.json"
+    },
+    "anamnesis-corpus-curation": {
+      "bindings": {
+        "evidence_classes": "checked, recomputed and recorded values joined to the canonical Evidence classes field",
+        "evidence_references": "source locators, native fields and the mapper",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "the admitted sources and the named curation policy",
+        "subject": "assertion id and kind",
+        "transition": "successful curate status joined to the canonical Authorises field",
+        "unknowns": "counted unknowns and the quarantine list, kept distinct from none"
+      },
+      "sha256": "c49b552b1747f95a1dff894fefd4cfad7d9a1fb3e2903da38130edbc29aba5ef",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/assertion-v1.json"
+    },
+    "anamnesis-corpus-release": {
+      "bindings": {
+        "evidence_classes": "checked, recomputed and recorded values joined to the canonical Evidence classes field",
+        "evidence_references": "sources, components and policy",
+        "exception": "canonical Exceptions field",
+        "promise_id": "coverage key joined to the canonical promise heading",
+        "scope": "the components the manifest names",
+        "subject": "release_id and component paths",
+        "transition": "successful release and verify status joined to the canonical Authorises field",
+        "unknowns": "the manifest's unknowns map and its exclusions"
+      },
+      "sha256": "f2df106e4111e3ceed8ec2b7feec90631e3938f633925f0d9dcb71c956dc1f08",
+      "source": "plugins/anamnesis/skills/anamnesis/schemas/release-v1.json"
     },
     "anamnesis-source-admission": {
       "bindings": {

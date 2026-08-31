@@ -2,7 +2,7 @@
 name: anamnesis
 description: Preserve audit findings and the changes that answered them as a source-bound corpus. Admit a source only against an explicit rights basis, keep the producer's bytes and identifiers unchanged, curate submissions, adjudicated findings, occurrences, remediation attempts and verifications as separate records, and release checked read-only projections for Elenchus and Synkrisis. Use when someone asks to preserve, curate, release or query a corpus of audit findings and their remedies. Do not use it to judge whether a finding is real, to prove a fix correct, or to compare runs.
 metadata:
-  version: "0.1.0"
+  version: "1.1.0"
 ---
 
 # Anamnesis
@@ -20,7 +20,7 @@ version, held frontier, next job, and maturity state live in
 [EVOLUTION.md](EVOLUTION.md). Read that ledger before starting work intended to
 advance Anamnesis itself.
 
-**Current frontier.** Source admission ships as the member's first promise: a closed pilot policy, no-follow regular-file reads under a declared byte cap, exact digest checks, and a closed rights and disclosure enumeration in which public visibility is not a rights basis. Curation and release are declared boundaries that refuse by name and say which runbook step owes them.
+**Current frontier.** The curation graph and the deterministic release ship. Submissions, findings, occurrences, remediation attempts and verifications are separate records joined by many-to-many edges; a severity outside the policy taxonomy is quarantined rather than mapped; a duplicate cluster arrives from the policy and keeps every submission; and a release rebuilds byte-for-byte or refuses. The Elenchus and Synkrisis projections are declared boundaries that refuse by name.
 
 Three siblings sit next to it and none of them is a substitute:
 
@@ -46,10 +46,8 @@ is not fixed, applied is not verified, and similar is not the same.
 
 ## The three operations
 
-Each operation is a separate promise, declared below. This version implements
-source admission only. `curate` and `release` refuse by name and say which
-runbook step owes them; an operation whose step has not landed refuses rather
-than guessing.
+Each operation is a separate promise, declared below. An operation whose
+runbook step has not landed refuses by name rather than guessing.
 
 ### `admit` -- source admission
 
@@ -73,13 +71,59 @@ python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py admit-seed \
   --report .hexaemeron/reports/anamnesis-member-seed-source-rights-admitted.json
 ```
 
+### `ingest` -- read the admitted sources
+
+Read each admitted source into the rounds and findings its producer wrote.
+Nothing is normalised here.
+
+```bash
+python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py ingest \
+  --policy plugins/anamnesis/specimens/pilot/policy.json
+```
+
 ### `curate` -- the finding-to-remedy graph
 
-Not implemented in this version. Runbook step 2 owes it.
+Build submissions, findings, occurrences, remediation attempts and
+verifications as separate records joined by many-to-many edges, under a
+versioned curation policy.
 
-### `release` -- the deterministic release
+```bash
+python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py curate \
+  --policy plugins/anamnesis/specimens/pilot/policy.json \
+  --curation-policy plugins/anamnesis/specimens/pilot/curation-policy.json
+```
 
-Not implemented in this version. Runbook step 3 owes it.
+A severity outside the policy's taxonomy is quarantined, not mapped to its
+nearest neighbour. A duplicate cluster is a curator's decision and arrives in
+the policy's `duplicates`; the mapper never invents one, and a duplicate keeps
+its own submission record while sharing one canonical finding.
+
+### `release` and `verify` -- the deterministic release
+
+`release` writes a closed manifest naming every component by digest, the policy
+that produced it, its counts with their denominators, its exclusions and its
+unknowns. The release id is derived from the inputs and the policy, so the same
+inputs under the same policy name the same release. `verify` recomputes every
+component digest from the bytes on disk.
+
+```bash
+python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py release \
+  --policy plugins/anamnesis/specimens/pilot/policy.json \
+  --curation-policy plugins/anamnesis/specimens/pilot/curation-policy.json \
+  --out plugins/anamnesis/specimens/pilot/release
+
+python3 plugins/anamnesis/skills/anamnesis/scripts/anamnesis.py verify \
+  --release plugins/anamnesis/specimens/pilot/release
+```
+
+The build stages beside its destination and promotes it only once every
+component is written, so a killed run leaves nothing that could be mistaken for
+a release.
+
+### The consumer projections
+
+Not implemented in this version. Runbook step 3 owes the Elenchus and Synkrisis
+adapters.
 
 ## Rights, disclosure and egress
 
@@ -135,24 +179,25 @@ did not run, say so plainly and do not describe its result as successful.
 
 ### anamnesis-corpus-curation
 
-- Promise: Reserved. A successful `curate` will establish that admitted sources produced source-linked finding, remediation, verification and relationship assertions without strengthening any native evidence state.
-- Evidence: Not yet earned. Runbook step 2 owes the mapper catalogue, the closed assertion and relation schemas, and their specimens.
-- Evidence classes: checked, recorded
-- Boundary: The promise is declared so the boundary is visible; this version establishes nothing about curation.
-- Authorises: Nothing in this version.
-- Consequence: 0
-- Refuses: Every invocation, by name, stating that runbook step 2 owes the operation.
-- Recovery: Land runbook step 2 and its evidence, then invoke `curate`.
+- Promise: A successful `curate` establishes that every admitted source produced source-linked submission, finding, occurrence, remediation and verification assertions under the named policy, joined by many-to-many edges, with no native evidence state strengthened and every severity outside the policy taxonomy quarantined rather than mapped.
+- Evidence: The admitted sources and their digests, the closed curation policy, the named mapper and its version, per-assertion source locators and verbatim native fields, the closed state enumerations, the deterministic assertion and relation ids, the quarantine list and the counted unknowns.
+- Evidence classes: checked, recomputed, recorded
+- Boundary: Curation establishes what the sources said and how the policy joined it. It does not establish that a finding was real, that a remediation worked, that a duplicate cluster is correct, or that the taxonomy is the right one. `applied` is as far as any status string reaches; a verification state comes only from a verdict the source declared.
+- Authorises: Building a release from the graph, and passing it to the consumer projections runbook step 3 owes.
+- Consequence: 2
+- Refuses: A duplicate naming itself or another duplicate, a policy outside its closed shape, an unknown disclosure class, a severity outside the taxonomy reaching a finding record, derived text from a source whose disclosure class the policy does not admit, and any state value outside the closed enumeration.
+- Recovery: Inspect the quarantine list and the policy that produced it, correct the taxonomy, the duplicate map or the disclosure classes, and rerun `curate`.
 - Exceptions: none
+
 
 ### anamnesis-corpus-release
 
-- Promise: Reserved. A successful `release` will establish that a declared cohort and its projections rebuilt to identical digests from named inputs while preserving exclusions, unknowns, policy versions and source digests.
-- Evidence: Not yet earned. Runbook step 3 owes the release manifest, the rebuild comparison, and the consumer projection schemas.
+- Promise: A successful `release` followed by `verify` establishes that one closed manifest names every component by exact digest, the policy that produced it, its counts with their denominators, its exclusions and its unknowns, and that those components rebuild byte-for-byte from the same inputs under the same policy.
+- Evidence: The release id derived from the policy and the source digests, the canonical byte form of every component, the recomputed component digests, the exact directory contents against the manifest, the staged build promoted only when complete, and the measured release byte total against the declared cap.
 - Evidence classes: checked, recomputed, recorded
-- Boundary: The promise is declared so the boundary is visible; this version establishes nothing about release.
-- Authorises: Nothing in this version.
-- Consequence: 0
-- Refuses: Every invocation, by name, stating that runbook step 3 owes the operation.
-- Recovery: Land runbook step 3 and its evidence, then invoke `release`.
+- Boundary: The release establishes its own bytes and what it excluded. It does not establish that the corpus is complete, that its counts describe anything outside the sources it names, or that an excluded record was rightly excluded.
+- Authorises: Publishing the release under its recorded rights bases, and measuring it for the conformance report the design record names.
+- Consequence: 2
+- Refuses: An existing destination, a component whose digest or byte count differs from the manifest, a release directory holding a file the manifest does not name or missing one it does, a manifest declaring another schema, a non-regular entry in the release, and a total above the byte cap.
+- Recovery: Inspect the failing component named by the refusal, rebuild the release from the same inputs and compare the release id, or correct the inputs and build a new release rather than editing one in place.
 - Exceptions: none

@@ -1,0 +1,3667 @@
+[
+  {
+    "id": "find:pandects-audit-rounds:S1-R1-01",
+    "kind": "finding",
+    "locator": {
+      "line": 45
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "The revert check looked for `require` and `revert` and not `assert`. A law reaching for `assert(cond)` to mean \"violated\" reverts with a panic, which under `fail_on_revert = false` is as silent as any other revert, so the law reports nothing and the check that exists to catch exactly that missed it",
+      "native_id": "S1-R1-01",
+      "severity": "medium",
+      "status": "fixed in this round: `assert` is scanned with the other two and the finding names which was used"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: `assert` is scanned with the other two and the finding names which was used",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S1-R1-02",
+    "kind": "finding",
+    "locator": {
+      "line": 46
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "The check first matched the body of `check()` with a regex that depended on the closing brace sitting at four spaces. A law written on one line, or inside a library, or indented differently, produced no match at all, and the revert check then silently did not run. A check that stops checking without saying so is worse than no check",
+      "native_id": "S1-R1-02",
+      "severity": "medium",
+      "status": "fixed in this round: the scan reads the whole component. A law component holds `id`, `statement` and `check` and nothing else, so no revert anywhere in it is legitimate and there is no body to find first"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: the scan reads the whole component. A law component holds `id`, `statement` and `check` and nothing else, so no revert anywhere in it is legitimate and there is no body to find first",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S1-R1-03",
+    "kind": "finding",
+    "locator": {
+      "line": 47
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "A component or specimen that was not UTF-8 raised out of the checker instead of being reported. `check_specimen` also called `.lower()` on the read result, so the same input crashed there twice over",
+      "native_id": "S1-R1-03",
+      "severity": "low",
+      "status": "fixed in this round: reading returns `None` and both call sites report it as a finding"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: reading returns `None` and both call sites report it as a finding",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S1-R1-04",
+    "kind": "finding",
+    "locator": {
+      "line": 48
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "`os.path.commonpath` raises on paths it cannot compare, which would have escaped as a traceback rather than a refusal to resolve",
+      "native_id": "S1-R1-04",
+      "severity": "low",
+      "status": "fixed in this round"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S1-R2-01",
+    "kind": "finding",
+    "locator": {
+      "line": 86
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "The pattern accepted any uppercase letter after the word, to catch `revert CustomError()`. A function named `revertHelper` matched it, so a law with an honestly named internal helper was reported as reverting to signal a violation",
+      "native_id": "S1-R2-01",
+      "severity": "medium",
+      "status": "fixed in this round: the pattern takes the two real spellings, `revert(` and `revert` followed by whitespace and a capital, and nothing else"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: the pattern takes the two real spellings, `revert(` and `revert` followed by whitespace and a capital, and nothing else",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S1-R2-02",
+    "kind": "finding",
+    "locator": {
+      "line": 87
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "The scan read string literals. A law whose `statement()` describes a system that requires collateral was accused of requiring it, which would have pushed authors to write worse sentences to get past a check",
+      "native_id": "S1-R2-02",
+      "severity": "medium",
+      "status": "fixed in this round: string literals are removed before comments, so a `//` inside one is removed with the string rather than truncating the line"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: string literals are removed before comments, so a `//` inside one is removed with the string rather than truncating the line",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S1-R3-01",
+    "kind": "finding",
+    "locator": {
+      "line": 116
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "A path carrying an embedded null byte raised `ValueError` out of `realpath` rather than being reported. The same class as round 1's unreadable component: malformed input crashing the checker instead of being told to the reader",
+      "native_id": "S1-R3-01",
+      "severity": "low",
+      "status": "fixed in this round: a path the filesystem will not look at is a containment that cannot be established, so it is refused"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: a path the filesystem will not look at is a containment that cannot be established, so it is refused",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S2-R1-01",
+    "kind": "finding",
+    "locator": {
+      "line": 159
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "specimens/Sound.sol",
+      "finding": "The sound reference is not sound. A Foundry campaign broke `reserves-backed-by-claims` against it and shrank the sequence to four calls: deposit, fee, reserve, fee. `accrueFee` reduced claims with no regard for what was already reserved, so a fee charged after a reservation dropped claims below reserved. In economic terms the protocol was taking its fee out of value already promised to a lender who had asked to leave. The law is right and the reference was wrong",
+      "native_id": "S2-R1-01",
+      "severity": "high",
+      "status": "fixed in this round: the fee is capped at claims that are not already reserved, and the reason is recorded on the function"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: the fee is capped at claims that are not already reserved, and the reason is recorded on the function",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S2-R1-02",
+    "kind": "finding",
+    "locator": {
+      "line": 160
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/campaigns/Specimens.sol",
+      "finding": "The campaign harnesses were written under `test/`. crytic-compile skips `test/` when it builds a Foundry project, so Echidna could not see them at all and answered `Given contract not found`. A harness an engine cannot see is a campaign that quietly tests nothing, which is the failure this corpus exists to refuse, in its own tooling",
+      "native_id": "S2-R1-02",
+      "severity": "medium",
+      "status": "fixed in this round: harnesses live under `src/campaigns/`, with the reason on the contract"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: harnesses live under `src/campaigns/`, with the reason on the contract",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S2-R1-03",
+    "kind": "finding",
+    "locator": {
+      "line": 161
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "test/Corpus.t.sol",
+      "finding": "A test function that reads and does not write was not marked `view`, which the compiler warned about. A warning nobody clears is a warning nobody reads",
+      "native_id": "S2-R1-03",
+      "severity": "low",
+      "status": "fixed in this round"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S2-R2-01",
+    "kind": "finding",
+    "locator": {
+      "line": 209
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/campaigns/Specimens.sol",
+      "finding": "The harness discarded the detail every law builds. `Law` is written so that a reader who finds a failure later learns which quantities were compared and what they were, and the campaign entry points dropped exactly that, leaving an operator with a call sequence and no reason. Slither's `unused-return` is what pointed at it",
+      "native_id": "S2-R2-01",
+      "severity": "medium",
+      "status": "fixed in this round: `explain()` returns each law's reason for the current state, so a replayed sequence gives up its reason instead of having to be worked out again. A property function may return only a boolean and emitting the string would make it non-view, so this is where it goes"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: `explain()` returns each law's reason for the current state, so a replayed sequence gives up its reason instead of having to be worked out again. A property function may return only a boolean and emitting the string would make it non-view, so this is where it goes",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S2-R2-02",
+    "kind": "finding",
+    "locator": {
+      "line": 210
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "audit/AUDIT.md",
+      "finding": "Round 1 recorded Slither over 5 contracts and no results. True when written, and stale within the same round: moving the harnesses out of `test/` so Echidna could see them also moved them into Slither's scope, and Slither was not run again afterwards. The clean result covered less than the sentence suggested",
+      "native_id": "S2-R2-02",
+      "severity": "low",
+      "status": "fixed in this round: Slither re-run over all 14 contracts, and the entry above records the count so the scope is legible"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: Slither re-run over all 14 contracts, and the entry above records the count so the scope is legible",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S2-R2-03",
+    "kind": "finding",
+    "locator": {
+      "line": 211
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "specimens/Sound.sol",
+      "finding": "`asset` was declared and never assigned, so every specimen reported that its quantities were denominated in the zero address. An observable that says nothing about itself while the interface promises it names the unit",
+      "native_id": "S2-R2-03",
+      "severity": "low",
+      "status": "fixed in this round: a named constant, with the reason that these specimens model units rather than a token"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: a named constant, with the reason that these specimens model units rather than a token",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S2-R2-04",
+    "kind": "finding",
+    "locator": {
+      "line": 212
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/campaigns/Specimens.sol",
+      "finding": "Seven harness fields were mutable storage where they are set once. Cosmetic on its own, but a detector list with fourteen entries nobody intends to act on is a detector list nobody reads",
+      "native_id": "S2-R2-04",
+      "severity": "low",
+      "status": "fixed in this round: the fields are immutable, and the two detectors that remain by design are disabled at each site with the reason in the source rather than repository wide, so the next thing either catches is read rather than filtered out with them"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: the fields are immutable, and the two detectors that remain by design are disabled at each site with the reason in the source rather than repository wide, so the next thing either catches is read rather than filtered out with them",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S3-R1-01",
+    "kind": "finding",
+    "locator": {
+      "line": 267
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/QueueOrderPreserved.sol, src/laws/ReservesCoverPayableClaims.sol, src/Observation.sol",
+      "finding": "Both queue laws and the snapshot helper traverse the whole queue with one external call per claim. Above some queue length the call runs out of gas and reverts, and the corpus counts a revert as no verdict -- so each law stops working, silently, at a size nobody has written down.",
+      "native_id": "S3-R1-01",
+      "severity": "medium",
+      "status": "fixed in 2429718"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 2429718",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S3-R1-02",
+    "kind": "finding",
+    "locator": {
+      "line": 268
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/DebtFallsOnlyAgainstPayment.sol, src/laws/NoAccrualAtRest.sol, src/laws/RecordedClaimNeverShrinks.sol",
+      "finding": "The succession laws compare totals, so an offsetting movement inside one transition hides a violation. A write-off in the same call as a deposit of the same size leaves debt down and held assets up, and the payment law holds.",
+      "native_id": "S3-R1-02",
+      "severity": "medium",
+      "status": "fixed in 2429718"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 2429718",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S3-R1-03",
+    "kind": "finding",
+    "locator": {
+      "line": 269
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/PairLaw.sol",
+      "finding": "Three laws each explain, in their own words, what they do with a pair they cannot judge, and two of them reach opposite conclusions. The rule behind that was written nowhere, so it read as inconsistency rather than as policy.",
+      "native_id": "S3-R1-03",
+      "severity": "low",
+      "status": "fixed in 2429718"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 2429718",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S3-R1-04",
+    "kind": "finding",
+    "locator": {
+      "line": 270
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "--",
+      "finding": "A Medusa run was read as \"none failed\" when it had not run at all: stale crytic artefacts, and the engine exited on `Failed to initialize the test chain` before any campaign started. Caught by noticing that Medusa disagreed with Echidna on five specimens. The corpus's own rule is never to report a campaign under an engine that did not run, and this round nearly broke it.",
+      "native_id": "S3-R1-04",
+      "severity": "low",
+      "status": "fixed in 2429718"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 2429718",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S3-R2-01",
+    "kind": "finding",
+    "locator": {
+      "line": 338
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/AccrualPathIndependent.sol",
+      "finding": "The bound is `subdivisions - 1`, and `subdivisions` is fixed when the law is deployed. Nothing in either observation says how many steps the subdivided run actually took, so a law built for the wrong count silently compares against the wrong bound -- too generous and a compounding system passes, too tight and a correct one is reported as violated.",
+      "native_id": "S3-R2-01",
+      "severity": "medium",
+      "status": "fixed in 0b7ae32"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 0b7ae32",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S3-R2-02",
+    "kind": "finding",
+    "locator": {
+      "line": 339
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/ReservesCoverPayableClaims.sol",
+      "finding": "The law reports a violation when more claims are declared payable than exist, which is marginally broader than its statement. The reason -- that the alternative reads past the end of the queue and reverts into silence -- was in nobody's head but mine.",
+      "native_id": "S3-R2-02",
+      "severity": "low",
+      "status": "fixed in 0b7ae32"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 0b7ae32",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S4-R1-01",
+    "kind": "finding",
+    "locator": {
+      "line": 425
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "adapters/CorpusBase.sol",
+      "finding": "A driving adapter whose entry points do not carry `records` reports all three succession laws holding, forever, and nothing about that verdict distinguishes it from three laws that held. The forgotten modifier is not something the compiler can catch, and the result of forgetting it is three green properties over a system nobody judged.",
+      "native_id": "S4-R1-01",
+      "severity": "high",
+      "status": "fixed in aa3df12"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in aa3df12",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S4-R1-02",
+    "kind": "finding",
+    "locator": {
+      "line": 426
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/run.py",
+      "finding": "A campaign killed by the timeout was reported as an engine that did not run. The engine ran, searched for as long as it was given and was killed; dropping it from the record hides a search that happened, and calling it passed would be worse.",
+      "native_id": "S4-R1-02",
+      "severity": "medium",
+      "status": "fixed in aa3df12"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in aa3df12",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S4-R1-03",
+    "kind": "finding",
+    "locator": {
+      "line": 427
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/run.py",
+      "finding": "Settings were read from `[invariant]` only, and an absent or differently named section produced `\"configuration\": {}` -- a record saying the campaign ran under no settings, when what happened is that nobody could read them. Foundry accepts `[profile.default.invariant]` as well.",
+      "native_id": "S4-R1-03",
+      "severity": "medium",
+      "status": "fixed in aa3df12"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in aa3df12",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S4-R2-01",
+    "kind": "finding",
+    "locator": {
+      "line": 480
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "adapters/CorpusBase.sol",
+      "finding": "`explainOneState` reads all five laws, so against a target with no withdrawal queue it reverts and takes the three answers down with the two reads that had none. An integrator whose system has no queue was told nothing at all, including about the laws that were happy to judge it.",
+      "native_id": "S4-R2-01",
+      "severity": "medium",
+      "status": "fixed in cf9cf68"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in cf9cf68",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S4-R2-02",
+    "kind": "finding",
+    "locator": {
+      "line": 481
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/run.py",
+      "finding": "A seed nobody could read was absent from the record; an engine version nobody could read was present and null. Same reason, two spellings, in one document.",
+      "native_id": "S4-R2-02",
+      "severity": "low",
+      "status": "fixed in cf9cf68"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in cf9cf68",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S5-R1-01",
+    "kind": "finding",
+    "locator": {
+      "line": 554
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "docs/catalogue.md",
+      "finding": "The document calls itself a rendering and there was no renderer. It was written once by a script that was not committed, and the drift test caught a stale document without offering any way to fix it: somebody adding a law was told the document was wrong and left to work out what it should have said.",
+      "native_id": "S5-R1-01",
+      "severity": "medium",
+      "status": "fixed in ac37f14"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in ac37f14",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S5-R1-02",
+    "kind": "finding",
+    "locator": {
+      "line": 555
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "integrations/wildcat/APPLICABILITY.md",
+      "finding": "A law added to the catalogue could go unmentioned in the integration's notes, which is the one place the applicability question actually gets asked of a real design. Nothing checked.",
+      "native_id": "S5-R1-02",
+      "severity": "low",
+      "status": "fixed in ac37f14"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in ac37f14",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S5-R2-01",
+    "kind": "finding",
+    "locator": {
+      "line": 614
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/render.py",
+      "finding": "The renderer hardcoded \"Nine laws in three families\" and looped over its own list of families rather than the catalogue's. A tenth law would produce a document that lies about its own count, and a law filed under a new family would vanish from the document entirely -- neither of which the drift test can see, because that test compares the document against this renderer and both would be wrong the same way.",
+      "native_id": "S5-R2-01",
+      "severity": "medium",
+      "status": "fixed in 9eb1314"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 9eb1314",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:pandects-audit-rounds:S5-R2-02",
+    "kind": "finding",
+    "locator": {
+      "line": 615
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": ".gitignore",
+      "finding": "The demo tells a reader to write `search-record.json` into the plugin, and nothing ignored it. Following the documented walkthrough left the repository dirty.",
+      "native_id": "S5-R2-02",
+      "severity": "low",
+      "status": "fixed in 9eb1314"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 9eb1314",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:E1-R1-01",
+    "kind": "finding",
+    "locator": {
+      "line": 38
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "An oversized decimal block field could escape the controlled validation path through Python's integer-string conversion limit.",
+      "native_id": "E1-R1-01",
+      "severity": "medium",
+      "status": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:E1-R1-02",
+    "kind": "finding",
+    "locator": {
+      "line": 39
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "Distinct source IDs could name the same transaction and log index, allowing duplicate canonical event identities.",
+      "native_id": "E1-R1-02",
+      "severity": "medium",
+      "status": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:E1-R1-03",
+    "kind": "finding",
+    "locator": {
+      "line": 40
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/release_v2.py",
+      "finding": "A rebound capture could claim a timestamp different from the preserved Euler V3 response metadata.",
+      "native_id": "E1-R1-03",
+      "severity": "medium",
+      "status": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:E1-R2-01",
+    "kind": "finding",
+    "locator": {
+      "line": 58
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "examples/euler-v1-v0/capture.json`, `scripts/tabularium_lib/release_v2.py",
+      "finding": "The preserved JSON-RPC response carried request ID `1`, but the capture's request descriptor omitted that ID. The purported exact request was therefore incomplete.",
+      "native_id": "E1-R2-01",
+      "severity": "medium",
+      "status": "fixed in `ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:E1-R3-01",
+    "kind": "finding",
+    "locator": {
+      "line": 75
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "An empty response could claim complete coverage over a reversed indexed block interval without being refused.",
+      "native_id": "E1-R3-01",
+      "severity": "medium",
+      "status": "fixed in `2feeb85de056bef62a55d975a8fe98022daa5a8a`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `2feeb85de056bef62a55d975a8fe98022daa5a8a`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:E1-R3-02",
+    "kind": "finding",
+    "locator": {
+      "line": 76
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v1.py`, `scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "Rows sharing a block or transaction identity could disagree about its hash, block number, transaction index or timestamp.",
+      "native_id": "E1-R3-02",
+      "severity": "medium",
+      "status": "fixed in `2feeb85de056bef62a55d975a8fe98022daa5a8a`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `2feeb85de056bef62a55d975a8fe98022daa5a8a`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:E1-R4-01",
+    "kind": "finding",
+    "locator": {
+      "line": 93
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "The mapper accepted arbitrary amount-leg names, and a liquidation could pass with a borrow-shaped single `assets` leg. An API shape change could therefore acquire an old canonical meaning.",
+      "native_id": "E1-R4-01",
+      "severity": "medium",
+      "status": "fixed in `e1e3fb71fb779aa2dc5d4295c69c66943a2f570c`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `e1e3fb71fb779aa2dc5d4295c69c66943a2f570c`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:S2-R1-01",
+    "kind": "finding",
+    "locator": {
+      "line": 132
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/core.py`, `scripts/tabularium_lib/builder.py",
+      "finding": "The builder checked whether output aliased the source and then wrote with `Path.write_bytes`. A symlink introduced between those operations would be followed, so the output write could replace the preserved source despite the alias gate.",
+      "native_id": "S2-R1-01",
+      "severity": "medium",
+      "status": "fixed in `f6131579cba199cea111f1e65de6d6e28c64b244`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `f6131579cba199cea111f1e65de6d6e28c64b244`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:S3-R1-01",
+    "kind": "finding",
+    "locator": {
+      "line": 172
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/core.py",
+      "finding": "An extremely long JSON integer or a recursive encoder failure could escape as `ValueError` or `RecursionError` instead of the documented `TabulariumError`, exposing an uncontrolled CLI traceback for malformed input.",
+      "native_id": "S3-R1-01",
+      "severity": "low",
+      "status": "fixed in `dbcaf19c443493606a1eef807fc7982cd9607cb7`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `dbcaf19c443493606a1eef807fc7982cd9607cb7`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:S3-R2-01",
+    "kind": "finding",
+    "locator": {
+      "line": 193
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/paths.py",
+      "finding": "A manifest artefact path containing a NUL character reached `Path.resolve` and raised an uncontrolled `ValueError` instead of a verification failure.",
+      "native_id": "S3-R2-01",
+      "severity": "low",
+      "status": "fixed in `307fa255a354b220aa5ab725de5a9c0e392f1e32`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `307fa255a354b220aa5ab725de5a9c0e392f1e32`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:S3-R2-02",
+    "kind": "finding",
+    "locator": {
+      "line": 194
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/verifier.py",
+      "finding": "Verification read the entry coverage manifest before confirming it was a regular file, so a FIFO at that path could block indefinitely.",
+      "native_id": "S3-R2-02",
+      "severity": "low",
+      "status": "fixed in `307fa255a354b220aa5ab725de5a9c0e392f1e32`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `307fa255a354b220aa5ab725de5a9c0e392f1e32`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "find:tabularium-audit-rounds:S4-R1-01",
+    "kind": "finding",
+    "locator": {
+      "line": 233
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/release.py",
+      "finding": "Capture validation reconciled the indexed block number with source metadata but did not reconcile the indexed block timestamp or deployment identifier. An altered capture with a rebound coverage digest could contradict either source field and still verify.",
+      "native_id": "S4-R1-01",
+      "severity": "medium",
+      "status": "fixed in `87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f`",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S1-R1-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 45
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S1-R1-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 46
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S1-R1-03",
+    "kind": "occurrence",
+    "locator": {
+      "line": 47
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S1-R1-04",
+    "kind": "occurrence",
+    "locator": {
+      "line": 48
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S1-R2-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 86
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S1-R2-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 87
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S1-R3-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 116
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S2-R1-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 159
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "specimens/Sound.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S2-R1-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 160
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/campaigns/Specimens.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S2-R1-03",
+    "kind": "occurrence",
+    "locator": {
+      "line": 161
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "test/Corpus.t.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S2-R2-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 209
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/campaigns/Specimens.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S2-R2-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 210
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "audit/AUDIT.md"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S2-R2-03",
+    "kind": "occurrence",
+    "locator": {
+      "line": 211
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "specimens/Sound.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S2-R2-04",
+    "kind": "occurrence",
+    "locator": {
+      "line": 212
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/campaigns/Specimens.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S3-R1-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 267
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/QueueOrderPreserved.sol, src/laws/ReservesCoverPayableClaims.sol, src/Observation.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S3-R1-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 268
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/DebtFallsOnlyAgainstPayment.sol, src/laws/NoAccrualAtRest.sol, src/laws/RecordedClaimNeverShrinks.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S3-R1-03",
+    "kind": "occurrence",
+    "locator": {
+      "line": 269
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/PairLaw.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S3-R1-04",
+    "kind": "occurrence",
+    "locator": {
+      "line": 270
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "--"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S3-R2-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 338
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/AccrualPathIndependent.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S3-R2-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 339
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/ReservesCoverPayableClaims.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S4-R1-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 425
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "adapters/CorpusBase.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S4-R1-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 426
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/run.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S4-R1-03",
+    "kind": "occurrence",
+    "locator": {
+      "line": 427
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/run.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S4-R2-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 480
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "adapters/CorpusBase.sol"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S4-R2-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 481
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/run.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S5-R1-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 554
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "docs/catalogue.md"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S5-R1-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 555
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "integrations/wildcat/APPLICABILITY.md"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S5-R2-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 614
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/render.py"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:pandects-audit-rounds:S5-R2-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 615
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": ".gitignore"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:E1-R1-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 38
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:E1-R1-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 39
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:E1-R1-03",
+    "kind": "occurrence",
+    "locator": {
+      "line": 40
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/release_v2.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:E1-R2-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 58
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "examples/euler-v1-v0/capture.json`, `scripts/tabularium_lib/release_v2.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:E1-R3-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 75
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:E1-R3-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 76
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v1.py`, `scripts/tabularium_lib/adapters/euler_v2.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:E1-R4-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 93
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:S2-R1-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 132
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/core.py`, `scripts/tabularium_lib/builder.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:S3-R1-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 172
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/core.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:S3-R2-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 193
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/paths.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:S3-R2-02",
+    "kind": "occurrence",
+    "locator": {
+      "line": 194
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/verifier.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "occ:tabularium-audit-rounds:S4-R1-01",
+    "kind": "occurrence",
+    "locator": {
+      "line": 233
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/release.py"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "an occurrence has no lifecycle state of its own",
+      "value": "not-applicable"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:0b7ae32",
+    "kind": "remediation",
+    "locator": {
+      "line": 338
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "0b7ae32",
+      "round": "round:pandects-audit-rounds:9"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 0b7ae32",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:2429718",
+    "kind": "remediation",
+    "locator": {
+      "line": 267
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "2429718",
+      "round": "round:pandects-audit-rounds:8"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 2429718",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:9eb1314",
+    "kind": "remediation",
+    "locator": {
+      "line": 614
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "9eb1314",
+      "round": "round:pandects-audit-rounds:15"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in 9eb1314",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:aa3df12",
+    "kind": "remediation",
+    "locator": {
+      "line": 425
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "aa3df12",
+      "round": "round:pandects-audit-rounds:11"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in aa3df12",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:ac37f14",
+    "kind": "remediation",
+    "locator": {
+      "line": 554
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "ac37f14",
+      "round": "round:pandects-audit-rounds:14"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in ac37f14",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:cf9cf68",
+    "kind": "remediation",
+    "locator": {
+      "line": 480
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "cf9cf68",
+      "round": "round:pandects-audit-rounds:12"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in cf9cf68",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:round:pandects-audit-rounds:1",
+    "kind": "remediation",
+    "locator": {
+      "line": 45
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "this-round",
+      "round": "round:pandects-audit-rounds:1"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: `assert` is scanned with the other two and the finding names which was used",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:round:pandects-audit-rounds:2",
+    "kind": "remediation",
+    "locator": {
+      "line": 86
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "this-round",
+      "round": "round:pandects-audit-rounds:2"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: the pattern takes the two real spellings, `revert(` and `revert` followed by whitespace and a capital, and nothing else",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:round:pandects-audit-rounds:3",
+    "kind": "remediation",
+    "locator": {
+      "line": 116
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "this-round",
+      "round": "round:pandects-audit-rounds:3"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: a path the filesystem will not look at is a containment that cannot be established, so it is refused",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:round:pandects-audit-rounds:5",
+    "kind": "remediation",
+    "locator": {
+      "line": 159
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "this-round",
+      "round": "round:pandects-audit-rounds:5"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: the fee is capped at claims that are not already reserved, and the reason is recorded on the function",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:pandects-audit-rounds:round:pandects-audit-rounds:6",
+    "kind": "remediation",
+    "locator": {
+      "line": 209
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "this-round",
+      "round": "round:pandects-audit-rounds:6"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "fixed in this round: `explain()` returns each law's reason for the current state, so a replayed sequence gives up its reason instead of having to be worked out again. A property function may return only a boolean and emitting the string would make it non-view, so this is where it goes",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:tabularium-audit-rounds:2feeb85de056bef62a55d975a8fe98022daa5a8a",
+    "kind": "remediation",
+    "locator": {
+      "line": 75
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "2feeb85de056bef62a55d975a8fe98022daa5a8a",
+      "round": "round:tabularium-audit-rounds:4"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `2feeb85de056bef62a55d975a8fe98022daa5a8a`",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:tabularium-audit-rounds:307fa255a354b220aa5ab725de5a9c0e392f1e32",
+    "kind": "remediation",
+    "locator": {
+      "line": 193
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "307fa255a354b220aa5ab725de5a9c0e392f1e32",
+      "round": "round:tabularium-audit-rounds:10"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `307fa255a354b220aa5ab725de5a9c0e392f1e32`",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:tabularium-audit-rounds:83b3b58f1419c04e2450da2df3cfd1ecdb8530dc",
+    "kind": "remediation",
+    "locator": {
+      "line": 38
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "83b3b58f1419c04e2450da2df3cfd1ecdb8530dc",
+      "round": "round:tabularium-audit-rounds:2"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:tabularium-audit-rounds:87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f",
+    "kind": "remediation",
+    "locator": {
+      "line": 233
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f",
+      "round": "round:tabularium-audit-rounds:12"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f`",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:tabularium-audit-rounds:dbcaf19c443493606a1eef807fc7982cd9607cb7",
+    "kind": "remediation",
+    "locator": {
+      "line": 172
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "dbcaf19c443493606a1eef807fc7982cd9607cb7",
+      "round": "round:tabularium-audit-rounds:9"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `dbcaf19c443493606a1eef807fc7982cd9607cb7`",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:tabularium-audit-rounds:e1e3fb71fb779aa2dc5d4295c69c66943a2f570c",
+    "kind": "remediation",
+    "locator": {
+      "line": 93
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "e1e3fb71fb779aa2dc5d4295c69c66943a2f570c",
+      "round": "round:tabularium-audit-rounds:5"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `e1e3fb71fb779aa2dc5d4295c69c66943a2f570c`",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:tabularium-audit-rounds:ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe",
+    "kind": "remediation",
+    "locator": {
+      "line": 58
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe",
+      "round": "round:tabularium-audit-rounds:3"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe`",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "rem:tabularium-audit-rounds:f6131579cba199cea111f1e65de6d6e28c64b244",
+    "kind": "remediation",
+    "locator": {
+      "line": 132
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "reference": "f6131579cba199cea111f1e65de6d6e28c64b244",
+      "round": "round:tabularium-audit-rounds:7"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "fixed in `f6131579cba199cea111f1e65de6d6e28c64b244`",
+      "value": "applied"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S1-R1-01",
+    "kind": "submission",
+    "locator": {
+      "line": 45
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "The revert check looked for `require` and `revert` and not `assert`. A law reaching for `assert(cond)` to mean \"violated\" reverts with a panic, which under `fail_on_revert = false` is as silent as any other revert, so the law reports nothing and the check that exists to catch exactly that missed it",
+      "native_id": "S1-R1-01",
+      "severity": "medium",
+      "status": "fixed in this round: `assert` is scanned with the other two and the finding names which was used"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S1-R1-02",
+    "kind": "submission",
+    "locator": {
+      "line": 46
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "The check first matched the body of `check()` with a regex that depended on the closing brace sitting at four spaces. A law written on one line, or inside a library, or indented differently, produced no match at all, and the revert check then silently did not run. A check that stops checking without saying so is worse than no check",
+      "native_id": "S1-R1-02",
+      "severity": "medium",
+      "status": "fixed in this round: the scan reads the whole component. A law component holds `id`, `statement` and `check` and nothing else, so no revert anywhere in it is legitimate and there is no body to find first"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S1-R1-03",
+    "kind": "submission",
+    "locator": {
+      "line": 47
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "A component or specimen that was not UTF-8 raised out of the checker instead of being reported. `check_specimen` also called `.lower()` on the read result, so the same input crashed there twice over",
+      "native_id": "S1-R1-03",
+      "severity": "low",
+      "status": "fixed in this round: reading returns `None` and both call sites report it as a finding"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S1-R1-04",
+    "kind": "submission",
+    "locator": {
+      "line": 48
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "`os.path.commonpath` raises on paths it cannot compare, which would have escaped as a traceback rather than a refusal to resolve",
+      "native_id": "S1-R1-04",
+      "severity": "low",
+      "status": "fixed in this round"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S1-R2-01",
+    "kind": "submission",
+    "locator": {
+      "line": 86
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "The pattern accepted any uppercase letter after the word, to catch `revert CustomError()`. A function named `revertHelper` matched it, so a law with an honestly named internal helper was reported as reverting to signal a violation",
+      "native_id": "S1-R2-01",
+      "severity": "medium",
+      "status": "fixed in this round: the pattern takes the two real spellings, `revert(` and `revert` followed by whitespace and a capital, and nothing else"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S1-R2-02",
+    "kind": "submission",
+    "locator": {
+      "line": 87
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "The scan read string literals. A law whose `statement()` describes a system that requires collateral was accused of requiring it, which would have pushed authors to write worse sentences to get past a check",
+      "native_id": "S1-R2-02",
+      "severity": "medium",
+      "status": "fixed in this round: string literals are removed before comments, so a `//` inside one is removed with the string rather than truncating the line"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S1-R3-01",
+    "kind": "submission",
+    "locator": {
+      "line": 116
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/checker.py",
+      "finding": "A path carrying an embedded null byte raised `ValueError` out of `realpath` rather than being reported. The same class as round 1's unreadable component: malformed input crashing the checker instead of being told to the reader",
+      "native_id": "S1-R3-01",
+      "severity": "low",
+      "status": "fixed in this round: a path the filesystem will not look at is a containment that cannot be established, so it is refused"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S2-R1-01",
+    "kind": "submission",
+    "locator": {
+      "line": 159
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "specimens/Sound.sol",
+      "finding": "The sound reference is not sound. A Foundry campaign broke `reserves-backed-by-claims` against it and shrank the sequence to four calls: deposit, fee, reserve, fee. `accrueFee` reduced claims with no regard for what was already reserved, so a fee charged after a reservation dropped claims below reserved. In economic terms the protocol was taking its fee out of value already promised to a lender who had asked to leave. The law is right and the reference was wrong",
+      "native_id": "S2-R1-01",
+      "severity": "high",
+      "status": "fixed in this round: the fee is capped at claims that are not already reserved, and the reason is recorded on the function"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S2-R1-02",
+    "kind": "submission",
+    "locator": {
+      "line": 160
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/campaigns/Specimens.sol",
+      "finding": "The campaign harnesses were written under `test/`. crytic-compile skips `test/` when it builds a Foundry project, so Echidna could not see them at all and answered `Given contract not found`. A harness an engine cannot see is a campaign that quietly tests nothing, which is the failure this corpus exists to refuse, in its own tooling",
+      "native_id": "S2-R1-02",
+      "severity": "medium",
+      "status": "fixed in this round: harnesses live under `src/campaigns/`, with the reason on the contract"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S2-R1-03",
+    "kind": "submission",
+    "locator": {
+      "line": 161
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "test/Corpus.t.sol",
+      "finding": "A test function that reads and does not write was not marked `view`, which the compiler warned about. A warning nobody clears is a warning nobody reads",
+      "native_id": "S2-R1-03",
+      "severity": "low",
+      "status": "fixed in this round"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S2-R2-01",
+    "kind": "submission",
+    "locator": {
+      "line": 209
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/campaigns/Specimens.sol",
+      "finding": "The harness discarded the detail every law builds. `Law` is written so that a reader who finds a failure later learns which quantities were compared and what they were, and the campaign entry points dropped exactly that, leaving an operator with a call sequence and no reason. Slither's `unused-return` is what pointed at it",
+      "native_id": "S2-R2-01",
+      "severity": "medium",
+      "status": "fixed in this round: `explain()` returns each law's reason for the current state, so a replayed sequence gives up its reason instead of having to be worked out again. A property function may return only a boolean and emitting the string would make it non-view, so this is where it goes"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S2-R2-02",
+    "kind": "submission",
+    "locator": {
+      "line": 210
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "audit/AUDIT.md",
+      "finding": "Round 1 recorded Slither over 5 contracts and no results. True when written, and stale within the same round: moving the harnesses out of `test/` so Echidna could see them also moved them into Slither's scope, and Slither was not run again afterwards. The clean result covered less than the sentence suggested",
+      "native_id": "S2-R2-02",
+      "severity": "low",
+      "status": "fixed in this round: Slither re-run over all 14 contracts, and the entry above records the count so the scope is legible"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S2-R2-03",
+    "kind": "submission",
+    "locator": {
+      "line": 211
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "specimens/Sound.sol",
+      "finding": "`asset` was declared and never assigned, so every specimen reported that its quantities were denominated in the zero address. An observable that says nothing about itself while the interface promises it names the unit",
+      "native_id": "S2-R2-03",
+      "severity": "low",
+      "status": "fixed in this round: a named constant, with the reason that these specimens model units rather than a token"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S2-R2-04",
+    "kind": "submission",
+    "locator": {
+      "line": 212
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/campaigns/Specimens.sol",
+      "finding": "Seven harness fields were mutable storage where they are set once. Cosmetic on its own, but a detector list with fourteen entries nobody intends to act on is a detector list nobody reads",
+      "native_id": "S2-R2-04",
+      "severity": "low",
+      "status": "fixed in this round: the fields are immutable, and the two detectors that remain by design are disabled at each site with the reason in the source rather than repository wide, so the next thing either catches is read rather than filtered out with them"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S3-R1-01",
+    "kind": "submission",
+    "locator": {
+      "line": 267
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/QueueOrderPreserved.sol, src/laws/ReservesCoverPayableClaims.sol, src/Observation.sol",
+      "finding": "Both queue laws and the snapshot helper traverse the whole queue with one external call per claim. Above some queue length the call runs out of gas and reverts, and the corpus counts a revert as no verdict -- so each law stops working, silently, at a size nobody has written down.",
+      "native_id": "S3-R1-01",
+      "severity": "medium",
+      "status": "fixed in 2429718"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S3-R1-02",
+    "kind": "submission",
+    "locator": {
+      "line": 268
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/DebtFallsOnlyAgainstPayment.sol, src/laws/NoAccrualAtRest.sol, src/laws/RecordedClaimNeverShrinks.sol",
+      "finding": "The succession laws compare totals, so an offsetting movement inside one transition hides a violation. A write-off in the same call as a deposit of the same size leaves debt down and held assets up, and the payment law holds.",
+      "native_id": "S3-R1-02",
+      "severity": "medium",
+      "status": "fixed in 2429718"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S3-R1-03",
+    "kind": "submission",
+    "locator": {
+      "line": 269
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/PairLaw.sol",
+      "finding": "Three laws each explain, in their own words, what they do with a pair they cannot judge, and two of them reach opposite conclusions. The rule behind that was written nowhere, so it read as inconsistency rather than as policy.",
+      "native_id": "S3-R1-03",
+      "severity": "low",
+      "status": "fixed in 2429718"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S3-R1-04",
+    "kind": "submission",
+    "locator": {
+      "line": 270
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "--",
+      "finding": "A Medusa run was read as \"none failed\" when it had not run at all: stale crytic artefacts, and the engine exited on `Failed to initialize the test chain` before any campaign started. Caught by noticing that Medusa disagreed with Echidna on five specimens. The corpus's own rule is never to report a campaign under an engine that did not run, and this round nearly broke it.",
+      "native_id": "S3-R1-04",
+      "severity": "low",
+      "status": "fixed in 2429718"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S3-R2-01",
+    "kind": "submission",
+    "locator": {
+      "line": 338
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/AccrualPathIndependent.sol",
+      "finding": "The bound is `subdivisions - 1`, and `subdivisions` is fixed when the law is deployed. Nothing in either observation says how many steps the subdivided run actually took, so a law built for the wrong count silently compares against the wrong bound -- too generous and a compounding system passes, too tight and a correct one is reported as violated.",
+      "native_id": "S3-R2-01",
+      "severity": "medium",
+      "status": "fixed in 0b7ae32"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S3-R2-02",
+    "kind": "submission",
+    "locator": {
+      "line": 339
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "src/laws/ReservesCoverPayableClaims.sol",
+      "finding": "The law reports a violation when more claims are declared payable than exist, which is marginally broader than its statement. The reason -- that the alternative reads past the end of the queue and reverts into silence -- was in nobody's head but mine.",
+      "native_id": "S3-R2-02",
+      "severity": "low",
+      "status": "fixed in 0b7ae32"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S4-R1-01",
+    "kind": "submission",
+    "locator": {
+      "line": 425
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "adapters/CorpusBase.sol",
+      "finding": "A driving adapter whose entry points do not carry `records` reports all three succession laws holding, forever, and nothing about that verdict distinguishes it from three laws that held. The forgotten modifier is not something the compiler can catch, and the result of forgetting it is three green properties over a system nobody judged.",
+      "native_id": "S4-R1-01",
+      "severity": "high",
+      "status": "fixed in aa3df12"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S4-R1-02",
+    "kind": "submission",
+    "locator": {
+      "line": 426
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/run.py",
+      "finding": "A campaign killed by the timeout was reported as an engine that did not run. The engine ran, searched for as long as it was given and was killed; dropping it from the record hides a search that happened, and calling it passed would be worse.",
+      "native_id": "S4-R1-02",
+      "severity": "medium",
+      "status": "fixed in aa3df12"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S4-R1-03",
+    "kind": "submission",
+    "locator": {
+      "line": 427
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/run.py",
+      "finding": "Settings were read from `[invariant]` only, and an absent or differently named section produced `\"configuration\": {}` -- a record saying the campaign ran under no settings, when what happened is that nobody could read them. Foundry accepts `[profile.default.invariant]` as well.",
+      "native_id": "S4-R1-03",
+      "severity": "medium",
+      "status": "fixed in aa3df12"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S4-R2-01",
+    "kind": "submission",
+    "locator": {
+      "line": 480
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "adapters/CorpusBase.sol",
+      "finding": "`explainOneState` reads all five laws, so against a target with no withdrawal queue it reverts and takes the three answers down with the two reads that had none. An integrator whose system has no queue was told nothing at all, including about the laws that were happy to judge it.",
+      "native_id": "S4-R2-01",
+      "severity": "medium",
+      "status": "fixed in cf9cf68"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S4-R2-02",
+    "kind": "submission",
+    "locator": {
+      "line": 481
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/run.py",
+      "finding": "A seed nobody could read was absent from the record; an engine version nobody could read was present and null. Same reason, two spellings, in one document.",
+      "native_id": "S4-R2-02",
+      "severity": "low",
+      "status": "fixed in cf9cf68"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S5-R1-01",
+    "kind": "submission",
+    "locator": {
+      "line": 554
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "docs/catalogue.md",
+      "finding": "The document calls itself a rendering and there was no renderer. It was written once by a script that was not committed, and the drift test caught a stale document without offering any way to fix it: somebody adding a law was told the document was wrong and left to work out what it should have said.",
+      "native_id": "S5-R1-01",
+      "severity": "medium",
+      "status": "fixed in ac37f14"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S5-R1-02",
+    "kind": "submission",
+    "locator": {
+      "line": 555
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "integrations/wildcat/APPLICABILITY.md",
+      "finding": "A law added to the catalogue could go unmentioned in the integration's notes, which is the one place the applicability question actually gets asked of a real design. Nothing checked.",
+      "native_id": "S5-R1-02",
+      "severity": "low",
+      "status": "fixed in ac37f14"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S5-R2-01",
+    "kind": "submission",
+    "locator": {
+      "line": 614
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/pandects_lib/render.py",
+      "finding": "The renderer hardcoded \"Nine laws in three families\" and looped over its own list of families rather than the catalogue's. A tenth law would produce a document that lies about its own count, and a law filed under a new family would vanish from the document entirely -- neither of which the drift test can see, because that test compares the document against this renderer and both would be wrong the same way.",
+      "native_id": "S5-R2-01",
+      "severity": "medium",
+      "status": "fixed in 9eb1314"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:pandects-audit-rounds:S5-R2-02",
+    "kind": "submission",
+    "locator": {
+      "line": 615
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": ".gitignore",
+      "finding": "The demo tells a reader to write `search-record.json` into the plugin, and nothing ignored it. Following the documented walkthrough left the repository dirty.",
+      "native_id": "S5-R2-02",
+      "severity": "low",
+      "status": "fixed in 9eb1314"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:E1-R1-01",
+    "kind": "submission",
+    "locator": {
+      "line": 38
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "An oversized decimal block field could escape the controlled validation path through Python's integer-string conversion limit.",
+      "native_id": "E1-R1-01",
+      "severity": "medium",
+      "status": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:E1-R1-02",
+    "kind": "submission",
+    "locator": {
+      "line": 39
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "Distinct source IDs could name the same transaction and log index, allowing duplicate canonical event identities.",
+      "native_id": "E1-R1-02",
+      "severity": "medium",
+      "status": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:E1-R1-03",
+    "kind": "submission",
+    "locator": {
+      "line": 40
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/release_v2.py",
+      "finding": "A rebound capture could claim a timestamp different from the preserved Euler V3 response metadata.",
+      "native_id": "E1-R1-03",
+      "severity": "medium",
+      "status": "fixed in `83b3b58f1419c04e2450da2df3cfd1ecdb8530dc`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:E1-R2-01",
+    "kind": "submission",
+    "locator": {
+      "line": 58
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "examples/euler-v1-v0/capture.json`, `scripts/tabularium_lib/release_v2.py",
+      "finding": "The preserved JSON-RPC response carried request ID `1`, but the capture's request descriptor omitted that ID. The purported exact request was therefore incomplete.",
+      "native_id": "E1-R2-01",
+      "severity": "medium",
+      "status": "fixed in `ea8bcead3a2e2dcad6f652485ed0aac41c2c98fe`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:E1-R3-01",
+    "kind": "submission",
+    "locator": {
+      "line": 75
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "An empty response could claim complete coverage over a reversed indexed block interval without being refused.",
+      "native_id": "E1-R3-01",
+      "severity": "medium",
+      "status": "fixed in `2feeb85de056bef62a55d975a8fe98022daa5a8a`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:E1-R3-02",
+    "kind": "submission",
+    "locator": {
+      "line": 76
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v1.py`, `scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "Rows sharing a block or transaction identity could disagree about its hash, block number, transaction index or timestamp.",
+      "native_id": "E1-R3-02",
+      "severity": "medium",
+      "status": "fixed in `2feeb85de056bef62a55d975a8fe98022daa5a8a`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:E1-R4-01",
+    "kind": "submission",
+    "locator": {
+      "line": 93
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/adapters/euler_v2.py",
+      "finding": "The mapper accepted arbitrary amount-leg names, and a liquidation could pass with a borrow-shaped single `assets` leg. An API shape change could therefore acquire an old canonical meaning.",
+      "native_id": "E1-R4-01",
+      "severity": "medium",
+      "status": "fixed in `e1e3fb71fb779aa2dc5d4295c69c66943a2f570c`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:S2-R1-01",
+    "kind": "submission",
+    "locator": {
+      "line": 132
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/core.py`, `scripts/tabularium_lib/builder.py",
+      "finding": "The builder checked whether output aliased the source and then wrote with `Path.write_bytes`. A symlink introduced between those operations would be followed, so the output write could replace the preserved source despite the alias gate.",
+      "native_id": "S2-R1-01",
+      "severity": "medium",
+      "status": "fixed in `f6131579cba199cea111f1e65de6d6e28c64b244`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:S3-R1-01",
+    "kind": "submission",
+    "locator": {
+      "line": 172
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/core.py",
+      "finding": "An extremely long JSON integer or a recursive encoder failure could escape as `ValueError` or `RecursionError` instead of the documented `TabulariumError`, exposing an uncontrolled CLI traceback for malformed input.",
+      "native_id": "S3-R1-01",
+      "severity": "low",
+      "status": "fixed in `dbcaf19c443493606a1eef807fc7982cd9607cb7`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:S3-R2-01",
+    "kind": "submission",
+    "locator": {
+      "line": 193
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/paths.py",
+      "finding": "A manifest artefact path containing a NUL character reached `Path.resolve` and raised an uncontrolled `ValueError` instead of a verification failure.",
+      "native_id": "S3-R2-01",
+      "severity": "low",
+      "status": "fixed in `307fa255a354b220aa5ab725de5a9c0e392f1e32`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:S3-R2-02",
+    "kind": "submission",
+    "locator": {
+      "line": 194
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/verifier.py",
+      "finding": "Verification read the entry coverage manifest before confirming it was a regular file, so a FIFO at that path could block indefinitely.",
+      "native_id": "S3-R2-02",
+      "severity": "low",
+      "status": "fixed in `307fa255a354b220aa5ab725de5a9c0e392f1e32`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "sub:tabularium-audit-rounds:S4-R1-01",
+    "kind": "submission",
+    "locator": {
+      "line": 233
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "file": "scripts/tabularium_lib/release.py",
+      "finding": "Capture validation reconciled the indexed block number with source metadata but did not reconcile the indexed block timestamp or deployment identifier. An altered capture with a rebound coverage digest could contradict either source field and still verify.",
+      "native_id": "S4-R1-01",
+      "severity": "medium",
+      "status": "fixed in `87cb45b2cc32728eaf4aafcdc23c26df1f7a4c9f`"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "the source records no adjudication of the submission",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:hexaemeron-audit-rounds:1",
+    "kind": "verification",
+    "locator": {
+      "line": 16
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 0 (the plugin), round 1"
+    },
+    "source": "hexaemeron-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:hexaemeron-audit-rounds:2",
+    "kind": "verification",
+    "locator": {
+      "line": 54
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 0 (the plugin), round 2"
+    },
+    "source": "hexaemeron-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:1",
+    "kind": "verification",
+    "locator": {
+      "line": 23
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 1, round 1"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:10",
+    "kind": "verification",
+    "locator": {
+      "line": 385
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 3, round 3"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:11",
+    "kind": "verification",
+    "locator": {
+      "line": 417
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 4, round 1"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:12",
+    "kind": "verification",
+    "locator": {
+      "line": 472
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 4, round 2"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:13",
+    "kind": "verification",
+    "locator": {
+      "line": 516
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 4, round 3"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:14",
+    "kind": "verification",
+    "locator": {
+      "line": 547
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 5, round 1"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:15",
+    "kind": "verification",
+    "locator": {
+      "line": 607
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 5, round 2"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:16",
+    "kind": "verification",
+    "locator": {
+      "line": 641
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 5, round 3"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:2",
+    "kind": "verification",
+    "locator": {
+      "line": 77
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 1, round 2"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:3",
+    "kind": "verification",
+    "locator": {
+      "line": 106
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 1, round 3"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:4",
+    "kind": "verification",
+    "locator": {
+      "line": 129
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 1, round 4"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:5",
+    "kind": "verification",
+    "locator": {
+      "line": 142
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 2, round 1"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:6",
+    "kind": "verification",
+    "locator": {
+      "line": 198
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 2, round 2"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:7",
+    "kind": "verification",
+    "locator": {
+      "line": 234
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 2, round 3"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:8",
+    "kind": "verification",
+    "locator": {
+      "line": 259
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 3, round 1"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:pandects-audit-rounds:9",
+    "kind": "verification",
+    "locator": {
+      "line": 330
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 3, round 2"
+    },
+    "source": "pandects-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:1",
+    "kind": "verification",
+    "locator": {
+      "line": 12
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 1, round 1"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:10",
+    "kind": "verification",
+    "locator": {
+      "line": 180
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 3, round 2"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:11",
+    "kind": "verification",
+    "locator": {
+      "line": 201
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 3, round 3"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:12",
+    "kind": "verification",
+    "locator": {
+      "line": 221
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 4, round 1"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:13",
+    "kind": "verification",
+    "locator": {
+      "line": 242
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 4, round 2"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:2",
+    "kind": "verification",
+    "locator": {
+      "line": 28
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Euler releases, step 1, round 1"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:3",
+    "kind": "verification",
+    "locator": {
+      "line": 49
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Euler releases, step 1, round 2"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:4",
+    "kind": "verification",
+    "locator": {
+      "line": 66
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Euler releases, step 1, round 3"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:5",
+    "kind": "verification",
+    "locator": {
+      "line": 84
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Euler releases, step 1, round 4"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:6",
+    "kind": "verification",
+    "locator": {
+      "line": 101
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Euler releases, step 1, round 5"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:7",
+    "kind": "verification",
+    "locator": {
+      "line": 120
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 2, round 1"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:8",
+    "kind": "verification",
+    "locator": {
+      "line": 141
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 2, round 2"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  },
+  {
+    "id": "ver:round:tabularium-audit-rounds:9",
+    "kind": "verification",
+    "locator": {
+      "line": 159
+    },
+    "mapper": {
+      "name": "warden-audit-round-markdown",
+      "version": "1"
+    },
+    "native": {
+      "declared": null,
+      "round": "Step 3, round 1"
+    },
+    "source": "tabularium-audit-rounds",
+    "state": {
+      "basis": "",
+      "value": "unknown"
+    }
+  }
+]
