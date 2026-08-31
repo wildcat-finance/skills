@@ -62,3 +62,21 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: the two accepted items from round 1 stand unchanged.
+
+## Step 3, round 1 -- 2026-09-01T00:00:00Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: workbook-bytes=reviewed; workbook-lineage=reviewed; cap-exhaustion=reviewed; path-traversal=reviewed; partial-write=reviewed; evidence-digest-binding=reviewed; subprocess-and-network=reviewed; target-repository-write=reviewed; marketplace-boundary=reviewed; inventory-fidelity=not-applicable; router-corpus-drift=not-applicable; disposition-closure=not-applicable
+
+Not checked: no reconciliation code exists, so nothing was audited for disposition behaviour; the reader was exercised against one producing application's output and nothing establishes it reads a workbook another tool writes; the status and source vocabularies are counted as written and not validated against a controlled list, which is deliberate and stated in the lineage rules; the Pashov pair did not run under the recorded security-suite waiver, since the step ships no Solidity.
+
+Elenchus verdict: guarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S3-R1-01 | medium | plugins/dokimasia/scripts/dokimasia_lib/xlsx.py | The member size cap was tested against `member.file_size`, which is a declaration the archive writes about itself. A container that understates the field walks past a cap checked only against it, so the stated bound on memory was not a bound an adversarial archive had to respect. Fixed by reading one byte past the cap through `ZipFile.open` and refusing when that byte arrives, which holds whatever the header claims. Guarded by a test that rewrites every declared size to zero, leaves the payloads intact, and requires a refusal. | fixed in 03e9439b |
+| S3-R1-02 | high | plugins/dokimasia/scripts/dokimasia_lib/xlsx.py | Every part was handed to `xml.etree.ElementTree.fromstring`, which expands internal entity definitions. A probe against the reader confirmed the expansion rather than assuming it: a payload declaring nested entities parsed and produced the expanded text. The archive caps do not bound this, because the expansion happens in memory after the bytes are read, so a part of a few hundred bytes could cost gigabytes and no declared cap would fire. Fixed by refusing a document type or entity declaration before anything parses the part; a spreadsheet part never carries one, so the class closes outright rather than being bounded. Guarded by a hostile fixture carrying a three-level entity chain and a test requiring the refusal by name. | fixed in 03e9439b |
+| S3-R1-03 | low | plugins/dokimasia/tests/test_xlsx.py | The over-size test lowered the module-level `MAX_MEMBER_BYTES` and restored it in cleanup. This is the pattern corrected as S2-R1-01 in `paths.MAX_FILES`, reintroduced in test code, where a mutated global can still be observed by anything sharing the process. Fixed by threading the cap as a parameter through `read_sheets`, `_checked_members` and `_read_member`, so the test lowers a bound for one call and the declared value never moves. | fixed in 03e9439b |
+
+Leads not pursued: the reader accepts a sheet whose rows are ragged and pads them to the widest cell reference, so a workbook with a stray far-right cell yields wide empty rows; the round trip catches any case this would drop and the cost is bounded by the cell cap. A shared-string table larger than the case count is read in full before any row is resolved, which is accepted because the member cap now binds the bytes that table can occupy. The status and source vocabularies observed in the reviewed workbook are not pinned anywhere, so a renamed status would import cleanly and reconcile differently; that belongs to the step that reconciles, not to the step that imports.
