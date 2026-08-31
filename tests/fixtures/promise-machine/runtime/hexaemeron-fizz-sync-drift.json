@@ -6,8 +6,7 @@
         "hexaemeron_fizz_sync_drift": {
           "evidence": {
             "classes": [
-              "checked",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
@@ -39,8 +38,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -75,8 +73,7 @@
         "hexaemeron_fizz_sync_drift": {
           "evidence": {
             "classes": [
-              "checked",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
@@ -108,8 +105,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

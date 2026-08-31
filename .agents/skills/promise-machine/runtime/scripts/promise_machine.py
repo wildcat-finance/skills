@@ -4737,6 +4737,14 @@ def validate_runtime_result(
         error = runtime_reference_error(root, reference, set(evidence_classes))
         if error is not None:
             return refuse("evidence_references", error)
+    referenced_classes = {reference["evidence_class"] for reference in references}
+    missing_classes = sorted(set(evidence_classes) - referenced_classes)
+    if missing_classes:
+        return refuse(
+            "evidence_references",
+            "no digest-bound reference represents satisfying evidence "
+            f"class(es) {missing_classes!r}",
+        )
     if not any(
         reference["path"] == source and reference["sha256"] == source_digest
         for reference in references

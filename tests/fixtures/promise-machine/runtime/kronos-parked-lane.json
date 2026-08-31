@@ -10,8 +10,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_kronos_scoreboard.py#test_a_park_stores_the_reason_byte_for_byte"
           },
           "classes": [
-            "checked",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -39,8 +38,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -79,8 +77,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_kronos_scoreboard.py#test_a_park_stores_the_reason_byte_for_byte"
           },
           "classes": [
-            "checked",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -108,8 +105,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

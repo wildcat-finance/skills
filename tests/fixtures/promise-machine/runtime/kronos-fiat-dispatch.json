@@ -17,9 +17,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases"
           },
           "classes": [
-            "checked",
-            "inferred",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -59,9 +57,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "inferred",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -112,9 +108,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_promise_evaluation_cases.py#test_labelled_positive_cases"
           },
           "classes": [
-            "checked",
-            "inferred",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -154,9 +148,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "inferred",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

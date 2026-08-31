@@ -17,9 +17,7 @@
             "subject": "runtime source plugins/probitas/tests/test_demo.py#test_it_exits_zero"
           },
           "classes": [
-            "checked",
-            "recomputed",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -59,9 +57,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -112,9 +108,7 @@
             "subject": "runtime source plugins/probitas/tests/test_demo.py#test_it_exits_zero"
           },
           "classes": [
-            "checked",
-            "recomputed",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -154,9 +148,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

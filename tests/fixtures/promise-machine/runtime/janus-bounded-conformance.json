@@ -17,9 +17,7 @@
             "subject": "runtime source plugins/janus/harness/test/WildcatConformance.t.sol#test_gate1_and_gate2_honest_deposit"
           },
           "classes": [
-            "checked",
-            "measured",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -59,9 +57,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "measured",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -112,9 +108,7 @@
             "subject": "runtime source plugins/janus/harness/test/WildcatConformance.t.sol#test_gate1_and_gate2_honest_deposit"
           },
           "classes": [
-            "checked",
-            "measured",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -154,9 +148,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "measured",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

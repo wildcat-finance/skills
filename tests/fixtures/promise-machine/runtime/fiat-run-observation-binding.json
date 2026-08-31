@@ -10,8 +10,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_run_observation_binding.py#test_normal_prefix_binds_to_the_selected_receipt"
           },
           "classes": [
-            "checked",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -39,8 +38,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -79,8 +77,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_run_observation_binding.py#test_normal_prefix_binds_to_the_selected_receipt"
           },
           "classes": [
-            "checked",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -108,8 +105,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

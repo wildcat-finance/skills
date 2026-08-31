@@ -17,8 +17,7 @@
             "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked"
           },
           "classes": [
-            "checked",
-            "recomputed"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -58,8 +57,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recomputed"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -110,8 +108,7 @@
             "subject": "runtime source plugins/ariadne/tests/test_examples.py#test_all_examples_verify_with_nothing_unchecked"
           },
           "classes": [
-            "checked",
-            "recomputed"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -151,8 +148,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recomputed"
+          "checked"
         ],
         "evidence_references": [
           {

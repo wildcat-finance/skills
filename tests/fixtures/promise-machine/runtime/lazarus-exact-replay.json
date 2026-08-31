@@ -10,9 +10,7 @@
             "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           },
           "classes": [
-            "checked",
-            "recomputed",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -40,9 +38,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -81,9 +77,7 @@
             "subject": "runtime source plugins/lazarus/tests/test_goldfinch.py#test_fixture_verifies_with_expected_evidence_and_provenance"
           },
           "classes": [
-            "checked",
-            "recomputed",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -111,9 +105,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

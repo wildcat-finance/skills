@@ -13,8 +13,7 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
@@ -58,8 +57,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -106,8 +104,7 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
@@ -151,8 +148,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

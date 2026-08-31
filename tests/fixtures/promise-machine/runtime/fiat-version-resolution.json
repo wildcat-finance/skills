@@ -10,8 +10,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit"
           },
           "classes": [
-            "checked",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -39,8 +38,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -79,8 +77,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_version_relations.py#test_done_resolve_versions_records_one_atomic_event_without_product_edit"
           },
           "classes": [
-            "checked",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -108,8 +105,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

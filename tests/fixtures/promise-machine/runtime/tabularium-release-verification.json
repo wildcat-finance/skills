@@ -17,9 +17,7 @@
             "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites"
           },
           "classes": [
-            "checked",
-            "recomputed",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -59,9 +57,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -112,9 +108,7 @@
             "subject": "runtime source plugins/tabularium/tests/test_release.py#test_committed_release_verifies_offline_and_without_rewrites"
           },
           "classes": [
-            "checked",
-            "recomputed",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -154,9 +148,7 @@
           }
         },
         "evidence_classes": [
-          "checked",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

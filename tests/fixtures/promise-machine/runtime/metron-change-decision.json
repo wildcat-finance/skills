@@ -6,9 +6,7 @@
         "metron_change_decision": {
           "evidence": {
             "classes": [
-              "checked",
-              "measured",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
@@ -40,9 +38,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "measured",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -77,9 +73,7 @@
         "metron_change_decision": {
           "evidence": {
             "classes": [
-              "checked",
-              "measured",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
@@ -111,9 +105,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "measured",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

@@ -10,8 +10,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_fiat_local_retirement.py#test_terminal_archive_is_local_and_ignored_by_git"
           },
           "classes": [
-            "checked",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -39,8 +38,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -79,8 +77,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_fiat_local_retirement.py#test_terminal_archive_is_local_and_ignored_by_git"
           },
           "classes": [
-            "checked",
-            "recorded"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -108,8 +105,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

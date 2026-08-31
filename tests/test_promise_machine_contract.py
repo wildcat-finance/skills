@@ -3440,6 +3440,34 @@ class PromiseCoverageTests(unittest.TestCase):
         self.assertEqual(semantic_codes(findings), ["PM095"])
         self.assertIn("subject", findings[0].message)
 
+    def test_runtime_satisfying_classes_require_corresponding_references(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        promise_id = "alexandria-derived-view"
+        record = records[promise_id]
+        binding = coverage["runtime"][promise_id]
+        positive = load_runtime_selector(binding["positive"])
+        unreferenced_class = mutate_runtime_field(
+            positive,
+            binding,
+            "evidence_classes",
+            ["checked", "recorded"],
+        )
+        findings = promise_machine_module.validate_runtime_result(
+            ROOT,
+            record,
+            binding,
+            unreferenced_class,
+            binding["positive"]["path"],
+        )
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("evidence_references", findings[0].message)
+        self.assertIn("recorded", findings[0].message)
+
     def test_runtime_specimen_reads_refuse_hostile_paths_and_bytes(self):
         record = promise_machine_module.PromiseRecord(
             "fixture-promise",

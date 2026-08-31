@@ -11,10 +11,7 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "proved",
-              "recomputed",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
@@ -45,10 +42,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "proved",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -88,10 +82,7 @@
           },
           "evidence": {
             "classes": [
-              "checked",
-              "proved",
-              "recomputed",
-              "recorded"
+              "checked"
             ],
             "references": [
               {
@@ -122,10 +113,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "proved",
-          "recomputed",
-          "recorded"
+          "checked"
         ],
         "evidence_references": [
           {

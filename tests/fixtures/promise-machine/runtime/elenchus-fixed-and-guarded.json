@@ -10,8 +10,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_elenchus_checker.py#test_runner_categories_distinguish_all_three_outcomes"
           },
           "classes": [
-            "checked",
-            "inferred"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -39,8 +38,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "inferred"
+          "checked"
         ],
         "evidence_references": [
           {
@@ -79,8 +77,7 @@
             "subject": "runtime source plugins/hexaemeron/tests/test_elenchus_checker.py#test_runner_categories_distinguish_all_three_outcomes"
           },
           "classes": [
-            "checked",
-            "inferred"
+            "checked"
           ],
           "exception": {
             "status": "none"
@@ -108,8 +105,7 @@
       },
       "promise_machine": {
         "evidence_classes": [
-          "checked",
-          "inferred"
+          "checked"
         ],
         "evidence_references": [
           {

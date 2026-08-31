@@ -3152,12 +3152,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/alexandria-derived-view.json",
         "selector": "negative",
-        "sha256": "a369156c8b0a472c77869d121352ba4d58a9d3d58350d023fb1bf35d30c76ab4"
+        "sha256": "d254361f493bef83a8f3d1d137366efac05f0c41f8aed3d89fa92b5483556259"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/alexandria-derived-view.json",
         "selector": "positive",
-        "sha256": "a369156c8b0a472c77869d121352ba4d58a9d3d58350d023fb1bf35d30c76ab4"
+        "sha256": "d254361f493bef83a8f3d1d137366efac05f0c41f8aed3d89fa92b5483556259"
       },
       "reader": "native-json-v1",
       "selector": "test_documented_build_and_verify_commands_run_exactly",
@@ -3180,12 +3180,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/alexandria-raw-release.json",
         "selector": "negative",
-        "sha256": "8052d24db5badb331eb57374e74d1cd5d810c1a55003a3d730814ef893a4a767"
+        "sha256": "75768561f8b0808568fad6535b349ee5b95cfa6ea53467404e6fb6063bc680a9"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/alexandria-raw-release.json",
         "selector": "positive",
-        "sha256": "8052d24db5badb331eb57374e74d1cd5d810c1a55003a3d730814ef893a4a767"
+        "sha256": "75768561f8b0808568fad6535b349ee5b95cfa6ea53467404e6fb6063bc680a9"
       },
       "reader": "native-json-v1",
       "selector": "test_documented_build_and_verify_commands_run_exactly",
@@ -3208,12 +3208,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ariadne-replay-command.json",
         "selector": "negative",
-        "sha256": "451bbe31457c4ce27c2d82389daacec764156d6c38a6ca1d21172eddef4e93a2"
+        "sha256": "989d30c5ad7bffb967854b7eade29f5b6222c91691f5eb6612173ac6e93a753b"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ariadne-replay-command.json",
         "selector": "positive",
-        "sha256": "451bbe31457c4ce27c2d82389daacec764156d6c38a6ca1d21172eddef4e93a2"
+        "sha256": "989d30c5ad7bffb967854b7eade29f5b6222c91691f5eb6612173ac6e93a753b"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_all_examples_verify_with_nothing_unchecked",
@@ -3238,12 +3238,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "negative",
-        "sha256": "55aa75d7831c405888c4f2285bb298ef697e08ec94d1fc0e02d8a065c3138ba5"
+        "sha256": "4a4b7a938ebeb9ef72a90d89defaea96cacf488667fa5b2b10cc5ae4c996e30f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ariadne-verify-statement.json",
         "selector": "positive",
-        "sha256": "55aa75d7831c405888c4f2285bb298ef697e08ec94d1fc0e02d8a065c3138ba5"
+        "sha256": "4a4b7a938ebeb9ef72a90d89defaea96cacf488667fa5b2b10cc5ae4c996e30f"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_all_examples_verify_with_nothing_unchecked",
@@ -3268,12 +3268,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
         "selector": "negative",
-        "sha256": "3497ed23317041ce87caa0f4d307f1f620ceb15639691c2acaaecb6bb63d42dd"
+        "sha256": "616484ea4afff4bf7cb48550aeb4ed029c209724dad0aeb86638bb811c47ed79"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/berean-release-promotion.json",
         "selector": "positive",
-        "sha256": "3497ed23317041ce87caa0f4d307f1f620ceb15639691c2acaaecb6bb63d42dd"
+        "sha256": "616484ea4afff4bf7cb48550aeb4ed029c209724dad0aeb86638bb811c47ed79"
       },
       "reader": "native-json-v1",
       "selector": "test_a_clean_report_promotes_and_the_release_is_active",
@@ -3296,12 +3296,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
         "selector": "negative",
-        "sha256": "7c9dd37f5d519311a9fac404632d48513009f35693fe49827d2935388fdb37f8"
+        "sha256": "96bfc199de9fe2548e5fe158a2f637b088f1b6a7e277e2c207e47cf8facdf28e"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/elenchus-fixed-and-guarded.json",
         "selector": "positive",
-        "sha256": "7c9dd37f5d519311a9fac404632d48513009f35693fe49827d2935388fdb37f8"
+        "sha256": "96bfc199de9fe2548e5fe158a2f637b088f1b6a7e277e2c207e47cf8facdf28e"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_runner_categories_distinguish_all_three_outcomes",
@@ -3324,12 +3324,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/ephoros-observability-review.json",
         "selector": "negative",
-        "sha256": "3cdaa4412bc365d0cb5d0e0da7f1fe9250092335e3d557290fcc8a4e05291d36"
+        "sha256": "b04313df6fb9976b79618419b2c5fa36598f629220456ca791ab8ef78bed98f9"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/ephoros-observability-review.json",
         "selector": "positive",
-        "sha256": "3cdaa4412bc365d0cb5d0e0da7f1fe9250092335e3d557290fcc8a4e05291d36"
+        "sha256": "b04313df6fb9976b79618419b2c5fa36598f629220456ca791ab8ef78bed98f9"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_ephoros_review_positive",
@@ -3352,12 +3352,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
         "selector": "negative",
-        "sha256": "8915435c2de57d5b1ceeba4f0400b04e6e06ae8157b16e8b5b1ba954f5a5e529"
+        "sha256": "104c1c5afa311aec8bc63f7054ed96397cbbb053bdd327faeb426367bf1533ec"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-controller-checkpoint.json",
         "selector": "positive",
-        "sha256": "8915435c2de57d5b1ceeba4f0400b04e6e06ae8157b16e8b5b1ba954f5a5e529"
+        "sha256": "104c1c5afa311aec8bc63f7054ed96397cbbb053bdd327faeb426367bf1533ec"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_restore_after_source_clone_loss",
@@ -3382,12 +3382,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "negative",
-        "sha256": "c034ec1b41d1bc2ac3d9e7d41277727e1b285d385182aa4d6d7c1cd9f74710c8"
+        "sha256": "66dc975f220c3ba5914552a75b817cbe43a06ce893779d6fa7db7d454f2b5d1c"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-final-integration.json",
         "selector": "positive",
-        "sha256": "c034ec1b41d1bc2ac3d9e7d41277727e1b285d385182aa4d6d7c1cd9f74710c8"
+        "sha256": "66dc975f220c3ba5914552a75b817cbe43a06ce893779d6fa7db7d454f2b5d1c"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_sync_run_supersedes_one_failed_composition_without_reopening_product",
@@ -3410,12 +3410,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
         "selector": "negative",
-        "sha256": "45ca28b27d8269c8197ed8d581dfd6985ba45f25dca9de831d1e7a848911796e"
+        "sha256": "7bb9ac820736ec8d0a41e13550efe250197fd797cf04da6f4ae11fbc71dfdaa2"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-local-retirement.json",
         "selector": "positive",
-        "sha256": "45ca28b27d8269c8197ed8d581dfd6985ba45f25dca9de831d1e7a848911796e"
+        "sha256": "7bb9ac820736ec8d0a41e13550efe250197fd797cf04da6f4ae11fbc71dfdaa2"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_terminal_archive_is_local_and_ignored_by_git",
@@ -3438,12 +3438,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "negative",
-        "sha256": "597eef8e6cf4f0ec3413ad68e1a9f7b55a0b0de0f6612bcd82551e63a51a2d4b"
+        "sha256": "22e6a394928b04be3c10401f3cd6c2c8e3c4820842b120d0dfacea868874424b"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-receipted-delivery.json",
         "selector": "positive",
-        "sha256": "597eef8e6cf4f0ec3413ad68e1a9f7b55a0b0de0f6612bcd82551e63a51a2d4b"
+        "sha256": "22e6a394928b04be3c10401f3cd6c2c8e3c4820842b120d0dfacea868874424b"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_push_advances_steps_then_the_stack_integrates",
@@ -3466,12 +3466,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-run-observation-binding.json",
         "selector": "negative",
-        "sha256": "30273ee7b2b2c947f96b925a80262d3237560827a44cf05fd8949d1ebc03f23a"
+        "sha256": "24fb2229140ebcef6bae6a05ca927a07549943d896fd5b724145ecd91246fc71"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-run-observation-binding.json",
         "selector": "positive",
-        "sha256": "30273ee7b2b2c947f96b925a80262d3237560827a44cf05fd8949d1ebc03f23a"
+        "sha256": "24fb2229140ebcef6bae6a05ca927a07549943d896fd5b724145ecd91246fc71"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_normal_prefix_binds_to_the_selected_receipt",
@@ -3494,12 +3494,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "negative",
-        "sha256": "e5581c914061b135d0c93b8559701afe94e5f278a9417b2efcd5c2e021f8afe9"
+        "sha256": "5d233bbc1216fc2373a6599e1504454ac3cb16da6525e963d8c7b4e3eb673e80"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-runbook-amendment.json",
         "selector": "positive",
-        "sha256": "e5581c914061b135d0c93b8559701afe94e5f278a9417b2efcd5c2e021f8afe9"
+        "sha256": "5d233bbc1216fc2373a6599e1504454ac3cb16da6525e963d8c7b4e3eb673e80"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_complete_replacement_exit_reaches_mason_and_warden_exactly",
@@ -3522,12 +3522,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "negative",
-        "sha256": "779a5e731332438522027fafa6daa2e314ff93be4c2b4140d2d9166f3c8d3024"
+        "sha256": "ec2a71873a5d19854745abb868c5fa6a6e870031c0d350f98d0250a126ef6088"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-study-amendment.json",
         "selector": "positive",
-        "sha256": "779a5e731332438522027fafa6daa2e314ff93be4c2b4140d2d9166f3c8d3024"
+        "sha256": "ec2a71873a5d19854745abb868c5fa6a6e870031c0d350f98d0250a126ef6088"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_valid_append_records_digest_history_and_reconstructs_the_packet",
@@ -3550,12 +3550,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "negative",
-        "sha256": "44fc9ab8e167f4ac8d5698475f7e289fecfadb252a03baab953cc2191cc32dda"
+        "sha256": "4876f303e4bb57c072fd2d9dceb3f4c6d60a799f723e30b9fe887afc584a991c"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/fiat-version-resolution.json",
         "selector": "positive",
-        "sha256": "44fc9ab8e167f4ac8d5698475f7e289fecfadb252a03baab953cc2191cc32dda"
+        "sha256": "4876f303e4bb57c072fd2d9dceb3f4c6d60a799f723e30b9fe887afc584a991c"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_done_resolve_versions_records_one_atomic_event_without_product_edit",
@@ -3578,12 +3578,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hermes-baseline-promotion.json",
         "selector": "negative",
-        "sha256": "d12dab6e918c07ebb764d57266aa771638bc3210a7cd95589de20e070988dbc2"
+        "sha256": "21b7cfde51cb96b1dcf1c0d070b01e4470807bc703694a4789fc76b903456eec"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hermes-baseline-promotion.json",
         "selector": "positive",
-        "sha256": "d12dab6e918c07ebb764d57266aa771638bc3210a7cd95589de20e070988dbc2"
+        "sha256": "21b7cfde51cb96b1dcf1c0d070b01e4470807bc703694a4789fc76b903456eec"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_accepts_and_promotes_a_fully_verified_candidate",
@@ -3606,12 +3606,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hermes-candidate-acceptance.json",
         "selector": "negative",
-        "sha256": "3558acdc8ed3644acf3d29366cf89fb513ac249bf2b602d6b2f604d0a07604d2"
+        "sha256": "203df62a25d54240c736c2502fa20a5fb6f341f70ae6c1cd42f23258db39ee29"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hermes-candidate-acceptance.json",
         "selector": "positive",
-        "sha256": "3558acdc8ed3644acf3d29366cf89fb513ac249bf2b602d6b2f604d0a07604d2"
+        "sha256": "203df62a25d54240c736c2502fa20a5fb6f341f70ae6c1cd42f23258db39ee29"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_accepts_and_promotes_a_fully_verified_candidate",
@@ -3634,12 +3634,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
         "selector": "negative",
-        "sha256": "bdaf7ac53bb996e96fa475190260f32b084e181340b5e58b51d1f45a40f0cd39"
+        "sha256": "9fbc41c6e1c63ffafee2109c383ae9765be2e46883a2803c234fc3014ddbca87"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-convert-properties.json",
         "selector": "positive",
-        "sha256": "bdaf7ac53bb996e96fa475190260f32b084e181340b5e58b51d1f45a40f0cd39"
+        "sha256": "9fbc41c6e1c63ffafee2109c383ae9765be2e46883a2803c234fc3014ddbca87"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
@@ -3664,12 +3664,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
         "selector": "negative",
-        "sha256": "08488d61052365b3099f7b458222dba6f569ff70e8d66b686525ee54cda9d6d1"
+        "sha256": "2c4d86bd79a260333e4cf6f9fcafb512eb7f0eda50172dc7deb853de42eb0744"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-harness-campaign.json",
         "selector": "positive",
-        "sha256": "08488d61052365b3099f7b458222dba6f569ff70e8d66b686525ee54cda9d6d1"
+        "sha256": "2c4d86bd79a260333e4cf6f9fcafb512eb7f0eda50172dc7deb853de42eb0744"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
@@ -3692,12 +3692,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
         "selector": "negative",
-        "sha256": "15d74207a15106c7118e14c937c54416c8f9ca6b6e40adb74c4b2042ed74f6c7"
+        "sha256": "679f21d389845311d21881465375131a24340a55bf0fd47d3c8407461320b0ee"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-fizz-sync-drift.json",
         "selector": "positive",
-        "sha256": "15d74207a15106c7118e14c937c54416c8f9ca6b6e40adb74c4b2042ed74f6c7"
+        "sha256": "679f21d389845311d21881465375131a24340a55bf0fd47d3c8407461320b0ee"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
@@ -3722,12 +3722,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
         "selector": "negative",
-        "sha256": "3963bf578ae79487c8ab53e5729e979bc01d4e7275243eb4246966e99f480a26"
+        "sha256": "70f2add8541ff7dd77028c99f73c86617ee365dc9043860200e5c4c70d4b9d91"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hexaemeron-solidity-audit-report.json",
         "selector": "positive",
-        "sha256": "3963bf578ae79487c8ab53e5729e979bc01d4e7275243eb4246966e99f480a26"
+        "sha256": "70f2add8541ff7dd77028c99f73c86617ee365dc9043860200e5c4c70d4b9d91"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
@@ -3750,12 +3750,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/horos-boundary-scan.json",
         "selector": "negative",
-        "sha256": "dba88467e4493ac34c31804a9763b52e7cca75548ab1f470fb74afc137d031ef"
+        "sha256": "8e17125a15fa60b6724e4dca62fabd5b16735458645de0ce06b57a38ad6720ce"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/horos-boundary-scan.json",
         "selector": "positive",
-        "sha256": "dba88467e4493ac34c31804a9763b52e7cca75548ab1f470fb74afc137d031ef"
+        "sha256": "8e17125a15fa60b6724e4dca62fabd5b16735458645de0ce06b57a38ad6720ce"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_check_passes_on_a_fresh_boundary",
@@ -3778,12 +3778,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
         "selector": "negative",
-        "sha256": "9d927b45c85426f593c94cd6a543dab5f1ad21206c7d99f90ea0a8f16be83214"
+        "sha256": "5cb87cc89066a74e28a1b3f4571f3b688f0dad30a2bc64c7e3a05752452bfae5"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/hypomnema-record-placement.json",
         "selector": "positive",
-        "sha256": "9d927b45c85426f593c94cd6a543dab5f1ad21206c7d99f90ea0a8f16be83214"
+        "sha256": "5cb87cc89066a74e28a1b3f4571f3b688f0dad30a2bc64c7e3a05752452bfae5"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
@@ -3808,12 +3808,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
         "selector": "negative",
-        "sha256": "3fae98a7dba9cece78f7184d5910be9319a787e8051eeed718f59152ca617352"
+        "sha256": "01eba813ecbf1ec431178817e2dd634d33508d96b5954f868fe0bc83a70dacf0"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/janus-bounded-conformance.json",
         "selector": "positive",
-        "sha256": "3fae98a7dba9cece78f7184d5910be9319a787e8051eeed718f59152ca617352"
+        "sha256": "01eba813ecbf1ec431178817e2dd634d33508d96b5954f868fe0bc83a70dacf0"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_gate1_and_gate2_honest_deposit",
@@ -3838,12 +3838,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
         "selector": "negative",
-        "sha256": "b6058f652b2d8590f730352b24e22f45123d6cfa83377f90225f20fd418b2f6c"
+        "sha256": "ad95869823cfecd2a37670ba39ce22b9c849352ebd719f44b5bb399a76c72f5f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/kronos-fiat-dispatch.json",
         "selector": "positive",
-        "sha256": "b6058f652b2d8590f730352b24e22f45123d6cfa83377f90225f20fd418b2f6c"
+        "sha256": "ad95869823cfecd2a37670ba39ce22b9c849352ebd719f44b5bb399a76c72f5f"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_labelled_positive_cases",
@@ -3866,12 +3866,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/kronos-parked-lane.json",
         "selector": "negative",
-        "sha256": "379bd8457d67f1d4b7c2b012b00a2ebbde1340097bf3087ca587639ecc14e28c"
+        "sha256": "97d509bbd69bbbcdc6a48733625261b35d54772d881d59e69d52c5515b41b229"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/kronos-parked-lane.json",
         "selector": "positive",
-        "sha256": "379bd8457d67f1d4b7c2b012b00a2ebbde1340097bf3087ca587639ecc14e28c"
+        "sha256": "97d509bbd69bbbcdc6a48733625261b35d54772d881d59e69d52c5515b41b229"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_a_park_stores_the_reason_byte_for_byte",
@@ -3894,12 +3894,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
         "selector": "negative",
-        "sha256": "279130d672f6fb26bc4b9ee11095afa5e58cdd2558c95797f5e8e4707c7b0be3"
+        "sha256": "5f314b9111def17ee607a8aa671b23c8872efd910663de944906370fb881e73f"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-exact-replay.json",
         "selector": "positive",
-        "sha256": "279130d672f6fb26bc4b9ee11095afa5e58cdd2558c95797f5e8e4707c7b0be3"
+        "sha256": "5f314b9111def17ee607a8aa671b23c8872efd910663de944906370fb881e73f"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
@@ -3922,12 +3922,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
         "selector": "negative",
-        "sha256": "6cef25cc2b7f78deeefd276b6f9bd53343e183bb1d6b639df5bab337f4619dd5"
+        "sha256": "53e176cac9e821927f3187143147b11a5d5a1ef298ac27237f1dc2af26a639d8"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-fixture-capture.json",
         "selector": "positive",
-        "sha256": "6cef25cc2b7f78deeefd276b6f9bd53343e183bb1d6b639df5bab337f4619dd5"
+        "sha256": "53e176cac9e821927f3187143147b11a5d5a1ef298ac27237f1dc2af26a639d8"
       },
       "reader": "native-json-v1",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
@@ -3952,12 +3952,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
         "selector": "negative",
-        "sha256": "b6ce81a00859caa4f198445cadabf535ffe05801f8fcb8369d7a3980199e0e21"
+        "sha256": "fa73892c5ecfd6b5cab20e19c3aae360d928ba5935bdb0e1703dfdbb73e445f2"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/lazarus-preservation-release.json",
         "selector": "positive",
-        "sha256": "b6ce81a00859caa4f198445cadabf535ffe05801f8fcb8369d7a3980199e0e21"
+        "sha256": "fa73892c5ecfd6b5cab20e19c3aae360d928ba5935bdb0e1703dfdbb73e445f2"
       },
       "reader": "native-json-v1",
       "selector": "test_fixture_verifies_with_expected_evidence_and_provenance",
@@ -3980,12 +3980,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "negative",
-        "sha256": "e2039246a91dc4132758f351cd868b1862a278f931fd4cc521fc235ac455e94d"
+        "sha256": "1bb54619c4ce3128796412ba266548dabac5f5204d316bf061a93fc1d82bbdeb"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/metron-change-decision.json",
         "selector": "positive",
-        "sha256": "e2039246a91dc4132758f351cd868b1862a278f931fd4cc521fc235ac455e94d"
+        "sha256": "1bb54619c4ce3128796412ba266548dabac5f5204d316bf061a93fc1d82bbdeb"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_an_improvement_past_the_variance_is_reported_and_passes",
@@ -4010,12 +4010,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
         "selector": "negative",
-        "sha256": "d1231631ad16c3175f7e34410b3be90ba7ce4d4d2c41a6238b79d8681ec28503"
+        "sha256": "33757ba47888e80407192d089f4d4f867d009f4dad74a4bf323d0ee04ac93d6e"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/pandects-search-record.json",
         "selector": "positive",
-        "sha256": "d1231631ad16c3175f7e34410b3be90ba7ce4d4d2c41a6238b79d8681ec28503"
+        "sha256": "33757ba47888e80407192d089f4d4f867d009f4dad74a4bf323d0ee04ac93d6e"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_a_law_with_every_part_passes",
@@ -4038,12 +4038,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/phylax-boundary-review.json",
         "selector": "negative",
-        "sha256": "858ebeb22270e138b2cf1b1fda08b2812e4a425553f5a8713892fad053955555"
+        "sha256": "e0e590762c180382b6fa5f05d25889e0c4b87a74e43ba3e219e968d156abdd6e"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/phylax-boundary-review.json",
         "selector": "positive",
-        "sha256": "858ebeb22270e138b2cf1b1fda08b2812e4a425553f5a8713892fad053955555"
+        "sha256": "e0e590762c180382b6fa5f05d25889e0c4b87a74e43ba3e219e968d156abdd6e"
       },
       "reader": "markdown-result-adapter-v1",
       "selector": "test_phylax_review_positive",
@@ -4068,12 +4068,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
         "selector": "negative",
-        "sha256": "62420acb6e71a3f46d1f0f4a495f639275a9510d380ff0a60b8d62470036694e"
+        "sha256": "8cabaed40b211681be66be4f0c101d09ad81e420595653c1abe4807ce33f5010"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/probitas-dossier-verification.json",
         "selector": "positive",
-        "sha256": "62420acb6e71a3f46d1f0f4a495f639275a9510d380ff0a60b8d62470036694e"
+        "sha256": "8cabaed40b211681be66be4f0c101d09ad81e420595653c1abe4807ce33f5010"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_it_exits_zero",
@@ -4096,12 +4096,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "negative",
-        "sha256": "63a115a8fc15d56c4ff3f145c075b0e6cfee6cad717fce7ef5db5565561fbadc"
+        "sha256": "576366e78cdfe9c07f72d54cea7367108fc9147039d2f2befefa77f967769531"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-build.json",
         "selector": "positive",
-        "sha256": "63a115a8fc15d56c4ff3f145c075b0e6cfee6cad717fce7ef5db5565561fbadc"
+        "sha256": "576366e78cdfe9c07f72d54cea7367108fc9147039d2f2befefa77f967769531"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",
@@ -4126,12 +4126,12 @@
         "finding": "PM095",
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "negative",
-        "sha256": "ceeff717d5e050dd0240fc6036592e6fe606c77a8e927e8fb042e8b4ba4fa749"
+        "sha256": "f8e3ff94c6a1c78d5b3d3aa8e8eed16447164d21ee5d79275ba777da5b917882"
       },
       "positive": {
         "path": "tests/fixtures/promise-machine/runtime/tabularium-release-verification.json",
         "selector": "positive",
-        "sha256": "ceeff717d5e050dd0240fc6036592e6fe606c77a8e927e8fb042e8b4ba4fa749"
+        "sha256": "f8e3ff94c6a1c78d5b3d3aa8e8eed16447164d21ee5d79275ba777da5b917882"
       },
       "reader": "python-result-adapter-v1",
       "selector": "test_committed_release_verifies_offline_and_without_rewrites",
