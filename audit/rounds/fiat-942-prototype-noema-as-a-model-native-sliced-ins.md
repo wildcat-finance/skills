@@ -622,3 +622,83 @@ Elenchus verdict: null
 | -- | -- | -- | none | -- |
 
 Leads not pursued: No further actionable candidate survived the complete post-rebinding tree at signed audit head `983e2cccb3cee167b3767824f3ca3f2412eca2dd`, the two round-5 repairs, the rejected topology candidate or every prior Step 5 finding. The exact runner passes 1,396 of 1,396 with no failure, error or skip and report SHA-256 `e3894910b5c99857ecec922ad004805d75f53ac1dcde2b1cfd2a06c50f3e5873`. Offline replay emits the exact 8-case, 16-prompt packet with manifest SHA-256 `94b848cfdc255f7627bd3331ff612ab90169ec098b18da2afa009fd641f9a5c4` and case-set SHA-256 `3691a2f94b56a49eed21c46ffe4bb296b3e0cf613af7d9f20b6e1ad06596df77`, then retallies canonical cohort 2 byte-identically to 16/16 output SHA-256 `6b7c2df3377cbf3a4ad68c31a46c7ccd9400b1ba16b14fc244516cfd8e483429`. Corpus verification and all 13 hostile mutations return `NOE-OK` with four specimens and seven critical vectors; codec and runtime self-tests pass. Phylax, Ephoros and Hypomnema are clean; Protasis accepts the final receipted runbook; Imprimatur scores 100/100 on the three changed shipping documents; the deterministic synopsis and 2,232-file Horos boundary match; whitespace is clean. The paid evidence anchor remains an ancestor of both product and audit heads, ADR-066 is unique against the observed default branch, and the final runbook copy binds receipt SHA-256 `3ddaa70761b0f473ec10c6759c707ff6a928f4fa93a9139bbaa368a490ed555b`. The controller verifies 68 ledger entries with an intact chain and still directs `push`. The prior 136,401-byte audit prefix at SHA-256 `d33d63433de2a5a824ae888d33950246e754675e9bf4e8a603b881862f7ef76b` remains byte-identical. No model result, spend authority, acceptance decision or integration status changed, and no integration action occurred.
+
+## Step 5, round 7 -- 2026-08-31T10:01:30Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-omission=reviewed; semantic-drift=reviewed; slice-omission=reviewed; authority-confusion=reviewed; module-drift=reviewed; alias-collision=reviewed; literal-injection=reviewed; parser-exhaustion=reviewed; profile-mismatch=reviewed; hidden-overhead=reviewed; evaluation-contamination=reviewed; provider-boundary=reviewed; derived-drift=reviewed; parallel-stack=reviewed
+
+Not checked: Pashov X-Ray and Solidity Auditor remain inapplicable under the no-Solidity waiver. The historyless witness intentionally does not authenticate its SSH payload, bind the carrier's tree or prove that a shallow `HEAD` descends from the carrier; `docs/noema-v1.md` assigns those claims to the full Git/controller boundary. This round made no paid provider call, remote-family rerun or small-local-decoder run. Hosted CI, GitHub publication, merge, `sync-run`, issue closure and integration remain outside the round.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: The three decoded witness objects match Git's exact raw commit, tree and carrier bytes at `437f2c21a97e644336f369109d99c1b8a02b0e93`, `bfe3f9bc4233c7c5e4d498f2acc6de149ed4d4d7` and `cab2e8f642413bc94daf5a3a1481eec390bcb518`; recomputed Git object ids match, and full-checkout `git verify-commit` validates both commit signatures. Rehashed carrier mutations with a changed or second parent refuse, as does a missing SSH marker. Rehashed signature-payload and carrier-tree changes remain shape-valid by design, which confirms rather than widens the published boundary. The focused witness and source-binding suite passes 63/63; full corpus verification returns `NOE-OK`. Witness SHA-256 `9e0e7affcd780e2fe2b3a0316fb624e58cb7534faf12db138b5ea66814567685` and manifest SHA-256 `c95f1c5cb8ba5bd16194e675a5951e2b86bf6320b44d23c5873df14b9d3905ba` remain unchanged. The prior 139,352-byte audit prefix at SHA-256 `b77c517cd336f5c9d357da0c02abee9693d01cd649fc922ab79c8a51cf66adf7` remains byte-identical. No integration action occurred.
+
+## Step 5, round 8 -- 2026-08-31T10:01:31Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-omission=reviewed; semantic-drift=reviewed; slice-omission=reviewed; authority-confusion=reviewed; module-drift=reviewed; alias-collision=reviewed; literal-injection=reviewed; parser-exhaustion=reviewed; profile-mismatch=reviewed; hidden-overhead=reviewed; evaluation-contamination=reviewed; provider-boundary=reviewed; derived-drift=reviewed; parallel-stack=reviewed
+
+Not checked: Pashov X-Ray and Solidity Auditor remain inapplicable. No provider call or answer was repeated; the round reconciled the checked-in evidence, ledgers and decision prose. Raw provider transcripts, a small local decoder, hosted CI, publication and every integration action remain outside scope.
+
+Elenchus verdict: unguarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R8-01 | low | `docs/decisions/ADR-066-evaluate-noema-as-a-sliced-instruction-ir.md:120` | The accepted-result paragraph retained retry provenance from the superseded evidence run: it said each evaluation cohort recovered two OpenAI refusals and kept four reservations. The final cohort records show all 32 calls in each cohort succeeded on attempt one with zero reservations; the retained retries instead belong to one Google measurement invocation whose first two attempts returned HTTP 502. | fixed in signed product commit `5037abbe0657042925482f3677c6651e24fb3eae`; the paragraph now assigns the two uncertain attempts and exact `$0.01521135` reservation to final measurement and records both cohorts' first-attempt, zero-reservation state |
+
+Leads not pursued: Independent reconciliation, without importing the Noema verifier, counts 32 answer records in each cohort, one attempt per answer and zero ledger reservations. Final measurement has 38 logical observations per family; Google alone carries 40 attempt records for one `HTTP_502`, `HTTP_502`, `NOE-OK` sequence, and its two ledger reservations sum to `$0.01521135`. Every component-token table, amortised gate, cohort input/output total, family cost, ledger sum and published digest matches its canonical JSON. The five retained ledgers reconcile to `$5.1581921` settled plus `$0.48752865` reserved; the ADR's earlier exposure and route probe arithmetic reaches `$32.3795085825`. After the prose-only repair, corpus verification and all 13 hostile mutations return `NOE-OK`, the focused witness/source suite passes 63/63, Imprimatur scores 100/100, and `git diff --check` is clean. No evidence byte, model result, threshold, spend authority or integration state changed.
+
+## Step 5, round 9 -- 2026-08-31T10:01:32Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-omission=reviewed; semantic-drift=reviewed; slice-omission=reviewed; authority-confusion=reviewed; module-drift=reviewed; alias-collision=reviewed; literal-injection=reviewed; parser-exhaustion=reviewed; profile-mismatch=reviewed; hidden-overhead=reviewed; evaluation-contamination=reviewed; provider-boundary=reviewed; derived-drift=reviewed; parallel-stack=reviewed
+
+Not checked: The separate full-history dead-code workflow, GitHub-hosted execution and current-main composition remained outside this local checkout-shape round. No paid call, local decoder, publication or integration action ran.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: A fresh depth-one local clone at signed product head `5037abbe0657042925482f3677c6651e24fb3eae` reports `--is-shallow-repository=true` and cannot resolve the anchor commit. Exact corpus verification nevertheless succeeds through the digest-bound witness. The complete repository runner then passes 1,407/1,407 tests in 80.916 seconds; only two history-dependent default-branch comparisons skip, as expected for a depth-one local clone. Its `elenchus.unittest.v1` report SHA-256 is `12a1a4ee9bef2b2d82436bda5245cc9ccec74b94e9c92c5597eaa97ae9407378`. The initial report request outside the clone refused before execution under the runner's path boundary; rerunning from the clone with an in-worktree report established the result. The clean verdict is limited to the repository invariant job's historyless shape and authorises no integration.
+
+## Step 5, round 10 -- 2026-08-31T10:01:33Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-omission=reviewed; semantic-drift=reviewed; slice-omission=reviewed; authority-confusion=reviewed; module-drift=reviewed; alias-collision=reviewed; literal-injection=reviewed; parser-exhaustion=reviewed; profile-mismatch=reviewed; hidden-overhead=reviewed; evaluation-contamination=reviewed; provider-boundary=reviewed; derived-drift=reviewed; parallel-stack=reviewed
+
+Not checked: Hosted CI, current-main composition, publication, merge, `sync-run`, issue closure and integration remained outside this local aggregate-gate round. Pashov's Solidity pair and a small local decoder remain inapplicable or separately deferred as already recorded.
+
+Elenchus verdict: unguarded
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S5-R10-01 | low | `.dead-code/baseline.json` | The round-8 ADR correction changed a tracked source after the evidence baseline was published. `dead_code.py baseline --check` correctly refused the otherwise green product head as stale, so its separate full-history workflow would fail. | fixed in signed product commit `7a4bfba8ebd98cd3fbab540a9356815a7e9c175a`; the report-only baseline now binds source commit `5037abbe0657042925482f3677c6651e24fb3eae`, tree `c4159f80b6e8b53ce843a44e866b49e3a9715709` and universe SHA-256 `52d2d9c45f7ca9bc3654c348876b8cf83f6be372b13b31fef366cf339050e705` |
+
+Leads not pursued: The exact parent is red only for `docs/decisions/ADR-066-evaluate-noema-as-a-sliced-instruction-ir.md`; deterministic regeneration changes only the baseline's source commit, tree and universe identities and retains 445 report-only candidates, zero suppressions and the pre-existing degraded repository analyser status. At `7a4bfba8`, `baseline --check` matches, the focused dead-code suite passes 210/210 and `run_checks.py --scope dead-code` passes that suite plus Phylax, Ephoros and Hypomnema. One aggregate invocation under ambient Python 3.9 failed before the repository-pinned rerun; the exact Python 3.14.6 path is green and is the recorded environment. No Noema source, schema, fixture, evidence, result or authority changed.
+
+## Step 5, round 11 -- 2026-08-31T10:01:34Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: source-omission=reviewed; semantic-drift=reviewed; slice-omission=reviewed; authority-confusion=reviewed; module-drift=reviewed; alias-collision=reviewed; literal-injection=reviewed; parser-exhaustion=reviewed; profile-mismatch=reviewed; hidden-overhead=reviewed; evaluation-contamination=reviewed; provider-boundary=reviewed; derived-drift=reviewed; parallel-stack=reviewed
+
+Not checked: This was the final local publication gate, not integration. GitHub-hosted checks, current-main composition, branch merges, `sync-run`, repository adoption, plugin registration, issue closure, deployment and the separately required named small-local-decoder evaluation remain outside it. No paid provider call ran.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: No further actionable candidate survived the complete signed product range through `7a4bfba8ebd98cd3fbab540a9356815a7e9c175a`, both supplemental repairs or all prior Step 5 findings. The normal-checkout runner passes 1,407/1,407 with no failure, error or skip and report SHA-256 `a72edb65a623658b27bf01005369a569fd0359eec1c41f930cf7e2bc5f92b018`; the 1,258-case inoculation has zero crash or unexpected-clean result. Measurement replay is byte-identical at SHA-256 `dcd754b99c625cc2e626bf3febc75ac2708d6bc911f93f555fc5c10834758c32`; packet reconstruction emits 8 cases and 16 prompts at `310731c1d3bb4b19f95489f6f3f626e39fa898f39a32f9b85e1d2339a2c6f64b`; canonical cohort 2 retallies 16/16 at `16490f631b016e2354a12b39a40c61fec77da8c26bd7329042a4b73038340361`. Corpus verification, 13 hostile mutations, seven critical vectors, codec self-test and all seven runtime cases return `NOE-OK`. Protasis, Imprimatur, Phylax, Ephoros, Hypomnema, synopsis, Horos, dead-code baseline/scope and whitespace checks pass. Every one of the ten commits after receipted product head `399bae76b6dfaca2f6dc59f1f48ca4654dc45f85` has a good Dave Coleman SSH signature, Dave author/committer identity and exactly one Shoggoth coauthor/origin line. The immutable runbook, corpus manifest and witness retain SHA-256 `3ddaa70761b0f473ec10c6759c707ff6a928f4fa93a9139bbaa368a490ed555b`, `c95f1c5cb8ba5bd16194e675a5951e2b86bf6320b44d23c5873df14b9d3905ba` and `9e0e7affcd780e2fe2b3a0316fb624e58cb7534faf12db138b5ea66814567685`. The range changes no #909, plugin, README, dependency or CI workflow path. The controller remains at 69 intact ledger entries and the first merge-step directive; this round authorises publication only. No finding is open, and no integration action occurred.
