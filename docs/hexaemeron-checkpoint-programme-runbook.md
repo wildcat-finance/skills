@@ -6,6 +6,13 @@
 > replaces it with same-ledger checkpoint continuation at two explicit
 > boundaries.
 
+> **Issue renumbering, 31 August 2026.** The epic and component issues were
+> re-filed under new numbers, and the links below point at the successors:
+> #558 to #859, #560 to #860, #561 to #861, #563 to #862, #564 to #863, #565
+> to #864, #566 to #865, #567 to #866, and #568 to #867. The `decision-chain`
+> packet #559 has no successor. Those originals and #530, #539, and #562 no
+> longer resolve on GitHub.
+
 Derived from `docs/hexaemeron-checkpoint-programme-study.md`. The chosen design
 is cumulative green-boundary archives, an independent locked authority, a
 signed external-run publication fence, and explicit DAG resolution.
@@ -42,9 +49,9 @@ decisions on a signed review branch while binding every component issue.
 `5d6fc67bb6c861f2be631eef2d7bef3c01c73e84`, after reading merged PR #562
 and merged PR #539; accepted ADR-022 on `main`; milestone
 [Wave Delta](https://github.com/wildcat-finance/skills/milestone/64); epic
-[#558](https://github.com/wildcat-finance/skills/issues/558); component issues
-#559, #560, #561, and #563 through #568; ADR-028 through ADR-032
-collision-free.
+[#859](https://github.com/wildcat-finance/skills/issues/859); component issues
+#559 (retired, no successor), #860, #861, and #862 through #867; ADR-028
+through ADR-032 collision-free.
 
 **Exit.** The study and this runbook pass Protasis; ADR-028 through ADR-032
 each pass Hypomnema with `Status: Proposed`; Imprimatur and Brevitas pass every
@@ -75,7 +82,7 @@ shows that one of these files earns a classified entry.
 
 **Tests.** No executable checkpoint test exists in this planning packet. The
 existing root decision/link/currency suites and the structural/prose commands
-above guard the shipped document surface. Read back milestone #64, epic #558,
+above guard the shipped document surface. Read back milestone #64, epic #859,
 and every component issue through GitHub before push.
 
 **Disciplines.** phylax: none, this step adds no executable or input path;
@@ -86,7 +93,7 @@ proposed records and no issue body masquerades as accepted policy.
 
 ## Step 2: Fix run, snapshot, transport, and receipt identities
 
-**Goal.** Deliver issue [#560](https://github.com/wildcat-finance/skills/issues/560)
+**Goal.** Deliver issue [#860](https://github.com/wildcat-finance/skills/issues/860)
 so two clean machines derive the same checkpoint identity while `main` moves.
 
 **Entry.** Step 1's PR is merged or its proposed ADR-028 and ADR-032 outcomes
@@ -127,7 +134,7 @@ accepted results of ADR-028 and ADR-032 without changing their scope silently.
 
 ## Step 3: Export, inspect, and restore one cumulative archive
 
-**Goal.** Deliver issue [#561](https://github.com/wildcat-finance/skills/issues/561)
+**Goal.** Deliver issue [#861](https://github.com/wildcat-finance/skills/issues/861)
 with deterministic bytes and an offline clean-directory restore.
 
 **Entry.** Step 2 is merged and released; #435 and #436 have landed safe,
@@ -171,7 +178,7 @@ lives in ADR-028 and this step must implement it rather than broaden it.
 
 ## Step 4: Build quarantine, validation, and immutable publication
 
-**Goal.** Deliver issue [#563](https://github.com/wildcat-finance/skills/issues/563)
+**Goal.** Deliver issue [#862](https://github.com/wildcat-finance/skills/issues/862)
 in one explicitly authorised service repository.
 
 **Entry.** Step 3 is released; the Creator has approved the exact service
@@ -210,7 +217,7 @@ and hands the attestation predicate/signature profile to Ariadne's boundary.
 
 ## Step 5: Deploy and prove the locked authority
 
-**Goal.** Deliver issue [#564](https://github.com/wildcat-finance/skills/issues/564)
+**Goal.** Deliver issue [#863](https://github.com/wildcat-finance/skills/issues/863)
 so accepted state outlives its DigitalOcean compute and mutable index.
 
 **Entry.** Step 4 is merged with non-production deployment support; exact
@@ -250,7 +257,7 @@ not change its authority split through an operator shortcut.
 
 ## Step 6: Enforce the external-run publication fence
 
-**Goal.** Deliver issue [#565](https://github.com/wildcat-finance/skills/issues/565)
+**Goal.** Deliver issue [#864](https://github.com/wildcat-finance/skills/issues/864)
 so one externally completed transition is not complete until its signed
 acceptance statement verifies locally.
 
@@ -294,7 +301,7 @@ the accepted execution classes without a new decision.
 
 ## Step 7: Preserve siblings and require signed resolution
 
-**Goal.** Deliver issue [#566](https://github.com/wildcat-finance/skills/issues/566)
+**Goal.** Deliver issue [#865](https://github.com/wildcat-finance/skills/issues/865)
 so concurrent useful checkpoints remain visible and preference is explicit.
 
 **Entry.** Step 6 publishes valid siblings; the service target and resolver
@@ -329,7 +336,7 @@ policy decision separate from a service index update.
 
 ## Step 8: Break and recover the complete authority path
 
-**Goal.** Deliver issue [#567](https://github.com/wildcat-finance/skills/issues/567)
+**Goal.** Deliver issue [#866](https://github.com/wildcat-finance/skills/issues/866)
 with preserved adversarial fixtures and measured recovery evidence.
 
 **Entry.** Steps 3 through 7 are pinned by signed releases/commits in a
@@ -350,7 +357,7 @@ and recovery harnesses, measurement records, recurring-drill schedules, all
 incident runbooks, and stable Make targets. Defects in other repositories are
 filed separately and remain outside this step's write boundary.
 
-**Tests.** The complete matrix from #567: canonicalisation, ZIP/Git/state,
+**Tests.** The complete matrix from #866: canonicalisation, ZIP/Git/state,
 identity/signatures, retries, siblings/resolutions, revocation/salvage,
 database/Droplet/primary/replica/KMS/certificate failures, index tampering,
 key transition, exact-version break glass, output redaction, alert delivery,
@@ -365,7 +372,7 @@ recovery authority earns a new record rather than an edited incident report.
 
 ## Step 9: Add Atlas resume, redraw, and start routing
 
-**Goal.** Deliver issue [#568](https://github.com/wildcat-finance/skills/issues/568)
+**Goal.** Deliver issue [#867](https://github.com/wildcat-finance/skills/issues/867)
 without making Atlas an archive or resolution authority.
 
 **Entry.** Step 8 proves the service and recovery path; issues #505 and #530
@@ -404,7 +411,7 @@ client under ADR-029 and cannot absorb checkpoint authority through convenience.
 ## Step 10: Demonstrate the programme and close the epic last
 
 **Goal.** Run the study's full two-machine, moving-main, fork, reconciliation,
-revocation, and recovery demonstration before closing #558.
+revocation, and recovery demonstration before closing #859.
 
 **Entry.** Steps 1 through 9 are merged/deployed where authorised, every child
 issue is still open or has its exit evidence linked, exact production/staging
@@ -418,12 +425,12 @@ siblings, accepts an authorised reconciliation, revokes one exact poisoned
 version, refuses its descendants, salvages from a clean ancestor, destroys and
 rebuilds replaceable service state, and restores through the replica path. All
 identities, signatures, object versions, source states, alerts, and durations
-are attached to #558. Component issues close only after their own criteria;
-#558 closes last. No evidence gap is replaced with a summary claim.
+are attached to #859. Component issues close only after their own criteria;
+#859 closes last. No evidence gap is replaced with a summary claim.
 
 **Files.** No product file is changed by programme closure. Store bounded
 demonstration scripts and non-secret fixtures in the repository that owns them;
-attach or link immutable evidence from #558 and update issue checklists without
+attach or link immutable evidence from #859 and update issue checklists without
 rewriting earlier records.
 
 **Tests.** Re-run every component's released check/demo target at its pinned
