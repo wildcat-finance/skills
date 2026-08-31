@@ -3498,6 +3498,36 @@ class PromiseCoverageTests(unittest.TestCase):
         self.assertEqual(semantic_codes(findings), ["PM095"])
         self.assertIn("unknowns", findings[0].message)
 
+    def test_runtime_evidence_references_are_unique(self):
+        coverage = json.loads(
+            (ROOT / "tests" / "promise_machine_coverage.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        records = declared_runtime_records()
+        promise_id = "alexandria-derived-view"
+        record = records[promise_id]
+        binding = coverage["runtime"][promise_id]
+        positive = load_runtime_selector(binding["positive"])
+        references = copy.deepcopy(
+            positive["promise_machine"]["evidence_references"]
+        )
+        repeated = mutate_runtime_field(
+            positive,
+            binding,
+            "evidence_references",
+            references + [copy.deepcopy(references[0])],
+        )
+        findings = promise_machine_module.validate_runtime_result(
+            ROOT,
+            record,
+            binding,
+            repeated,
+            binding["positive"]["path"],
+        )
+        self.assertEqual(semantic_codes(findings), ["PM095"])
+        self.assertIn("evidence_references", findings[0].message)
+
     def test_runtime_negative_specimens_name_and_isolate_their_field(self):
         coverage = json.loads(
             (ROOT / "tests" / "promise_machine_coverage.json").read_text(

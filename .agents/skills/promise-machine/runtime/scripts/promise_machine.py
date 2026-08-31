@@ -4799,6 +4799,12 @@ def validate_runtime_result(
         error = runtime_reference_error(root, reference, set(evidence_classes))
         if error is not None:
             return refuse("evidence_references", error)
+    reference_keys = [
+        (reference["path"], reference["sha256"], reference["evidence_class"])
+        for reference in references
+    ]
+    if len(set(reference_keys)) != len(reference_keys):
+        return refuse("evidence_references", "digest-bound references are repeated")
     referenced_classes = {reference["evidence_class"] for reference in references}
     missing_classes = sorted(set(evidence_classes) - referenced_classes)
     if missing_classes:
