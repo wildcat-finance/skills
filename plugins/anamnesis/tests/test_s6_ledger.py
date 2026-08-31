@@ -81,8 +81,9 @@ class LedgerRecordsTheCompletedJob(unittest.TestCase):
 class LiveProseAgreesWithTheDecision(unittest.TestCase):
     def test_no_live_document_still_says_the_decision_is_unmade(self) -> None:
         for path in LIVE_PROSE:
-            if not path.is_file():
-                continue
+            # Not a skip: a renamed or deleted document would otherwise drop out
+            # of the sweep silently and leave this passing on less than it names.
+            self.assertTrue(path.is_file(), f"{path} is named here but absent")
             text = path.read_text(encoding="utf-8")
             for claim in STALE_CLAIMS:
                 with self.subTest(path=path.name, claim=claim):
