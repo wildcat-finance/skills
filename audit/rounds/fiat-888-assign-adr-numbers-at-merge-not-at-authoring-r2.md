@@ -1,0 +1,35 @@
+## Step 1, round 1 -- 2026-08-30T22:51:41Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: stale-base-window=reviewed; ruleset-not-enforcing=reviewed; strictness-disabled=reviewed; bypass-or-direct-push=reviewed; candidate-owned-gate=reviewed; shallow-or-stale-ref=reviewed; hole-reuse=reviewed; slug-identity-drift=reviewed; batch-order-drift=reviewed; assignment-byte-drift=reviewed; unreceipted-mapping=reviewed; superseded-sync-ancestry=reviewed; historical-reference-rewrite=reviewed; git-object-substitution=reviewed; controller-product-mutation=reviewed; status-head-mismatch=reviewed; bootstrap-overclaim=reviewed
+
+Not checked: Step 2-4 executable allocator, controller, and base-owned workflow behavior; production canary and enforced admission, because Step 1 adds only the receipted Markdown specification, runbook, and unnumbered record.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| -- | -- | -- | none | -- |
+
+Leads not pursued: none
+
+## Step 2, round 1 -- 2026-08-31T01:35:39Z
+
+Audit schema: fiat-audit-round/v2
+
+Covered: stale-base-window=reviewed; ruleset-not-enforcing=not-applicable; strictness-disabled=not-applicable; bypass-or-direct-push=not-applicable; candidate-owned-gate=not-applicable; shallow-or-stale-ref=reviewed; hole-reuse=reviewed; slug-identity-drift=reviewed; batch-order-drift=reviewed; assignment-byte-drift=reviewed; unreceipted-mapping=not-applicable; superseded-sync-ancestry=not-applicable; historical-reference-rewrite=reviewed; git-object-substitution=reviewed; controller-product-mutation=not-applicable; status-head-mismatch=not-applicable; bootstrap-overclaim=reviewed
+
+Not checked: the waived Pashov Solidity suite, because this step changes Python, Markdown, repository policy, generated metadata, and tests but no Solidity; Step 3's signed assignment receipt, trailer, controller-mutation, superseded-sync-ancestry, and exact-head evidence; Step 4's base-owned workflow, candidate-as-data execution, hosted status, canary, direct-push exclusion, or repository-setting mutation; native Windows execution; concurrent filesystem mutation and power-loss recovery. Production admission is not established: a read-only query of ruleset `21830871` on 2026-08-31 returned `enforcement=evaluate`, `strict_required_status_checks_policy=false`, required contexts `identity` and `invariants` only under integration `15368`, and zero bypass actors.
+
+Elenchus verdict: null
+
+| id | severity | file | finding | status |
+| --- | --- | --- | --- | --- |
+| S2-R1-01 | high | plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py:838 | The apply preflight queries only `git config --local --includes`, so a clean filter configured in `config.worktree` is not seen before `git status`. In a disposable repository with `extensions.worktreeConfig=true`, `filter.hostile.clean` set by `git config --worktree`, and `* filter=hostile` in `.git/info/attributes`, the preflight exited 1 with no output; apply then executed the filter, created its sentinel, and only afterwards refused with `worktree-dirty`. The promised refusal without execution therefore fails for worktree-scoped Git configuration. | open; product code was not changed in this findings-only round |
+| S2-R1-02 | medium | plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py:552 | `git --no-replace-objects` does not disable `.git/info/grafts`, and the allocator does not reject a graft file before its ancestry check. With natural product `a56ae833da331fa3817510247d23f27007db4571`, unrelated product `9bdf0b8116ac744eae17e99e40e2b87b9cc82adb`, base `8934379618abce1c8754b0dffd8fb53b6424c128`, graft `9bdf0b8116ac744eae17e99e40e2b87b9cc82adb 8934379618abce1c8754b0dffd8fb53b6424c128`, and `advice.graftFileDeprecated=false`, plan exited 0 and wrote a two-mapping report for the unrelated product with result tree `1d2622ea3d6d52d47252ace1c8964cd06a97d614`. Native ancestry is therefore forgeable by repository state that the promise says is refused. | open; product code was not changed in this findings-only round |
+| S2-R1-03 | medium | plugins/hexaemeron/skills/hypomnema/scripts/decision_assignments.py:901 | Apply deletes backups one at a time inside the fallible transaction and catches only `OSError`. Forcing `OSError` on the second backup deletion returned `apply-io`, but mapping 1 then had neither its draft source nor final target, while mapping 2's source was restored and its target absent. Separately, interrupting the fourth rename propagated `KeyboardInterrupt` with both sources absent, only target 1 installed, two backups present, and one prepared output present; the outer handler reports `interrupted` without rollback. These are partial mutations, and the cleanup-failure case loses a worktree path despite the promise to restore every source after I/O failure. | open; product code was not changed in this findings-only round |
+| S2-R1-04 | low | plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py:480 | The placeholder exemption accepts any token beginning `adr/<slug>` instead of only the exact grammar placeholder. A disposable tree containing `Governed by adr/<slug>-typo.` linted at exit 0 with JSON `[]`, so a malformed stable identity can bypass both H008 and H009 despite the contract's exact-placeholder qualification. | open; product code was not changed in this findings-only round |
+| S2-R1-05 | low | .agents/skills/promise-machine/runtime/plugins/hexaemeron/skills/hypomnema/EVOLUTION.md:18 | The required changed-document Hypomnema lint exits 1 with 11 H001 findings in the changed portable runtime ledger. The unresolved targets are `../../../../docs/hypomnema-first-records-study.md`, `../../../../docs/hypomnema-design-bridge-study.md`, `../../../../docs/hypomnema-adr-shape-check-study.md`, `../../../../docs/hypomnema-source-comment-references-study.md`, `../../../../docs/hypomnema-runbook-shape-check-study.md`, `../../../../docs/ephoros-alert-runbook-annotations-study.md`, `../../../../docs/hypomnema-quoted-specimen-study.md`, `../../tests/test_hypomnema_checker.py`, `../../../../docs/fiat-host-byline-readback/study.md`, `../../../../docs/decisions/drafts/assign-adr-numbers-at-merge-not-at-authoring.md`, and `../../../../docs/adr-merge-assignment/`, at lines 18 through 27. The canonical ledger alone and the source-bound full-tree Hypomnema command both exit 0; the failure is specific to linting the changed generated portable document at its shipped location. | open; product code was not changed in this findings-only round |
+
+Leads not pursued: concurrent directory or destination swaps after worktree preflight and crash durability between renames require a separate concurrency and filesystem-durability contract; this round exercised single-process failures only. A non-shallow partial clone with complete endpoint trees but absent non-endpoint historical blobs was not constructed; shallow refusal, endpoint object completeness, commit types, moved refs, and ordinary unrelated ancestry were exercised. Native Windows pipe-selector behaviour was not exercised on this macOS host.
