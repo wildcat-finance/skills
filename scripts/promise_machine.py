@@ -3975,7 +3975,10 @@ def check_overlays(root: Path, inventory: Inventory):
     if loaded is None:
         return 0, findings
     _, text = loaded
-    lines = text.splitlines()
+    lines = [
+        line if isinstance(line, str) else ""
+        for line in markdown_unfenced_lines(text)
+    ]
     if lines.count(OVERLAY_HEADING) != 1:
         findings.append(
             Finding(
@@ -4024,7 +4027,7 @@ def check_overlays(root: Path, inventory: Inventory):
     seen_paths: dict[str, list[str]] = {}
     seen_ids: set[str] = set()
     for offset, block_start in enumerate(blocks):
-        block_end = blocks[offset + 1] if offset + 1 < len(blocks) else len(lines)
+        block_end = blocks[offset + 1] if offset + 1 < len(blocks) else section_end
         promise_id = lines[block_start][4:].strip()
         if not PROMISE_ID.fullmatch(promise_id):
             findings.append(
@@ -4375,7 +4378,10 @@ def promise_records(root: Path, inventory: Inventory):
         root / OVERLAY_PATH, root, missing_code="PM060", unsafe_code="PM060"
     )
     if loaded is not None:
-        lines = loaded[1].splitlines()
+        lines = [
+            line if isinstance(line, str) else ""
+            for line in markdown_unfenced_lines(loaded[1])
+        ]
         heading_index = lines.index(OVERLAY_HEADING) if OVERLAY_HEADING in lines else 0
         section_end = next(
             (
@@ -4391,7 +4397,7 @@ def promise_records(root: Path, inventory: Inventory):
             if lines[index].startswith("### ")
         ]
         for offset, block_start in enumerate(blocks):
-            block_end = blocks[offset + 1] if offset + 1 < len(blocks) else len(lines)
+            block_end = blocks[offset + 1] if offset + 1 < len(blocks) else section_end
             promise_id = lines[block_start][4:].strip()
             declared = ""
             evidence_classes: frozenset[str] = frozenset()
@@ -4419,7 +4425,10 @@ def promise_records(root: Path, inventory: Inventory):
 
 
 def declaration_field_blocks(text: str, heading: str):
-    lines = text.splitlines()
+    lines = [
+        line if isinstance(line, str) else ""
+        for line in markdown_unfenced_lines(text)
+    ]
     headings = [index for index, line in enumerate(lines) if line == heading]
     if len(headings) != 1:
         return []
@@ -4729,6 +4738,7 @@ def check_history(root: Path, inventory: Inventory):
         continuity_valid = (
             isinstance(continuity, dict)
             and set(continuity) == {"action", "predecessors", "successors"}
+            and isinstance(continuity.get("action"), str)
             and continuity.get("action") in HISTORY_ACTIONS
             and isinstance(continuity.get("predecessors"), list)
             and isinstance(continuity.get("successors"), list)
@@ -4777,6 +4787,7 @@ def check_history(root: Path, inventory: Inventory):
                     promise_id=promise_id,
                 )
             )
+            continue
         rows[promise_id] = {
             "entry": entry,
             "current": current,

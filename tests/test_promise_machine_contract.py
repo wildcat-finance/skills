@@ -3223,6 +3223,72 @@ class PromiseOverlayTests(unittest.TestCase):
             self.assertEqual(completed.returncode, 1)
             self.assertIn("PM054", [item["code"] for item in report["findings"]])
 
+    def test_overlay_fields_cannot_be_borrowed_from_a_later_section(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target, "hexaemeron")
+            skill = write_vendored_skill(plugin)
+            overlay = write_overlay(target, skill)
+            text = overlay.read_text(encoding="utf-8").replace(
+                "- Repository: `https://github.com/example/upstream.git`\n", ""
+            )
+            overlay.write_text(
+                text
+                + "\n## Unrelated example\n\n"
+                + "- Repository: `https://github.com/example/upstream.git`\n",
+                encoding="utf-8",
+            )
+            completed = run_cli(
+                "check", "--root", target, "--only", "overlays", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1)
+        self.assertIn("PM054", [item["code"] for item in report["findings"]])
+
+    def test_container_hidden_overlay_declaration_is_refused(self):
+        wrappers = {
+            "fenced": ("```text\n", "```\n"),
+            "raw-html": ("<div>\n", "</div>\n"),
+        }
+        for name, (opening, closing) in wrappers.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                plugin = make_plugin(target, "hexaemeron")
+                skill = write_vendored_skill(plugin)
+                overlay = write_overlay(target, skill)
+                text = overlay.read_text(encoding="utf-8")
+                heading, declaration = text.split("\n\n", 1)
+                overlay.write_text(
+                    f"{heading}\n\n{opening}{declaration}{closing}",
+                    encoding="utf-8",
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "overlays", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1)
+            self.assertIn("PM052", [item["code"] for item in report["findings"]])
+
+    def test_unsafe_overlay_path_is_refused_before_filesystem_observation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target, "hexaemeron")
+            skill = write_vendored_skill(plugin)
+            overlay = write_overlay(target, skill)
+            declared = skill.relative_to(target).as_posix()
+            overlay.write_text(
+                overlay.read_text(encoding="utf-8").replace(
+                    f"- Path: `{declared}`", "- Path: `plugins/\x00/SKILL.md`"
+                ),
+                encoding="utf-8",
+            )
+            completed = run_cli(
+                "check", "--root", target, "--only", "overlays", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1, completed.stderr)
+        self.assertIn("PM055", [item["code"] for item in report["findings"]])
+
     def test_mutable_commit_and_switched_repository_host_are_refused(self):
         mutations = {
             "mutable-commit": (
@@ -3433,6 +3499,52 @@ class VendoredUpstreamVerifierTests(unittest.TestCase):
                     self.assertEqual(verified, [])
                     self.assertEqual([item.code for item in findings], ["PV001"])
 
+    def test_slow_final_read_cannot_cross_the_total_deadline(self):
+        verifier = self.verifier()
+
+        class Clock:
+            def __init__(self):
+                self.value = 0.0
+
+            def __call__(self):
+                return self.value
+
+        clock = Clock()
+
+        class SlowEOFResponse(self.Response):
+            def read(self, size=-1):
+                clock.value += verifier.TOTAL_TIMEOUT_SECONDS + 1.0
+                return b""
+
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            skill, selected = self.make_fixture(target)
+            overlay = target / "plugins" / "hexaemeron" / "PROMISES.md"
+            local_digest = hashlib.sha256(skill.read_bytes()).hexdigest()
+            empty_digest = hashlib.sha256(b"").hexdigest()
+            overlay.write_text(
+                overlay.read_text(encoding="utf-8")
+                .replace(
+                    f"- Upstream SHA-256: `{local_digest}`",
+                    f"- Upstream SHA-256: `{empty_digest}`",
+                )
+                .replace("local-bytes-identical", "local-bytes-modified"),
+                encoding="utf-8",
+            )
+            connection = self.Connection(SlowEOFResponse())
+
+            def factory(host, *, timeout, context):
+                return connection
+
+            verified, findings = verifier.verify_selected(
+                target,
+                [selected],
+                connection_factory=factory,
+                clock=clock,
+            )
+        self.assertEqual(verified, [])
+        self.assertEqual([item.code for item in findings], ["PV003"])
+
 
 class PromiseHistoryTests(unittest.TestCase):
     def make_single_history(self, root):
@@ -3497,6 +3609,66 @@ class PromiseHistoryTests(unittest.TestCase):
         report = json.loads(completed.stdout)
         self.assertEqual(completed.returncode, 1)
         self.assertIn("PM101", [item["code"] for item in report["findings"]])
+
+    def test_non_object_history_returns_a_stable_finding(self):
+        for document in ([], None, "history"):
+            with self.subTest(document=document), tempfile.TemporaryDirectory() as directory:
+                target = Path(directory)
+                _, history, _ = self.make_single_history(target)
+                history.write_text(
+                    json.dumps(document, indent=2) + "\n", encoding="utf-8"
+                )
+                completed = run_cli(
+                    "check", "--root", target, "--only", "history", "--json"
+                )
+            report = json.loads(completed.stdout)
+            self.assertEqual(completed.returncode, 1, completed.stderr)
+            self.assertIn("PM100", [item["code"] for item in report["findings"]])
+
+    def test_unhashable_continuity_action_returns_a_stable_finding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            _, history, document = self.make_single_history(target)
+            document["entries"][0]["continuity"]["action"] = []
+            history.write_text(json.dumps(document, indent=2) + "\n", encoding="utf-8")
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1, completed.stderr)
+        self.assertIn("PM105", [item["code"] for item in report["findings"]])
+
+    def test_invalid_rename_shape_returns_a_stable_finding(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            plugin = make_plugin(target)
+            skill = write_skill(plugin, promise_id="replacement-check") / "SKILL.md"
+            snapshot = history_snapshot(
+                skill.relative_to(target).as_posix(), fixture_promise_fields()
+            )
+            entries = [
+                history_row(
+                    "example-check",
+                    entry=None,
+                    current=None,
+                    action="renamed",
+                    successors=("replacement-check",),
+                ),
+                history_row(
+                    "replacement-check",
+                    entry=None,
+                    current=snapshot,
+                    action="introduced",
+                    predecessors=("example-check",),
+                ),
+            ]
+            write_history(target, entries)
+            completed = run_cli(
+                "check", "--root", target, "--only", "history", "--json"
+            )
+        report = json.loads(completed.stdout)
+        self.assertEqual(completed.returncode, 1, completed.stderr)
+        self.assertIn("PM105", [item["code"] for item in report["findings"]])
 
     def test_missing_declaration_and_undeclared_active_id_are_refused(self):
         mutations = ("missing-declaration", "undeclared-active")
