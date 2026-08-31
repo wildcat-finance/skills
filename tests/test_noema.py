@@ -602,7 +602,7 @@ class NoemaScaffoldTests(unittest.TestCase):
     def test_receipted_runbook_copy_is_exact(self):
         self.assertEqual(
             sha256(RUNBOOK.read_bytes()).hexdigest(),
-            "489a76e8abcd552322333bb11f855d393b84de1cd4b2fd2c331949380f6a02da",
+            "0664168ef8fd2edad08a86be35e1ab77e1e1283dbee510ec7ab72e3156179fd5",
         )
 
     def test_repository_python_pin_is_exact(self):

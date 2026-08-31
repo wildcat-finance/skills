@@ -370,7 +370,7 @@ At least two genuinely different families complete all critical cases with no
 changed required answer between source and Noema. The record does not claim
 future rerun agreement, model quality or semantic correctness beyond its cases.
 
-ADR-055 states every measured count, gate verdict, family result, unknown and
+ADR-059 states every measured count, gate verdict, family result, unknown and
 failure. It chooses `accepted for continued shadowing`, `narrowed` or
 `rejected`; names the trade against #909's whole-model codec; keeps Markdown
 authoritative; and lists the exact later evidence required before native Noema
@@ -390,7 +390,7 @@ python3 -m unittest tests.test_noema -v
 python3 -m unittest discover -s tests
 python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py --study docs/noema/study.md
 python3 plugins/hexaemeron/skills/protasis/scripts/protasis.py docs/noema/runbook.md
-python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/noema/study.md docs/noema/runbook.md docs/noema-v1.md docs/decisions/ADR-055-evaluate-noema-as-a-sliced-instruction-ir.md
+python3 plugins/hexaemeron/skills/imprimatur/scripts/imprimatur.py docs/noema/study.md docs/noema/runbook.md docs/noema-v1.md docs/decisions/ADR-059-evaluate-noema-as-a-sliced-instruction-ir.md
 python3 plugins/hexaemeron/skills/phylax/scripts/phylax.py scripts tests
 python3 plugins/hexaemeron/skills/ephoros/scripts/ephoros.py scripts tests
 python3 plugins/hexaemeron/skills/hypomnema/scripts/hypomnema.py docs scripts
@@ -474,11 +474,24 @@ record.
 
 ### Amendment -- 2026-08-30
 
-**What changed.** Step 5 evaluation profiles bind the fixed seed `0`, require
-the acquired endpoint to advertise `seed`, and send that seed only on
-evaluation requests. Measurement-only profiles bind `null`; measurement
-requests omit the field. Adapter request digests, schemas, fixtures and hostile
-tests cover the boundary. The fixed gates and selected models are unchanged.
+**What changed.** Complete replacement Tests: Add at least 40 measurement and
+evaluation-adapter cases using fake local executables for every failure path,
+then run the exact authorised live profiles only for the committed evidence.
+Cover component omission, dictionary under-counting, changed executable or
+vocabulary digest, unavailable profile, non-integer and negative counts,
+unlike cohorts, threshold boundaries, exact decimal budget accounting,
+per-request pricing, byte-identical shared kernel and alias preflight, packet
+partial writes, prompt answer leakage, one-case context binding, duplicate and
+missing answers, family aliases, stale tree/profile/model ids, unknown answer
+values, missing or changed evaluation seeds, measurement seed leakage, timeout,
+output cap, environment allowlist, secret-shaped output and atomic reports.
+Audit repairs use `python3 tests/run_tests.py --elenchus-report {report}`,
+format `unittest-json-v1`, schema `elenchus.unittest.v1` and fresh report
+`.elenchus/fiat-942-step-5.json`; an unavailable or contaminated live run is
+evidence unknown, never a guarded result. Evaluation profiles bind fixed seed
+`0`, require advertised `seed` support and send it only for evaluation;
+measurement-only profiles bind `null` and measurement requests omit it. The
+fixed gates and selected models are unchanged.
 
 **Why.** Two exact unseeded cohorts at the first audit checkpoint both scored
 15/16 when Google permitted the Phylax source case that its Noema arm and both
@@ -496,12 +509,29 @@ scope.
 
 ### Amendment -- 2026-08-30
 
-**What changed.** Every source and Noema evaluation prompt now carries the same
-decision contract: asking, confirmation and approval are requirements rather
-than permission; when the document conditions the queried effect on one of
-them and no authorising actor is established, the effect is not permitted.
-Candidate output fields are alternatives, not governing evidence. The corpus,
-queries, candidates, gates, profiles and fixed seed are unchanged.
+**What changed.** Complete replacement Tests: Add at least 40 measurement and
+evaluation-adapter cases using fake local executables for every failure path,
+then run the exact authorised live profiles only for the committed evidence.
+Cover component omission, dictionary under-counting, changed executable or
+vocabulary digest, unavailable profile, non-integer and negative counts,
+unlike cohorts, threshold boundaries, exact decimal budget accounting,
+per-request pricing, byte-identical shared kernel and alias preflight, packet
+partial writes, prompt answer leakage, one-case context binding, duplicate and
+missing answers, family aliases, stale tree/profile/model ids, unknown answer
+values, missing or changed evaluation seeds, measurement seed leakage, timeout,
+output cap, environment allowlist, secret-shaped output and atomic reports.
+Audit repairs use `python3 tests/run_tests.py --elenchus-report {report}`,
+format `unittest-json-v1`, schema `elenchus.unittest.v1` and fresh report
+`.elenchus/fiat-942-step-5.json`; an unavailable or contaminated live run is
+evidence unknown, never a guarded result. Evaluation profiles bind fixed seed
+`0`, require advertised `seed` support and send it only for evaluation;
+measurement-only profiles bind `null` and measurement requests omit it. Every
+source and Noema prompt carries the same representation-neutral decision
+contract: asking, confirmation and approval are requirements rather than
+permission; absent authorising actors cannot satisfy them; candidate outcome
+fields are alternatives, not governing evidence. Negative tests prohibit case,
+candidate, consequence and required-answer leakage. The corpus, queries,
+candidates, gates, profiles and fixed seed are unchanged.
 
 **Why.** The first seed-`0` cohort reproduced the same 15/16 Google source miss,
 falsifying sampling noise as the whole cause. The prompt defined the authority
@@ -518,11 +548,33 @@ scope.
 
 ### Amendment -- 2026-08-30
 
-**What changed.** The final evidence anchor records the sole predeclared exact
-repeat of the final packet. The first cohort is retained as rejected evidence:
-15/16 after OpenAI reversed Fiat's ordered Noema explanation. The repeat passed
-16/16 after only that selection changed. No profile, seed, prompt, candidate,
-gate or model changed between them.
+**What changed.** Complete replacement Tests: Add at least 40 measurement and
+evaluation-adapter cases using fake local executables for every failure path,
+then run the exact authorised live profiles only for the committed evidence.
+Cover component omission, dictionary under-counting, changed executable or
+vocabulary digest, unavailable profile, non-integer and negative counts,
+unlike cohorts, threshold boundaries, exact decimal budget accounting,
+per-request pricing, byte-identical shared kernel and alias preflight, packet
+partial writes, prompt answer leakage, one-case context binding, duplicate and
+missing answers, family aliases, stale tree/profile/model ids, unknown answer
+values, missing or changed evaluation seeds, measurement seed leakage, timeout,
+output cap, environment allowlist, secret-shaped output and atomic reports.
+Audit repairs use `python3 tests/run_tests.py --elenchus-report {report}`,
+format `unittest-json-v1`, schema `elenchus.unittest.v1` and fresh report
+`.elenchus/fiat-942-step-5.json`; an unavailable or contaminated live run is
+evidence unknown, never a guarded result. Evaluation profiles bind fixed seed
+`0`, require advertised `seed` support and send it only for evaluation;
+measurement-only profiles bind `null` and measurement requests omit it. Every
+source and Noema prompt carries the same representation-neutral decision
+contract: asking, confirmation and approval are requirements rather than
+permission; absent authorising actors cannot satisfy them; candidate outcome
+fields are alternatives, not governing evidence. Negative tests prohibit case,
+candidate, consequence and required-answer leakage. The final evidence anchor
+records the sole predeclared exact same-packet repeat: its 15/16 predecessor is
+retained as rejected evidence and the repeat's 16/16 is a capability result,
+not a determinism or frequency claim. No profile, seed, prompt, candidate, gate
+or model changed between them. A later automated gate requires a deterministic
+judge or a preregistered repetition, aggregation and failure rule.
 
 **Why.** Provider seed `0` is best-effort, not a deterministic replay key. The
 accepted repeat establishes one complete capability run under Step 5's stated
