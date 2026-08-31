@@ -57,6 +57,48 @@ Apply these rules:
 Milestone descriptions hold the score and concise ordering reason for every
 current member. They are the durable ranking record for this allocation.
 
+## Amendment: Authorise a delimited status block in issue bodies (2026-08-31)
+
+The alternatives below reject writing Wave metadata into issue bodies, because
+that creates a second source of truth and changes issue content. That reasoning
+holds for Wave assignment and is unchanged here. The milestone field stays the
+only Wave assignment, and nothing may write a Wave into a body.
+
+It does not extend to an issue's current requirement. A Wave has a canonical
+GitHub field, so writing it into prose duplicates a value that already exists.
+Requirement drift has no such field. When an open issue is narrowed by work that
+landed, subsumed by a later issue, or invalidated by a change to `main`, the only
+surfaces available are the body and the comment thread.
+
+The comment thread is the weaker of the two, and the difference is measured.
+Issue #838 read 213 issues and 583 closed pull requests and found 436
+carried-forward items across pull-request bodies and issue closing comments, of
+which 344 name no issue or pull request and 245 have no register anywhere. A
+correction that arrives as the fourteenth comment is not read by a census that
+reads bodies.
+
+This amendment authorises one further mutation, bounded as follows.
+
+1. An open issue's body may be edited to record current status, supersession, or
+   a changed requirement. The edit is confined to a single block at the top of
+   the body, delimited by `<!-- status:start -->` and `<!-- status:end -->`.
+2. Wave assignment remains milestone-only. No Wave, score, or ordering value may
+   be written into a body.
+3. Filing prose outside the delimited block is not rewritten. Where a filing is
+   wrong rather than stale, the block says so and the original text stays, which
+   keeps the append-only amendment discipline that governs documents.
+4. The Atlas dependency extractor must ignore the delimited block. It parses
+   bodies for dependency declarations, and issue #497 records it reading a
+   `depends on` line as a declaration about the issue that contained it. A status
+   block naming other issues would otherwise change eligibility.
+5. Titles, labels, assignees, comments, and project membership stay outside the
+   authorised mutation, as the Context section states.
+
+This amendment does not address issue #894, which records that this document
+misstates what happened to the superseded alpha, beta, and Handover milestones.
+That correction needs its own amendment and a decision about whether closed
+issues should carry a Wave at all.
+
 ## Alternatives
 
 - **Patch only the issues added since the previous census.** This would be
