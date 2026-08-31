@@ -1,4 +1,0 @@
-interface:
-  display_name: "Tabularium"
-  short_description: "Venue-qualified credit-event releases rebuilt from preserved source records."
-  default_prompt: "Use Tabularium to build or verify a reproducible Goldfinch, Euler v1 or Euler V2 credit-event release, or rebuild the Compound v3 Phase 0 witness from a verified Alexandria release."

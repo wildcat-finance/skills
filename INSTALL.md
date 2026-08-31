@@ -133,17 +133,19 @@ the keys are documented in Anthropic's
 
 ### Local agents
 
-Install the collective through the Agent Skills convention by selecting the single
-[Promise Machine router](./.agents/skills/promise-machine/SKILL.md):
+Install the collective through the Agent Skills convention by selecting the
+single [Promise Machine router](./.agents/skills/promise-machine/SKILL.md),
+published from
+[wildcat-finance/skills-runtime](https://github.com/wildcat-finance/skills-runtime):
 
 ```bash
-npx skills add wildcat-finance/skills --skill promise-machine
+npx skills add wildcat-finance/skills-runtime --skill promise-machine
 ```
 
 For a non-interactive project-local Codex install:
 
 ```bash
-npx skills add wildcat-finance/skills \
+npx skills add wildcat-finance/skills-runtime \
   --skill promise-machine --agent codex --copy -y
 python3 .agents/skills/promise-machine/scripts/verify_runtime.py
 ```
@@ -155,11 +157,19 @@ separate behavioural version. A specialist entry copied on its own may lack
 the scripts or parent contract it requires; use the collective router for the
 supported portable install.
 
+That runtime is generated from this repository rather than committed to it. A
+scheduled job in the distribution repository rebuilds the package hourly and
+publishes it only when it verifies, so an install can be up to an hour behind
+this repository's `main`. ADR-066 records that trade, and
+[the publication guide](./docs/skills-runtime-publication.md) records how to
+check which source commit the published package was built from.
+
 The portable package omits host manifests, development suites, historical
 audit records, and Alexandria's 16 MB Compound v3 Phase 0 offline trace
 inputs and built release. Use a full source checkout when an operation needs
 one of those surfaces. To use a checkout directly, point the agent at this
-repository and include `.agents/skills` in its project skill search path.
+repository; the router detects a source checkout and reads the real tree rather
+than a bundled runtime.
 
 A file-reading agent without automatic skill discovery should begin with
 [AGENTS.md](./AGENTS.md). That file identifies the entrypoints, path rules, and

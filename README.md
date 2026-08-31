@@ -171,6 +171,13 @@ operations, examples, evidence contract, and current frontier.
   answered them, admitted against an explicit rights basis. It releases
   read-only projections rather than lending its source material.
 
+<p align="center">
+  <a href="./plugins/anamnesis#character">
+    <img src="./plugins/anamnesis/assets/characters/anamnesis.webp" width="960" alt="Anamnesis, keeper of the recalled record">
+  </a><br>
+  <a href="./plugins/anamnesis#character">Keeper of the recalled record</a>
+</p>
+
 ### Protocol behaviour and Solidity
 
 - [Janus](./plugins/janus) checks what a contract hook may observe and change
@@ -250,13 +257,16 @@ isolated worker is unavailable; the packet and artefacts remain the authority.
 To install the dependency-closed router through the Agent Skills convention:
 
 ```bash
-npx skills add wildcat-finance/skills --skill promise-machine
+npx skills add wildcat-finance/skills-runtime --skill promise-machine
 ```
 
-The router verifies its installed runtime before selecting a specialist. The
-[installation guide](./INSTALL.md) covers Codex, Claude Code, portable local
-agents, private organisation distribution, and the first-party licence
-boundary.
+That package is generated from this repository and published hourly to
+[wildcat-finance/skills-runtime](https://github.com/wildcat-finance/skills-runtime),
+so an install can be up to an hour behind `main`. The router verifies its local
+runtime before it selects a specialist. See the
+[installation guide](./INSTALL.md#local-agents) for the non-interactive Codex
+command, private organisation distribution, first-party licence boundary, and
+the boundary of that package.
 
 You can begin with a concrete request:
 
@@ -337,9 +347,11 @@ printable guide is available as a [PDF](./docs/pdf/how-to-help-shoggoth.pdf).
 ## Repository map
 
 ```text
-.claude-plugin/marketplace.json   Claude marketplace entries
-.agents/plugins/marketplace.json  the same host-neutral plugin set
-.agents/skills/promise-machine/   portable router and generated fallback
+.claude-plugin/marketplace.json   one entry per plugin
+.agents/plugins/marketplace.json  the same set, host-neutral
+.agents/skills/promise-machine/   authored router; runtime published separately
+├── PORTABLE.md                   isolated-install path and refusal boundary
+└── scripts/verify_runtime.py     installed byte-manifest check
 plugins/<name>/
 ├── .claude-plugin/plugin.json    host discovery metadata
 ├── .codex-plugin/plugin.json
