@@ -157,6 +157,7 @@
         },
         "unknowns": {
           "type": "array",
+          "maxItems": 64,
           "items": {"$ref": "#/$defs/nonEmpty"}
         },
         "authority": {

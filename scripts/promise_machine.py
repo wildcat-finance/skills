@@ -278,6 +278,7 @@ POSITIVE_EVIDENCE_STATES = {
     "recorded",
 }
 NON_AUTHORISING_EVIDENCE_STATES = {"missing", "not-run", "stale", "unknown"}
+JSON_LINE_TERMINATORS = frozenset("\r\n\u2028\u2029")
 CONSEQUENCE_ROLES = {
     0: {"content"},
     1: {"content", "provenance", "structure"},
@@ -292,15 +293,35 @@ CONSEQUENCE_ROLES = {
         "tests",
     },
 }
+CORE_ALLOWED_IMPORT_ROOTS = {
+    "__future__",
+    "argparse",
+    "ast",
+    "dataclasses",
+    "datetime",
+    "hashlib",
+    "json",
+    "os",
+    "pathlib",
+    "re",
+    "stat",
+    "tempfile",
+}
 FORBIDDEN_IMPORT_ROOTS = {
     "asyncio",
+    "concurrent",
+    "ctypes",
     "ftplib",
     "getpass",
     "http",
     "importlib",
     "keyring",
+    "marshal",
     "multiprocessing",
     "netrc",
+    "pickle",
+    "posix",
+    "pty",
     "requests",
     "runpy",
     "socket",
@@ -313,22 +334,115 @@ FORBIDDEN_IMPORT_ROOTS = {
 }
 FORBIDDEN_CALLS = {
     "__import__",
+    "builtins.__import__",
+    "builtins.compile",
+    "builtins.__dict__",
+    "builtins.eval",
+    "builtins.exec",
+    "builtins.open",
     "compile",
     "eval",
     "exec",
+    "open",
+    "__builtins__.__dict__",
+    "__builtins__.__import__",
+    "__builtins__.compile",
+    "__builtins__.eval",
+    "__builtins__.exec",
+    "__builtins__.open",
     "importlib.import_module",
+    "os._exit",
+    "os.__dict__",
+    "os.abort",
+    "os.chdir",
+    "os.chroot",
+    "os.fchdir",
     "os.fork",
     "os.forkpty",
+    "os.chown",
+    "os.fchmod",
+    "os.fchown",
+    "os.ftruncate",
     "os.getenv",
+    "os.getenvb",
+    "os.lchmod",
+    "os.lchown",
+    "os.link",
+    "os.kill",
+    "os.killpg",
+    "os.makedirs",
+    "os.mkdir",
+    "os.mkfifo",
+    "os.mknod",
+    "os.nice",
+    "os.path.expanduser",
+    "os.path.expandvars",
     "os.popen",
     "os.posix_spawn",
     "os.posix_spawnp",
+    "os.pwrite",
+    "os.pwritev",
+    "os.putenv",
+    "os.remove",
+    "os.removedirs",
+    "os.rename",
+    "os.renames",
+    "os.rmdir",
+    "os.setegid",
+    "os.seteuid",
+    "os.setgid",
+    "os.setgroups",
+    "os.setpgid",
+    "os.setpgrp",
+    "os.setpriority",
+    "os.setregid",
+    "os.setresgid",
+    "os.setresuid",
+    "os.setreuid",
+    "os.setsid",
+    "os.setuid",
+    "os.startfile",
+    "os.symlink",
     "os.system",
+    "os.truncate",
+    "os.umask",
+    "os.unsetenv",
+    "os.utime",
+    "os.write",
+    "os.writev",
     "runpy.run_module",
     "runpy.run_path",
+    "pathlib.Path.cwd",
+    "pathlib.Path.home",
+    "tempfile.NamedTemporaryFile",
+    "tempfile.SpooledTemporaryFile",
+    "tempfile.TemporaryDirectory",
+    "tempfile.TemporaryFile",
+    "tempfile.mkdtemp",
+    "tempfile.mktemp",
 }
+FORBIDDEN_FILE_METHODS = {
+    "chmod",
+    "hardlink_to",
+    "lchmod",
+    "link_to",
+    "mkdir",
+    "rename",
+    "rmdir",
+    "symlink_to",
+    "touch",
+    "unlink",
+    "write_bytes",
+    "write_text",
+}
+SAFE_OS_DYNAMIC_LOOKUPS = {"O_CLOEXEC", "O_NONBLOCK"}
 FORBIDDEN_OS_IMPORTS = {
+    "_exit",
+    "abort",
+    "chdir",
+    "chroot",
     "environ",
+    "environb",
     "execl",
     "execle",
     "execlp",
@@ -337,12 +451,31 @@ FORBIDDEN_OS_IMPORTS = {
     "execve",
     "execvp",
     "execvpe",
+    "fchdir",
     "fork",
     "forkpty",
     "getenv",
+    "getenvb",
+    "kill",
+    "killpg",
+    "nice",
     "popen",
     "posix_spawn",
     "posix_spawnp",
+    "putenv",
+    "setegid",
+    "seteuid",
+    "setgid",
+    "setgroups",
+    "setpgid",
+    "setpgrp",
+    "setpriority",
+    "setregid",
+    "setresgid",
+    "setresuid",
+    "setreuid",
+    "setsid",
+    "setuid",
     "spawnl",
     "spawnle",
     "spawnlp",
@@ -351,7 +484,10 @@ FORBIDDEN_OS_IMPORTS = {
     "spawnve",
     "spawnvp",
     "spawnvpe",
+    "startfile",
     "system",
+    "umask",
+    "unsetenv",
 }
 COVERAGE_CODES = ("P", "M", "S", "O", "R", "X")
 EVALUATION_KEYS = {"status", "model", "prompt", "corpus", "disposition"}
@@ -480,6 +616,15 @@ def relative(path: Path, root: Path) -> str:
         return path.relative_to(root).as_posix()
     except ValueError:
         return str(path)
+
+
+def closed_non_empty_scalar(value):
+    return (
+        isinstance(value, str)
+        and bool(value.strip())
+        and value == value.strip()
+        and not JSON_LINE_TERMINATORS.intersection(value)
+    )
 
 
 def confined(path: Path, root: Path) -> bool:
@@ -1316,7 +1461,7 @@ def semantic_finding(
     if type(candidate_consequence) is not int or candidate_consequence not in range(4):
         candidate_consequence = context["consequence"]
     candidate_transition = blocked_transition or record.get("transition")
-    if not isinstance(candidate_transition, str) or not candidate_transition.strip():
+    if not closed_non_empty_scalar(candidate_transition):
         candidate_transition = context["blocked_transition"]
     return Finding(
         context["code"],
@@ -1369,9 +1514,7 @@ def read_bound_reference(root: Path, reference, noun: str):
     raw_path = reference.get("path")
     digest = reference.get("sha256")
     if (
-        not isinstance(raw_path, str)
-        or not raw_path
-        or raw_path != raw_path.strip()
+        not closed_non_empty_scalar(raw_path)
         or "\\" in raw_path
         or any(ord(character) < 32 for character in raw_path)
         or not isinstance(digest, str)
@@ -1433,7 +1576,12 @@ def validate_declaration_reference(root: Path, reference, record: dict):
         "scope",
         "transition",
     }
-    if set(declaration) != keys or declaration.get("schema") != TRANSITION_DECLARATION_SCHEMA:
+    if (
+        set(declaration) != keys
+        or declaration.get("schema") != TRANSITION_DECLARATION_SCHEMA
+        or type(declaration.get("consequence")) is not int
+        or declaration["consequence"] not in range(4)
+    ):
         return "transition declaration has an unsupported or open shape"
     for key in ("promise_id", "gate", "consequence", "subject", "scope", "transition"):
         if declaration.get(key) != record.get(key):
@@ -1448,7 +1596,7 @@ def validate_authority_reference(root: Path, reference, expected: dict):
     keys = {"schema", "id", "promise_id", "gate", "subject", "scope"}
     if set(authority) != keys or authority.get("schema") != TRANSITION_AUTHORITY_SCHEMA:
         return None, "authority record has an unsupported or open shape"
-    if not isinstance(authority.get("id"), str) or not authority["id"].strip():
+    if not closed_non_empty_scalar(authority.get("id")):
         return None, "authority record has no identity"
     for key in ("promise_id", "gate", "subject", "scope"):
         if authority.get(key) != expected.get(key):
@@ -1499,12 +1647,7 @@ def validate_exception_record(
     scalars = ("id", "promise_id", "gate", "subject", "scope", "recovery")
     if (
         document.get("schema") != EXCEPTION_SCHEMA
-        or any(
-            not isinstance(document.get(key), str)
-            or not document[key].strip()
-            or document[key] != document[key].strip()
-            for key in scalars
-        )
+        or any(not closed_non_empty_scalar(document.get(key)) for key in scalars)
     ):
         return [
             semantic_finding(
@@ -1525,7 +1668,11 @@ def validate_exception_record(
                 )
             ]
     authority = document.get("authority")
-    if not isinstance(authority, dict) or set(authority) != {"id", "reference"}:
+    if (
+        not isinstance(authority, dict)
+        or set(authority) != {"id", "reference"}
+        or not closed_non_empty_scalar(authority.get("id"))
+    ):
         return [
             semantic_finding(
                 "law-exception-resolution",
@@ -1548,9 +1695,18 @@ def validate_exception_record(
                 record=expected,
             )
         ]
-    _reason, error = read_bound_reference(root, document.get("record"), "exception reason")
+    reason, error = read_bound_reference(root, document.get("record"), "exception reason")
     if error is not None:
         return [semantic_finding("law-exception-resolution", shown, error, record=expected)]
+    if not reason.strip():
+        return [
+            semantic_finding(
+                "law-exception-resolution",
+                shown,
+                "exception reason record is empty",
+                record=expected,
+            )
+        ]
     expiry = document.get("expiry")
     if not isinstance(expiry, dict) or len(expiry) != 1:
         return [
@@ -1574,7 +1730,7 @@ def validate_exception_record(
             ]
     elif "not_applicable" in expiry:
         reason = expiry["not_applicable"]
-        if not isinstance(reason, str) or not reason.strip():
+        if not closed_non_empty_scalar(reason):
             return [
                 semantic_finding(
                     "law-exception-resolution",
@@ -1648,12 +1804,7 @@ def evaluate_transition_record(
     )
     if (
         document.get("schema") != TRANSITION_SCHEMA
-        or any(
-            not isinstance(document.get(key), str)
-            or not document[key].strip()
-            or document[key] != document[key].strip()
-            for key in scalars
-        )
+        or any(not closed_non_empty_scalar(document.get(key)) for key in scalars)
         or PROMISE_ID.fullmatch(document["promise_id"]) is None
         or obligation_id not in SEMANTIC_OBLIGATIONS
         or (expected_obligation is not None and obligation_id != expected_obligation)
@@ -1682,8 +1833,10 @@ def evaluate_transition_record(
             )
         ]
     unknowns = document.get("unknowns")
-    if not isinstance(unknowns, list) or len(unknowns) > 64 or any(
-        not isinstance(item, str) or not item.strip() for item in unknowns
+    if (
+        not isinstance(unknowns, list)
+        or len(unknowns) > 64
+        or any(not closed_non_empty_scalar(item) for item in unknowns)
     ):
         return [
             semantic_finding(
@@ -1722,6 +1875,7 @@ def evaluate_transition_record(
         "independent",
     }
     roles: set[str] = set()
+    evidence_digests: dict[str, str] = {}
     for entry in evidence:
         if not isinstance(entry, dict) or set(entry) != evidence_keys:
             return [
@@ -1739,7 +1893,9 @@ def evaluate_transition_record(
             not isinstance(role, str)
             or not role
             or role in roles
+            or not isinstance(evidence_class, str)
             or evidence_class not in SUPPORTED_EVIDENCE_CLASSES
+            or not isinstance(status, str)
             or status not in POSITIVE_EVIDENCE_STATES | NON_AUTHORISING_EVIDENCE_STATES
             or entry.get("subject") != document["subject"]
             or entry.get("scope") != document["scope"]
@@ -1783,6 +1939,7 @@ def evaluate_transition_record(
                 )
             ]
         roles.add(role)
+        evidence_digests[role] = entry["reference"]["sha256"]
     required_roles = CONSEQUENCE_ROLES[document["consequence"]]
     if roles != required_roles:
         return [
@@ -1812,6 +1969,20 @@ def evaluate_transition_record(
                     "law-consequence-separation",
                     shown,
                     authority_error,
+                    record=document,
+                )
+            ]
+        independent_digest = evidence_digests["independent"]
+        if independent_digest == document["authority"]["sha256"] or any(
+            digest == independent_digest
+            for role, digest in evidence_digests.items()
+            if role != "independent"
+        ):
+            return [
+                semantic_finding(
+                    "law-consequence-separation",
+                    shown,
+                    "level three independent evidence reuses authority or ordinary evidence bytes",
                     record=document,
                 )
             ]
@@ -1869,10 +2040,7 @@ def validate_refusal_payload(payload, shown: str):
     if (
         not isinstance(payload, dict)
         or set(payload) != keys
-        or any(
-            not isinstance(payload.get(key), str) or not payload[key].strip()
-            for key in strings
-        )
+        or any(not closed_non_empty_scalar(payload.get(key)) for key in strings)
         or re.fullmatch(r"PM[0-9]{3}", payload["code"]) is None
         or PROMISE_ID.fullmatch(payload["promise_id"]) is None
         or (
@@ -1921,8 +2089,11 @@ def check_core_source_text(source: str, shown: str):
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                aliases[alias.asname or alias.name.split(".", 1)[0]] = alias.name
-                if alias.name.split(".", 1)[0] in FORBIDDEN_IMPORT_ROOTS:
+                root = alias.name.split(".", 1)[0]
+                aliases[alias.asname or root] = alias.name
+                if root not in CORE_ALLOWED_IMPORT_ROOTS:
+                    violations.append(f"unsupported core-checker import {alias.name}")
+                if root in FORBIDDEN_IMPORT_ROOTS:
                     violations.append(f"forbidden import {alias.name}")
         elif isinstance(node, ast.ImportFrom):
             root = (node.module or "").split(".", 1)[0]
@@ -1930,20 +2101,114 @@ def check_core_source_text(source: str, shown: str):
                 aliases[alias.asname or alias.name] = (
                     f"{node.module}.{alias.name}" if node.module else alias.name
                 )
+            if root not in CORE_ALLOWED_IMPORT_ROOTS:
+                violations.append(
+                    f"unsupported core-checker import {node.module or '<relative>'}"
+                )
             if root in FORBIDDEN_IMPORT_ROOTS:
                 violations.append(f"forbidden import {node.module}")
             if root == "os":
                 for alias in node.names:
-                    if alias.name in FORBIDDEN_OS_IMPORTS:
+                    if alias.name == "*" or alias.name in FORBIDDEN_OS_IMPORTS:
                         violations.append(f"forbidden import os.{alias.name}")
 
     def resolve_alias(name: str):
         head, separator, tail = name.partition(".")
         return aliases.get(head, head) + (separator + tail if separator else "")
 
+    def external_path_literal(node):
+        if not isinstance(node, ast.Constant) or not isinstance(node.value, str):
+            return False
+        normalized = node.value.replace("\\", "/")
+        parts = normalized.split("/")
+        return (
+            normalized.startswith(("/", "~"))
+            or re.match(r"^[A-Za-z]:/", normalized) is not None
+            or ".." in parts
+        )
+
+    path_names: set[str] = set()
+
+    def path_annotation(annotation):
+        return annotation is not None and resolve_alias(
+            qualified_call_name(annotation)
+        ) == "pathlib.Path"
+
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            arguments = (
+                list(node.args.posonlyargs)
+                + list(node.args.args)
+                + list(node.args.kwonlyargs)
+            )
+            if node.args.vararg is not None:
+                arguments.append(node.args.vararg)
+            if node.args.kwarg is not None:
+                arguments.append(node.args.kwarg)
+            path_names.update(
+                argument.arg
+                for argument in arguments
+                if path_annotation(argument.annotation)
+            )
+        elif (
+            isinstance(node, ast.AnnAssign)
+            and isinstance(node.target, ast.Name)
+            and path_annotation(node.annotation)
+        ):
+            path_names.add(node.target.id)
+
+    def path_expression(node):
+        if isinstance(node, ast.Name):
+            return node.id in path_names
+        if isinstance(node, ast.Call):
+            if resolve_alias(qualified_call_name(node.func)) == "pathlib.Path":
+                return True
+            if isinstance(node.func, ast.Attribute) and node.func.attr in {
+                "absolute",
+                "joinpath",
+                "resolve",
+                "with_name",
+                "with_stem",
+                "with_suffix",
+            }:
+                return path_expression(node.func.value)
+        if isinstance(node, ast.Attribute) and node.attr == "parent":
+            return path_expression(node.value)
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Div):
+            return path_expression(node.left)
+        return False
+
+    changed = True
+    while changed:
+        changed = False
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and path_expression(node.value):
+                names = [
+                    target.id
+                    for target in node.targets
+                    if isinstance(target, ast.Name)
+                ]
+            elif (
+                isinstance(node, ast.AnnAssign)
+                and isinstance(node.target, ast.Name)
+                and node.value is not None
+                and path_expression(node.value)
+            ):
+                names = [node.target.id]
+            else:
+                names = []
+            for name in names:
+                if name not in path_names:
+                    path_names.add(name)
+                    changed = True
+
     def forbidden_operation(name: str):
         return (
             name in FORBIDDEN_CALLS
+            or (
+                name.rsplit(".", 1)[-1] in FORBIDDEN_FILE_METHODS
+                and not name.startswith("os.")
+            )
             or name.startswith("asyncio.create_subprocess")
             or name.startswith("multiprocessing.")
             or name.startswith("os.exec")
@@ -1954,26 +2219,104 @@ def check_core_source_text(source: str, shown: str):
             or name.startswith("http.client.")
         )
 
+    def sensitive_dynamic_receiver(node):
+        receiver = resolve_alias(qualified_call_name(node))
+        return receiver, (
+            receiver
+            in {"builtins", "__builtins__", "os", "pathlib.Path", "tempfile"}
+            or receiver.startswith("os.")
+            or path_expression(node)
+        )
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             name = resolve_alias(qualified_call_name(node.func))
             if forbidden_operation(name):
                 violations.append(f"forbidden call {name}")
             if (
-                name == "getattr"
-                and len(node.args) >= 2
-                and isinstance(node.args[1], ast.Constant)
-                and node.args[1].value in FORBIDDEN_OS_IMPORTS
+                name == "pathlib.Path"
+                and node.args
+                and external_path_literal(node.args[0])
             ):
-                violations.append(
-                    f"forbidden dynamic process or credential lookup {node.args[1].value}"
+                violations.append("forbidden external path literal")
+            if (
+                name
+                in {
+                    "os.access",
+                    "os.listdir",
+                    "os.lstat",
+                    "os.open",
+                    "os.readlink",
+                    "os.scandir",
+                    "os.stat",
+                    "os.walk",
+                }
+                and node.args
+                and external_path_literal(node.args[0])
+            ):
+                violations.append(f"forbidden external filesystem read {name}")
+            if isinstance(node.func, ast.Attribute) and path_expression(
+                node.func.value
+            ):
+                if node.func.attr == "expanduser":
+                    violations.append("forbidden home-directory path expansion")
+                elif node.func.attr == "replace":
+                    violations.append("forbidden path mutation replace")
+                elif node.func.attr == "open":
+                    mode_node = node.args[0] if node.args else None
+                    for keyword in node.keywords:
+                        if keyword.arg == "mode":
+                            mode_node = keyword.value
+                    mode = (
+                        mode_node.value
+                        if isinstance(mode_node, ast.Constant)
+                        and isinstance(mode_node.value, str)
+                        else None
+                    )
+                    if mode is None or any(marker in mode for marker in "wax+"):
+                        violations.append("forbidden write-capable path open")
+            if name in {"getattr", "vars"} and node.args:
+                receiver, sensitive_receiver = sensitive_dynamic_receiver(
+                    node.args[0]
                 )
+                attribute = (
+                    node.args[1].value
+                    if name == "getattr"
+                    and len(node.args) >= 2
+                    and isinstance(node.args[1], ast.Constant)
+                    and isinstance(node.args[1].value, str)
+                    else None
+                )
+                safe_os_lookup = (
+                    name == "getattr"
+                    and receiver == "os"
+                    and attribute in SAFE_OS_DYNAMIC_LOOKUPS
+                )
+                if sensitive_receiver and not safe_os_lookup:
+                    violations.append(
+                        "forbidden dynamic access through "
+                        f"{receiver or '<path expression>'}.{attribute or '<computed>'}"
+                    )
         elif isinstance(node, ast.Attribute):
             name = resolve_alias(qualified_call_name(node))
-            if name == "os.environ" or name.startswith("os.environ."):
-                violations.append("forbidden credential or environment read os.environ")
+            receiver, sensitive_receiver = sensitive_dynamic_receiver(node.value)
+            if name in {"os.environ", "os.environb"} or name.startswith(
+                ("os.environ.", "os.environb.")
+            ):
+                environment_name = ".".join(name.split(".", 2)[:2])
+                violations.append(
+                    f"forbidden credential or environment read {environment_name}"
+                )
+            elif name.startswith("__builtins__."):
+                violations.append(f"forbidden builtins namespace access {name}")
+            elif node.attr == "__dict__" and sensitive_receiver:
+                violations.append(
+                    f"forbidden dynamic namespace access {receiver}.__dict__"
+                )
             elif forbidden_operation(name):
                 violations.append(f"forbidden process or dynamic-code reference {name}")
+        elif isinstance(node, ast.Name) and node.id == "__builtins__":
+            violations.append("forbidden builtins namespace access __builtins__")
     if violations:
         return [
             semantic_finding(
@@ -2115,15 +2458,16 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
     if (
         set(exception) != keys
         or exception.get("schema") != EXCEPTION_SCHEMA
-        or any(
-            not isinstance(exception.get(key), str) or not exception[key].strip()
-            for key in scalars
-        )
+        or any(not closed_non_empty_scalar(exception.get(key)) for key in scalars)
         or exception.get("promise_id") != promise_id
     ):
         return "exception record has an unsupported shape or promise identity"
     authority = exception.get("authority")
-    if not isinstance(authority, dict) or set(authority) != {"id", "reference"}:
+    if (
+        not isinstance(authority, dict)
+        or set(authority) != {"id", "reference"}
+        or not closed_non_empty_scalar(authority.get("id"))
+    ):
         return "exception authority is not an identified resolvable reference"
     authority_document, error = validate_authority_reference(
         root, authority.get("reference"), exception
@@ -2132,9 +2476,11 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
         return error
     if authority.get("id") != authority_document.get("id"):
         return "exception authority identity does not match its record"
-    _reason, error = read_bound_reference(root, exception.get("record"), "exception reason")
+    reason, error = read_bound_reference(root, exception.get("record"), "exception reason")
     if error is not None:
         return error
+    if not reason.strip():
+        return "exception reason record is empty"
     expiry = exception.get("expiry")
     if not isinstance(expiry, dict) or len(expiry) != 1:
         return "exception expiry is not the closed at or not_applicable form"
@@ -2142,9 +2488,8 @@ def declared_exception_error(root: Path, raw: str, promise_id: str):
         if parse_utc_timestamp(expiry["at"]) is None:
             return "exception expiry is not a real UTC timestamp"
     elif "not_applicable" in expiry:
-        if not isinstance(expiry["not_applicable"], str) or not expiry[
-            "not_applicable"
-        ].strip():
+        reason = expiry["not_applicable"]
+        if not closed_non_empty_scalar(reason):
             return "exception does not explain why expiry cannot apply"
     else:
         return "exception expiry field is unknown"
@@ -2215,9 +2560,7 @@ def validate_semantic_specimen(root: Path, relative_specimen: Path, document, ro
             not isinstance(expected.get("promise_id"), str)
             or PROMISE_ID.fullmatch(expected["promise_id"]) is None
             or any(
-                not isinstance(expected.get(key), str)
-                or not expected[key].strip()
-                or expected[key] != expected[key].strip()
+                not closed_non_empty_scalar(expected.get(key))
                 for key in ("gate", "subject", "scope", "transition")
             )
             or type(expected.get("consequence")) is not int
