@@ -274,6 +274,13 @@ def main(argv: list[str] | None = None) -> int:
     suite = unittest.defaultTestLoader.discover(
         str(here), pattern=f"test_s{step}_*.py", top_level_dir=str(plugin_root)
     )
+    if suite.countTestCases() == 0:
+        print(
+            f"elenchus.py: step {step} discovered no tests matching "
+            f"test_s{step}_*.py; a step with no guards is not a passing step",
+            file=sys.stderr,
+        )
+        return 3
     result = unittest.TextTestRunner(verbosity=1).run(suite)
     try:
         write_report(target, result_payload(result))
