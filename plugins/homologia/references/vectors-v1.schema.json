@@ -1,13 +1,13 @@
 {
   "$defs": {
     "canonicalInteger": {
-      "pattern": "^(?:0|-?[1-9][0-9]*)$",
+      "pattern": "^(?:0|-?[1-9][0-9]*)(?![\\s\\S])",
       "type": "string"
     },
     "path": {
       "maxLength": 1024,
       "minLength": 1,
-      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*//).+$",
+      "pattern": "^(?!/)(?![\\s\\S]*(?:^|/)\\.{1,2}(?:/|$))(?![\\s\\S]*[\\u0000-\\u001f\\u007f])(?![\\s\\S]*\\\\)(?![\\s\\S]*//)(?![\\s\\S]*/$)[\\s\\S]+(?![\\s\\S])",
       "type": "string"
     },
     "provenance": {
@@ -32,15 +32,15 @@
           "additionalProperties": false,
           "properties": {
             "block_hash": {
-              "pattern": "^0x[0-9A-Fa-f]{64}$",
+              "pattern": "^0x[0-9A-Fa-f]{64}(?![\\s\\S])",
               "type": "string"
             },
             "block_number": {
-              "pattern": "^(?:0|[1-9][0-9]*)$",
+              "pattern": "^(?:0|[1-9][0-9]*)(?![\\s\\S])",
               "type": "string"
             },
             "chain_id": {
-              "pattern": "^(?:0|[1-9][0-9]*)$",
+              "pattern": "^(?:0|[1-9][0-9]*)(?![\\s\\S])",
               "type": "string"
             },
             "class": {
@@ -61,6 +61,7 @@
             "author": {
               "maxLength": 256,
               "minLength": 1,
+              "pattern": "[^\\u0009-\\u000d\\u001c-\\u0020\\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]",
               "type": "string"
             },
             "class": {
@@ -79,7 +80,7 @@
       "additionalProperties": false,
       "properties": {
         "absolute": {
-          "pattern": "^(?:0|[1-9][0-9]*)$",
+          "pattern": "^(?:0|[1-9][0-9]*)(?![\\s\\S])",
           "type": "string"
         }
       },
@@ -111,7 +112,7 @@
     },
     "id": {
       "maxLength": 128,
-      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?![\\s\\S])",
       "type": "string"
     },
     "inputs": {
@@ -121,7 +122,7 @@
       "minProperties": 1,
       "propertyNames": {
         "maxLength": 128,
-        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*(?![\\s\\S])"
       },
       "type": "object"
     },

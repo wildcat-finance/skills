@@ -42,6 +42,10 @@ UNSIGNED_INTEGER_RE = re.compile(r"^(?:0|[1-9][0-9]*)$")
 ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
 HASH_RE = re.compile(r"^0x[0-9a-fA-F]{64}$")
 REVISION_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+TEXT_CONTENT_RE = re.compile(
+    r"[^\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680"
+    r"\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]"
+)
 
 
 class Limits(NamedTuple):
@@ -63,10 +67,12 @@ class FileRead(NamedTuple):
     path: Path
     data: bytes
     sha256: str
+    mode: int
     device: int
     inode: int
     size: int
     mtime_ns: int
+    ctime_ns: int
 
 
 class CheckResult(NamedTuple):
@@ -75,6 +81,28 @@ class CheckResult(NamedTuple):
     output_sha256: str
     vector_set_count: int
     vector_count: int
+
+
+def _stat_version(metadata: os.stat_result) -> tuple[int, int, int, int, int, int]:
+    return (
+        metadata.st_mode,
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def _read_version(value: FileRead) -> tuple[int, int, int, int, int, int]:
+    return (
+        value.mode,
+        value.device,
+        value.inode,
+        value.size,
+        value.mtime_ns,
+        value.ctime_ns,
+    )
 
 
 class Refusal(Exception):
@@ -119,7 +147,11 @@ def _identifier(value: object, subject: str) -> str:
 
 
 def _text(value: object, subject: str, *, maximum: int = 256) -> str:
-    if not isinstance(value, str) or not value.strip() or len(value) > maximum:
+    if (
+        not isinstance(value, str)
+        or not TEXT_CONTENT_RE.search(value)
+        or len(value) > maximum
+    ):
         _refuse("HOM-CHECK-SHAPE", subject, "supply a bounded non-empty string")
     return value
 
@@ -138,7 +170,7 @@ def _integer(value: object, subject: str, *, unsigned: bool = False) -> str:
 def _lexical_parts(raw: object, subject: str) -> tuple[str, ...]:
     if not isinstance(raw, str) or not raw or len(raw) > 1024:
         _refuse("HOM-CHECK-PATH", subject, "use one bounded repository-relative path")
-    if "\x00" in raw or "\\" in raw:
+    if "\\" in raw or any(ord(character) < 32 or ord(character) == 127 for character in raw):
         _refuse("HOM-CHECK-PATH", subject, "use slash-separated repository-relative path syntax")
     pure = PurePosixPath(raw)
     pieces = tuple(raw.split("/"))
@@ -189,17 +221,23 @@ def _assert_named_identity(value: FileRead, subject: str) -> None:
         _refuse("HOM-CHECK-PATH", subject, "restore the named regular file and retry")
     if stat.S_ISLNK(named.st_mode) or not stat.S_ISREG(named.st_mode):
         _refuse("HOM-CHECK-PATH", subject, "use one non-symlink regular file")
-    if (
-        named.st_dev != value.device
-        or named.st_ino != value.inode
-        or named.st_size != value.size
-        or named.st_mtime_ns != value.mtime_ns
-    ):
+    if _stat_version(named) != _read_version(value):
         _refuse("HOM-CHECK-PATH", subject, "stop replacing the named input while it is checked")
 
 
 def _read_bounded_file(path: Path, *, limit: int, subject: str) -> FileRead:
-    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        named = path.lstat()
+    except OSError:
+        _refuse("HOM-CHECK-PATH", subject, "supply one existing non-symlink regular file")
+    if stat.S_ISLNK(named.st_mode) or not stat.S_ISREG(named.st_mode):
+        _refuse("HOM-CHECK-PATH", subject, "use one non-symlink regular file")
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_CLOEXEC", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+    )
     try:
         descriptor = os.open(path, flags)
     except OSError as error:
@@ -211,6 +249,12 @@ def _read_bounded_file(path: Path, *, limit: int, subject: str) -> FileRead:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             _refuse("HOM-CHECK-PATH", subject, "use one non-symlink regular file")
+        if _stat_version(before) != _stat_version(named):
+            _refuse(
+                "HOM-CHECK-PATH",
+                subject,
+                "stop replacing the named input while it is checked",
+            )
         if before.st_size > limit:
             _refuse("HOM-CHECK-FILE-CAP", subject, f"reduce the file to at most {limit} bytes")
         chunks: list[bytes] = []
@@ -225,13 +269,7 @@ def _read_bounded_file(path: Path, *, limit: int, subject: str) -> FileRead:
         if len(data) > limit:
             _refuse("HOM-CHECK-FILE-CAP", subject, f"reduce the file to at most {limit} bytes")
         after = os.fstat(descriptor)
-        if (
-            after.st_dev != before.st_dev
-            or after.st_ino != before.st_ino
-            or after.st_size != before.st_size
-            or after.st_mtime_ns != before.st_mtime_ns
-            or len(data) != after.st_size
-        ):
+        if _stat_version(after) != _stat_version(before) or len(data) != after.st_size:
             _refuse("HOM-CHECK-PATH", subject, "stop mutating the input while it is checked")
     except OSError:
         _refuse("HOM-CHECK-READ", subject, "make the declared input stable and readable")
@@ -242,10 +280,12 @@ def _read_bounded_file(path: Path, *, limit: int, subject: str) -> FileRead:
         path=path,
         data=data,
         sha256=hashlib.sha256(data).hexdigest(),
+        mode=before.st_mode,
         device=before.st_dev,
         inode=before.st_ino,
         size=before.st_size,
         mtime_ns=before.st_mtime_ns,
+        ctime_ns=before.st_ctime_ns,
     )
     _assert_named_identity(value, subject)
     return value
@@ -264,18 +304,40 @@ def _reject_constant(value: str) -> None:
     _refuse("HOM-CHECK-JSON", value, "replace non-finite JSON numbers with declared strings")
 
 
+def _reject_unpaired_surrogates(value: object, subject: str) -> None:
+    pending = [value]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, str):
+            try:
+                item.encode("utf-8", errors="strict")
+            except UnicodeEncodeError:
+                _refuse(
+                    "HOM-CHECK-JSON",
+                    subject,
+                    "replace unpaired Unicode surrogates with valid Unicode scalar values",
+                )
+        elif isinstance(item, dict):
+            pending.extend(item.keys())
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+
+
 def _parse_json(data: bytes, subject: str) -> object:
     try:
         text = data.decode("utf-8", errors="strict")
-        return json.loads(
+        value = json.loads(
             text,
             object_pairs_hook=_pairs_no_duplicates,
             parse_constant=_reject_constant,
         )
     except Refusal:
         raise
-    except (UnicodeDecodeError, json.JSONDecodeError):
+    except (UnicodeDecodeError, ValueError, RecursionError):
         _refuse("HOM-CHECK-JSON", subject, "supply strict UTF-8 JSON with no duplicate keys")
+    _reject_unpaired_surrogates(value, subject)
+    return value
 
 
 def _scale(value: object, subject: str) -> dict[str, Any]:
@@ -317,7 +379,9 @@ def _validate_pair(value: object) -> dict[str, Any]:
     return pair
 
 
-def _validate_provenance(value: object, subject: str) -> dict[str, Any]:
+def _validate_provenance(
+    value: object, subject: str, *, pair_chain_id: str
+) -> dict[str, Any]:
     if not isinstance(value, dict) or not isinstance(value.get("class"), str):
         _refuse("HOM-CHECK-PROVENANCE", subject, "declare one closed provenance object")
     provenance_class = value["class"]
@@ -342,6 +406,12 @@ def _validate_provenance(value: object, subject: str) -> dict[str, Any]:
             _integer(provenance["block_number"], f"{subject}.block_number", unsigned=True)
         except Refusal:
             _refuse("HOM-CHECK-PROVENANCE", subject, "supply canonical chain and block identity")
+        if provenance["chain_id"] != pair_chain_id:
+            _refuse(
+                "HOM-CHECK-PROVENANCE",
+                subject,
+                "make the recorded chain id exactly equal to pair.chain.id",
+            )
         if not isinstance(provenance["block_hash"], str) or not HASH_RE.fullmatch(provenance["block_hash"]):
             _refuse("HOM-CHECK-PROVENANCE", subject, "supply one 32-byte hexadecimal block hash")
         return provenance
@@ -366,6 +436,7 @@ def _validate_vector(
     set_id: str,
     position: int,
     declared_tolerance: dict[str, str] | None,
+    pair_chain_id: str,
 ) -> dict[str, Any]:
     subject = f"vector_sets.{set_id}.vectors.{position}"
     vector = _closed_object(
@@ -385,7 +456,11 @@ def _validate_vector(
         vector["expected"], required={"integer", "provenance"}, subject=f"{subject}.expected"
     )
     _integer(expected["integer"], f"{subject}.expected.integer")
-    _validate_provenance(expected["provenance"], f"{subject}.expected.provenance")
+    _validate_provenance(
+        expected["provenance"],
+        f"{subject}.expected.provenance",
+        pair_chain_id=pair_chain_id,
+    )
     if "tolerance" in vector:
         tolerance = _tolerance(vector["tolerance"], f"{subject}.tolerance")
         if declared_tolerance is None or tolerance != declared_tolerance:
@@ -402,13 +477,16 @@ def _parse_vectors(
     *,
     set_id: str,
     declared_tolerance: dict[str, str] | None,
+    pair_chain_id: str,
     limit: int,
 ) -> list[dict[str, Any]]:
     try:
         text = source.data.decode("utf-8", errors="strict")
     except UnicodeDecodeError:
         _refuse("HOM-CHECK-JSON", set_id, "supply strict UTF-8 JSON Lines")
-    lines = text.splitlines()
+    lines = text.split("\n")
+    if lines[-1:] == [""]:
+        lines.pop()
     if not lines:
         _refuse("HOM-CHECK-SHAPE", set_id, "supply at least one vector")
     if len(lines) > limit:
@@ -423,6 +501,7 @@ def _parse_vectors(
             set_id=set_id,
             position=position,
             declared_tolerance=declared_tolerance,
+            pair_chain_id=pair_chain_id,
         )
         vector_id = vector["id"]
         if vector_id in seen:
@@ -436,6 +515,18 @@ def _canonical_json(value: object) -> bytes:
     return (
         json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False) + "\n"
     ).encode("utf-8")
+
+
+def _refuse_output_input_alias(path: Path, sources: list[FileRead]) -> None:
+    try:
+        named = path.lstat()
+    except FileNotFoundError:
+        return
+    except OSError:
+        _refuse("HOM-CHECK-PATH", "output", "make the output path readable and retry")
+    for source in sources:
+        if named.st_dev == source.device and named.st_ino == source.inode:
+            _refuse("HOM-CHECK-PATH", "output", "choose a destination distinct from every input")
 
 
 def _atomic_write(path: Path, data: bytes, *, root: Path, subject: str) -> None:
@@ -516,6 +607,7 @@ def check_manifest(
     sources = [manifest_source]
     seen_ids: set[str] = set()
     seen_paths: set[str] = set()
+    seen_input_identities = {(manifest_source.device, manifest_source.inode)}
     total_vectors = 0
     manifest_directory = manifest_path.parent
     for position, descriptor_value in enumerate(descriptors, start=1):
@@ -554,6 +646,14 @@ def check_manifest(
         source = _read_bounded_file(
             vector_path, limit=limits.max_file_bytes, subject=f"vector_set.{set_id}"
         )
+        source_identity = (source.device, source.inode)
+        if source_identity in seen_input_identities:
+            _refuse(
+                "HOM-CHECK-DUPLICATE",
+                descriptor_path,
+                "declare each input file once, without filesystem aliases",
+            )
+        seen_input_identities.add(source_identity)
         sources.append(source)
         aggregate_bytes += source.size
         if aggregate_bytes > limits.max_aggregate_bytes:
@@ -566,6 +666,7 @@ def check_manifest(
             source,
             set_id=set_id,
             declared_tolerance=declared_tolerance,
+            pair_chain_id=pair["chain"]["id"],
             limit=limits.max_vectors_per_set,
         )
         total_vectors += len(vectors)
@@ -585,6 +686,7 @@ def check_manifest(
 
     for source in sources:
         _assert_named_identity(source, source.path.relative_to(repository_root).as_posix())
+    _refuse_output_input_alias(output_path, sources)
     record = {
         "manifest": {
             "path": manifest_path.relative_to(repository_root).as_posix(),
