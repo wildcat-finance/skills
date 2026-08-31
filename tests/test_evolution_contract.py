@@ -114,7 +114,7 @@ class EvolutionContractTests(unittest.TestCase):
         ledger = (
             PLUGINS / "hexaemeron" / "skills" / "fiat" / "EVOLUTION.md"
         ).read_text(encoding="utf-8")
-        self.assertEqual(field(ledger, "Current version"), "fiat-v5.46.1")
+        self.assertEqual(field(ledger, "Current version"), "fiat-v5.47.1")
         self.assertEqual(field(ledger, "Frontier status"), "open")
         self.assertEqual(field(ledger, "Frontier revision"), "state-shape-validation")
         self.assertEqual(field(ledger, "Current frontier"), FIAT_FRONTIER)
@@ -122,18 +122,26 @@ class EvolutionContractTests(unittest.TestCase):
         rows = history_rows(ledger)
         by_version = {row["version"]: row for row in rows}
         latest = rows[-1]
-        self.assertEqual(latest["version"], "fiat-v5.46.1")
+        self.assertEqual(latest["version"], "fiat-v5.47.1")
         self.assertEqual(latest["axis"], "generation")
         self.assertEqual(latest["revision"], "state-shape-validation")
         self.assertEqual(
             latest["digest"],
             "e413d6041edb34b3807a54019489605814a591f60547755f8f66f01830f643aa",
         )
-        self.assertIn("skills#972", latest["evidence"])
-        self.assertIn("ADR-065", latest["evidence"])
-        self.assertIn("PROSE_PATHS_MAX", latest["change"])
-        self.assertIn("GIT_PATHS_MAX", latest["change"])
-        self.assertIn("held issue 363 job is untouched", latest["change"])
+        self.assertIn("ADR-067", latest["evidence"])
+        self.assertIn("Fiat-Required", latest["change"])
+        self.assertIn("carryover", latest["change"])
+        self.assertIn("issue-check", latest["change"])
+        self.assertIn("held target stay unchanged", latest["change"])
+        prose_packet = by_version["fiat-v5.46.1"]
+        self.assertEqual(prose_packet["axis"], "generation")
+        self.assertEqual(prose_packet["revision"], "state-shape-validation")
+        self.assertIn("skills#972", prose_packet["evidence"])
+        self.assertIn("ADR-065", prose_packet["evidence"])
+        self.assertIn("PROSE_PATHS_MAX", prose_packet["change"])
+        self.assertIn("GIT_PATHS_MAX", prose_packet["change"])
+        self.assertIn("held issue 363 job is untouched", prose_packet["change"])
         design_evidence = by_version["fiat-v5.45.1"]
         self.assertEqual(design_evidence["axis"], "generation")
         self.assertEqual(design_evidence["revision"], "state-shape-validation")

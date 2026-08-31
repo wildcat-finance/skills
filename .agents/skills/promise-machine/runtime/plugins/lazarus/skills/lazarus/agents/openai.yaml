@@ -1,4 +1,0 @@
-interface:
-  display_name: "Lazarus"
-  short_description: "Proof-checked historical Ethereum fixtures with exact-request replay, no live fallback, and preservation releases a stranger can check."
-  default_prompt: "Use Lazarus to capture, verify or replay a finite historical Ethereum fixture without a live provider fallback."

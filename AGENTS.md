@@ -96,6 +96,47 @@ in [ADR-009](docs/decisions/ADR-009-four-issue-queues-and-their-titles.md).
 Filing an issue merely to satisfy a workflow remains forbidden; these
 conventions say how to title one that was worth filing.
 
+## What every issue body decides
+
+Two decisions are mechanical, checked, and belong in the body rather than in a
+reviewer's head. Both apply to every queue above.
+[ADR-067](docs/decisions/ADR-067-gate-a-run-on-what-its-issue-filed.md) holds the
+reasoning, the alternatives and what the checks deliberately do not read.
+
+**Does this need a Fiat run?** Exactly one unfenced line, `Fiat-Required: 1` when
+the work needs a run and `Fiat-Required: 0` when one independent pull request
+will do. Not everything earns a study, a runbook and an audit loop per step; a
+wonky regular expression does not. A `0` names the pull request that answers it
+before the issue closes. `hexctl init` reads the line and refuses to start a run
+against a `0` before it creates any state, worktree or branch.
+
+**What does this leave for somebody else?** One fenced `carryover` block, one row
+per outstanding, carried-forward or unaddressed item:
+
+```text
+<id> | <disposition> | <reference>
+```
+
+`filed` and `duplicate` each point at one canonical GitHub issue URL: the item's
+own new issue, or the existing issue that already carries it. Compare against
+what is already open before filing a second copy. `none` states why the item
+earns neither, which is how the prohibition above stays satisfied. Ids are
+kebab-case and used once. A filing that carries nothing writes the single row
+`none | none | <why nothing is carried>`. A Fiat run owes the same block in its
+run-level pull request body under `## Carried forward`, and `hexctl done
+integrate` refuses without it.
+
+Check a candidate body before filing it:
+
+```bash
+python3 plugins/hexaemeron/skills/fiat/scripts/hexctl.py issue-check --body <path>
+```
+
+It exits 1 on findings and reports both questions at once. `--issue <url>` reads
+an already-filed issue instead. The check reads shape, never judgement: it does
+not open a referenced issue, and a disposition nobody should have accepted still
+counts as an answer.
+
 Closing a delivered issue belongs to whoever merges its pull request. The
 Atlas draws from open issues alone, so one whose delivery has merged keeps
 being allocated until it is closed, and a contributor working from a fork
@@ -109,16 +150,20 @@ comment for this repository, use this sequence on the complete candidate:
 1. freeze the required title prefix, body opening and protected evidence inventory;
 2. apply `sapheneia-durable-record-shape`;
 3. run Imprimatur and clear every reported defect without dropping protected content;
-4. apply Vulgate to the surface only and compare its content with the source; and
-5. re-run Imprimatur on the exact publishable bytes.
+4. apply Vulgate to the surface only and compare its content with the source;
+5. re-run Imprimatur on the exact publishable bytes; and
+6. for an issue body, run `hexctl issue-check --body` on those exact bytes and
+   clear every finding. The decision line and the `carryover` block are
+   protected content, so a wording pass may not drop or reword either.
 
 The four frozen title forms are `{skill}-next`, `{skill}-N`, `{skill}-wish`, and
 `framework-N`. Keep every queue-specific body rule from the section above.
 The protected inventory includes claims, qualifications, unknowns, negative
 evidence, identifiers, paths, `file:line` locations, hashes, addresses,
-selectors, numbers, dates, links, quotations, severities, verdicts, status, and
-required host structure. Do not publish after a failed check, changed prefix or
-body opening, missing protected item, or content mismatch.
+selectors, numbers, dates, links, quotations, severities, verdicts, status, the
+`Fiat-Required` line, the `carryover` block, and required host structure. Do not
+publish after a failed check, changed prefix or body opening, missing protected
+item, or content mismatch.
 GitHub does not enforce this repository rule; it governs agents working from
 these instructions.
 
