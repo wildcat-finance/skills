@@ -66,6 +66,9 @@ refuse. Two names for the same file are one input and refuse as a repeated path.
 Non-regular inputs refuse without a blocking read. Each input is opened once
 with no-follow and non-blocking flags where the platform provides them, read
 through that descriptor, and checked against the named file again before output.
+The initial name, opened descriptor, post-read descriptor and final name must
+retain the same mode, device, inode, size, nanosecond modification time and
+nanosecond metadata-change time.
 
 ## Fixed safety caps
 

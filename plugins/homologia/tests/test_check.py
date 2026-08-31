@@ -13,6 +13,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 PLUGIN = Path(__file__).resolve().parents[1]
@@ -617,6 +618,89 @@ class CheckTests(unittest.TestCase):
             return value
 
         with mock.patch.object(HOMOLOGIA, "_read_bounded_file", replace_after_read):
+            self.assert_refuses("HOM-CHECK-PATH")
+
+    def test_replacement_between_lstat_and_open_refuses(self):
+        replacement = self.root / "case" / "replacement.jsonl"
+        replacement.write_bytes(self.vectors_path.read_bytes())
+        vector_path = self.vectors_path.resolve()
+        original_open = os.open
+        state = {"swapped": False}
+
+        def replace_before_open(path, flags, *args, **kwargs):
+            if not state["swapped"] and Path(path) == vector_path:
+                state["swapped"] = True
+                replacement.replace(self.vectors_path)
+            return original_open(path, flags, *args, **kwargs)
+
+        with mock.patch.object(HOMOLOGIA.os, "open", replace_before_open):
+            self.assert_refuses("HOM-CHECK-PATH")
+        self.assertTrue(state["swapped"])
+
+    def test_in_place_rewrite_with_restored_mtime_refuses(self):
+        vector_path = self.vectors_path.resolve()
+        starting = self.vectors_path.stat()
+        original_bytes = self.vectors_path.read_bytes()
+        rewritten = original_bytes.replace(b'"integer":"1', b'"integer":"9', 1)
+        self.assertEqual(len(rewritten), len(original_bytes))
+        original_open = os.open
+        original_fstat = os.fstat
+        state = {"descriptor": None, "rewritten": False}
+
+        def rewrite_before_open(path, flags, *args, **kwargs):
+            target = Path(path)
+            if not state["rewritten"] and target == vector_path:
+                state["rewritten"] = True
+                self.vectors_path.write_bytes(rewritten)
+                os.utime(
+                    self.vectors_path,
+                    ns=(starting.st_atime_ns, starting.st_mtime_ns),
+                )
+            descriptor = original_open(path, flags, *args, **kwargs)
+            if target == vector_path:
+                state["descriptor"] = descriptor
+            return descriptor
+
+        def fstat_with_changed_ctime(descriptor):
+            metadata = original_fstat(descriptor)
+            if descriptor != state["descriptor"]:
+                return metadata
+            return SimpleNamespace(
+                st_mode=metadata.st_mode,
+                st_dev=metadata.st_dev,
+                st_ino=metadata.st_ino,
+                st_size=metadata.st_size,
+                st_mtime_ns=starting.st_mtime_ns,
+                st_ctime_ns=starting.st_ctime_ns + 1,
+            )
+
+        with (
+            mock.patch.object(HOMOLOGIA.os, "open", rewrite_before_open),
+            mock.patch.object(HOMOLOGIA.os, "fstat", fstat_with_changed_ctime),
+        ):
+            self.assert_refuses("HOM-CHECK-PATH")
+        self.assertTrue(state["rewritten"])
+
+    def test_final_recheck_refuses_rewrite_with_restored_mtime(self):
+        original = HOMOLOGIA._read_bounded_file
+
+        def rewrite_after_read(*args, **kwargs):
+            value = original(*args, **kwargs)
+            if Path(args[0]).name != "vectors.jsonl":
+                return value
+            rewritten = value.data.replace(b'"integer":"1', b'"integer":"9', 1)
+            self.assertEqual(len(rewritten), value.size)
+            value.path.write_bytes(rewritten)
+            current = value.path.stat()
+            os.utime(value.path, ns=(current.st_atime_ns, value.mtime_ns))
+            current = value.path.stat()
+            self.assertEqual(current.st_ino, value.inode)
+            self.assertEqual(current.st_size, value.size)
+            self.assertEqual(current.st_mtime_ns, value.mtime_ns)
+            self.assertNotEqual(current.st_ctime_ns, value.ctime_ns)
+            return value
+
+        with mock.patch.object(HOMOLOGIA, "_read_bounded_file", rewrite_after_read):
             self.assert_refuses("HOM-CHECK-PATH")
 
     def test_published_schemas_are_closed_draft_2020_12_documents(self):

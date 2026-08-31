@@ -67,10 +67,12 @@ class FileRead(NamedTuple):
     path: Path
     data: bytes
     sha256: str
+    mode: int
     device: int
     inode: int
     size: int
     mtime_ns: int
+    ctime_ns: int
 
 
 class CheckResult(NamedTuple):
@@ -79,6 +81,28 @@ class CheckResult(NamedTuple):
     output_sha256: str
     vector_set_count: int
     vector_count: int
+
+
+def _stat_version(metadata: os.stat_result) -> tuple[int, int, int, int, int, int]:
+    return (
+        metadata.st_mode,
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def _read_version(value: FileRead) -> tuple[int, int, int, int, int, int]:
+    return (
+        value.mode,
+        value.device,
+        value.inode,
+        value.size,
+        value.mtime_ns,
+        value.ctime_ns,
+    )
 
 
 class Refusal(Exception):
@@ -197,12 +221,7 @@ def _assert_named_identity(value: FileRead, subject: str) -> None:
         _refuse("HOM-CHECK-PATH", subject, "restore the named regular file and retry")
     if stat.S_ISLNK(named.st_mode) or not stat.S_ISREG(named.st_mode):
         _refuse("HOM-CHECK-PATH", subject, "use one non-symlink regular file")
-    if (
-        named.st_dev != value.device
-        or named.st_ino != value.inode
-        or named.st_size != value.size
-        or named.st_mtime_ns != value.mtime_ns
-    ):
+    if _stat_version(named) != _read_version(value):
         _refuse("HOM-CHECK-PATH", subject, "stop replacing the named input while it is checked")
 
 
@@ -230,6 +249,12 @@ def _read_bounded_file(path: Path, *, limit: int, subject: str) -> FileRead:
         before = os.fstat(descriptor)
         if not stat.S_ISREG(before.st_mode):
             _refuse("HOM-CHECK-PATH", subject, "use one non-symlink regular file")
+        if _stat_version(before) != _stat_version(named):
+            _refuse(
+                "HOM-CHECK-PATH",
+                subject,
+                "stop replacing the named input while it is checked",
+            )
         if before.st_size > limit:
             _refuse("HOM-CHECK-FILE-CAP", subject, f"reduce the file to at most {limit} bytes")
         chunks: list[bytes] = []
@@ -244,13 +269,7 @@ def _read_bounded_file(path: Path, *, limit: int, subject: str) -> FileRead:
         if len(data) > limit:
             _refuse("HOM-CHECK-FILE-CAP", subject, f"reduce the file to at most {limit} bytes")
         after = os.fstat(descriptor)
-        if (
-            after.st_dev != before.st_dev
-            or after.st_ino != before.st_ino
-            or after.st_size != before.st_size
-            or after.st_mtime_ns != before.st_mtime_ns
-            or len(data) != after.st_size
-        ):
+        if _stat_version(after) != _stat_version(before) or len(data) != after.st_size:
             _refuse("HOM-CHECK-PATH", subject, "stop mutating the input while it is checked")
     except OSError:
         _refuse("HOM-CHECK-READ", subject, "make the declared input stable and readable")
@@ -261,10 +280,12 @@ def _read_bounded_file(path: Path, *, limit: int, subject: str) -> FileRead:
         path=path,
         data=data,
         sha256=hashlib.sha256(data).hexdigest(),
+        mode=before.st_mode,
         device=before.st_dev,
         inode=before.st_ino,
         size=before.st_size,
         mtime_ns=before.st_mtime_ns,
+        ctime_ns=before.st_ctime_ns,
     )
     _assert_named_identity(value, subject)
     return value
