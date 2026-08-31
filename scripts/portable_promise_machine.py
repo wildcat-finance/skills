@@ -103,6 +103,7 @@ PORTABLE_TEST_FILES = (
     Path("plugins/berean/tests/test_promote.py"),
     Path("plugins/hexaemeron/tests/test_hexctl.py"),
     Path("plugins/hexaemeron/tests/test_run_observation_binding.py"),
+    Path("plugins/lazarus/tests/test_capture.py"),
     Path("plugins/lazarus/tests/test_verifier.py"),
     Path("plugins/lemma/tests/test_markdown.py"),
     Path("plugins/synkrisis/tests/test_cohort.py"),

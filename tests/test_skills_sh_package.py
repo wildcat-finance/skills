@@ -53,6 +53,7 @@ PORTABLE_TEST_FILES = {
     "plugins/berean/tests/test_promote.py",
     "plugins/hexaemeron/tests/test_hexctl.py",
     "plugins/hexaemeron/tests/test_run_observation_binding.py",
+    "plugins/lazarus/tests/test_capture.py",
     "plugins/lazarus/tests/test_verifier.py",
     "plugins/lemma/tests/test_markdown.py",
     "plugins/synkrisis/tests/test_cohort.py",

@@ -8,7 +8,7 @@
         "schema": "promise-machine-composition/v1",
         "relation_id": "lemma-retrieval-to-berean-corpus",
         "producer": {
-          "promise_id": "lemma-chunk-validation",
+          "promise_id": "lemma-corpus-provenance",
           "bindings": {
             "subject": "markdown-corpus",
             "scope": "source-linked-chunks",
@@ -88,7 +88,7 @@
                 "producer",
                 "promise_id"
               ],
-              "value": "lemma-corpus-provenance"
+              "value": "lemma-chunk-validation"
             }
           ]
         },
@@ -114,15 +114,15 @@
         "schema": "promise-machine-composition/v1",
         "relation_id": "lazarus-rpc-to-berean-answer",
         "producer": {
-          "promise_id": "lazarus-fixture-verification",
+          "promise_id": "lazarus-fixture-capture",
           "bindings": {
             "subject": "historical-ethereum-read",
             "scope": "declared-rpc-fixture",
             "time-domain": "pinned-chain-and-block",
             "evidence-references": [
               {
-                "path": "plugins/lazarus/tests/test_verifier.py",
-                "sha256": "3174198bb6d4e8d3c09ab11941bc0ff8aa3a31f34b806c766ec8b4f22b4039c5"
+                "path": "plugins/lazarus/tests/test_capture.py",
+                "sha256": "a4e6bb68306128b82ea4c71b7a7ea8d15b08e673f44ca52c283303d4b8d2bb72"
               }
             ],
             "evidence-classes": [
@@ -156,8 +156,8 @@
             "time-domain": "pinned-chain-and-block",
             "evidence-references": [
               {
-                "path": "plugins/lazarus/tests/test_verifier.py",
-                "sha256": "3174198bb6d4e8d3c09ab11941bc0ff8aa3a31f34b806c766ec8b4f22b4039c5"
+                "path": "plugins/lazarus/tests/test_capture.py",
+                "sha256": "a4e6bb68306128b82ea4c71b7a7ea8d15b08e673f44ca52c283303d4b8d2bb72"
               },
               {
                 "path": "plugins/berean/tests/test_examples.py",
@@ -242,7 +242,8 @@
               }
             ],
             "evidence-classes": [
-              "checked"
+              "checked",
+              "recorded"
             ],
             "unknowns": [
               "model-quality-not-established"
@@ -282,7 +283,8 @@
             ],
             "evidence-classes": [
               "checked",
-              "attested"
+              "recorded",
+              "recomputed"
             ],
             "unknowns": [
               "model-quality-not-established"
@@ -354,7 +356,9 @@
               }
             ],
             "evidence-classes": [
-              "checked"
+              "checked",
+              "measured",
+              "recorded"
             ],
             "unknowns": [
               "cross-host-safety-not-established"
@@ -396,7 +400,9 @@
             ],
             "evidence-classes": [
               "checked",
-              "attested"
+              "measured",
+              "recorded",
+              "recomputed"
             ],
             "unknowns": [
               "cross-host-safety-not-established"
@@ -470,7 +476,8 @@
               }
             ],
             "evidence-classes": [
-              "checked"
+              "checked",
+              "recomputed"
             ],
             "unknowns": [
               "author-identity-not-established"
@@ -509,6 +516,7 @@
             ],
             "evidence-classes": [
               "checked",
+              "recomputed",
               "recorded"
             ],
             "unknowns": [
@@ -579,7 +587,8 @@
               }
             ],
             "evidence-classes": [
-              "checked"
+              "checked",
+              "recorded"
             ],
             "unknowns": [
               "event-truth-not-established"
@@ -619,7 +628,7 @@
             ],
             "evidence-classes": [
               "checked",
-              "recomputed"
+              "recorded"
             ],
             "unknowns": [
               "event-truth-not-established"

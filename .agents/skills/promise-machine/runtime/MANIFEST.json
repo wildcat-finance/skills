@@ -2,8 +2,8 @@
   "schema": "promise-machine-portable-runtime/v1",
   "contract": "promise-machine/v1",
   "generated_by": "scripts/portable_promise_machine.py",
-  "file_count": 1039,
-  "total_bytes": 22471198,
+  "file_count": 1040,
+  "total_bytes": 22553708,
   "omissions": [
     {
       "pattern": "plugins/*/.claude-plugin/**",
@@ -28,6 +28,7 @@
         "plugins/berean/tests/test_promote.py",
         "plugins/hexaemeron/tests/test_hexctl.py",
         "plugins/hexaemeron/tests/test_run_observation_binding.py",
+        "plugins/lazarus/tests/test_capture.py",
         "plugins/lazarus/tests/test_verifier.py",
         "plugins/lemma/tests/test_markdown.py",
         "plugins/synkrisis/tests/test_cohort.py",
@@ -71,7 +72,7 @@
       "bytes": 9126,
       "generated_by": "plugins/horos/skills/horos/scripts/horos.py",
       "path": ".horos/boundary.json",
-      "sha256": "1d30381d04b79e3134120a2b9356ae9f6608e6a7f4474cf6b9c79bbed46b8729",
+      "sha256": "624ec40be4e0864cfc8fc06dd5d0021b604e77a0e0ebb38db9d3ba06c56f6556",
       "source": null
     },
     {
@@ -4611,6 +4612,12 @@
       "source": "plugins/lazarus/skills/lazarus/agents/openai.yaml"
     },
     {
+      "bytes": 76195,
+      "path": "plugins/lazarus/tests/test_capture.py",
+      "sha256": "a4e6bb68306128b82ea4c71b7a7ea8d15b08e673f44ca52c283303d4b8d2bb72",
+      "source": "plugins/lazarus/tests/test_capture.py"
+    },
+    {
       "bytes": 28205,
       "path": "plugins/lazarus/tests/test_verifier.py",
       "sha256": "3174198bb6d4e8d3c09ab11941bc0ff8aa3a31f34b806c766ec8b4f22b4039c5",
@@ -6087,9 +6094,9 @@
       "source": "schemas/promise-machine-semantic-v1.schema.json"
     },
     {
-      "bytes": 274477,
+      "bytes": 280563,
       "path": "scripts/promise_machine.py",
-      "sha256": "6191257caea8de1573b7da83e482277836330ccf45c0b09cdacb4dd2ea40b770",
+      "sha256": "2295a30743befa98f1839d683a1c07d5fd4d512781616528413908e6e0c138c2",
       "source": "scripts/promise_machine.py"
     },
     {
@@ -6105,9 +6112,9 @@
       "source": "scripts/run_observation_capture.py"
     },
     {
-      "bytes": 26545,
+      "bytes": 26778,
       "path": "tests/fixtures/promise-machine/composition/cases.json",
-      "sha256": "e9a7cefcd50835bfcfdacd68a5bca694bb642a24cb66e79af216517bd06dd29a",
+      "sha256": "4513dd956d6faa04c3852428313651b847b789a059a2a9236647e127608d99f0",
       "source": "tests/fixtures/promise-machine/composition/cases.json"
     },
     {
@@ -6285,9 +6292,9 @@
       "source": "tests/fixtures/promise-machine/runtime/law-runtime-result-binding.json"
     },
     {
-      "bytes": 191865,
+      "bytes": 191861,
       "path": "tests/promise_machine_coverage.json",
-      "sha256": "96e85a349641c19bbbff7f5c227fa16c2dbfd75988a7edf771a2a8f35c5a250c",
+      "sha256": "5738527b4832154d59e48fc79260e725d94d2670d0cebc7cb6acb1a4f22d52d6",
       "source": "tests/promise_machine_coverage.json"
     },
     {
